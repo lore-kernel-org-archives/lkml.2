@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab0LFXBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:01:41 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:46068 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752389Ab0LFXBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:01:40 -0500
-Subject: Re: [patch 1/4] vt-d: quirk for masking vtd spec errors to
-	platform error handling logic
-From: Max Asbock <masbock@linux.vnet.ibm.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+	id S1754384Ab0LFXBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:01:50 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44035 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab0LFXBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 18:01:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PRw0MwGukV5W9oRDNTVLWtynUsFjh+sL85Me6TcARQ4T7jOVTybQnI1S33KnuniF9g
+         fBZskufRveh9mjxZcwzUd01SR1Bn7Djy+uslG60pQb5IeNq4nZg4e05oO99eUoiv9K24
+         BGYCXZH3q9Cv8S7DAZY5N0mG39/X6lYjCvYzo=
+Subject: Re: acpi_button: random oops on boot
+From: Tobias Karnat <tobias.karnat@googlemail.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: linux-acpi@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        "indou.takao@jp.fujitsu.com" <indou.takao@jp.fujitsu.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "stable@kernel.org" <stable@kernel.org>
-In-Reply-To: <1291669332.2675.23.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <20101201062225.292364637@intel.com>
-	 <20101201062244.365995600@intel.com>
-	 <20101206092749.7f89f3fd@jbarnes-desktop>
-	 <1291667190.2675.8.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <20101206124423.0868b71e@jbarnes-desktop>
-	 <1291669332.2675.23.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain
-Date: Mon, 06 Dec 2010 15:01:32 -0800
-Message-Id: <1291676492.5867.8.camel@w-amax.beaverton.ibm.com>
+        richard.coe@med.ge.com, jslaby@novell.com
+In-Reply-To: <201012060928.11307.bjorn.helgaas@hp.com>
+References: <1291477752.5096.27.camel@Tobias-Karnat>
+	 <201012060928.11307.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Dec 2010 00:01:43 +0100
+Message-ID: <1291676503.24968.25.camel@Tobias-Karnat>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-06 at 13:02 -0800, Suresh Siddha wrote:
-> On Mon, 2010-12-06 at 12:44 -0800, Jesse Barnes wrote:
-> > On Mon, 06 Dec 2010 12:26:30 -0800
-> > Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+Am Montag, den 06.12.2010, 09:28 -0700 schrieb Bjorn Helgaas:
+> On Saturday, December 04, 2010 08:49:12 am Tobias Karnat wrote:
+> > Applying the patch from the thread, makes the problem occurring less
+> > often and dmesg shows acpi-button loads for me on hid PNP0C0C and
+> > LNXPWRBN.
 > > 
-> > > On Mon, 2010-12-06 at 09:27 -0800, Jesse Barnes wrote:
-> > > > Can we make these registers and bits a bit more self-documenting (i.e.
-> > > > #defines for both, maybe along with other useful bit definitions for
-> > > > this reg)? Also, "error" is misspelled as "erorr" above. :)
-> > > 
-> > > Thanks for the review. Appended the updated patch. I haven't used
-> > > #defines for the pci-id's, as the first one (IOH) is used by several
-> > > chipsets and the second one is not named yet.
-> > 
-> > Is there a bug # that should be referenced in the commit log?  Any
-> > tested-bys to add?
+> > Maybe commit e2fb9754d27513918a4936e8cbaad50ff56cfd3d
+> > ACPI: button: remove unnecessary null pointer checks
+> > has unmasked an underlying problem?
 > 
-> There is no kernel.org bug# but there are multiple bugs with different
-> OSV's. And hence didn't care to mention to the bug #
-> 
-> Please add:
-> 
-> Reported-by: Max Asbock <masbock@linux.vnet.ibm.com>
-> Reported-and-tested-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> Acked-by: Chris Wright <chrisw@sous-sol.org>
-> Acked-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-> 
+> The oopses from the bugzilla are not the sort I would expect from
+> a null pointer dereference, but since it's fairly reproducible for
+> you, it might be worth reverting e2fb9754d27 to see whether it makes
+> any difference.
 
-I tested the patches on a system with a Tylersburg chipset. I used the
-patches against the 2.6.37-rc4 kernel and tested kdump. I still see the
-Vt-d errors but they no longer cause NMIs. It works as expected. 
+I was not able to revert it.
+But it would only mask the problem anyway...
 
-- Max
+I have now reverted bf04a77227db76f163bc2355ef4e176794987be2
+ACPI: button: cache hid/name/class pointers and build acpi_button
+as a module but this makes no difference.
+
+> Does Rich's script from https://bugzilla.novell.com/show_bug.cgi?id=647029#c30
+> help you reproduce the problem?
+
+No, it only crashes on boot (without the printk patch).
+If it happens the machine is completely dead, SysRq does not work.
+
+However it is definitely the acpi_button module, because removing it
+also fixes this.
+
+-Tobias
 
