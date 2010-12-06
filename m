@@ -1,179 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab0LFCl2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 21:41:28 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55885 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab0LFCl1 (ORCPT
+	id S1752454Ab0LFCmw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 21:42:52 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43773 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab0LFCmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 21:41:27 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 6 Dec 2010 11:35:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] mm: kswapd: Stop high-order balancing when any
- suitable zone is balanced
-Message-Id: <20101206113541.dda0a794.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1291376734-30202-2-git-send-email-mel@csn.ul.ie>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-	<1291376734-30202-2-git-send-email-mel@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Dec 2010 21:42:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uZP1+KBi/m7DC3rilN7IklNqyGWL/IJ9NT+368JrgtK7N9jcuwx9n0RapinnUA6nf5
+         8zo9OhluWzoUvrwcd+E0DPa+UcvmPZCHWFpRgBZzfwXiWWbb/MNCqALA8RYJSUTNbWWh
+         3ivjZq3zDjV0dCtPfGsU9c3fJt07+ADJvFd1s=
+Date: Mon, 6 Dec 2010 03:42:47 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH -tip  6/7] perf bts trace: print function+offset
+Message-ID: <20101206024244.GA2418@nowhere>
+References: <20101203035832.7827.16528.stgit@localhost6.localdomain6>
+ <20101203040015.7827.38870.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101203040015.7827.38870.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  3 Dec 2010 11:45:30 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-> When the allocator enters its slow path, kswapd is woken up to balance the
-> node. It continues working until all zones within the node are balanced. For
-> order-0 allocations, this makes perfect sense but for higher orders it can
-> have unintended side-effects. If the zone sizes are imbalanced, kswapd may
-> reclaim heavily within a smaller zone discarding an excessive number of
-> pages. The user-visible behaviour is that kswapd is awake and reclaiming
-> even though plenty of pages are free from a suitable zone.
+On Fri, Dec 03, 2010 at 01:00:15PM +0900, Akihiro Nagai wrote:
+> Provide the function to print function+offset.
+> And, set it as the default behavior of 'perf bts trace'.
+> To use this function, users can also specify the option '-s' or '--symbol'.
 > 
-> This patch alters the "balance" logic for high-order reclaim allowing kswapd
-> to stop if any suitable zone becomes balanced to reduce the number of pages
-> it reclaims from other zones. kswapd still tries to ensure that order-0
-> watermarks for all zones are met before sleeping.
+> Example: 'perf bts -as trace'
+> This command prints address and function+offset.
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Output sample:
+> address            function+offset
+> 0xffffffff8146fe0e irq_return+0x0         => 0x00007fd4038e3b20 _start+0x0
+> ...
+> 0x000000380661ee79 __libc_start_main+0xf9 => 0x00000000004035c3 main+0x0
+> 0xffffffff8146ef4e irq_return+0x0         => 0x00000000004035c3 main+0x0
+> 0x00000000004035e8 main+0x25              => 0x000000000040bca0 set_program_name+0x0
+> 0xffffffff8146ef4e irq_return+0x0         => 0x000000000040bca0 set_program_name+0x0
+> 0x000000000040bcae set_program_name+0xe   => 0x00000000004023d0 strrchr@plt+0x0
+> 0x00000000004023d0 strrchr@plt+0x0        => 0x00000000004023d6 strrchr@plt+0x6
+> ...
+> 0x0000000000403e0c main+0x849             => 0x00000000004021f0 exit@plt+0x0
+> 0x00000000004021f0 exit@plt+0x0           => 0x00000000004021f6 exit@plt+0x6
+> 0x00000000004021fb exit@plt+0xb           => 0x00000000004020d0 _init+0x18
+> 0x00000000004020d6 _init+0x1e             => 0x00000038062149d0 _dl_runtime_resolve+0x0
+> ...
 
-a nitpick.
+There is another kind of mode that I suspect would be very useful: something like
+a userspace function graph tracer (you can have a look into the kernel function
+graph tracer we have in ftrace to get an overview).
 
-> ---
->  include/linux/mmzone.h |    3 +-
->  mm/page_alloc.c        |    8 ++++--
->  mm/vmscan.c            |   55 +++++++++++++++++++++++++++++++++++++++++-------
->  3 files changed, 54 insertions(+), 12 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 39c24eb..7177f51 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -645,6 +645,7 @@ typedef struct pglist_data {
->  	wait_queue_head_t kswapd_wait;
->  	struct task_struct *kswapd;
->  	int kswapd_max_order;
-> +	enum zone_type classzone_idx;
->  } pg_data_t;
->  
->  #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
-> @@ -660,7 +661,7 @@ typedef struct pglist_data {
->  
->  extern struct mutex zonelists_mutex;
->  void build_all_zonelists(void *data);
-> -void wakeup_kswapd(struct zone *zone, int order);
-> +void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
->  int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->  		int classzone_idx, int alloc_flags);
->  enum memmap_context {
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e409270..82e3499 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1915,13 +1915,14 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
->  
->  static inline
->  void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
-> -						enum zone_type high_zoneidx)
-> +						enum zone_type high_zoneidx,
-> +						enum zone_type classzone_idx)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
->  
->  	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
-> -		wakeup_kswapd(zone, order);
-> +		wakeup_kswapd(zone, order, classzone_idx);
->  }
->  
->  static inline int
-> @@ -1998,7 +1999,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  		goto nopage;
->  
->  restart:
-> -	wake_all_kswapd(order, zonelist, high_zoneidx);
-> +	wake_all_kswapd(order, zonelist, high_zoneidx,
-> +						zone_idx(preferred_zone));
->  
->  	/*
->  	 * OK, we're below the kswapd watermark and have kicked background
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d31d7ce..d070d19 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2165,11 +2165,14 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
->   * interoperates with the page allocator fallback scheme to ensure that aging
->   * of pages is balanced across the zones.
->   */
-> -static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
-> +static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> +							int classzone_idx)
->  {
->  	int all_zones_ok;
-> +	int any_zone_ok;
->  	int priority;
->  	int i;
-> +	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
->  	unsigned long total_scanned;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	struct scan_control sc = {
-> @@ -2192,7 +2195,6 @@ loop_again:
->  	count_vm_event(PAGEOUTRUN);
->  
->  	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-> -		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
->  		unsigned long lru_pages = 0;
->  		int has_under_min_watermark_zone = 0;
->  
-> @@ -2201,6 +2203,7 @@ loop_again:
->  			disable_swap_token();
->  
->  		all_zones_ok = 1;
-> +		any_zone_ok = 0;
->  
->  		/*
->  		 * Scan in the highmem->dma direction for the highest
-> @@ -2310,10 +2313,12 @@ loop_again:
->  				 * spectulatively avoid congestion waits
->  				 */
->  				zone_clear_flag(zone, ZONE_CONGESTED);
-> +				if (i <= classzone_idx)
-> +					any_zone_ok = 1;
->  			}
->  
->  		}
-> -		if (all_zones_ok)
-> +		if (all_zones_ok || (order && any_zone_ok))
->  			break;		/* kswapd: all done */
->  		/*
->  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> @@ -2336,7 +2341,7 @@ loop_again:
->  			break;
->  	}
->  out:
-> -	if (!all_zones_ok) {
-> +	if (!(all_zones_ok || (order && any_zone_ok))) {
+So, the idea would be to rebuild the whole function call flow:
 
-Could you add a comment ?
+main() {
+	func1()
+	func2() {
+		func3()
+	}
+}
 
-And this means...
 
-	all_zones_ok .... all_zone_balanced
-	any_zones_ok .... fallback_allocation_ok
-?
+This would require to deref the instructions into the dso addresses from
+the bts trace, keep only the "call" and the "ret" (there would be a small arch
+backend for this mode) and rebuild the whole tree of calls.
+We already have all the dso address mapping API in place with perf.
 
-Thanks,
--Kame
+I really think this could be a very useful tool. Also we can even later
+expand this to the branches, as Peter suggested. But starting with calls
+would a very great start already.
 
+Thanks.
