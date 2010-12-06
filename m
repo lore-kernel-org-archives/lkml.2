@@ -1,158 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab0LFWVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 17:21:23 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:59260 "EHLO ogre.sisk.pl"
+	id S1754044Ab0LFWXW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 17:23:22 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:59270 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753335Ab0LFWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 17:21:21 -0500
+	id S1753465Ab0LFWXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 17:23:21 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH v2] PCI: Disable ASPM if BIOS asks us to
-Date: Mon, 6 Dec 2010 23:20:36 +0100
+To: Karel Zak <kzak@redhat.com>
+Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature to avoid user space breakage
+Date: Mon, 6 Dec 2010 23:22:45 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org
-References: <1291662056-6055-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <1291662056-6055-1-git-send-email-mjg@redhat.com>
+Cc: Bojan Smojver <bojan@rexursive.com>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>
+References: <201012052324.30231.rjw@sisk.pl> <1291592215.2866.3.camel@shrek.rexursive.com> <20101206132613.GB9421@nb.net.home>
+In-Reply-To: <20101206132613.GB9421@nb.net.home>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012062320.36304.rjw@sisk.pl>
+Message-Id: <201012062322.45922.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 06, 2010, Matthew Garrett wrote:
-> We currently refuse to touch the ASPM registers if the BIOS tells us that
-> ASPM isn't supported. This can cause problems if the BIOS has (for any
-> reason) enabled ASPM on some devices anyway. Change the code such that we
-> explicitly clear ASPM if the FADT indicates that ASPM isn't supported,
-> and make sure we tidy up appropriately on device removal in order to deal
-> with the hotplug case. If ASPM is disabled because the BIOS doesn't hand
-> over control then we won't touch the registers.
+On Monday, December 06, 2010, Karel Zak wrote:
+> On Mon, Dec 06, 2010 at 10:36:55AM +1100, Bojan Smojver wrote:
+> > On Sun, 2010-12-05 at 23:24 +0100, Rafael J. Wysocki wrote:
+> > > Commit 3624eb0 (PM / Hibernate: Modify signature used to mark swap)
+> > > modified hibernate signature used to mark swap partitions containing
+> > > hibernation images, but that turns out to have caused problems in
+> > > libblkid on recent Ubuntu.  Restore the old signature to avoid those
+> > > problems. 
+> > 
+> > Don't quite understand this change (sorry, probably just being obtuse).
 > 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+>  I too.
+> 
+> > The signature was changed to make sure older kernels don't handle
+> > compressed images by accident, right? If so, this would seem like a bad
+> > idea, because this is what can actually happen now.
+> > 
+> > Shouldn't user space learn how to handle both signatures instead?
+> 
+>  The upstream libblkid has been updated, there is not a problem to
+>  support more signatures.
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Cool.
 
-> ---
-> 
-> Implement Rafael's suggestion to use two separate functions, and also
-> ensure that we clear the clkpm bit as well as the ASPM bits.
-> 
->  drivers/pci/pci-acpi.c   |    1 +
->  drivers/pci/pcie/aspm.c  |   21 +++++++++++++++++----
->  include/linux/pci-aspm.h |    5 ++++-
->  3 files changed, 22 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> index 24e19c5..d7ea699 100644
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -399,6 +399,7 @@ static int __init acpi_pci_init(void)
->  
->  	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
->  		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
-> +		pcie_clear_aspm();
->  		pcie_no_aspm();
->  	}
->  
-> diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-> index 7122281..8112415 100644
-> --- a/drivers/pci/pcie/aspm.c
-> +++ b/drivers/pci/pcie/aspm.c
-> @@ -68,7 +68,7 @@ struct pcie_link_state {
->  	struct aspm_latency acceptable[8];
->  };
->  
-> -static int aspm_disabled, aspm_force;
-> +static int aspm_disabled, aspm_force, aspm_clear_state;
->  static DEFINE_MUTEX(aspm_lock);
->  static LIST_HEAD(link_list);
->  
-> @@ -139,7 +139,7 @@ static void pcie_set_clkpm(struct pcie_link_state *link, int enable)
->  {
->  	/* Don't enable Clock PM if the link is not Clock PM capable */
->  	if (!link->clkpm_capable && enable)
-> -		return;
-> +		enable = 0;
->  	/* Need nothing if the specified equals to current state */
->  	if (link->clkpm_enabled == enable)
->  		return;
-> @@ -498,6 +498,10 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
->  	struct pci_dev *child;
->  	int pos;
->  	u32 reg32;
-> +
-> +	if (aspm_clear_state)
-> +		return -EINVAL;
-> +
->  	/*
->  	 * Some functions in a slot might not all be PCIe functions,
->  	 * very strange. Disable ASPM for the whole slot
-> @@ -563,12 +567,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
->  	struct pcie_link_state *link;
->  	int blacklist = !!pcie_aspm_sanity_check(pdev);
->  
-> -	if (aspm_disabled || !pci_is_pcie(pdev) || pdev->link_state)
-> +	if (!pci_is_pcie(pdev) || pdev->link_state)
->  		return;
->  	if (pdev->pcie_type != PCI_EXP_TYPE_ROOT_PORT &&
->  	    pdev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)
->  		return;
->  
-> +	if (aspm_disabled && !aspm_clear_state)
-> +		return;
-> +
->  	/* VIA has a strange chipset, root port is under a bridge */
->  	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT &&
->  	    pdev->bus->self)
-> @@ -641,7 +648,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
->  	struct pci_dev *parent = pdev->bus->self;
->  	struct pcie_link_state *link, *root, *parent_link;
->  
-> -	if (aspm_disabled || !pci_is_pcie(pdev) ||
-> +	if ((aspm_disabled && !aspm_clear_state) || !pci_is_pcie(pdev) ||
->  	    !parent || !parent->link_state)
->  		return;
->  	if ((parent->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
-> @@ -899,6 +906,12 @@ static int __init pcie_aspm_disable(char *str)
->  
->  __setup("pcie_aspm=", pcie_aspm_disable);
->  
-> +void pci_clear_aspm(void)
-> +{
-> +	if (!aspm_force)
-> +		aspm_clear_state = 1;
-> +}
-> +
->  void pcie_no_aspm(void)
->  {
->  	if (!aspm_force)
-> diff --git a/include/linux/pci-aspm.h b/include/linux/pci-aspm.h
-> index 91ba0b3..ce68105 100644
-> --- a/include/linux/pci-aspm.h
-> +++ b/include/linux/pci-aspm.h
-> @@ -27,6 +27,7 @@ extern void pcie_aspm_init_link_state(struct pci_dev *pdev);
->  extern void pcie_aspm_exit_link_state(struct pci_dev *pdev);
->  extern void pcie_aspm_pm_state_change(struct pci_dev *pdev);
->  extern void pci_disable_link_state(struct pci_dev *pdev, int state);
-> +extern void pcie_clear_aspm(void);
->  extern void pcie_no_aspm(void);
->  #else
->  static inline void pcie_aspm_init_link_state(struct pci_dev *pdev)
-> @@ -41,7 +42,9 @@ static inline void pcie_aspm_pm_state_change(struct pci_dev *pdev)
->  static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
->  {
->  }
-> -
-> +static inline void pcie_clear_aspm(void)
-> +{
-> +}
->  static inline void pcie_no_aspm(void)
->  {
->  }
-> 
+I'm withdrawing the patch, then.
 
+Thanks,
+Rafael
