@@ -1,81 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0LFQNX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:13:23 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:20873 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab0LFQNW (ORCPT
+	id S1753759Ab0LFQNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:13:34 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61284 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691Ab0LFQNb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:13:22 -0500
-Message-ID: <4CFD0B9D.6020809@siemens.com>
-Date: Mon, 06 Dec 2010 17:13:17 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 6 Dec 2010 11:13:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pl8Sm99lthCjHVIjIS29V/yfpfXS0pU3UBilon13x1VvLpK7vlgTsb9G/qv16dipGV
+         duojjj3KjKefdHiBl6WOGhsabsYiuDSK0ozzF+HJXbO/8aqonc2Hce3ZpFuxxHUNsI0i
+         M8i6AtY+J7cZX1kbi5eXM4vjMJ0Wds0aJ8EUs=
 MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>
-Subject: Re: Roadmap for KVM support on Tile?
-References: <4CFCD363.7060803@siemens.com> <4CFD0857.8050205@tilera.com>
-In-Reply-To: <4CFD0857.8050205@tilera.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101206105021.2b6bfc96@tlielax.poochiereds.net>
+References: <20101203130440.9f89dd31.sfr@canb.auug.org.au>
+	<20101203094844.68f2bc40.randy.dunlap@oracle.com>
+	<20101206070956.GA5570@elte.hu>
+	<20101206073513.54ca2c71@tlielax.poochiereds.net>
+	<AANLkTimTFi6jji5wmnBTT25XYAXAhJYNY+YmqhW5McEC@mail.gmail.com>
+	<20101206105021.2b6bfc96@tlielax.poochiereds.net>
+Date: Mon, 6 Dec 2010 10:13:29 -0600
+Message-ID: <AANLkTi=25aSmAia3ADbi+Pmu4eNOLiRuYnhbBHnqZQgV@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 3 (cifs)
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Steve French <sfrench@samba.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.12.2010 16:59, Chris Metcalf wrote:
-> On 12/6/2010 7:13 AM, Jan Kiszka wrote:
->> Hi Chris,
+On Mon, Dec 6, 2010 at 9:50 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Mon, 6 Dec 2010 09:40:33 -0600
+> Shirish Pargaonkar <shirishpargaonkar@gmail.com> wrote:
+>
+>> On Mon, Dec 6, 2010 at 6:35 AM, Jeff Layton <jlayton@redhat.com> wrote:
+>> > On Mon, 6 Dec 2010 08:09:56 +0100
+>> > Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> >>
+>> >> * Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> >>
+>> >> > On Fri, 3 Dec 2010 13:04:40 +1100 Stephen Rothwell wrote:
+>> >> >
+>> >> > > Hi all,
+>> >> > >
+>> >> > > Changes since 20101202:
+>> >> >
+>> >> >
+>> >> > When CIFS_EXPERIMENTAL is not enabled:
+>> >> >
+>> >> > (.text+0xdf6c9): undefined reference to `get_cifs_acl'
+>> >> >
+>> >> > from fs/cifs/xattr.c:cifs_getxattr()
+>> >> >
+>> >> >
+>> >> > CONFIG_CIFS=y
+>> >> > # CONFIG_CIFS_STATS is not set
+>> >> > CONFIG_CIFS_WEAK_PW_HASH=y
+>> >> > # CONFIG_CIFS_UPCALL is not set
+>> >> > CONFIG_CIFS_XATTR=y
+>> >> > CONFIG_CIFS_POSIX=y
+>> >> > # CONFIG_CIFS_DEBUG2 is not set
+>> >> > # CONFIG_CIFS_DFS_UPCALL is not set
+>> >> > CONFIG_CIFS_FSCACHE=y
+>> >> > CONFIG_CIFS_ACL=y
+>> >> > # CONFIG_CIFS_EXPERIMENTAL is not set
+>> >>
+>> >> And this build regression has been pushed upstream now, as of:
+>> >>
+>> >>    8520eeaa1235: Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6
+>> >>
+>> >> and it is triggering for me too:
+>> >>
+>> >>    fs/built-in.o: In function `cifs_getxattr':
+>> >>    (.text+0xc518e): undefined reference to `get_cifs_acl'
+>> >>
+>> >> The regression got introduced by:
+>> >>
+>> >>    fbeba8bb16d7: cifs: Handle extended attribute name cifs_acl to generate cifs acl blob (try #4)
+>> >>
+>> >> Which introduced the new CIFS_ACL option.
+>> >>
+>> >> Thanks,
+>> >>
+>> >>       Ingo
+>> >
+>> > Yeah, looks like this new Kconfig option depends on some code that's
+>> > under the (much-overloaded) CIFS_EXPERIMENTAL Kconfig option. I think
+>> > this patch needs some rework. The simple fix would be to make it
+>> > dependent on CIFS_EXPERIMENTAL, but that's rather icky since
 >>
->> as I'm already running around, telling people that Tile might be the
->> next arch to gain KVM support, I wanted to back this derived [1]
->> information with some more details. Can you share some of your plans
->> regarding this, either officially (LKML, kvm-devel) or yet privately?
->>  - What will be the level of support in the first version and long-term
->>    (CPU virtualization + I/O emulation, also I/O virtualization/
->>    pass-though)?
->>  - What use cases do you target, and why do you plan to use KVM for
->>    them?
->>  - What use cases may not fit a KVM-based approach?
+>> Making CONFIG_CIFS_ACL dependent on CONFIG_CIFS_EXPERIMENTAL
+>> works
 >>
->> The background of this questionnaire is not (yet) a concrete project
->> based on a Tile processor and KVM. Right now I'm primarily promoting KVM
->> for use cases beyond classic x86 server scenarios, both in-house as well
->> as in the community.
+>>  config CIFS_ACL
+>>           bool "Provide CIFS ACL support (EXPERIMENTAL)"
+>> -         depends on EXPERIMENTAL && CIFS_XATTR
+>> +         depends on CIFS_EXPERIMENTAL && CIFS_XATTR
+>>           help
+>>             Allows to fetch CIFS/NTFS ACL from the server.  The DACL blob
+>>             is handed over to the application/caller.
 >>
->> TiA!
+>> At the minimum function find_readable_file() and three functions
+>> in cifssmb.c would not have to be in CIFS_EXPERIMENTAL.
+>> And we would need to move some other cifs acl related functions
+>> from under CIFS_ACL from CIFS_EXPERIMENTAL.
 >>
->> Best regards,
->> Jan Kiszka
->>
->> [1] http://permalink.gmane.org/gmane.linux.kernel/1048568
-> 
-> We already have a hypervisor that is used for Tile, which allows us to do
-> client isolation and spatial multiplexing (i.e. splitting the cores among
-> different supervisors), and smooths over some of the more nitty-gritty
-> hardware issues to present an easier API to the client supervisor, e.g.
-> Linux.  The supervisor is paravirtualized, i.e. aware of the hypervisor API
-> for page-table management and I/O access.
-> 
-> But moving forward there is some appeal to using a standard virtualization
-> technology, and we picked KVM as the target that seemed best for us to
-> support.  Some of the things this will facilitate for us include dynamic
-> reconfiguration of supervisor domains, sharing I/O devices between
-> supervisors, providing virtual devices to supervisors, virtual machine
-> migration/snapshots, etc.  And, we'd like to support a standard management
-> interface such as the KVM interface, so our customers don't have to learn
-> how to manage the Tilera-specific hypervisor software.
-> 
-> None of this is committed to any particular release schedule yet, but this
-> is the direction we are currently planning to head.
-> 
+>
+> Ugh, let's not do that. CONFIG_CIFS_EXPERIMENTAL is like a box of
+> chocolates...when you enable it you just never know what you're going
+> to get...
+>
+> I think the patch below is a better way to deal with this. It's larger
+> than I would like to see at this point in the release cycle, but we
+> might as well fix it the right way.
+>
+> I also have some other patches to clean up CONFIG_CIFS_EXPERIMENTAL,
+> but I'll send those along separately for 2.6.38.
+>
+> Steve, if this looks good, I'll send it along to you as a "formal"
+> patch for inclusion via your tree.
+>
+> -------------------[snip]---------------------
+>
+> cifs: fix use of CONFIG_CIFS_ACL
+>
+> Some of the code under CONFIG_CIFS_ACL is dependent upon code under
+> CONFIG_CIFS_EXPERIMENTAL, but the Kconfig options don't reflect that
+> dependency. Move more of the ACL code out from under
+> CONFIG_CIFS_EXPERIMENTAL and under CONFIG_CIFS_ACL.
+>
+> Also move find_readable_file out from other any sort of Kconfig
+> option and make it a function normally compiled in.
+>
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/cifs/Makefile    |    4 +-
+>  fs/cifs/cifsacl.c   |    3 -
+>  fs/cifs/cifsacl.h   |    4 -
+>  fs/cifs/cifsproto.h |    2 -
+>  fs/cifs/cifssmb.c   |  183 ++++++++++++++++++++++++++-------------------------
+>  fs/cifs/file.c      |    2 -
+>  fs/cifs/inode.c     |    8 +-
+>  7 files changed, 99 insertions(+), 107 deletions(-)
+>
+> diff --git a/fs/cifs/Makefile b/fs/cifs/Makefile
+> index adefa60..43b19dd 100644
+> --- a/fs/cifs/Makefile
+> +++ b/fs/cifs/Makefile
+> @@ -6,7 +6,9 @@ obj-$(CONFIG_CIFS) += cifs.o
+>  cifs-y := cifsfs.o cifssmb.o cifs_debug.o connect.o dir.o file.o inode.o \
+>          link.o misc.o netmisc.o smbdes.o smbencrypt.o transport.o asn1.o \
+>          md4.o md5.o cifs_unicode.o nterr.o xattr.o cifsencrypt.o \
+> -         readdir.o ioctl.o sess.o export.o cifsacl.o
+> +         readdir.o ioctl.o sess.o export.o
+> +
+> +cifs-$(CONFIG_CIFS_ACL) += cifsacl.o
+>
+>  cifs-$(CONFIG_CIFS_UPCALL) += cifs_spnego.o
+>
+> diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
+> index c6ebea0..a437ec3 100644
+> --- a/fs/cifs/cifsacl.c
+> +++ b/fs/cifs/cifsacl.c
+> @@ -30,8 +30,6 @@
+>  #include "cifs_debug.h"
+>
+>
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+> -
+>  static struct cifs_wksid wksidarr[NUM_WK_SIDS] = {
+>        {{1, 0, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0} }, "null user"},
+>        {{1, 1, {0, 0, 0, 0, 0, 1}, {0, 0, 0, 0, 0} }, "nobody"},
+> @@ -774,4 +772,3 @@ int mode_to_cifs_acl(struct inode *inode, const char *path, __u64 nmode)
+>
+>        return rc;
+>  }
+> -#endif /* CONFIG_CIFS_EXPERIMENTAL */
+> diff --git a/fs/cifs/cifsacl.h b/fs/cifs/cifsacl.h
+> index 6c8096c..c4ae7d0 100644
+> --- a/fs/cifs/cifsacl.h
+> +++ b/fs/cifs/cifsacl.h
+> @@ -74,11 +74,7 @@ struct cifs_wksid {
+>        char sidname[SIDNAMELENGTH];
+>  } __attribute__((packed));
+>
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+> -
+>  extern int match_sid(struct cifs_sid *);
+>  extern int compare_sids(const struct cifs_sid *, const struct cifs_sid *);
+>
+> -#endif /*  CONFIG_CIFS_EXPERIMENTAL */
+> -
+>  #endif /* _CIFSACL_H */
+> diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
+> index 38cdec9..cb65499 100644
+> --- a/fs/cifs/cifsproto.h
+> +++ b/fs/cifs/cifsproto.h
+> @@ -80,9 +80,7 @@ extern bool is_valid_oplock_break(struct smb_hdr *smb,
+>                                  struct TCP_Server_Info *);
+>  extern bool is_size_safe_to_change(struct cifsInodeInfo *, __u64 eof);
+>  extern struct cifsFileInfo *find_writable_file(struct cifsInodeInfo *, bool);
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+>  extern struct cifsFileInfo *find_readable_file(struct cifsInodeInfo *, bool);
+> -#endif
+>  extern unsigned int smbCalcSize(struct smb_hdr *ptr);
+>  extern unsigned int smbCalcSize_LE(struct smb_hdr *ptr);
+>  extern int decode_negTokenInit(unsigned char *security_blob, int length,
+> diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
+> index 0ef7c3a..d7957a3 100644
+> --- a/fs/cifs/cifssmb.c
+> +++ b/fs/cifs/cifssmb.c
+> @@ -2478,95 +2478,6 @@ querySymLinkRetry:
+>  }
+>
+>  #ifdef CONFIG_CIFS_EXPERIMENTAL
+> -/* Initialize NT TRANSACT SMB into small smb request buffer.
+> -   This assumes that all NT TRANSACTS that we init here have
+> -   total parm and data under about 400 bytes (to fit in small cifs
+> -   buffer size), which is the case so far, it easily fits. NB:
+> -       Setup words themselves and ByteCount
+> -       MaxSetupCount (size of returned setup area) and
+> -       MaxParameterCount (returned parms size) must be set by caller */
+> -static int
+> -smb_init_nttransact(const __u16 sub_command, const int setup_count,
+> -                  const int parm_len, struct cifsTconInfo *tcon,
+> -                  void **ret_buf)
+> -{
+> -       int rc;
+> -       __u32 temp_offset;
+> -       struct smb_com_ntransact_req *pSMB;
+> -
+> -       rc = small_smb_init(SMB_COM_NT_TRANSACT, 19 + setup_count, tcon,
+> -                               (void **)&pSMB);
+> -       if (rc)
+> -               return rc;
+> -       *ret_buf = (void *)pSMB;
+> -       pSMB->Reserved = 0;
+> -       pSMB->TotalParameterCount = cpu_to_le32(parm_len);
+> -       pSMB->TotalDataCount  = 0;
+> -       pSMB->MaxDataCount = cpu_to_le32((tcon->ses->server->maxBuf -
+> -                                         MAX_CIFS_HDR_SIZE) & 0xFFFFFF00);
+> -       pSMB->ParameterCount = pSMB->TotalParameterCount;
+> -       pSMB->DataCount  = pSMB->TotalDataCount;
+> -       temp_offset = offsetof(struct smb_com_ntransact_req, Parms) +
+> -                       (setup_count * 2) - 4 /* for rfc1001 length itself */;
+> -       pSMB->ParameterOffset = cpu_to_le32(temp_offset);
+> -       pSMB->DataOffset = cpu_to_le32(temp_offset + parm_len);
+> -       pSMB->SetupCount = setup_count; /* no need to le convert byte fields */
+> -       pSMB->SubCommand = cpu_to_le16(sub_command);
+> -       return 0;
+> -}
+> -
+> -static int
+> -validate_ntransact(char *buf, char **ppparm, char **ppdata,
+> -                  __u32 *pparmlen, __u32 *pdatalen)
+> -{
+> -       char *end_of_smb;
+> -       __u32 data_count, data_offset, parm_count, parm_offset;
+> -       struct smb_com_ntransact_rsp *pSMBr;
+> -
+> -       *pdatalen = 0;
+> -       *pparmlen = 0;
+> -
+> -       if (buf == NULL)
+> -               return -EINVAL;
+> -
+> -       pSMBr = (struct smb_com_ntransact_rsp *)buf;
+> -
+> -       /* ByteCount was converted from little endian in SendReceive */
+> -       end_of_smb = 2 /* sizeof byte count */ + pSMBr->ByteCount +
+> -                       (char *)&pSMBr->ByteCount;
+> -
+> -       data_offset = le32_to_cpu(pSMBr->DataOffset);
+> -       data_count = le32_to_cpu(pSMBr->DataCount);
+> -       parm_offset = le32_to_cpu(pSMBr->ParameterOffset);
+> -       parm_count = le32_to_cpu(pSMBr->ParameterCount);
+> -
+> -       *ppparm = (char *)&pSMBr->hdr.Protocol + parm_offset;
+> -       *ppdata = (char *)&pSMBr->hdr.Protocol + data_offset;
+> -
+> -       /* should we also check that parm and data areas do not overlap? */
+> -       if (*ppparm > end_of_smb) {
+> -               cFYI(1, "parms start after end of smb");
+> -               return -EINVAL;
+> -       } else if (parm_count + *ppparm > end_of_smb) {
+> -               cFYI(1, "parm end after end of smb");
+> -               return -EINVAL;
+> -       } else if (*ppdata > end_of_smb) {
+> -               cFYI(1, "data starts after end of smb");
+> -               return -EINVAL;
+> -       } else if (data_count + *ppdata > end_of_smb) {
+> -               cFYI(1, "data %p + count %d (%p) past smb end %p start %p",
+> -                       *ppdata, data_count, (data_count + *ppdata),
+> -                       end_of_smb, pSMBr);
+> -               return -EINVAL;
+> -       } else if (parm_count + data_count > pSMBr->ByteCount) {
+> -               cFYI(1, "parm count and data count larger than SMB");
+> -               return -EINVAL;
+> -       }
+> -       *pdatalen = data_count;
+> -       *pparmlen = parm_count;
+> -       return 0;
+> -}
+> -
+>  int
+>  CIFSSMBQueryReparseLinkInfo(const int xid, struct cifsTconInfo *tcon,
+>                        const unsigned char *searchName,
+> @@ -3056,7 +2967,97 @@ GetExtAttrOut:
+>
+>  #endif /* CONFIG_POSIX */
+>
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+> +#ifdef CONFIG_CIFS_ACL
+> +/*
+> + * Initialize NT TRANSACT SMB into small smb request buffer.  This assumes that
+> + * all NT TRANSACTS that we init here have total parm and data under about 400
+> + * bytes (to fit in small cifs buffer size), which is the case so far, it
+> + * easily fits. NB: Setup words themselves and ByteCount MaxSetupCount (size of
+> + * returned setup area) and MaxParameterCount (returned parms size) must be set
+> + * by caller
+> + */
+> +static int
+> +smb_init_nttransact(const __u16 sub_command, const int setup_count,
+> +                  const int parm_len, struct cifsTconInfo *tcon,
+> +                  void **ret_buf)
+> +{
+> +       int rc;
+> +       __u32 temp_offset;
+> +       struct smb_com_ntransact_req *pSMB;
+> +
+> +       rc = small_smb_init(SMB_COM_NT_TRANSACT, 19 + setup_count, tcon,
+> +                               (void **)&pSMB);
+> +       if (rc)
+> +               return rc;
+> +       *ret_buf = (void *)pSMB;
+> +       pSMB->Reserved = 0;
+> +       pSMB->TotalParameterCount = cpu_to_le32(parm_len);
+> +       pSMB->TotalDataCount  = 0;
+> +       pSMB->MaxDataCount = cpu_to_le32((tcon->ses->server->maxBuf -
+> +                                         MAX_CIFS_HDR_SIZE) & 0xFFFFFF00);
+> +       pSMB->ParameterCount = pSMB->TotalParameterCount;
+> +       pSMB->DataCount  = pSMB->TotalDataCount;
+> +       temp_offset = offsetof(struct smb_com_ntransact_req, Parms) +
+> +                       (setup_count * 2) - 4 /* for rfc1001 length itself */;
+> +       pSMB->ParameterOffset = cpu_to_le32(temp_offset);
+> +       pSMB->DataOffset = cpu_to_le32(temp_offset + parm_len);
+> +       pSMB->SetupCount = setup_count; /* no need to le convert byte fields */
+> +       pSMB->SubCommand = cpu_to_le16(sub_command);
+> +       return 0;
+> +}
+> +
+> +static int
+> +validate_ntransact(char *buf, char **ppparm, char **ppdata,
+> +                  __u32 *pparmlen, __u32 *pdatalen)
+> +{
+> +       char *end_of_smb;
+> +       __u32 data_count, data_offset, parm_count, parm_offset;
+> +       struct smb_com_ntransact_rsp *pSMBr;
+> +
+> +       *pdatalen = 0;
+> +       *pparmlen = 0;
+> +
+> +       if (buf == NULL)
+> +               return -EINVAL;
+> +
+> +       pSMBr = (struct smb_com_ntransact_rsp *)buf;
+> +
+> +       /* ByteCount was converted from little endian in SendReceive */
+> +       end_of_smb = 2 /* sizeof byte count */ + pSMBr->ByteCount +
+> +                       (char *)&pSMBr->ByteCount;
+> +
+> +       data_offset = le32_to_cpu(pSMBr->DataOffset);
+> +       data_count = le32_to_cpu(pSMBr->DataCount);
+> +       parm_offset = le32_to_cpu(pSMBr->ParameterOffset);
+> +       parm_count = le32_to_cpu(pSMBr->ParameterCount);
+> +
+> +       *ppparm = (char *)&pSMBr->hdr.Protocol + parm_offset;
+> +       *ppdata = (char *)&pSMBr->hdr.Protocol + data_offset;
+> +
+> +       /* should we also check that parm and data areas do not overlap? */
+> +       if (*ppparm > end_of_smb) {
+> +               cFYI(1, "parms start after end of smb");
+> +               return -EINVAL;
+> +       } else if (parm_count + *ppparm > end_of_smb) {
+> +               cFYI(1, "parm end after end of smb");
+> +               return -EINVAL;
+> +       } else if (*ppdata > end_of_smb) {
+> +               cFYI(1, "data starts after end of smb");
+> +               return -EINVAL;
+> +       } else if (data_count + *ppdata > end_of_smb) {
+> +               cFYI(1, "data %p + count %d (%p) past smb end %p start %p",
+> +                       *ppdata, data_count, (data_count + *ppdata),
+> +                       end_of_smb, pSMBr);
+> +               return -EINVAL;
+> +       } else if (parm_count + data_count > pSMBr->ByteCount) {
+> +               cFYI(1, "parm count and data count larger than SMB");
+> +               return -EINVAL;
+> +       }
+> +       *pdatalen = data_count;
+> +       *pparmlen = parm_count;
+> +       return 0;
+> +}
+> +
+>  /* Get Security Descriptor (by handle) from remote server for a file or dir */
+>  int
+>  CIFSSMBGetCIFSACL(const int xid, struct cifsTconInfo *tcon, __u16 fid,
+> @@ -3214,7 +3215,7 @@ setCifsAclRetry:
+>        return (rc);
+>  }
+>
+> -#endif /* CONFIG_CIFS_EXPERIMENTAL */
+> +#endif /* CONFIG_CIFS_ACL */
+>
+>  /* Legacy Query Path Information call for lookup to old servers such
+>    as Win9x/WinME */
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index b857ce5..5a28660 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -1108,7 +1108,6 @@ static ssize_t cifs_write(struct cifsFileInfo *open_file,
+>        return total_written;
+>  }
+>
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+>  struct cifsFileInfo *find_readable_file(struct cifsInodeInfo *cifs_inode,
+>                                        bool fsuid_only)
+>  {
+> @@ -1142,7 +1141,6 @@ struct cifsFileInfo *find_readable_file(struct cifsInodeInfo *cifs_inode,
+>        spin_unlock(&cifs_file_list_lock);
+>        return NULL;
+>  }
+> -#endif
+>
+>  struct cifsFileInfo *find_writable_file(struct cifsInodeInfo *cifs_inode,
+>                                        bool fsuid_only)
+> diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+> index 0023146..10d1cab 100644
+> --- a/fs/cifs/inode.c
+> +++ b/fs/cifs/inode.c
+> @@ -687,7 +687,7 @@ int cifs_get_inode_info(struct inode **pinode,
+>                        cFYI(1, "cifs_sfu_type failed: %d", tmprc);
+>        }
+>
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+> +#ifdef CONFIG_CIFS_ACL
+>        /* fill in 0777 bits from ACL */
+>        if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_CIFS_ACL) {
+>                rc = cifs_acl_to_fattr(cifs_sb, &fattr, *pinode, full_path,
+> @@ -698,7 +698,7 @@ int cifs_get_inode_info(struct inode **pinode,
+>                        goto cgii_exit;
+>                }
+>        }
+> -#endif
+> +#endif /* CONFIG_CIFS_ACL */
+>
+>        /* fill in remaining high mode bits e.g. SUID, VTX */
+>        if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_UNX_EMUL)
+> @@ -2128,7 +2128,7 @@ cifs_setattr_nounix(struct dentry *direntry, struct iattr *attrs)
+>
+>        if (attrs->ia_valid & ATTR_MODE) {
+>                rc = 0;
+> -#ifdef CONFIG_CIFS_EXPERIMENTAL
+> +#ifdef CONFIG_CIFS_ACL
+>                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_CIFS_ACL) {
+>                        rc = mode_to_cifs_acl(inode, full_path, mode);
+>                        if (rc) {
+> @@ -2137,7 +2137,7 @@ cifs_setattr_nounix(struct dentry *direntry, struct iattr *attrs)
+>                                goto cifs_setattr_exit;
+>                        }
+>                } else
+> -#endif
+> +#endif /* CONFIG_CIFS_ACL */
+>                if (((mode & S_IWUGO) == 0) &&
+>                    (cifsInode->cifsAttrs & ATTR_READONLY) == 0) {
+>
+> --
+> 1.7.3.2
+>
+>
 
-Thanks for the information! Sound thrilling, looking forward seeing this
-materializing.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Jeff, patch looks good except I have one comment, I will state it
+that when the patch is posted on cifs mailing list.
