@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab0LFSJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 13:09:45 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56155 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab0LFSJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 13:09:44 -0500
-Date: Mon, 6 Dec 2010 10:09:42 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] ext4: Set barrier=0 when block device does not
-	advertise flush support
-Message-ID: <20101206180942.GL18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20101203001659.GI18195@tux1.beaverton.ibm.com> <20101203070950.GA19071@infradead.org> <20101203091445.GK18195@tux1.beaverton.ibm.com> <20101206133924.GB9235@infradead.org>
+	id S1753884Ab0LFSLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 13:11:12 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:60661 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778Ab0LFSLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 13:11:10 -0500
+Date: Mon, 6 Dec 2010 16:11:27 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Joe Perches <joe@perches.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 1/2] vsprintf: Add %pMbt, bluetooth mac address
+Message-ID: <20101206181127.GB883@vigoh>
+References: <cover.1291419007.git.joe@perches.com>
+ <a33a0b00eeb29713a08d91156cbb2d816176f990.1291419007.git.joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101206133924.GB9235@infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <a33a0b00eeb29713a08d91156cbb2d816176f990.1291419007.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 08:39:24AM -0500, Christoph Hellwig wrote:
-> barrier=0 really means losemydata=1.  The plan I discussed with Jens was
-> to allow to disable the flush and fua semantics in the block layer, so
-> we'll have one new tunable for that, which is documented to causes these
-> issues.  
+Hi Joe,
 
-Oh.  I wasn't aware that anyone was planning to put in a tuning knob for
-flush/fua, red warning light or otherwise.  What is the name of the tunable,
-and when will it appear?  Or has it already?
+* Joe Perches <joe@perches.com> [2010-12-03 18:33:03 -0800]:
 
-> > picks the safe option by default.  However, I'd prefer /proc/mounts not
-> > misrepresent the status of flush support, to the best of ext4's knowledge.
+> Bluetooth output the MAC address in reverse order.
+> Bluetooth memory order: 00 01 02 03 04 05 is output "05:04:03:02:01:00".
 > 
-> That's bullshit.  The barrier option has traditionally meant that we
+> This can save overall text when bluetooth is compiled in.
+> 
+> Bluetooth currently uses a very slightly unsafe local function (batostr)
+> to output these formatted addresses.
+> 
+> Adding %pMbt allows the batostr function to be removed.
+> 
+> For x86:
+> 
+> $ size lib/vsprintf*.o*
+>    text	   data	    bss	    dec	    hex	filename
+>    8189	      0	      2	   8191	   1fff	lib/vsprintf.o.defconfig.new
+>    8150	      0	      2	   8152	   1fd8	lib/vsprintf.o.defconfig.old
+>   18633	     56	   3936	  22625	   5861	lib/vsprintf.o.allyesconfig.new
+>   18571	     56	   3920	  22547	   5813	lib/vsprintf.o.allyesconfig.old
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Well then, let's remove the barrier= mount flag altogether.  No need for strong
-language over a minor issue. :)  When I see some patches I will push this
-through my testing setup and report back what data I collect.
+Looks good to me.
 
---D
+Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-> sent barrier requests, and now means thatwe send flush+fua requests.
-> There's no reason for a warning and option mislabling just because you
-> got the most efficient implementation of it.
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
