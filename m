@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab0LFAcb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 19:32:31 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20729 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0LFAca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 19:32:30 -0500
-Date: Mon, 6 Dec 2010 01:25:34 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/45] kstrtox: converting strings to integers done
- (hopefully) right
-In-Reply-To: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
-Message-ID: <alpine.LNX.2.00.1012060120590.16078@swampdragon.chaosbits.net>
-References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754295Ab0LFAfs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 19:35:48 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57841 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab0LFAfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 19:35:47 -0500
+Date: Mon, 6 Dec 2010 11:35:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the sound tree with the Linus' tree
+Message-Id: <20101206113542.b1d2f978.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Dec 2010, Alexey Dobriyan wrote:
+Hi Takashi,
 
-> 1. simple_strto*() do not contain overflow checks and crufty,
->    libc way to indicate failure.
-> 2. strict_strto*() also do not have overflow checks but the name and
->    comments pretend they do.
-> 3. Both families have only "long long" and "long" variants,
->    but users want strtou8()
-> 4. Both "simple" and "strict" prefixes are wrong:
->    Simple doesn't exactly say what's so simple, strict should not exist
->    because conversion should be strict by default.
-> 
-> The solution is to use "k" prefix and add convertors for more types.
-> Enter
-> 	kstrtoull()
-> 	kstrtoll()
-> 	kstrtoul()
-> 	kstrtol()
-> 	kstrtouint()
-> 	kstrtoint()
-> 	kstrtou64()
-> 	kstrtos64()
-> 	kstrtou32()
-> 	kstrtos32()
-> 	kstrtou16()
-> 	kstrtos16()
-> 	kstrtou8()
-> 	kstrtos8()
-> 
-> Include runtime testsuite (somewhat incomplete) as well.
-> 
-> strict_strto*() become deprecated, stubbed to kstrto*() and
-> eventually will be removed altogether.
-> 
-> Use kstrto*() in code today!
-> 
-> Note: sizeof and __alignof__ trick is done to save function call
->       where types aren't distinguishable.
-> 
-> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-> ---
-<snip>
-> +/* Internal, do not use. */
-> +int _kstrtol(const char *s, unsigned int base, long *res)
-> +{
-> +	long long tmp;
-> +	int rv;
-> +
-> +	rv = kstrtoll(s, base, &tmp);
-> +	if (rv < 0)
-> +		return rv;
-> +	if (tmp != (long long)(long)tmp)
-> +		return -EINVAL;
-> +	*res = tmp;
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(_kstrtol);
+Today's linux-next merge of the sound tree got a conflict in
+sound/soc/sh/fsi.c between commit
+d4bc99b977e3a1dd10a84a01ebe59ac2ccebf0cd ("ARM: mach-shmobile: ap4evb:
+FSI clock use proper process for HDMI") from Linus' tree and commit
+2b0e73025f74699e9cc9df60649fcc14cd02481b ("ASoC: sh: fsi: change
+fsi->mst_ctrl to master->a/b_mclk") from the sound tree.
 
-Ok, probably I'm just being dense, but the "_" prefix tells me I probably 
-shouldn't use this function. The comment clearly tells me I shouldn't use 
-this function.
-So, why is this exported? And if it is not/should not be exported, then 
-why is it not static?
-(goes for other functions in this patch as well).
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-/Jesper Juhl
-
+diff --cc sound/soc/sh/fsi.c
+index 4c2404b,19a2f99..0000000
+--- a/sound/soc/sh/fsi.c
++++ b/sound/soc/sh/fsi.c
+@@@ -131,10 -142,6 +142,8 @@@ struct fsi_priv 
+  
+  	struct fsi_stream playback;
+  	struct fsi_stream capture;
+ +
+ +	long rate;
+- 
+- 	u32 mst_ctrl;
+  };
+  
+  struct fsi_core {
