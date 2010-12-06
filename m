@@ -1,65 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab0LFS47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 13:56:59 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41738 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab0LFS45 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 13:56:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=V9IYf0HQUzXLc5vs5krZ2DyL0NkisXyuzUdB1r1YsvRc2kcntFbW4QFluYycieHzT5
-         Dd6DBDA+XpUw6fgjuQieB5mPNxEQtizK7WF5DLsGjSoeHAqQIsGEAJJjqZ/FfAqywOxH
-         RCCrietVdm6L7ticnx1B2BFNm/CWfW1pGMJ2Q=
-MIME-Version: 1.0
-In-Reply-To: <4CFD258B.4030604@oracle.com>
-References: <20101204135732.GA12774@sepie.suse.cz>
-	<AANLkTimeyo==XJWUaUs8EzJvA8azkk3sw9FXQhMjuo6M@mail.gmail.com>
-	<20101205081108.9bdb7504.randy.dunlap@oracle.com>
-	<AANLkTimm1Xn4wwNAoDJ4hjnOmBOnxBgcsCzVEJTEag97@mail.gmail.com>
-	<AANLkTimXRBz7-mz_E_xdc85pGi7ExMy67XfDVF7jEt+Y@mail.gmail.com>
-	<4CFD258B.4030604@oracle.com>
-Date: Mon, 6 Dec 2010 13:56:56 -0500
-Message-ID: <AANLkTi=uMk74hYa-2aoVgj-F1h=+zGC2T=m4i__OwwQM@mail.gmail.com>
-Subject: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, trapdoor6@gmail.com,
-        Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        brueckner@linux.vnet.ibm.com, mchehab@redhat.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753754Ab0LFTBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 14:01:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752625Ab0LFTBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 14:01:10 -0500
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH v2] PCI: Disable ASPM if BIOS asks us to
+Date: Mon,  6 Dec 2010 14:00:56 -0500
+Message-Id: <1291662056-6055-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We currently refuse to touch the ASPM registers if the BIOS tells us that
+ASPM isn't supported. This can cause problems if the BIOS has (for any
+reason) enabled ASPM on some devices anyway. Change the code such that we
+explicitly clear ASPM if the FADT indicates that ASPM isn't supported,
+and make sure we tidy up appropriately on device removal in order to deal
+with the hotplug case. If ASPM is disabled because the BIOS doesn't hand
+over control then we won't touch the registers.
 
-On Mon, Dec 6, 2010 at 1:03 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On 12/06/10 10:01, Catalin Marinas wrote:
-> [...]
->> This could be simplified to only show the first option of every '&&'
->> expression, something like below:
->>
->> warning: I2C_ISCH selects MFD_CORE...
->> warning: GPIO_SCH selects MFD_CORE...
->>
->> But I couldn't figure out whether the expression reduction code in
->> kbuild reorders the options or not.
->
-This was the purpose of a patch I send a month or two ago, though, you
-defeated it with cases the code was not taking into account. I updated
-it since, but did not post it. I'll post it on linux-kbuild@ and
-continue the discussion there.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
 
-> I'm pretty sure that I have seen cases where the faulty kconfig is not the
-> first one listed, so all of them need to be available.
->
-do you have an example ?
+Implement Rafael's suggestion to use two separate functions, and also
+ensure that we clear the clkpm bit as well as the ASPM bits.
 
-Thanks,
- - Arnaud
+ drivers/pci/pci-acpi.c   |    1 +
+ drivers/pci/pcie/aspm.c  |   21 +++++++++++++++++----
+ include/linux/pci-aspm.h |    5 ++++-
+ 3 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 24e19c5..d7ea699 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -399,6 +399,7 @@ static int __init acpi_pci_init(void)
+ 
+ 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
+ 		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
++		pcie_clear_aspm();
+ 		pcie_no_aspm();
+ 	}
+ 
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 7122281..8112415 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -68,7 +68,7 @@ struct pcie_link_state {
+ 	struct aspm_latency acceptable[8];
+ };
+ 
+-static int aspm_disabled, aspm_force;
++static int aspm_disabled, aspm_force, aspm_clear_state;
+ static DEFINE_MUTEX(aspm_lock);
+ static LIST_HEAD(link_list);
+ 
+@@ -139,7 +139,7 @@ static void pcie_set_clkpm(struct pcie_link_state *link, int enable)
+ {
+ 	/* Don't enable Clock PM if the link is not Clock PM capable */
+ 	if (!link->clkpm_capable && enable)
+-		return;
++		enable = 0;
+ 	/* Need nothing if the specified equals to current state */
+ 	if (link->clkpm_enabled == enable)
+ 		return;
+@@ -498,6 +498,10 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
+ 	struct pci_dev *child;
+ 	int pos;
+ 	u32 reg32;
++
++	if (aspm_clear_state)
++		return -EINVAL;
++
+ 	/*
+ 	 * Some functions in a slot might not all be PCIe functions,
+ 	 * very strange. Disable ASPM for the whole slot
+@@ -563,12 +567,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ 	struct pcie_link_state *link;
+ 	int blacklist = !!pcie_aspm_sanity_check(pdev);
+ 
+-	if (aspm_disabled || !pci_is_pcie(pdev) || pdev->link_state)
++	if (!pci_is_pcie(pdev) || pdev->link_state)
+ 		return;
+ 	if (pdev->pcie_type != PCI_EXP_TYPE_ROOT_PORT &&
+ 	    pdev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)
+ 		return;
+ 
++	if (aspm_disabled && !aspm_clear_state)
++		return;
++
+ 	/* VIA has a strange chipset, root port is under a bridge */
+ 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT &&
+ 	    pdev->bus->self)
+@@ -641,7 +648,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
+ 	struct pci_dev *parent = pdev->bus->self;
+ 	struct pcie_link_state *link, *root, *parent_link;
+ 
+-	if (aspm_disabled || !pci_is_pcie(pdev) ||
++	if ((aspm_disabled && !aspm_clear_state) || !pci_is_pcie(pdev) ||
+ 	    !parent || !parent->link_state)
+ 		return;
+ 	if ((parent->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
+@@ -899,6 +906,12 @@ static int __init pcie_aspm_disable(char *str)
+ 
+ __setup("pcie_aspm=", pcie_aspm_disable);
+ 
++void pci_clear_aspm(void)
++{
++	if (!aspm_force)
++		aspm_clear_state = 1;
++}
++
+ void pcie_no_aspm(void)
+ {
+ 	if (!aspm_force)
+diff --git a/include/linux/pci-aspm.h b/include/linux/pci-aspm.h
+index 91ba0b3..ce68105 100644
+--- a/include/linux/pci-aspm.h
++++ b/include/linux/pci-aspm.h
+@@ -27,6 +27,7 @@ extern void pcie_aspm_init_link_state(struct pci_dev *pdev);
+ extern void pcie_aspm_exit_link_state(struct pci_dev *pdev);
+ extern void pcie_aspm_pm_state_change(struct pci_dev *pdev);
+ extern void pci_disable_link_state(struct pci_dev *pdev, int state);
++extern void pcie_clear_aspm(void);
+ extern void pcie_no_aspm(void);
+ #else
+ static inline void pcie_aspm_init_link_state(struct pci_dev *pdev)
+@@ -41,7 +42,9 @@ static inline void pcie_aspm_pm_state_change(struct pci_dev *pdev)
+ static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
+ {
+ }
+-
++static inline void pcie_clear_aspm(void)
++{
++}
+ static inline void pcie_no_aspm(void)
+ {
+ }
+-- 
+1.7.3.2
+
