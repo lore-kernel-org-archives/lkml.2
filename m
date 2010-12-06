@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab0LFO1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:27:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53409 "EHLO
+	id S1753175Ab0LFOhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:37:10 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47251 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab0LFO1J (ORCPT
+	with ESMTP id S1751204Ab0LFOhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:27:09 -0500
+	Mon, 6 Dec 2010 09:37:08 -0500
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] drivers/char/applicom.c: remove cvs ID and French in-file changelog
-Date: Mon,  6 Dec 2010 15:27:02 +0100
-Message-Id: <1291645622-10430-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] staging/comedi: remove German in-file changelog
+Date: Mon,  6 Dec 2010 15:37:02 +0100
+Message-Id: <1291646222-16322-1-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,45 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My script that finds typos always wants to do s/acces/access/ and
-claims that "addresse" is wrong.  While at it remove obsolete cvs id and
-outdated reference to kernel version.
+My script that finds typos always wants to do s/Funktion/Function/.
+Instead of adding some whilelist logic to my script just delete the
+changelog that is useless in general and still more in this case as most
+kernel developers don't understand it.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/char/applicom.c |   18 ------------------
- 1 files changed, 0 insertions(+), 18 deletions(-)
+ .../comedi/drivers/addi-data/APCI1710_Ssi.c        |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-index 25373df..75c74cf 100644
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -1,24 +1,6 @@
- /* Derived from Applicom driver ac.c for SCO Unix                            */
- /* Ported by David Woodhouse, Axiom (Cambridge) Ltd.                         */
- /* dwmw2@infradead.org 30/8/98                                               */
--/* $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $			     */
--/* This module is for Linux 2.1 and 2.2 series kernels.                      */
--/*****************************************************************************/
--/* J PAGET 18/02/94 passage V2.4.2 ioctl avec code 2 reset to les interrupt  */
--/* ceci pour reseter correctement apres une sortie sauvage                   */
--/* J PAGET 02/05/94 passage V2.4.3 dans le traitement de d'interruption,     */
--/* LoopCount n'etait pas initialise a 0.                                     */
--/* F LAFORSE 04/07/95 version V2.6.0 lecture bidon apres acces a une carte   */
--/*           pour liberer le bus                                             */
--/* J.PAGET 19/11/95 version V2.6.1 Nombre, addresse,irq n'est plus configure */
--/* et passe en argument a acinit, mais est scrute sur le bus pour s'adapter  */
--/* au nombre de cartes presentes sur le bus. IOCL code 6 affichait V2.4.3    */
--/* F.LAFORSE 28/11/95 creation de fichiers acXX.o avec les differentes       */
--/* addresses de base des cartes, IOCTL 6 plus complet                         */
--/* J.PAGET le 19/08/96 copie de la version V2.6 en V2.8.0 sans modification  */
--/* de code autre que le texte V2.6.1 en V2.8.0                               */
--/*****************************************************************************/
--
+diff --git a/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c b/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c
+index 0c890a9..2b19823 100644
+--- a/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c
++++ b/drivers/staging/comedi/drivers/addi-data/APCI1710_Ssi.c
+@@ -38,20 +38,6 @@ You should also find the complete GPL in the COPYING file accompanying this sour
+   |                                                                       |
+   |                                                                       |
+   +-----------------------------------------------------------------------+
+-  |                             UPDATES                                   |
+-  +-----------------------------------------------------------------------+
+-  |   Date   |   Author  |          Description of updates                |
+-  +----------+-----------+------------------------------------------------+
+-  | 13/05/98 | S. Weber  | SSI digital input / output implementation      |
+-  |----------|-----------|------------------------------------------------|
+-  | 22/03/00 | C.Guinot  | 0100/0226 -> 0200/0227                         |
+-  |          |           | Änderung in InitSSI Funktion                   |
+-  |          |           | b_SSIProfile >= 2 anstatt b_SSIProfile > 2     |
+-  |          |           |                                                |
+-  +-----------------------------------------------------------------------+
+-  | 08/05/00 | Guinot C  | - 0400/0228 All Function in RING 0             |
+-  |          |           |   available                                    |
+-  +-----------------------------------------------------------------------+
+ */
  
- #include <linux/kernel.h>
- #include <linux/module.h>
+ /*
 -- 
 1.7.2.3
 
