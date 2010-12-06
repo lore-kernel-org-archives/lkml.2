@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab0LFLMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 06:12:17 -0500
-Received: from www.tglx.de ([62.245.132.106]:42055 "EHLO www.tglx.de"
+	id S1752477Ab0LFLc1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 06:32:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:61179 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023Ab0LFLMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 06:12:15 -0500
-Date: Mon, 6 Dec 2010 12:11:38 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Jeff Ohlstein <johlstei@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        arve@android.com, David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: Re: [PATCH 3/5] msm: timer: SMP timer support for msm
-In-Reply-To: <20101206102046.GD29563@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1012061156100.2653@localhost6.localdomain6>
-References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org> <1291619778-30289-4-git-send-email-johlstei@codeaurora.org> <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6> <20101206102046.GD29563@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752393Ab0LFLcZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 06:32:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,305,1288594800"; 
+   d="scan'208";a="864935801"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "kmpark@infradead.org" <kmpark@infradead.org>,
+        "Mai, Leonard" <leonard.mai@intel.com>
+Date: Mon, 6 Dec 2010 19:32:05 +0800
+Subject: RE: [PATCH v2 0/4]enable Background operations and HPI feature for
+	eMMC4.41 card
+Thread-Topic: [PATCH v2 0/4]enable Background operations and HPI feature for
+	eMMC4.41 card
+Thread-Index: AcuS4/mTsy2A7jH9Rbunc5ihbp68VgCVONRQ
+Message-ID: <5D8008F58939784290FAB48F54975198320B3E49EC@shsmsx502.ccr.corp.intel.com>
+References: <20101203121315.GA18655@intel.com>
+In-Reply-To: <20101203121315.GA18655@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010, Russell King - ARM Linux wrote:
+Hi all,
+I have updated the HW reset feature patch to be version4, but no one has given me any comment....
+Does any want to review these patches?
 
-> On Mon, Dec 06, 2010 at 10:56:14AM +0100, Thomas Gleixner wrote:
-> > > +	local_irq_save(flags);
-> > > +	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
-> > 
-> > Why are you fiddling wiht the irqchip functions directly ? Please use
-> > disable_irq/enable_irq if at all.
+> -----Original Message-----
+> From: linux-mmc-owner@vger.kernel.org
+> [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chuanxiao Dong
+> Sent: Friday, December 03, 2010 8:13 PM
+> To: linux-mmc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; cjb@laptop.org; akpm@linux-foundation.org;
+> arjan@linux.intel.com; alan@linux.intel.com; kmpark@infradead.org
+> Subject: [PATCH v2 0/4]enable Background operations and HPI feature for
+> eMMC4.41 card
 > 
-> PPI.  The interrupt has to be enabled by the very same CPU that wants
-> to receive the interrupt.  Other CPUs on the system do not have access
-> to the interrupt enable bits for PPIs.
-
-That's fine, but the code is called on that very cpu anyway, so
-enable_irq() ends up calling the very same chip->unmask()
- 
-> That's something which genirq can't handle because it doesn't _actually_
-> support real per-CPU interrupts - iow, ones which are truely private to
-> CPU N.
-
-So what you want to avoid are the enable/disable_irq() side effects
-(setting/clearing the IRQ_DISABLED flags etc.) as they would apply to
-the other cpus as well - which would be bogus of course.
-
-We could actually solve that in the genirq code in a halfways simple
-way. Now that we get the references to the irq descriptors via
-irq_to_desc() we could add a function which marks an irq as percpu and
-use the main irq descriptor as a place holder which allocates percpu
-memory for the real descriptors. irq_to_desc() would lookup the main
-descriptor and hand back the one for the current cpu if the percpu
-pointer is set. That would allow you to use the generic functions at
-least with some care (functions need to be called from migration
-disabled code).
-
-Thanks,
-
-	tglx
-
- 
+> Hi,
+> 	This is the version 2 patch to enable background operations and HPI
+> 	feature for eMMC4.41 card. Both of these two features are optional.
+> 
+> 	Background operations can be started when user request queue is idle. So
+> 	each time user start to handle a new request, driver should check
+> 	whether the card is doing BKOPS. If so, should wait until BKOPS is done
+> 	or use a HPI command to interrupt it if eMMC card support HPI. The
+> 	serial patches were designed as this work flow.
+> 
+> 	This version patch only use HPI to interrupt background operation,
+> 	didnot implement to interrupt foreground operations.
+> 
+> 	patch1: enable background operations feature for supported eMMC card.
+> 	patch2: start to do background operations when user request queue is
+> 	idle. Check whether card is doing BKOPS when start a new user request.
+> 	patch3: enable HPI for supported eMMC card.
+> 	patch4: use HPI command to interrupt BKOPS.
+> 
+> 	change-log:
+> 
+> 	patch2: remove the added workqueue in the version 1 patch. This
+> 	workqueue is used to put card in runtime suspend state. Since current
+> 	MMC driver has not a runtime power management in card block layer, just
+> 	remove this workqueue. Define erro response to be macro
+> R1_ERROR_RESPONSE
+> 
+> 	patch3: fixed community comment. Thanks for Kyungmin Park.
+> 
+> Thanks
+> Chuanxiao
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
