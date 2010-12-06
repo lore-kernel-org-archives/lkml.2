@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab0LFNC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:02:59 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40880 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab0LFNC6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 08:02:58 -0500
-Date: Mon, 6 Dec 2010 21:00:59 +0800
-From: Joe Jin <joe.jin@oracle.com>
-To: sathyap@serverengines.com, subbus@serverengines.com,
-        sarveshwarb@serverengines.com, ajitk@serverengines.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        greg.marsden@oracle.com, guru.anbalagane@oracle.com,
-        joe.jin@oracle.com
-Subject: [patch 1/1] driver/net/benet: fix be_cmd_multicast_set() memcpy bug
-Message-ID: <20101206130059.GA19448@joejin-pc.cn.oracle.com>
+	id S1752705Ab0LFNDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:03:48 -0500
+Received: from mxs.selfmail.ru ([77.221.143.26]:57345 "EHLO mxs.selfmail.ru"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751254Ab0LFNDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 08:03:47 -0500
+X-ACL-SPF: 
+Subject: Re: [Xen-devel] [PATCH 0/2] Xen PV on HVM multiple PV consoles
+From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Reply-To: v.tolstov@selfip.ru
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+In-Reply-To: <alpine.DEB.2.00.1012061035070.9029@kaball-desktop>
+References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop>
+	 <1291236234.22027.0.camel@mobile>
+	 <alpine.DEB.2.00.1012021720170.14723@kaball-desktop>
+	 <1291404900.5298.15.camel@mobile>
+	 <alpine.DEB.2.00.1012061035070.9029@kaball-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Selfip.Ru
+Date: Mon, 06 Dec 2010 16:03:34 +0300
+Message-ID: <1291640614.32324.85.camel@work.selfip.ru>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+On Mon, 2010-12-06 at 10:36 +0000, Stefano Stabellini wrote:
 
-Regarding  benet be_cmd_multicast_set() function, now using
-netdev_for_each_mc_addr() helper for mac address copy, but
-when copying to req->mac[] did not increase of the index.
+> 
+> Could you please add CONFIG_DEBUG_INFO=y to your kernel config, so that
+> we can see the name of the functions in the stack trace?
+> 
 
-Cc: Sathya Perla <sathyap@serverengines.com>
-Cc: Subbu Seetharaman <subbus@serverengines.com>
-Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
-Cc: Ajit Khaparde <ajitk@serverengines.com>
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
+After add debug kernel not crushed. I'm test more expensive it now. Can
+You provide ps auxwww | grep qemu-dm after creating domain with two
+serial consoles? (sles does not have libxl, i want to write now wrapper
+to qemu-dm, after that try to compile rpm from spec to support libxl).
 
----
- be_cmds.c |    2 +-
-
-diff --git a/drivers/net/benet/be_cmds.c b/drivers/net/benet/be_cmds.c
-index 36eca1c..e4465d2 100644
---- a/drivers/net/benet/be_cmds.c
-+++ b/drivers/net/benet/be_cmds.c
-@@ -1235,7 +1235,7 @@ int be_cmd_multicast_set(struct be_adapter *adapter, u32 if_id,
- 
- 		i = 0;
- 		netdev_for_each_mc_addr(ha, netdev)
--			memcpy(req->mac[i].byte, ha->addr, ETH_ALEN);
-+			memcpy(req->mac[i++].byte, ha->addr, ETH_ALEN);
- 	} else {
- 		req->promiscuous = 1;
- 	}
 
 
 -- 
-Oracle <http://www.oracle.com>
-Joe Jin | Team Leader, Software Development | +8610.8278.6295
-ORACLE | Linux and Virtualization
-Incubator Building 2-A ZPark | Beijing China, 100094
-
+Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Selfip.Ru
 
