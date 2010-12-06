@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab0LFQKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:10:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab0LFQKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:10:51 -0500
-Message-ID: <4CFD0B06.9010308@redhat.com>
-Date: Mon, 06 Dec 2010 18:10:46 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1753613Ab0LFQNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:13:23 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:20873 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab0LFQNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:13:22 -0500
+Message-ID: <4CFD0B9D.6020809@siemens.com>
+Date: Mon, 06 Dec 2010 17:13:17 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: SVM: Add xsetbv intercept
-References: <1291394523-7689-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1291394523-7689-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>
+Subject: Re: Roadmap for KVM support on Tile?
+References: <4CFCD363.7060803@siemens.com> <4CFD0857.8050205@tilera.com>
+In-Reply-To: <4CFD0857.8050205@tilera.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2010 06:42 PM, Joerg Roedel wrote:
-> This patch implements the xsetbv intercept to the AMD part
-> of KVM. This makes AVX usable in a save way for the guest on
-> AVX capable AMD hardware.
-> The patch is tested by using AVX in the guest and host in
-> parallel and checking for data corruption. I also used the
-> KVM xsave unit-tests and they all pass.
->
+Am 06.12.2010 16:59, Chris Metcalf wrote:
+> On 12/6/2010 7:13 AM, Jan Kiszka wrote:
+>> Hi Chris,
+>>
+>> as I'm already running around, telling people that Tile might be the
+>> next arch to gain KVM support, I wanted to back this derived [1]
+>> information with some more details. Can you share some of your plans
+>> regarding this, either officially (LKML, kvm-devel) or yet privately?
+>>  - What will be the level of support in the first version and long-term
+>>    (CPU virtualization + I/O emulation, also I/O virtualization/
+>>    pass-though)?
+>>  - What use cases do you target, and why do you plan to use KVM for
+>>    them?
+>>  - What use cases may not fit a KVM-based approach?
+>>
+>> The background of this questionnaire is not (yet) a concrete project
+>> based on a Tile processor and KVM. Right now I'm primarily promoting KVM
+>> for use cases beyond classic x86 server scenarios, both in-house as well
+>> as in the community.
+>>
+>> TiA!
+>>
+>> Best regards,
+>> Jan Kiszka
+>>
+>> [1] http://permalink.gmane.org/gmane.linux.kernel/1048568
+> 
+> We already have a hypervisor that is used for Tile, which allows us to do
+> client isolation and spatial multiplexing (i.e. splitting the cores among
+> different supervisors), and smooths over some of the more nitty-gritty
+> hardware issues to present an easier API to the client supervisor, e.g.
+> Linux.  The supervisor is paravirtualized, i.e. aware of the hypervisor API
+> for page-table management and I/O access.
+> 
+> But moving forward there is some appeal to using a standard virtualization
+> technology, and we picked KVM as the target that seemed best for us to
+> support.  Some of the things this will facilitate for us include dynamic
+> reconfiguration of supervisor domains, sharing I/O devices between
+> supervisors, providing virtual devices to supervisors, virtual machine
+> migration/snapshots, etc.  And, we'd like to support a standard management
+> interface such as the KVM interface, so our customers don't have to learn
+> how to manage the Tilera-specific hypervisor software.
+> 
+> None of this is committed to any particular release schedule yet, but this
+> is the direction we are currently planning to head.
+> 
 
-That is really strange.  You didn't need to do anything to get cpuid.avx 
-recognized.  So running an older kvm on newer hardware will happily 
-expose avx even though it's not supported.
+Thanks for the information! Sound thrilling, looking forward seeing this
+materializing.
 
-We screwed up - we should have made cpuid.avx dependent on vendor support.
-
-The patch itself looks fine, I just want to understand this point first.
+Jan
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
