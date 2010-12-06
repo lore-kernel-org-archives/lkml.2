@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab0LFIyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 03:54:45 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:41397 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751130Ab0LFIyo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 03:54:44 -0500
+	id S1752186Ab0LFI7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 03:59:33 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:7574 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620Ab0LFI7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 03:59:32 -0500
+Subject: [PATCH v2] NFS: suppressing showing of default mount port value in
+	/proc fixed
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 06 Dec 2010 12:00:31 +0300
+Message-ID: <20101206085553.2172.24863.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <1288631750-2218-1-git-send-email-x0095078@ti.com>
-References: <Act55ohcdcwbjUYNRFK4Cj1Br4dQDQ==>
-	<1288631750-2218-1-git-send-email-x0095078@ti.com>
-Date: Mon, 6 Dec 2010 02:54:43 -0600
-Message-ID: <AANLkTi=7ZuOPm1WiYUs+DpLwzOp8Oam-N6TdWxHrA5d=@mail.gmail.com>
-Subject: Re: [PATCH] staging: tidspbridge - Eliminate direct manipulation of OMAP_SYSC_BASE
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: "Uribe de Leon, Armando" <x0095078@ti.com>
-Cc: gregkh@suse.de, felipe.contreras@gmail.com, "Menon, Nishanth" <nm@ti.com>,
-        ohad@wizery.com, "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "Sapiens, Rene" <rene.sapiens@ti.com>, ameya.palande@nokia.com,
-        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Ramos Falcon, Ernesto" <ernesto@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 12:15 PM, Uribe de Leon, Armando <x0095078@ti.com> wrote:
-> Eliminates Bridge direct manipulation of OMAP_SYSC_BASE registers
->
-> Signed-off-by: Armando Uribe <x0095078@ti.com>
-> ---
->  drivers/staging/tidspbridge/core/dsp-clock.c       |   52
-> +-------------------
->  drivers/staging/tidspbridge/core/tiomap3430.c      |    3 -
->  .../tidspbridge/include/dspbridge/cfgdefs.h        |    1 -
->  .../staging/tidspbridge/include/dspbridge/drv.h    |    3 -
->  drivers/staging/tidspbridge/rmgr/drv.c             |    1 -
->  5 files changed, 2 insertions(+), 58 deletions(-)
+Update: added check for zero value as it was before (note: can't simply check
+mountd_port for positive value because it's typeof unsigned short)
 
-Pushed to dspbridge.
+Default value for mount server port is set to NFS_UNSPEC_PORT (-1) and will not
+be changed during parsing mount options for mound data version 6. This default
+value will be showed for mountport in /proc/mounts always since current default
+check is for zero value. This small mistake leads to big problem, because
+during umount.nfs execution from old user-space utils (at least nfs-utils
+1.0.9) this value will be used as the server port to connect to. This request
+will be rejected (since port is 65535) and thus nfs mount point can't be
+unmounted.
 
-Regards,
+Note from Chuck Lever (chuck.lever@oracle.com): this is only possible if
+/etc/mtab is a link to /proc/mounts.  Not all systems have this configuration.
 
-Omar
+---
+ fs/nfs/super.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 6d6e21d..449024f 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -681,7 +681,9 @@ static void nfs_show_mountd_options(struct seq_file *m, struct nfs_server *nfss,
+ 
+ 	if (nfss->mountd_version || showdefaults)
+ 		seq_printf(m, ",mountvers=%u", nfss->mountd_version);
+-	if (nfss->mountd_port || showdefaults)
++	if ((nfss->mountd_port &&
++		nfss->mountd_port != (unsigned short)NFS_UNSPEC_PORT) || 
++		showdefaults)
+ 		seq_printf(m, ",mountport=%u", nfss->mountd_port);
+ 
+ 	nfs_show_mountd_netid(m, nfss, showdefaults);
+
