@@ -1,206 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab0LFTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 14:02:59 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:50309 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab0LFTC6 (ORCPT
+	id S1754276Ab0LFTDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 14:03:19 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59287 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab0LFTDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 14:02:58 -0500
-Date: Mon, 6 Dec 2010 20:02:51 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        sodaville@linutronix.de, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        mmarek@suse.cz
-Subject: Re: [PATCH 1/4] of: Add support for linking device tree blobs into
-	vmlinux
-Message-ID: <20101206190251.GB20882@merkur.ravnborg.org>
-References: <cover.1291656753.git.dirk.brandewie@gmail.com> <76a37fa459aeadce5d11db8a7cc044687a2e0e8c.1291656753.git.dirk.brandewie@gmail.com>
+	Mon, 6 Dec 2010 14:03:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Zx9RRbSDs8HfQuZ17MbQXECj6HpQKLImyL+9xIrheSZZRJFzmSObyRAHvThGPtdN2y
+         LZmMKDecUbscySMYU+9qUYypNIbhomTKhmk2WBmZCGyoPty7ooixSYaHMf9+Qy38Uorw
+         jj3m+Fovd/70viJhYPt83s4NOyPQbfCsemWdA=
+Message-ID: <4CFD3371.3080807@gmail.com>
+Date: Mon, 06 Dec 2010 11:03:13 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <76a37fa459aeadce5d11db8a7cc044687a2e0e8c.1291656753.git.dirk.brandewie@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+CC: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of/fdt: add kernel command line option for dtb_compat
+ string
+References: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com> <4bb36a12-8d95-4d4e-936c-c1c74a9372cc@VA3EHSMHS025.ehs.local> <4CFD3322.1000503@gmail.com>
+In-Reply-To: <4CFD3322.1000503@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 09:35:59AM -0800, dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
-> 
-> This patch adds support for linking device tree blob(s) into
-> vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
-> .dtb sections into vmlinux. To maintain compatiblity with the of/fdt
-> driver code platforms MUST copy the blob to a non-init memory location
-> before the kernel frees the .init.* sections in the image.
-> 
-> Modifies scripts/Makefile.lib to add a kbuild command to
-> compile DTS files to device tree blobs and a rule to create objects to
-> wrap the blobs for linking.
-> 
-> STRUCT_ALIGNMENT is defined in vmlinux.lds.h for use in the rule to
-> create wrapper objects for the dtb in Makefile.lib.  The
-> STRUCT_ALIGN() macro in vmlinux.lds.h is modified to use the
-> STRUCT_ALIGNMENT definition.
-> 
-> The DTB's are placed on 32 byte boundries to allow parsing the blob
-> with driver/of/fdt.c during early boot without having to copy the blob
-> to get the structure alignment GCC expects.
-> 
-> A DTB is linked in by adding the DTB object to the list of objects to
-> be linked into vmlinux in the archtecture specific Makefile using
->    obj-y += foo.dtb.o
-> 
-> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> ---
->  Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
->  include/asm-generic/vmlinux.lds.h  |   15 ++++++++++++---
->  scripts/Makefile.lib               |   21 ++++++++++++++++++++-
->  3 files changed, 47 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-> index 0ef00bd..fc18bb1 100644
-> --- a/Documentation/kbuild/makefiles.txt
-> +++ b/Documentation/kbuild/makefiles.txt
-> @@ -1136,6 +1136,21 @@ When kbuild executes, the following steps are followed (roughly):
->  	      resulting in the target file being recompiled for no
->  	      obvious reason.
->  
-> +    dtc
-> +	Create flattend device tree blob object suitable for linking
-> +	into vmlinux. Device tree blobs linked into vmlinux are placed
-> +	in an init section in the image. Platform code *must* copy the
-> +	blob to non-init memory prior to calling unflatten_device_tree().
-> +
-> +	Example:
-> +		#arch/x86/platform/ce4100/Makefile
-> +		clean-files := *dtb.S
-> +
-> +		DTC_FLAGS := -p 1024
-> +		obj-y += foo.dtb.o
-> +
-> +		$(obj)/%.dtb: $(src)/%.dts
-> +			$(call if_changed,dtc)
+On 12/06/2010 11:01 AM, Dirk Brandewie wrote:
+> On 12/06/2010 10:37 AM, Stephen Neuendorffer wrote:
+>>
+>>
+>>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+>>> index c1360e0..ca1318c 100644
+>>> --- a/drivers/of/fdt.c
+>>> +++ b/drivers/of/fdt.c
+>>> @@ -15,6 +15,8 @@
+>>> #include<linux/of_fdt.h>
+>>> #include<linux/string.h>
+>>> #include<linux/errno.h>
+>>> +#include<asm-generic/vmlinux.lds.h>
+>>> +
+>>>
+>>> #ifdef CONFIG_PPC
+>>> #include<asm/machdep.h>
+>>> @@ -604,3 +606,49 @@ void __init unflatten_device_tree(void)
+>>>
+>>> pr_debug("<- unflatten_device_tree()\n");
+>>> }
+>>> +
+>>> +extern uint8_t __dtb_start[];
+>>> +extern uint8_t __dtb_end[];
+>>> +static void __init *of_flat_dt_find_compatible_dtb(char *name)
+>>> +{
+>>> + void *rc = NULL;
+>>> + unsigned long root, size;
+>>> + struct boot_param_header *orig_initial_boot_params;
+>>> + uint8_t *blob;
+>>> +
+>>> + orig_initial_boot_params = initial_boot_params;
+>>> + blob = __dtb_start;
+>>> + initial_boot_params = (struct boot_param_header *)blob;
+>>
+>> Oy... can you avoid the pointer dance by using of_fdt_is_compatible()
+>> from my recent set of patches?
+>
+> I would like to get rid of the pointer dance. Is your patch set going to make it
+> into .37? I didn't see any acks.
+>
+Obviously I meant .38 :-)
 
-When using "if_changed" you need to add your target to targets-y.
-And you need to specify FORCE as a prerequisite to force kbuild
-to use the if_changed logic.
+>> It takes a blob argument. Then the loop below goes away.
+>>
+>
+> The loop will still be needed since multiple DTBs may be linked into the image.
+> using your of_fdt_is_compatible() will make the loop a lot more readable though.
+>
+> --Dirk
+>
+>> Steve
+>>
+>>> +
+>>> +
+>>> + while (blob< __dtb_end) {
+>>> + if (be32_to_cpu(initial_boot_params->magic) !=
+>> OF_DT_HEADER) {
+>>> + WARN(1, "Invalid device tree blob in
+>> vmlinux\n");
+>>> + break;
+>>> + }
+>>> +
+>>> + root = of_get_flat_dt_root();
+>>> + if (of_flat_dt_is_compatible(root, name)> 0) {
+>>> + rc = blob;
+>>> + break;
+>>> + }
+>>> +
+>>> + size = be32_to_cpu(initial_boot_params->totalsize);
+>>> + blob = PTR_ALIGN(blob + size, STRUCT_ALIGNMENT);
+>>> + initial_boot_params = (struct boot_param_header *)blob;
+>>> + }
+>>> +
+>>> + if (rc == NULL)
+>>> + initial_boot_params = orig_initial_boot_params;
+>>> + return rc;
+>>> +}
+>>> +
+>>> +
+>>> +static int __init of_flat_dtb_compat_setup(char *line)
+>>> +{
+>>> + if (!initial_boot_params)
+>>> + initial_boot_params =
+>> of_flat_dt_find_compatible_dtb(line);
+>>> + return 1;
+>>> +}
+>>> +
+>>> +early_param("dtb_compat", of_flat_dtb_compat_setup);
+>>> +
+>>> --
+>>> 1.7.2.3
+>>>
+>>> _______________________________________________
+>>> devicetree-discuss mailing list
+>>> devicetree-discuss@lists.ozlabs.org
+>>> https://lists.ozlabs.org/listinfo/devicetree-discuss
+>>
+>>
+>> This email and any attachments are intended for the sole use of the named
+>> recipient(s) and contain(s) confidential information that may be proprietary,
+>> privileged or copyrighted under applicable law. If you are not the intended
+>> recipient, do not read, copy, or forward this email message or any
+>> attachments. Delete this email message and any attachments immediately.
+>>
+>>
+>
 
-The purpose of if_changed is to check if the commandlien has changed
-and execute the command again also if the commandline has changed.
-The simpler variant is $(call cmd,dtc) where you do not check
-the command line and do not need FORCE.
-
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index bd69d79..024d3b9 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -23,7 +23,7 @@
->   *	_etext = .;
->   *
->   *      _sdata = .;
-> - *	RO_DATA_SECTION(PAGE_SIZE)
-> +*	RO_DATA_SECTION(PAGE_SIZE)
->   *	RW_DATA_SECTION(...)
->   *	_edata = .;
->   *
-
-Change seems wrong.
-
-> @@ -67,7 +67,8 @@
->   * Align to a 32 byte boundary equal to the
->   * alignment gcc 4.5 uses for a struct
->   */
-> -#define STRUCT_ALIGN() . = ALIGN(32)
-> +#define STRUCT_ALIGNMENT 32
-> +#define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
->  
->  /* The actual configuration determine if the init/exit sections
->   * are handled as text/data or they can be discarded (which
-> @@ -146,6 +147,13 @@
->  #define TRACE_SYSCALLS()
->  #endif
->  
-> +
-> +#define KERNEL_DTB()							\
-> +	STRUCT_ALIGN();							\
-> +	VMLINUX_SYMBOL(__dtb_start) = .;				\
-> +	*(.dtb.init.rodata)						\
-> +	VMLINUX_SYMBOL(__dtb_end) = .;
-> +
->  /* .data section */
->  #define DATA_DATA							\
->  	*(.data)							\
-> @@ -468,7 +476,8 @@
->  	MCOUNT_REC()							\
->  	DEV_DISCARD(init.rodata)					\
->  	CPU_DISCARD(init.rodata)					\
-> -	MEM_DISCARD(init.rodata)
-> +	MEM_DISCARD(init.rodata)					\
-> +	KERNEL_DTB()
->  
->  #define INIT_TEXT							\
->  	*(.init.text)							\
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 4c72c11..937eabbb 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -200,7 +200,26 @@ quiet_cmd_gzip = GZIP    $@
->  cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9 > $@) || \
->  	(rm -f $@ ; false)
->  
-> -
-> +# DTC
-> +#  ---------------------------------------------------------------------------
-> +
-> +# Generate an assembly file to wrap the output of the device tree compiler
-> +$(obj)/%.dtb.S: $(obj)/%.dtb
-> +	@echo '#include <asm-generic/vmlinux.lds.h>' > $@
-> +	@echo '.section .dtb.init.rodata,"a"' >> $@
-> +	@echo '.balign STRUCT_ALIGNMENT' >> $@
-> +	@echo '.global __dtb_$(*F)_begin' >> $@
-> +	@echo '__dtb_$(*F)_begin:' >> $@
-> +	@echo '.incbin "$<" ' >> $@
-> +	@echo '__dtb_$(*F)_end:' >> $@
-> +	@echo '.global __dtb_$(*F)_end' >> $@
-> +	@echo '.balign STRUCT_ALIGNMENT' >> $@
-> +
-
-If we really want this rule in Makefile.lib then at least make it less verbose,
-and more secure.
-Something like this:
-quiet_dt_S_dtb_cmd = DTB    $@
-      dt_S_dtb_cmd =                                      \
-(                                                         \
-	@echo '#include <asm-generic/vmlinux.lds.h>';     \
-	@echo '.section .dtb.init.rodata,"a"';            \
-	@echo '.balign STRUCT_ALIGNMENT';                 \
-	echo '.global __dtb_$(*F)_begin';                 \
-	echo '__dtb_$(*F)_begin:';                        \
-	echo '.incbin "$<" ';                             \
-	echo '__dtb_$(*F)_end:';                          \
-	echo '.global __dtb_$(*F)_end';                   \
-	echo '.balign STRUCT_ALIGNMENT';                  \
-) > $@
-
-$(obj)/%.dtb.S: $(obj)/%.dtb
-	$(call cmd,dt_S_dtb)
-
-
-> +DTC = $(objtree)/scripts/dtc/dtc
-
-If this is the only spot where we use DTC then drop the variable.
-
-> +
-> +quiet_cmd_dtc = DTC $@
-> +      cmd_dtc = $(DTC) -O dtb -o $@ -b 0 $(DTC_FLAGS) $<
-
-
-> +ooo
-
-What is the purpose of these "ooo"? A debugging left-over?
-
-
-	Sam
