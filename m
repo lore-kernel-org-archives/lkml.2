@@ -1,119 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab0LFXHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:07:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:56400 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab0LFXHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:07:32 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vitaly Wool <vitalywool@gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-Date: Tue, 7 Dec 2010 00:07:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <201012061754.44592.arnd@arndb.de> <AANLkTin_VOjz=bGCnANgp8G2SFFFOkT3TKRh50p5L1Gj@mail.gmail.com>
-In-Reply-To: <AANLkTin_VOjz=bGCnANgp8G2SFFFOkT3TKRh50p5L1Gj@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012070007.19239.arnd@arndb.de>
-X-Provags-ID: V02:K0:pRoO2mXSUavw8fZgccW0EgHXALGgvK9OvyCWrO+Cmv4
- V9WgxFIr/gAEY/llomfupKA/j09STx0iuJbbU7e1HAbLah50+d
- IvFV18JLsc7tJ4BXeHiJsC8uWFtGTH3TBu5NEnR7/zJ7QshADE
- 4HfaQXQPFNhbsWCPVFyMEv7ZlyQPUOZSKKKAOLygEEt2D3LRqW
- CdkVOrDVDPnxAKdEYYeWQ==
+	id S1753422Ab0LFXPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:15:35 -0500
+Received: from serv04.lahn.de ([213.239.197.57]:51593 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab0LFXPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 18:15:34 -0500
+X-Greylist: delayed 1633 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 18:15:33 EST
+Date: Mon, 6 Dec 2010 23:47:25 +0100
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: jean-philippe.menil@univ-nantes.fr, netdev@vger.kernel.org,
+        David Lamparter <equinox@diac24.net>, Greg KH <greg@kroah.com>,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
+ (adding ipv6 address to interface)
+Message-ID: <20101206234725.622a2212@xenia.leun.net>
+In-Reply-To: <m11v5uk35z.fsf@fess.ebiederm.org>
+References: <20100710235323.5336f627@xenia.leun.net>
+	<20100711192939.1c25dcaf@xenia.leun.net>
+	<20100804153543.56f6ecad@xenia.leun.net>
+	<20100804214618.GA6289@kroah.com>
+	<20100805001105.5a3453ed@xenia.leun.net>
+	<m1lj8l29zm.fsf@fess.ebiederm.org>
+	<20100805112538.60a46cb1@xenia.leun.net>
+	<m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+	<20100805134707.0442a7b1@xenia.leun.net>
+	<20101021171532.54af5e97@xenia.leun.net>
+	<20101022124858.GA719746@jupiter.n2.diac24.net>
+	<20101022190532.00e9e5d8@xenia.leun.net>
+	<20101024151541.161bf46c@xenia.leun.net>
+	<4CFD0A8F.8010906@univ-nantes.fr>
+	<m11v5uk35z.fsf@fess.ebiederm.org>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010 22:24:34 Vitaly Wool wrote:
-> On Mon, Dec 6, 2010 at 5:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Mon, 06 Dec 2010 13:22:00 -0800
+ebiederm@xmission.com (Eric W. Biederman) wrote:
+
+> Menil Jean-Philippe <jean-philippe.menil@univ-nantes.fr> writes:
 > 
-> >> But I was trying to make a different point here. On a basic level,
-> >> there's this cg2000 chip from STE that does BT, FM and GPS. There's
-> >> the chip from TI that does BT, FM and GPS, and there's the Broadcom
-> >> chip that does BT+FM. They all use HCI to access the other functions
-> >> of the combo chip and they do it in a really simiar way, with the
-> >> differences mostly in power management techniques. So I think it's
-> >> quite sensible to have some kind of framework that is suitable for
-> >> such devices.
+> > Le 24/10/2010 15:15, Michael Leun a écrit :
+> >> On Fri, 22 Oct 2010 19:05:32 +0200
+> >> Michael Leun<lkml20100708@newton.leun.net>  wrote:
+> >>
+> >>> On Fri, 22 Oct 2010 14:48:58 +0200
+> >>> David Lamparter<equinox@diac24.net>  wrote:
+> >>>
+> >>>> On Thu, Oct 21, 2010 at 05:15:32PM +0200, Michael Leun wrote:
+> >>>>> unfortunately the bug described below originally reported in
+> >>>>> 2.6.35-rcX is still there in 2.6.36.
+[...]
+> > curiously, i'm facing a similar problem in 2.6.36.1
 > >
-> > Yes, I agree 100% in principle. I could not find the code that
-> > Broadcom/TI FM and GPS stuff so far, can you point us to that?
-> 
-> Sure, the TI "shared transport" code is mostly at drivers/misc/ti-st.
-> 
-> Some Broadcom BCM43xx chips work in a similar way AFAIK but I'm not
-> sure about the mainline support for those.
-
-Ah, it had not occured to me to look in drivers/misc. Looking at the
-code over there, it becomes much clearer what your point is. Evidently
-the ti-st driver implements a line discipline similar to, but conflicting
-with hci_ldisc, and it has its own copy of the hci_ll code.
-
-I guess this is exactly what we're trying to avoid having with the
-cg2900 code ;-).
-
-> > The cg2900 solution for this was to use MFD (plus another layer
-> > in the posted version, but that will go away I assume). Using
-> > MFD is not the only possibility here, but I could not see anything
-> > wrong with it either. Do you think we can move them all over to
-> > use MFD infrastructure?
-> 
-> I guess so but it's probably more of a detail than what I'm up to now :)
-
-Agreed.
- 
-> >> But generally speaking, isn't a line discipline/driver attached to a
-> >> tty? We can use dumb tty for e. g. SPI and still be able to use
-> >> hci_ll, right?
+> > in my container, when i configure ipv6 adress on the interfaces,
+> > everything seems good on the first boot of the host. If i shutdown
+> > my container (lxc), then boot it, i observe the following logs:
+> > Dec  6 17:04:12 suntory.u06.univ-nantes.prive kernel: [  368.192019]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:04:22 suntory.u06.univ-nantes.prive kernel: [  378.432018]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:04:32 suntory.u06.univ-nantes.prive kernel: [  388.672015]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:04:42 suntory.u06.univ-nantes.prive kernel: [  398.912016]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:04:53 suntory.u06.univ-nantes.prive kernel: [  409.152016]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:05:03 suntory.u06.univ-nantes.prive kernel: [  419.392018]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:05:13 suntory.u06.univ-nantes.prive kernel: [  429.632018]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:05:23 suntory.u06.univ-nantes.prive kernel: [  439.876016]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:05:34 suntory.u06.univ-nantes.prive kernel: [  450.116015]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:05:44 suntory.u06.univ-nantes.prive kernel: [  460.356019]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:05:54 suntory.u06.univ-nantes.prive kernel: [  470.596020]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:06:04 suntory.u06.univ-nantes.prive kernel: [  480.836019]
+> > unregister_netdevice: waiting for lo to become free. Usage count = 4
+> > Dec  6 17:06:05 suntory.u06.univ-nantes.prive kernel:
+> > [  481.468021] INFO: task lxc-start:3805 blocked for more than 120
+> > seconds.
 > >
-> > I suggested that as well, but the point was made that this would
-> > add an unnecessary indirection for the SPI case, which is not
-> > really much like a serial port. It's certainly possible to do it
-> > like you say, but if we add a way to register the high-level
-> > protocols with an HCI-like multi-function device, we could
-> > also do it in a way that does not rely on tty-ldisc but keeps it
-> > as one of the options.
+> > Then i must reboot the host.
+> > The same on kernel 2.6.34, but everything is good on a 2.6.32
+> >
+> > Some relvant informations about the kernel:
+> > root@suntory:~# cat /boot/config-2.6.36.1-dsiun-1d | grep -i sysfs
+> > # CONFIG_SYSFS_DEPRECATED_V2 is not set
+> > CONFIG_ACPI_SYSFS_POWER=y
+> > # CONFIG_WIRELESS_EXT_SYSFS is not set
+> > CONFIG_ISCSI_BOOT_SYSFS=m
+> > CONFIG_RTC_INTF_SYSFS=y
+> > CONFIG_SYSFS=y
+> > root@suntory:~# cat /boot/config-2.6.36.1-dsiun-1d | grep -i net_ns
+> > CONFIG_NET_NS=y
+> >
+> > Is there anything in my configuration, i must check in order to get
+> > ipv6 working fully in the container?
 > 
-> I actually don't think it's such a big indirection, I prefer to think
-> of it more as of the abstraction layer. If not use this, are we going
-> to have direct SPI device drivers? I'm afraid we might end up with a
-> huge duplication of code in that case.
+> 2.6.37-rc4 is working here.  There were problems earlier in the
+> earlier rcs. Can you try that?
+> 
+> There have been a couple of different reference counting bugs between
+> 2.6.34 and the present, and I haven't tracked them, just noticed they
+> exist.
 
-The question is how it should be modeled in a better way than today.
-
-I believe we already agree it should be something like
-
-   bt   ti-radio    st-e-radio    ti-gps   st-e-gps  broadcom-radio ...
-   |         |          |            |          |          |         |
-   +---------+----------+---------+--+----------+----------+---------+
-                                  |
-                          common-hci-module
-                                  |
-                      +-----------+-----------+
-                      |        |       |      |
-                    serial    spi     i2c    ...
+Can reproduce the following still on 2.6.36.1, but NOT on 2.6.37-rc4 -
+so indeed seems to be fixed!
 
 
-Any objections to this?
+Putting an ipv6 address on a device seems to be the trigger:
 
-If you agree, I think we should discuss the alternatives for the common
-module. I think you are saying we should make the common module a single
-ldisc doing the multiplexing and have all transports register as ttys into
-it, right?
+OrigNS > # ip link add type veth
+OrigNS > # ip link set dev veth0 up
+OrigNS > # unshare -n /bin/bash
+NewNS > # echo $$
+<SomePID>
+OrigNS > # ip link set dev veth1 netns <SomePID> # this, of course is
+on a different terminal NewNS > # ip link set dev veth1 up
+NewNS > # ip -6 addr add dev veth1 fd50:dead:beef::1/64
+NewNS > # exit
 
-What we discussed before was to split it into multiple modules, one for
-the tty ldisc and one for the common code, and then have the spi/i2c/...
-drivers feed into the common multiplexer without going through tty.
+Yields
 
-I don't currently see a significant advantage or disadvantage with either
-approach.
+kernel: unregister_netdevice: waiting for veth1 to become free. Usage
+count = 3
 
-	Arnd
+
+-- 
+MfG,
+
+Michael Leun
+
