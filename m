@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab0LFK3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 05:29:01 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52318 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab0LFK3A (ORCPT
+	id S1752278Ab0LFKgc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 05:36:32 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20833 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab0LFKgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 05:29:00 -0500
-X-Greylist: delayed 1218 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 05:28:59 EST
-X-AuditID: b753bd60-a5711ba00000392d-64-4cfcbae9db5a
-Message-ID: <4CFCBAE1.9000007@hitachi.com>
-Date: Mon, 06 Dec 2010 19:28:49 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 6 Dec 2010 05:36:31 -0500
+X-IronPort-AV: E=Sophos;i="4.59,305,1288569600"; 
+   d="scan'208";a="3199958"
+Date: Mon, 6 Dec 2010 10:36:32 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [Xen-devel] [PATCH 0/2] Xen PV on HVM multiple PV consoles
+In-Reply-To: <1291404900.5298.15.camel@mobile>
+Message-ID: <alpine.DEB.2.00.1012061035070.9029@kaball-desktop>
+References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop>  <1291236234.22027.0.camel@mobile>  <alpine.DEB.2.00.1012021720170.14723@kaball-desktop> <1291404900.5298.15.camel@mobile>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH -tip  6/7] perf bts trace: print function+offset
-References: <20101203035832.7827.16528.stgit@localhost6.localdomain6> <20101203040015.7827.38870.stgit@localhost6.localdomain6> <20101206024244.GA2418@nowhere>
-In-Reply-To: <20101206024244.GA2418@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/06 11:42), Frederic Weisbecker wrote:
-> On Fri, Dec 03, 2010 at 01:00:15PM +0900, Akihiro Nagai wrote:
->> Provide the function to print function+offset.
->> And, set it as the default behavior of 'perf bts trace'.
->> To use this function, users can also specify the option '-s' or '--symbol'.
->>
->> Example: 'perf bts -as trace'
->> This command prints address and function+offset.
->>
->> Output sample:
->> address            function+offset
->> 0xffffffff8146fe0e irq_return+0x0         =>  0x00007fd4038e3b20 _start+0x0
->> ...
->> 0x000000380661ee79 __libc_start_main+0xf9 =>  0x00000000004035c3 main+0x0
->> 0xffffffff8146ef4e irq_return+0x0         =>  0x00000000004035c3 main+0x0
->> 0x00000000004035e8 main+0x25              =>  0x000000000040bca0 set_program_name+0x0
->> 0xffffffff8146ef4e irq_return+0x0         =>  0x000000000040bca0 set_program_name+0x0
->> 0x000000000040bcae set_program_name+0xe   =>  0x00000000004023d0 strrchr@plt+0x0
->> 0x00000000004023d0 strrchr@plt+0x0        =>  0x00000000004023d6 strrchr@plt+0x6
->> ...
->> 0x0000000000403e0c main+0x849             =>  0x00000000004021f0 exit@plt+0x0
->> 0x00000000004021f0 exit@plt+0x0           =>  0x00000000004021f6 exit@plt+0x6
->> 0x00000000004021fb exit@plt+0xb           =>  0x00000000004020d0 _init+0x18
->> 0x00000000004020d6 _init+0x1e             =>  0x00000038062149d0 _dl_runtime_resolve+0x0
->> ...
->
-> There is another kind of mode that I suspect would be very useful: something like
-> a userspace function graph tracer (you can have a look into the kernel function
-> graph tracer we have in ftrace to get an overview).
->
-> So, the idea would be to rebuild the whole function call flow:
->
-> main() {
-> 	func1()
-> 	func2() {
-> 		func3()
-> 	}
-> }
->
->
-> This would require to deref the instructions into the dso addresses from
-> the bts trace, keep only the "call" and the "ret" (there would be a small arch
-> backend for this mode) and rebuild the whole tree of calls.
-> We already have all the dso address mapping API in place with perf.
->
-> I really think this could be a very useful tool. Also we can even later
-> expand this to the branches, as Peter suggested. But starting with calls
-> would a very great start already.
->
-> Thanks.
-It's very good idea!
-I'll try it.
+On Fri, 3 Dec 2010, Vasiliy G Tolstov wrote:
+> On Thu, 2010-12-02 at 17:21 +0000, Stefano Stabellini wrote:
+> > On Wed, 1 Dec 2010, Vasiliy G Tolstov wrote:
+> > > On Wed, 2010-12-01 at 18:25 +0000, Stefano Stabellini wrote:
+> > > > Hi all,
+> > > > this small patch series achieves two goals:
+> > > > 
+> > > > - make PV consoles work for PV on HVM guests;
+> > > > 
+> > > > - implement support for multiple PV consoles for PV and PV on HVM guests.
+> > > > 
+> > > > Stefano Stabellini (2):
+> > > >       hvc_xen: support PV on HVM consoles
+> > > >       hvc_xen: implement multiconsole support
+> > > > 
+> > > >  drivers/char/hvc_xen.c             |  479 ++++++++++++++++++++++++++++++++----
+> > > >  include/xen/interface/hvm/params.h |    6 +-
+> > > >  2 files changed, 441 insertions(+), 44 deletions(-)
+> > > > 
+> > > > A branch with these patches on 2.6.37-rc4 is available here:
+> > > > 
+> > > > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc4-pvhvm-pvconsole
+> > > > 
+> > > > Cheers,
+> > > 
+> > > Does it possible to apply only this 2 patches on stable-2.6.32.x and get
+> > > working serial consoles?
+> > > 
+> > 
+> > I backported the two patches to stable-2.6.32 and created a new branch
+> > that is stable-2.6.32.x + support PV on HVM consoles + implement
+> > multiconsole support:
+> > 
+> > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git stable-2.6.32-pvconsole
+> > 
+> > I still haven't tested it with xend though.
+> 
+> Kernel crushed =(. Use config file from 64 bit fully worked
+> configuration, what does it mean? How can i find reason for this crush?
 
-Thank you for your suggestion!
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Could you please add CONFIG_DEBUG_INFO=y to your kernel config, so that
+we can see the name of the functions in the stack trace?
+
