@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab0LFGYj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 01:24:39 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:41470 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab0LFGYi (ORCPT
+	id S1751556Ab0LFGd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 01:33:29 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53371 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab0LFGd2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 01:24:38 -0500
-X-Greylist: delayed 22984 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 01:24:38 EST
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, stable@kernel.org
-References: <m1oc90n6qp.fsf@fess.ebiederm.org>
-	<AANLkTikCXV_y2fmv0wTPXvxEad3Sqs_Vr4S+6_pZFDoo@mail.gmail.com>
-Date: Sun, 05 Dec 2010 16:01:27 -0800
-In-Reply-To: <AANLkTikCXV_y2fmv0wTPXvxEad3Sqs_Vr4S+6_pZFDoo@mail.gmail.com>
-	(Linus Torvalds's message of "Sun, 5 Dec 2010 10:06:57 -0800")
-Message-ID: <m1lj43lqg8.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 6 Dec 2010 01:33:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rQJiXiwv2qSi8YZMn/WcUhCEGjkor4zyC9hFWSPxpF3whjoOGACS3vTXs0I2Xu3AkQ
+         j34q2baYR52V4JxnUdwLu+03QKnO6T0T/SmieEq6AQ9WAN8y+x4xsXM9fOiIz7i1Vtm1
+         z2MoKPPA8EKPM2XWo/RwGiaV0eRzwi/FzifQY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/MZtb3iYx5gSaf1vY73GkSYPJm3M706Q8=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH]: Revert 2.6.36 chroot ttyname regression
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <z3LGq_ncuOB.A.huF.kB_-MB@chimera>
+References: <jyQ21do2hOF.A.qwD.m_--MB@chimera>
+	<z3LGq_ncuOB.A.huF.kB_-MB@chimera>
+Date: Sun, 5 Dec 2010 22:33:26 -0800
+Message-ID: <AANLkTinFKcs+SzEfviPxm893k-vuzbXAh57XN_oOm7q9@mail.gmail.com>
+Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475
+ ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+From: Justin Mattock <justinmattock@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-
-> On Sat, Dec 4, 2010 at 9:11 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>
->> As of 2.6.36 ttyname does not work in a chroot.
+On Sun, Dec 5, 2010 at 12:34 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
 >
-> I'll happily revert, but even for trivial stuff like this I'd like to
-> get the sign-off, just so that we always have it.
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=19392
+> Subject         : WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+> Submitter       : Justin Mattock <justinmattock@gmail.com>
+> Date            : 2010-09-28 22:30 (69 days old)
+> Message-ID      : <<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>>
+> References      : http://marc.info/?l=linux-kernel&m=128571307018635&w=2
+>
+>
+>
 
-No problem, I just forgot.  The patch is resent.
+still here with the latest Mainline..
 
-Eric
+-- 
+Justin P. Mattock
