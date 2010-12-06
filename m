@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab0LFJ1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 04:27:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51107 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab0LFJ1v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 04:27:51 -0500
+	id S1751977Ab0LFJcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 04:32:07 -0500
+Received: from minas.ics.muni.cz ([147.251.4.40]:43004 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab0LFJcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 04:32:05 -0500
+Date: Mon, 6 Dec 2010 10:31:58 +0100
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: "Moore, Robert" <robert.moore@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Calvin Walton <calvin.walton@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Regression] 2.6.37-rc1: Lenovo T61 mute button does not work
+Message-ID: <20101206093158.GA15702@ics.muni.cz>
+References: <20101130185303.GI10354@ics.muni.cz>
+ <1291172324.14274.33.camel@nayuki>
+ <20101203141358.GA6936@ics.muni.cz>
+ <1291599424.3688.0.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <201010252025.24128.arnd@arndb.de>
-References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
-	<201010251525.09002.arnd@arndb.de>
-	<1288023534.14756.109.camel@e102109-lin.cambridge.arm.com>
-	<201010252025.24128.arnd@arndb.de>
-Date: Mon, 6 Dec 2010 10:27:50 +0100
-X-Google-Sender-Auth: BWHmelpJqqnbHM5LwMG68YpderE
-Message-ID: <AANLkTimEdNj71v-oiKKho27DWcZbxOWtO6M4eLg2NDRE@mail.gmail.com>
-Subject: Re: [RFC PATCH 06/18] ARM: LPAE: Introduce the 3-level page table
- format definitions
-From: Christoffer Dall <cdall@cs.columbia.edu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291599424.3688.0.camel@minggr.sh.intel.com>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Muni-Spam-TestIP: 147.251.3.109
+X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Mon, 06 Dec 2010 10:31:57 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for jumping in here at such a late hour...
+On Mon, Dec 06, 2010 at 09:37:04AM +0800, Lin Ming wrote:
+> > which apparently does not work with Lenovo T61.
+> 
+> I'm looking at this regression.
 
->> You can look at the IPA as the virtual address translation set up by the
->> hypervisor (stage 2 translation). The guest OS only sets up stage 1
->> translations but can use 40-bit physical addresses (via stage 1) with or
->> without the hypervisor. The input to the stage 1 translations is always
->> 32-bit.
->
->
-> Right, that's what I thought.
->
->> > Are there any significant differences to Linux between setting up page
->> > tables for a 32 bit VA space or a 40 bit IPA space, other than the
->> > size of the PGD?
->>
->> I think I get what you were asking :).
->>
->> >From KVM you could indeed set up stage 2 translations that a guest OS
->> can use (you need some code running in hypervisor mode to turn this on).
->> The format is pretty close to the stage 1 tables, so the Linux macros
->> could be reused. The PGD size would be different (depending on whether
->> you want to emulate 40-bit physical address space or a 32-bit one).
->> There are also a few bits (memory attributes) that may differ but you
->> could handle them in KVM.
->>
->> If KVM would reuse the existing pgd/pmd/pte Linux macros, it would
->> indeed be restricted to 32-bit IPA (sizeof(long)). You may need to
->> define different macros to use either a pfn or long long as address
->> input.
+I did some debugging. It looks like this:
+[    0.000000] ACPI: DMI detected: Lenovo ThinkPad T61
+[    0.000000] ACPI: Set_osi_linux Added _OSI(Linux)
+[    0.000000] Pid: 0, comm: swapper Not tainted 2.6.37-rc3+ #122
+[    0.000000] Call Trace:
+[    0.000000]  [<ffffffff8162c0a1>] ? set_osi_linux+0x4b/0x6b
+[    0.000000]  [<ffffffff8162bbe7>] ? dmi_enable_osi_linux+0x11/0x18
+[    0.000000]  [<ffffffff812f7313>] ? dmi_check_system+0x33/0x50
+[    0.000000]  [<ffffffff8162bdc2>] ? acpi_blacklisted+0x16a/0x190
+[    0.000000]  [<ffffffff81617b6e>] ? acpi_boot_table_init+0x3a/0x75
+[    0.000000]  [<ffffffff81611cf3>] ? setup_arch+0x6d5/0x7a8
+[    0.000000]  [<ffffffff814072f2>] ? printk+0x40/0x46
+[    0.000000]  [<ffffffff816108de>] ? start_kernel+0xbe/0x323
+[    0.000000]  [<ffffffff816103de>] ? x86_64_start_kernel+0xf9/0xff
 
-I'm not even sure it would be a big advantage to re-use the macros for
-KVM. Sure, creating separate macros may duplicate some bit-shifting
-logic, but my guess is that code will be easier to read if using
-separate macros for the 2-nd stage translation in KVM. One might also
-imagine specific virtualization-oriented bits which could be
-explicitly names or directly targeted in macros that don't have to
-handle both standard non-virt tables and 2-nd stage translation
-tables.
+after this call, osi_linux.dmi is set.
 
-At least from my experience writing KVM code, it's difficult enough to
-make it clear to anyone reading the code which address space exactly
-is being referenced at which time.
+However, after this call:
+[    0.186721] Call Trace:
+[    0.186721]  [<ffffffff8120ecad>] ? acpi_install_interface_handler+0x4d/0x56
+[    0.186750]  [<ffffffff8162c0a1>] ? set_osi_linux+0x4b/0x6b
+[    0.186777]  [<ffffffff811edefa>] ? acpi_os_initialize1+0x10f/0x13d
+[    0.186803]  [<ffffffff8162c3fa>] ? acpi_bus_init+0xa/0x1e2
+[    0.186829]  [<ffffffff811c498c>] ? kobject_create_and_add+0x3c/0x80
+[    0.186855]  [<ffffffff8162c63b>] ? acpi_init+0x69/0xdf
+[    0.186880]  [<ffffffff810002da>] ? do_one_initcall+0x3a/0x170
+[    0.186906]  [<ffffffff81610c75>] ? kernel_init+0x132/0x1be
+[    0.186932]  [<ffffffff81003b94>] ? kernel_thread_helper+0x4/0x10
+[    0.186958]  [<ffffffff81610b43>] ? kernel_init+0x0/0x1be
+[    0.187577]  [<ffffffff81003b90>] ? kernel_thread_helper+0x0/0x10
 
->> But if KVM uses qemu for platform emulation, this may only support
->> 32-bit physical address space so the guest OS could only generate 32-bit
->> IPA.
->
-> Good point. At the very least, qemu would need a way to get at the highmem
-> portion of the guest that is not normally part of the qemu virtual address
-> space. In fact this would already be required without LPAE in order to run
-> a VM with 4GB guest physical addressing.
->
-> There are probable (slow) ways of doing that, e.g. remap_file_pages or
-> a new syscall for accessing high guest memory. It's not entirely clear
-> to me how useful that is, the most sensible way to start here is certainly
-> to start out with a 32-bit IPA as you suggested and see how badly that
-> limits guests in real-world setups.
+osi_linux.cmdline is set.
 
-So this depends on what the use would be. True, if you wanted a guest
-that used more than 4GB of memory AND you wanted QEMU to be able to
-readily access all of that, then yes, it would be difficult on a
-32-bit architecture.
-
-But QEMU doesn't really use the mmap'ed areas backing physical memory
-for anything - it's merely a way of telling KVM how much physical
-memory should be given to the guest, and the kernel side conveniently
-uses get_user_pages() to access that memory. Instead, QEMU could
-simply call an IOCTL to KVM telling it something like
-register_user_memory(long long base_phys_addr, long long size); and
-KVM could just allocate physical pages to back that without them being
-mapped on the host side. An individual page could be mapped in as
-needed for emulation and mapped out again. I don't see a huge
-performance hit for such a solution.
-
-But as you both suggest, 32-bit physical address space is probably
-going to be more than needed for initial uses of ARM virtual machines.
-
--Christoffer
+-- 
+Luká¹ Hejtmánek
