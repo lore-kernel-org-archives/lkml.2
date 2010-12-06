@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab0LGFts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 00:49:48 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:54125 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751198Ab0LGFtr (ORCPT
+	id S1752275Ab0LGF60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 00:58:26 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:33565 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab0LGF6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 00:49:47 -0500
-Date: Tue, 7 Dec 2010 07:49:42 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Felipe Balbi <balbi@ti.com>,
-        Hema Kalliguddi <hemahk@ti.com>
-Subject: Re: linux-next: manual merge of the usb tree with Linus'  tree
-Message-ID: <20101207054942.GA2576@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20101206124718.12e49789.sfr@canb.auug.org.au>
- <20101207044358.GB29457@kroah.com>
+	Tue, 7 Dec 2010 00:58:23 -0500
+Date: Mon, 6 Dec 2010 20:02:56 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
+Subject: Re: [thisops uV3 08/18] Taskstats: Use this_cpu_ops
+Message-ID: <20101206143256.GE3158@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101130190707.457099608@linux.com>
+ <20101130190845.819605614@linux.com>
+ <1291226786.2898.22.camel@holzheu-laptop>
+ <alpine.DEB.2.00.1012011212490.3774@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101207044358.GB29457@kroah.com>
+In-Reply-To: <alpine.DEB.2.00.1012011212490.3774@router.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 08:43:58PM -0800, Greg KH wrote:
->On Mon, Dec 06, 2010 at 12:47:18PM +1100, Stephen Rothwell wrote:
->> Hi Greg,
->>
->> Today's linux-next merge of the usb tree got a conflict in
->> drivers/usb/musb/blackfin.c between commit
->> 1e393c6eece048052d4131ec4dad3b98e35a98e2 ("USB: musb: blackfin: pm: make
->> it work") from Linus' tree and commit
->> ea65df57c2eea803535a071752efb030c46a11f5 ("usb: musb: remove board_data
->> parameter from musb_platform_init()") from the usb tree.
->>
->> I fixed it up (see below) and can carry the fix as necessary.
->
->Thanks.  Felipe, does this patch look correct?  I should probably merge
->the next -rc release into my USB tree to handle this type of thing.
+* Christoph Lameter <cl@linux.com> [2010-12-01 12:13:44]:
 
-Looks perfect. Thanks Stephen.
+> On Wed, 1 Dec 2010, Michael Holzheu wrote:
+> 
+> > >  		return -ENOMEM;
+> > >
+> > >  	if (!info) {
+> > > -		int seq = get_cpu_var(taskstats_seqnum)++;
+> > > -		put_cpu_var(taskstats_seqnum);
+> > > +		int seq = this_cpu_inc_return(taskstats_seqnum);
+> >
+> > Hmmm, wouldn't seq now always be one more than before?
+> >
+> > I think that "seq = get_cpu_var(taskstats_seqnum)++" first assigns
+> > taskstats_seqnum to seq and then increases the value in contrast to
+> > this_cpu_inc_return() that returns the already increased value, correct?
+> 
+> Correct. We need to subtract one from that (which will eliminate the minus
+> -1 that the inline this_cpu_inc_return creates).
+>
+
+But that breaks current behaviour, we should probably initialize all
+of the array to -1? 
 
 -- 
-balbi
+	Three Cheers,
+	Balbir
