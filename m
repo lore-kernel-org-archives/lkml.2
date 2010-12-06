@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0LFKgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 05:36:32 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20833 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab0LFKgb (ORCPT
+	id S1751821Ab0LFKww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 05:52:52 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62796 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab0LFKwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 05:36:31 -0500
-X-IronPort-AV: E=Sophos;i="4.59,305,1288569600"; 
-   d="scan'208";a="3199958"
-Date: Mon, 6 Dec 2010 10:36:32 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 0/2] Xen PV on HVM multiple PV consoles
-In-Reply-To: <1291404900.5298.15.camel@mobile>
-Message-ID: <alpine.DEB.2.00.1012061035070.9029@kaball-desktop>
-References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop>  <1291236234.22027.0.camel@mobile>  <alpine.DEB.2.00.1012021720170.14723@kaball-desktop> <1291404900.5298.15.camel@mobile>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 6 Dec 2010 05:52:51 -0500
+Message-ID: <4CFCC048.4030408@ru.mvista.com>
+Date: Mon, 06 Dec 2010 13:51:52 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Paulius Zaleckas <paulius.zaleckas@gmail.com>,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Gemini: Add support for PCI BUS
+References: <1290860675-15453-1-git-send-email-ulli.kroll@googlemail.com>	<201011282056.17389.arnd@arndb.de> <4CF3CF33.20407@gmail.com> <201011291745.22566.arnd@arndb.de>
+In-Reply-To: <201011291745.22566.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Dec 2010, Vasiliy G Tolstov wrote:
-> On Thu, 2010-12-02 at 17:21 +0000, Stefano Stabellini wrote:
-> > On Wed, 1 Dec 2010, Vasiliy G Tolstov wrote:
-> > > On Wed, 2010-12-01 at 18:25 +0000, Stefano Stabellini wrote:
-> > > > Hi all,
-> > > > this small patch series achieves two goals:
-> > > > 
-> > > > - make PV consoles work for PV on HVM guests;
-> > > > 
-> > > > - implement support for multiple PV consoles for PV and PV on HVM guests.
-> > > > 
-> > > > Stefano Stabellini (2):
-> > > >       hvc_xen: support PV on HVM consoles
-> > > >       hvc_xen: implement multiconsole support
-> > > > 
-> > > >  drivers/char/hvc_xen.c             |  479 ++++++++++++++++++++++++++++++++----
-> > > >  include/xen/interface/hvm/params.h |    6 +-
-> > > >  2 files changed, 441 insertions(+), 44 deletions(-)
-> > > > 
-> > > > A branch with these patches on 2.6.37-rc4 is available here:
-> > > > 
-> > > > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc4-pvhvm-pvconsole
-> > > > 
-> > > > Cheers,
-> > > 
-> > > Does it possible to apply only this 2 patches on stable-2.6.32.x and get
-> > > working serial consoles?
-> > > 
-> > 
-> > I backported the two patches to stable-2.6.32 and created a new branch
-> > that is stable-2.6.32.x + support PV on HVM consoles + implement
-> > multiconsole support:
-> > 
-> > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git stable-2.6.32-pvconsole
-> > 
-> > I still haven't tested it with xend though.
-> 
-> Kernel crushed =(. Use config file from 64 bit fully worked
-> configuration, what does it mean? How can i find reason for this crush?
+Hello.
 
+On 29-11-2010 19:45, Arnd Bergmann wrote:
 
-Could you please add CONFIG_DEBUG_INFO=y to your kernel config, so that
-we can see the name of the functions in the stack trace?
+>>> The I/O ordering is probably not what you think it is.
+>>> There is no ordering guarantee between __raw_writel and
+>>> spin_lock/spin_unlock, so you really should be using
+>>> readl/writel.
 
+>> No he really should NOT use readl/writel. The ONLY difference
+>> between readl/writel and __raw_readl/__raw_writel is endianess
+>> conversion. __raw_*l is not doing it. Which to use depend only
+>> on HW.
+
+> There are many differences between readl and __raw_readl, including
+
+> * __raw_readl does not have barriers and does not serialize with
+>    spinlocks, so it breaks on out-of-order CPUs.
+> * __raw_readl does not have a specific endianess, while readl is
+>    fixed little-endian,
+
+    I know I'm late but readl()/writel() are CPU-endian, not LE.
+
+WBR, Sergei
