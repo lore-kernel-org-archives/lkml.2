@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab0LFN0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:26:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5342 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab0LFN0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 08:26:38 -0500
-Date: Mon, 6 Dec 2010 14:26:13 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>
-Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature
-	to avoid user space breakage
-Message-ID: <20101206132613.GB9421@nb.net.home>
-References: <201012052324.30231.rjw@sisk.pl> <1291592215.2866.3.camel@shrek.rexursive.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291592215.2866.3.camel@shrek.rexursive.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752896Ab0LFNbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:31:05 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:33624 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751429Ab0LFNbD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 08:31:03 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: mchehab@infradead.org
+Cc: linux-media@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] V4L: videobuf, don't use dma addr as physical
+Date: Mon,  6 Dec 2010 14:30:52 +0100
+Message-Id: <1291642252-10264-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 10:36:55AM +1100, Bojan Smojver wrote:
-> On Sun, 2010-12-05 at 23:24 +0100, Rafael J. Wysocki wrote:
-> > Commit 3624eb0 (PM / Hibernate: Modify signature used to mark swap)
-> > modified hibernate signature used to mark swap partitions containing
-> > hibernation images, but that turns out to have caused problems in
-> > libblkid on recent Ubuntu.  Restore the old signature to avoid those
-> > problems. 
-> 
-> Don't quite understand this change (sorry, probably just being obtuse).
+mem->dma_handle is a dma address obtained by dma_alloc_coherent which
+needn't be a physical address in presence of IOMMU. So ensure we are
+remapping (remap_pfn_range) the right page in __videobuf_mmap_mapper
+by using virt_to_phys(mem->vaddr) and not mem->dma_handle.
 
- I too.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+---
+ drivers/media/video/videobuf-dma-contig.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> The signature was changed to make sure older kernels don't handle
-> compressed images by accident, right? If so, this would seem like a bad
-> idea, because this is what can actually happen now.
-> 
-> Shouldn't user space learn how to handle both signatures instead?
-
- The upstream libblkid has been updated, there is not a problem to
- support more signatures.
-
-    Karel
-
+diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
+index c969111..8d778aa 100644
+--- a/drivers/media/video/videobuf-dma-contig.c
++++ b/drivers/media/video/videobuf-dma-contig.c
+@@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	retval = remap_pfn_range(vma, vma->vm_start,
+-				 mem->dma_handle >> PAGE_SHIFT,
++				 virt_to_phys(mem->vaddr) >> PAGE_SHIFT,
+ 				 size, vma->vm_page_prot);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+1.7.3.1
+
+
