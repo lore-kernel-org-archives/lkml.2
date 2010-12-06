@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab0LFSLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 13:11:12 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:60661 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778Ab0LFSLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 13:11:10 -0500
-Date: Mon, 6 Dec 2010 16:11:27 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Joe Perches <joe@perches.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] vsprintf: Add %pMbt, bluetooth mac address
-Message-ID: <20101206181127.GB883@vigoh>
-References: <cover.1291419007.git.joe@perches.com>
- <a33a0b00eeb29713a08d91156cbb2d816176f990.1291419007.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a33a0b00eeb29713a08d91156cbb2d816176f990.1291419007.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753996Ab0LFSLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 13:11:46 -0500
+Received: from waste.org ([173.11.57.241]:43327 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752297Ab0LFSLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 13:11:45 -0500
+Subject: Re: [cpuops inc_return V1 8/9] random: Use this_cpu_inc_return
+From: Matt Mackall <mpm@selenic.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20101206174017.684979312@linux.com>
+References: <20101206173958.685460926@linux.com>
+	 <20101206174017.684979312@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Dec 2010 12:11:42 -0600
+Message-ID: <1291659102.3065.2212.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Mon, 2010-12-06 at 11:40 -0600, Christoph Lameter wrote:
+> plain text document attachment (cpuops_inc_return_random)
+> __this_cpu_inc can create a single instruction to do the same as
+> __get_cpu_var()++.
 
-* Joe Perches <joe@perches.com> [2010-12-03 18:33:03 -0800]:
+> -	    (__get_cpu_var(trickle_count)++ & 0xfff))
+> +	    ((__this_cpu_inc_return(trickle_count) - 1) & 0xfff))
 
-> Bluetooth output the MAC address in reverse order.
-> Bluetooth memory order: 00 01 02 03 04 05 is output "05:04:03:02:01:00".
-> 
-> This can save overall text when bluetooth is compiled in.
-> 
-> Bluetooth currently uses a very slightly unsafe local function (batostr)
-> to output these formatted addresses.
-> 
-> Adding %pMbt allows the batostr function to be removed.
-> 
-> For x86:
-> 
-> $ size lib/vsprintf*.o*
->    text	   data	    bss	    dec	    hex	filename
->    8189	      0	      2	   8191	   1fff	lib/vsprintf.o.defconfig.new
->    8150	      0	      2	   8152	   1fd8	lib/vsprintf.o.defconfig.old
->   18633	     56	   3936	  22625	   5861	lib/vsprintf.o.allyesconfig.new
->   18571	     56	   3920	  22547	   5813	lib/vsprintf.o.allyesconfig.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+I see you've added a "- 1" to mimic the post-increment ++ semantic.
 
-Looks good to me.
-
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
+The goal of this code to add only 1 sample in every 4096, but we don't
+really care which, so this semantic isn't actually important here.
 
 -- 
-Gustavo F. Padovan
-http://profusion.mobi
+Mathematics is the supreme nostalgia of our time.
+
+
