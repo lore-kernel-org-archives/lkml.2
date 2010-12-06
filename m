@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0LFXZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:25:11 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26820 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab0LFXZK (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 6 Dec 2010 18:25:10 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com, airlied@redhat.com,
-        linux-kernel@vger.kernel.org, konrad@kernel.org
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 04/23] agp: Make agp_generic_[alloc|destroy]_pages use the _agp_[alloc|free]_page macro.
-Date: Mon,  6 Dec 2010 18:24:16 -0500
-Message-Id: <1291677875-30493-5-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
-References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
+	id S1754284Ab0LFXd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:33:57 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:54570 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752625Ab0LFXdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 18:33:55 -0500
+Date: Tue, 7 Dec 2010 10:33:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: unsigned commits
+Message-Id: <20101207103346.fbbcf099.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__7_Dec_2010_10_33_46_+1100_AaW3B.DAlxIeuQ+c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way when we want to opt in a platform to use the PCI DMA it
-is just the matter of changing the implementation in
-arch/<platform>/include/asm/agp.h
+--Signature=_Tue__7_Dec_2010_10_33_46_+1100_AaW3B.DAlxIeuQ+c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/char/agp/generic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Hi Matthew,
 
-diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
-index bcefc66..cf465b5 100644
---- a/drivers/char/agp/generic.c
-+++ b/drivers/char/agp/generic.c
-@@ -1233,7 +1233,7 @@ int agp_generic_alloc_pages(struct agp_bridge_data *bridge, struct agp_memory *m
- 	int i, ret = -ENOMEM;
- 
- 	for (i = 0; i < num_pages; i++) {
--		page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO);
-+		page = _agp_alloc_page(agp_bridge, &mem->dma_addr[i]);
- 		/* agp_free_memory() needs gart address */
- 		if (page == NULL)
- 			goto out;
-@@ -1292,7 +1292,7 @@ void agp_generic_destroy_pages(struct agp_memory *mem)
- 		unmap_page_from_agp(page);
- #endif
- 		put_page(page);
--		__free_page(page);
-+		_agp_free_page(agp_bridge, page, &mem->dma_addr[i]);
- 		atomic_dec(&agp_bridge->current_memory_agp);
- 		mem->pages[i] = NULL;
- 	}
--- 
-1.7.1
+Looking through the drivers-x86 tree update for linux-next today, I found
+a few commits that have no signed-off-by line ...
 
+8f2e88b22a4caaebcc8d5a9e00a8249fec350cf3	"Generic key reporting"
+e3a2b10707902bcf95d022a5bab8f13b26bccc64	"ACPI-ify"
+52f4e59f269e0d3bb1d54ca654d9cbf6880e7370	"Fix some tos1900 devices"
+64ea4efdd949c99d9206a44a43984d2e861350f1	"wwan rfkill stubs"
+
+And I think those commit messages could do with some elaboration as well.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__7_Dec_2010_10_33_46_+1100_AaW3B.DAlxIeuQ+c
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM/XLaAAoJEDMEi1NhKgbsLpYH/2UU8gmUW7/+8xMyjeWb5JK7
+5m9Jl66uQjJSAchke1+j56j/kqtEZSPsM4Ghkaag64FUorggT0Xm7IUDHdJjpQsg
+TUtZgX4qsVhAF52455fbXRumSmWm95hnqp497N5sHp5vTOvjgsQr7NSd3IGOmzNW
+5L9YJ1lCElOurBD9HA88WDiHM7rWqzKaAVZ6In9S/TwWMQhGv92qgqZ7hpiNfGBf
+5npcZpL+GnLTtYhMiFZd3Cle/EsRbDdNPzg+Y0UpzQuv1wWkptApOb3BLgE6HgLj
+597JBbPjr09SWiyta12nqenrpjlkk0+IB8u6gtcT8CEQv+JHLWMF+y+AN9VRqDA=
+=HVvz
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Dec_2010_10_33_46_+1100_AaW3B.DAlxIeuQ+c--
