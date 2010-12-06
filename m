@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab0LFPyK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 10:54:10 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:36474 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753583Ab0LFPyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 10:54:08 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 8A8nKOYVM1lawUGDLc7le_W2D50d.iaJm6DJ08qk5rGPUsx
- FCbpbxA88FkuClTlLvEN5tXxnJEk7MvwhuBCDIW34L7QZCzt9cWYe8pQwIN_
- XYpY4_EOUGNsYyYRURmo88inkiFAlIsS6hQ.0hOnCh42cCNIF9WZ_PFVKSKx
- ah6yXIGUe_a9HLZPEOvg4217hhuXhOw4em3LMOE.Cr5JhcLArgl45d_BnVRg
- 5nseIETnpJHCHSrdT5uRx0HAazc8HSm3UOEkhdw--
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 6 Dec 2010 09:54:04 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org
-Subject: Re: [thisops uV3 14/18] lguest: Use this_cpu_ops
-In-Reply-To: <201012061816.07860.rusty@rustcorp.com.au>
-Message-ID: <alpine.DEB.2.00.1012060952540.32000@router.home>
-References: <20101130190707.457099608@linux.com> <20101130190849.422541374@linux.com> <201012061816.07860.rusty@rustcorp.com.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752693Ab0LFP6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 10:58:24 -0500
+Received: from kroah.org ([198.145.64.141]:60922 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015Ab0LFP6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 10:58:22 -0500
+Date: Mon, 6 Dec 2010 07:56:25 -0800
+From: Greg KH <greg@kroah.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
+Message-ID: <20101206155625.GC23214@kroah.com>
+References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
+ <20101201161039.GB29318@suse.de>
+ <1291222151.1684.46.camel@leonhard>
+ <20101201173604.GA30708@suse.de>
+ <1291640730.1696.29.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291640730.1696.29.camel@leonhard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010, Rusty Russell wrote:
+On Mon, Dec 06, 2010 at 10:05:30PM +0900, Namhyung Kim wrote:
+> 2010-12-01 (수), 09:36 -0800, Greg KH:
+> > On Thu, Dec 02, 2010 at 01:49:11AM +0900, Namhyung Kim wrote:
+> > > 2010-12-01 (수), 08:10 -0800, Greg KH:
+> > > > On Wed, Dec 01, 2010 at 01:28:41PM +0900, Namhyung Kim wrote:
+> > > > > Annotate whci_hcd_id_table as '__used' to fix following warning:
+> > > > > 
+> > > > >   CC      drivers/usb/host/whci/hcd.o
+> > > > > drivers/usb/host/whci/hcd.c:359: warning: ‘whci_hcd_id_table’ defined but not used
+> > > > 
+> > > > Are you seeing this warning when you build the module into the kernel,
+> > > > or as a module?
+> > > > 
+> > > > thanks,
+> > > > 
+> > > > greg k-h
+> > > 
+> > > I saw it during allyesconfig build but not on allmodconfig.
+> > > Maybe we can wrap it up in #ifdef CONFIG_MODULES ?
+> > 
+> > No, don't do that, your __used is the correct thing here, I just wanted
+> > to make sure why you were seeing this warning.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> Hi, Greg
+> 
+> It seems this one is not applied in your tree yet. Do you need a resend?
 
-> This doesn't even compile :(
+Yes please, I must have missed it, thinking it was part of your other
+series.  Sorry.
 
-Yeah. I had to go through a lot of code and the build process did not
-build all subsystem. Sorry.
-
-> I've applied it, and applied the following fixes, too:
-
-Great. Thanks.
+greg k-h
