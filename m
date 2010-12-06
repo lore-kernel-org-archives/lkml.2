@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab0LFPCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 10:02:18 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45874 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0LFPCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 10:02:16 -0500
-Date: Mon, 6 Dec 2010 15:02:01 GMT
-From: tip-bot for Feng Tang <feng.tang@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, feng.tang@intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, feng.tang@intel.com
-In-Reply-To: <1291348298-21263-1-git-send-email-feng.tang@intel.com>
-References: <1291348298-21263-1-git-send-email-feng.tang@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, earlyprintk: Move mrst early console to platform/ and fix a typo
-Message-ID: <tip-1ec1fe231814ec4af374b4b32ccc510fcba2e7a8@git.kernel.org>
-Git-Commit-ID: 1ec1fe231814ec4af374b4b32ccc510fcba2e7a8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753346Ab0LFPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 10:07:28 -0500
+Received: from nm4.bullet.mail.in.yahoo.com ([121.101.151.226]:24644 "HELO
+	nm4.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751822Ab0LFPH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 10:07:27 -0500
+X-Yahoo-Newman-Id: 347408.47586.bm@omp1004.mail.in.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.in;
+  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Date:From:To:Cc:Subject:Message-ID:MIME-Version:Content-Type:Content-Disposition:User-Agent;
+  b=S6k7d0FwOH5idUE70y9Bc4U2AjvOnS1c3YVDcgJRXcY/KS9AYSsP4z0IYlOwkE94P8Ih9waKuajtFUuHQDH9tQu3Zsn+klDJesjkQ6f0ZQblCDv4AcW41M3/kMcEUY8u5SbCR4cuGWFOJ92ivJWFlk/xtALFf8NAPLjtnjArd8o=  ;
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+X-YMail-OSG: bpFmWcUVM1k8nkbuz9b4h1UGiS9rofCj2wmd0w1s9L4vB9K
+ 65nFfavY424Q07qhGqrmzUiZuveAscXiINsz3XLx5snMRigEP8e2H0IAzLYl
+ ga7TStq6PQPj0hXAEC6zG1tZ.8IGOV4koavTutL9ZPS9GUzxBSVsxeX8d86w
+ SM2MvNWsdMogXgIQJ8.IoYHyqDlqKnHvs3QdbVYEaCNDkJIlssyPzzlgFgBG
+ .JpP6uJQ.z.9gYQwQLUYpgV53sFz9oSNpXbdo.bRfuF2lVa8xgdFUplA72vL
+ rNAWBn0iT3E7G6w--
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 6 Dec 2010 20:37:24 +0530
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
+Subject: sound: Fixed line limit issue in sound/ac97_bus.c
+Message-ID: <20101206150724.GA2752@debian.Jeff>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="fdj2RfSjLxBAspz7"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Dec 2010 15:02:01 +0000 (UTC)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ec1fe231814ec4af374b4b32ccc510fcba2e7a8
-Gitweb:     http://git.kernel.org/tip/1ec1fe231814ec4af374b4b32ccc510fcba2e7a8
-Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Fri, 3 Dec 2010 11:51:37 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 6 Dec 2010 15:58:27 +0100
 
-x86, earlyprintk: Move mrst early console to platform/ and fix a typo
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Move the code to arch/x86/platform/mrst/. Also fix a typo to use
-the correct config option: ONFIG_EARLY_PRINTK_MRST
+hello.
+a small patch for a format issue is attached with this
+mail.
+-- 
+software engineer.
+department of computer science
+rajagiri school of engineering and technology.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: alan@linux.intel.com
-LKML-Reference: <1291348298-21263-1-git-send-email-feng.tang@intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+--fdj2RfSjLxBAspz7
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-sound-Fixed-line-limit-issue-in-sound-ac97_bus.c.patch"
+
+>From a2c2867876c246420a199a0fb4c36ad2965a42cc Mon Sep 17 00:00:00 2001
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+Date: Mon, 6 Dec 2010 19:27:53 +0530
+Subject: [PATCH] sound: Fixed line limit issue in sound/ac97_bus.c
+ This is a patch to the sound/ac97_bus.c file that fixes up a 80 character
+ line limit issue found by the checkpatch.pl tool.
+ Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+
 ---
- arch/x86/kernel/Makefile                           |    1 -
- arch/x86/kernel/early_printk.c                     |    3 +--
- arch/x86/platform/mrst/Makefile                    |    1 +
- .../{kernel => platform/mrst}/early_printk_mrst.c  |    0
- 4 files changed, 2 insertions(+), 3 deletions(-)
+ sound/ac97_bus.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9e13763..f60153d 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -84,7 +84,6 @@ obj-$(CONFIG_DOUBLEFAULT) 	+= doublefault_32.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
- obj-$(CONFIG_VM86)		+= vm86_32.o
- obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
--obj-$(CONFIG_EARLY_PRINTK_MRST)	+= early_printk_mrst.o
+diff --git a/sound/ac97_bus.c b/sound/ac97_bus.c
+index a351dd0..c93251a 100644
+--- a/sound/ac97_bus.c
++++ b/sound/ac97_bus.c
+@@ -19,9 +19,9 @@
  
- obj-$(CONFIG_HPET_TIMER) 	+= hpet.o
- obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index 4572f25..cd28a35 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -240,7 +240,7 @@ static int __init setup_early_printk(char *buf)
- 		if (!strncmp(buf, "xen", 3))
- 			early_console_register(&xenboot_console, keep);
- #endif
--#ifdef CONFIG_X86_MRST_EARLY_PRINTK
-+#ifdef CONFIG_EARLY_PRINTK_MRST
- 		if (!strncmp(buf, "mrst", 4)) {
- 			mrst_early_console_init();
- 			early_console_register(&early_mrst_console, keep);
-@@ -250,7 +250,6 @@ static int __init setup_early_printk(char *buf)
- 			hsu_early_console_init();
- 			early_console_register(&early_hsu_console, keep);
- 		}
--
- #endif
- 		buf++;
- 	}
-diff --git a/arch/x86/platform/mrst/Makefile b/arch/x86/platform/mrst/Makefile
-index 4d3e256..f61ccdd 100644
---- a/arch/x86/platform/mrst/Makefile
-+++ b/arch/x86/platform/mrst/Makefile
-@@ -1,2 +1,3 @@
- obj-$(CONFIG_X86_MRST)		+= mrst.o
- obj-$(CONFIG_X86_MRST)		+= vrtc.o
-+obj-$(CONFIG_EARLY_PRINTK_MRST)	+= early_printk_mrst.o
-diff --git a/arch/x86/kernel/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
-similarity index 100%
-rename from arch/x86/kernel/early_printk_mrst.c
-rename to arch/x86/platform/mrst/early_printk_mrst.c
+ /*
+  * Let drivers decide whether they want to support given codec from their
+- * probe method.  Drivers have direct access to the struct snd_ac97 structure and may
+- * decide based on the id field amongst other things.
+- */
++ * probe method. Drivers have direct access to the struct snd_ac97
++ * structure and may  decide based on the id field amongst other things.
++*/
+ static int ac97_bus_match(struct device *dev, struct device_driver *drv)
+ {
+ 	return 1;
+-- 
+1.7.1
+
+
+--fdj2RfSjLxBAspz7--
