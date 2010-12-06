@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab0LFQ6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:58:31 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59712 "EHLO hera.kernel.org"
+	id S1754058Ab0LFRCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:02:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35968 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753902Ab0LFQ61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:58:27 -0500
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/16] signal: fix CLD_CONTINUED notification target
-Date: Mon,  6 Dec 2010 17:56:50 +0100
-Message-Id: <1291654624-6230-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
-References: <1291654624-6230-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Dec 2010 16:57:39 +0000 (UTC)
+	id S1753993Ab0LFRCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 12:02:06 -0500
+Message-ID: <4CFD16FC.8040905@redhat.com>
+Date: Mon, 06 Dec 2010 19:01:48 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 5/5] KVM: Allow host IRQ sharing for passed-through PCI
+ 2.3 devices
+References: <cover.1291419444.git.jan.kiszka@web.de> <10b9265d513950f2574edf4e79be3b808e741a78.1291419444.git.jan.kiszka@web.de> <4CFD0D91.3050303@redhat.com> <4CFD108F.5000200@siemens.com> <4CFD1208.4070600@redhat.com> <4CFD1377.7030008@siemens.com>
+In-Reply-To: <4CFD1377.7030008@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CLD_CONTINUED notification code calls do_notify_parent_cldstop() with
-its group_leader; however, do_notify_parent_cldstop() already uses the
-group_leader for non-ptraced notifications.  The duplicate
-->group_leader dereferencing is unnecessary and leads to incorrectly
-notifying the group_leader's ptracer of CLD_CONTINUED from a different
-task in the group.  Fix it.
+On 12/06/2010 06:46 PM, Jan Kiszka wrote:
+> Am 06.12.2010 17:40, Avi Kivity wrote:
+> >  On 12/06/2010 06:34 PM, Jan Kiszka wrote:
+> >>>
+> >>>   What's the protocol for doing this?  I suppose userspace has to disable
+> >>>   interrupts, ioctl(SET_INTX_MASK, masked), ..., ioctl(SET_INTX_MASK,
+> >>>   unmasked), enable interrupts?
+> >>
+> >>  Userspace just has to synchronize against itself - what it already does:
+> >>  qemu_mutex, and masking/unmasking is synchronous /wrt the the executing
+> >>  VCPU. Otherwise, masking/unmasking is naturally racy, also in Real Life.
+> >>  The guest resolves the remaining races.
+> >
+> >  I meant when qemu sets INTX_MASK and the kernel clears it immediately
+> >  afterwards because the two are not synchronized.  I guess that won't
+> >  happen in practice because playing with INTX_MASK is very rare.
+>
+> Ah, there is indeed a race, and the qemu-kvm patches I did not post yet
+> (to wait for the kernel interface to settle) actually suffer from it:
+> userspace needs to set the kernel mask before writing the config space
+> (it's the other way around ATM). This avoids that the kernel overwrites
+> what userspace just wrote out. We always suffer from the race the other
+> way around, see below.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>
----
- kernel/signal.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Please document the protocol.  Is this always the right order?  
+Shouldn't it be reversed when unmasking?  I admit I'm confused about this.
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index fe004b5..0411131 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1867,7 +1867,7 @@ relock:
- 
- 		if (why) {
- 			read_lock(&tasklist_lock);
--			do_notify_parent_cldstop(current->group_leader, why);
-+			do_notify_parent_cldstop(current, why);
- 			read_unlock(&tasklist_lock);
- 		}
- 		goto relock;
+> >>
+> >>  I think this is what VFIO does and is surely cleaner than this approach.
+> >>  But it's not possible with the existing interface (sysfs + KVM ioctls) -
+> >>  or can you restrict the sysfs access to the config space in such details?
+> >
+> >  I'm sure you can, not sure it's worth it.  Can the situation be
+> >  exploited?  what if userspace lies?
+>
+> That's also the above scenario inverted: Userspace can mask or unmask at
+> any time. If it unmasks a yet unhandled, thus raise interrupt, it will
+> trigger another one. The kernel will catch it and mask it again. That
+> can repeat forever with the frequency userspace is able to run its
+> unmasking code. Not nice, but nothing to leverage for a DoS.
+
+Ok (I think).
+
 -- 
-1.7.1
+error compiling committee.c: too many arguments to function
 
