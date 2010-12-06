@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab0LFC26 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 21:28:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4665 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776Ab0LFC25 convert rfc822-to-8bit (ORCPT
+	id S1752331Ab0LFCh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 21:37:28 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60274 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab0LFCh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 21:28:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,304,1288594800"; 
-   d="scan'208";a="357429799"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Kyungmin Park <kmpark@infradead.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Date: Mon, 6 Dec 2010 10:28:34 +0800
-Subject: RE: [PATCH v2 1/4]enable background operations for supported eMMC
- card
-Thread-Topic: [PATCH v2 1/4]enable background operations for supported eMMC
- card
-Thread-Index: AcuU4qpm6Y0CF/0RSSG33D0U4x2RzgAB50XQ
-Message-ID: <5D8008F58939784290FAB48F54975198320B3E464D@shsmsx502.ccr.corp.intel.com>
-References: <20101203121338.GB18655@intel.com>
- <AANLkTikPAmpJq7Q7riDPGq5UkhAa9cuXRW7kjuNGv6oB@mail.gmail.com>
-In-Reply-To: <AANLkTikPAmpJq7Q7riDPGq5UkhAa9cuXRW7kjuNGv6oB@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sun, 5 Dec 2010 21:37:27 -0500
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Process events in order if recording from multiple CPUs
+Date: Mon,  6 Dec 2010 13:37:03 +1100
+Message-Id: <1291603026-11785-1-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <alpine.LFD.2.00.1012051220450.2653@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1012051220450.2653@localhost6.localdomain6>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: kyungmin78@gmail.com [mailto:kyungmin78@gmail.com] On Behalf Of
-> Kyungmin Park
-> Sent: Monday, December 06, 2010 9:12 AM
-> To: Dong, Chuanxiao
-> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; cjb@laptop.org;
-> akpm@linux-foundation.org; arjan@linux.intel.com; alan@linux.intel.com
-> Subject: Re: [PATCH v2 1/4]enable background operations for supported eMMC
-> card
-> 
-> <Tested-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> Note that I'm not yet see any performance improvements :)
+Hi all,
 
-Thanks Park. Can you tell me the testing steps you used?
-During the test, has there any background operation been started?
-I think two cases can be tested to check whether there is performance improvement or not.
-One is doing background operations when card is busy for reading/writing. The other is doing background operations when card is idle.
+Here are my set of patches to process events in order and solve the bug where
+samples would not be attributed correctly if the COMM and MMAP events for them
+had not yet been processed.
 
-Thanks
-Chuanxiao
+
+I ran out of time cleaning these on Friday and hadn't touched them over the
+weekend. I see Thomas has now already posted a patch that does most of what the
+third patch in this series does, and this series would supersede his patch, my
+apologies for not getting these out last week.
+
+In addition to what Thomas' patch does, patch 3 in this series:
+ - Enables the PERF_SAMPLE_TIME flag automatically when recording if recording
+   from multiple CPUs (ie, if no_inherit is not set). This flag will be
+   disabled if the kernel does not support timestamps on every event and was
+   not manually requested.
+ - Enables ordered_samples in perf report by default.
+ - If an event is encountered without a timestamp, fall back to processing in
+   file order (otherwise we might process a PERF_RECORD_EXIT event too early).
+
+Thomas' patch does change some names that I did not ('self' -> 'session'), but
+those should be pretty straight forward to put in their own patch on top of
+these.
+
+
+The first patch in this series changes how unresolved symbols are printed out
+and the second patch moves some debugging output into the trace_event function
+to keep the debugging output sensible when processing events by timestamp.
+
+
+Cheers,
+-Ian
+
+
