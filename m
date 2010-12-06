@@ -1,122 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab0LFRWC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:22:02 -0500
-Received: from web31805.mail.mud.yahoo.com ([68.142.207.68]:26292 "HELO
-	web31805.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752266Ab0LFRWA (ORCPT
+	id S1752699Ab0LFRZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:25:47 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38855 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab0LFRZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 12:22:00 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=SY4EwPquKXI3mF1IH0JSgr043f4lItovPHkbydpxhKbICcs108praEojTE6QAZkH73VNzub5lUMged+9dW9AODkAIyD9uUWHYvo+R+N54pAjBTxK8imWLk36S8W1yArgaOr8nptLXwyhXx8cn+k09pECnEFrQb9jB7AXGh5Lsvo=;
-Message-ID: <401889.90968.qm@web31805.mail.mud.yahoo.com>
-X-YMail-OSG: ZGIxgeIVM1kMVpCxr1OA4anm6dFbrJ1l8MjjIw7cEyWX7CV
- kcNJsHnaSJCXiHRToI71Y_iVoSUlu.Bz6kWPsn.58CnqNsw5swO4LX8L6EGp
- ycrHOd7C_3PZRtNd0Pq_mDjGvoCHcyu0s2iKWxizY.JJMc6DGK6vqlCzx4IU
- oa5b_ZrQvzcr2VGt_QDLbzF3mMM_S0j7zWQ9X_.V0b_Zzm0cz6BoFCS_bh7c
- zaGQldcA1hoSK6H_8pa4c3V_jGiKJCxf0qigARaNmG2lA5nPCWvhuvmigRxQ
- JrE4obkETxar5fsgHlB_byrtwsLskQaWXe1L8DxnGy_.mICDLhzyPdMyXWFh
- HMuGZ56jesC0Qn.SeRg--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
-Date: Mon, 6 Dec 2010 09:21:58 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH preliminary] [BLOCK] Preliminary increasing tag sequence implementation
-To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 6 Dec 2010 12:25:46 -0500
+From: Dave Martin <dave.martin@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Martin <dave.martin@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Will Deacon <Will.Deacon@arm.com>
+Subject: [PATCH v4] perf symbols: fix symbol offset breakage with separated debug
+Date: Mon,  6 Dec 2010 17:25:31 +0000
+Message-Id: <1291656331-24706-1-git-send-email-dave.martin@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
----
- * This is a preliminary patch. Feel free to apply it for
- inclusion and/or work/modify it to submit a more
- atomically-correct version.
- * Vendors: apply this to see an increasing sequence of tags
- on the wire and at your device, so that error recovery doesn't
- abort a task which isn't intended to be aborted especially in
- full duplex protocols when the command status and TMF can
- cross on the wire. See this thread: http://marc.info/?l=linux-scsi&m=128902337522893&w=2  
- block/blk-tag.c        |   15 +++++++++++++--
- include/linux/blkdev.h |    1 +
- 2 files changed, 14 insertions(+), 2 deletions(-)
+v4: remove assert() calls
 
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index ece65fc..f792e98 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -130,6 +130,7 @@ init_tag_map(struct request_queue *q, struct blk_queue_tag *tags, int depth)
- 	tags->max_depth = depth;
- 	tags->tag_index = tag_index;
- 	tags->tag_map = tag_map;
-+	tags->last_tag = 0;
+  * Simply removed the assert() to validate section indices
+    returned by libelf: libelf should validate the ELF file
+    anyway.
+
+  * Replaced the assert() on arguments to dso__load_sym
+    with a run-time check.
+
+v3: Fixed a minor error in v2 where a check was erronueously
+done twice.
+
+Original description follows:
+
+The new patch loads the ELF section headers from a separate
+file if necessary, to avoid getting confused by the different
+section file offsets seen in debug images.  Invalid section
+headers are detected by checking for the presence of non-
+writable SHT_NOBITS sections, which don't make sense under
+normal circumstances.
+
+In particular, this allows symbols in ET_EXEC images to get
+fixed up correctly in the presence of separated debug images.
+
+The image search loop is also tidied up to fix a minor bug
+which would perform the same image load attempt more than
+once in some situations.
+
+For non-separated images, the headers should get loaded from
+the same image as the symbols, in the usual way.
+---
+KernelVersion: 2.6.37-rc3
+
+ tools/perf/util/symbol.c |  188 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 176 insertions(+), 12 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index b39f499..7d8fd34 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -992,8 +992,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
  
- 	return 0;
- fail:
-@@ -222,7 +223,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
- 	struct blk_queue_tag *bqt = q->queue_tags;
- 	struct request **tag_index;
- 	unsigned long *tag_map;
--	int max_depth, nr_ulongs;
-+	int max_depth, nr_ulongs, last_tag;
++/**
++ * Read all section headers, copying them into a separate array so they survive
++ * elf_end.
++ *
++ * @elf: the libelf instance to operate on.
++ * @ehdr: the elf header: this must already have been read with gelf_getehdr().
++ * @count: the number of headers read is assigned to *count on successful
++ *	return.  count must not be NULL.
++ *
++ * Returns a pointer to the allocated headers, which should be deallocated with
++ * free() when no longer needed.
++ */
++static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
++				    unsigned *count)
++{
++	GElf_Shdr *shdrs;
++	Elf_Scn *scn;
++	unsigned max_index = 0;
++	unsigned i;
++
++	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
++	if (!shdrs)
++		return NULL;
++
++	for (i = 0; i < ehdr->e_shnum; i++)
++		shdrs[i].sh_type = SHT_NULL;
++
++	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
++		size_t j;
++
++		/*
++		 * Just assuming we get section 0, 1, ... in sequence may lead
++		 * to wrong section indices.  Check the index explicitly:
++		 */
++		j = elf_ndxscn(scn);
++
++		if (j > max_index)
++			max_index = j;
++
++		if (!gelf_getshdr(scn, &shdrs[j]))
++			goto error;
++	}
++
++	*count = max_index + 1;
++	return shdrs;
++
++error:
++	free(shdrs);
++	return NULL;
++}
++
++/**
++ * Check that the section headers @shdrs reflect accurately the file data
++ * layout of the image that was loaded during perf record.  This is generally
++ * not true for separated debug images generated with e.g.,
++ * objcopy --only-keep-debug.
++ *
++ * We identify invalid files by checking for non-empty sections which are
++ * declared as having no file data (SHT_NOBITS) but are not writable.
++ *
++ * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
++ * @count: the number of headers present in @shdrs.
++ *
++ * Returns 1 for valid headers, 0 otherwise.
++ */
++static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
++{
++	unsigned i;
++
++	for (i = 0; i < count; i++) {
++		if (shdrs[i].sh_type == SHT_NOBITS &&
++		    !(shdrs[i].sh_flags & SHF_WRITE) &&
++		    shdrs[i].sh_size != 0)
++			return 0;
++	}
++
++	return 1;
++}
++
++/*
++ * Notes:
++ *
++ * If saved_shdrs is non-NULL, the section headers will be read if found, and
++ * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
++ * this case.  This may be needed for separated debug images, since the section
++ * headers and symbols may need to come from separate images in that case.
++ *
++ * Note: irrespective of whether this function returns successfully,
++ * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
++ * caller's responsibility to free() it when non longer needed.
++ *
++ * If want_symtab == 1, this function will only load symbols from .symtab
++ * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
++ * loaded.  This feature is used by dso__load() to search for the best image
++ * to load.
++ */
+ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
++			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
+ 			 int want_symtab)
+ {
+ 	struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
+@@ -1012,6 +1109,17 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 	int nr = 0;
+ 	size_t opdidx = 0;
  
- 	if (!bqt)
- 		return -ENXIO;
-@@ -251,6 +252,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
- 	tag_index = bqt->tag_index;
- 	tag_map = bqt->tag_map;
- 	max_depth = bqt->real_max_depth;
-+	last_tag = bqt->last_tag;
- 
- 	if (init_tag_map(q, bqt, new_depth))
- 		return -ENOMEM;
-@@ -258,6 +260,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
- 	memcpy(bqt->tag_index, tag_index, max_depth * sizeof(struct request *));
- 	nr_ulongs = ALIGN(max_depth, BITS_PER_LONG) / BITS_PER_LONG;
- 	memcpy(bqt->tag_map, tag_map, nr_ulongs * sizeof(unsigned long));
-+	bqt->last_tag = last_tag;
- 
- 	kfree(tag_index);
- 	kfree(tag_map);
-@@ -364,12 +367,20 @@ int blk_queue_start_tag(struct request_queue *q, struct request *rq)
- 			return 1;
++	if(saved_shdrs != NULL && saved_shdrs_count == NULL) {
++		/*
++		 * If you trigger this check, you're calling this function
++		 * incorrectly.  Refer to the notes above for details.
++		 */
++		pr_debug("%s: warning: saved_shdrs_count == NULL: "
++			 "ignoring the saved section headers.\n",
++			 __func__);
++		saved_shdrs = NULL;
++	}
++
+ 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+ 	if (elf == NULL) {
+ 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
+@@ -1035,6 +1143,34 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			goto out_elf_end;
  	}
  
-+	if (bqt->last_tag == bqt->max_depth-1)
-+		bqt->last_tag = 0;
++	/*
++	 * Copy all section headers from the image if requested and if not
++	 * already loaded.
++	 */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
++		GElf_Shdr *shdrs;
++		unsigned count;
 +
- 	do {
--		tag = find_first_zero_bit(bqt->tag_map, max_depth);
-+		tag = find_next_zero_bit(bqt->tag_map,
-+					 max_depth,
-+					 bqt->last_tag+1);
- 		if (tag >= max_depth)
- 			return 1;
++		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
++		if (shdrs == NULL)
++			goto out_elf_end;
++
++		/*
++		 * Only keep the headers if they reflect the actual run-time
++		 * image's file layout:
++		 */
++		if (elf_check_shdrs_valid(shdrs, count)) {
++			*saved_shdrs = shdrs;
++			*saved_shdrs_count = count;
++		} else
++			free(shdrs);
++	}
++
++	/* If no genuine ELF headers are available yet, give up: we can't
++	 * adjust symbols correctly in that case: */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL)
++		goto out_elf_end;
++
+ 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+ 	if (sec == NULL) {
+ 		if (want_symtab)
+@@ -1167,12 +1303,25 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			goto new_symbol;
+ 		}
  
- 	} while (test_and_set_bit_lock(tag, bqt->tag_map));
-+
-+	bqt->last_tag = tag;
-+
- 	/*
- 	 * We need lock ordering semantics given by test_and_set_bit_lock.
- 	 * See blk_queue_end_tag for details.
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 5027a59..955222e 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -224,6 +224,7 @@ struct blk_queue_tag {
- 	int max_depth;			/* what we will send to device */
- 	int real_max_depth;		/* what the array can hold */
- 	atomic_t refcnt;		/* map can be shared */
-+	int last_tag;
- };
++		/*
++		 * Currently, symbols for shared objects and PIE executables
++		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
++		 * to change if file offset == virtual address is not actually
++		 * guaranteed for these images.  ELF doesn't provide this
++		 * guarantee natively.
++		 */
+ 		if (curr_dso->adjust_symbols) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#Lx "
+ 				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+ 				  (u64)shdr.sh_offset);
+-			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
++			if (saved_shdrs && *saved_shdrs &&
++			    sym.st_shndx < *saved_shdrs_count)
++				sym.st_value -=
++					(*saved_shdrs)[sym.st_shndx].sh_addr -
++					(*saved_shdrs)[sym.st_shndx].sh_offset;
++			else
++				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+ 		}
+ 		/*
+ 		 * We need to figure out if the object was created from C++ sources
+@@ -1409,6 +1558,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	struct machine *machine;
+ 	const char *root_dir;
+ 	int want_symtab;
++	GElf_Shdr *saved_shdrs = NULL;
++	unsigned saved_shdrs_count;
  
- #define BLK_SCSI_MAX_CMDS	(256)
+ 	dso__set_loaded(self, map->type);
+ 
+@@ -1439,13 +1590,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	 * On the first pass, only load images if they have a full symtab.
+ 	 * Failing that, do a second pass where we accept .dynsym also
+ 	 */
+-	for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
+-	     self->origin != DSO__ORIG_NOT_FOUND;
+-	     self->origin++) {
++	self->origin = DSO__ORIG_BUILD_ID_CACHE;
++	want_symtab = 1;
++	while (1) {
+ 		switch (self->origin) {
+ 		case DSO__ORIG_BUILD_ID_CACHE:
+ 			if (dso__build_id_filename(self, name, size) == NULL)
+-				continue;
++				goto continue_next;
+ 			break;
+ 		case DSO__ORIG_FEDORA:
+ 			snprintf(name, size, "/usr/lib/debug%s.debug",
+@@ -1459,7 +1610,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+ 
+ 			if (!self->has_build_id)
+-				continue;
++				goto continue_next;
+ 
+ 			build_id__sprintf(self->build_id,
+ 					  sizeof(self->build_id),
+@@ -1483,21 +1634,24 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 		default:
+ 			/*
+ 			 * If we wanted a full symtab but no image had one,
+-			 * relax our requirements and repeat the search.
++			 * relax our requirements and repeat the search,
++			 * providing we saw some valid section headers:
+ 			 */
+-			if (want_symtab) {
++			if (want_symtab && saved_shdrs != NULL) {
+ 				want_symtab = 0;
+ 				self->origin = DSO__ORIG_BUILD_ID_CACHE;
+-			} else
+ 				continue;
++			} else
++				goto done;
+ 		}
+ 
+ 		/* Name is now the name of the next image to try */
+ 		fd = open(name, O_RDONLY);
+ 		if (fd < 0)
+-			continue;
++			goto continue_next;
+ 
+ 		ret = dso__load_sym(self, map, name, fd, filter, 0,
++				    &saved_shdrs, &saved_shdrs_count,
+ 				    want_symtab);
+ 		close(fd);
+ 
+@@ -1506,7 +1660,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 		 * info!?!?
+ 		 */
+ 		if (!ret)
+-			continue;
++			goto continue_next;
+ 
+ 		if (ret > 0) {
+ 			int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
+@@ -1514,9 +1668,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 				ret += nr_plt;
+ 			break;
+ 		}
++
++continue_next:
++		self->origin++;
++		continue;
+ 	}
+ 
++done:
+ 	free(name);
++
++	if (saved_shdrs)
++		free(saved_shdrs);
++
+ 	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
+ 		return 0;
+ 	return ret;
+@@ -1782,7 +1945,8 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
+ 		return -1;
+ 
+ 	dso__set_loaded(self, map->type);
+-	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
++	err = dso__load_sym(self, map, vmlinux, fd, filter, 0,
++			    NULL, NULL, 0);
+ 	close(fd);
+ 
+ 	if (err > 0)
 -- 
-1.7.2.2.165.gbc382
+1.7.1
 
