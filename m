@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0LFNbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:31:05 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:33624 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751429Ab0LFNbD (ORCPT
+	id S1752963Ab0LFNbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:31:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40320 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab0LFNbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 08:31:03 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: mchehab@infradead.org
-Cc: linux-media@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] V4L: videobuf, don't use dma addr as physical
-Date: Mon,  6 Dec 2010 14:30:52 +0100
-Message-Id: <1291642252-10264-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 6 Dec 2010 08:31:21 -0500
+Date: Mon, 6 Dec 2010 21:30:28 +0800
+From: Joe Jin <joe.jin@oracle.com>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        greg.marsden@oracle.com, guru.anbalagane@oracle.com,
+        joe.jin@oracle.com
+Subject: [PATCH 1/1] SCSI: fix scsi disk hotpulg/hotunplug race
+Message-ID: <20101206133028.GB19448@joejin-pc.cn.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem->dma_handle is a dma address obtained by dma_alloc_coherent which
-needn't be a physical address in presence of IOMMU. So ensure we are
-remapping (remap_pfn_range) the right page in __videobuf_mmap_mapper
-by using virt_to_phys(mem->vaddr) and not mem->dma_handle.
+Hi,
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Trigger scsi scan when plug new disk, device also support disk
+hotplug and auto scan disk, it may allocate scsi_target for same
+target more then one by call scsi_alloc_target(),  this caused by
+the race of __scsi_add_device() and scsi_scan_host_selected().
+
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+
 ---
- drivers/media/video/videobuf-dma-contig.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ scsi_scan.c |    8 +++++---
 
-diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
-index c969111..8d778aa 100644
---- a/drivers/media/video/videobuf-dma-contig.c
-+++ b/drivers/media/video/videobuf-dma-contig.c
-@@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 087821f..2429771 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -1508,12 +1508,14 @@ struct scsi_device *__scsi_add_device(struct Scsi_Host *shost, uint channel,
+ 	if (strncmp(scsi_scan_type, "none", 4) == 0)
+ 		return ERR_PTR(-ENODEV);
  
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
- 	retval = remap_pfn_range(vma, vma->vm_start,
--				 mem->dma_handle >> PAGE_SHIFT,
-+				 virt_to_phys(mem->vaddr) >> PAGE_SHIFT,
- 				 size, vma->vm_page_prot);
- 	if (retval) {
- 		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
++	mutex_lock(&shost->scan_mutex);
+ 	starget = scsi_alloc_target(parent, channel, id);
+-	if (!starget)
++	if (!starget) {
++		mutex_unlock(&shost->scan_mutex);
+ 		return ERR_PTR(-ENOMEM);
++	}
+ 	scsi_autopm_get_target(starget);
+ 
+-	mutex_lock(&shost->scan_mutex);
+ 	if (!shost->async_scan)
+ 		scsi_complete_async_scans();
+ 
+@@ -1521,10 +1523,10 @@ struct scsi_device *__scsi_add_device(struct Scsi_Host *shost, uint channel,
+ 		scsi_probe_and_add_lun(starget, lun, NULL, &sdev, 1, hostdata);
+ 		scsi_autopm_put_host(shost);
+ 	}
+-	mutex_unlock(&shost->scan_mutex);
+ 	scsi_autopm_put_target(starget);
+ 	scsi_target_reap(starget);
+ 	put_device(&starget->dev);
++	mutex_unlock(&shost->scan_mutex);
+ 
+ 	return sdev;
+ }
+
 -- 
-1.7.3.1
+Oracle <http://www.oracle.com>
+Joe Jin | Team Leader, Software Development | +8610.8278.6295
+ORACLE | Linux and Virtualization
+Incubator Building 2-A ZPark | Beijing China, 100094
 
 
