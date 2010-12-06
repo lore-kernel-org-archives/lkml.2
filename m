@@ -1,83 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab0LFQy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:54:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:61517 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab0LFQy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:54:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vitaly Wool <vitalywool@gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-Date: Mon, 6 Dec 2010 17:54:44 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <201012061615.28093.arnd@arndb.de> <AANLkTi=upn_ieeW_OXzKaHsrEumH2F_fMn07P6-97qb1@mail.gmail.com>
-In-Reply-To: <AANLkTi=upn_ieeW_OXzKaHsrEumH2F_fMn07P6-97qb1@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012061754.44592.arnd@arndb.de>
-X-Provags-ID: V02:K0:mFjnWAB5wW4aXWzaAt9nCLSn243+6yTce+/MALSKqBO
- wOGAGI83FmgobynE4ONd1N1/ot29xpPVk/hh+hJJDrJEipWkET
- 4wu2fkrBqoalBcS1fywSnu5wQ7VfHN4Sew1Pb0fGYqEtMh0VYa
- qRfP23r0Ru2KM4tqMBuqQdMAEFpEFp3lxqj0rRAVZdv6GXD8+t
- WvqybQCxwqT16GOoMvjpw==
+	id S1753743Ab0LFQ6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:58:17 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59702 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699Ab0LFQ6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:58:15 -0500
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 12/16] ptrace: make group stop notification reliable against ptrace
+Date: Mon,  6 Dec 2010 17:57:00 +0100
+Message-Id: <1291654624-6230-13-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Dec 2010 16:57:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010, Vitaly Wool wrote:
-> On Mon, Dec 6, 2010 at 4:15 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > Yes, that makes sense. I'm probably missing something here, but
-> > it seems to me that hci_ll is only about the power management stuff
-> > on TI (and broadcom, as you say) chips, and the multi-protocol
-> > support is currently handled in hci_ldisc by allowing multiple
-> > protocols like h4 and ll to be registered. It that correct?
-> 
-> Yeah, it's basic for TI and it's supported by Broadcom although they
-> have their own protocol for power saving.
-> 
-> But I was trying to make a different point here. On a basic level,
-> there's this cg2000 chip from STE that does BT, FM and GPS. There's
-> the chip from TI that does BT, FM and GPS, and there's the Broadcom
-> chip that does BT+FM. They all use HCI to access the other functions
-> of the combo chip and they do it in a really simiar way, with the
-> differences mostly in power management techniques. So I think it's
-> quite sensible to have some kind of framework that is suitable for
-> such devices.
+Group stop notifications are unreliable if one or more tasks of the
+task group are being ptraced.  If a ptraced task ends up finishing a
+group stop, the notification is sent to the ptracer and the real
+parent never gets notified.
 
-Yes, I agree 100% in principle. I could not find the code that 
-Broadcom/TI FM and GPS stuff so far, can you point us to that?
+This patch adds a new signal flag SIGNAL_NOTIFY_STOP which is set on
+group stop completion and cleared on notification to the real parent
+or together with other stopped flags on SIGCONT/KILL.  This guarantees
+that the real parent is notified correctly regardless of ptrace.  If a
+ptraced task is the last task to stop, the notification is postponed
+till ptrace detach or canceled if SIGCONT/KILL is received inbetween.
 
-The cg2900 solution for this was to use MFD (plus another layer
-in the posted version, but that will go away I assume). Using
-MFD is not the only possibility here, but I could not see anything
-wrong with it either. Do you think we can move them all over to
-use MFD infrastructure?
+Oleg spotted race against ptrace attach/detach in the initial
+implementation.  This is fixed by moving notification determiniation
+into do_notify_parent_cldstop() and performing it while holding both
+tasklist_lock and siglock.
 
-> > One aspect that Par-Gunnar mentioned was that the multi-protocol
-> > stuff for cg2900 and I suspect other similar devices would also
-> > need to work with non-UART-based HCIs, which don't use hci_uart_proto
-> > but would need something similar. Also, hci_uart is currently not
-> > modular, e.g. you cannot build hci_ll as a loadable module
-> > as you'd need for dynamic registration.
-> 
-> But generally speaking, isn't a line discipline/driver attached to a
-> tty? We can use dumb tty for e. g. SPI and still be able to use
-> hci_ll, right?
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>
+---
+ include/linux/sched.h |    2 +
+ kernel/signal.c       |   65 +++++++++++++++++++++++++++++-------------------
+ 2 files changed, 41 insertions(+), 26 deletions(-)
 
-I suggested that as well, but the point was made that this would
-add an unnecessary indirection for the SPI case, which is not
-really much like a serial port. It's certainly possible to do it
-like you say, but if we add a way to register the high-level
-protocols with an HCI-like multi-function device, we could
-also do it in a way that does not rely on tty-ldisc but keeps it
-as one of the options.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7045c34..7a26e7d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -653,6 +653,8 @@ struct signal_struct {
+ 
+ #define SIGNAL_UNKILLABLE	0x00000040 /* for init: ignore fatal signals */
+ 
++#define SIGNAL_NOTIFY_STOP	0x00000100 /* notify parent of group stop */
++
+ /* If true, all threads except ->group_exit_task have pending SIGKILL */
+ static inline int signal_group_exit(const struct signal_struct *sig)
+ {
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 7dfbba9..3196367 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -269,7 +269,7 @@ void task_clear_group_stop(struct task_struct *task)
+  * CONTEXT:
+  * Must be called with @task->sighand->siglock held.
+  */
+-static bool task_participate_group_stop(struct task_struct *task)
++static void task_participate_group_stop(struct task_struct *task)
+ {
+ 	struct signal_struct *sig = task->signal;
+ 	bool consume = task->group_stop & GROUP_STOP_CONSUME;
+@@ -279,18 +279,15 @@ static bool task_participate_group_stop(struct task_struct *task)
+ 	task_clear_group_stop(task);
+ 
+ 	if (!consume)
+-		return false;
++		return;
+ 
+ 	task->group_stop &= ~GROUP_STOP_CONSUME;
+ 
+ 	if (!WARN_ON_ONCE(sig->group_stop_count == 0))
+ 		sig->group_stop_count--;
+ 
+-	if (!sig->group_stop_count) {
+-		sig->flags = SIGNAL_STOP_STOPPED;
+-		return true;
+-	}
+-	return false;
++	if (!sig->group_stop_count)
++		sig->flags = SIGNAL_STOP_STOPPED | SIGNAL_NOTIFY_STOP;
+ }
+ 
+ /*
+@@ -1603,6 +1600,16 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+  * @why: CLD_{CONTINUED|STOPPED|TRAPPED}
+  *
+  * Notifies the parent that @tsk has been continued or is about to stop.
++ * Depending on @why and other conditions, the notification might be
++ * skipped.
++ *
++ * CLD_STOPPED		: If ptraced, always notify; otherwise, notify
++ *			  once if SIGNAL_NOTIFY_STOP is set.
++ *
++ * CLD_TRAPPED		: Always notify.
++ *
++ * For notify once cases, the respective NOTIFY flag is consumed and
++ * cleared.
+  *
+  * The notify target changes depending on whether @tsk is being ptraced or
+  * not.  If @tsk is being ptraced, it's always the ptracer; otherwise, it's
+@@ -1632,9 +1639,26 @@ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
+ 
+ 	switch (why) {
+ 	case CLD_CONTINUED:
++		notify = why;
++		break;
++
+ 	case CLD_STOPPED:
++		/*
++		 * If ptraced, always notify; otherwise, notify once if
++		 * NOTIFY_STOP is set.
++		 */
++		if (task_ptrace(tsk))
++			notify = CLD_STOPPED;
++		else if (sig->flags & SIGNAL_NOTIFY_STOP) {
++			notify = CLD_STOPPED;
++			sig->flags &= ~SIGNAL_NOTIFY_STOP;
++		}
++		break;
++
+ 	case CLD_TRAPPED:
+-		notify = why;
++		/* TRAPPED is possible only while ptraced and always notified */
++		WARN_ON_ONCE(!task_ptrace(tsk));
++		notify = CLD_TRAPPED;
+ 		break;
+ 	}
+ 
+@@ -1901,21 +1925,12 @@ retry:
+ 	__set_current_state(TASK_STOPPED);
+ 
+ 	if (likely(!task_ptrace(current))) {
+-		int notify = 0;
+-
+-		/*
+-		 * If there are no other threads in the group, or if there
+-		 * is a group stop in progress and we are the last to stop,
+-		 * report to the parent.
+-		 */
+-		if (task_participate_group_stop(current))
+-			notify = CLD_STOPPED;
+-
++		task_participate_group_stop(current);
+ 		spin_unlock_irq(&current->sighand->siglock);
+ 
+-		if (notify) {
++		if (sig->flags & SIGNAL_NOTIFY_STOP) {
+ 			read_lock(&tasklist_lock);
+-			do_notify_parent_cldstop(current, notify);
++			do_notify_parent_cldstop(current, CLD_STOPPED);
+ 			read_unlock(&tasklist_lock);
+ 		}
+ 
+@@ -2160,7 +2175,6 @@ relock:
+ 
+ void exit_signals(struct task_struct *tsk)
+ {
+-	int group_stop = 0;
+ 	struct task_struct *t;
+ 
+ 	if (thread_group_empty(tsk) || signal_group_exit(tsk->signal)) {
+@@ -2185,15 +2199,14 @@ void exit_signals(struct task_struct *tsk)
+ 		if (!signal_pending(t) && !(t->flags & PF_EXITING))
+ 			recalc_sigpending_and_wake(t);
+ 
+-	if (unlikely(tsk->group_stop & GROUP_STOP_PENDING) &&
+-	    task_participate_group_stop(tsk))
+-		group_stop = CLD_STOPPED;
++	if (unlikely(tsk->group_stop & GROUP_STOP_PENDING))
++		task_participate_group_stop(tsk);
+ out:
+ 	spin_unlock_irq(&tsk->sighand->siglock);
+ 
+-	if (unlikely(group_stop)) {
++	if (unlikely(tsk->signal->flags & SIGNAL_NOTIFY_STOP)) {
+ 		read_lock(&tasklist_lock);
+-		do_notify_parent_cldstop(tsk, group_stop);
++		do_notify_parent_cldstop(tsk, CLD_STOPPED);
+ 		read_unlock(&tasklist_lock);
+ 	}
+ }
+-- 
+1.7.1
 
-	Arnd
