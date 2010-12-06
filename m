@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab0LFUiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:38:51 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:34196 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab0LFUiu (ORCPT
+	id S1754599Ab0LFUja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:39:30 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:36500 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060Ab0LFUj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:38:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=sudrAoDBCzwii4HHM+8TAEvQnIz3i5uNpHNYaCYbCtNKId21y4c+77HkHVSFUQQlLo
-         UQgk1VkoGyYrOslxdNQA==
+	Mon, 6 Dec 2010 15:39:29 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: resource map sanity check conflict
+Date: Mon, 6 Dec 2010 13:34:56 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: David Airlie <airlied@linux.ie>, LKML <linux-kernel@vger.kernel.org>,
+        abelay@mit.edu, Chris Wilson <chris@chris-wilson.co.uk>,
+        Thomas Renninger <trenn@suse.de>
+References: <4CED14C1.4050703@suse.cz> <201011241222.06749.bjorn.helgaas@hp.com> <4CFD44DD.3070901@gmail.com>
+In-Reply-To: <4CFD44DD.3070901@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4CF9F7AB.8050802@redhat.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <1291421609-14665-8-git-send-email-dhsharp@google.com> <4CF9F7AB.8050802@redhat.com>
-From: David Sharp <dhsharp@google.com>
-Date: Mon, 6 Dec 2010 12:38:26 -0800
-Message-ID: <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>
-Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
-To: Avi Kivity <avi@redhat.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com,
-        kvm-devel <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012061334.57246.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB6Kd2xg018873
 
-On Sat, Dec 4, 2010 at 12:11 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 12/04/2010 02:13 AM, David Sharp wrote:
->>
->> Signed-off-by: David Sharp<dhsharp@google.com>
->> ---
->>  arch/x86/kvm/trace.h |    8 ++++----
->>  1 files changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
->> index a6544b8..ab41fb0 100644
->> --- a/arch/x86/kvm/trace.h
->> +++ b/arch/x86/kvm/trace.h
->> @@ -62,21 +62,21 @@ TRACE_EVENT(kvm_hv_hypercall,
->>        TP_ARGS(code, fast, rep_cnt, rep_idx, ingpa, outgpa),
->>
->>        TP_STRUCT__entry(
->> -               __field(        __u16,          code            )
->> -               __field(        bool,           fast            )
->>                __field(        __u16,          rep_cnt         )
->>                __field(        __u16,          rep_idx         )
->>                __field(        __u64,          ingpa           )
->>                __field(        __u64,          outgpa          )
->> +               __field(        __u16,          code            )
->> +               __field(        bool,           fast            )
->>        ),
->>
->
-> Looks like a pessimisation.
->
-> Before: 24 bytes
-> After: 32 bytes
->
-> (on a 64-bit machine, assuming no packing)
+On Monday, December 06, 2010 01:17:33 pm Jiri Slaby wrote:
+> On 11/24/2010 08:22 PM, Bjorn Helgaas wrote:
+> > On Wednesday, November 24, 2010 06:36:01 am Jiri Slaby wrote:
+> >> Hi,
+> >>
+> >> with 2.6.37-rc2 with some unrelated patches the following WARNING is
+> >> generated:
+> >>
+> >> pnp 00:0a: [mem 0xfed40000-0xfed44fff]
+> >> pnp 00:0a: Plug and Play ACPI device, IDs ATM1200 PNP0c31 (active)
+> >> ...
+> >> resource map sanity check conflict: 0xfed40000 0xfed44fff 0xfed44000
+> >> 0xfed44fff Intel Flush Page
+> >> ------------[ cut here ]------------
+> >> WARNING: at arch/x86/mm/ioremap.c:98 __ioremap_caller+0x353/0x380()
+> >> ...
+> > 
+> >> /proc/iomem:
+> >> fed1c000-fed8ffff : reserved
+> >>   fed1c000-fed1ffff : pnp 00:02
+> >>   fed40000-fed4bfff : PCI Bus 0000:00
+> >>     fed44000-fed44fff : Intel Flush Page
+> >>     fed45000-fed4bfff : pnp 00:02
+> >>
+> >>
+> >> Is it a result of the past resource handling rewrote?
+> >>
+> >> It seems like pci_bus_alloc_resource in
+> >> intel_alloc_chipset_flush_resource chooses a weird place to put the
+> >> mapping in.
+> > 
+> > Yes, this is related to the PCI resource changes I made recently.
+> > We used to allocate PCI resources from low addresses first and work
+> > upwards, and now we do the reverse.  So in 2.6.36, the "Intel Flush
+> > Page" was probably allocated low in the [mem 0x7e000000-0xfebfffff]
+> > window, but now we put it in the [mem 0xfed40000-0xfed4bfff] window:
+> > 
+> >   pci_root PNP0A08:00: host bridge window [mem 0x000dc000-0x000dffff]
+> >   pci_root PNP0A08:00: host bridge window [mem 0xfed40000-0xfed4bfff]
+> > 
+> > I think the problem is that we ignore most of what ACPI tells us
+> > about motherboard device resource usage.  We do have the "system"
+> > driver, which reserves resources used by PNP0c01 and PNP0c02 devices,
+> > but we don't do anything about other devices like the ATM1200/PNP0c31
+> > device which, in your case, is using some of the space in that
+> > [mem 0xfed40000-0xfed4bfff] host bridge window.
+> > 
+> > I've been worried that this would bite us eventually, and I tried to
+> > reserve all the ACPI resources in the PNP core a couple years ago,
+> > but we had to revert that because it caused other problems.  I still
+> > think it's something we need to do after we straighten out the issues.
+> > 
+> >> dmesg:
+> >> https://bugzillafiles.novell.org/attachment.cgi?id=401414
+> >> lspci -vvnnxxx:
+> >> https://bugzillafiles.novell.org/attachment.cgi?id=401643
+> >> /proc/iomem:
+> >> https://bugzillafiles.novell.org/attachment.cgi?id=401476
+> > 
+> > Is there a kernel.org bugzilla about this?  If not, could you open one
+> > and assign it to me?
+> 
+> I created the bko entry some time ago:
+> https://bugzilla.kernel.org/show_bug.cgi?id=23802
+> 
+> Any chance you will take a look?
 
-This patch is predicated on packing the event structures. And since
-the ring buffer is 32-bit addressable, I don't attempt to improve
-alignment beyond 32-bit boundaries.
+I will take a look, and in fact, I'm working on these:
+  https://bugzilla.kernel.org/show_bug.cgi?id=23542
+  https://bugzilla.kernel.org/show_bug.cgi?id=23332
 
->
-> --
-> I have a truly marvellous patch that fixes the bug which this
-> signature is too narrow to contain.
->
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+and the fix I'm contemplating should also apply to 23802.
+
+Bjorn
