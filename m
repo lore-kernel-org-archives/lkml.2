@@ -1,60 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab0LFTBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 14:01:20 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55066 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab0LFTBS (ORCPT
+	id S1754223Ab0LFTB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 14:01:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39950 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab0LFTB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 14:01:18 -0500
-Message-ID: <4CFD324B.8050800@oracle.com>
-Date: Mon, 06 Dec 2010 10:58:19 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Mon, 6 Dec 2010 14:01:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GRtgR1yrZAlw6PQzS5Gc/5J1kHqkedm+dlBME2ueOYcFRrYBZQHsw7SArZce+oNwav
+         DFHcPHhYrGOyt+abZNKN/aP6yxNASEgmUz6pcRcZbMUtA1m8VI1RfVo5Wo5TpCSQBBxh
+         Zg4bmwd90xtfMoXN/G6Bqg2/zSyZ/RUwXNGu0=
+Message-ID: <4CFD3322.1000503@gmail.com>
+Date: Mon, 06 Dec 2010 11:01:54 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>, trapdoor6@gmail.com,
-        Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        brueckner@linux.vnet.ibm.com, mchehab@redhat.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5
-References: <20101204135732.GA12774@sepie.suse.cz>	<AANLkTimeyo==XJWUaUs8EzJvA8azkk3sw9FXQhMjuo6M@mail.gmail.com>	<20101205081108.9bdb7504.randy.dunlap@oracle.com>	<AANLkTimm1Xn4wwNAoDJ4hjnOmBOnxBgcsCzVEJTEag97@mail.gmail.com>	<AANLkTimXRBz7-mz_E_xdc85pGi7ExMy67XfDVF7jEt+Y@mail.gmail.com>	<4CFD258B.4030604@oracle.com> <AANLkTi=uMk74hYa-2aoVgj-F1h=+zGC2T=m4i__OwwQM@mail.gmail.com>
-In-Reply-To: <AANLkTi=uMk74hYa-2aoVgj-F1h=+zGC2T=m4i__OwwQM@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+CC: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of/fdt: add kernel command line option for dtb_compat
+ string
+References: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com> <4bb36a12-8d95-4d4e-936c-c1c74a9372cc@VA3EHSMHS025.ehs.local>
+In-Reply-To: <4bb36a12-8d95-4d4e-936c-c1c74a9372cc@VA3EHSMHS025.ehs.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/10 10:56, Arnaud Lacombe wrote:
-> Hi,
-> 
-> On Mon, Dec 6, 2010 at 1:03 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> On 12/06/10 10:01, Catalin Marinas wrote:
->> [...]
->>> This could be simplified to only show the first option of every '&&'
->>> expression, something like below:
->>>
->>> warning: I2C_ISCH selects MFD_CORE...
->>> warning: GPIO_SCH selects MFD_CORE...
->>>
->>> But I couldn't figure out whether the expression reduction code in
->>> kbuild reorders the options or not.
+On 12/06/2010 10:37 AM, Stephen Neuendorffer wrote:
+>
+>
+>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+>> index c1360e0..ca1318c 100644
+>> --- a/drivers/of/fdt.c
+>> +++ b/drivers/of/fdt.c
+>> @@ -15,6 +15,8 @@
+>>   #include<linux/of_fdt.h>
+>>   #include<linux/string.h>
+>>   #include<linux/errno.h>
+>> +#include<asm-generic/vmlinux.lds.h>
+>> +
 >>
-> This was the purpose of a patch I send a month or two ago, though, you
-> defeated it with cases the code was not taking into account. I updated
-> it since, but did not post it. I'll post it on linux-kbuild@ and
-> continue the discussion there.
-> 
->> I'm pretty sure that I have seen cases where the faulty kconfig is not the
->> first one listed, so all of them need to be available.
+>>   #ifdef CONFIG_PPC
+>>   #include<asm/machdep.h>
+>> @@ -604,3 +606,49 @@ void __init unflatten_device_tree(void)
 >>
-> do you have an example ?
+>>   	pr_debug("<- unflatten_device_tree()\n");
+>>   }
+>> +
+>> +extern uint8_t __dtb_start[];
+>> +extern uint8_t __dtb_end[];
+>> +static void __init *of_flat_dt_find_compatible_dtb(char *name)
+>> +{
+>> +	void *rc = NULL;
+>> +	unsigned long root, size;
+>> +	struct boot_param_header  *orig_initial_boot_params;
+>> +	uint8_t *blob;
+>> +
+>> +	orig_initial_boot_params = initial_boot_params;
+>> +	blob = __dtb_start;
+>> +	initial_boot_params = (struct boot_param_header *)blob;
+>
+> Oy... can you avoid the pointer dance by using of_fdt_is_compatible()
+> from my recent set of patches?
 
-Not at hand, but I'll be on the lookout for one.
+I would like to get rid of the pointer dance. Is your patch set going to make it 
+into .37?  I didn't see any acks.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> It takes a blob argument.  Then the loop below goes away.
+>
+
+The loop will still be needed since multiple DTBs may be linked into the image. 
+using your  of_fdt_is_compatible() will make the loop a lot more readable though.
+
+--Dirk
+
+> Steve
+>
+>> +
+>> +
+>> +	while (blob<  __dtb_end) {
+>> +		if (be32_to_cpu(initial_boot_params->magic) !=
+> OF_DT_HEADER) {
+>> +			WARN(1, "Invalid device tree blob in
+> vmlinux\n");
+>> +			break;
+>> +		}
+>> +
+>> +		root = of_get_flat_dt_root();
+>> +		if (of_flat_dt_is_compatible(root, name)>  0) {
+>> +			rc = blob;
+>> +			break;
+>> +		}
+>> +
+>> +		size =  be32_to_cpu(initial_boot_params->totalsize);
+>> +		blob =  PTR_ALIGN(blob + size, STRUCT_ALIGNMENT);
+>> +		initial_boot_params = (struct boot_param_header *)blob;
+>> +	}
+>> +
+>> +	if (rc == NULL)
+>> +		initial_boot_params = orig_initial_boot_params;
+>> +	return rc;
+>> +}
+>> +
+>> +
+>> +static int __init of_flat_dtb_compat_setup(char *line)
+>> +{
+>> +	if (!initial_boot_params)
+>> +		initial_boot_params =
+> of_flat_dt_find_compatible_dtb(line);
+>> +	return 1;
+>> +}
+>> +
+>> +early_param("dtb_compat", of_flat_dtb_compat_setup);
+>> +
+>> --
+>> 1.7.2.3
+>>
+>> _______________________________________________
+>> devicetree-discuss mailing list
+>> devicetree-discuss@lists.ozlabs.org
+>> https://lists.ozlabs.org/listinfo/devicetree-discuss
+>
+>
+> This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+>
+>
+
