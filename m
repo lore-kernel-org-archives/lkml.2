@@ -1,143 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab0LFO5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:57:30 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:60994 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab0LFO53 (ORCPT
+	id S1753271Ab0LFO5q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:57:46 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35704 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab0LFO5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:57:29 -0500
-Date: Mon, 6 Dec 2010 09:57:25 -0500
-From: Jeff Layton <jlayton@samba.org>
-To: Bernhard Walle <bernhard@bwalle.de>
-Cc: sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: Add information about noserverino
-Message-ID: <20101206095725.78422138@tlielax.poochiereds.net>
-In-Reply-To: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Dec 2010 09:57:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RwUlFhJ/76hWS9K8HgVwBfN8f+ZvI5F2693gI3vIdKf71Z3LdET7u3MfxeA5z3GX1X
+         wkjAxGA04nERxMM98VWRUoFnLUE1nxqUmhvVvcPoxHPQaGmTPzUXbqNTszftfFOiZ4hI
+         iIjETPww6xb06hwZ+GQTRwG/Lg8xOcja7m3s0=
+MIME-Version: 1.0
+In-Reply-To: <201012061549.01534.arnd@arndb.de>
+References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
+	<AANLkTikMAWikj9HQ76YVeHr7pMoFK6ME2=HHpuQ1kUxq@mail.gmail.com>
+	<AANLkTi=V+89hmBP8iqz13xMhYVfnBkbiVnk=FY=OBE8T@mail.gmail.com>
+	<201012061549.01534.arnd@arndb.de>
+Date: Mon, 6 Dec 2010 15:57:43 +0100
+Message-ID: <AANLkTiku8_ZYHcsGVwyYffmRgc=5Wab1F=kNkOztNW-S@mail.gmail.com>
+Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
+From: Vitaly Wool <vitalywool@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  5 Dec 2010 18:07:35 +0100
-Bernhard Walle <bernhard@bwalle.de> wrote:
+On Mon, Dec 6, 2010 at 3:49 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-> In my case I had the problem that 32 bit userspace applications in an
-> amd64 environment was not able to list the directories of a CIFS-mounted
-> share. The simple userspace code
-> 
->     int main(int argc, char *argv[])
->     {
->         DIR *dir;
->         struct dirent *dirent;
-> 
->         if (!argv[1]) {
->             fprintf(stderr, "Usage: %s <directory>\n", argv[0]);
->             return -1;
->         }
-> 
->         dir = opendir(argv[1]);
->         if (!dir) {
->             perror("Unable to open directory");
->             return -1;
->         }
-> 
->         while ((dirent = readdir(dir)) != NULL)
->             puts(dirent->d_name);
-> 
->         closedir(dir);
-> 
->         return 0;
->     }
-> 
-> was sufficient to trigger the problem.
-> 
-> I discovered that the problem was that the inodes were too large to fit
-> in a 32 bit (unsigned long) integer, so the compat_filldir() function
-> returned -EOVERFLOW.
-> 
-> While that is okay it would have saved me a some hours of debugging if
-> the message below would have appeared in my kernel log.
-> 
-> The target was a Samba server (I guess) of a Buffalo LinkStation Duo
-> with the unmodified vendor firmware 1.34.
-> 
-> Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
-> ---
->  fs/cifs/readdir.c |   23 +++++++++++++++++++----
->  1 files changed, 19 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
-> index d5e591f..d979826 100644
-> --- a/fs/cifs/readdir.c
-> +++ b/fs/cifs/readdir.c
-> @@ -773,6 +773,7 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
->  	char *tmp_buf = NULL;
->  	char *end_of_smb;
->  	unsigned int max_len;
-> +	int err;
->  
->  	xid = GetXid();
->  
-> @@ -783,17 +784,31 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
->  
->  	switch ((int) file->f_pos) {
->  	case 0:
-> -		if (filldir(direntry, ".", 1, file->f_pos,
-> -		     file->f_path.dentry->d_inode->i_ino, DT_DIR) < 0) {
-> +		err = filldir(direntry, ".", 1, file->f_pos,
-> +		     file->f_path.dentry->d_inode->i_ino, DT_DIR);
-> +		if (err < 0) {
->  			cERROR(1, "Filldir for current dir failed");
-> +			if (err == -EOVERFLOW) {
-> +				cERROR(1, "Server inodes are too large for 32 "
-> +						"bit userspace. You might "
-> +						"consider using 'noserverino' "
-> +						"mount option for this mount.");
-> +			}
->  			rc = -ENOMEM;
->  			break;
->  		}
->  		file->f_pos++;
->  	case 1:
-> -		if (filldir(direntry, "..", 2, file->f_pos,
-> -		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR) < 0) {
-> +		err = filldir(direntry, "..", 2, file->f_pos,
-> +		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR);
-> +		if (err < 0) {
->  			cERROR(1, "Filldir for parent dir failed");
-> +			if (err == -EOVERFLOW) {
-> +				cERROR(1, "Server inodes are too large for 32 "
-> +						"bit userspace. You might "
-> +						"consider using 'noserverino' "
-> +						"mount option for this mount.");
-> +			}
->  			rc = -ENOMEM;
->  			break;
->  		}
+> As far as I understand, the point is that it's no longer a 'solution'
+> at the core, i.e. there is no replacement for hci_ldisc or any
+> of these, just modules for the additional h4 protocols that don't
+> have a linux implementation yet.
+>
+> The patch set that was originally posted here had a new framework,
+> but after the comments from Alan and me, Par-Gunnar agreed to use
+> the existing framework instead and extend it in a useful way.
+> Please read all of the discussion we already had. You made a good
+> point here, but I fear you had both Par-Gunnar and me confused
+> because it was a point that already got resolved.
 
-This doesn't look right to me...
+Yeah I've read through that thread but the only conclusion I'd been
+able to make was that you agreed on not introducing yet another line
+discipline. I'm not sure if I could make a conclusion that Par gave up
+on his attempt to make his patchset generic/extensible/reusable for
+other chips of similar type. But if that's really the case, I see no
+point in this patchset at all, as opposed to generalizing the TI
+shared transport thingie and using that one.
 
-i_ino is an unsigned long. The code in filldir() is this:
-
-        unsigned long d_ino;
-
-[...]
-
-        d_ino = ino;
-        if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
-                buf->error = -EOVERFLOW;
-                return -EOVERFLOW;
-        }
-
-...so the first condition will return true on a 32-bit arch, but it's
-not clear to me how you'd get the second one to return true in this
-situation.
-
--- 
-Jeff Layton <jlayton@samba.org>
+Thanks,
+   Vitaly
