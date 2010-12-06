@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0LFUCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:02:12 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56680 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab0LFUCK (ORCPT
+	id S1754402Ab0LFUCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:02:23 -0500
+Received: from passoire.arboi.fr.eu.org ([81.57.108.63]:46583 "EHLO
+	passoire.arboi.fr.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab0LFUCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:02:10 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Jeff Ohlstein <johlstei@codeaurora.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/5] msm: Secure Channel Manager (SCM) support
-In-Reply-To: Your message of "Sun, 05 Dec 2010 23:16:14 PST."
-             <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>
-            <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
+	Mon, 6 Dec 2010 15:02:22 -0500
+X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 15:02:22 EST
+Date: Mon, 6 Dec 2010 20:53:45 +0100
+From: Michel Arboi <michel@arboi.fr.eu.org>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: Hans de Goede <hdegoede@redhat.com>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Patch for Fintek F71869 watchdoh
+Message-ID: <20101206205345.639f31bb@marmite>
+In-Reply-To: <20101206191930.GA3188@salidar.me.mortis.eu>
+References: <4CFCB76D.2060405@redhat.com>
+	<20101206191930.GA3188@salidar.me.mortis.eu>
+Organization: Compilo ergo sum
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1291665648_4733P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 06 Dec 2010 15:00:48 -0500
-Message-ID: <29863.1291665648@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4CFD40F1.005C,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/mixed; boundary="MP_/Ttn1dpTChjZ1TbcgiWnpkAr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1291665648_4733P
-Content-Type: text/plain; charset=us-ascii
+--MP_/Ttn1dpTChjZ1TbcgiWnpkAr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-On Sun, 05 Dec 2010 23:16:14 PST, Jeff Ohlstein said:
+On Mon, 6 Dec 2010 20:19:30 +0100
+Giel van Schijndel <me@mortis.eu> wrote:
 
-> SCM is the protocol used to communicate between the secure and
-> non-secure code executing on the applications processor. 
+> Please insert that constant in the list of other Chipset ID's
+> alphabetically sorted (to keep that list consistent).
 
-Does the presence of SCM hardware imply SMP?  From reading this, it's unclear
-why the dependence on SMP - it looks like scm.c is something that hardware that
-has one ARM processor and a 'secure processor' would still want.  Or is the
-'secure processor' just another (arbitrarily labeled) ARM CPU participating
-as a full SMP processor?
+Like this?
+
+> The rest of that patch looks fine.  So if you perform the above
+> modification you'll get my Ack.
+
+Please note that this was just a quick hack. My basic tests showed that
+the board did not reboot by itself, and it rebooted when I stopped the
+watchdog process.
+I downloaded the chip datasheet from Fintek's site but could not make
+much sense out of it. It is rather terse.
 
 
---==_Exmh_1291665648_4733P
-Content-Type: application/pgp-signature
+--MP_/Ttn1dpTChjZ1TbcgiWnpkAr
+Content-Type: text/x-patch
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename=f71808e_wdt.patch
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+--- ./drivers/watchdog/f71808e_wdt.c	2010-10-20 22:30:22.000000000 +0200
++++ /tmp/f71808e_wdt.c	2010-12-06 20:48:00.257989527 +0100
+@@ -49,6 +49,7 @@
+ #define SIO_F71808_ID		0x0901  /* Chipset ID */
+ #define SIO_F71858_ID		0x0507  /* Chipset ID */
+ #define SIO_F71862_ID		0x0601	/* Chipset ID */
++#define SIO_F71869_ID		0x0814
+ #define SIO_F71882_ID		0x0541	/* Chipset ID */
+ #define SIO_F71889_ID		0x0723	/* Chipset ID */
+=20
+@@ -98,12 +99,13 @@
+ MODULE_PARM_DESC(start_withtimeout, "Start watchdog timer on module load w=
+ith"
+ 	" given initial timeout. Zero (default) disables this feature.");
+=20
+-enum chips { f71808fg, f71858fg, f71862fg, f71882fg, f71889fg };
++enum chips { f71808fg, f71858fg, f71862fg, f71869, f71882fg, f71889fg };
+=20
+ static const char *f71808e_names[] =3D {
+ 	"f71808fg",
+ 	"f71858fg",
+ 	"f71862fg",
++	"f71869",
+ 	"f71882fg",
+ 	"f71889fg",
+ };
+@@ -308,6 +310,10 @@
+ 		superio_set_bit(watchdog.sioaddr, 0x29, 1);
+ 		break;
+=20
++	case f71869:
++		/* GPIO14 --> WDTRST# */
++		superio_clear_bit(watchdog.sioaddr, 0x29, 4);
++		break;
+ 	default:
+ 		/*
+ 		 * 'default' label to shut up the compiler and catch
+@@ -708,6 +714,9 @@
+ 	case SIO_F71882_ID:
+ 		watchdog.type =3D f71882fg;
+ 		break;
++	case SIO_F71869_ID:
++		watchdog.type =3D f71869;
++		break;
+ 	case SIO_F71862_ID:
+ 	case SIO_F71889_ID:
+ 		/* These have a watchdog, though it isn't implemented (yet). */
 
-iD8DBQFM/UDwcC3lWbTT17ARAhT4AKDit4oYNcVR6MAXBs8z09+WAyvCWACfW6PY
-lzuqPN2v8vQrWGM12BlmdtM=
-=CdKU
------END PGP SIGNATURE-----
-
---==_Exmh_1291665648_4733P--
-
+--MP_/Ttn1dpTChjZ1TbcgiWnpkAr--
