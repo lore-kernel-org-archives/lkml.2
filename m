@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab0LFRkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:40:22 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:31672 "HELO
+	id S1754164Ab0LFRkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:40:25 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:31690 "HELO
 	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753894Ab0LFRkS (ORCPT
+	by vger.kernel.org with SMTP id S1753974Ab0LFRkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 12:40:18 -0500
+	Mon, 6 Dec 2010 12:40:19 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Cy.U5KEVM1mN5RKX101HhK.qUo1W.aMLlug6_eXSdk4x3wG
- JQnXLjuOcrHmbu9pW1rwnPQhlTD5udlp7fzn1zjbB15.NH5BlmEFbG_leEf4
- N7uq9T4mmLW8nKyx0jsPmjybZSz2xGQvncZLaW6meheKkKVGVMxb_sBHkC_Q
- Y.s0k_ltKdM_xHseZu1nnDahaHFoUfSLERp9Lm_oeq2rokzYVXOxkyAIQnx5
- LcVaplrHXScw8MEUJH3suOgARS8UpJNmhupNPyfXqS3TlhfKSHw0N
+X-YMail-OSG: _y_p79oVM1kKIiBVG6elOINAgZ7y.fN_gJHPOuRRd9Exg7B
+ k94kZu_wsFiSp7fdwb9FcED7ZmGD4PqdEn0.ALjL99HrswA9HzNoKnqkhsEq
+ Wmvc_Ui0iNL8vPMJTMnia6grnwoD9CSx.7Q9uGYb346ftz6AFAXvLTE7pC8j
+ EiVMgitGfRI0NzC5j5bGaWbLz7PwivwJveL3VvaDcqwECOQSrNoy6fo5PSl0
+ byDKc9f3RRs3IBvIVahV3jPLIBTM_4cfcEQ_ZS.7_hxxVf5Qh_qzgxSI-
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101206174015.961454797@linux.com>
+Message-Id: <20101206174017.684979312@linux.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 06 Dec 2010 11:40:03 -0600
+Date: Mon, 06 Dec 2010 11:40:06 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Catalin Marinas <catalin.marinas@arm.com>
+Cc: akpm@linux-foundation.org, Richard Kennedy <richard@rsk.demon.co.uk>,
+        Matt Mackall <mpm@selenic.com>
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [cpuops inc_return V1 5/9] highmem: Use this_cpu_xx_return() operations
+Subject: [cpuops inc_return V1 8/9] random: Use this_cpu_inc_return
 References: <20101206173958.685460926@linux.com>
-Content-Disposition: inline; filename=cpuops_inc_return_highmem
+Content-Disposition: inline; filename=cpuops_inc_return_random
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use this_cpu operations to optimize access primitives for highmem.
+__this_cpu_inc can create a single instruction to do the same as
+__get_cpu_var()++.
 
-The main effect is the avoidance of address calculations through the
-use of a segment prefix.
-
-V3->V4
-	- kmap_atomic_idx: Do not return a value.
-	- Use __this_cpu_dec without HIGHMEM_DEBUG
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Matt Mackall <mpm@selenic.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- include/linux/highmem.h |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/char/random.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6/include/linux/highmem.h
+Index: linux-2.6/drivers/char/random.c
 ===================================================================
---- linux-2.6.orig/include/linux/highmem.h	2010-12-01 09:47:58.000000000 -0600
-+++ linux-2.6/include/linux/highmem.h	2010-12-01 09:48:16.000000000 -0600
-@@ -81,7 +81,8 @@ DECLARE_PER_CPU(int, __kmap_atomic_idx);
+--- linux-2.6.orig/drivers/char/random.c	2010-12-06 11:01:06.000000000 -0600
++++ linux-2.6/drivers/char/random.c	2010-12-06 11:19:38.000000000 -0600
+@@ -626,7 +626,7 @@ static void add_timer_randomness(struct
+ 	preempt_disable();
+ 	/* if over the trickle threshold, use only 1 in 4096 samples */
+ 	if (input_pool.entropy_count > trickle_thresh &&
+-	    (__get_cpu_var(trickle_count)++ & 0xfff))
++	    ((__this_cpu_inc_return(trickle_count) - 1) & 0xfff))
+ 		goto out;
  
- static inline int kmap_atomic_idx_push(void)
- {
--	int idx = __get_cpu_var(__kmap_atomic_idx)++;
-+	int idx = __this_cpu_inc_return(__kmap_atomic_idx) - 1;
-+
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	WARN_ON_ONCE(in_irq() && !irqs_disabled());
- 	BUG_ON(idx > KM_TYPE_NR);
-@@ -91,16 +92,18 @@ static inline int kmap_atomic_idx_push(v
- 
- static inline int kmap_atomic_idx(void)
- {
--	return __get_cpu_var(__kmap_atomic_idx) - 1;
-+	return __this_cpu_read(__kmap_atomic_idx) - 1;
- }
- 
--static inline int kmap_atomic_idx_pop(void)
-+static inline void kmap_atomic_idx_pop(void)
- {
--	int idx = --__get_cpu_var(__kmap_atomic_idx);
- #ifdef CONFIG_DEBUG_HIGHMEM
-+	int idx = __this_cpu_dec_return(__kmap_atomic_idx);
-+
- 	BUG_ON(idx < 0);
-+#else
-+	__this_cpu_dec(__kmap_atomic_idx);
- #endif
--	return idx;
- }
- 
- #endif
+ 	sample.jiffies = jiffies;
 
