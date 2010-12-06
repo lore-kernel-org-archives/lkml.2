@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab0LFQ6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:58:51 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59765 "EHLO hera.kernel.org"
+	id S1754169Ab0LFQ7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:59:34 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59732 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754127Ab0LFQ6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:58:49 -0500
+	id S1754090Ab0LFQ6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:58:44 -0500
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
         jan.kratochvil@redhat.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 14/16] ptrace: make SIGCONT notification reliable against ptrace
-Date: Mon,  6 Dec 2010 17:57:02 +0100
-Message-Id: <1291654624-6230-15-git-send-email-tj@kernel.org>
+Subject: [PATCH 10/16] ptrace: clean transitions between TASK_STOPPED and TRACED
+Date: Mon,  6 Dec 2010 17:56:58 +0100
+Message-Id: <1291654624-6230-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
 References: <1291654624-6230-1-git-send-email-tj@kernel.org>
@@ -22,201 +22,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, SIGCONT notifications which are pending on ptrace attach or
-occur while ptraced are reported to the tracer and never make it to
-the real parent.
+Currently, if the task is STOPPED on ptrace attach, it's left alone
+and the state is silently changed to TRACED on the next ptrace call.
+The behavior breaks the assumption that arch_ptrace_stop() is called
+before any task is poked by ptrace and is ugly in that a task
+manipulates the state of another task directly.
 
-This patch adds a new signal flag SIGNAL_NOTIFY_CONT which is set when
-a task is woken up by SIGCONT and cleared once the event is notified
-to the parent.  SIGNAL_CLD_MASK bits are no longer cleared after
-notification.  Combined with clearing SIGNAL_CLD_MASK if
-!SIGNAL_NOTIFY_CONT on ptrace attach, these bits are set on ptrace
-detach iff the tracee owes a notification to the real parent.
-__ptrace_unlink() is updated to check these bits and reschedule
-SIGCONT notification if necessary.
+With GROUP_STOP_PENDING, the transitions between TASK_STOPPED and
+TRACED can be made clean.  The tracer can use the flag to tell the
+tracee to retry stop on attach and detach.  On retry, the tracee will
+enter the desired state in the correct way.  The lower 16bits of
+task->group_stop is used to remember the signal number which caused
+the last group stop.  This is used while retrying for ptrace attach as
+the original group_exit_code could have been consumed with wait(2) by
+then.
 
-As notification delivery should consider both the child's signal flags
-and ptraced state, it should be done while holding both siglock and
-tasklist_lock.  The delivery logic is moved into
-do_notify_parent_cldstop() and performed while holding both
-tasklist_lock and siglock.
+As the real parent may wait(2) and consume the group_exit_code
+anytime, the group_exit_code needs to be saved separately so that it
+can be used when switching from regular sleep to ptrace_stop().  This
+is recorded in the lower 16bits of task->group_stop.
 
-This change puts the initial SIGNAL_NOTIFY_CONT test out of siglock.
-This is safe as the bit set by the waker are guaranteed to be visible
-to the woken up task.
+If a task is already stopped and there's no intervening SIGCONT, a
+ptrace request immediately following a successful PTRACE_ATTACH should
+always succeed even if the tracer doesn't wait(2) for attach
+completion; however, with this change, the tracee might still be
+TASK_RUNNING trying to enter TASK_TRACED which would cause the
+following request to fail with -ESRCH.
 
-Oleg spotted the above race condition caused by ptrace state and
-signal state protected by different locks.
+This intermediate state is hidden from userland by setting
+GROUP_STOP_TRAPPING on attach and making ptrace_check_attach() wait
+for it to clear.  Completing the transition or any event which clears
+the group stop states of the task clears the bit and wakes up the
+ptracer if waiting.
+
+Oleg:
+
+* Spotted a race condition where a task may retry group stop without
+  proper bookkeeping.  Fixed by redoing bookkeeping on retry.
+
+* Pointed out the userland visible intermediate state.  Fixed with
+  GROUP_STOP_TRAPPING.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Roland McGrath <roland@redhat.com>
+Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
 ---
- include/linux/sched.h |    1 +
- kernel/ptrace.c       |   36 ++++++++++++++++++++++++++++++++++++
- kernel/signal.c       |   49 ++++++++++++++++++++++++++++---------------------
- 3 files changed, 65 insertions(+), 21 deletions(-)
+ include/linux/sched.h |    2 +
+ kernel/ptrace.c       |   63 ++++++++++++++++++++++++++++++++++++++++++------
+ kernel/signal.c       |   62 ++++++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 112 insertions(+), 15 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7a26e7d..ed7725b 100644
+index c2538dd..7045c34 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -654,6 +654,7 @@ struct signal_struct {
- #define SIGNAL_UNKILLABLE	0x00000040 /* for init: ignore fatal signals */
+@@ -1760,8 +1760,10 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ /*
+  * task->group_stop flags
+  */
++#define GROUP_STOP_SIGMASK	0xffff    /* signr of the last group stop */
+ #define GROUP_STOP_PENDING	(1 << 16) /* task should stop for group stop */
+ #define GROUP_STOP_CONSUME	(1 << 17) /* consume group stop count */
++#define GROUP_STOP_TRAPPING	(1 << 18) /* switching from STOPPED to TRACED */
  
- #define SIGNAL_NOTIFY_STOP	0x00000100 /* notify parent of group stop */
-+#define SIGNAL_NOTIFY_CONT	0x00000200 /* notify parent of continuation */
+ extern void task_clear_group_stop(struct task_struct *task);
  
- /* If true, all threads except ->group_exit_task have pending SIGKILL */
- static inline int signal_group_exit(const struct signal_struct *sig)
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 6ac12f4..dba6aeb 100644
+index 99bbaa3..5191301 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
-@@ -52,6 +52,7 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent)
- void __ptrace_unlink(struct task_struct *child)
- {
- 	struct signal_struct *sig = child->signal;
-+	bool woken_up = false;
+@@ -49,14 +49,14 @@ static void ptrace_untrace(struct task_struct *child)
+ 	spin_lock(&child->sighand->siglock);
+ 	if (task_is_traced(child)) {
+ 		/*
+-		 * If the group stop is completed or in progress,
+-		 * this thread was already counted as stopped.
++		 * If group stop is completed or in progress, it should
++		 * participate in the group stop.  Set GROUP_STOP_PENDING
++		 * before kicking it.
+ 		 */
+ 		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
+ 		    child->signal->group_stop_count)
+-			__set_task_state(child, TASK_STOPPED);
+-		else
+-			signal_wake_up(child, 1);
++			child->group_stop |= GROUP_STOP_PENDING;
++		signal_wake_up(child, 1);
+ 	}
+ 	spin_unlock(&child->sighand->siglock);
+ }
+@@ -79,6 +79,12 @@ void __ptrace_unlink(struct task_struct *child)
+ 		ptrace_untrace(child);
+ }
  
- 	BUG_ON(!child->ptrace);
++static int ptrace_wait_trap(void *flags)
++{
++	schedule();
++	return 0;
++}
++
+ /*
+  * Check that we have indeed attached to the thing..
+  */
+@@ -93,6 +99,7 @@ int ptrace_check_attach(struct task_struct *child, int kill)
+ 	 * we are sure that this is our traced child and that can only
+ 	 * be changed by us so it's not changing right after this.
+ 	 */
++relock:
+ 	read_lock(&tasklist_lock);
+ 	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
+ 		ret = 0;
+@@ -101,10 +108,30 @@ int ptrace_check_attach(struct task_struct *child, int kill)
+ 		 * does ptrace_unlink() before __exit_signal().
+ 		 */
+ 		spin_lock_irq(&child->sighand->siglock);
+-		if (task_is_stopped(child))
+-			child->state = TASK_TRACED;
+-		else if (!task_is_traced(child) && !kill)
++		if (!task_is_traced(child) && !kill) {
++			/*
++			 * If GROUP_STOP_TRAPPING is set, it is known that
++			 * the tracee will enter either TRACED or the bit
++			 * will be cleared in definite amount of (userland)
++			 * time.  Wait while the bit is set.
++			 *
++			 * This hides PTRACE_ATTACH initiated transition
++			 * from STOPPED to TRACED from userland.
++			 */
++			if (child->group_stop & GROUP_STOP_TRAPPING) {
++				const int bit = ilog2(GROUP_STOP_TRAPPING);
++				DEFINE_WAIT_BIT(wait, &child->group_stop, bit);
++
++				spin_unlock_irq(&child->sighand->siglock);
++				read_unlock(&tasklist_lock);
++
++				wait_on_bit(&child->group_stop, bit,
++					    ptrace_wait_trap,
++					    TASK_UNINTERRUPTIBLE);
++				goto relock;
++			}
+ 			ret = -ESRCH;
++		}
+ 		spin_unlock_irq(&child->sighand->siglock);
+ 	}
+ 	read_unlock(&tasklist_lock);
+@@ -204,6 +231,26 @@ int ptrace_attach(struct task_struct *task)
+ 	__ptrace_link(task, current);
+ 	send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
  
-@@ -66,6 +67,33 @@ void __ptrace_unlink(struct task_struct *child)
- 		if (sig->flags & SIGNAL_STOP_STOPPED || sig->group_stop_count)
- 			child->group_stop |= GROUP_STOP_PENDING;
- 		signal_wake_up(child, 1);
-+		woken_up = true;
++	spin_lock(&task->sighand->siglock);
++
++	/*
++	 * If the task is already STOPPED, set GROUP_STOP_PENDING and
++	 * TRAPPING, and kick it so that it transits to TRACED.  TRAPPING
++	 * will be cleared if the child completes the transition or any
++	 * event which clears the group stop states happens.  The bit is
++	 * waited by ptrace_check_attach() to hide the transition from
++	 * userland.
++	 *
++	 * The following is safe as both transitions in and out of STOPPED
++	 * are protected by siglock.
++	 */
++	if (task_is_stopped(task)) {
++		task->group_stop |= GROUP_STOP_PENDING | GROUP_STOP_TRAPPING;
++		signal_wake_up(task, 1);
 +	}
 +
-+	/*
-+	 * SIGNAL_CLD_MASK is cleared only on a stop signal or, if
-+	 * notification isn't pending, ptrace attach.  If any bit is
-+	 * set,
-+	 *
-+	 * - SIGCONT notification was pending before attach or there
-+	 *   was one or more SIGCONT notifications while tracing.
-+	 *
-+	 * - And, there hasn't been any stop signal since the last
-+	 *   pending SIGCONT notification.
-+	 *
-+	 * Combined, it means that the tracee owes a SIGCONT
-+	 * notification to the real parent.
-+	 */
-+	if (sig->flags & SIGNAL_CLD_MASK) {
-+		sig->flags |= SIGNAL_NOTIFY_CONT;
-+		/*
-+		 * Force the tracee into signal delivery path so that
-+		 * the notification is delievered ASAP.  This wakeup
-+		 * is unintrusive as SIGCONT delivery would have
-+		 * caused the same effect.
-+		 */
-+		if (!woken_up)
-+			signal_wake_up(child, 0);
- 	}
- 
- 	child->ptrace = 0;
-@@ -245,6 +273,14 @@ int ptrace_attach(struct task_struct *task)
- 		signal_wake_up(task, 1);
- 	}
- 
-+	/*
-+	 * Clear SIGNAL_CLD_MASK if NOTIFY_CONT is not set.  This is
-+	 * used to preserve SIGCONT notification across ptrace
-+	 * attach/detach.  Read the comment in __ptrace_unlink().
-+	 */
-+	if (!(task->signal->flags & SIGNAL_NOTIFY_CONT))
-+		task->signal->flags &= ~SIGNAL_CLD_MASK;
++	spin_unlock(&task->sighand->siglock);
 +
- 	spin_unlock(&task->sighand->siglock);
- 
  	retval = 0;
+ unlock_tasklist:
+ 	write_unlock_irq(&tasklist_lock);
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 3196367..7b6f972 100644
+index a6bc4cf..6d93a3f 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -832,7 +832,8 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
- 			 * will take ->siglock, notice SIGNAL_CLD_MASK, and
- 			 * notify its parent. See get_signal_to_deliver().
- 			 */
--			signal->flags = why | SIGNAL_STOP_CONTINUED;
-+			why |= SIGNAL_STOP_CONTINUED | SIGNAL_NOTIFY_CONT;
-+			signal->flags = why;
- 			signal->group_stop_count = 0;
- 			signal->group_exit_code = 0;
- 		} else {
-@@ -1603,6 +1604,8 @@ int do_notify_parent(struct task_struct *tsk, int sig)
-  * Depending on @why and other conditions, the notification might be
-  * skipped.
-  *
-+ * CLD_CONTINUED	: Notify once if SIGNAL_NOTIFY_CONT is set.
+@@ -224,10 +224,29 @@ static inline void print_dropped_signal(int sig)
+ }
+ 
+ /**
++ * task_clear_group_stop_trapping - clear group stop trapping bit
++ * @task: target task
 + *
-  * CLD_STOPPED		: If ptraced, always notify; otherwise, notify
-  *			  once if SIGNAL_NOTIFY_STOP is set.
++ * If GROUP_STOP_TRAPPING is set, it's cleared and wake_up_bit() is called
++ * on the bit.
++ *
++ * CONTEXT:
++ * Must be called with @task->sighand->siglock held.
++ */
++static void task_clear_group_stop_trapping(struct task_struct *task)
++{
++	if (unlikely(task->group_stop & GROUP_STOP_TRAPPING)) {
++		task->group_stop &= ~GROUP_STOP_TRAPPING;
++		wake_up_bit(&task->group_stop, ilog2(GROUP_STOP_TRAPPING));
++	}
++}
++
++/**
+  * task_clear_group_stop - clear pending group stop
+  * @task: target task
   *
-@@ -1639,7 +1642,24 @@ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
+- * Clear group stop states for @task.
++ * Clear group stop pending state for @task.  All group stop states except
++ * for the recorded last stop signal are cleared.
+  *
+  * CONTEXT:
+  * Must be called with @task->sighand->siglock held.
+@@ -235,6 +254,7 @@ static inline void print_dropped_signal(int sig)
+ void task_clear_group_stop(struct task_struct *task)
+ {
+ 	task->group_stop &= ~(GROUP_STOP_PENDING | GROUP_STOP_CONSUME);
++	task_clear_group_stop_trapping(task);
+ }
  
- 	switch (why) {
- 	case CLD_CONTINUED:
--		notify = why;
-+		/*
-+		 * Notify once if NOTIFY_CONT is set regardless of ptrace.
-+		 * NOTIFY_CONT will be reinstated on detach if necessary.
-+		 */
-+		if (!(sig->flags & SIGNAL_NOTIFY_CONT))
-+			break;
-+
-+		/*
-+		 * If ptraced, always report CLD_CONTINUED; otherwise,
-+		 * prepare_signal(SIGCONT) encodes the CLD_ si_code into
-+		 * SIGNAL_CLD_MASK bits.
-+		 */
-+		if (task_ptrace(tsk) || (sig->flags & SIGNAL_CLD_CONTINUED))
-+			notify = CLD_CONTINUED;
-+		else
-+			notify = CLD_STOPPED;
-+
-+		sig->flags &= ~SIGNAL_NOTIFY_CONT;
- 		break;
- 
- 	case CLD_STOPPED:
-@@ -2015,31 +2035,18 @@ relock:
- 	 */
- 	try_to_freeze();
- 
--	spin_lock_irq(&sighand->siglock);
- 	/*
--	 * Every stopped thread goes here after wakeup. Check to see if
--	 * we should notify the parent, prepare_signal(SIGCONT) encodes
--	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
-+	 * Every stopped thread should go through this function after
-+	 * waking up.  Check to see if we should notify the parent.
- 	 */
--	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
--		int why;
--
--		if (task_ptrace(current) ||
--		    (signal->flags & SIGNAL_CLD_CONTINUED))
--			why = CLD_CONTINUED;
--		else
--			why = CLD_STOPPED;
--
--		signal->flags &= ~SIGNAL_CLD_MASK;
--
--		spin_unlock_irq(&sighand->siglock);
--
-+	if (unlikely(current->signal->flags & SIGNAL_NOTIFY_CONT)) {
- 		read_lock(&tasklist_lock);
--		do_notify_parent_cldstop(current, why);
-+		do_notify_parent_cldstop(current, CLD_CONTINUED);
- 		read_unlock(&tasklist_lock);
--		goto relock;
+ /**
+@@ -1696,6 +1716,14 @@ static void ptrace_stop(int exit_code, int why, int clear_code, siginfo_t *info)
  	}
  
-+	spin_lock_irq(&sighand->siglock);
+ 	/*
++	 * We're committing to trapping.  Clearing GROUP_STOP_TRAPPING and
++	 * transition to TASK_TRACED should be atomic with respect to
++	 * siglock.  Do it after the arch hook as siglock is released and
++	 * regrabbed across it.
++	 */
++	task_clear_group_stop_trapping(current);
 +
- 	for (;;) {
- 		struct k_sigaction *ka;
- 		/*
++	/*
+ 	 * If @why is CLD_STOPPED, we're trapping to participate in a group
+ 	 * stop.  Do the bookkeeping.  Note that if SIGCONT was delievered
+ 	 * while siglock was released for the arch hook, PENDING could be
+@@ -1790,6 +1818,9 @@ static int do_signal_stop(int signr)
+ 		unsigned int gstop = GROUP_STOP_PENDING | GROUP_STOP_CONSUME;
+ 		struct task_struct *t;
+ 
++		/* signr will be recorded in task->group_stop for retries */
++		WARN_ON_ONCE(signr & ~GROUP_STOP_SIGMASK);
++
+ 		if (!likely(sig->flags & SIGNAL_STOP_DEQUEUED) ||
+ 		    unlikely(signal_group_exit(sig)))
+ 			return 0;
+@@ -1799,22 +1830,28 @@ static int do_signal_stop(int signr)
+ 		 */
+ 		sig->group_exit_code = signr;
+ 
+-		current->group_stop = gstop;
++		current->group_stop &= ~GROUP_STOP_SIGMASK;
++		current->group_stop |= signr | gstop;
+ 		sig->group_stop_count = 1;
+-		for (t = next_thread(current); t != current; t = next_thread(t))
++		for (t = next_thread(current); t != current;
++		     t = next_thread(t)) {
++			t->group_stop &= ~GROUP_STOP_SIGMASK;
+ 			/*
+ 			 * Setting state to TASK_STOPPED for a group
+ 			 * stop is always done with the siglock held,
+ 			 * so this check has no races.
+ 			 */
+ 			if (!(t->flags & PF_EXITING) && !task_is_stopped(t)) {
+-				t->group_stop = gstop;
++				t->group_stop |= signr | gstop;
+ 				sig->group_stop_count++;
+ 				signal_wake_up(t, 0);
+-			} else
++			} else {
+ 				task_clear_group_stop(t);
++				t->group_stop |= signr;
++			}
++		}
+ 	}
+-
++retry:
+ 	current->exit_code = sig->group_exit_code;
+ 	__set_current_state(TASK_STOPPED);
+ 
+@@ -1842,7 +1879,18 @@ static int do_signal_stop(int signr)
+ 
+ 		spin_lock_irq(&current->sighand->siglock);
+ 	} else
+-		ptrace_stop(current->exit_code, CLD_STOPPED, 0, NULL);
++		ptrace_stop(current->group_stop & GROUP_STOP_SIGMASK,
++			    CLD_STOPPED, 0, NULL);
++
++	/*
++	 * GROUP_STOP_PENDING could be set if another group stop has
++	 * started since being woken up or ptrace wants us to transit
++	 * between TASK_STOPPED and TRACED.  Retry group stop.
++	 */
++	if (current->group_stop & GROUP_STOP_PENDING) {
++		WARN_ON_ONCE(!(current->group_stop & GROUP_STOP_SIGMASK));
++		goto retry;
++	}
+ 
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 
 -- 
 1.7.1
 
