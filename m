@@ -1,177 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab0LFVco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 16:32:44 -0500
-Received: from www.tglx.de ([62.245.132.106]:34456 "EHLO www.tglx.de"
+	id S1754065Ab0LFVdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 16:33:21 -0500
+Received: from serv04.lahn.de ([213.239.197.57]:42525 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab0LFVcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 16:32:43 -0500
-Date: Mon, 6 Dec 2010 22:31:35 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Drake <dsd@laptop.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andres Salomon <dilinger@queued.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH v5 resend] OLPC: Add XO-1 suspend/resume support
-In-Reply-To: <20101203141828.33E8F9D401B@zog.reactivated.net>
-Message-ID: <alpine.LFD.2.00.1012062119350.2653@localhost6.localdomain6>
-References: <20101203141828.33E8F9D401B@zog.reactivated.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751794Ab0LFVdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 16:33:19 -0500
+Date: Mon, 6 Dec 2010 22:27:03 +0100
+From: Michael Leun <lkml20101129@newton.leun.net>
+To: Jesse Gross <jesse@nicira.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
+ used
+Message-ID: <20101206222703.32fbe852@xenia.leun.net>
+In-Reply-To: <AANLkTikKkAesHc4Fi4SwAkV0e65D0TQRztrRYoDNu3MP@mail.gmail.com>
+References: <20101129201716.1d0257c4@xenia.leun.net>
+	<4CF442FA.4070701@candelatech.com>
+	<20101130095944.41b5f7b6@xenia.leun.net>
+	<1291108809.2904.3.camel@edumazet-laptop>
+	<20101201111716.424fb771@xenia.leun.net>
+	<1291200914.2856.546.camel@edumazet-laptop>
+	<20101205030712.36149bc2@xenia.leun.net>
+	<1291536233.2806.102.camel@edumazet-laptop>
+	<20101205105528.49fa9a9f@xenia.leun.net>
+	<20101205114404.7c0cddc2@xenia.leun.net>
+	<AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
+	<20101206203437.54b550e0@xenia.leun.net>
+	<AANLkTikKkAesHc4Fi4SwAkV0e65D0TQRztrRYoDNu3MP@mail.gmail.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Dec 2010, Daniel Drake wrote:
+On Mon, 6 Dec 2010 12:04:48 -0800
+Jesse Gross <jesse@nicira.com> wrote:
 
-> Add code needed for basic suspend/resume of the XO-1 laptop.
+> On Mon, Dec 6, 2010 at 11:34 AM, Michael Leun
+> <lkml20101129@newton.leun.net> wrote:
+> > On Mon, 6 Dec 2010 10:14:55 -0800
+> > Jesse Gross <jesse@nicira.com> wrote:
+> >
+> >> On Sun, Dec 5, 2010 at 2:44 AM, Michael Leun
+> >> <lkml20101129@newton.leun.net> wrote:
+> >> > Hi Jesse,
+> >> >
+> >> > On Sun, 5 Dec 2010 10:55:28 +0100
+> >> > Michael Leun <lkml20101129@newton.leun.net> wrote:
+> >> >
+> >> >> On Sun, 05 Dec 2010 09:03:53 +0100
+> >> >> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >> >>
+> >> >> > > But on
+> >> >> > >
+> >> >> > > hpdl320g5:/home/ml # lspci | grep Eth
+> >> >> > > 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme
+> >> >> > > BCM5714 Gigabit Ethernet (rev a3) 03:04.1 Ethernet
+> >> >> > > controller: Broadcom Corporation NetXtreme BCM5714 Gigabit
+> >> >> > > Ethernet (rev a3)
+> >> >> > >
+> >> >> > > the good message is that it also does not crash, but with
+> >> >> > > tcpdump I see vlan tags when no vlan devices configured on
+> >> >> > > the respective eth, if so I do not see tags anymore vlan
+> >> >> > > tags on the trunk interface.
+> >> >> > >
+> >> >> >
+> >> >> > For all these very specific needs, you'll have to try 2.6.37
+> >> >> > I am afraid. Jesse did huge changes to exactly make this
+> >> >> > working, we wont backport this to 2.6.36, but only avoid
+> >> >> > crashes.
+> >> >>
+> >> >> OK, I'm perfectly fine with that, of course, actually nice to
+> >> >> hear that the issue already is addressed.
+> >> >>
+> >> >> Likely I'll give some rc an shot on this machine (maybe over
+> >> >> christmas), but it is an production machine (acutally testing
+> >> >> other devices is the "product" produced on this machine), so
+> >> >> unfortunately I'm not that free in when and what I can do (but
+> >> >> the possibility to, for example, bridge the trunk interface
+> >> >> would make testing easier, that justifies something...).
+> >> >>
+> >> >> Thank you all very much for your work.
+> >> >
+> >> > Are these changes already in 2.6.37-rc4? Or, if not are they
+> >> > somewhere publically available already?
+> >> >
+> >> > I looked into various changelogs but have some difficulties to
+> >> > identify them...
+> >> >
+> >> > Maybe I have some time next days to give them an try...
+> >>
+> >> Yes, all of the existing vlan changes are in 2.6.37-rc4.  There
+> >> were a number of patches but the main one was
+> >> 3701e51382a026cba10c60b03efabe534fba4ca4
+> >
+> > Then, I'm afraid, this (seeing vlan tags even if vlan interfaces are
+> > configured) does not work on HP DL320G5 (for exact description and
+> > examples please see my mail a few days ago).
 > 
-> As distro kernels would prefer to build XO-1 support modular, we have
+> What driver are you using?  Is it tg3?
+> 
+> The vlan changes that I made unfortunately require updating drivers to
+> get the full benefit.  I've been busy lately so tg3 hasn't yet been
+> updated.
+> 
+> I know that tg3 does some things differently depending on whether a
+> vlan group is configured, so that would likely be the cause of what
+> you are seeing.  I'd have to look at it in more detail to be sure
+> though.
+> 
+> You said that everything works on the other Broadcom NIC that you
+> tested?  Maybe it uses bnx2 instead?
+> 
 
-And I would prefer to have a pony. 
+Both machines use tg3 / 2.6.36.1 - one is opensuse, one ubuntu (but
+this should not matter, I think).
 
-> had to export suspend_set_ops() and create an exported function for
-> reading the address of the initial page table.
+If I can do anything to support your investigations / work (most
+likely testing / providing information) please let me know.
 
-This is nuts. We export stuff just to save 8k binary blob in the
-kernel image of which at least 4k are wasted by completely unnecessary
-alignment. The real code size of all this stuff (ignore the module
-magic) is less than 1k.
+-- 
+MfG,
 
-> Andrew, this is the latest version of the patch causing the compilation
-> failure detected through -mm inclusion (thanks). It also integrates new
-> review comments from Thomas Gleixner, and has since passed another silent
-> week without feedback from x86 hackers :(
+Michael Leun
 
-It's been in my queue for review. I'm not a machine.
- 
->  
-> +pgd_t *get_initial_page_table(void)
-> +{
-> +	return initial_page_table;
-> +}
-> +EXPORT_SYMBOL_GPL(get_initial_page_table);
-
-You export a function to get the address of initial_page_table?
-
-Then you call that function from your wakeup context. Does that
-context have a proper stack for calling a c-function? 
-
-And you call it _BEFORE_ you restored the control registers. GDT et
-al. are not restored at that point either.
-
-Further this call might end up via mcount in the low level tracing
-code or in the tracer itself. How's that supposed to work with wrong
-crX/GDT... contents? Not at all.
-
-> +ALIGN
-> +	.align 4096
-
-What's the reason for this alignment? Firmware stupidity? If yes, it
-needs to be documented. If no, it needs to be removed.
-
-> +wakeup_start:
-> +	cli
-> +	cld
-
-That's silly. You clear the stuff below anyway.
-
-> +	# Clear any dangerous flags
-> +
-> +	pushl $0
-> +	popfl
-> +
-> +	writepost 0x31
-> +
-> +	# Set up %cr3
-> +	call get_initial_page_table
-
-See above.
-
-> +	sub $__PAGE_OFFSET, %eax
-> +	movl %eax, %cr3
-> +
-> +	movl saved_cr4, %eax
-> +	movl %eax, %cr4
-> +
-> +	movl saved_cr0, %eax
-> +	movl %eax, %cr0
-> +
-> +	jmp 1f
-
-What's the point of this ? It's just wrong.
-
-> +1:
-> +	ljmpl $__KERNEL_CS,$wakeup_return
-
-And this? This normalizes CS _BEFORE_ restoring GDT. How is that
-supposed to work if GDT is not correct because it has not been
-restored ?
-
-> +
-> +.org 0x1000
-
-And this ? 
-
-AFAICT it's useless waste of space. If not it's there for a completely
-undocumented reason. Either way it needs documenting or fixing.
-
-> +wakeup_return:
-> +	movw    $__KERNEL_DS, %ax
-> +	movw    %ax, %ss
-
-> --- /dev/null
-> +++ b/arch/x86/platform/olpc/xo1.c
-> +
-> +#define PMS_BAR                4
-> +#define ACPI_BAR       5
-> +
-> +/* PMC registers (PMS block) */
-> +#define PM_SCLK                0x10
-> +#define PM_IN_SLPCTL   0x20
-> +#define PM_WKXD                0x34
-> +#define PM_WKD         0x30
-> +#define PM_SSC         0x54
-> +
-> +/* PM registers (ACPI block) */
-> +#define PM1_STS                0x00
-> +#define PM1_CNT                0x08
-> +#define PM_GPE0_STS    0x18
-> +
-> +#define CS5536_PM_PWRBTN (1 << 8)
-
-Please move these to the header file(s) which contain(s) the other
-OLPC/CS5536 defines?
-
-> +
-> +extern void do_olpc_suspend_lowlevel(void);
-
-No externs in c files. Move that to the appropriate header please.
-
-> +
-> +	/*
-> +	 * Take a reference on ourself to prevent module unloading. We can't
-> +	 * safely unload after changing the suspend handlers.
-> +	 */
-> +	__module_get(THIS_MODULE);
-
-Another good reason to avoid this module hackery alltogether.
-
-> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-> index 7335952..c320724 100644
-> --- a/kernel/power/suspend.c
-> +++ b/kernel/power/suspend.c
-> @@ -42,6 +42,7 @@ void suspend_set_ops(struct platform_suspend_ops *ops)
->  	suspend_ops = ops;
->  	mutex_unlock(&pm_mutex);
->  }
-> +EXPORT_SYMBOL_GPL(suspend_set_ops);
-
-Has this been acked by the PM folks ?
-
-Thanks,
-
-	tglx
