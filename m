@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab0LFOVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:21:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62836 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab0LFOVV (ORCPT
+	id S1752926Ab0LFO1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:27:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53409 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab0LFO1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:21:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Christoffer Dall <cdall@cs.columbia.edu>
-Subject: Re: [RFC PATCH 06/18] ARM: LPAE: Introduce the 3-level page table format definitions
-Date: Mon, 6 Dec 2010 15:21:20 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com> <201010252025.24128.arnd@arndb.de> <AANLkTimEdNj71v-oiKKho27DWcZbxOWtO6M4eLg2NDRE@mail.gmail.com>
-In-Reply-To: <AANLkTimEdNj71v-oiKKho27DWcZbxOWtO6M4eLg2NDRE@mail.gmail.com>
+	Mon, 6 Dec 2010 09:27:09 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] drivers/char/applicom.c: remove cvs ID and French in-file changelog
+Date: Mon,  6 Dec 2010 15:27:02 +0100
+Message-Id: <1291645622-10430-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012061521.20346.arnd@arndb.de>
-X-Provags-ID: V02:K0:F9koIZIgv7uvfPZ5MZ3OsgTIKph8h3fs+zv+ilJjNeT
- W6fw7Sn7Y4ZnlNRc2rMkrf07aMJuDQ9ZqTKDKGCSi7ZSnleIIT
- 8uPvh9dVtMvZhiO5bdSjBIpsB8oNHPJgl3sqkXGl9CXctmsqNw
- HsZsuvj51EpKHBAourTvQjlLwFAxAFq5HlGM9Enei/T0rvPGvd
- R7Gy7JNNUQOPNG/XoPrZA==
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010, Christoffer Dall wrote:
-> Sorry for jumping in here at such a late hour...
-> >
-> >> > Are there any significant differences to Linux between setting up page
-> >> > tables for a 32 bit VA space or a 40 bit IPA space, other than the
-> >> > size of the PGD?
-> >>
-> >> ...
-> >>
-> >> If KVM would reuse the existing pgd/pmd/pte Linux macros, it would
-> >> indeed be restricted to 32-bit IPA (sizeof(long)). You may need to
-> >> define different macros to use either a pfn or long long as address
-> >> input.
-> 
-> I'm not even sure it would be a big advantage to re-use the macros for
-> KVM. Sure, creating separate macros may duplicate some bit-shifting
-> logic, but my guess is that code will be easier to read if using
-> separate macros for the 2-nd stage translation in KVM. One might also
-> imagine specific virtualization-oriented bits which could be
-> explicitly names or directly targeted in macros that don't have to
-> handle both standard non-virt tables and 2-nd stage translation
-> tables.
-> 
-> At least from my experience writing KVM code, it's difficult enough to
-> make it clear to anyone reading the code which address space exactly
-> is being referenced at which time.
+My script that finds typos always wants to do s/acces/access/ and
+claims that "addresse" is wrong.  While at it remove obsolete cvs id and
+outdated reference to kernel version.
 
-Good point. My thoughts were that we basically treat KVM guests as
-processes with 40 bit virtual address space though, so the kernel
-would be using them directly.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/char/applicom.c |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
 
-> So this depends on what the use would be. True, if you wanted a guest
-> that used more than 4GB of memory AND you wanted QEMU to be able to
-> readily access all of that, then yes, it would be difficult on a
-> 32-bit architecture.
-> 
-> But QEMU doesn't really use the mmap'ed areas backing physical memory
-> for anything - it's merely a way of telling KVM how much physical
-> memory should be given to the guest, and the kernel side conveniently
-> uses get_user_pages() to access that memory. Instead, QEMU could
-> simply call an IOCTL to KVM telling it something like
-> register_user_memory(long long base_phys_addr, long long size); and
-> KVM could just allocate physical pages to back that without them being
-> mapped on the host side. An individual page could be mapped in as
-> needed for emulation and mapped out again. I don't see a huge
-> performance hit for such a solution.
-
-Ok.
+diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
+index 25373df..75c74cf 100644
+--- a/drivers/char/applicom.c
++++ b/drivers/char/applicom.c
+@@ -1,24 +1,6 @@
+ /* Derived from Applicom driver ac.c for SCO Unix                            */
+ /* Ported by David Woodhouse, Axiom (Cambridge) Ltd.                         */
+ /* dwmw2@infradead.org 30/8/98                                               */
+-/* $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $			     */
+-/* This module is for Linux 2.1 and 2.2 series kernels.                      */
+-/*****************************************************************************/
+-/* J PAGET 18/02/94 passage V2.4.2 ioctl avec code 2 reset to les interrupt  */
+-/* ceci pour reseter correctement apres une sortie sauvage                   */
+-/* J PAGET 02/05/94 passage V2.4.3 dans le traitement de d'interruption,     */
+-/* LoopCount n'etait pas initialise a 0.                                     */
+-/* F LAFORSE 04/07/95 version V2.6.0 lecture bidon apres acces a une carte   */
+-/*           pour liberer le bus                                             */
+-/* J.PAGET 19/11/95 version V2.6.1 Nombre, addresse,irq n'est plus configure */
+-/* et passe en argument a acinit, mais est scrute sur le bus pour s'adapter  */
+-/* au nombre de cartes presentes sur le bus. IOCL code 6 affichait V2.4.3    */
+-/* F.LAFORSE 28/11/95 creation de fichiers acXX.o avec les differentes       */
+-/* addresses de base des cartes, IOCTL 6 plus complet                         */
+-/* J.PAGET le 19/08/96 copie de la version V2.6 en V2.8.0 sans modification  */
+-/* de code autre que le texte V2.6.1 en V2.8.0                               */
+-/*****************************************************************************/
+-
  
-> But as you both suggest, 32-bit physical address space is probably
-> going to be more than needed for initial uses of ARM virtual machines.
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+-- 
+1.7.2.3
 
-Right. Note that as long as we keep the guest mapped into the qemu
-address space, we're limited to something between 0.5 and 3 GB of 
-guest physical address space, but even that is likely enough for the
-near future.
-
-	Arnd
