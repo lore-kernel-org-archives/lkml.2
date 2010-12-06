@@ -1,110 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab0LFMwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 07:52:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:49951 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab0LFMwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 07:52:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,305,1288594800"; 
-   d="scan'208,223";a="684319838"
-Date: Mon, 6 Dec 2010 20:24:32 +0800
-From: Yunpeng Gao <yunpeng.gao@intel.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3]mmc: changes to enable runtime PM of mmc core layer
-Message-ID: <20101206122432.GD30654@intel.com>
+	id S1752052Ab0LFMzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 07:55:10 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57728 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab0LFMzI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 07:55:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=t50Qukez2Ui27nkesh9HKVxNummMGQ82YRH0lnWSPdN83KnzgecyvyLMsopXuhUwe8
+         bBQhOpZIQ6GBLjagNA58I64fKsGOZv02L+LEbGA5X+XgRRhb3BLk000zzw4pkNY1rWra
+         3SMVix337BtmQmFVgTb9oLZJPVu9lHEERiAfE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <AANLkTimCQnoY2FmRe4Gcf8vgxp4QanYXftRaD9gvrejy@mail.gmail.com>
+References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
+	<AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
+	<AANLkTikTF9uvKw+48_jJKLAwqp7MJnypvvUsHN3qQ58+@mail.gmail.com>
+	<AANLkTin80q4tGPZ1FefWCUMmhpNKj3_-KZZB12gZvwSA@mail.gmail.com>
+	<AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
+	<AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
+	<1282932708.1946.8.camel@work-vm>
+	<AANLkTina8xAwnGVuPKywsf1qEzpu+rWNbv7JjqAgLqp1@mail.gmail.com>
+	<1284054125.2762.47.camel@localhost.localdomain>
+	<AANLkTimCQnoY2FmRe4Gcf8vgxp4QanYXftRaD9gvrejy@mail.gmail.com>
+Date: Mon, 6 Dec 2010 13:55:07 +0100
+X-Google-Sender-Auth: i0aUmvSo8wfUDFd5ASWZrCmc3wc
+Message-ID: <AANLkTikoyL96JDeXQ+OX7UBpzicZEj0nm6k9G1cKjJtz@mail.gmail.com>
+Subject: Re: System time drifts when processor idle.
+From: jean-philippe francois <jp.francois@cynove.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Lin Ming <lin@ming.vg>, venki@google.com, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/9/13 jean-philippe francois <jp.francois@cynove.com>:
+> 2010/9/9 john stultz <johnstul@us.ibm.com>:
+>> On Fri, 2010-09-03 at 14:23 +0200, jean-philippe francois wrote:
+>>> 2010/8/27 john stultz <johnstul@us.ibm.com>:
+>>> > On Fri, 2010-08-27 at 16:12 +0200, jean-philippe francois wrote:
+>>> >> My Timekeeping bug is still present, here is an updated script and log.
+>>> >> I am willing to make test, but I don't know what kind of debugging
+>>> >> info is needed.
+>>> >>
+>>> >> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
+>>> >> hpet acpi_pm
+>>> >> cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+>>> >> hpet
+>>> >
+>>> > Huh. hpet was not what I would have expected.
+>>> >
+>>> >
+>>> > So first, two experiments:
+>>> >
+>>> > 1) Does booting with "clock=acpi_pm" cause the issue to disappear?
+>>> >
+>>>
+>>> Hi,
+>>>
+>>> The same bug happens with clock=acpi_pm.
+>>> My apologies for a previous mail where I said it was not hapenning with acpi_pm.
+>>>
+>>> With both clock, the timekeeping gap augments by amount of 5 minutes.
+>>
+>> Huh. So this still seems strange, but assuming we're still using the
+>> hpet for irqs, its possible the event somehow gets pushed back 5 minutes
+>> and we miss an timekeeping interval accumulation (with acpi_pm, the
+>> counter wraps ever 5 seconds or so, so we could miss many accumulation
+>> intervals and still be 5 minutes off if the tick timer was late).
+>>
+>> Again, seeing if the issue goes away with nohz=off would be helpful.
+>>
+>
+> It  goes away witj nohz=off
+>
+A little update on this time keeping bug :
+- the system time drifts by amount of 5 minutes
+- it happens with both hpet and acpi_pm as clock source
+- it goes away when booting with nohz=off
+- it goes away when booting with processor.max_cstate=1
 
->From ab869336b1924e9f1d8bdc22aee5c5364941d286 Mon Sep 17 00:00:00 2001
-From: Yunpeng Gao <yunpeng.gao@intel.com>
-Date: Mon, 6 Dec 2010 20:03:00 +0800
-Subject: [PATCH] Do some changes in mmc core layer to enable mmc card runtime pm.
-
-Seems current runtime PM support in mmc core layer has some problems:
-
-1. If host controller is PCI device, then it's possibly that the PCI
-host controller will be runtime suspended immediately after its PCI
-probe. Then it will have trouble when do the following mmc_rescan
-since at that time the function driver (mmc block driver or sdio
-function driver) has not been called and there's no chance to execute
-pm_runtime_get().
-
-2. Currently mmc_host_class (defined in drivers/mmc/core/host.c) is
-parent of mmc_card and child of host controller. But mmc_host_class
-has not implemented the runtime pm APIs of itself. So seems it'll
-cause the mmc runtime PM chain disconnect here.
-
-This patch tries to fix above 2 problems.
-For 1, it adds pm_runtime_get/put at the begging/end of function
-mmc_rescan().
-For2, it calling the pm_runtime_no_callbacks() API to bypass the
-mmc_host_class device.
-
-Signed-off-by: Yunpeng Gao <yunpeng.gao@intel.com>
----
- drivers/mmc/core/core.c |    4 ++++
- drivers/mmc/core/host.c |    3 +++
- 2 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 6286898..2905dac 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -22,6 +22,7 @@
- #include <linux/scatterlist.h>
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -1503,6 +1504,7 @@ void mmc_rescan(struct work_struct *work)
- 
- 	spin_unlock_irqrestore(&host->lock, flags);
- 
-+	pm_runtime_get_sync(host->parent);
- 
- 	mmc_bus_get(host);
- 
-@@ -1598,6 +1600,8 @@ out_fail:
- 		mmc_power_off(host);
- 	}
- out:
-+	pm_runtime_put_sync(host->parent);
-+
- 	if (host->caps & MMC_CAP_NEEDS_POLL)
- 		mmc_schedule_delayed_work(&host->detect, HZ);
- }
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 92e3370..caa9e85 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -19,6 +19,7 @@
- #include <linux/leds.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/pm_runtime.h>
- 
- #include <linux/mmc/host.h>
- #include <linux/mmc/card.h>
-@@ -303,6 +304,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
- 	host->max_blk_size = 512;
- 	host->max_blk_count = PAGE_CACHE_SIZE / 512;
- 
-+	pm_runtime_no_callbacks(&host->class_dev);
-+
- 	return host;
- 
- free:
--- 
-1.6.6.1
-
+Jean-Philippe François
