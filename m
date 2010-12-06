@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0LFD03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 22:26:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32794 "EHLO mx1.redhat.com"
+	id S1752900Ab0LFDv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 22:51:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46261 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab0LFD02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 22:26:28 -0500
-Message-ID: <4CFC57BF.6000903@redhat.com>
-Date: Sun, 05 Dec 2010 22:25:51 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1752438Ab0LFDv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 22:51:57 -0500
+From: Ian Kent <raven@themaw.net>
+Subject: [PATCH] autofs4 - remove ioctl mutex
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        autofs mailing list <autofs@linux.kernel.org>
+Date: Mon, 06 Dec 2010 11:51:23 +0800
+Message-ID: <20101206035123.28966.79954.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v4 6/7] Remove zap_details NULL dependency
-References: <cover.1291568905.git.minchan.kim@gmail.com> <807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
-In-Reply-To: <807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2010 12:29 PM, Minchan Kim wrote:
-> Some functions used zap_details depends on assumption that
-> zap_details parameter should be NULLed if some fields are 0.
->
-> This patch removes that dependency for next patch easy review/merge.
-> It should not chanage behavior.
->
-> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
-> Cc: Rik van Riel<riel@redhat.com>
-> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> Cc: Johannes Weiner<hannes@cmpxchg.org>
-> Cc: Nick Piggin<npiggin@kernel.dk>
-> Cc: Mel Gorman<mel@csn.ul.ie>
-> Cc: Wu Fengguang<fengguang.wu@intel.com>
-> Cc: Hugh Dickins<hughd@google.com>
+With the recent changes to remove the BKL a mutex was added to the
+ioctl entry point for calls to the old ioctl interface. This mutex
+needs to be removed because of the need for the expire ioctl to call
+back to the daemon to perform a umount and receive a completion
+status (via another ioctl).
 
-Acked-by: Rik van Riel <riel@redhat.com>
+This should be fine as the new ioctl interface uses much of the same
+code and it has been used without a mutex for around a year without
+issue, as was the original intention.
+---
 
--- 
-All rights reversed
+ fs/autofs4/root.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
+
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index d5c1401..d34896c 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -980,19 +980,11 @@ static int autofs4_root_ioctl_unlocked(struct inode *inode, struct file *filp,
+ 	}
+ }
+ 
+-static DEFINE_MUTEX(autofs4_ioctl_mutex);
+-
+ static long autofs4_root_ioctl(struct file *filp,
+ 			       unsigned int cmd, unsigned long arg)
+ {
+-	long ret;
+ 	struct inode *inode = filp->f_dentry->d_inode;
+-
+-	mutex_lock(&autofs4_ioctl_mutex);
+-	ret = autofs4_root_ioctl_unlocked(inode, filp, cmd, arg);
+-	mutex_unlock(&autofs4_ioctl_mutex);
+-
+-	return ret;
++	return autofs4_root_ioctl_unlocked(inode, filp, cmd, arg);
+ }
+ 
+ #ifdef CONFIG_COMPAT
+@@ -1002,13 +994,11 @@ static long autofs4_root_compat_ioctl(struct file *filp,
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 	int ret;
+ 
+-	mutex_lock(&autofs4_ioctl_mutex);
+ 	if (cmd == AUTOFS_IOC_READY || cmd == AUTOFS_IOC_FAIL)
+ 		ret = autofs4_root_ioctl_unlocked(inode, filp, cmd, arg);
+ 	else
+ 		ret = autofs4_root_ioctl_unlocked(inode, filp, cmd,
+ 			(unsigned long)compat_ptr(arg));
+-	mutex_unlock(&autofs4_ioctl_mutex);
+ 
+ 	return ret;
+ }
+
