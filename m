@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab0LFHQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 02:16:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15295 "EHLO
+	id S1752211Ab0LFHQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 02:16:41 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:62201 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab0LFHQ3 (ORCPT
+	with ESMTP id S1751918Ab0LFHQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 02:16:29 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6188"; a="65617290"
+	Mon, 6 Dec 2010 02:16:38 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6188"; a="65617305"
 X-IronPort-AV: E=Sophos;i="4.59,303,1288594800"; 
-   d="scan'208";a="15879350"
+   d="scan'208";a="15879355"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 1/5] msm: Secure Channel Manager (SCM) support
-Date: Sun,  5 Dec 2010 23:16:14 -0800
-Message-Id: <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
+Subject: [PATCH 4/5] msm: hotplug: support cpu hotplug on msm
+Date: Sun,  5 Dec 2010 23:16:17 -0800
+Message-Id: <1291619778-30289-5-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>
 References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>
@@ -29,392 +28,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-
-SCM is the protocol used to communicate between the secure and
-non-secure code executing on the applications processor. The
-non-secure side uses a physically contiguous buffer to pass
-information to the secure side; where the buffer conforms to a
-format that is agreed upon by both sides. The use of a buffer
-allows multiple pending requests to be in flight on the secure
-side. It also benefits use cases where the command or response
-buffer contains large chunks of data.
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig  |    4 +
- arch/arm/mach-msm/Makefile |    1 +
- arch/arm/mach-msm/scm.c    |  280 ++++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/scm.h    |   41 +++++++
- 4 files changed, 326 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/scm.c
- create mode 100644 arch/arm/mach-msm/scm.h
+ arch/arm/mach-msm/Makefile  |    2 +
+ arch/arm/mach-msm/hotplug.c |  101 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 103 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/hotplug.c
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 31e5fd6..ab5338f 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -44,6 +44,7 @@ config ARCH_MSM8X60
- 	select CPU_V7
- 	select MSM_V2_TLMM
- 	select MSM_GPIOMUX
-+	select MSM_SCM if SMP
- 
- endchoice
- 
-@@ -164,4 +165,7 @@ config MSM_GPIOMUX
- 
- config MSM_V2_TLMM
- 	bool
-+
-+config MSM_SCM
-+	bool
- endif
 diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index b5a7b07..eed503b 100644
+index 34cd0a8..7a11b4a 100644
 --- a/arch/arm/mach-msm/Makefile
 +++ b/arch/arm/mach-msm/Makefile
-@@ -18,6 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
- obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+@@ -20,6 +20,8 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
  obj-$(CONFIG_MSM_SMD) += last_radio_log.o
-+obj-$(CONFIG_MSM_SCM) += scm.o
+ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
  
++obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
++
  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
  obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
 new file mode 100644
-index 0000000..e09bc94
+index 0000000..4891165
 --- /dev/null
-+++ b/arch/arm/mach-msm/scm.c
-@@ -0,0 +1,280 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -0,0 +1,101 @@
++/*
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
 +
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
++#include <linux/kernel.h>
 +#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/dma-mapping.h>
++#include <linux/smp.h>
++#include <linux/completion.h>
++#include <linux/irq.h>
 +
 +#include <asm/cacheflush.h>
 +
-+#include "scm.h"
++#include <mach/smp.h>
 +
-+#define SCM_ENOMEM		-5
-+#define SCM_EOPNOTSUPP		-4
-+#define SCM_EINVAL_ADDR		-3
-+#define SCM_EINVAL_ARG		-2
-+#define SCM_ERROR		-1
-+#define SCM_INTERRUPTED		1
++static DECLARE_COMPLETION(cpu_killed);
 +
-+static DEFINE_MUTEX(scm_lock);
-+
-+/**
-+ * struct scm_command - one SCM command buffer
-+ * @len: total available memory for command and response
-+ * @buf_offset: start of command buffer
-+ * @resp_hdr_offset: start of response buffer
-+ * @id: command to be executed
-+ *
-+ * An SCM command is layed out in memory as follows:
-+ *
-+ *	------------------- <--- struct scm_command
-+ *	| command header  |
-+ *	------------------- <--- scm_get_command_buffer()
-+ *	| command buffer  |
-+ *	------------------- <--- struct scm_response and
-+ *	| response header |      scm_command_to_response()
-+ *	------------------- <--- scm_get_response_buffer()
-+ *	| response buffer |
-+ *	-------------------
-+ *
-+ * There can be arbitrary padding between the headers and buffers so
-+ * you should always use the appropriate scm_get_*_buffer() routines
-+ * to access the buffers in a safe manner.
-+ */
-+struct scm_command {
-+	u32	len;
-+	u32	buf_offset;
-+	u32	resp_hdr_offset;
-+	u32	id;
-+};
-+
-+/**
-+ * struct scm_response - one SCM response buffer
-+ * @len: total available memory for response
-+ * @buf_offset: start of response data relative to start of scm_response
-+ * @is_complete: indicates if the command has finished processing
-+ */
-+struct scm_response {
-+	u32	len;
-+	u32	buf_offset;
-+	u32 is_complete;
-+};
-+
-+/**
-+ * alloc_scm_command() - Allocate an SCM command
-+ * @cmd_size - size of the command buffer
-+ * @resp_size - size of the response buffer
-+ * @handle - dma handle
-+ *
-+ * Allocate an SCM command, including enough room for the command
-+ * and response headers as well as the command and response buffers.
-+ *
-+ * Returns a valid &scm_command on success or %NULL if the allocation fails.
-+ */
-+static struct scm_command *alloc_scm_command(size_t cmd_size, size_t resp_size,
-+		dma_addr_t *handle)
++static inline void cpu_enter_lowpower(void)
 +{
-+	struct scm_command *cmd;
-+	size_t len = sizeof(*cmd) + sizeof(struct scm_response) + cmd_size +
-+		resp_size;
-+
-+	cmd = dma_alloc_coherent(NULL, len, handle, GFP_KERNEL);
-+	if (cmd) {
-+		cmd->len = len;
-+		cmd->buf_offset = sizeof(*cmd);
-+		cmd->resp_hdr_offset = cmd->buf_offset + cmd_size;
-+	}
-+	return cmd;
-+}
-+
-+/**
-+ * free_scm_command() - Free an SCM command
-+ * @cmd - command to free
-+ * @handle - dma handle
-+ *
-+ * Free an SCM command.
-+ */
-+static inline void free_scm_command(struct scm_command *cmd, dma_addr_t handle)
-+{
-+	dma_free_coherent(NULL, cmd->len, cmd, handle);
-+}
-+
-+/**
-+ * scm_command_to_response() - Get a pointer to a scm_response
-+ * @cmd - command
-+ *
-+ * Returns a pointer to a response for a command.
-+ */
-+static inline struct scm_response *scm_command_to_response(
-+		const struct scm_command *cmd)
-+{
-+	return (void *)cmd + cmd->resp_hdr_offset;
-+}
-+
-+/**
-+ * scm_get_command_buffer() - Get a pointer to a command buffer
-+ * @cmd - command
-+ *
-+ * Returns a pointer to the command buffer of a command.
-+ */
-+static inline void *scm_get_command_buffer(const struct scm_command *cmd)
-+{
-+	return (void *)cmd + cmd->buf_offset;
-+}
-+
-+/**
-+ * scm_get_response_buffer() - Get a pointer to a response buffer
-+ * @rsp - response
-+ *
-+ * Returns a pointer to a response buffer of a response.
-+ */
-+static inline void *scm_get_response_buffer(const struct scm_response *rsp)
-+{
-+	return (void *)rsp + rsp->buf_offset;
-+}
-+
-+static int scm_remap_error(int err)
-+{
-+	switch (err) {
-+	case SCM_ERROR:
-+		return -EIO;
-+	case SCM_EINVAL_ADDR:
-+	case SCM_EINVAL_ARG:
-+		return -EINVAL;
-+	case SCM_EOPNOTSUPP:
-+		return -EOPNOTSUPP;
-+	case SCM_ENOMEM:
-+		return -ENOMEM;
-+	}
-+	return -EINVAL;
-+}
-+
-+static u32 smc(dma_addr_t cmd_addr)
-+{
-+	int context_id;
-+	register u32 r0 asm("r0") = 1;
-+	register u32 r1 asm("r1") = (u32)&context_id;
-+	register u32 r2 asm("r2") = (u32)cmd_addr;
-+	asm(
-+		__asmeq("%0", "r0")
-+		__asmeq("%1", "r0")
-+		__asmeq("%2", "r1")
-+		__asmeq("%3", "r2")
-+		"smc	#0	@ switch to secure world\n"
-+		: "=r" (r0)
-+		: "r" (r0), "r" (r1), "r" (r2)
-+		: "r3");
-+	return r0;
-+}
-+
-+static int __scm_call(const dma_addr_t cmd)
-+{
-+	int ret;
-+
-+	/*
-+	 * Flush the entire cache here so callers don't have to remember
-+	 * to flush the cache when passing physical addresses to the secure
-+	 * side in the buffer.
-+	 */
 +	flush_cache_all();
-+	do {
-+		ret = smc(cmd);
-+		if (ret < 0) {
-+			ret = scm_remap_error(ret);
++}
++
++static inline void cpu_leave_lowpower(void)
++{
++	pen_release = -1;
++}
++
++static inline void platform_do_lowpower(unsigned int cpu)
++{
++	/* Just enter wfe for now. */
++	for (;;) {
++		asm("wfe");
++		if (pen_release == cpu) {
++			/*
++			 * OK, proper wakeup, we're done
++			 */
 +			break;
 +		}
-+	} while (ret == SCM_INTERRUPTED);
 +
-+	return ret;
++		/*
++		 * getting here, means that we have come out of WFI without
++		 * having been woken up - this shouldn't happen
++		 *
++		 * The trouble is, letting people know about this is not really
++		 * possible, since we are currently running incoherently, and
++		 * therefore cannot safely call printk() or anything else
++		*/
++		pr_debug("CPU%u: spurious wakeup call\n", cpu);
++	}
 +}
 +
-+/**
-+ * scm_call() - Send an SCM command
-+ * @svc_id - service identifier
-+ * @cmd_id - command identifier
-+ * @cmd_buf - command buffer
-+ * @cmd_len - length of the command buffer
-+ * @resp_buf - response buffer
-+ * @resp_len - length of the response buffer
-+ *
-+ * Sends a command to the SCM and waits for the command to finish processing.
-+ */
-+int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
-+		void *resp_buf, size_t resp_len)
++int platform_cpu_kill(unsigned int cpu)
 +{
-+	int ret;
-+	struct scm_command *cmd;
-+	struct scm_response *rsp;
-+	dma_addr_t handle;
-+
-+	cmd = alloc_scm_command(cmd_len, resp_len, &handle);
-+	if (!cmd)
-+		return -ENOMEM;
-+
-+	cmd->id = (svc_id << 10) | cmd_id;
-+	if (cmd_buf)
-+		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
-+	wmb();
-+
-+	mutex_lock(&scm_lock);
-+	ret = __scm_call(handle);
-+	mutex_unlock(&scm_lock);
-+	if (ret)
-+		goto out;
-+
-+	rsp = scm_command_to_response(cmd);
-+	do {
-+		rmb();
-+	} while (!rsp->is_complete);
-+
-+	if (resp_buf)
-+		memcpy(resp_buf, scm_get_response_buffer(rsp), resp_len);
-+out:
-+	free_scm_command(cmd, handle);
-+	return ret;
++	return wait_for_completion_timeout(&cpu_killed, 50000);
 +}
-+EXPORT_SYMBOL(scm_call);
 +
-+u32 scm_get_version(void)
-+{
-+	int context_id;
-+	static u32 version = -1;
-+	register u32 r0 asm("r0") = 0x1 << 8;
-+	register u32 r1 asm("r1") = (u32)&context_id;
-+
-+	if (version != -1)
-+		return version;
-+
-+	mutex_lock(&scm_lock);
-+	asm(
-+		__asmeq("%0", "r1")
-+		__asmeq("%1", "r0")
-+		__asmeq("%2", "r1")
-+		"smc	#0	@ switch to secure world\n"
-+		: "=r" (r1)
-+		: "r" (r0), "r" (r1)
-+		: "r2", "r3");
-+	version = r1;
-+	mutex_unlock(&scm_lock);
-+
-+	return version;
-+}
-+EXPORT_SYMBOL(scm_get_version);
-diff --git a/arch/arm/mach-msm/scm.h b/arch/arm/mach-msm/scm.h
-new file mode 100644
-index 0000000..261786b
---- /dev/null
-+++ b/arch/arm/mach-msm/scm.h
-@@ -0,0 +1,41 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++/*
++ * platform-specific code to shutdown a CPU
 + *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are
-+ * met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above
-+ *       copyright notice, this list of conditions and the following
-+ *       disclaimer in the documentation and/or other materials provided
-+ *       with the distribution.
-+ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
-+ *       contributors may be used to endorse or promote products derived
-+ *       from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
-+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
-+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * Called with IRQs disabled
 + */
-+#ifndef __MACH_SCM_H
-+#define __MACH_SCM_H
++void platform_cpu_die(unsigned int cpu)
++{
++#ifdef DEBUG
++	unsigned int this_cpu = hard_smp_processor_id();
 +
-+#define SCM_SVC_BOOT			0x1
-+#define SCM_SVC_PIL			0x2
-+
-+extern int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
-+		void *resp_buf, size_t resp_len);
-+
-+#define SCM_VERSION(major, minor) (((major) << 16) | ((minor) & 0xFF))
-+
-+extern u32 scm_get_version(void);
-+
++	if (cpu != this_cpu) {
++		printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
++			   this_cpu, cpu);
++		BUG();
++	}
 +#endif
++
++	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
++	complete(&cpu_killed);
++
++	/*
++	 * we're ready for shutdown now, so do it
++	 */
++	cpu_enter_lowpower();
++	platform_do_lowpower(cpu);
++
++	/*
++	 * bring this CPU back into the world of cache
++	 * coherency, and then restore interrupts
++	 */
++	cpu_leave_lowpower();
++}
++
++int platform_cpu_disable(unsigned int cpu)
++{
++	/*
++	 * we don't allow CPU 0 to be shutdown (it is still too special
++	 * e.g. clock tick interrupts)
++	 */
++	return cpu == 0 ? -EPERM : 0;
++}
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
