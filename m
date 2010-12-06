@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab0LFXwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:52:14 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:50412 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab0LFXwM (ORCPT
+	id S1753705Ab0LFXzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:55:05 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49010 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab0LFXzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:52:12 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ECKDxlKgKAnhzZL1OYWgm
-Date: Mon, 6 Dec 2010 15:51:58 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: plat-omap: counter_32k: use IS_ERR() instead of
- NULL check
-Message-ID: <20101206235158.GU8345@atomide.com>
-References: <1290791163-21190-1-git-send-email-segoon@openwall.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290791163-21190-1-git-send-email-segoon@openwall.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Dec 2010 18:55:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=pM6EZWnqOqzQQlUY3L5oHKTJ1rQw6/K88Mlk6RHS3nYxgSnsdR4gY5t0OqJiqB2uTz
+         xj7JtUOHPBPyGB76kWIxNviQdbfhIadESZJXXhPAKxSRgZQ/g2+7TzJbT69ZPSukM8dg
+         Tj7ULw7Vs2x2DZYopn1LV128mQKqOlw2ICgRY=
+Subject: Re: acpi_button: random oops on boot
+From: Tobias Karnat <tobias.karnat@googlemail.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        richard.coe@med.ge.com, jslaby@novell.com
+In-Reply-To: <201012061626.45962.bjorn.helgaas@hp.com>
+References: <1291477752.5096.27.camel@Tobias-Karnat>
+	 <201012060928.11307.bjorn.helgaas@hp.com>
+	 <1291676503.24968.25.camel@Tobias-Karnat>
+	 <201012061626.45962.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Dec 2010 00:54:59 +0100
+Message-ID: <1291679699.6246.11.camel@Tobias-Karnat>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vasiliy Kulikov <segoon@openwall.com> [101126 08:56]:
-> clk_get() returns ERR_PTR() on error, not NULL.
+Am Montag, den 06.12.2010, 16:26 -0700 schrieb Bjorn Helgaas:
+> On Monday, December 06, 2010 04:01:43 pm Tobias Karnat wrote:
+> > No, it only crashes on boot (without the printk patch).
+> > If it happens the machine is completely dead, SysRq does not work.
+> > 
+> > However it is definitely the acpi_button module, because removing it
+> > also fixes this.
 > 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  Cannot compile this driver, so it is not tested at all.
+> If it crashes on boot (not when loading an acpi_button module),
+> you must be building acpi_button into the static kernel.
 
-Thanks will merge this.
+It does crash on boot either if built-in to the kernel or as a module,
+However it does not crash if the module is loaded/unloaded after the
+machine has booted.
 
-Tony
+> The acpi_button driver has a fairly complicated add() method.
+> In the absence of a better idea, I might just comment out blocks
+> of it and try to isolate the problem.  For example, take out
+> all the input stuff, take out the wakeup GPE stuff, take out
+> the type/name setup, etc.
 
-> 
->  arch/arm/plat-omap/counter_32k.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/plat-omap/counter_32k.c b/arch/arm/plat-omap/counter_32k.c
-> index 155fe43..c1e0d00 100644
-> --- a/arch/arm/plat-omap/counter_32k.c
-> +++ b/arch/arm/plat-omap/counter_32k.c
-> @@ -164,7 +164,7 @@ static int __init omap_init_clocksource_32k(void)
->  			return -ENODEV;
->  
->  		sync_32k_ick = clk_get(NULL, "omap_32ksync_ick");
-> -		if (sync_32k_ick)
-> +		if (!IS_ERR(sync_32k_ick))
->  			clk_enable(sync_32k_ick);
->  
->  		clocksource_32k.mult = clocksource_hz2mult(32768,
-> -- 
-> 1.7.0.4
-> 
+Couldn't this be a compiler issue?
+Adding some printk's to fix it seems to be insane.
+
+-Tobias
+
