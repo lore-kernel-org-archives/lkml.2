@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab0LFJDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 04:03:18 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33852 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab0LFJDP (ORCPT
+	id S1752211Ab0LFJGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 04:06:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59046 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab0LFJGE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 04:03:15 -0500
-Date: Mon, 6 Dec 2010 14:32:57 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
-        Nikhil Rao <ncrao@google.com>
-Subject: Re: [PATCH v3 1/7] sched: introduce primitives to account for CFS
-	bandwidth tracking
-Message-ID: <20101206090257.GC3704@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20101012074910.GA9893@in.ibm.com> <20101012075023.GB9893@in.ibm.com> <20101013130018.GC3914@balbir.in.ibm.com> <1287042737.29097.153.camel@twins> <20101014123834.GB13048@balbir.in.ibm.com>
+	Mon, 6 Dec 2010 04:06:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Q9X8HBx8FZ2T6HYXGNtCfVXQYqP6cejUK2Rq4B8EWzKR6sP/89Dw5LHg98YvTfvfzC
+         Ig09KFM4mxu1B2FY2xBWtQVk4Z4FlWRAxSEtreSXhZkr7MY2a+r0YC3lg/utSCNHdQ7f
+         zMdcQ708MiZuugxXYGezFYicxoARl9DbZ1lEw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101014123834.GB13048@balbir.in.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTim7brB0JecKXDNddt0am=Um457Kfbm6bRG_yzFM@mail.gmail.com>
+References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
+	<20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
+	<AANLkTinj93zAXJAipB3HjE62Xa1Z=9k9gPBxaT=+MLtg@mail.gmail.com>
+	<20101029172443.61f7b067@pyx>
+	<AANLkTimiyxiKzT=9pKXLFACkc6C=nTD2dtBR7PcgjhOL@mail.gmail.com>
+	<AANLkTim7brB0JecKXDNddt0am=Um457Kfbm6bRG_yzFM@mail.gmail.com>
+Date: Mon, 6 Dec 2010 10:06:02 +0100
+Message-ID: <AANLkTik4T=PsMzB+umSQPLDPmeD-6sebgCtrQRePH_2h@mail.gmail.com>
+Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
+From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
+To: Vitaly Wool <vitalywool@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Marcel Holtmann <marcel@holtmann.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 06:08:34PM +0530, Balbir Singh wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2010-10-14 09:52:17]:
-> 
-> > On Wed, 2010-10-13 at 18:30 +0530, Balbir Singh wrote:
-> > > > +static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
-> > > > +{
-> > > > +	int i;
-> > > > +	static DEFINE_MUTEX(mutex);
-> > > > +
-> > > > +	if (tg == &init_task_group)
-> > > > +		return -EINVAL;
-> > > > +
-> > > > +	if (!period)
-> > > > +		return -EINVAL;
-> > > > +
-> > > > +	/*
-> > > > +	 * Ensure we have at least one tick of bandwidth every period.  This is
-> > > > +	 * to prevent reaching a state of large arrears when throttled via
-> > > > +	 * entity_tick() resulting in prolonged exit starvation.
-> > > > +	 */
-> > > > +	if (NS_TO_JIFFIES(quota) < 1)
-> > > > +		return -EINVAL;
-> > > 
-> > > I hope we document this in the Documentation :)
-> > 
-> > /me went and looked up arrears in a dictionary and wonders why 'debt'
-> > wasn't good enough.
-> > > > +
-> > > > +	mutex_lock(&mutex);
-> > > > +	raw_spin_lock_irq(&tg->cfs_bandwidth.lock);
-> > > > +	tg->cfs_bandwidth.period = ns_to_ktime(period);
-> > > > +	tg->cfs_bandwidth.runtime = tg->cfs_bandwidth.quota = quota;
-> > > > +	raw_spin_unlock_irq(&tg->cfs_bandwidth.lock);
-> > > > +
-> > > > +	for_each_possible_cpu(i) {
-> > > 
-> > > Why not for_each_online_cpu()?
-> > 
-> > Probably could be cured with a hotplug handler, but then you need to
-> > track more state iirc.
-> >
-> 
-> What more state? If a CPU is offline, we never get to it, do we? I
-> think we need to do just an init and destroy - no?
+Hi Vitaly,
 
-Here we essentially initialize tg->cfs_rq[cpu]->quota_used{assigned}
-for all CPUs. Given that we don't destroy tg->cfs_rq[cpu] and tg->se->[cpu]
-when a CPU goes offline, is it really worth to have a notifier to just
-initialize quota_used and quota_assigned when a CPU comes online ?
+2010/12/3 Vitaly Wool <vitalywool@gmail.com>:
+> Hi Par,
+>
+> On Fri, Dec 3, 2010 at 10:16 AM, Par-Gunnar Hjalmdahl
+> <pghatwork@gmail.com> wrote:
+>> 2010/10/29 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+>
+>> By the way, I will soon release a new patch set for CG2900 (hopefully
+>> next week), which contains major rework. It's hard to explain
+>> everything here and now but changes include:
+>>  - Reuse of existing HCI line discipline under /drivers/bluetooth/.
+>> Line discipline has been modified so it is selectable from protocol if
+>> line discipline should register to Bluetooth stack or not.
+>
+> So is it true that if there's the other chip with similar
+> functionality I have to implement support for, I'll have to pretty
+> much duplicate your line discipline driver?
+>
 
-Regards,
-Bharata.
+What will be in the protocol file, i.e. the same level as hci_h4.c,
+hci_bcsp.c, etc, will be to ~80% vendor specific. The only H4 channels
+that are in a standardized specification are the Bluetooth channels
+1-4. Other channels such as FM and GPS are vendor specific. I've seen
+that for example TI has the same channels for FM and GPS, but these
+channels, 8 and 9, are in no way standardized. The CG2900 also carries
+a number of other channels, such as debug and device channels, which
+I'm pretty sure is individual for this chip.
+This identification of the channels is also only one function, even
+though it is an important function. There are also a lot of other code
+regarding baud rate settings, low power handling, etc that I'm
+positive will not apply to chips of other vendors. It is of course
+possible that other chips from ST-Ericsson, current and future, will
+be able to reuse this file, but as I said I doubt that other vendors
+might be able to use it.
 
-> 
-> > > > +		struct cfs_rq *cfs_rq = tg->cfs_rq[i];
-> > > > +		struct rq *rq = rq_of(cfs_rq);
-> > > > +
-> > > > +		raw_spin_lock_irq(&rq->lock);
-> > > > +		init_cfs_rq_quota(cfs_rq);
-> > > > +		raw_spin_unlock_irq(&rq->lock);
-> > > > +	}
-> > > > +	mutex_unlock(&mutex);
-> > > > +
-> > > > +	return 0;
-> > > > +}
-> > 
-> 
-> -- 
-> 	Three Cheers,
-> 	Balbir
+> Isn't it better to have a new line discipline that the standard
+> drivers (H4, LL, ...) will be applicable to?
+>
+> ~Vitaly
+>
+
+I'm not certain what you mean. We are modifying the line discipline a
+bit, but the only thing we have needed to do with existing protocol
+drivers has been to add a boolean parameter for the protocol settings
+(so they will register to the Bluetooth stack). I don't see why we
+should create a new line discipline driver and then move the existing
+protocol drivers to this.
+
+/P-G
