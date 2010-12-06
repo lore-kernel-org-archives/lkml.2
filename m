@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab0LFWGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 17:06:52 -0500
-Received: from mail.perches.com ([173.55.12.10]:2333 "EHLO mail.perches.com"
+	id S1754504Ab0LFWGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 17:06:50 -0500
+Received: from mail.perches.com ([173.55.12.10]:2347 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754415Ab0LFWFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754430Ab0LFWFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Dec 2010 17:05:24 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 23/29] kernel/panic.c: Update warn_slowpath to use %pV
-Date: Mon,  6 Dec 2010 14:05:13 -0800
-Message-Id: <345027d59c242352e7f9dcc319f3a97a21b9dfbe.1291670105.git.joe@perches.com>
+Subject: [PATCH 24/29] kernel: Update WARN uses
+Date: Mon,  6 Dec 2010 14:05:14 -0800
+Message-Id: <405f6d9400e07f78048aa88307c2cfbc5be4849c.1291670105.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <cover.1291670104.git.joe@perches.com>
 References: <cover.1291670104.git.joe@perches.com>
@@ -19,96 +19,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace struct slowpath_args with struct va_format.
-Add KERN_WARNING to output.
-Remove space after pointer in panic declaration.
+Align arguments.
+Add missing newlines.
+Remove KERN_<level>.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- kernel/panic.c |   40 ++++++++++++++++++----------------------
- 1 files changed, 18 insertions(+), 22 deletions(-)
+ kernel/notifier.c      |    2 +-
+ kernel/pm_qos_params.c |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 4c13b1a..8943c8f 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -56,7 +56,7 @@ EXPORT_SYMBOL(panic_blink);
-  *
-  *	This function never returns.
-  */
--NORET_TYPE void panic(const char * fmt, ...)
-+NORET_TYPE void panic(const char *fmt, ...)
- {
- 	static char buf[1024];
- 	va_list args;
-@@ -357,13 +357,9 @@ void oops_exit(void)
- }
+diff --git a/kernel/notifier.c b/kernel/notifier.c
+index 2488ba7..ff6a774 100644
+--- a/kernel/notifier.c
++++ b/kernel/notifier.c
+@@ -85,7 +85,7 @@ static int __kprobes notifier_call_chain(struct notifier_block **nl,
  
- #ifdef WANT_WARN_ON_SLOWPATH
--struct slowpath_args {
--	const char *fmt;
--	va_list args;
--};
+ #ifdef CONFIG_DEBUG_NOTIFIERS
+ 		if (unlikely(!func_ptr_is_kernel_text(nb->notifier_call))) {
+-			WARN(1, "Invalid notifier called!");
++			WARN(1, "Invalid notifier called!\n");
+ 			nb = next_nb;
+ 			continue;
+ 		}
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index aeaa7f8..a7abb8b 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -231,7 +231,7 @@ void pm_qos_add_request(struct pm_qos_request_list *dep,
+ 	int new_value;
  
- static void warn_slowpath_common(const char *file, int line, void *caller,
--				 unsigned taint, struct slowpath_args *args)
-+				 unsigned taint, struct va_format *vaf)
- {
- 	const char *board;
+ 	if (pm_qos_request_active(dep)) {
+-		WARN(1, KERN_ERR "pm_qos_add_request() called for already added request\n");
++		WARN(1, "%s() called for already added request\n", __func__);
+ 		return;
+ 	}
+ 	if (value == PM_QOS_DEFAULT_VALUE)
+@@ -264,7 +264,7 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+ 		return;
  
-@@ -372,10 +368,8 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
- 	if (board)
- 		printk(KERN_WARNING "Hardware name: %s\n", board);
--
--	if (args)
--		vprintk(args->fmt, args->args);
--
-+	if (vaf)
-+		printk(KERN_WARNING "%pV", vaf);
- 	print_modules();
- 	dump_stack();
- 	print_oops_end_marker();
-@@ -384,26 +378,28 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ 	if (!pm_qos_request_active(pm_qos_req)) {
+-		WARN(1, KERN_ERR "pm_qos_update_request() called for unknown object\n");
++		WARN(1, "%s() called for unknown object\n", __func__);
+ 		return;
+ 	}
  
- void warn_slowpath_fmt(const char *file, int line, const char *fmt, ...)
- {
--	struct slowpath_args args;
--
--	args.fmt = fmt;
--	va_start(args.args, fmt);
-+	struct va_format vaf;
-+	va_list va;
-+	va_start(va, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &va;
- 	warn_slowpath_common(file, line, __builtin_return_address(0),
--			     TAINT_WARN, &args);
--	va_end(args.args);
-+			     TAINT_WARN, &vaf);
-+	va_end(va);
- }
- EXPORT_SYMBOL(warn_slowpath_fmt);
+@@ -297,7 +297,7 @@ void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req)
+ 		/* silent return to keep pcm code cleaner */
  
- void warn_slowpath_fmt_taint(const char *file, int line,
- 			     unsigned taint, const char *fmt, ...)
- {
--	struct slowpath_args args;
--
--	args.fmt = fmt;
--	va_start(args.args, fmt);
-+	struct va_format vaf;
-+	va_list va;
-+	va_start(va, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &va;
- 	warn_slowpath_common(file, line, __builtin_return_address(0),
--			     taint, &args);
--	va_end(args.args);
-+			     taint, &vaf);
-+	va_end(va);
- }
- EXPORT_SYMBOL(warn_slowpath_fmt_taint);
+ 	if (!pm_qos_request_active(pm_qos_req)) {
+-		WARN(1, KERN_ERR "pm_qos_remove_request() called for unknown object\n");
++		WARN(1, "%s() called for unknown object\n", __func__);
+ 		return;
+ 	}
  
 -- 
 1.7.3.2.245.g03276.dirty
