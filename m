@@ -1,124 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0LFRSC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:18:02 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:36787 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753336Ab0LFRQk (ORCPT
+	id S1754090Ab0LFRSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:18:04 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:21401 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753257Ab0LFRQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Dec 2010 12:16:40 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: mHhrgUkVM1mVKQ3gcH6My7TBuJr7DYcVhYGuk0TebsCzw81
- ka6WlIOZndYH5Tawl1DiVJ4ofimWpRsc4ir14tfnTKvX8THxG_Xd1gwke_iS
- 4rLNsIUJW9ohTPkTfU8QPSRTHCScctqNUPeyPd2rb03f9eXQ.SKcmDcji.AK
- mND.HV7UovMK23WxI4rc0fAk53t2bGFul0ohXray6E3IseAF_5CpsQ3hKOnx
- pZNl13wzWaZIKEWoE3TbpF.Gq6WUR2XT6LlSk8RoBjFzm.XBDN5wvwu9Itod
- puFgut_rNzraLJvT8fw--
+X-YMail-OSG: NAeXXmkVM1mGiG_NG9D0GJ1ogcq4tQeBVF36sodMarMzJQm
+ O903VV9P1yXZaH54yf9HLQ4U4caXMP7gg9AFyVBxmF3FAzAnD7PA4csHh.Wp
+ Hst0TK4V4WQirm99tiRnjRoUZC4wr4ByuNNjJh1bMEcULyQdcpTwXP_2OzF_
+ GD69c1ldAoMGx9rkC8NnRGJgcWnGm2.QF6x0nl22_8sNfJQAE.KQVOwMUgsX
+ 87jOfbiQnZ2MBFD3EkijXDs9EuI1j8chrgFUCDGkYgota.iCsW7Cb
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101206171638.595205962@linux.com>
+Message-Id: <20101206171637.445023081@linux.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 06 Dec 2010 11:16:22 -0600
+Date: Mon, 06 Dec 2010 11:16:20 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
+Cc: akpm@linux-foundation.org
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [Use cpuops V1 04/11] x86: Use this_cpu_ops for current_cpu_data accesses
+Subject: [Use cpuops V1 02/11] vmstat: Optimize zone counter modifications through the use of this cpu operations
 References: <20101206171618.302060721@linux.com>
-Content-Disposition: inline; filename=cpuops_x86_current_cpu_data
+Content-Disposition: inline; filename=cpuops_vmstat_this_cpu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current_cpu_data accesses are per cpu accesses. We can also use
-this_cpu_ops if a scalar is retrieved.
+this cpu operations can be used to slightly optimize the function. The
+changes will avoid some address calculations and replace them with the
+use of the percpu segment register.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
+If one would have this_cpu_inc_return and this_cpu_dec_return then it
+would be possible to optimize inc_zone_page_state and dec_zone_page_state even
+more.
+
+V1->V2:
+	- Fix __dec_zone_state overflow handling
+	- Use s8 variables for temporary storage.
+
+V2->V3:
+	- Put __percpu annotations in correct places.
+
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    2 +-
- arch/x86/kernel/cpu/intel_cacheinfo.c     |    4 ++--
- arch/x86/kernel/smpboot.c                 |   10 +++++-----
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ mm/vmstat.c |   56 ++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 32 insertions(+), 24 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/smpboot.c
+Index: linux-2.6/mm/vmstat.c
 ===================================================================
---- linux-2.6.orig/arch/x86/kernel/smpboot.c	2010-11-30 11:53:03.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/smpboot.c	2010-11-30 11:57:02.000000000 -0600
-@@ -430,7 +430,7 @@ void __cpuinit set_cpu_sibling_map(int c
- 
- 	cpumask_set_cpu(cpu, c->llc_shared_map);
- 
--	if (current_cpu_data.x86_max_cores == 1) {
-+	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
- 		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
- 		c->booted_cores = 1;
- 		return;
-@@ -1377,7 +1377,7 @@ void play_dead_common(void)
- 
- 	mb();
- 	/* Ack it */
--	__get_cpu_var(cpu_state) = CPU_DEAD;
-+	__this_cpu_write(cpu_state, CPU_DEAD);
- 
- 	/*
- 	 * With physical CPU hotplug, we should halt the cpu
-@@ -1401,7 +1401,7 @@ static inline void mwait_play_dead(void)
- 		return;
- 	if (!cpu_has(&current_cpu_data, X86_FEATURE_CLFLSH))
- 		return;
--	if (current_cpu_data.cpuid_level < CPUID_MWAIT_LEAF)
-+	if (__this_cpu_read(cpu_info.cpuid_level) < CPUID_MWAIT_LEAF)
- 		return;
- 
- 	eax = CPUID_MWAIT_LEAF;
-@@ -1452,7 +1452,7 @@ static inline void mwait_play_dead(void)
- 
- static inline void hlt_play_dead(void)
+--- linux-2.6.orig/mm/vmstat.c	2010-11-29 10:17:28.000000000 -0600
++++ linux-2.6/mm/vmstat.c	2010-11-29 10:36:16.000000000 -0600
+@@ -167,18 +167,20 @@ static void refresh_zone_stat_thresholds
+ void __mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+ 				int delta)
  {
--	if (current_cpu_data.x86 >= 4)
-+	if (__this_cpu_read(cpu_info.x86) >= 4)
- 		wbinvd();
+-	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
+-
+-	s8 *p = pcp->vm_stat_diff + item;
++	struct per_cpu_pageset __percpu *pcp = zone->pageset;
++	s8 __percpu *p = pcp->vm_stat_diff + item;
+ 	long x;
++	long t;
++
++	x = delta + __this_cpu_read(*p);
  
- 	while (1) {
-Index: linux-2.6/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/cpufreq/powernow-k8.c	2010-11-30 11:53:03.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/cpu/cpufreq/powernow-k8.c	2010-11-30 11:53:33.000000000 -0600
-@@ -521,7 +521,7 @@ static void check_supported_cpu(void *_r
+-	x = delta + *p;
++	t = __this_cpu_read(pcp->stat_threshold);
  
- 	*rc = -ENODEV;
+-	if (unlikely(x > pcp->stat_threshold || x < -pcp->stat_threshold)) {
++	if (unlikely(x > t || x < -t)) {
+ 		zone_page_state_add(x, zone, item);
+ 		x = 0;
+ 	}
+-	*p = x;
++	__this_cpu_write(*p, x);
+ }
+ EXPORT_SYMBOL(__mod_zone_page_state);
  
--	if (current_cpu_data.x86_vendor != X86_VENDOR_AMD)
-+	if (__this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_AMD)
- 		return;
+@@ -221,16 +223,19 @@ EXPORT_SYMBOL(mod_zone_page_state);
+  */
+ void __inc_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+-	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
+-	s8 *p = pcp->vm_stat_diff + item;
+-
+-	(*p)++;
++	struct per_cpu_pageset __percpu *pcp = zone->pageset;
++	s8 __percpu *p = pcp->vm_stat_diff + item;
++	s8 v, t;
++
++	__this_cpu_inc(*p);
++
++	v = __this_cpu_read(*p);
++	t = __this_cpu_read(pcp->stat_threshold);
++	if (unlikely(v > t)) {
++		s8 overstep = t >> 1;
  
- 	eax = cpuid_eax(CPUID_PROCESSOR_SIGNATURE);
-Index: linux-2.6/arch/x86/kernel/cpu/intel_cacheinfo.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/intel_cacheinfo.c	2010-11-30 11:53:03.000000000 -0600
-+++ linux-2.6/arch/x86/kernel/cpu/intel_cacheinfo.c	2010-11-30 11:53:33.000000000 -0600
-@@ -266,7 +266,7 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_
- 		line_size = l2.line_size;
- 		lines_per_tag = l2.lines_per_tag;
- 		/* cpu_data has errata corrections for K7 applied */
--		size_in_kb = current_cpu_data.x86_cache_size;
-+		size_in_kb = __this_cpu_read(cpu_info.x86_cache_size);
- 		break;
- 	case 3:
- 		if (!l3.val)
-@@ -288,7 +288,7 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_
- 	eax->split.type = types[leaf];
- 	eax->split.level = levels[leaf];
- 	eax->split.num_threads_sharing = 0;
--	eax->split.num_cores_on_die = current_cpu_data.x86_max_cores - 1;
-+	eax->split.num_cores_on_die = __this_cpu_read(cpu_info.x86_max_cores) - 1;
+-	if (unlikely(*p > pcp->stat_threshold)) {
+-		int overstep = pcp->stat_threshold / 2;
+-
+-		zone_page_state_add(*p + overstep, zone, item);
+-		*p = -overstep;
++		zone_page_state_add(v + overstep, zone, item);
++		__this_cpu_write(*p, - overstep);
+ 	}
+ }
  
+@@ -242,16 +247,19 @@ EXPORT_SYMBOL(__inc_zone_page_state);
  
- 	if (assoc == 0xffff)
+ void __dec_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+-	struct per_cpu_pageset *pcp = this_cpu_ptr(zone->pageset);
+-	s8 *p = pcp->vm_stat_diff + item;
+-
+-	(*p)--;
+-
+-	if (unlikely(*p < - pcp->stat_threshold)) {
+-		int overstep = pcp->stat_threshold / 2;
++	struct per_cpu_pageset __percpu *pcp = zone->pageset;
++	s8 __percpu *p = pcp->vm_stat_diff + item;
++	s8 v, t;
++
++	__this_cpu_dec(*p);
++
++	v = __this_cpu_read(*p);
++	t = __this_cpu_read(pcp->stat_threshold);
++	if (unlikely(v < - t)) {
++		s8 overstep = t >> 1;
+ 
+-		zone_page_state_add(*p - overstep, zone, item);
+-		*p = overstep;
++		zone_page_state_add(v - overstep, zone, item);
++		__this_cpu_write(*p, overstep);
+ 	}
+ }
+ 
 
