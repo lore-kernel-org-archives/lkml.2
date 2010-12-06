@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab0LFXiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:38:46 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:44125 "EHLO smtps.tip.net.au"
+	id S1754661Ab0LFXnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:43:07 -0500
+Received: from ozlabs.org ([203.10.76.45]:32872 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab0LFXip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:38:45 -0500
-Date: Tue, 7 Dec 2010 10:38:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: unsigned commits
-Message-Id: <20101207103839.1110d7ce.sfr@canb.auug.org.au>
-In-Reply-To: <20101206233458.GA3738@srcf.ucam.org>
-References: <20101207103346.fbbcf099.sfr@canb.auug.org.au>
-	<20101206233458.GA3738@srcf.ucam.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__7_Dec_2010_10_38_39_+1100_vl4c3m12DMM/55SQ"
+	id S1753758Ab0LFXmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 18:42:55 -0500
+Message-Id: <20101206234049.880246100@neuling.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 07 Dec 2010 10:40:45 +1100
+From: Michael Neuling <mikey@neuling.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kumar Gala <galak@kernel.crashing.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [RFC/PATCH 2/7] Rearrange include files to make struct call_single_data usable in more places
+References: <20101206234043.083045003@neuling.org>
+Content-Disposition: inline; filename=csd_thread_struct_prepare.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Dec_2010_10_38_39_+1100_vl4c3m12DMM/55SQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We need to put struct call_single_data in the powerpc thread_struct,
+but can't without this.
 
-Hi Matthew,
+The thread_struct is in processor.h.  To add a struct call_single_data
+to the thread_struct asm/processor.h must include linux/smp.h.  When
+linux/smp.h is added to processor.h this creates an include loop via
+with list.h via:
 
-On Mon, 6 Dec 2010 23:34:58 +0000 Matthew Garrett <mjg59@srcf.ucam.org> wro=
-te:
->
-> They're somewhat WIP - I'll shift them to a topic branch.
+  linux/list.h includes: 
+    linux/prefetch.h includes:
+      asm/processor.h (for powerpc) includes:
+        linux/smp.h includes:
+          linux/list.h
 
-Thanks.  They really shouldn't be in linux-next until they are (more or
-less) finished.
+This loops results in an "incomplete list type" compile when using
+struct list_head as used in struct call_single_data.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+This patch rearanges some include files to avoid this loop.
 
---Signature=_Tue__7_Dec_2010_10_38_39_+1100_vl4c3m12DMM/55SQ
-Content-Type: application/pgp-signature
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+---
+ include/linux/call_single_data.h |   14 ++++++++++++++
+ include/linux/list.h             |    4 +++-
+ include/linux/smp.h              |    8 +-------
+ 3 files changed, 18 insertions(+), 8 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Index: linux-lazy/include/linux/call_single_data.h
+===================================================================
+--- /dev/null
++++ linux-lazy/include/linux/call_single_data.h
+@@ -0,0 +1,14 @@
++#ifndef __LINUX_CALL_SINGLE_DATA_H
++#define __LINUX_CALL_SINGLE_DATA_H
++
++#include <linux/list.h>
++
++struct call_single_data {
++	struct list_head list;
++	void (*func) (void *info);
++	void *info;
++	u16 flags;
++	u16 priv;
++};
++
++#endif /* __LINUX_CALL_SINGLE_DATA_H */
+Index: linux-lazy/include/linux/list.h
+===================================================================
+--- linux-lazy.orig/include/linux/list.h
++++ linux-lazy/include/linux/list.h
+@@ -4,7 +4,6 @@
+ #include <linux/types.h>
+ #include <linux/stddef.h>
+ #include <linux/poison.h>
+-#include <linux/prefetch.h>
+ 
+ /*
+  * Simple doubly linked list implementation.
+@@ -16,6 +15,9 @@
+  * using the generic single-entry routines.
+  */
+ 
++#include <linux/prefetch.h>
++#include <asm/system.h>
++
+ #define LIST_HEAD_INIT(name) { &(name), &(name) }
+ 
+ #define LIST_HEAD(name) \
+Index: linux-lazy/include/linux/smp.h
+===================================================================
+--- linux-lazy.orig/include/linux/smp.h
++++ linux-lazy/include/linux/smp.h
+@@ -9,18 +9,12 @@
+ #include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/list.h>
++#include <linux/call_single_data.h>
+ #include <linux/cpumask.h>
+ 
+ extern void cpu_idle(void);
+ 
+ typedef void (*smp_call_func_t)(void *info);
+-struct call_single_data {
+-	struct list_head list;
+-	smp_call_func_t func;
+-	void *info;
+-	u16 flags;
+-	u16 priv;
+-};
+ 
+ /* total number of cpus in this system (may exceed NR_CPUS) */
+ extern unsigned int total_cpus;
 
-iQEcBAEBAgAGBQJM/XP/AAoJEDMEi1NhKgbstxwIAIOksNFTU5UuIX1oKb0ZZpAS
-pYkkERbVD10Fy6nEWygJ75Aq6lv7RaEIyxT5dirxF7PBz288fEPapkj32s+rF8Ik
-dqUoFfMbyw6qP/o9fTaJtX21tVnoZ/L4yVYqX6fwJ3Vc99GoxVZ4y6n8QzV3IKpY
-QLCuFRK6HcNam+gFjDBk5wdTJy52ioo7LswYM0tJ1n2YQ6Q/pb2USeEX3iYdRot6
-LRTTrdusnSFX40iiLdlCkL/vFONOfQcUk2y71LmTyzI7QJAWCO3w3W78OkN8xN+u
-Nkfz48APSqwHrSj9PHpmofsVi/q46TiRXB7sKzUokMwfB/prSdXTxOE3LpPRqDY=
-=CWsL
------END PGP SIGNATURE-----
 
---Signature=_Tue__7_Dec_2010_10_38_39_+1100_vl4c3m12DMM/55SQ--
