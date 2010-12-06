@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab0LFJGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 04:06:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59046 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab0LFJGE convert rfc822-to-8bit (ORCPT
+	id S1752345Ab0LFJGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 04:06:19 -0500
+Received: from lav-w.yar.ru ([193.233.48.101]:39242 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752261Ab0LFJGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 04:06:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q9X8HBx8FZ2T6HYXGNtCfVXQYqP6cejUK2Rq4B8EWzKR6sP/89Dw5LHg98YvTfvfzC
-         Ig09KFM4mxu1B2FY2xBWtQVk4Z4FlWRAxSEtreSXhZkr7MY2a+r0YC3lg/utSCNHdQ7f
-         zMdcQ708MiZuugxXYGezFYicxoARl9DbZ1lEw=
+	Mon, 6 Dec 2010 04:06:17 -0500
+Date: Mon, 6 Dec 2010 12:06:03 +0300
+From: "Alexander V. Lukyanov" <lav@netis.ru>
+To: linux-kernel@vger.kernel.org
+Subject: strange cache reclaim and swap
+Message-ID: <20101206090603.GA13779@lw.yar.ru>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim7brB0JecKXDNddt0am=Um457Kfbm6bRG_yzFM@mail.gmail.com>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
-	<AANLkTinj93zAXJAipB3HjE62Xa1Z=9k9gPBxaT=+MLtg@mail.gmail.com>
-	<20101029172443.61f7b067@pyx>
-	<AANLkTimiyxiKzT=9pKXLFACkc6C=nTD2dtBR7PcgjhOL@mail.gmail.com>
-	<AANLkTim7brB0JecKXDNddt0am=Um457Kfbm6bRG_yzFM@mail.gmail.com>
-Date: Mon, 6 Dec 2010 10:06:02 +0100
-Message-ID: <AANLkTik4T=PsMzB+umSQPLDPmeD-6sebgCtrQRePH_2h@mail.gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-To: Vitaly Wool <vitalywool@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Marcel Holtmann <marcel@holtmann.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vitaly,
+Hello!
 
-2010/12/3 Vitaly Wool <vitalywool@gmail.com>:
-> Hi Par,
->
-> On Fri, Dec 3, 2010 at 10:16 AM, Par-Gunnar Hjalmdahl
-> <pghatwork@gmail.com> wrote:
->> 2010/10/29 Alan Cox <alan@lxorguk.ukuu.org.uk>:
->
->> By the way, I will soon release a new patch set for CG2900 (hopefully
->> next week), which contains major rework. It's hard to explain
->> everything here and now but changes include:
->>  - Reuse of existing HCI line discipline under /drivers/bluetooth/.
->> Line discipline has been modified so it is selectable from protocol if
->> line discipline should register to Bluetooth stack or not.
->
-> So is it true that if there's the other chip with similar
-> functionality I have to implement support for, I'll have to pretty
-> much duplicate your line discipline driver?
->
+I have noticed that linux discards disk cache when it is not really needed.
+Here is vmstat trace:
 
-What will be in the protocol file, i.e. the same level as hci_h4.c,
-hci_bcsp.c, etc, will be to ~80% vendor specific. The only H4 channels
-that are in a standardized specification are the Bluetooth channels
-1-4. Other channels such as FM and GPS are vendor specific. I've seen
-that for example TI has the same channels for FM and GPS, but these
-channels, 8 and 9, are in no way standardized. The CG2900 also carries
-a number of other channels, such as debug and device channels, which
-I'm pretty sure is individual for this chip.
-This identification of the channels is also only one function, even
-though it is an important function. There are also a lot of other code
-regarding baud rate settings, low power handling, etc that I'm
-positive will not apply to chips of other vendors. It is of course
-possible that other chips from ST-Ericsson, current and future, will
-be able to reuse this file, but as I said I doubt that other vendors
-might be able to use it.
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 1  0 150368  56112  46728 358512    0    0   832  1416 17460 18229 14 26 53  6  0
+ 1  1 150360  54284  46940 359472   12    0   672  2760 17488 18465 15 27 53  6  0
+ 0  0 150356  53292  47032 360504    0    0   312  2060 16735 20288 14 27 55  5  0
+ 1  2 150356  51216  47240 362364    0    0  1104  2984 17482 20538 16 27 45 13  0
+ 1  0 150352  49436  47356 364152    4    0   816  1484 17427 18354 15 26 50  8  0
+ 1  1 150344  46252  47628 367136    0    0  1076  1890 17445 21731 15 27 42 16  0
+ 0  0 150344  44268  47752 368916   16    0   776  1772 16639 16545 15 26 51  7  0
+ 0  0 150336  42056  47864 370580    4    0   784  3348 16501 16426 13 23 58  6  0
+ 0  2 150344  66196  46236 347336    0    8   276  3908 16305 17032 13 22 58  7  0
+ 0  0 150420 221500  37140 199684    4   84   976  1592 16626 16129 14 27 50  9  0
+ 1  0 150416 218972  37328 201736    0    0   704  1096 17801 16720 16 28 46 11  0
+ 0  0 152932 251020  34572 171656    4 2528   284  3592 18838 15565 17 27 46 12  0
+ 3  1 153728 258724  33612 165096    4  812   540  5448 17270 17582 15 26 48 11  0
+ 0  0 154300 269484  32716 155428    0  596  1084  2372 17050 14742 15 25 40 22  0
+ 1  0 154300 267348  32860 157520    0    0  1388  1768 17192 13229 17 26 46 10  0
+ 0  4 154256 264840  33024 159896   40    0  1652  1704 17324 17067 18 27 40 16  0
 
-> Isn't it better to have a new line discipline that the standard
-> drivers (H4, LL, ...) will be applicable to?
->
-> ~Vitaly
->
+The strange thing is that it had freed 150M of cache and *then* swapped out
+another 18M. Why? This happens regularly.
 
-I'm not certain what you mean. We are modifying the line discipline a
-bit, but the only thing we have needed to do with existing protocol
-drivers has been to add a boolean parameter for the protocol settings
-(so they will register to the Bluetooth stack). I don't see why we
-should create a new line discipline driver and then move the existing
-protocol drivers to this.
+Another vmstat output:
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 0  0 152740 198420  32820 217080   52    0   620   852 17606 18243 17 25 50  9  0
+ 0  0 152720 194740  32892 219672    8    0   412   728 18256 19845 17 27 52  4  0
+ 1  1 152712 193352  32964 220948    4    0   692   332 15686 19272 15 31 47  8  0
+ 1  1 168064 240668  27628 178640  508 15804  7036 24344 144163 139061 14 26 45 15  0
+ 2  5 170152 259460  26380 160896  244 2216  1316 11656 19073 16941 15 31 21 34  0
+ 1  6 170584 263084  26096 157132  148  528  1044 31464 17949 16048 14 30 38 18  0
+ 1  1 170996 269560  25312 151652  264  500   936  1280 17594 19059 14 26 23 37  0
 
-/P-G
+It started to swap when there are 190M of free memory! No big processes were
+started at the time.
+
+kernel version 2.6.34.7-61.fc13.x86_64 (fedora13).
+Here is my /proc/meminfo:
+MemTotal:        4023864 kB
+MemFree:          132140 kB
+Buffers:           38952 kB
+Cached:           284568 kB
+SwapCached:        46620 kB
+Active:          2360084 kB
+Inactive:         997628 kB
+Active(anon):    2217764 kB
+Inactive(anon):   819796 kB
+Active(file):     142320 kB
+Inactive(file):   177832 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:       8388604 kB
+SwapFree:        8224428 kB
+Dirty:             20416 kB
+Writeback:             0 kB
+AnonPages:       3010196 kB
+Mapped:             5156 kB
+Shmem:              3340 kB
+Slab:             413676 kB
+SReclaimable:     240068 kB
+SUnreclaim:       173608 kB
+KernelStack:        1392 kB
+PageTables:         8488 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    10400536 kB
+Committed_AS:    3166880 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:      561196 kB
+VmallocChunk:   34359125752 kB
+HardwareCorrupted:     0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+DirectMap4k:        9088 kB
+DirectMap2M:     4149248 kB
+
+-- 
+   Alexander.
