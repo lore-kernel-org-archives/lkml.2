@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab0LFFgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 00:36:01 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62074 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab0LFFgA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 00:36:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N5NKt2bIIh1ICzPA4wqLIFF0kzGqcm7s/7aR45ZVG7r1Ah6ipP58RisSDw6/A+QoLP
-         QOtKdeEIWfmsPaodeiq8Cp7f9jm/EdVTJATko/WONl54OIuNBQuDnJyTvqQBQJhd2SxZ
-         AdBj3nOWXHPDNbUQBaBJDebHJAEsihi+R4IuU=
+	id S1751332Ab0LFFgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 00:36:35 -0500
+Received: from smtp1.ist.utl.pt ([193.136.128.21]:48423 "EHLO smtp1.ist.utl.pt"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915Ab0LFFgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 00:36:32 -0500
+Message-ID: <20101206053607.sr8ycy77k08g8g8w@mail.ist.utl.pt>
+Date: Mon, 06 Dec 2010 05:36:07 +0000
+From: United Nations Poverty Alleviation <sara.machado@ist.utl.pt>
+Reply-to: claims_dept@zbavitu.net
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-In-Reply-To: <20101204172840.GC10282@kroah.com>
-References: <20101203210719.GB21223@windriver.com>
-	<20101204172840.GC10282@kroah.com>
-Date: Mon, 6 Dec 2010 14:35:59 +0900
-Message-ID: <AANLkTint4xffGN4RJJ=Rn2XK--AAbM-2MEaVezzV7xJr@mail.gmail.com>
-Subject: Re: Announcement: Plans for v2.6.34-longterm
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org,
-        jason.wessel@windriver.com, Andi Kleen <andi@firstfloor.org>,
-        lwn@lwn.net, Tim Bird <tim.bird@am.sony.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 5, 2010 at 2:28 AM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Dec 03, 2010 at 04:07:19PM -0500, Paul Gortmaker wrote:
->> With that in mind, it is our intention to also maintain a 2.6.34
->> longterm tree.  Jason and I work at Wind River, which already has
->> released products based on v2.6.34, and as such it only makes sense
->> to have a public long-term tree that others who are also based on
->> 2.6.34 can make use of.
->
-> Other than Wind River, what other distros/userbases are using .34 as a
-> platform for their products?
 
-I am not sure companies/platforms(Sony, Google, Meego, and Linaro)
-mentioned below article really made a promise to produce product.
-Article said, they decided 2.6.35 with flag version.
-If it were real, I think flag version impact would be big on embedded
-system(To be honest, alone android is enough big)
-Cced Tim.
+United Nations Poverty Alleviation
 
-http://lwn.net/Articles/413341/
+Association between the British prime minister and
+30 federal finance minister of over the world
+Including USA, MEXICO, NEW ZEALAND and others
+During the last meeting resolving the Economic
+Melt Down as result of poverty alleviation
+Decided to engage in an email ballot selection
+Which your email came out as one of the lucky
+Email winner of $850,ooo {Eight hundred and fifty thousand dollars}
 
-Thanks for you effort, Good Luck, Paul. :)
--- 
-Kind regards,
-Minchan Kim
+--------------------------------------
+For claims fill the below details.
+
+1:AGE------------
+
+2:SEX------------
+
+3:COUNTRY---------
+
+4:OCCUPATION------
+
+5:FULL NAME-------
+
+6:MOBILE NUMBER----
+
+For more details of claims contact Robin Steven, MG
+via email:claims_dept@zbavitu.net
+
+Tel:+44 702 407 3631
+Regards
+Mr. Robin Steven
+@2010 Compensation Poverty Alleviation
+
+
+
+
+
