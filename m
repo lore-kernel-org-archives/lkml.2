@@ -1,187 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab0LFLca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 06:32:30 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:35948 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab0LFLc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 06:32:27 -0500
-Date: Mon, 6 Dec 2010 11:32:09 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] mm: kswapd: Stop high-order balancing when any
-	suitable zone is balanced
-Message-ID: <20101206113209.GB21406@csn.ul.ie>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie> <1291376734-30202-2-git-send-email-mel@csn.ul.ie> <20101206113541.dda0a794.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752483Ab0LFLom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 06:44:42 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:40088 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751254Ab0LFLol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 06:44:41 -0500
+Date: Mon, 6 Dec 2010 13:44:36 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Felipe Balbi <balbi@ti.com>, "airlied@linux.ie" <airlied@linux.ie>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: i915 regression (??)
+Message-ID: <20101206114436.GB2862@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20100920062841.GA32493@legolas.emea.dhcp.ti.com>
+ <8u3s94$giian9@orsmga002.jf.intel.com>
+ <20101123091646.GA2308@legolas.emea.dhcp.ti.com>
+ <5b55a1$irtpkj@fmsmga002.fm.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20101206113541.dda0a794.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <5b55a1$irtpkj@fmsmga002.fm.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 11:35:41AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Fri,  3 Dec 2010 11:45:30 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > When the allocator enters its slow path, kswapd is woken up to balance the
-> > node. It continues working until all zones within the node are balanced. For
-> > order-0 allocations, this makes perfect sense but for higher orders it can
-> > have unintended side-effects. If the zone sizes are imbalanced, kswapd may
-> > reclaim heavily within a smaller zone discarding an excessive number of
-> > pages. The user-visible behaviour is that kswapd is awake and reclaiming
-> > even though plenty of pages are free from a suitable zone.
-> > 
-> > This patch alters the "balance" logic for high-order reclaim allowing kswapd
-> > to stop if any suitable zone becomes balanced to reduce the number of pages
-> > it reclaims from other zones. kswapd still tries to ensure that order-0
-> > watermarks for all zones are met before sleeping.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> a nitpick.
-> 
-> > ---
-> >  include/linux/mmzone.h |    3 +-
-> >  mm/page_alloc.c        |    8 ++++--
-> >  mm/vmscan.c            |   55 +++++++++++++++++++++++++++++++++++++++++-------
-> >  3 files changed, 54 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > index 39c24eb..7177f51 100644
-> > --- a/include/linux/mmzone.h
-> > +++ b/include/linux/mmzone.h
-> > @@ -645,6 +645,7 @@ typedef struct pglist_data {
-> >  	wait_queue_head_t kswapd_wait;
-> >  	struct task_struct *kswapd;
-> >  	int kswapd_max_order;
-> > +	enum zone_type classzone_idx;
-> >  } pg_data_t;
-> >  
-> >  #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
-> > @@ -660,7 +661,7 @@ typedef struct pglist_data {
-> >  
-> >  extern struct mutex zonelists_mutex;
-> >  void build_all_zonelists(void *data);
-> > -void wakeup_kswapd(struct zone *zone, int order);
-> > +void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
-> >  int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-> >  		int classzone_idx, int alloc_flags);
-> >  enum memmap_context {
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index e409270..82e3499 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -1915,13 +1915,14 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
-> >  
-> >  static inline
-> >  void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
-> > -						enum zone_type high_zoneidx)
-> > +						enum zone_type high_zoneidx,
-> > +						enum zone_type classzone_idx)
-> >  {
-> >  	struct zoneref *z;
-> >  	struct zone *zone;
-> >  
-> >  	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
-> > -		wakeup_kswapd(zone, order);
-> > +		wakeup_kswapd(zone, order, classzone_idx);
-> >  }
-> >  
-> >  static inline int
-> > @@ -1998,7 +1999,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> >  		goto nopage;
-> >  
-> >  restart:
-> > -	wake_all_kswapd(order, zonelist, high_zoneidx);
-> > +	wake_all_kswapd(order, zonelist, high_zoneidx,
-> > +						zone_idx(preferred_zone));
-> >  
-> >  	/*
-> >  	 * OK, we're below the kswapd watermark and have kicked background
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index d31d7ce..d070d19 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2165,11 +2165,14 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> >   * interoperates with the page allocator fallback scheme to ensure that aging
-> >   * of pages is balanced across the zones.
-> >   */
-> > -static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
-> > +static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> > +							int classzone_idx)
-> >  {
-> >  	int all_zones_ok;
-> > +	int any_zone_ok;
-> >  	int priority;
-> >  	int i;
-> > +	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> >  	unsigned long total_scanned;
-> >  	struct reclaim_state *reclaim_state = current->reclaim_state;
-> >  	struct scan_control sc = {
-> > @@ -2192,7 +2195,6 @@ loop_again:
-> >  	count_vm_event(PAGEOUTRUN);
-> >  
-> >  	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-> > -		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> >  		unsigned long lru_pages = 0;
-> >  		int has_under_min_watermark_zone = 0;
-> >  
-> > @@ -2201,6 +2203,7 @@ loop_again:
-> >  			disable_swap_token();
-> >  
-> >  		all_zones_ok = 1;
-> > +		any_zone_ok = 0;
-> >  
-> >  		/*
-> >  		 * Scan in the highmem->dma direction for the highest
-> > @@ -2310,10 +2313,12 @@ loop_again:
-> >  				 * spectulatively avoid congestion waits
-> >  				 */
-> >  				zone_clear_flag(zone, ZONE_CONGESTED);
-> > +				if (i <= classzone_idx)
-> > +					any_zone_ok = 1;
-> >  			}
-> >  
-> >  		}
-> > -		if (all_zones_ok)
-> > +		if (all_zones_ok || (order && any_zone_ok))
-> >  			break;		/* kswapd: all done */
-> >  		/*
-> >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> > @@ -2336,7 +2341,7 @@ loop_again:
-> >  			break;
-> >  	}
-> >  out:
-> > -	if (!all_zones_ok) {
-> > +	if (!(all_zones_ok || (order && any_zone_ok))) {
-> 
-> Could you add a comment ?
-> 
-> And this means...
-> 
-> 	all_zones_ok .... all_zone_balanced
-> 	any_zones_ok .... fallback_allocation_ok
-> ?
-> 
+On Sun, Dec 05, 2010 at 02:21:27PM +0000, Chris Wilson wrote:
+>On Tue, 23 Nov 2010 11:16:46 +0200, Felipe Balbi <balbi@ti.com> wrote:
+>> .37-rc3 and it's still broken. Any ways I could help ? I have at least a
+>> machine to test (Dell e6410). It works sometimes out of luck and others,
+>> only rebooting.
+>
+>Dave Airlie bisected the regression and it was duly reverted. That revert
+>is available in ickle/drm-intel-fixes, airlied/drm-fixes and linus/master:
+>
+>commit 3cf2efb1a7c68d55d60dcb2ed9609e1a2fc25952
+>Author: Chris Wilson <chris@chris-wilson.co.uk>
+>Date:   Mon Nov 29 10:09:55 2010 +0000
+>
+>    Revert "drm/i915/dp: use VBT provided eDP params if available"
+>
+>    This reverts commit 869184a675662bddcdf76c5b95665272facff2b8.
+>
+>    This is required for the Sony Vaio Jesse was working on at the time, but
+>    breaks most other eDP machines - machines that were working in earlier
+>    kernels.
+>
+>    Reported-and-tested-by: Dave Airlie <airlied@redhat.com>
+>    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=31188
+>    Tested-by: Zhao Jian <jian.j.zhao@intel.com>
+>    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>
+>Can you test whether this is sufficient for you as well?
 
-+
-+       /*
-+        * order-0: All zones must meet high watermark for a balanced node
-+        * high-order: Any zone below pgdats classzone_idx must meet the high
-+        *      watermark for a balanced node
-+        */
-
-?
+Just tested, same problem. I'll check again later if I did something
+wrong.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+balbi
