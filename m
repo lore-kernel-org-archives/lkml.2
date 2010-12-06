@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab0LFNX1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:23:27 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:54682 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab0LFNX0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 08:23:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=ocHw8oq2Rl2xzkp1pHT4YrZH/RE2K1yKdwwKxk4qtsi80WJzQpP2wzahGN2C0ssqZ0
-         6p7TksMotSbrF5hTCwL0NZUnzt1l2e0SbaDvlmuBAMDRO/vrvN/rk6MWDFVgonP9Zud2
-         lAs1oGIVUPeufCnCkmgdSPzINeXwVA65AyeZ8=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] omap1: mailbox: Fix compilation warning.
-Date: Mon,  6 Dec 2010 14:25:52 +0100
-Message-Id: <1291641952-20029-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752580Ab0LFN0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:26:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5342 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752456Ab0LFN0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 08:26:38 -0500
+Date: Mon, 6 Dec 2010 14:26:13 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Bojan Smojver <bojan@rexursive.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>
+Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature
+	to avoid user space breakage
+Message-ID: <20101206132613.GB9421@nb.net.home>
+References: <201012052324.30231.rjw@sisk.pl> <1291592215.2866.3.camel@shrek.rexursive.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291592215.2866.3.camel@shrek.rexursive.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following compilation warning:
-arch/arm/mach-omap1/mailbox.c: In function 'omap1_mbox_probe':
-arch/arm/mach-omap1/mailbox.c:148: warning: unused variable 'i'
+On Mon, Dec 06, 2010 at 10:36:55AM +1100, Bojan Smojver wrote:
+> On Sun, 2010-12-05 at 23:24 +0100, Rafael J. Wysocki wrote:
+> > Commit 3624eb0 (PM / Hibernate: Modify signature used to mark swap)
+> > modified hibernate signature used to mark swap partitions containing
+> > hibernation images, but that turns out to have caused problems in
+> > libblkid on recent Ubuntu.  Restore the old signature to avoid those
+> > problems. 
+> 
+> Don't quite understand this change (sorry, probably just being obtuse).
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- arch/arm/mach-omap1/mailbox.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ I too.
 
-diff --git a/arch/arm/mach-omap1/mailbox.c b/arch/arm/mach-omap1/mailbox.c
-index 1a85a42..1add133 100644
---- a/arch/arm/mach-omap1/mailbox.c
-+++ b/arch/arm/mach-omap1/mailbox.c
-@@ -145,7 +145,6 @@ static int __devinit omap1_mbox_probe(struct platform_device *pdev)
- {
- 	struct resource *mem;
- 	int ret;
--	int i;
- 	struct omap_mbox **list;
- 
- 	list = omap1_mboxes;
+> The signature was changed to make sure older kernels don't handle
+> compressed images by accident, right? If so, this would seem like a bad
+> idea, because this is what can actually happen now.
+> 
+> Shouldn't user space learn how to handle both signatures instead?
+
+ The upstream libblkid has been updated, there is not a problem to
+ support more signatures.
+
+    Karel
+
 -- 
-1.7.1
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
