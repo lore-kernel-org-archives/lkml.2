@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab0LFUKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:10:17 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39623 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab0LFUKP (ORCPT
+	id S1753156Ab0LFUNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:13:23 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:41002 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751993Ab0LFUNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:10:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XZzS8/x7Ts+TWGcmKKqFHfnUssIbM0v2WaQszi3PS6aHiqDQRUKGJtr4DTv64qUJ2W
-         c2E5aiVtDCf3MsXequyOTHs9Zi5aHEZphuaTJHfWVhnhkjWSHINnOTyWGQA6IO/6+hMb
-         9nD+BXcT1P1sO5+k9zS1HnXpmighhHYPGKg6o=
-Date: Mon, 6 Dec 2010 22:10:08 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Tilman Schmidt <t.schmidt@phoenixsoftware.de>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 26/45] kstrtox: convert drivers/isdn/
-Message-ID: <20101206201008.GA5650@core2.telecom.by>
-References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
- <1291571382-2719-26-git-send-email-adobriyan@gmail.com>
- <4CFC2A05.7010509@phoenixsoftware.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CFC2A05.7010509@phoenixsoftware.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Dec 2010 15:13:22 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: mchehab@infradead.org
+Cc: linux-media@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2 1/1] V4L: videobuf, don't use dma addr as physical
+Date: Mon,  6 Dec 2010 21:13:16 +0100
+Message-Id: <1291666396-23493-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20101206175418.GA26693@dumpdata.com>
+References: <20101206175418.GA26693@dumpdata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 01:10:45AM +0100, Tilman Schmidt wrote:
-> I like the patch, but why not go all the way?
-> 
-> Am 05.12.2010 18:49 schrieb Alexey Dobriyan:
-> > @@ -566,10 +566,10 @@ void gigaset_handle_modem_response(struct cardstate *cs)
-> >  		case RT_ZCAU:
-> >  			event->parameter = -1;
-> >  			if (curarg + 1 < params) {
-> > -				unsigned long type, value;
-> > +				u8 type, value;
-> >  
-> > -				i = strict_strtoul(argv[curarg++], 16, &type);
-> > -				j = strict_strtoul(argv[curarg++], 16, &value);
-> > +				i = kstrtou8(argv[curarg++], 16, &type);
-> > +				j = kstrtou8(argv[curarg++], 16, &value);
-> >  
-> >  				if (i == 0 && type < 256 &&
-> >  				    j == 0 && value < 256)
-> 
-> Once type and value are u8, the checks for < 256 are unnecessary.
+mem->dma_handle is a dma address obtained by dma_alloc_coherent which
+needn't be a physical address in presence of IOMMU. So ensure we are
+remapping (remap_pfn_range) the right page in __videobuf_mmap_mapper
+by using virt_to_phys(mem->vaddr) and not mem->dma_handle.
 
-OK.
+While at it, use PFN_DOWN instead of explicit shift.
 
-> > @@ -583,7 +583,7 @@ void gigaset_handle_modem_response(struct cardstate *cs)
-> >  				unsigned long res;
-> >  				int rc;
-> >  
-> > -				rc = strict_strtoul(argv[curarg++], 10, &res);
-> > +				rc = kstrtoul(argv[curarg++], 10, &res);
-> >  				if (rc == 0)
-> >  					event->parameter = res;
-> >  			}
-> 
-> The new kstrtoul() promises not to touch the result field in the event
-> of a conversion error, so &event->parameter can be passed directly to
-> it, getting rid of the variables rc and res and the if statement.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/media/video/videobuf-dma-contig.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-What should be done in case of error?
-Compiler will warn if kstrto*() result is unused:
+diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
+index c969111..19d3e4a 100644
+--- a/drivers/media/video/videobuf-dma-contig.c
++++ b/drivers/media/video/videobuf-dma-contig.c
+@@ -300,7 +300,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	retval = remap_pfn_range(vma, vma->vm_start,
+-				 mem->dma_handle >> PAGE_SHIFT,
++				 PFN_DOWN(virt_to_phys(mem->vaddr))
+ 				 size, vma->vm_page_prot);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
+-- 
+1.7.3.1
 
-	kstrtoul(argv[curarg++], 10, &event->parameter);
+
