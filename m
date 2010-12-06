@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab0LFX0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:26:16 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27254 "EHLO
+	id S1754699Ab0LFXZN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:25:13 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26822 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859Ab0LFXZc (ORCPT
+	with ESMTP id S1753076Ab0LFXZK (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 6 Dec 2010 18:25:32 -0500
+	Mon, 6 Dec 2010 18:25:10 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com, airlied@redhat.com,
         linux-kernel@vger.kernel.org, konrad@kernel.org
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 10/23] ati/agp: Utilize the PCI API for creating/inserting pages.
-Date: Mon,  6 Dec 2010 18:24:22 -0500
-Message-Id: <1291677875-30493-11-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 14/23] ia64/agp/i460: Use PCI API for inserting pages in DIG (non-VT-d) platforms.
+Date: Mon,  6 Dec 2010 18:24:26 -0500
+Message-Id: <1291677875-30493-15-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
 References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,89 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The i460-agp.c code sets its own GATT up, but relies on
+agp_generic_[alloc|destroy]_page[|s] functions, which use the PCI API.
+
+The code can support large-pages (more than 4KB) but the code is
+disabled with "insane" comment so did not attempt to grok it.
+
+Following the chain of functions that pci_alloc_consistent does
+on a DIG platform it ends up using the SWIOTLB. The SWIOTLB calls
+ia64_swiotlb_alloc_coherent which ends up calling alloc_page.
+
+The dma_address they come up with is virt_to_phys(addr) or in case
+of needing to use the SWIOTLB, it is the DMA address of the virtual
+pages in SWIOTLB pool.
+
+Since the dma_addr[i] ends up having the value from virt_to_phys(addr)
+or page_to_phys(addr), lets utilize the dma_addr[i] and stick
+a WARN_ON just in case.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/char/agp/ati-agp.c |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
+ drivers/char/agp/i460-agp.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/agp/ati-agp.c b/drivers/char/agp/ati-agp.c
-index dc30e22..9c8d19d 100644
---- a/drivers/char/agp/ati-agp.c
-+++ b/drivers/char/agp/ati-agp.c
-@@ -44,19 +44,23 @@ static struct gatt_mask ati_generic_masks[] =
- struct ati_page_map {
- 	unsigned long *real;
- 	unsigned long __iomem *remapped;
-+	dma_addr_t dma_addr;
- };
+diff --git a/drivers/char/agp/i460-agp.c b/drivers/char/agp/i460-agp.c
+index 75b763c..bfd9234 100644
+--- a/drivers/char/agp/i460-agp.c
++++ b/drivers/char/agp/i460-agp.c
+@@ -297,8 +297,8 @@ static int i460_insert_memory_small_io_page (struct agp_memory *mem,
+ 	int i, j, k, num_entries;
+ 	void *temp;
  
- static struct _ati_generic_private {
- 	volatile u8 __iomem *registers;
- 	struct ati_page_map **gatt_pages;
- 	int num_tables;
-+	struct pci_dev *pcidev;
- } ati_generic_private;
+-	pr_debug("i460_insert_memory_small_io_page(mem=%p, pg_start=%ld, type=%d, paddr0=0x%lx)\n",
+-		 mem, pg_start, type, page_to_phys(mem->pages[0]));
++	pr_debug("i460_insert_memory_small_io_page(mem=%p, pg_start=%ld, type=%d, paddr0=0x%lx (0x%lx)\n",
++		 mem, pg_start, type, page_to_phys(mem->pages[0]),(unsigned long)mem->dma_addr[0]);
  
- static int ati_create_page_map(struct ati_page_map *page_map)
- {
- 	int i, err = 0;
+ 	if (type >= AGP_USER_TYPES || mem->type >= AGP_USER_TYPES)
+ 		return -EINVAL;
+@@ -325,7 +325,8 @@ static int i460_insert_memory_small_io_page (struct agp_memory *mem,
  
--	page_map->real = (unsigned long *) __get_free_page(GFP_KERNEL);
-+	page_map->real = (unsigned long *) pci_alloc_consistent(ati_generic_private.pcidev,
-+								PAGE_SIZE,
-+								&page_map->dma_addr);
- 	if (page_map->real == NULL)
- 		return -ENOMEM;
- 
-@@ -77,7 +81,9 @@ static void ati_free_page_map(struct ati_page_map *page_map)
- {
- 	unmap_page_from_agp(virt_to_page(page_map->real));
- 	set_memory_wb((unsigned long)page_map->real, 1);
--	free_page((unsigned long) page_map->real);
-+	pci_free_consistent(ati_generic_private.pcidev, PAGE_SIZE,
-+			    (void *)page_map->real, page_map->dma_addr);
-+	page_map->dma_addr = DMA_ERROR_CODE;
- }
- 
- 
-@@ -302,7 +308,7 @@ static int ati_insert_memory(struct agp_memory * mem,
- 		addr = (j * PAGE_SIZE) + agp_bridge->gart_bus_addr;
- 		cur_gatt = GET_GATT(addr);
- 		writel(agp_bridge->driver->mask_memory(agp_bridge,	
--						       page_to_phys(mem->pages[i]),
-+						       mem->dma_addr[i],
- 						       mem->type),
- 		       cur_gatt+GET_GATT_OFF(addr));
+ 	io_page_size = 1UL << I460_IO_PAGE_SHIFT;
+ 	for (i = 0, j = io_pg_start; i < mem->page_count; i++) {
+-		paddr = page_to_phys(mem->pages[i]);
++		paddr = mem->dma_addr[i];
++		WARN_ON(page_to_phys(mem->pages[i]) != paddr);
+ 		for (k = 0; k < I460_IOPAGES_PER_KPAGE; k++, j++, paddr += io_page_size)
+ 			WR_GATT(j, i460_mask_memory(agp_bridge, paddr, mem->type));
  	}
-@@ -361,7 +367,7 @@ static int ati_create_gatt_table(struct agp_bridge_data *bridge)
- 
- 	agp_bridge->gatt_table_real = (u32 *)page_dir.real;
- 	agp_bridge->gatt_table = (u32 __iomem *) page_dir.remapped;
--	agp_bridge->gatt_bus_addr = virt_to_phys(page_dir.real);
-+	agp_bridge->gatt_bus_addr = page_dir.dma_addr;
- 
- 	/* Write out the size register */
- 	current_size = A_SIZE_LVL2(agp_bridge->current_size);
-@@ -391,7 +397,7 @@ static int ati_create_gatt_table(struct agp_bridge_data *bridge)
- 
- 	/* Calculate the agp offset */
- 	for (i = 0; i < value->num_entries / 1024; i++, addr += 0x00400000) {
--		writel(virt_to_phys(ati_generic_private.gatt_pages[i]->real) | 1,
-+		writel(ati_generic_private.gatt_pages[i]->dma_addr | 1,
- 			page_dir.remapped+GET_PAGE_DIR_OFF(addr));
- 		readl(page_dir.remapped+GET_PAGE_DIR_OFF(addr));	/* PCI Posting. */
- 	}
-@@ -521,9 +527,9 @@ found:
- 	bridge->capndx = cap_ptr;
- 
- 	bridge->driver = &ati_generic_bridge;
--
- 	dev_info(&pdev->dev, "Ati %s chipset\n", devs[j].chipset_name);
- 
-+	ati_generic_private.pcidev = pdev;
- 	/* Fill in the mode register */
- 	pci_read_config_dword(pdev,
- 			bridge->capndx+PCI_AGP_STATUS,
 -- 
 1.7.1
 
