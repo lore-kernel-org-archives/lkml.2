@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab0LFRKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:10:16 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:46986 "EHLO mx01.d-labs.de"
+	id S1753076Ab0LFRMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:12:19 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:24824 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab0LFRKO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 12:10:14 -0500
-Date: Mon, 6 Dec 2010 18:09:22 +0100
-From: Florian Mickler <florian@mickler.org>
-Cc: Prasad Joshi <prasadjoshi124@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Joern <joern@logfs.org>,
-        logfs@logfs.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] LogFS: Kernel BUG at readwrite.c:1193
-Message-ID: <20101206180922.5f7fa3c1@schatten.dmk.lab>
-In-Reply-To: <AANLkTikfu-AZNbZDrGqhca8hGXMrOwA1yJdZJRs0qq-Y@mail.gmail.com>
-References: <AANLkTikfu-AZNbZDrGqhca8hGXMrOwA1yJdZJRs0qq-Y@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+	id S1751815Ab0LFRMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 12:12:17 -0500
+Message-ID: <4CFD195E.5060208@siemens.com>
+Date: Mon, 06 Dec 2010 18:11:58 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 5/5] KVM: Allow host IRQ sharing for passed-through PCI
+ 2.3 devices
+References: <cover.1291419444.git.jan.kiszka@web.de> <10b9265d513950f2574edf4e79be3b808e741a78.1291419444.git.jan.kiszka@web.de> <4CFD0D91.3050303@redhat.com> <4CFD108F.5000200@siemens.com> <4CFD1208.4070600@redhat.com> <4CFD1377.7030008@siemens.com> <4CFD16FC.8040905@redhat.com>
+In-Reply-To: <4CFD16FC.8040905@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am 06.12.2010 18:01, Avi Kivity wrote:
+> On 12/06/2010 06:46 PM, Jan Kiszka wrote:
+>> Am 06.12.2010 17:40, Avi Kivity wrote:
+>>>  On 12/06/2010 06:34 PM, Jan Kiszka wrote:
+>>>>>
+>>>>>   What's the protocol for doing this?  I suppose userspace has to disable
+>>>>>   interrupts, ioctl(SET_INTX_MASK, masked), ..., ioctl(SET_INTX_MASK,
+>>>>>   unmasked), enable interrupts?
+>>>>
+>>>>  Userspace just has to synchronize against itself - what it already does:
+>>>>  qemu_mutex, and masking/unmasking is synchronous /wrt the the executing
+>>>>  VCPU. Otherwise, masking/unmasking is naturally racy, also in Real Life.
+>>>>  The guest resolves the remaining races.
+>>>
+>>>  I meant when qemu sets INTX_MASK and the kernel clears it immediately
+>>>  afterwards because the two are not synchronized.  I guess that won't
+>>>  happen in practice because playing with INTX_MASK is very rare.
+>>
+>> Ah, there is indeed a race, and the qemu-kvm patches I did not post yet
+>> (to wait for the kernel interface to settle) actually suffer from it:
+>> userspace needs to set the kernel mask before writing the config space
+>> (it's the other way around ATM). This avoids that the kernel overwrites
+>> what userspace just wrote out. We always suffer from the race the other
+>> way around, see below.
+> 
+> Please document the protocol.
 
-On Tue, 16 Nov 2010 16:54:17 +0000
-Prasad Joshi <prasadjoshi124@gmail.com> wrote:
+Yes, will do.
 
-> This happens when __logfs_create() tries to write a new inode to the
-> disk which is full.
-> 
-> __logfs_create() associates the transaction pointer with inode. During
-> the logfs_write_inode() function call chain this transaction pointer
-> is moved from inode to page->private using function move_inode_to_page
-> (do_write_inode() -> inode_to_page() -> move_inode_to_page)
-> 
-> When the write inode fails, the transaction is aborted and iput is
-> called on the failed inode. During delete_inode the same transaction
-> pointer associated with the page is getting used. Thus causing kernel
-> BUG.
-> 
-> The patch checks for error in write_inode() and restores the
-> page->private to NULL.
-> 
-> 
+>  Is this always the right order?  
+> Shouldn't it be reversed when unmasking?  I admit I'm confused about this.
 
+The kernel only notes down userspace's view on the mask, it doesn't
+modify the hardware (unless it is in line-disabling mode, but then there
+is no conflict anyway). Therefore, if userspace first unmasks and an
+interrupts arrives before this was reported to the kernel, the device
+interrupt will remain masked and no event is delivered to userspace.
 
+Jan
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=20162 . Can
-someone please review? Any comments?
-
-
-
-> Signed-off-by: Prasad Joshi <prasadjoshi124@gmail.com>
-> ---
-> diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
-> index 6127baf..ee99a9f 100644
-> --- a/fs/logfs/readwrite.c
-> +++ b/fs/logfs/readwrite.c
-> @@ -1994,6 +1994,9 @@ static int do_write_inode(struct inode *inode)
-> 
->         /* FIXME: transaction is part of logfs_block now.  Is that enough? */
->         err = logfs_write_buf(master_inode, page, 0);
-> +       if (err)
-> +               move_page_to_inode(inode, page);
-> +
->         logfs_put_write_page(page);
->         return err;
->  }
-> 
-> 
-> 
-> ---------- Forwarded message ----------
-> From:  <bugzilla-daemon@bugzilla.kernel.org>
-> Date: Tue, Nov 16, 2010 at 3:20 PM
-> Subject: [Bug 20162] [LogFS][2.6.36.rc7+] Kernel BUG at readwrite.c:1193
-> To: prasadjoshi124@gmail.com
-> 
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=20162
-> 
-> 
-> Florian Mickler <florian@mickler.org> changed:
-> 
->           What    |Removed                     |Added
-> ----------------------------------------------------------------------------
->             Status|NEW                         |RESOLVED
->                 CC|                            |florian@mickler.org
->         Resolution|                            |PATCH_ALREADY_AVAILABLE
-> 
-> 
-> 
-> 
-> --- Comment #2 from Florian Mickler <florian@mickler.org>  2010-11-16
-> 15:20:46 ---
-> Can you submit that patch to lkml and cc the logfs maintainer and the logfs
-> list?
-> (Joern Engel <joern@logfs.org>, logfs@logfs.org, linux-kernel@vger.kernel.org)
-> 
-> See Documentation/SubmittingPatches
-> 
-> Patch: https://bugzilla.kernel.org/show_bug.cgi?id=20162#c1
-> 
-> --
-> Configure bugmail: https://bugzilla.kernel.org/userprefs.cgi?tab=email
-> ------- You are receiving this mail because: -------
-> You are on the CC list for the bug.
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
