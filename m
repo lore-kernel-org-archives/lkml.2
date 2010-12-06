@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab0LFUAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:00:24 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:54172 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab0LFUAW (ORCPT
+	id S1753941Ab0LFUCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:02:12 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56680 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab0LFUCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:00:22 -0500
-Message-ID: <4CFD40CD.1000304@canonical.com>
-Date: Mon, 06 Dec 2010 12:00:13 -0800
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Chris Bagwell <chris@cnpbagwell.com>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pingc@wacom.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] input: mt: Move tracking and pointer emulation to
- input-mt (rev2)
-References: <1291224069-11770-1-git-send-email-rydberg@euromail.se>	<4CFD2E15.50105@canonical.com> <AANLkTingU7pUSwt6myUYzDhMVWg7PqfFpftw_hjsE4iK@mail.gmail.com>
-In-Reply-To: <AANLkTingU7pUSwt6myUYzDhMVWg7PqfFpftw_hjsE4iK@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Dec 2010 15:02:10 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Jeff Ohlstein <johlstei@codeaurora.org>
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/5] msm: Secure Channel Manager (SCM) support
+In-Reply-To: Your message of "Sun, 05 Dec 2010 23:16:14 PST."
+             <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
+From: Valdis.Kletnieks@vt.edu
+References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>
+            <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1291665648_4733P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Mon, 06 Dec 2010 15:00:48 -0500
+Message-ID: <29863.1291665648@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4CFD40F1.005C,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 11:52 AM, Chris Bagwell wrote:
-> On Mon, Dec 6, 2010 at 12:40 PM, Chase Douglas
-> <chase.douglas@canonical.com> wrote:
->> On 12/01/2010 09:21 AM, Henrik Rydberg wrote:
->>> The drivers using the type B protocol all report tracking information
->>> the same way. The contact id is semantically equivalent to
->>> ABS_MT_SLOT, and the handling of ABS_MT_TRACKING_ID only complicates
->>> the driver. The situation can be improved upon by providing a common
->>> pointer emulation code, thereby removing the need for the tracking id
->>> in the driver.  This patch moves all tracking event handling over to
->>> the input core, simplifying both the existing drivers and the ones
->>> currently in preparation.
->>
->> When two or more fingers are down, one of the fingers controls
->> ABS_{X,Y}. I think the aim is to emulate current behavior for
->> synaptics-style touchpads, which average the position in firmware. Thus,
->> we should be averaging the touch positions to generate the ABS_{X,Y} values.
->>
-> 
-> At least for modern synaptics hardware, it does track to first touch
-> like this patch does.
-> 
-> It is maybe a weighted average were its 90% first finger and 10%
-> second finger.  Just moving second finger gives slight movement.
+--==_Exmh_1291665648_4733P
+Content-Type: text/plain; charset=us-ascii
 
-Ok. Does this present any usability issues, or does it seem to work fine
-in your opinion? If it works ok in normal use cases then I'm fine with
-how this is implemented.
+On Sun, 05 Dec 2010 23:16:14 PST, Jeff Ohlstein said:
 
--- Chase
+> SCM is the protocol used to communicate between the secure and
+> non-secure code executing on the applications processor. 
+
+Does the presence of SCM hardware imply SMP?  From reading this, it's unclear
+why the dependence on SMP - it looks like scm.c is something that hardware that
+has one ARM processor and a 'secure processor' would still want.  Or is the
+'secure processor' just another (arbitrarily labeled) ARM CPU participating
+as a full SMP processor?
+
+
+--==_Exmh_1291665648_4733P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFM/UDwcC3lWbTT17ARAhT4AKDit4oYNcVR6MAXBs8z09+WAyvCWACfW6PY
+lzuqPN2v8vQrWGM12BlmdtM=
+=CdKU
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1291665648_4733P--
+
