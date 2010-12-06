@@ -1,135 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750964Ab0LFFdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 00:33:33 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:53076 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750748Ab0LFFdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 00:33:32 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19wi9RQXHRwb5gdJl2DyJc0SciTyp9+NZhnAo8YLQ
-	+FUVv9xc2ihmO0
-Subject: Re: Scheduler bug related to rq->skip_clock_update?
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: "Bjoern B. Brandenburg" <bbb.lst@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrea Bastoni <bastoni@sprg.uniroma2.it>,
-        "James H. Anderson" <anderson@cs.unc.edu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101205052819.GA2878@zhy>
-References: <alpine.LNX.2.00.1011202315290.8927@jupiter-cs.cs.unc.edu>
-	 <1290359641.4816.69.camel@maggy.simson.net>
-	 <alpine.LNX.2.00.1011212327250.8927@jupiter-cs.cs.unc.edu>
-	 <1290442781.16393.22.camel@maggy.simson.net>
-	 <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
-	 <20101205052819.GA2878@zhy>
-Content-Type: text/plain
-Date: Mon, 06 Dec 2010 06:33:27 +0100
-Message-Id: <1291613607.9457.5.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1751130Ab0LFFgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 00:36:01 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62074 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab0LFFgA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 00:36:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=N5NKt2bIIh1ICzPA4wqLIFF0kzGqcm7s/7aR45ZVG7r1Ah6ipP58RisSDw6/A+QoLP
+         QOtKdeEIWfmsPaodeiq8Cp7f9jm/EdVTJATko/WONl54OIuNBQuDnJyTvqQBQJhd2SxZ
+         AdBj3nOWXHPDNbUQBaBJDebHJAEsihi+R4IuU=
+MIME-Version: 1.0
+In-Reply-To: <20101204172840.GC10282@kroah.com>
+References: <20101203210719.GB21223@windriver.com>
+	<20101204172840.GC10282@kroah.com>
+Date: Mon, 6 Dec 2010 14:35:59 +0900
+Message-ID: <AANLkTint4xffGN4RJJ=Rn2XK--AAbM-2MEaVezzV7xJr@mail.gmail.com>
+Subject: Re: Announcement: Plans for v2.6.34-longterm
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org,
+        jason.wessel@windriver.com, Andi Kleen <andi@firstfloor.org>,
+        lwn@lwn.net, Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-05 at 13:28 +0800, Yong Zhang wrote:
+On Sun, Dec 5, 2010 at 2:28 AM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Dec 03, 2010 at 04:07:19PM -0500, Paul Gortmaker wrote:
+>> With that in mind, it is our intention to also maintain a 2.6.34
+>> longterm tree.  Jason and I work at Wind River, which already has
+>> released products based on v2.6.34, and as such it only makes sense
+>> to have a public long-term tree that others who are also based on
+>> 2.6.34 can make use of.
+>
+> Other than Wind River, what other distros/userbases are using .34 as a
+> platform for their products?
 
-> when we init idle task, we doesn't mark it on_rq.
-> My test show the concern is smoothed by below patch.
+I am not sure companies/platforms(Sony, Google, Meego, and Linaro)
+mentioned below article really made a promise to produce product.
+Article said, they decided 2.6.35 with flag version.
+If it were real, I think flag version impact would be big on embedded
+system(To be honest, alone android is enough big)
+Cced Tim.
 
-Close :)
+http://lwn.net/Articles/413341/
 
-The skip_clock_update flag should only be set if rq->curr is on_rq,
-because it it _that_ clock update during dequeue, and subsequent
-microscopic vruntime update it causes that we're trying to avoid.
-
-I think the below fixes it up properly.
-
-Sched: fix skip_clock_update optimization
-
-idle_balance() drops/retakes rq->lock, leaving the previous task
-vulnerable to set_tsk_need_resched().  Clear it after we return
-from balancing instead, and in setup_thread_stack() as well, so
-no successfully descheduled or never scheduled task has it set.
- 
-Need resched confused the skip_clock_update logic, which assumes
-that the next call to update_rq_clock() will come nearly immediately
-after being set.  Make the optimization robust against the waking
-a sleeper before it sucessfully deschedules case by checking that
-the current task has not been dequeued before setting the flag,
-since it is that useless clock update we're trying to save, and
-clear in update_rq_clock() to ensure that ONE call may be skipped.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Bjoern B. Brandenburg <bbb.lst@gmail.com>
-Reported-by: Bjoern B. Brandenburg <bbb.lst@gmail.com>
-
----
- kernel/fork.c  |    1 +
- kernel/sched.c |    6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
-Index: linux-2.6.37.git/kernel/sched.c
-===================================================================
---- linux-2.6.37.git.orig/kernel/sched.c
-+++ linux-2.6.37.git/kernel/sched.c
-@@ -660,6 +660,7 @@ inline void update_rq_clock(struct rq *r
- 
- 		sched_irq_time_avg_update(rq, irq_time);
- 	}
-+	rq->skip_clock_update = 0;
- }
- 
- /*
-@@ -2138,7 +2139,7 @@ static void check_preempt_curr(struct rq
- 	 * A queue event has occurred, and we're going to schedule.  In
- 	 * this case, we can save a useless back to back clock update.
- 	 */
--	if (test_tsk_need_resched(rq->curr))
-+	if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
- 		rq->skip_clock_update = 1;
- }
- 
-@@ -3854,7 +3855,6 @@ static void put_prev_task(struct rq *rq,
- {
- 	if (prev->se.on_rq)
- 		update_rq_clock(rq);
--	rq->skip_clock_update = 0;
- 	prev->sched_class->put_prev_task(rq, prev);
- }
- 
-@@ -3912,7 +3912,6 @@ need_resched_nonpreemptible:
- 		hrtick_clear(rq);
- 
- 	raw_spin_lock_irq(&rq->lock);
--	clear_tsk_need_resched(prev);
- 
- 	switch_count = &prev->nivcsw;
- 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-@@ -3942,6 +3941,7 @@ need_resched_nonpreemptible:
- 	if (unlikely(!rq->nr_running))
- 		idle_balance(cpu, rq);
- 
-+	clear_tsk_need_resched(prev);
- 	put_prev_task(rq, prev);
- 	next = pick_next_task(rq);
- 
-Index: linux-2.6.37.git/kernel/fork.c
-===================================================================
---- linux-2.6.37.git.orig/kernel/fork.c
-+++ linux-2.6.37.git/kernel/fork.c
-@@ -275,6 +275,7 @@ static struct task_struct *dup_task_stru
- 
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
-+	clear_tsk_need_resched(tsk);
- 	stackend = end_of_stack(tsk);
- 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
- 
-
-
+Thanks for you effort, Good Luck, Paul. :)
+-- 
+Kind regards,
+Minchan Kim
