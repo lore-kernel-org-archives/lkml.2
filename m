@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab0LFRAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:00:32 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:9226 "EHLO mx2.netapp.com"
+	id S1754203Ab0LFRAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 12:00:07 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:9236 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754046Ab0LFQ7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:59:32 -0500
+	id S1754058Ab0LFQ7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:59:33 -0500
 X-IronPort-AV: E=Sophos;i="4.59,306,1288594800"; 
-   d="scan'208";a="491620042"
+   d="scan'208";a="491620058"
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Nick Bowler <nbowler@elliptictech.com>
@@ -17,77 +17,174 @@ Cc: Simon Kirby <sim@hostway.ca>,
         Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
         Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
         Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v4 1/3] NFS: Ensure we use the correct cookie in nfs_readdir_xdr_filler
-Date: Mon,  6 Dec 2010 11:59:06 -0500
-Message-Id: <1291654748-8921-2-git-send-email-Trond.Myklebust@netapp.com>
+Subject: [PATCH v4 2/3] Call the filesystem back whenever a page is removed from the page cache
+Date: Mon,  6 Dec 2010 11:59:07 -0500
+Message-Id: <1291654748-8921-3-git-send-email-Trond.Myklebust@netapp.com>
 X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1291654748-8921-1-git-send-email-Trond.Myklebust@netapp.com>
+In-Reply-To: <1291654748-8921-2-git-send-email-Trond.Myklebust@netapp.com>
 References: <1291654748-8921-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1291654748-8921-2-git-send-email-Trond.Myklebust@netapp.com>
 In-Reply-To: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
 References: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to use the cookie from the previous array entry, not the
-actual cookie that we are searching for (except for the case of
-uncached_readdir).
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
+NFS needs to be able to release objects that are stored in the page
+cache once the page itself is no longer visible from the page cache.
+
+This patch adds a callback to the address space operations that allows
+filesystems to perform page cleanups once the page has been removed
+from the page cache.
+
+Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
+[trondmy: cover the cases of invalidate_inode_pages2() and
+          truncate_inode_pages()]
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- fs/nfs/dir.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ Documentation/filesystems/Locking |    7 ++++++-
+ Documentation/filesystems/vfs.txt |    7 +++++++
+ include/linux/fs.h                |    1 +
+ mm/filemap.c                      |    5 +++++
+ mm/truncate.c                     |    4 ++++
+ mm/vmscan.c                       |    7 +++++++
+ 6 files changed, 30 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index f0a384e..e03537f 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -178,6 +178,7 @@ typedef struct {
- 	struct page	*page;
- 	unsigned long	page_index;
- 	u64		*dir_cookie;
-+	u64		last_cookie;
- 	loff_t		current_index;
- 	decode_dirent_t	decode;
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index a91f308..b6426f1 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -173,12 +173,13 @@ prototypes:
+ 	sector_t (*bmap)(struct address_space *, sector_t);
+ 	int (*invalidatepage) (struct page *, unsigned long);
+ 	int (*releasepage) (struct page *, int);
++	void (*freepage)(struct page *);
+ 	int (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs);
+ 	int (*launder_page) (struct page *);
  
-@@ -344,6 +345,8 @@ int nfs_readdir_search_array(nfs_readdir_descriptor_t *desc)
- 	else
- 		status = nfs_readdir_search_for_cookie(array, desc);
+ locking rules:
+-	All except set_page_dirty may block
++	All except set_page_dirty and freepage may block
  
-+	if (status == -EAGAIN)
-+		desc->last_cookie = array->last_cookie;
- 	nfs_readdir_release_array(desc->page);
- out:
- 	return status;
-@@ -563,7 +566,7 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
- 	unsigned int array_size = ARRAY_SIZE(pages);
+ 			BKL	PageLocked(page)	i_mutex
+ writepage:		no	yes, unlocks (see below)
+@@ -193,6 +194,7 @@ perform_write:		no	n/a			yes
+ bmap:			no
+ invalidatepage:		no	yes
+ releasepage:		no	yes
++freepage:		no	yes
+ direct_IO:		no
+ launder_page:		no	yes
  
- 	entry.prev_cookie = 0;
--	entry.cookie = *desc->dir_cookie;
-+	entry.cookie = desc->last_cookie;
- 	entry.eof = 0;
- 	entry.fh = nfs_alloc_fhandle();
- 	entry.fattr = nfs_alloc_fattr();
-@@ -672,8 +675,10 @@ int readdir_search_pagecache(nfs_readdir_descriptor_t *desc)
+@@ -288,6 +290,9 @@ buffers from the page in preparation for freeing it.  It returns zero to
+ indicate that the buffers are (or may be) freeable.  If ->releasepage is zero,
+ the kernel assumes that the fs has no private interest in the buffers.
+ 
++	->freepage() is called when the kernel is done dropping the page
++from the page cache.
++
+ 	->launder_page() may be called prior to releasing a page if
+ it is still found to be dirty. It returns zero if the page was successfully
+ cleaned, or an error value if not. Note that in order to prevent the page
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index ed7e5ef..3b14a55 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -534,6 +534,7 @@ struct address_space_operations {
+ 	sector_t (*bmap)(struct address_space *, sector_t);
+ 	int (*invalidatepage) (struct page *, unsigned long);
+ 	int (*releasepage) (struct page *, int);
++	void (*freepage)(struct page *);
+ 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs);
+ 	struct page* (*get_xip_page)(struct address_space *, sector_t,
+@@ -679,6 +680,12 @@ struct address_space_operations {
+         need to ensure this.  Possibly it can clear the PageUptodate
+         bit if it cannot free private data yet.
+ 
++  freepage: freepage is called once the page is no longer visible in
++        the page cache in order to allow the cleanup of any private
++	data. Since it may be called by the memory reclaimer, it
++	should not assume that the original address_space mapping still
++	exists, and it should not block.
++
+   direct_IO: called by the generic read/write routines to perform
+         direct_IO - that is IO requests which bypass the page cache
+         and transfer data directly between the storage and the
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c9e06cc..090f0ea 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -602,6 +602,7 @@ struct address_space_operations {
+ 	sector_t (*bmap)(struct address_space *, sector_t);
+ 	void (*invalidatepage) (struct page *, unsigned long);
+ 	int (*releasepage) (struct page *, gfp_t);
++	void (*freepage)(struct page *);
+ 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
+ 			loff_t offset, unsigned long nr_segs);
+ 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index ea89840..6b9aee2 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -143,13 +143,18 @@ void __remove_from_page_cache(struct page *page)
+ void remove_from_page_cache(struct page *page)
  {
- 	int res;
+ 	struct address_space *mapping = page->mapping;
++	void (*freepage)(struct page *);
  
--	if (desc->page_index == 0)
-+	if (desc->page_index == 0) {
- 		desc->current_index = 0;
-+		desc->last_cookie = 0;
-+	}
- 	while (1) {
- 		res = find_cache_page(desc);
- 		if (res != -EAGAIN)
-@@ -764,6 +769,7 @@ int uncached_readdir(nfs_readdir_descriptor_t *desc, void *dirent,
+ 	BUG_ON(!PageLocked(page));
+ 
++	freepage = mapping->a_ops->freepage;
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	__remove_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
++
++	if (freepage)
++		freepage(page);
+ }
+ EXPORT_SYMBOL(remove_from_page_cache);
+ 
+diff --git a/mm/truncate.c b/mm/truncate.c
+index ba887bf..3c2d5dd 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -390,6 +390,10 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+ 	__remove_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
++
++	if (mapping->a_ops->freepage)
++		mapping->a_ops->freepage(page);
++
+ 	page_cache_release(page);	/* pagecache ref */
+ 	return 1;
+ failed:
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d31d7ce..9ca587c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -494,9 +494,16 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		swapcache_free(swap, page);
+ 	} else {
++		void (*freepage)(struct page *);
++
++		freepage = mapping->a_ops->freepage;
++
+ 		__remove_from_page_cache(page);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
++
++		if (freepage != NULL)
++			freepage(page);
  	}
  
- 	desc->page_index = 0;
-+	desc->last_cookie = *desc->dir_cookie;
- 	desc->page = page;
- 
- 	status = nfs_readdir_xdr_to_array(desc, page, inode);
+ 	return 1;
 -- 
 1.7.3.2
 
