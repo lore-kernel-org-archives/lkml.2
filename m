@@ -1,130 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab0LFHR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 02:17:27 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:36922 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab0LFHR0 (ORCPT
+	id S1751588Ab0LFH3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 02:29:31 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33628 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab0LFH3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 02:17:26 -0500
-X-Greylist: delayed 1214 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 02:17:25 EST
-Message-ID: <4CFC893F.3050104@suse.de>
-Date: Mon, 06 Dec 2010 12:27:03 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Bernhard Walle <bernhard@bwalle.de>
-CC: sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: Add information about noserverino
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-In-Reply-To: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-Content-Type: text/plain; charset=ISO-8859-15
+	Mon, 6 Dec 2010 02:29:30 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 6 Dec 2010 08:29:18 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Robin Cook <rcook@wyrms.net>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>, linux-kernel@vger.kernel.org,
+        linux1394-devel <linux1394-devel@lists.sourceforge.net>
+Subject: Re: Issue with firewire from 2.6.35.9 to 2.6.36.1
+Message-ID: <20101206082918.6d1ccc41@stein>
+In-Reply-To: <1291594279.9196.2.camel@maxim-laptop>
+References: <1291592226.7134.1.camel@pheuri.wyrms.net>
+	<1291594279.9196.2.camel@maxim-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2010 10:37 PM, Bernhard Walle wrote:
-> In my case I had the problem that 32 bit userspace applications in an
-> amd64 environment was not able to list the directories of a CIFS-mounted
-> share. The simple userspace code
-> 
->     int main(int argc, char *argv[])
->     {
->         DIR *dir;
->         struct dirent *dirent;
-> 
->         if (!argv[1]) {
->             fprintf(stderr, "Usage: %s <directory>\n", argv[0]);
->             return -1;
->         }
-> 
->         dir = opendir(argv[1]);
->         if (!dir) {
->             perror("Unable to open directory");
->             return -1;
->         }
-> 
->         while ((dirent = readdir(dir)) != NULL)
->             puts(dirent->d_name);
-> 
->         closedir(dir);
-> 
->         return 0;
->     }
-> 
-> was sufficient to trigger the problem.
-> 
-> I discovered that the problem was that the inodes were too large to fit
-> in a 32 bit (unsigned long) integer, so the compat_filldir() function
-> returned -EOVERFLOW.
-> 
-> While that is okay it would have saved me a some hours of debugging if
-> the message below would have appeared in my kernel log.
-> 
-> The target was a Samba server (I guess) of a Buffalo LinkStation Duo
-> with the unmodified vendor firmware 1.34.
-> 
-> Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
-> ---
->  fs/cifs/readdir.c |   23 +++++++++++++++++++----
->  1 files changed, 19 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
-> index d5e591f..d979826 100644
-> --- a/fs/cifs/readdir.c
-> +++ b/fs/cifs/readdir.c
-> @@ -773,6 +773,7 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
->  	char *tmp_buf = NULL;
->  	char *end_of_smb;
->  	unsigned int max_len;
-> +	int err;
->  
->  	xid = GetXid();
->  
-> @@ -783,17 +784,31 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
->  
->  	switch ((int) file->f_pos) {
->  	case 0:
-> -		if (filldir(direntry, ".", 1, file->f_pos,
-> -		     file->f_path.dentry->d_inode->i_ino, DT_DIR) < 0) {
-> +		err = filldir(direntry, ".", 1, file->f_pos,
-> +		     file->f_path.dentry->d_inode->i_ino, DT_DIR);
-> +		if (err < 0) {
->  			cERROR(1, "Filldir for current dir failed");
-> +			if (err == -EOVERFLOW) {
-> +				cERROR(1, "Server inodes are too large for 32 "
-> +						"bit userspace. You might "
-> +						"consider using 'noserverino' "
-> +						"mount option for this mount.");
-> +			}
+> On Sun, 2010-12-05 at 17:37 -0600, Robin Cook wrote:
+> > Hello,
+> > 
+> > I recently upgraded from 26.35.9 to 2.6.36.1 and now the /dev/fwX
+> > devices are not being created.  I have udev 164 installed.
+> > 
+> > 2.6.35.9 dmesg firewire lines...
+> > 
+> > firewire_ohci 0000:07:00.0: PCI INT A -> GSI 44 (level, low) -> IRQ 44
+> > firewire_ohci 0000:07:00.0: setting latency timer to 64
+> > firewire_ohci: Added fw-ohci device 0000:07:00.0, OHCI v1.10, 4 IR + 8 IT contexts, quirks 0x1
+> > firewire_core: created device fw0: GUID 0010dc0001adc862, S400
+> > firewire_core: created device fw1: GUID 00808803072803a5, S100
+> > firewire_core: phy config: card 0, new root=ffc1, gap_count=5
+> > 
+> > 2.6.36.1 dmesg firewire lines...
+> > 
+> > firewire_ohci 0000:07:00.0: PCI INT A -> GSI 44 (level, low) -> IRQ 44
+> > firewire_ohci 0000:07:00.0: setting latency timer to 64
+> > firewire_ohci 0000:07:00.0: irq 75 for MSI/MSI-X
+> > firewire_ohci: Added fw-ohci device 0000:07:00.0, OHCI v1.10, 4 IR + 8 IT contexts, quirks 0x1
+> > 
+> > I have compared the difference between the two kernel configs and the
+> > only differences that I see that may apply to the firewire are:
+> > 
+> >  CONFIG_DNOTIFY=y
+> > -CONFIG_INOTIFY=y
+> >  CONFIG_INOTIFY_USER=y
+> > 
+> >  # CONFIG_IEEE1394 is not set 
+> > +CONFIG_FIREWIRE_NOSY=m  
+> >  CONFIG_I2O=m
+> > 
+> > On the ieee1394 wiki page it says that these kernel option are expected
+> > to be on for the libraw1394:
+> > 
+> > CONFIG_INOTIFY=y
+> > CONFIG_INOTIFY_USER=y
+> > CONFIG_EPOLL=y
+> > 
+> > These option are correct in the 2.6.35.9 kernel but the CONFIG_INOTIFY
+> > option is missing completely in the 2.6.36.1 kernel.
+> > 
+> > Is this a change in how the firewire works in the kernel and that udev
+> > needs to be modified or is there something else wrong?
 
-The patch looks good, however I don't see any reason why we need to
-override the returned error with -ENOMEM below. I think we could
-possibly use the variable 'rc' itself and set the error code as is.
+I hadn't noticed that the INOTIFY kconfig options changed relative to
+what is documented at the wiki.  I'll update that.
 
->  			rc = -ENOMEM;
->  			break;
->  		}
->  		file->f_pos++;
->  	case 1:
-> -		if (filldir(direntry, "..", 2, file->f_pos,
-> -		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR) < 0) {
-> +		err = filldir(direntry, "..", 2, file->f_pos,
-> +		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR);
-> +		if (err < 0) {
->  			cERROR(1, "Filldir for parent dir failed");
-> +			if (err == -EOVERFLOW) {
-> +				cERROR(1, "Server inodes are too large for 32 "
-> +						"bit userspace. You might "
-> +						"consider using 'noserverino' "
-> +						"mount option for this mount.");
-> +			}
->  			rc = -ENOMEM;
->  			break;
->  		}
+It is most likely not the cause for your issue.  Rather, MSI support
+(messages signaled interrupts, added to firewire-ohci in kernel 2.6.36)
+of your controller might be buggy.  Which controller do you have
+according to "lspci -nn"?
 
-
+Try "modprobe -r firewire-ohci", "modprobe firewire-ohci quirks=17".
+The unrelated quirks flag 1 is already present in firewire-ohci's
+quirks list; the additional flag 16 switches off MSI.
 -- 
-Suresh Jayaraman
+Stefan Richter
+-=====-==-=- ==-- --==-
+http://arcgraph.de/sr/
