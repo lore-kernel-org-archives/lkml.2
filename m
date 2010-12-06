@@ -1,190 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab0LFRAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 12:00:07 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:9236 "EHLO mx2.netapp.com"
+	id S1753983Ab0LFQ6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:58:33 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59711 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754058Ab0LFQ7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:59:33 -0500
-X-IronPort-AV: E=Sophos;i="4.59,306,1288594800"; 
-   d="scan'208";a="491620058"
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v4 2/3] Call the filesystem back whenever a page is removed from the page cache
-Date: Mon,  6 Dec 2010 11:59:07 -0500
-Message-Id: <1291654748-8921-3-git-send-email-Trond.Myklebust@netapp.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1291654748-8921-2-git-send-email-Trond.Myklebust@netapp.com>
-References: <1291654748-8921-1-git-send-email-Trond.Myklebust@netapp.com>
- <1291654748-8921-2-git-send-email-Trond.Myklebust@netapp.com>
-In-Reply-To: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
-References: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
+	id S1753899Ab0LFQ61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:58:27 -0500
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/16] signal: fix SIGCONT notification code
+Date: Mon,  6 Dec 2010 17:56:49 +0100
+Message-Id: <1291654624-6230-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Dec 2010 16:57:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+After a task receives SIGCONT, its parent is notified via SIGCHLD with
+its siginfo describing what the notified event is.  If SIGCONT is
+received while the child process is stopped, the code should be
+CLD_CONTINUED.  If SIGCONT is recieved while the child process is in
+the process of being stopped, it should be CLD_STOPPED.  Which code to
+use is determined in prepare_signal() and recorded in signal->flags
+using SIGNAL_CLD_CONTINUED|STOP flags.
 
-NFS needs to be able to release objects that are stored in the page
-cache once the page itself is no longer visible from the page cache.
+get_signal_deliver() should test these flags and then notify
+accoringly; however, it incorrectly tested SIGNAL_STOP_CONTINUED
+instead of SIGNAL_CLD_CONTINUED, thus incorrectly notifying
+CLD_CONTINUED if the signal is delivered before the task is wait(2)ed
+and CLD_STOPPED if the state was fetched already.
 
-This patch adds a callback to the address space operations that allows
-filesystems to perform page cleanups once the page has been removed
-from the page cache.
+Fix it by testing SIGNAL_CLD_CONTINUED.  While at it, uncompress the
+?: test into if/else clause for better readability.
 
-Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
-[trondmy: cover the cases of invalidate_inode_pages2() and
-          truncate_inode_pages()]
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@redhat.com>
 ---
- Documentation/filesystems/Locking |    7 ++++++-
- Documentation/filesystems/vfs.txt |    7 +++++++
- include/linux/fs.h                |    1 +
- mm/filemap.c                      |    5 +++++
- mm/truncate.c                     |    4 ++++
- mm/vmscan.c                       |    7 +++++++
- 6 files changed, 30 insertions(+), 1 deletions(-)
+ kernel/signal.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index a91f308..b6426f1 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -173,12 +173,13 @@ prototypes:
- 	sector_t (*bmap)(struct address_space *, sector_t);
- 	int (*invalidatepage) (struct page *, unsigned long);
- 	int (*releasepage) (struct page *, int);
-+	void (*freepage)(struct page *);
- 	int (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
- 			loff_t offset, unsigned long nr_segs);
- 	int (*launder_page) (struct page *);
- 
- locking rules:
--	All except set_page_dirty may block
-+	All except set_page_dirty and freepage may block
- 
- 			BKL	PageLocked(page)	i_mutex
- writepage:		no	yes, unlocks (see below)
-@@ -193,6 +194,7 @@ perform_write:		no	n/a			yes
- bmap:			no
- invalidatepage:		no	yes
- releasepage:		no	yes
-+freepage:		no	yes
- direct_IO:		no
- launder_page:		no	yes
- 
-@@ -288,6 +290,9 @@ buffers from the page in preparation for freeing it.  It returns zero to
- indicate that the buffers are (or may be) freeable.  If ->releasepage is zero,
- the kernel assumes that the fs has no private interest in the buffers.
- 
-+	->freepage() is called when the kernel is done dropping the page
-+from the page cache.
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 4e3cff1..fe004b5 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1853,8 +1853,13 @@ relock:
+ 	 * the CLD_ si_code into SIGNAL_CLD_MASK bits.
+ 	 */
+ 	if (unlikely(signal->flags & SIGNAL_CLD_MASK)) {
+-		int why = (signal->flags & SIGNAL_STOP_CONTINUED)
+-				? CLD_CONTINUED : CLD_STOPPED;
++		int why;
 +
- 	->launder_page() may be called prior to releasing a page if
- it is still found to be dirty. It returns zero if the page was successfully
- cleaned, or an error value if not. Note that in order to prevent the page
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index ed7e5ef..3b14a55 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -534,6 +534,7 @@ struct address_space_operations {
- 	sector_t (*bmap)(struct address_space *, sector_t);
- 	int (*invalidatepage) (struct page *, unsigned long);
- 	int (*releasepage) (struct page *, int);
-+	void (*freepage)(struct page *);
- 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
- 			loff_t offset, unsigned long nr_segs);
- 	struct page* (*get_xip_page)(struct address_space *, sector_t,
-@@ -679,6 +680,12 @@ struct address_space_operations {
-         need to ensure this.  Possibly it can clear the PageUptodate
-         bit if it cannot free private data yet.
++		if (signal->flags & SIGNAL_CLD_CONTINUED)
++			why = CLD_CONTINUED;
++		else
++			why = CLD_STOPPED;
++
+ 		signal->flags &= ~SIGNAL_CLD_MASK;
  
-+  freepage: freepage is called once the page is no longer visible in
-+        the page cache in order to allow the cleanup of any private
-+	data. Since it may be called by the memory reclaimer, it
-+	should not assume that the original address_space mapping still
-+	exists, and it should not block.
-+
-   direct_IO: called by the generic read/write routines to perform
-         direct_IO - that is IO requests which bypass the page cache
-         and transfer data directly between the storage and the
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index c9e06cc..090f0ea 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -602,6 +602,7 @@ struct address_space_operations {
- 	sector_t (*bmap)(struct address_space *, sector_t);
- 	void (*invalidatepage) (struct page *, unsigned long);
- 	int (*releasepage) (struct page *, gfp_t);
-+	void (*freepage)(struct page *);
- 	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
- 			loff_t offset, unsigned long nr_segs);
- 	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
-diff --git a/mm/filemap.c b/mm/filemap.c
-index ea89840..6b9aee2 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -143,13 +143,18 @@ void __remove_from_page_cache(struct page *page)
- void remove_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
-+	void (*freepage)(struct page *);
- 
- 	BUG_ON(!PageLocked(page));
- 
-+	freepage = mapping->a_ops->freepage;
- 	spin_lock_irq(&mapping->tree_lock);
- 	__remove_from_page_cache(page);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
-+
-+	if (freepage)
-+		freepage(page);
- }
- EXPORT_SYMBOL(remove_from_page_cache);
- 
-diff --git a/mm/truncate.c b/mm/truncate.c
-index ba887bf..3c2d5dd 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -390,6 +390,10 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
- 	__remove_from_page_cache(page);
- 	spin_unlock_irq(&mapping->tree_lock);
- 	mem_cgroup_uncharge_cache_page(page);
-+
-+	if (mapping->a_ops->freepage)
-+		mapping->a_ops->freepage(page);
-+
- 	page_cache_release(page);	/* pagecache ref */
- 	return 1;
- failed:
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d31d7ce..9ca587c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -494,9 +494,16 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
- 		spin_unlock_irq(&mapping->tree_lock);
- 		swapcache_free(swap, page);
- 	} else {
-+		void (*freepage)(struct page *);
-+
-+		freepage = mapping->a_ops->freepage;
-+
- 		__remove_from_page_cache(page);
- 		spin_unlock_irq(&mapping->tree_lock);
- 		mem_cgroup_uncharge_cache_page(page);
-+
-+		if (freepage != NULL)
-+			freepage(page);
- 	}
- 
- 	return 1;
+ 		why = tracehook_notify_jctl(why, CLD_CONTINUED);
 -- 
-1.7.3.2
+1.7.1
 
