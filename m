@@ -1,476 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab0LFPLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 10:11:55 -0500
-Received: from 93.100.122.208.pool.sknt.ru ([93.100.122.208]:41232 "EHLO
-	localhost.localdomain" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750709Ab0LFPLx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 10:11:53 -0500
-Date: Mon, 6 Dec 2010 18:16:11 +0300
-From: Valentine Barshak <vbarshak@mvista.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+	id S1753468Ab0LFPMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 10:12:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab0LFPMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 10:12:20 -0500
+Date: Mon, 6 Dec 2010 10:12:14 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@samba.org>
+Cc: Bernhard Walle <bernhard@bwalle.de>, sfrench@samba.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] USB: HID: Consolidate device existence checks in
-	hiddev_ioctl
-Message-ID: <20101206151611.GA10130@mvista.com>
-Reply-To: Valentine Barshak <vbarshak@mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101206144519.GA8438@mvista.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [PATCH] cifs: Add information about noserverino
+Message-ID: <20101206101214.52a24415@tlielax.poochiereds.net>
+In-Reply-To: <20101206095725.78422138@tlielax.poochiereds.net>
+References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
+	<20101206095725.78422138@tlielax.poochiereds.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if the device has been removed before hiddev_ioctl(),
-the -EIO is returned. If it's removed while hiddev_ioctl() is in
-progress, some commands are still processed fine, others
-return -ENODEV. This change takes the "existancelock" before
-processing ioctl commands and releases it at the end.
-If the device has been removed, always returns -ENODEV.
+On Mon, 6 Dec 2010 09:57:25 -0500
+Jeff Layton <jlayton@samba.org> wrote:
 
-Signed-off-by: Valentine Barshak <vbarshak@mvista.com>
----
- drivers/hid/usbhid/hiddev.c |  287 +++++++++++++++---------------------------
- 1 files changed, 103 insertions(+), 184 deletions(-)
+> On Sun,  5 Dec 2010 18:07:35 +0100
+> Bernhard Walle <bernhard@bwalle.de> wrote:
+> 
+> > In my case I had the problem that 32 bit userspace applications in an
+> > amd64 environment was not able to list the directories of a CIFS-mounted
+> > share. The simple userspace code
+> > 
+> >     int main(int argc, char *argv[])
+> >     {
+> >         DIR *dir;
+> >         struct dirent *dirent;
+> > 
+> >         if (!argv[1]) {
+> >             fprintf(stderr, "Usage: %s <directory>\n", argv[0]);
+> >             return -1;
+> >         }
+> > 
+> >         dir = opendir(argv[1]);
+> >         if (!dir) {
+> >             perror("Unable to open directory");
+> >             return -1;
+> >         }
+> > 
+> >         while ((dirent = readdir(dir)) != NULL)
+> >             puts(dirent->d_name);
+> > 
+> >         closedir(dir);
+> > 
+> >         return 0;
+> >     }
+> > 
+> > was sufficient to trigger the problem.
+> > 
+> > I discovered that the problem was that the inodes were too large to fit
+> > in a 32 bit (unsigned long) integer, so the compat_filldir() function
+> > returned -EOVERFLOW.
+> > 
+> > While that is okay it would have saved me a some hours of debugging if
+> > the message below would have appeared in my kernel log.
+> > 
+> > The target was a Samba server (I guess) of a Buffalo LinkStation Duo
+> > with the unmodified vendor firmware 1.34.
+> > 
+> > Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+> > ---
+> >  fs/cifs/readdir.c |   23 +++++++++++++++++++----
+> >  1 files changed, 19 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
+> > index d5e591f..d979826 100644
+> > --- a/fs/cifs/readdir.c
+> > +++ b/fs/cifs/readdir.c
+> > @@ -773,6 +773,7 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+> >  	char *tmp_buf = NULL;
+> >  	char *end_of_smb;
+> >  	unsigned int max_len;
+> > +	int err;
+> >  
+> >  	xid = GetXid();
+> >  
+> > @@ -783,17 +784,31 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+> >  
+> >  	switch ((int) file->f_pos) {
+> >  	case 0:
+> > -		if (filldir(direntry, ".", 1, file->f_pos,
+> > -		     file->f_path.dentry->d_inode->i_ino, DT_DIR) < 0) {
+> > +		err = filldir(direntry, ".", 1, file->f_pos,
+> > +		     file->f_path.dentry->d_inode->i_ino, DT_DIR);
+> > +		if (err < 0) {
+> >  			cERROR(1, "Filldir for current dir failed");
+> > +			if (err == -EOVERFLOW) {
+> > +				cERROR(1, "Server inodes are too large for 32 "
+> > +						"bit userspace. You might "
+> > +						"consider using 'noserverino' "
+> > +						"mount option for this mount.");
+> > +			}
+> >  			rc = -ENOMEM;
+> >  			break;
+> >  		}
+> >  		file->f_pos++;
+> >  	case 1:
+> > -		if (filldir(direntry, "..", 2, file->f_pos,
+> > -		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR) < 0) {
+> > +		err = filldir(direntry, "..", 2, file->f_pos,
+> > +		     file->f_path.dentry->d_parent->d_inode->i_ino, DT_DIR);
+> > +		if (err < 0) {
+> >  			cERROR(1, "Filldir for parent dir failed");
+> > +			if (err == -EOVERFLOW) {
+> > +				cERROR(1, "Server inodes are too large for 32 "
+> > +						"bit userspace. You might "
+> > +						"consider using 'noserverino' "
+> > +						"mount option for this mount.");
+> > +			}
+> >  			rc = -ENOMEM;
+> >  			break;
+> >  		}
+> 
+> This doesn't look right to me...
+> 
+> i_ino is an unsigned long. The code in filldir() is this:
+> 
+>         unsigned long d_ino;
+> 
+> [...]
+> 
+>         d_ino = ino;
+>         if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+>                 buf->error = -EOVERFLOW;
+>                 return -EOVERFLOW;
+>         }
+> 
+> ...so the first condition will return true on a 32-bit arch, but it's
+> not clear to me how you'd get the second one to return true in this
+> situation.
+> 
 
-diff --git a/drivers/hid/usbhid/hiddev.c b/drivers/hid/usbhid/hiddev.c
-index cbb6974..d099cad 100644
---- a/drivers/hid/usbhid/hiddev.c
-+++ b/drivers/hid/usbhid/hiddev.c
-@@ -586,221 +586,167 @@ static long hiddev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	struct hiddev_list *list = file->private_data;
- 	struct hiddev *hiddev = list->hiddev;
- 	struct hid_device *hid;
--	struct usb_device *dev;
- 	struct hiddev_collection_info cinfo;
- 	struct hiddev_report_info rinfo;
- 	struct hiddev_field_info finfo;
- 	struct hiddev_devinfo dinfo;
- 	struct hid_report *report;
- 	struct hid_field *field;
--	struct usbhid_device *usbhid;
- 	void __user *user_arg = (void __user *)arg;
--	int i, r;
-+	int i, r = -EINVAL;
- 
- 	/* Called without BKL by compat methods so no BKL taken */
- 
--	/* FIXME: Who or what stop this racing with a disconnect ?? */
--	if (!hiddev->exist)
--		return -EIO;
-+	mutex_lock(&hiddev->existancelock);
-+	if (!hiddev->exist) {
-+		r = -ENODEV;
-+		goto ret_unlock;
-+	}
-+
-+	hid = hiddev->hid;
- 
- 	switch (cmd) {
- 
- 	case HIDIOCGVERSION:
--		return put_user(HID_VERSION, (int __user *)arg);
-+		r = put_user(HID_VERSION, (int __user *)arg) ?
-+			-EFAULT : 0;
-+		break;
- 
- 	case HIDIOCAPPLICATION:
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
--		}
--
--		hid = hiddev->hid;
--		if (arg < 0 || arg >= hid->maxapplication) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (arg < 0 || arg >= hid->maxapplication)
-+			break;
- 
- 		for (i = 0; i < hid->maxcollection; i++)
- 			if (hid->collection[i].type ==
- 			    HID_COLLECTION_APPLICATION && arg-- == 0)
- 				break;
- 
--		if (i == hid->maxcollection)
--			r = -EINVAL;
--		else
-+		if (i < hid->maxcollection)
- 			r = hid->collection[i].usage;
--		goto ret_unlock;
-+		break;
- 
- 	case HIDIOCGDEVINFO:
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
-+		{
-+			struct usb_device *dev = hid_to_usb_dev(hid);
-+			struct usbhid_device *usbhid = hid->driver_data;
-+
-+			dinfo.bustype = BUS_USB;
-+			dinfo.busnum = dev->bus->busnum;
-+			dinfo.devnum = dev->devnum;
-+			dinfo.ifnum = usbhid->ifnum;
-+			dinfo.vendor = le16_to_cpu(dev->descriptor.idVendor);
-+			dinfo.product = le16_to_cpu(dev->descriptor.idProduct);
-+			dinfo.version = le16_to_cpu(dev->descriptor.bcdDevice);
-+			dinfo.num_applications = hid->maxapplication;
-+
-+			r = copy_to_user(user_arg, &dinfo, sizeof(dinfo)) ?
-+				-EFAULT : 0;
-+			break;
- 		}
- 
--		hid = hiddev->hid;
--		dev = hid_to_usb_dev(hid);
--		usbhid = hid->driver_data;
--
--		dinfo.bustype = BUS_USB;
--		dinfo.busnum = dev->bus->busnum;
--		dinfo.devnum = dev->devnum;
--		dinfo.ifnum = usbhid->ifnum;
--		dinfo.vendor = le16_to_cpu(dev->descriptor.idVendor);
--		dinfo.product = le16_to_cpu(dev->descriptor.idProduct);
--		dinfo.version = le16_to_cpu(dev->descriptor.bcdDevice);
--		dinfo.num_applications = hid->maxapplication;
--		mutex_unlock(&hiddev->existancelock);
--
--		if (copy_to_user(user_arg, &dinfo, sizeof(dinfo)))
--			return -EFAULT;
--
--		return 0;
--
- 	case HIDIOCGFLAG:
--		if (put_user(list->flags, (int __user *)arg))
--			return -EFAULT;
--
--		return 0;
-+		r = put_user(list->flags, (int __user *)arg) ?
-+			-EFAULT : 0;
-+		break;
- 
- 	case HIDIOCSFLAG:
- 		{
- 			int newflags;
--			if (get_user(newflags, (int __user *)arg))
--				return -EFAULT;
-+
-+			if (get_user(newflags, (int __user *)arg)) {
-+				r = -EFAULT;
-+				break;
-+			}
- 
- 			if ((newflags & ~HIDDEV_FLAGS) != 0 ||
- 			    ((newflags & HIDDEV_FLAG_REPORT) != 0 &&
- 			     (newflags & HIDDEV_FLAG_UREF) == 0))
--				return -EINVAL;
-+				break;
- 
- 			list->flags = newflags;
- 
--			return 0;
-+			r = 0;
-+			break;
- 		}
- 
- 	case HIDIOCGSTRING:
--		mutex_lock(&hiddev->existancelock);
--		if (hiddev->exist)
--			r = hiddev_ioctl_string(hiddev, cmd, user_arg);
--		else
--			r = -ENODEV;
--ret_unlock:
--		mutex_unlock(&hiddev->existancelock);
--		return r;
-+		r = hiddev_ioctl_string(hiddev, cmd, user_arg);
-+		break;
- 
- 	case HIDIOCINITREPORT:
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			mutex_unlock(&hiddev->existancelock);
--			return -ENODEV;
--		}
--		hid = hiddev->hid;
- 		usbhid_init_reports(hid);
--		mutex_unlock(&hiddev->existancelock);
--
--		return 0;
-+		r = 0;
-+		break;
- 
- 	case HIDIOCGREPORT:
--		if (copy_from_user(&rinfo, user_arg, sizeof(rinfo)))
--			return -EFAULT;
-+		if (copy_from_user(&rinfo, user_arg, sizeof(rinfo))) {
-+			r = -EFAULT;
-+			break;
-+		}
- 
- 		if (rinfo.report_type == HID_REPORT_TYPE_OUTPUT)
--			return -EINVAL;
-+			break;
- 
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
--		}
--
--		hid = hiddev->hid;
- 		report = hiddev_lookup_report(hid, &rinfo);
--		if (report == NULL) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (report == NULL)
-+			break;
- 
- 		usbhid_submit_report(hid, report, USB_DIR_IN);
- 		usbhid_wait_io(hid);
--		mutex_unlock(&hiddev->existancelock);
- 
--		return 0;
-+		r = 0;
-+		break;
- 
- 	case HIDIOCSREPORT:
--		if (copy_from_user(&rinfo, user_arg, sizeof(rinfo)))
--			return -EFAULT;
-+		if (copy_from_user(&rinfo, user_arg, sizeof(rinfo))) {
-+			r = -EFAULT;
-+			break;
-+		}
- 
- 		if (rinfo.report_type == HID_REPORT_TYPE_INPUT)
--			return -EINVAL;
--
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
--		}
-+			break;
- 
--		hid = hiddev->hid;
- 		report = hiddev_lookup_report(hid, &rinfo);
--		if (report == NULL) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (report == NULL)
-+			break;
- 
- 		usbhid_submit_report(hid, report, USB_DIR_OUT);
- 		usbhid_wait_io(hid);
--		mutex_unlock(&hiddev->existancelock);
- 
--		return 0;
-+		r = 0;
-+		break;
- 
- 	case HIDIOCGREPORTINFO:
--		if (copy_from_user(&rinfo, user_arg, sizeof(rinfo)))
--			return -EFAULT;
--
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
-+		if (copy_from_user(&rinfo, user_arg, sizeof(rinfo))) {
-+			r = -EFAULT;
-+			break;
- 		}
- 
--		hid = hiddev->hid;
- 		report = hiddev_lookup_report(hid, &rinfo);
--		if (report == NULL) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (report == NULL)
-+			break;
- 
- 		rinfo.num_fields = report->maxfield;
--		mutex_unlock(&hiddev->existancelock);
--
--		if (copy_to_user(user_arg, &rinfo, sizeof(rinfo)))
--			return -EFAULT;
- 
--		return 0;
-+		r = copy_to_user(user_arg, &rinfo, sizeof(rinfo)) ?
-+			-EFAULT : 0;
-+		break;
- 
- 	case HIDIOCGFIELDINFO:
--		if (copy_from_user(&finfo, user_arg, sizeof(finfo)))
--			return -EFAULT;
-+		if (copy_from_user(&finfo, user_arg, sizeof(finfo))) {
-+			r = -EFAULT;
-+			break;
-+		}
-+
- 		rinfo.report_type = finfo.report_type;
- 		rinfo.report_id = finfo.report_id;
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
--		}
- 
--		hid = hiddev->hid;
- 		report = hiddev_lookup_report(hid, &rinfo);
--		if (report == NULL) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (report == NULL)
-+			break;
- 
--		if (finfo.field_index >= report->maxfield) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (finfo.field_index >= report->maxfield)
-+			break;
- 
- 		field = report->field[finfo.field_index];
- 		memset(&finfo, 0, sizeof(finfo));
-@@ -818,12 +764,10 @@ ret_unlock:
- 		finfo.physical_maximum = field->physical_maximum;
- 		finfo.unit_exponent = field->unit_exponent;
- 		finfo.unit = field->unit;
--		mutex_unlock(&hiddev->existancelock);
- 
--		if (copy_to_user(user_arg, &finfo, sizeof(finfo)))
--			return -EFAULT;
--
--		return 0;
-+		r = copy_to_user(user_arg, &finfo, sizeof(finfo)) ?
-+			-EFAULT : 0;
-+		break;
- 
- 	case HIDIOCGUCODE:
- 		/* fall through */
-@@ -832,57 +776,36 @@ ret_unlock:
- 	case HIDIOCGUSAGES:
- 	case HIDIOCSUSAGES:
- 	case HIDIOCGCOLLECTIONINDEX:
--		mutex_lock(&hiddev->existancelock);
--		if (hiddev->exist)
--			r = hiddev_ioctl_usage(hiddev, cmd, user_arg);
--		else
--			r = -ENODEV;
--		mutex_unlock(&hiddev->existancelock);
--		return r;
-+		r = hiddev_ioctl_usage(hiddev, cmd, user_arg);
-+		break;
- 
- 	case HIDIOCGCOLLECTIONINFO:
--		if (copy_from_user(&cinfo, user_arg, sizeof(cinfo)))
--			return -EFAULT;
--
--		mutex_lock(&hiddev->existancelock);
--		if (!hiddev->exist) {
--			r = -ENODEV;
--			goto ret_unlock;
-+		if (copy_from_user(&cinfo, user_arg, sizeof(cinfo))) {
-+			r = -EFAULT;
-+			break;
- 		}
- 
--		hid = hiddev->hid;
--		if (cinfo.index >= hid->maxcollection) {
--			r = -EINVAL;
--			goto ret_unlock;
--		}
-+		if (cinfo.index >= hid->maxcollection)
-+			break;
- 
- 		cinfo.type = hid->collection[cinfo.index].type;
- 		cinfo.usage = hid->collection[cinfo.index].usage;
- 		cinfo.level = hid->collection[cinfo.index].level;
--		mutex_lock(&hiddev->existancelock);
- 
--		if (copy_to_user(user_arg, &cinfo, sizeof(cinfo)))
--			return -EFAULT;
--		return 0;
-+		r = copy_to_user(user_arg, &cinfo, sizeof(cinfo)) ?
-+			-EFAULT : 0;
-+		break;
- 
- 	default:
--
- 		if (_IOC_TYPE(cmd) != 'H' || _IOC_DIR(cmd) != _IOC_READ)
--			return -EINVAL;
-+			break;
- 
- 		if (_IOC_NR(cmd) == _IOC_NR(HIDIOCGNAME(0))) {
- 			int len;
- 
--			mutex_lock(&hiddev->existancelock);
--			if (!hiddev->exist) {
--				r = -ENODEV;
--				goto ret_unlock;
--			}
--
--			hid = hiddev->hid;
- 			if (!hid->name) {
- 				r = 0;
--				goto ret_unlock;
-+				break;
- 			}
- 
- 			len = strlen(hid->name) + 1;
-@@ -890,22 +813,15 @@ ret_unlock:
- 				 len = _IOC_SIZE(cmd);
- 			r = copy_to_user(user_arg, hid->name, len) ?
- 				-EFAULT : len;
--			goto ret_unlock;
-+			break;
- 		}
- 
- 		if (_IOC_NR(cmd) == _IOC_NR(HIDIOCGPHYS(0))) {
- 			int len;
- 
--			mutex_lock(&hiddev->existancelock);
--			if (!hiddev->exist) {
--				r = -ENODEV;
--				goto ret_unlock;
--			}
--
--			hid = hiddev->hid;
- 			if (!hid->phys) {
- 				r = 0;
--				goto ret_unlock;
-+				break;
- 			}
- 
- 			len = strlen(hid->phys) + 1;
-@@ -913,10 +829,13 @@ ret_unlock:
- 				len = _IOC_SIZE(cmd);
- 			r = copy_to_user(user_arg, hid->phys, len) ?
- 				-EFAULT : len;
--			goto ret_unlock;
-+			break;
- 		}
- 	}
--	return -EINVAL;
-+
-+ret_unlock:
-+	mutex_unlock(&hiddev->existancelock);
-+	return r;
- }
- 
- #ifdef CONFIG_COMPAT
+Oh.... *compat*_filldir. Ok, that makes more sense...
+
+I'm still not sure I like this patch however. It potentially means a
+lot of printk spam since these things have no ratelimiting. It also
+doesn't tell me anything about which server might be giving me grief.
+
+Maybe this should be turned into a cFYI?
+
+The bottom line though is that running 32-bit applications that were
+built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
+idea. It would be nice to be able to alert users that things aren't
+working the way they expect, but I'm not sure this is the right place
+to do that.
+
 -- 
-1.6.0.6
-
+Jeff Layton <jlayton@redhat.com>
