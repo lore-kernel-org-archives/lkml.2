@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab0LFOtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:49:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64568 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab0LFOtM (ORCPT
+	id S1753269Ab0LFOuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:50:03 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:56767 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab0LFOuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:49:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vitaly Wool <vitalywool@gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-Date: Mon, 6 Dec 2010 15:49:01 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <AANLkTikMAWikj9HQ76YVeHr7pMoFK6ME2=HHpuQ1kUxq@mail.gmail.com> <AANLkTi=V+89hmBP8iqz13xMhYVfnBkbiVnk=FY=OBE8T@mail.gmail.com>
-In-Reply-To: <AANLkTi=V+89hmBP8iqz13xMhYVfnBkbiVnk=FY=OBE8T@mail.gmail.com>
+	Mon, 6 Dec 2010 09:50:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=DidslkehAeRGmozBI1tYjHB77tSaL5GhpFMa2ZmwWSRx0WGteTQzAdLtE1mcii+NEr
+         NI7RgpD5e4DEPWHIG3HbBImJdsitQBCqKaqWDtDKLnbgrSwrNnlwF/1S5P23WOXHucIL
+         j871s6GdjAA3vr2ihyAF67WzmslqlEG0F96js=
+Date: Mon, 6 Dec 2010 12:49:55 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC] perf: Prevent potential null dereference
+Message-ID: <20101206144954.GA25943@ghostprotocols.net>
+References: <20101202222605.GA6471@lenovo>
+ <20101202224104.GA1639@nowhere>
+ <20101202224609.GA31473@ghostprotocols.net>
+ <20101205221321.GD7799@lenovo>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012061549.01534.arnd@arndb.de>
-X-Provags-ID: V02:K0:LphxzjHkEDRqCh+VfuEYYLIzCCJEJWFeFu1vli5EYG1
- qTj/ReVUaUcuFShanhDGeZYrdBD6LXm8F01gOR518aU3KpuSi7
- oGueK7ZeWTn+jTQScAWme3nwWuxZ/YrD26VSoYfQ+Ax/MiFzpu
- n04z6GrEFKuFK5BHjzEiLbhBp7wUqw+hBeaNdh4j3iR4D54Hb0
- PEXMnH0fWbwUW5AuUATsQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101205221321.GD7799@lenovo>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010, Vitaly Wool wrote:
-> > As a quick answer to your question: that would depend on the
-> > difference between the different controllers, I guess. But CG2900
-> > doesn't support the LL protocol so it is not an issue for that.
+Em Mon, Dec 06, 2010 at 01:13:21AM +0300, Cyrill Gorcunov escreveu:
+> On Thu, Dec 02, 2010 at 08:46:10PM -0200, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Dec 02, 2010 at 11:41:08PM +0100, Frederic Weisbecker escreveu:
+> > > On Fri, Dec 03, 2010 at 01:26:05AM +0300, Cyrill Gorcunov wrote:
+> > > > In case if there is no memory we might hit null
+> > > > dereference on accessing calloc'ed data.
+> > > > 
+> > > > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > > > CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > > CC: Peter Zijlstra <peterz@infradead.org>
+> > > > CC: Ingo Molnar <mingo@elte.hu>
+> > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > ---
+> ...
+> > > 
+> > > Good.
+> > > 
+> > > As a nit, not that it matters that much because we are very close to the starting code
+> > > anyway, but it would be better to propagate the error to the callers.
+> > 
+> > I'm of the opinion that main() should be where exit() is allowed, and
+> > even there... return would be better. 8-)
+> > 
+> > - Arnaldo
+> > 
 > 
-> Right, but if you are only aiming cg2000, why would you create a
-> framework for that?  I initially thought your solution was generic
-> enough to handle other "many-in-one" Bluetooth chips but I'm
-> completely unsure about that now.
+> ok, sorry for delay, it seems the following would be liked
+> more than first version ;)
+> 
 
-As far as I understand, the point is that it's no longer a 'solution'
-at the core, i.e. there is no replacement for hci_ldisc or any
-of these, just modules for the additional h4 protocols that don't
-have a linux implementation yet.
+Hey, what tree is this agains? I guess tip/master, right? If so, I still
+didn't got there :-\
 
-The patch set that was originally posted here had a new framework,
-but after the comments from Alan and me, Par-Gunnar agreed to use
-the existing framework instead and extend it in a useful way.
-Please read all of the discussion we already had. You made a good
-point here, but I fear you had both Par-Gunnar and me confused
-because it was a point that already got resolved.
-
-	Arnd
+- Arnaldo
