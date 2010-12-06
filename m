@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab0LFTjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 14:39:19 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22785 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab0LFTjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 14:39:18 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/FkBPsS1y4DqSbGZPwhdJW
-Date: Mon, 6 Dec 2010 11:39:13 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Hemanth V <hemanthv@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 2/2] omap4: platform changes for CMA3000
-Message-ID: <20101206193913.GP8345@atomide.com>
-References: <37166.10.24.255.17.1291028266.squirrel@dbdmail.itg.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37166.10.24.255.17.1291028266.squirrel@dbdmail.itg.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754054Ab0LFTsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 14:48:22 -0500
+Received: from serv04.lahn.de ([213.239.197.57]:40928 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752057Ab0LFTsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 14:48:20 -0500
+Date: Mon, 6 Dec 2010 20:34:37 +0100
+From: Michael Leun <lkml20101129@newton.leun.net>
+To: Jesse Gross <jesse@nicira.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
+ used
+Message-ID: <20101206203437.54b550e0@xenia.leun.net>
+In-Reply-To: <AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
+References: <20101129201716.1d0257c4@xenia.leun.net>
+	<4CF442FA.4070701@candelatech.com>
+	<20101130095944.41b5f7b6@xenia.leun.net>
+	<1291108809.2904.3.camel@edumazet-laptop>
+	<20101201111716.424fb771@xenia.leun.net>
+	<1291200914.2856.546.camel@edumazet-laptop>
+	<20101205030712.36149bc2@xenia.leun.net>
+	<1291536233.2806.102.camel@edumazet-laptop>
+	<20101205105528.49fa9a9f@xenia.leun.net>
+	<20101205114404.7c0cddc2@xenia.leun.net>
+	<AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hemanth V <hemanthv@ti.com> [101129 02:48]:
-> From 8082870cc704d901d98cf0d6af90e45860927ceb Mon Sep 17 00:00:00 2001
-> From: Hemanth V <hemanthv@ti.com>
-> Date: Thu, 26 Aug 2010 17:49:12 +0530
-> Subject: [PATCH] Platform changes for CMA3000 Accelerometer driver
-> 
-> Update 4430 SDP board file with platform data for accelerometer driver
-> and select the driver in kconfig
-> 
-> Signed-off-by: Hemanth V <hemanthv@ti.com>
-> ---
->  arch/arm/mach-omap2/Kconfig         |    2 ++
->  arch/arm/mach-omap2/board-4430sdp.c |   30 ++++++++++++++++++++++++++++++
->  2 files changed, 32 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> index a928fd6..e87c049 100644
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@ -255,6 +255,8 @@ config MACH_OMAP_4430SDP
->  	depends on ARCH_OMAP4
->  	select INPUT_TOUCHSCREEN
->  	select TOUCHSCREEN_SYNTM12XX
-> +	select INPUT_MISC
-> + 	select INPUT_CMA3000
-> + 	select INPUT_CMA3000_I2C
-> 
+On Mon, 6 Dec 2010 10:14:55 -0800
+Jesse Gross <jesse@nicira.com> wrote:
 
-The better way is to patch omap2plus_defconfig so these get added
-as modules.
+> On Sun, Dec 5, 2010 at 2:44 AM, Michael Leun
+> <lkml20101129@newton.leun.net> wrote:
+> > Hi Jesse,
+> >
+> > On Sun, 5 Dec 2010 10:55:28 +0100
+> > Michael Leun <lkml20101129@newton.leun.net> wrote:
+> >
+> >> On Sun, 05 Dec 2010 09:03:53 +0100
+> >> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >>
+> >> > > But on
+> >> > >
+> >> > > hpdl320g5:/home/ml # lspci | grep Eth
+> >> > > 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme
+> >> > > BCM5714 Gigabit Ethernet (rev a3) 03:04.1 Ethernet controller:
+> >> > > Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev
+> >> > > a3)
+> >> > >
+> >> > > the good message is that it also does not crash, but with
+> >> > > tcpdump I see vlan tags when no vlan devices configured on the
+> >> > > respective eth, if so I do not see tags anymore vlan tags on
+> >> > > the trunk interface.
+> >> > >
+> >> >
+> >> > For all these very specific needs, you'll have to try 2.6.37 I am
+> >> > afraid. Jesse did huge changes to exactly make this working, we
+> >> > wont backport this to 2.6.36, but only avoid crashes.
+> >>
+> >> OK, I'm perfectly fine with that, of course, actually nice to hear
+> >> that the issue already is addressed.
+> >>
+> >> Likely I'll give some rc an shot on this machine (maybe over
+> >> christmas), but it is an production machine (acutally testing other
+> >> devices is the "product" produced on this machine), so
+> >> unfortunately I'm not that free in when and what I can do (but the
+> >> possibility to, for example, bridge the trunk interface would make
+> >> testing easier, that justifies something...).
+> >>
+> >> Thank you all very much for your work.
+> >
+> > Are these changes already in 2.6.37-rc4? Or, if not are they
+> > somewhere publically available already?
+> >
+> > I looked into various changelogs but have some difficulties to
+> > identify them...
+> >
+> > Maybe I have some time next days to give them an try...
+> 
+> Yes, all of the existing vlan changes are in 2.6.37-rc4.  There were a
+> number of patches but the main one was
+> 3701e51382a026cba10c60b03efabe534fba4ca4
 
-Regards,
+Then, I'm afraid, this (seeing vlan tags even if vlan interfaces are
+configured) does not work on HP DL320G5 (for exact description and
+examples please see my mail a few days ago).
 
-Tony
+-- 
+MfG,
+
+Michael Leun
+
