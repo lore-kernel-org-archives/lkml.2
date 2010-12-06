@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab0LFQ6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:58:44 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59726 "EHLO hera.kernel.org"
+	id S1754149Ab0LFQ6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:58:48 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59735 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab0LFQ6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:58:41 -0500
+	id S1754127Ab0LFQ6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:58:46 -0500
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
         jan.kratochvil@redhat.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/16] signal: prepare for CLD_* notification changes
-Date: Mon,  6 Dec 2010 17:56:59 +0100
-Message-Id: <1291654624-6230-12-git-send-email-tj@kernel.org>
+Subject: [PATCH 13/16] ptrace: reorganize __ptrace_unlink() and ptrace_untrace()
+Date: Mon,  6 Dec 2010 17:57:01 +0100
+Message-Id: <1291654624-6230-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
 References: <1291654624-6230-1-git-send-email-tj@kernel.org>
@@ -22,115 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add docbook comment for do_notify_parent_cldstop(), fix a comment typo
-and add boilerplat code to prepare for moving notification
-determination logic into do_notify_parent_cldstop().
+* Collapse ptrace_untrace() into __ptrace_unlink().
 
-This patch doesn't cause any visible behavior change.
+* Always do the whole unlinking inside siglock.
+
+* Untracing is done before unlinking.
+
+This is to prepare for further changes.  As the whole
+unlinking/tracing is done inside both tasklist lock and siglock, the
+reordering doesn't cause any visible behavior difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Roland McGrath <roland@redhat.com>
 ---
- kernel/signal.c |   53 +++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 49 insertions(+), 4 deletions(-)
+ kernel/ptrace.c |   40 ++++++++++++++++++----------------------
+ 1 files changed, 18 insertions(+), 22 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 6d93a3f..7dfbba9 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1597,13 +1597,57 @@ int do_notify_parent(struct task_struct *tsk, int sig)
- 	return ret;
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 5191301..6ac12f4 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -38,45 +38,41 @@ void __ptrace_link(struct task_struct *child, struct task_struct *new_parent)
  }
  
-+/**
-+ * do_notify_parent_cldstop - notify parent of CLD_CONTINUED, STOPPED or TRAPPED
-+ * @tsk: task which has been continued or is about to stop
-+ * @why: CLD_{CONTINUED|STOPPED|TRAPPED}
+ /*
+- * Turn a tracing stop into a normal stop now, since with no tracer there
+- * would be no way to wake it up with SIGCONT or SIGKILL.  If there was a
+- * signal sent that would resume the child, but didn't because it was in
+- * TASK_TRACED, resume it now.
+- * Requires that irqs be disabled.
++ * unptrace a task: move it back to its original parent and remove it
++ * from the ptrace list.
 + *
-+ * Notifies the parent that @tsk has been continued or is about to stop.
++ * Turn a tracing stop into a normal stop now, since with no tracer
++ * there would be no way to wake it up with SIGCONT or SIGKILL.  If
++ * there was a signal sent that would resume the child, but didn't
++ * because it was in TASK_TRACED, resume it now.  Requires that irqs
++ * be disabled.
 + *
-+ * The notify target changes depending on whether @tsk is being ptraced or
-+ * not.  If @tsk is being ptraced, it's always the ptracer; otherwise, it's
-+ * the task group's real parent.
-+ *
-+ * CONTEXT:
-+ * Must be called with tasklist_lock held.  Grabs and releases the siglocks
-+ * of @tsk and the notify target.
-+ */
- static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
++ * Must be called with the tasklist lock write-held.
+  */
+-static void ptrace_untrace(struct task_struct *child)
++void __ptrace_unlink(struct task_struct *child)
  {
- 	struct siginfo info;
- 	unsigned long flags;
- 	struct task_struct *parent;
- 	struct sighand_struct *sighand;
-+	struct signal_struct *sig;
-+	int notify = 0;
++	struct signal_struct *sig = child->signal;
 +
-+	/*
-+	 * Determine whether and what to notify.  This should be done under
-+	 * @tsk's siglock.  As tasklist_lock is already held,
-+	 * task_ptrace(@tsk) won't change beneath us.
-+	 */
-+	sighand = tsk->sighand;
-+	sig = tsk->signal;
-+	spin_lock_irqsave(&sighand->siglock, flags);
++	BUG_ON(!child->ptrace);
++
+ 	spin_lock(&child->sighand->siglock);
++
+ 	if (task_is_traced(child)) {
+ 		/*
+ 		 * If group stop is completed or in progress, it should
+ 		 * participate in the group stop.  Set GROUP_STOP_PENDING
+ 		 * before kicking it.
+ 		 */
+-		if (child->signal->flags & SIGNAL_STOP_STOPPED ||
+-		    child->signal->group_stop_count)
++		if (sig->flags & SIGNAL_STOP_STOPPED || sig->group_stop_count)
+ 			child->group_stop |= GROUP_STOP_PENDING;
+ 		signal_wake_up(child, 1);
+ 	}
+-	spin_unlock(&child->sighand->siglock);
+-}
+-
+-/*
+- * unptrace a task: move it back to its original parent and
+- * remove it from the ptrace list.
+- *
+- * Must be called with the tasklist lock write-held.
+- */
+-void __ptrace_unlink(struct task_struct *child)
+-{
+-	BUG_ON(!child->ptrace);
  
-+	switch (why) {
-+	case CLD_CONTINUED:
-+	case CLD_STOPPED:
-+	case CLD_TRAPPED:
-+		notify = why;
-+		break;
-+	}
-+
-+	spin_unlock_irqrestore(&sighand->siglock, flags);
-+
-+	if (!notify)
-+		return;
-+
-+	/*
-+	 * Determine notify target and who should be notifying.  If being
-+	 * ptraced, @tsk notifies to its current parent; otherwise, the
-+	 * group leader reports to its real parent.
-+	 */
- 	if (task_ptrace(tsk))
- 		parent = tsk->parent;
- 	else {
-@@ -1614,7 +1658,7 @@ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
- 	info.si_signo = SIGCHLD;
- 	info.si_errno = 0;
- 	/*
--	 * see comment in do_notify_parent() abot the following 3 lines
-+	 * see comment in do_notify_parent() about the following 3 lines
- 	 */
- 	rcu_read_lock();
- 	info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
-@@ -1624,13 +1668,13 @@ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
- 	info.si_utime = cputime_to_clock_t(tsk->utime);
- 	info.si_stime = cputime_to_clock_t(tsk->stime);
+ 	child->ptrace = 0;
+ 	child->parent = child->real_parent;
+ 	list_del_init(&child->ptrace_entry);
  
-- 	info.si_code = why;
-- 	switch (why) {
-+	info.si_code = notify;
-+	switch (notify) {
-  	case CLD_CONTINUED:
-  		info.si_status = SIGCONT;
-  		break;
-  	case CLD_STOPPED:
-- 		info.si_status = tsk->signal->group_exit_code & 0x7f;
-+		info.si_status = sig->group_exit_code & 0x7f;
-  		break;
-  	case CLD_TRAPPED:
-  		info.si_status = tsk->exit_code & 0x7f;
-@@ -1640,6 +1684,7 @@ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
-  	}
+-	if (task_is_traced(child))
+-		ptrace_untrace(child);
++	spin_unlock(&child->sighand->siglock);
+ }
  
- 	sighand = parent->sighand;
-+	sig = parent->signal;
- 	spin_lock_irqsave(&sighand->siglock, flags);
- 	if (sighand->action[SIGCHLD-1].sa.sa_handler != SIG_IGN &&
- 	    !(sighand->action[SIGCHLD-1].sa.sa_flags & SA_NOCLDSTOP))
+ static int ptrace_wait_trap(void *flags)
 -- 
 1.7.1
 
