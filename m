@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab0LFUd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:33:59 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:57346 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab0LFUdy (ORCPT
+	id S1754324Ab0LFUfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:35:08 -0500
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:55076 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753172Ab0LFUfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:33:54 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au1.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/5] perf hist: Better displaying of unresolved DSOs and symbols
-Date: Mon,  6 Dec 2010 18:28:14 -0200
-Message-Id: <1291667298-7238-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1291667298-7238-1-git-send-email-acme@infradead.org>
-References: <1291667298-7238-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 6 Dec 2010 15:35:06 -0500
+From: Daniel Drake <dsd@laptop.org>
+To: cbou@mail.ru
+To: dwmw2@infradead.org
+Cc: pgf@laptop.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] power_supply: allow control of attribute visibility
+Message-Id: <20101206203501.9D8BE9D401B@zog.reactivated.net>
+Date: Mon,  6 Dec 2010 20:35:01 +0000 (GMT)
+X-Cloudmark-Analysis: v=1.1 cv=X0sWjjQ37bMP4yB/pNNinY3VxVB2n/hmdAjhihaCFGs= c=1 sm=0 a=fgPuYRNnNckA:10 a=Op-mwl0xAAAA:8 a=Y-KqmgIGl8z7dHC3RUUA:9 a=hXBSHGH_gfqlONEEsbhB6BmdvSAA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+A power supply driver could support a certain attribute that is not
+available at runtime (e.g. because the specific host doesn't support
+that functionality).
 
-In the event that a DSO has not been identified, just print out [unknown]
-instead of the instruction pointer as we previously were doing, which is pretty
-meaningless for a shared object (at least to the users perspective).
+Add a mechanism for power supplies to be able to specify this.
 
-The IP we print out is fairly meaningless in general anyway - it's just one
-(the first) of the many addresses that were lumped together as unidentified,
-and could span many shared objects and symbols. In reality if we see this
-[unknown] output then the report -D output is going to be more useful anyway as
-we can see all the different address that it represents.
-
-If we are printing the symbols we are still going to see this IP in that column
-anyway since they shouldn't resolve either.
-
-This patch also changes the symbol address printouts so that they print out 0x
-before the address, are left aligned, and changes the %L format string (which
-relies on a glibc bug) to %ll.
-
-Before:
-    74.11%    :3259               4a6c  [k]     4a6c
-After:
-    74.11%    :3259  [unknown]          [k] 0x4a6c
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <1291603026-11785-2-git-send-email-imunsie@au1.ibm.com>
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
- tools/perf/util/sort.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/power/power_supply_sysfs.c |    4 ++++
+ include/linux/power_supply.h       |    2 ++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b62a553..f44fa54 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -170,7 +170,7 @@ static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
- 		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
- 	}
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index cd1f907..8df9e4c 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -191,6 +191,10 @@ static mode_t power_supply_attr_is_visible(struct kobject *kobj,
+ 		int property = psy->properties[i];
  
--	return repsep_snprintf(bf, size, "%*Lx", width, self->ip);
-+	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
- }
- 
- /* --sort symbol */
-@@ -196,7 +196,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
- 
- 	if (verbose) {
- 		char o = self->ms.map ? dso__symtab_origin(self->ms.map->dso) : '!';
--		ret += repsep_snprintf(bf, size, "%*Lx %c ",
-+		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
- 				       BITS_PER_LONG / 4, self->ip, o);
- 	}
- 
-@@ -205,7 +205,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
- 		ret += repsep_snprintf(bf + ret, size - ret, "%s",
- 				       self->ms.sym->name);
- 	else
--		ret += repsep_snprintf(bf + ret, size - ret, "%*Lx",
-+		ret += repsep_snprintf(bf + ret, size - ret, "%-#*llx",
- 				       BITS_PER_LONG / 4, self->ip);
- 
- 	return ret;
+ 		if (property == attrno) {
++			if (psy->property_is_available &&
++			    !psy->property_is_available(psy, property))
++				return 0;
++
+ 			if (psy->property_is_writeable &&
+ 			    psy->property_is_writeable(psy, property) > 0)
+ 				mode |= S_IWUSR;
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 7d73256..b481458 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -152,6 +152,8 @@ struct power_supply {
+ 	int (*set_property)(struct power_supply *psy,
+ 			    enum power_supply_property psp,
+ 			    const union power_supply_propval *val);
++	bool (*property_is_available)(struct power_supply *psy,
++				      enum power_supply_property psp);
+ 	int (*property_is_writeable)(struct power_supply *psy,
+ 				     enum power_supply_property psp);
+ 	void (*external_power_changed)(struct power_supply *psy);
 -- 
-1.6.2.5
+1.7.3.2
 
