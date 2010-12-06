@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab0LFPmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 10:42:09 -0500
-Received: from smtprelay03.ispgateway.de ([80.67.29.7]:42835 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0LFPmI (ORCPT
+	id S1752835Ab0LFPvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 10:51:11 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:44030 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750774Ab0LFPvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 10:42:08 -0500
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 10:42:08 EST
-Message-ID: <20101206163506.56232lqqhc5c3co4@webmail.df.eu>
-Date: Mon, 06 Dec 2010 16:35:06 +0100
-From: Bernhard Walle <bernhard@bwalle.de>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Jeff Layton <jlayton@samba.org>, sfrench@samba.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: Add information about noserverino
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
- <20101206095725.78422138@tlielax.poochiereds.net>
- <20101206101214.52a24415@tlielax.poochiereds.net>
-In-Reply-To: <20101206101214.52a24415@tlielax.poochiereds.net>
+	Mon, 6 Dec 2010 10:51:10 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: BPwqMqcVM1lRJ2OMW0P5HMjxGdE.wwknCYPQD6M2bdmpUA9
+ 8zNCNUIfwzYSX4cLq2f4aZrvrZWL779CAKTFFoaENHDfkYQsIt5ah32Ids24
+ 9.fy.LfMxHl.F8e9kBqE_pVGPA44ojNdtecMhZB1NR7h_AxdUjZMj9W0ceoQ
+ YwLvvWayqYaNdOBp859MHNELz76BWogeR18hN6cBHlOQHok2NQ.P1hEcWK4U
+ wLRl_9UoOQkI-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 6 Dec 2010 09:51:07 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [rfc: cpuops adv V1 0/8] Cmpxchg and xchg support for cpu ops
+In-Reply-To: <4CFA9685.20200@cs.helsinki.fi>
+Message-ID: <alpine.DEB.2.00.1012060949000.32000@router.home>
+References: <20101202215340.562309713@linux.com> <4CFA9685.20200@cs.helsinki.fi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.2)
-X-Originating-IP: 212.114.252.242
-X-Df-Sender: 1227806
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 4 Dec 2010, Pekka Enberg wrote:
 
-Zitat von Jeff Layton <jlayton@redhat.com>:
+> Christoph, do you mind sending me a series that you think is stable enough for
+> linux-next? The numbers are pretty impressive and I'd love to give them some
+> testing locally and in linux-next.
 
->
-> I'm still not sure I like this patch however. It potentially means a
-> lot of printk spam since these things have no ratelimiting. It also
-> doesn't tell me anything about which server might be giving me grief.
->
-> Maybe this should be turned into a cFYI?
-
-Well, if I see it in the kernel log, it doesn't matter if it's info or
-something else.
-
-> The bottom line though is that running 32-bit applications that were
-> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
-> idea. It would be nice to be able to alert users that things aren't
-> working the way they expect, but I'm not sure this is the right place
-> to do that.
-
-Well, but there *are* such application (in my case it was Softmaker Office
-which is a proprietary word processor) and it's quite nice if you know
-how you can workaround it when you encounter such a problem. That's all.
-
-
-Regards,
-Bernhard
-
-
+I'd like to see the cpu ops *updates* patchset getting into -next and
+then be hopefully merged for the next relased. The cpuops advanced
+patchset (this one) can go into -next *after* the next merge phase.
