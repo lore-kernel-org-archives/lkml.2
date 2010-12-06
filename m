@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab0LFOFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:05:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46568 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab0LFOFW (ORCPT
+	id S1753164Ab0LFOGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:06:15 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53551 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab0LFOGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:05:22 -0500
-Date: Mon, 6 Dec 2010 14:05:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: ecard: Fix compilation warning.
-Message-ID: <20101206140506.GE31777@n2100.arm.linux.org.uk>
-References: <1291644243-23540-1-git-send-email-marek.belisko@open-nandra.com>
+	Mon, 6 Dec 2010 09:06:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vitaly Wool <vitalywool@gmail.com>
+Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
+Date: Mon, 6 Dec 2010 15:06:04 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <AANLkTik4T=PsMzB+umSQPLDPmeD-6sebgCtrQRePH_2h@mail.gmail.com> <AANLkTimjACtU_Mx5mDHkm9OpVJ4ueNWgZPsX3YjL0cTi@mail.gmail.com>
+In-Reply-To: <AANLkTimjACtU_Mx5mDHkm9OpVJ4ueNWgZPsX3YjL0cTi@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291644243-23540-1-git-send-email-marek.belisko@open-nandra.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012061506.04364.arnd@arndb.de>
+X-Provags-ID: V02:K0:HtWFB79kOPIOUmZPUmMgvXQO1WF7x9cLXp6vfcmqcNI
+ 7uAuzGSKdA07+rSgvObxc19v+oPq8vECXFnXUve5f09E9CGYi5
+ 3nPij7UtCqDV+dAqqw53ZgPdOlvQBqJPGn+DBTIO6i4PJU8cp/
+ L6DUy12XXs8Uqo1KfWZYnk0cZVNIOw7ChUEvrqlZzKJS/yBSta
+ ki16F7zzl302+R1PgRoAg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 03:04:03PM +0100, Marek Belisko wrote:
-> Fix following compilation warning:
-> arch/arm/kernel/ecard.c:1066: warning: ignoring return value of
-> 'device_register', declared with attribute warn_unused_result
-> 
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> ---
->  arch/arm/kernel/ecard.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/ecard.c b/arch/arm/kernel/ecard.c
-> index eed2f79..da882b1 100644
-> --- a/arch/arm/kernel/ecard.c
-> +++ b/arch/arm/kernel/ecard.c
-> @@ -1063,8 +1063,10 @@ ecard_probe(int slot, card_type_t type)
->  	*ecp = ec;
->  	slot_to_expcard[slot] = ec;
->  
-> -	device_register(&ec->dev);
-> -
-> +	rc = device_register(&ec->dev);
-> +	if (rc)
-> +		goto nodev;
-> +
->  	return 0;
+On Monday 06 December 2010, Vitaly Wool wrote:
 
-No.  It is important that cards which are actually there remain present
-even if device_register fails.  In other words, we _really_ don't care
-what device_register() returns.
+> On Mon, Dec 6, 2010 at 10:06 AM, Par-Gunnar Hjalmdahl
+> <pghatwork@gmail.com> wrote:
+
+> >> Isn't it better to have a new line discipline that the standard
+> >> drivers (H4, LL, ...) will be applicable to?
+> 
+> > I'm not certain what you mean. We are modifying the line discipline a
+> > bit, but the only thing we have needed to do with existing protocol
+> > drivers has been to add a boolean parameter for the protocol settings
+> > (so they will register to the Bluetooth stack). I don't see why we
+> > should create a new line discipline driver and then move the existing
+> > protocol drivers to this.
+> 
+> Okay, let me try to be more specific. There's for instance
+> drivers/bluetooth/hci_ll.c which is the line discipline driver that is
+> meant to work with any BT chip supporting LL protocol. Your solution
+> seems to imply that one will have to create a variation of this
+> implementation for each BT chip supporting LL that will use your
+> shared transport implementation. Is it really the case?
+
+hci_ll is not the line discipline but the a TI specific uart protocol.
+The line discipline driver (hci_ldisc.c) is shared across all protocols
+(h4, ll, ...) and gets extended slightly so it can deal with cg2900
+in addition to the existing HCIs. The rest of the cg2900 support is
+about adding more hci_uart_protos.
+
+	Arnd
