@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab0LFJqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 04:46:46 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63481 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab0LFJqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 04:46:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=nFI1bc714xw43fTBLG4QmBTpobtZoZofQgAmd4q1+S+kA6nyAFogBzam7Iby9inX6w
-         VMeiziyI/kbAU+3howY0YaCTj5H/Zc7yxaelOHaRiYHTYlgh7OOny1YFF699p61sMYD1
-         jileX538CQYEM+2SGAUgV+bI7Hrame+Y13Phc=
+	id S1752389Ab0LFJsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 04:48:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19311 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab0LFJsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 04:48:06 -0500
+Message-ID: <4CFCB150.40202@redhat.com>
+Date: Mon, 06 Dec 2010 11:48:00 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik4T=PsMzB+umSQPLDPmeD-6sebgCtrQRePH_2h@mail.gmail.com>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
-	<AANLkTinj93zAXJAipB3HjE62Xa1Z=9k9gPBxaT=+MLtg@mail.gmail.com>
-	<20101029172443.61f7b067@pyx>
-	<AANLkTimiyxiKzT=9pKXLFACkc6C=nTD2dtBR7PcgjhOL@mail.gmail.com>
-	<AANLkTim7brB0JecKXDNddt0am=Um457Kfbm6bRG_yzFM@mail.gmail.com>
-	<AANLkTik4T=PsMzB+umSQPLDPmeD-6sebgCtrQRePH_2h@mail.gmail.com>
-Date: Mon, 6 Dec 2010 10:46:43 +0100
-Message-ID: <AANLkTimjACtU_Mx5mDHkm9OpVJ4ueNWgZPsX3YjL0cTi@mail.gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Marcel Holtmann <marcel@holtmann.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 3/3] KVM: MMU: retry #PF for softmmu
+References: <4CF76A8B.2040102@cn.fujitsu.com> <4CF76B06.6050708@cn.fujitsu.com>
+In-Reply-To: <4CF76B06.6050708@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Par,
-
-On Mon, Dec 6, 2010 at 10:06 AM, Par-Gunnar Hjalmdahl
-<pghatwork@gmail.com> wrote:
-
->> So is it true that if there's the other chip with similar
->> functionality I have to implement support for, I'll have to pretty
->> much duplicate your line discipline driver?
->>
+On 12/02/2010 11:46 AM, Xiao Guangrong wrote:
+> Retry #PF for softmmu only when the current vcpu has the same cr3 as the time
+> when #PF occurs
 >
-> What will be in the protocol file, i.e. the same level as hci_h4.c,
-> hci_bcsp.c, etc, will be to ~80% vendor specific. The only H4 channels
-> that are in a standardized specification are the Bluetooth channels
-> 1-4. Other channels such as FM and GPS are vendor specific. I've seen
-> that for example TI has the same channels for FM and GPS, but these
-> channels, 8 and 9, are in no way standardized. The CG2900 also carries
-> a number of other channels, such as debug and device channels, which
-> I'm pretty sure is individual for this chip.
-> This identification of the channels is also only one function, even
-> though it is an important function. There are also a lot of other code
-> regarding baud rate settings, low power handling, etc that I'm
-> positive will not apply to chips of other vendors. It is of course
-> possible that other chips from ST-Ericsson, current and future, will
-> be able to reuse this file, but as I said I doubt that other vendors
-> might be able to use it.
+> Changelog:
+>    Just compare cr3 value since It's harmless to instantiate an spte for an
+>    unused translation from Marcelo's comment
+>
 
-Wait. What level of abstraction is this file at if even some future
-STE chips are not guaranteed to work with it? Is it at a level of
-hardcoding the GPIO numbers?
+It's not harmless.  We could be in a different process, so we have to 
+re-fetch the gpte.  Or we could have switched from one nested guest to 
+another.
 
->> Isn't it better to have a new line discipline that the standard
->> drivers (H4, LL, ...) will be applicable to?
+>
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index c6bb449..3f0d9a0 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2607,9 +2607,11 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+>   static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+>   {
+>   	struct kvm_arch_async_pf arch;
+> +
+>   	arch.token = (vcpu->arch.apf.id++<<  12) | vcpu->vcpu_id;
+>   	arch.gfn = gfn;
+>   	arch.direct_map = vcpu->arch.mmu.direct_map;
+> +	arch.cr3 = vcpu->arch.mmu.get_cr3(vcpu);
+>
+>   	return kvm_setup_async_pf(vcpu, gva, gfn,&arch);
+>   }
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 23275d0..437e11a 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -116,7 +116,7 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
+>    */
+>   static int FNAME(walk_addr_generic)(struct guest_walker *walker,
+>   				    struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
+> -				    gva_t addr, u32 access)
+> +				    gva_t addr, u32 access, bool prefault)
+>   {
+>   	pt_element_t pte;
+>   	gfn_t table_gfn;
+> @@ -194,6 +194,13 @@ walk:
+>   #endif
+>
+>   		if (!eperm&&  !rsvd_fault&&  !(pte&  PT_ACCESSED_MASK)) {
+> +			/*
+> +			 * Don't set gpte accessed bit if it's on
+> +			 * speculative path.
+> +			 */
+> +			if (prefault)
+> +				goto error;
 
-> I'm not certain what you mean. We are modifying the line discipline a
-> bit, but the only thing we have needed to do with existing protocol
-> drivers has been to add a boolean parameter for the protocol settings
-> (so they will register to the Bluetooth stack). I don't see why we
-> should create a new line discipline driver and then move the existing
-> protocol drivers to this.
+It's actually legal to set the accessed bit on speculative access.
 
-Okay, let me try to be more specific. There's for instance
-drivers/bluetooth/hci_ll.c which is the line discipline driver that is
-meant to work with any BT chip supporting LL protocol. Your solution
-seems to imply that one will have to create a variation of this
-implementation for each BT chip supporting LL that will use your
-shared transport implementation. Is it really the case?
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks,
-   Vitaly
