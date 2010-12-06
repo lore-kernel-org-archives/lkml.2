@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab0LFQlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:41:16 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:48292 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab0LFQlP convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Mon, 6 Dec 2010 11:41:15 -0500
-Message-Id: <4CFD20370200007800026269@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 06 Dec 2010 16:41:11 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-mm@kvack.org>, <akpm@linux-foundation.org>
-Subject: [PATCH] use total_highpages when calculating lowmem-only
-	 allocation sizes (core)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753835Ab0LFQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:41:56 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:54681 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab0LFQly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 11:41:54 -0500
+Date: Mon, 6 Dec 2010 17:41:50 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "Ted Ts'o" <tytso@mit.edu>,
+        David Sharp <dhsharp@google.com>, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, mrubin@google.com
+Subject: Re: [Patch 00/15] Reduce tracing payload size.
+Message-ID: <20101206164150.GD24977@basil.fritz.box>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+ <878w03t4sn.fsf@basil.nowhere.org>
+ <20101206135637.GC8135@thunk.org>
+ <20101206145852.GA24977@basil.fritz.box>
+ <AANLkTin9=zCbfwdt0GxaGMynTqUsf8R4GWJy88qw87A_@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <AANLkTin9=zCbfwdt0GxaGMynTqUsf8R4GWJy88qw87A_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For those (large) table allocations that come only from lowmem, the
-total amount of memory shouldn't really matter.
+> That is true for the decompression step but not for the compression
+> one, which takes more than 10 memcpys().
 
-For vfs_caches_init(), in the same spirit also replace the use of
-nr_free_pages() by nr_free_buffer_pages().
+That's a good point. At 10x it's definitely too slow. Too bad, would have been too easy.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+I guess one could still consider some very cheap data specific delta compressions 
+(I assume there's a lot of redundancy in a tracing stream with similar events
+occurring in a row or nearby) I used this technique successfully with large log files 
+in the past and overall moving less data around ends up being cheaper.
 
----
- fs/dcache.c                       |    4 ++--
- init/main.c                       |    5 +++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+-Andi
 
---- linux-2.6.37-rc4/fs/dcache.c
-+++ 2.6.37-rc4-use-totalhigh_pages/fs/dcache.c
-@@ -2474,10 +2474,10 @@ void __init vfs_caches_init(unsigned lon
- {
- 	unsigned long reserve;
- 
--	/* Base hash sizes on available memory, with a reserve equal to
-+	/* Base hash sizes on available lowmem memory, with a reserve equal to
-            150% of current kernel size */
- 
--	reserve = min((mempages - nr_free_pages()) * 3/2, mempages - 1);
-+	reserve = min((mempages - nr_free_buffer_pages()) * 3/2, mempages - 1);
- 	mempages -= reserve;
- 
- 	names_cachep = kmem_cache_create("names_cache", PATH_MAX, 0,
---- linux-2.6.37-rc4/init/main.c
-+++ 2.6.37-rc4-use-totalhigh_pages/init/main.c
-@@ -22,6 +22,7 @@
- #include <linux/init.h>
- #include <linux/initrd.h>
- #include <linux/bootmem.h>
-+#include <linux/highmem.h>
- #include <linux/acpi.h>
- #include <linux/tty.h>
- #include <linux/percpu.h>
-@@ -673,13 +674,13 @@ asmlinkage void __init start_kernel(void
- #endif
- 	thread_info_cache_init();
- 	cred_init();
--	fork_init(totalram_pages);
-+	fork_init(totalram_pages - totalhigh_pages);
- 	proc_caches_init();
- 	buffer_init();
- 	key_init();
- 	security_init();
- 	dbg_late_init();
--	vfs_caches_init(totalram_pages);
-+	vfs_caches_init(totalram_pages - totalhigh_pages);
- 	signals_init();
- 	/* rootfs populating might need page-writeback */
- 	page_writeback_init();
-
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
