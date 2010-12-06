@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab0LFUEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:04:53 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36033 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab0LFUEv convert rfc822-to-8bit (ORCPT
+	id S1754214Ab0LFUHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:07:36 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:34686 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab0LFUHf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:04:51 -0500
+	Mon, 6 Dec 2010 15:07:35 -0500
+Date: Mon, 6 Dec 2010 18:07:51 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Joe Perches <joe@perches.com>
+Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] bluetooth: Use printf extension %pMbt
+Message-ID: <20101206200751.GF883@vigoh>
+References: <cover.1291419007.git.joe@perches.com>
+ <b966e9510dec12556a3d1313b026cb2c8281e4d6.1291419007.git.joe@perches.com>
+ <20101206181507.GC883@vigoh>
+ <1291661413.17494.219.camel@Joe-Laptop>
 MIME-Version: 1.0
-In-Reply-To: <20101206203437.54b550e0@xenia.leun.net>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	<4CF442FA.4070701@candelatech.com>
-	<20101130095944.41b5f7b6@xenia.leun.net>
-	<1291108809.2904.3.camel@edumazet-laptop>
-	<20101201111716.424fb771@xenia.leun.net>
-	<1291200914.2856.546.camel@edumazet-laptop>
-	<20101205030712.36149bc2@xenia.leun.net>
-	<1291536233.2806.102.camel@edumazet-laptop>
-	<20101205105528.49fa9a9f@xenia.leun.net>
-	<20101205114404.7c0cddc2@xenia.leun.net>
-	<AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
-	<20101206203437.54b550e0@xenia.leun.net>
-Date: Mon, 6 Dec 2010 12:04:48 -0800
-Message-ID: <AANLkTikKkAesHc4Fi4SwAkV0e65D0TQRztrRYoDNu3MP@mail.gmail.com>
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used
-From: Jesse Gross <jesse@nicira.com>
-To: Michael Leun <lkml20101129@newton.leun.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1291661413.17494.219.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 6, 2010 at 11:34 AM, Michael Leun
-<lkml20101129@newton.leun.net> wrote:
-> On Mon, 6 Dec 2010 10:14:55 -0800
-> Jesse Gross <jesse@nicira.com> wrote:
->
->> On Sun, Dec 5, 2010 at 2:44 AM, Michael Leun
->> <lkml20101129@newton.leun.net> wrote:
->> > Hi Jesse,
->> >
->> > On Sun, 5 Dec 2010 10:55:28 +0100
->> > Michael Leun <lkml20101129@newton.leun.net> wrote:
->> >
->> >> On Sun, 05 Dec 2010 09:03:53 +0100
->> >> Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> >>
->> >> > > But on
->> >> > >
->> >> > > hpdl320g5:/home/ml # lspci | grep Eth
->> >> > > 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme
->> >> > > BCM5714 Gigabit Ethernet (rev a3) 03:04.1 Ethernet controller:
->> >> > > Broadcom Corporation NetXtreme BCM5714 Gigabit Ethernet (rev
->> >> > > a3)
->> >> > >
->> >> > > the good message is that it also does not crash, but with
->> >> > > tcpdump I see vlan tags when no vlan devices configured on the
->> >> > > respective eth, if so I do not see tags anymore vlan tags on
->> >> > > the trunk interface.
->> >> > >
->> >> >
->> >> > For all these very specific needs, you'll have to try 2.6.37 I am
->> >> > afraid. Jesse did huge changes to exactly make this working, we
->> >> > wont backport this to 2.6.36, but only avoid crashes.
->> >>
->> >> OK, I'm perfectly fine with that, of course, actually nice to hear
->> >> that the issue already is addressed.
->> >>
->> >> Likely I'll give some rc an shot on this machine (maybe over
->> >> christmas), but it is an production machine (acutally testing other
->> >> devices is the "product" produced on this machine), so
->> >> unfortunately I'm not that free in when and what I can do (but the
->> >> possibility to, for example, bridge the trunk interface would make
->> >> testing easier, that justifies something...).
->> >>
->> >> Thank you all very much for your work.
->> >
->> > Are these changes already in 2.6.37-rc4? Or, if not are they
->> > somewhere publically available already?
->> >
->> > I looked into various changelogs but have some difficulties to
->> > identify them...
->> >
->> > Maybe I have some time next days to give them an try...
->>
->> Yes, all of the existing vlan changes are in 2.6.37-rc4.  There were a
->> number of patches but the main one was
->> 3701e51382a026cba10c60b03efabe534fba4ca4
->
-> Then, I'm afraid, this (seeing vlan tags even if vlan interfaces are
-> configured) does not work on HP DL320G5 (for exact description and
-> examples please see my mail a few days ago).
+Hi Joe,
 
-What driver are you using?  Is it tg3?
+* Joe Perches <joe@perches.com> [2010-12-06 10:50:13 -0800]:
 
-The vlan changes that I made unfortunately require updating drivers to
-get the full benefit.  I've been busy lately so tg3 hasn't yet been
-updated.
+> On Mon, 2010-12-06 at 16:15 -0200, Gustavo F. Padovan wrote:
+> > This patch doesn't apply to the bluetooth-next-2.6 tree.
+> > Can you please rebase it against the bluetooth-next-2.6 tree?
+> 
+> No worries, it was done against next-20101202.
+> 
+> Do you care about using %pMR vs %pMbt as MichaÅ‚ suggested in
+> https://lkml.org/lkml/2010/12/4/21 ?
 
-I know that tg3 does some things differently depending on whether a
-vlan group is configured, so that would likely be the cause of what
-you are seeing.  I'd have to look at it in more detail to be sure
-though.
+I'm fine either way. It depends more if another subsystem will want to use
+%pMR or not as you said.
 
-You said that everything works on the other Broadcom NIC that you
-tested?  Maybe it uses bnx2 instead?
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
