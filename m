@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab0LFSOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 13:14:50 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61743 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab0LFSOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 13:14:49 -0500
-Date: Mon, 6 Dec 2010 16:15:07 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+	id S1754111Ab0LFSQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 13:16:25 -0500
+Received: from waste.org ([173.11.57.241]:45619 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752960Ab0LFSQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 13:16:23 -0500
+Subject: Re: [PATCH 0/7] printk: add pr_<level>_once, guard print_hex_dump
+From: Matt Mackall <mpm@selenic.com>
 To: Joe Perches <joe@perches.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] bluetooth: Use printf extension %pMbt
-Message-ID: <20101206181507.GC883@vigoh>
-References: <cover.1291419007.git.joe@perches.com>
- <b966e9510dec12556a3d1313b026cb2c8281e4d6.1291419007.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b966e9510dec12556a3d1313b026cb2c8281e4d6.1291419007.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-embedded@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291659120.17494.179.camel@Joe-Laptop>
+References: <cover.1291611190.git.joe@perches.com>
+	 <1291649869.3065.2095.camel@calx>  <1291659120.17494.179.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Dec 2010 12:16:20 -0600
+Message-ID: <1291659380.3065.2214.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-
-* Joe Perches <joe@perches.com> [2010-12-03 18:33:04 -0800]:
-
-> Save some text and bss.
-> Remove function batostr so there's no possibility of bad output.
+On Mon, 2010-12-06 at 10:12 -0800, Joe Perches wrote:
+> On Mon, 2010-12-06 at 09:37 -0600, Matt Mackall wrote:
+> > On Sun, 2010-12-05 at 21:44 -0800, Joe Perches wrote:
+> > > There are many uses of printk_once(KERN_<level>.
+> > > Add pr_<level>_once macros to avoid printk_once(KERN_<level> pr_fmt(fmt).
+> > > Add an #ifdef CONFIG_PRINTK for print_hex_dump and static inline void
+> > > functions for the #else cases to reduce embedded code size.
+> > > Neaten and organize the rest of the code.
+> > Looks fine to me. I'd missed the introduction of the pr_<level> macros
+> > and I'm not sure if I like the idea, but this is a tidy and
+> > well-presented cleanup and extension.
+> > Acked-by: Matt Mackall <mpm@selenic.com>
 > 
-> from the net/bluetooth directory:
+> The #ifdef CONFIG_PRINTK guard for print_hex_dump saves ~200
+> bytes in an x86 !CONFIG_PRINTK
 > 
-> $ size built-in.o.*
->    text	   data	    bss	    dec	    hex	filename
->  293562	  16265	  70088	 379915	  5cc0b	built-in.o.allyesconfig.new
->  294619	  16269	  70480	 381368	  5d1b8	built-in.o.allyesconfig.old
->   30359	    772	     56	  31187	   79d3	built-in.o.btonly.new
->   30555	    776	     92	  31423	   7abf	built-in.o.btonly.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  net/bluetooth/bnep/core.c   |    3 +--
->  net/bluetooth/cmtp/core.c   |    2 +-
->  net/bluetooth/hci_conn.c    |    6 +++---
->  net/bluetooth/hci_core.c    |    8 ++++----
->  net/bluetooth/hci_event.c   |    6 +++---
->  net/bluetooth/hci_sysfs.c   |   10 +++++-----
->  net/bluetooth/hidp/core.c   |    4 ++--
->  net/bluetooth/l2cap.c       |   19 +++++++++----------
->  net/bluetooth/lib.c         |   14 --------------
->  net/bluetooth/rfcomm/core.c |   16 ++++++++--------
->  net/bluetooth/rfcomm/sock.c |    8 ++++----
->  net/bluetooth/rfcomm/tty.c  |    6 +++---
->  net/bluetooth/sco.c         |   12 ++++++------
->  13 files changed, 49 insertions(+), 65 deletions(-)
+> There could be ~500 bytes more saved if hex_dump_to_buffer
+> was compiled out.
 
-This patch doesn't apply to the bluetooth-next-2.6 tree. Can you please rebase
-it against the bluetooth-next-2.6 tree? The tree is at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-next-2.6.git
-
+Can't say I'm excited by this approach. .5k is under my threshold for
+this level of invasiveness.
 
 -- 
-Gustavo F. Padovan
-http://profusion.mobi
+Mathematics is the supreme nostalgia of our time.
+
+
