@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab0LFX1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:27:39 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27035 "EHLO
+	id S1755007Ab0LFX2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:28:34 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26978 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab0LFXZQ (ORCPT
+	with ESMTP id S1754700Ab0LFXZO (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 6 Dec 2010 18:25:16 -0500
+	Mon, 6 Dec 2010 18:25:14 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com, airlied@redhat.com,
         linux-kernel@vger.kernel.org, konrad@kernel.org
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 03/23] agp: Introduce two new macros: _agp_[alloc|free]_page.
-Date: Mon,  6 Dec 2010 18:24:15 -0500
-Message-Id: <1291677875-30493-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 09/23] agp/amd-k7: Utilize the PCI API for creating/inserting pages.
+Date: Mon,  6 Dec 2010 18:24:21 -0500
+Message-Id: <1291677875-30493-10-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
 References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,165 +22,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This macro will be used in the agp_generic_[alloc|destroy]_page[s|]
-functions. Currently it does exactly what it replaces and also
-saves the DMA address in dma_addr[] using the page_to_phys() macro.
-
-These two macros can be at any time replaced with an implementation that
-can utilize the PCI API.
-
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/alpha/include/asm/agp.h   |   14 ++++++++++++++
- arch/ia64/include/asm/agp.h    |   15 +++++++++++++++
- arch/parisc/include/asm/agp.h  |   15 +++++++++++++++
- arch/powerpc/include/asm/agp.h |   15 +++++++++++++++
- arch/sparc/include/asm/agp.h   |   14 ++++++++++++++
- arch/x86/include/asm/agp.h     |   14 ++++++++++++++
- 6 files changed, 87 insertions(+), 0 deletions(-)
+ drivers/char/agp/amd-k7-agp.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/arch/alpha/include/asm/agp.h b/arch/alpha/include/asm/agp.h
-index 0ee274c..41547e3 100644
---- a/arch/alpha/include/asm/agp.h
-+++ b/arch/alpha/include/asm/agp.h
-@@ -15,4 +15,18 @@
- #define free_gatt_pages(bridge, order)	\
- 	free_pages((unsigned long)(bridge->gatt_table_real), (order))
+diff --git a/drivers/char/agp/amd-k7-agp.c b/drivers/char/agp/amd-k7-agp.c
+index b1b4362..4be8f65 100644
+--- a/drivers/char/agp/amd-k7-agp.c
++++ b/drivers/char/agp/amd-k7-agp.c
+@@ -25,19 +25,23 @@ static struct pci_device_id agp_amdk7_pci_table[];
+ struct amd_page_map {
+ 	unsigned long *real;
+ 	unsigned long __iomem *remapped;
++	dma_addr_t dma_addr;
+ };
  
-+/* pages allocation. */
-+#define _agp_alloc_page(bridge, dma_addr) \
-+	({ \
-+		struct page *_page = NULL; \
-+		_page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO); \
-+		if (_page) \
-+			*dma_addr = page_to_phys(_page); \
-+		_page; \
-+	})
-+#define _agp_free_page(bridge, page, dma_addr) \
-+	({ \
-+		__free_page(page); \
-+		*dma_addr = DMA_ERROR_CODE; \
-+	})
+ static struct _amd_irongate_private {
+ 	volatile u8 __iomem *registers;
+ 	struct amd_page_map **gatt_pages;
+ 	int num_tables;
++	struct pci_dev *pcidev;
+ } amd_irongate_private;
+ 
+ static int amd_create_page_map(struct amd_page_map *page_map)
+ {
+ 	int i;
+ 
+-	page_map->real = (unsigned long *) __get_free_page(GFP_KERNEL);
++	page_map->real = (unsigned long *)pci_alloc_consistent(amd_irongate_private.pcidev,
++							       PAGE_SIZE,
++							       &page_map->dma_addr);
+ 	if (page_map->real == NULL)
+ 		return -ENOMEM;
+ 
+@@ -48,7 +52,8 @@ static int amd_create_page_map(struct amd_page_map *page_map)
+ 					    PAGE_SIZE);
+ 	if (page_map->remapped == NULL) {
+ 		ClearPageReserved(virt_to_page(page_map->real));
+-		free_page((unsigned long) page_map->real);
++		pci_free_consistent(amd_irongate_private.pcidev, PAGE_SIZE,
++				    (void *) page_map->real, page_map->dma_addr);
+ 		page_map->real = NULL;
+ 		return -ENOMEM;
+ 	}
+@@ -74,7 +79,9 @@ static void amd_free_page_map(struct amd_page_map *page_map)
+ #else
+ 	set_memory_wb((unsigned long)page_map->real, 1);
  #endif
-diff --git a/arch/ia64/include/asm/agp.h b/arch/ia64/include/asm/agp.h
-index 4e12b72..9107e97 100644
---- a/arch/ia64/include/asm/agp.h
-+++ b/arch/ia64/include/asm/agp.h
-@@ -23,4 +23,19 @@
- #define free_gatt_pages(bridge, order)	\
- 	free_pages((unsigned long)(bridge->gatt_table_real), (order))
+-	free_page((unsigned long) page_map->real);
++	pci_free_consistent(amd_irongate_private.pcidev, PAGE_SIZE,
++			    (void *) page_map->real, page_map->dma_addr);
++	page_map->dma_addr = DMA_ERROR_CODE;
+ }
  
-+/* pages allocation. */
-+#define _agp_alloc_page(bridge, dma_addr) \
-+	({ \
-+		struct page *_page = NULL; \
-+		_page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO); \
-+		if (_page) \
-+			*dma_addr = page_to_phys(_page); \
-+		_page; \
-+	})
-+#define _agp_free_page(bridge, page, dma_addr) \
-+	({ \
-+		__free_page(page); \
-+		*dma_addr = DMA_ERROR_CODE; \
-+	})
-+
- #endif /* _ASM_IA64_AGP_H */
-diff --git a/arch/parisc/include/asm/agp.h b/arch/parisc/include/asm/agp.h
-index 6e8fd98..1de4174 100644
---- a/arch/parisc/include/asm/agp.h
-+++ b/arch/parisc/include/asm/agp.h
-@@ -17,4 +17,19 @@
- #define free_gatt_pages(bridge, order)	\
- 	free_pages((unsigned long)(bridge->gatt_table_real), (order))
+ static void amd_free_gatt_pages(void)
+@@ -161,7 +168,7 @@ static int amd_create_gatt_table(struct agp_bridge_data *bridge)
  
-+/* pages allocation. */
-+#define _agp_alloc_page(bridge, dma_addr) \
-+	({ \
-+		struct page *_page = NULL; \
-+		_page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO); \
-+		if (_page) \
-+			*dma_addr = page_to_phys(_page); \
-+		_page; \
-+	})
-+#define _agp_free_page(bridge, page, dma_addr) \
-+	({ \
-+		__free_page(page); \
-+		*dma_addr = DMA_ERROR_CODE; \
-+	})
-+
- #endif /* _ASM_PARISC_AGP_H */
-diff --git a/arch/powerpc/include/asm/agp.h b/arch/powerpc/include/asm/agp.h
-index 0996a43..cdfa8e7 100644
---- a/arch/powerpc/include/asm/agp.h
-+++ b/arch/powerpc/include/asm/agp.h
-@@ -14,5 +14,20 @@
- #define free_gatt_pages(bridge, order)	\
- 	free_pages((unsigned long)(bridge->gatt_table_real), (order))
+ 	agp_bridge->gatt_table_real = (u32 *)page_dir.real;
+ 	agp_bridge->gatt_table = (u32 __iomem *)page_dir.remapped;
+-	agp_bridge->gatt_bus_addr = virt_to_phys(page_dir.real);
++	agp_bridge->gatt_bus_addr = page_dir.dma_addr;
  
-+/* pages allocation. */
-+#define _agp_alloc_page(bridge, dma_addr) \
-+	({ \
-+		struct page *_page = NULL; \
-+		_page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO); \
-+		if (_page) \
-+			*dma_addr = page_to_phys(_page); \
-+		_page; \
-+	})
-+#define _agp_free_page(bridge, page, dma_addr) \
-+	({ \
-+		__free_page(page); \
-+		*dma_addr = DMA_ERROR_CODE; \
-+	})
-+
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_AGP_H */
-diff --git a/arch/sparc/include/asm/agp.h b/arch/sparc/include/asm/agp.h
-index 2a83241..b0cd187 100644
---- a/arch/sparc/include/asm/agp.h
-+++ b/arch/sparc/include/asm/agp.h
-@@ -13,4 +13,18 @@
- #define free_gatt_pages(bridge, order)	\
- 	free_pages((unsigned long)(bridge->gatt_table_real), (order))
+ 	/* Get the address for the gart region.
+ 	 * This is a bus address even on the alpha, b/c its
+@@ -174,7 +181,7 @@ static int amd_create_gatt_table(struct agp_bridge_data *bridge)
  
-+/* pages allocation. */
-+#define _agp_alloc_page(bridge, dma_addr) \
-+	({ \
-+		struct page *_page = NULL; \
-+		_page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO); \
-+		if (_page) \
-+			*dma_addr = page_to_phys(_page); \
-+		_page; \
-+	})
-+#define _agp_free_page(bridge, page, dma_addr) \
-+	({ \
-+		__free_page(page); \
-+		*dma_addr = DMA_ERROR_CODE; \
-+	})
- #endif
-diff --git a/arch/x86/include/asm/agp.h b/arch/x86/include/asm/agp.h
-index cbc996d..72e7179 100644
---- a/arch/x86/include/asm/agp.h
-+++ b/arch/x86/include/asm/agp.h
-@@ -28,4 +28,18 @@
- #define free_gatt_pages(bridge, order)	\
- 	free_pages((unsigned long)(bridge->gatt_table_real), (order))
+ 	/* Calculate the agp offset */
+ 	for (i = 0; i < value->num_entries / 1024; i++, addr += 0x00400000) {
+-		writel(virt_to_phys(amd_irongate_private.gatt_pages[i]->real) | 1,
++		writel(amd_irongate_private.gatt_pages[i]->dma_addr | 1,
+ 			page_dir.remapped+GET_PAGE_DIR_OFF(addr));
+ 		readl(page_dir.remapped+GET_PAGE_DIR_OFF(addr));	/* PCI Posting. */
+ 	}
+@@ -334,7 +341,7 @@ static int amd_insert_memory(struct agp_memory *mem, off_t pg_start, int type)
+ 		addr = (j * PAGE_SIZE) + agp_bridge->gart_bus_addr;
+ 		cur_gatt = GET_GATT(addr);
+ 		writel(agp_generic_mask_memory(agp_bridge,
+-					       page_to_phys(mem->pages[i]),
++					       mem->dma_addr[i],
+ 					       mem->type),
+ 		       cur_gatt+GET_GATT_OFF(addr));
+ 		readl(cur_gatt+GET_GATT_OFF(addr));	/* PCI Posting. */
+@@ -447,6 +454,7 @@ static int __devinit agp_amdk7_probe(struct pci_dev *pdev,
+ 	bridge->dev_private_data = &amd_irongate_private,
+ 	bridge->dev = pdev;
+ 	bridge->capndx = cap_ptr;
++	amd_irongate_private.pcidev = bridge->dev;
  
-+/* pages allocation. */
-+#define _agp_alloc_page(bridge, dma_addr) \
-+	({ \
-+		struct page *_page = NULL; \
-+		_page = alloc_page(GFP_KERNEL | GFP_DMA32 | __GFP_ZERO); \
-+		if (_page) \
-+			*dma_addr = page_to_phys(_page); \
-+		_page; \
-+	})
-+#define _agp_free_page(bridge, page, dma_addr) \
-+	({ \
-+		__free_page(page); \
-+		*dma_addr = DMA_ERROR_CODE; \
-+	})
- #endif /* _ASM_X86_AGP_H */
+ 	/* 751 Errata (22564_B-1.PDF)
+ 	   erratum 20: strobe glitch with Nvidia NV10 GeForce cards.
 -- 
 1.7.1
 
