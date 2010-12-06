@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab0LFWQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 17:16:24 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49548 "EHLO arroyo.ext.ti.com"
+	id S1754786Ab0LFWQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 17:16:26 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52723 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754649Ab0LFWQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753530Ab0LFWQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Dec 2010 17:16:18 -0500
 From: David Sin <davidsin@ti.com>
 To: Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Cc: Lajos Molnar <molnar@ti.com>, David Sin <davidsin@ti.com>,
-        Ravi Ramachandra <r.ramachandra@ti.com>
-Subject: [PATCH 2/9] TILER-DMM: Container manager interface and utility definitons
-Date: Mon,  6 Dec 2010 16:27:19 -0600
-Message-Id: <1291674446-10766-3-git-send-email-davidsin@ti.com>
+Cc: Lajos Molnar <molnar@ti.com>, David Sin <davidsin@ti.com>
+Subject: [PATCH 6/9] TILER-DMM: Geometry and view manipulation functions
+Date: Mon,  6 Dec 2010 16:27:23 -0600
+Message-Id: <1291674446-10766-7-git-send-email-davidsin@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1291674446-10766-1-git-send-email-davidsin@ti.com>
 References: <1291674446-10766-1-git-send-email-davidsin@ti.com>
@@ -25,28 +24,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lajos Molnar <molnar@ti.com>
 
-This patch defined the TILER Container Manager (TCM) interface and
-provides utility methods for implementing a TCM.
+This patch contains information on TILER geometry, as well as
+tiler_view_t object manipulation functions.
+
+It also contains an internal TILER header file to share geometric
+information with other TILER files.
 
 Signed-off-by: Lajos Molnar <molnar@ti.com>
 Signed-off-by: David Sin <davidsin@ti.com>
-Signed-off-by: Ravi Ramachandra <r.ramachandra@ti.com>
 ---
- drivers/misc/tiler/tcm.h           |  171 ++++++++++++++++++++++++++++++++++++
- drivers/misc/tiler/tcm/tcm-utils.h |   51 +++++++++++
- 2 files changed, 222 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/tiler/tcm.h
- create mode 100644 drivers/misc/tiler/tcm/tcm-utils.h
+ drivers/misc/tiler/tiler-geom.c |  362 +++++++++++++++++++++++++++++++++++++++
+ drivers/misc/tiler/tiler-geom.h |   48 +++++
+ 2 files changed, 410 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/tiler/tiler-geom.c
+ create mode 100644 drivers/misc/tiler/tiler-geom.h
 
-diff --git a/drivers/misc/tiler/tcm.h b/drivers/misc/tiler/tcm.h
+diff --git a/drivers/misc/tiler/tiler-geom.c b/drivers/misc/tiler/tiler-geom.c
 new file mode 100644
-index 0000000..8968108
+index 0000000..c94193b
 --- /dev/null
-+++ b/drivers/misc/tiler/tcm.h
-@@ -0,0 +1,171 @@
++++ b/drivers/misc/tiler/tiler-geom.c
+@@ -0,0 +1,362 @@
 +/*
-+ * TILER container manager specification and support functions for TI
-+ * TILER driver.
++ * TILER geometry functions for TI TILER hardware block.
 + *
 + * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
 + *
@@ -60,169 +60,361 @@ index 0000000..8968108
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef TCM_H
-+#define TCM_H
++#include <linux/module.h>
++#include "tiler-geom.h"
 +
-+struct tcm;
++/* bits representing the same slot in DMM-TILER hw-block */
++#define SLOT_WIDTH_BITS		6
++#define SLOT_HEIGHT_BITS	6
 +
-+/* point */
-+struct tcm_pt {
-+	u16 x;
-+	u16 y;
++/* bits reserved to describe coordinates in DMM-TILER hw-block */
++#define CONT_WIDTH_BITS		14
++#define CONT_HEIGHT_BITS	13
++
++static struct tiler_geom geom[TILER_FORMATS] = {
++	{
++		.x_shft = 0,
++		.y_shft = 0,
++	},
++	{
++		.x_shft = 0,
++		.y_shft = 1,
++	},
++	{
++		.x_shft = 1,
++		.y_shft = 1,
++	},
 +};
 +
-+/* 2d area */
-+struct tcm_area {
-+	struct tcm    *tcm;	/* parent */
-+	struct tcm_pt  p0;
-+	struct tcm_pt  p1;
-+};
++/* tiler space addressing bitfields */
++#define MASK_XY_FLIP		(1 << 31)
++#define MASK_Y_INVERT		(1 << 30)
++#define MASK_X_INVERT		(1 << 29)
++#define SHIFT_ACC_MODE		27
++#define MASK_ACC_MODE		3
 +
-+struct tcm {
-+	u16 width, height;	/* container dimensions */
++/* calculated constants */
++#define TILER_PAGE		(1 << (SLOT_WIDTH_BITS + SLOT_HEIGHT_BITS))
++#define TILER_WIDTH		(1 << (CONT_WIDTH_BITS - SLOT_WIDTH_BITS))
++#define TILER_HEIGHT		(1 << (CONT_HEIGHT_BITS - SLOT_HEIGHT_BITS))
 +
-+	/*
-+	 * 'pvt' structure shall contain any tcm details (attr) along with
-+	 * linked list of allocated areas and mutex for mutually exclusive
-+	 * access to the list.  It may also contain copies of width and height
-+	 * to notice any changes to the publicly available width and height
-+	 * fields.
-+	 */
-+	void *pvt;
++#define VIEW_SIZE		(1u << (CONT_WIDTH_BITS + CONT_HEIGHT_BITS))
++#define VIEW_MASK		(VIEW_SIZE - 1u)
 +
-+	/* function table */
-+	s32 (*reserve_2d)(struct tcm *tcm, u16 height, u16 width, u8 align,
-+			  struct tcm_area *area);
-+	s32 (*free)      (struct tcm *tcm, struct tcm_area *area);
-+	void (*deinit)   (struct tcm *tcm);
-+};
++#define MASK(bits) ((1 << (bits)) - 1)
 +
-+/*
-+ * Since some basic parameter checking is done outside the TCM algorithms,
-+ * TCM implementation do NOT have to check the following:
-+ *
-+ *   area pointer is NULL
-+ *   width and height fits within container
-+ *   number of pages is more than the size of the container
-+ */
++#define TILER_FMT(x)	((enum tiler_fmt) \
++		((x >> SHIFT_ACC_MODE) & MASK_ACC_MODE))
 +
-+/*
-+ * Template for <ALGO_NAME>_tcm_init method.  Define as:
-+ * TCM_INIT(<ALGO_NAME>_tcm_init)
-+ *
-+ * Allocates and initializes a tiler container manager.
-+ *
-+ * Pointer to the allocated and initialized container manager.
-+ * NULL on failure.  DO NOT leak any memory on failure!
-+ */
-+#define TCM_INIT(name, attr_t) \
-+struct tcm *name(u16 width, u16 height, typeof(attr_t) *attr);
++#define MASK_VIEW		(MASK_X_INVERT | MASK_Y_INVERT | MASK_XY_FLIP)
 +
-+/*
-+ * Deinitialize tiler container manager.
-+ *
-+ * The call should free as much memory as possible and meaningful
-+ * even on failure.  Some error codes: -ENODEV: invalid manager.
-+ */
-+static inline void tcm_deinit(struct tcm *tcm)
++/* location of the various tiler views in physical address space */
++#define TILVIEW_8BIT	0x60000000u
++#define TILVIEW_16BIT	(TILVIEW_8BIT  + VIEW_SIZE)
++#define TILVIEW_32BIT	(TILVIEW_16BIT + VIEW_SIZE)
++#define TILVIEW_PAGE	(TILVIEW_32BIT + VIEW_SIZE)
++#define TILVIEW_END	(TILVIEW_PAGE  + VIEW_SIZE)
++
++/* create tsptr by adding view orientation and access mode */
++#define TIL_ADDR(x, orient, a)\
++	((u32) (x) | (orient) | ((a) << SHIFT_ACC_MODE))
++
++bool is_tiler_addr(u32 phys)
 +{
-+	if (tcm)
-+		tcm->deinit(tcm);
++	return phys >= TILVIEW_8BIT && phys < TILVIEW_END;
++}
++EXPORT_SYMBOL_GPL(is_tiler_addr);
++
++u32 tiler_bpp(const struct tiler_block_t *b)
++{
++	enum tiler_fmt fmt = tiler_fmt(b->phys);
++	WARN_ON(fmt == TILFMT_INVALID || fmt == TILFMT_PAGE);
++
++	return geom[fmt].bpp;
++}
++EXPORT_SYMBOL_GPL(tiler_bpp);
++
++/* return the stride of a tiler-block in tiler space */
++static inline s32 tiler_stride(u32 tsptr)
++{
++	enum tiler_fmt fmt = TILER_FMT(tsptr);
++
++	if (fmt == TILFMT_PAGE)
++		return 0;
++	else if (tsptr & MASK_XY_FLIP)
++		return 1 << (CONT_HEIGHT_BITS + geom[fmt].x_shft);
++	else
++		return 1 << (CONT_WIDTH_BITS + geom[fmt].y_shft);
++}
++
++u32 tiler_pstride(const struct tiler_block_t *b)
++{
++	enum tiler_fmt fmt = tiler_fmt(b->phys);
++	WARN_ON(fmt == TILFMT_INVALID);
++
++	/* return the virtual stride for page mode */
++	if (fmt == TILFMT_PAGE)
++		return tiler_vstride(b);
++
++	return tiler_stride(b->phys & ~MASK_VIEW);
++}
++EXPORT_SYMBOL_GPL(tiler_pstride);
++
++enum tiler_fmt tiler_fmt(u32 phys)
++{
++	if (!is_tiler_addr(phys))
++		return TILFMT_INVALID;
++
++	return TILER_FMT(phys);
++}
++EXPORT_SYMBOL_GPL(tiler_fmt);
++
++/* returns the tiler geometry information for a format */
++static const struct tiler_geom *get_geom(enum tiler_fmt fmt)
++{
++	if (fmt >= TILFMT_MIN && fmt <= TILFMT_MAX)
++		return geom + fmt;
++	return NULL;
 +}
 +
 +/*
-+ * Reserves a 2D area in the container.
-+ *
-+ * The tcm field of the area will be set to NULL on failure.
-+ * Some error codes: -ENODEV: invalid manager, -EINVAL:
-+ * invalid area, -ENOMEM: not enough space for allocation.
++ * Returns the natural x and y coordinates for a pixel in tiler space address.
++ * That is, the coordinates for the same pixel in the natural (non-rotated,
++ * non-mirrored) view. This allows to uniquely identify a tiler pixel in any
++ * view orientation.
 + */
-+static inline s32 tcm_reserve_2d(struct tcm *tcm, u16 width, u16 height,
-+				 u16 align, struct tcm_area *area)
++static void tiler_get_natural_xy(u32 tsptr, u32 *x, u32 *y)
 +{
-+	/* perform rudimentary error checking */
-+	s32 res = (tcm  == NULL ? -ENODEV :
-+		(area == NULL || width == 0 || height == 0 ||
-+		 /* align must be a 2 power */
-+		 align & (align - 1)) ? -EINVAL :
-+		(height > tcm->height || width > tcm->width) ? -ENOMEM :
-+		tcm->reserve_2d(tcm, height, width, align, area));
++	u32 x_bits, y_bits, offset;
++	enum tiler_fmt fmt;
 +
-+	if (area)
-+		area->tcm = res ? NULL : tcm;
++	fmt = TILER_FMT(tsptr);
 +
-+	return res;
-+}
++	x_bits = CONT_WIDTH_BITS - geom[fmt].x_shft;
++	y_bits = CONT_HEIGHT_BITS - geom[fmt].y_shft;
++	offset = (tsptr & VIEW_MASK) >> (geom[fmt].x_shft + geom[fmt].y_shft);
 +
-+/*
-+ * Free a previously reserved area from the container.
-+ *
-+ * The tcm field of the area is set to NULL on success
-+ * to avoid subsequent freeing.  This call will succeed
-+ * even if supplying the area from a failed reserved call.
-+ */
-+static inline s32 tcm_free(struct tcm_area *area)
-+{
-+	s32 res = 0; /* free succeeds by default */
-+
-+	if (area && area->tcm) {
-+		res = area->tcm->free(area->tcm, area);
-+		if (res == 0)
-+			area->tcm = NULL;
++	/* separate coordinate bitfields based on view orientation */
++	if (tsptr & MASK_XY_FLIP) {
++		*x = offset >> y_bits;
++		*y = offset & MASK(y_bits);
++	} else {
++		*x = offset & MASK(x_bits);
++		*y = offset >> x_bits;
 +	}
 +
-+	return res;
++	/* account for mirroring */
++	if (tsptr & MASK_X_INVERT)
++		*x ^= MASK(x_bits);
++	if (tsptr & MASK_Y_INVERT)
++		*y ^= MASK(y_bits);
 +}
 +
-+/* Verify if a tcm area is logically valid */
-+static inline bool tcm_area_is_valid(struct tcm_area *area)
++/* calculate the tiler space address of a pixel in a view orientation */
++static u32 tiler_get_address(u32 orient, enum tiler_fmt fmt, u32 x, u32 y)
 +{
-+	return area && area->tcm &&
-+		/* coordinate bounds */
-+		area->p1.x < area->tcm->width &&
-+		area->p1.y < area->tcm->height &&
-+		area->p0.y <= area->p1.y &&
-+		area->p0.x <= area->p1.x;
++	u32 x_bits, y_bits, tmp, x_mask, y_mask, alignment;
++
++	x_bits = CONT_WIDTH_BITS - geom[fmt].x_shft;
++	y_bits = CONT_HEIGHT_BITS - geom[fmt].y_shft;
++	alignment = geom[fmt].x_shft + geom[fmt].y_shft;
++
++	/* validate coordinate */
++	x_mask = MASK(x_bits);
++	y_mask = MASK(y_bits);
++	if (x < 0 || x > x_mask || y < 0 || y > y_mask)
++		return 0;
++
++	/* account for mirroring */
++	if (orient & MASK_X_INVERT)
++		x ^= x_mask;
++	if (orient & MASK_Y_INVERT)
++		y ^= y_mask;
++
++	/* get coordinate address */
++	if (orient & MASK_XY_FLIP)
++		tmp = ((x << y_bits) + y);
++	else
++		tmp = ((y << x_bits) + x);
++
++	return TIL_ADDR((tmp << alignment), orient, fmt);
 +}
 +
-+/* see if a coordinate is within an area */
-+static inline bool __tcm_is_in(struct tcm_pt *p, struct tcm_area *a)
++void tilview_create(struct tiler_view_t *view, u32 phys, u32 width, u32 height)
 +{
-+	return p->x >= a->p0.x && p->x <= a->p1.x &&
-+		p->y >= a->p0.y && p->y <= a->p1.y;
-+}
++	WARN_ON(!is_tiler_addr(phys));
 +
-+/* calculate area width */
-+static inline u16 __tcm_area_width(struct tcm_area *area)
++	view->tsptr = phys & ~MASK_VIEW;
++	view->bpp = geom[TILER_FMT(phys)].bpp;
++	view->width = width;
++	view->height = height;
++	view->h_inc = view->bpp;
++	view->v_inc = tiler_stride(view->tsptr);
++}
++EXPORT_SYMBOL_GPL(tilview_create);
++
++void tilview_get(struct tiler_view_t *view, struct tiler_block_t *blk)
 +{
-+	return area->p1.x - area->p0.x + 1;
++	view->tsptr = blk->phys & ~MASK_VIEW;
++	view->bpp = tiler_bpp(blk);
++	view->width = blk->width;
++	view->height = blk->height;
++	view->h_inc = view->bpp;
++	view->v_inc = tiler_stride(view->tsptr);
 +}
++EXPORT_SYMBOL_GPL(tilview_get);
 +
-+/* calculate area height */
-+static inline u16 __tcm_area_height(struct tcm_area *area)
++s32 tilview_crop(struct tiler_view_t *view, u32 left, u32 top, u32 width,
++								u32 height)
 +{
-+	return area->p1.y - area->p0.y + 1;
-+}
++	/* check for valid crop */
++	if (left + width < left || left + width > view->width ||
++	    top + height < top || top + height > view->height)
++		return -EINVAL;
 +
-+/* calculate number of slots in an area */
-+static inline u16 __tcm_sizeof(struct tcm_area *area)
++	view->tsptr += left * view->h_inc + top * view->v_inc;
++	view->width = width;
++	view->height = height;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tilview_crop);
++
++/* calculate tilerspace address and stride after view orientation change */
++static void reorient(struct tiler_view_t *view, u32 orient)
 +{
-+	return __tcm_area_width(area) * __tcm_area_height(area);
-+}
-+#define tcm_sizeof(area) __tcm_sizeof(&(area))
-+#define tcm_awidth(area) __tcm_area_width(&(area))
-+#define tcm_aheight(area) __tcm_area_height(&(area))
-+#define tcm_is_in(pt, area) __tcm_is_in(&(pt), &(area))
++	u32 x, y;
 +
-+#endif
-diff --git a/drivers/misc/tiler/tcm/tcm-utils.h b/drivers/misc/tiler/tcm/tcm-utils.h
++	tiler_get_natural_xy(view->tsptr, &x, &y);
++	view->tsptr = tiler_get_address(orient,
++					TILER_FMT(view->tsptr), x, y);
++	view->v_inc = tiler_stride(view->tsptr);
++}
++
++s32 tilview_rotate(struct tiler_view_t *view, s32 rotation)
++{
++	u32 orient;
++
++	if (rotation % 90)
++		return -EINVAL;
++
++	/* normalize rotation to quarters */
++	rotation = (rotation / 90) & 3;
++	if (!rotation)
++		return 0; /* nothing to do */
++
++	/* PAGE mode view cannot be rotated */
++	if (TILER_FMT(view->tsptr) == TILFMT_PAGE)
++		return -EPERM;
++
++	/*
++	 * first adjust top-left corner. NOTE: it rotates counter-clockwise:
++	 * 0 < 3
++	 * v   ^
++	 * 1 > 2
++	 */
++	if (rotation < 3)
++		view->tsptr += (view->height - 1) * view->v_inc;
++	if (rotation > 1)
++		view->tsptr += (view->width - 1) * view->h_inc;
++
++	/* then rotate view itself */
++	orient = view->tsptr & MASK_VIEW;
++
++	/* rotate first 2 quarters */
++	if (rotation & 2) {
++		orient ^= MASK_X_INVERT;
++		orient ^= MASK_Y_INVERT;
++	}
++
++	/* rotate last quarter */
++	if (rotation & 1) {
++		orient ^= (orient & MASK_XY_FLIP) ?
++			MASK_X_INVERT : MASK_Y_INVERT;
++
++		/* swap x & y */
++		orient ^= MASK_XY_FLIP;
++		swap(view->height, view->width);
++	}
++
++	/* finally reorient view */
++	reorient(view, orient);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tilview_rotate);
++
++s32 tilview_flip(struct tiler_view_t *view, bool flip_x, bool flip_y)
++{
++	u32 orient;
++	orient = view->tsptr & MASK_VIEW;
++
++	if (!flip_x && !flip_y)
++		return 0; /* nothing to do */
++
++	/* PAGE mode view cannot be flipped */
++	if (TILER_FMT(view->tsptr) == TILFMT_PAGE)
++		return -EPERM;
++
++	/* adjust top-left corner */
++	if (flip_x)
++		view->tsptr += (view->width - 1) * view->h_inc;
++	if (flip_y)
++		view->tsptr += (view->height - 1) * view->v_inc;
++
++	/* flip view orientation */
++	if (orient & MASK_XY_FLIP)
++		swap(flip_x, flip_y);
++
++	if (flip_x)
++		orient ^= MASK_X_INVERT;
++	if (flip_y)
++		orient ^= MASK_Y_INVERT;
++
++	/* finally reorient view */
++	reorient(view, orient);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tilview_flip);
++
++/* return the alias address for a coordinate */
++static inline u32 alias_address(enum tiler_fmt fmt, u32 x, u32 y)
++{
++	return tiler_get_address(0, fmt, x, y) + TILVIEW_8BIT;
++}
++
++/* get the coordinates for an alias address */
++static inline void alias_xy(u32 ssptr, u32 *x, u32 *y)
++{
++	tiler_get_natural_xy(ssptr & ~MASK_VIEW, x, y);
++}
++
++/* initialize shared geometric data */
++void tiler_geom_init(struct tiler_ops *tiler)
++{
++	struct tiler_geom *g;
++
++	tiler->xy = alias_xy;
++	tiler->addr = alias_address;
++	tiler->geom = get_geom;
++
++	tiler->page   = TILER_PAGE;
++	tiler->width  = TILER_WIDTH;
++	tiler->height = TILER_HEIGHT;
++
++	/* calculate geometry */
++	for (g = geom; g < geom + TILER_FORMATS; g++) {
++		g->bpp = 1 << (g->x_shft + g->y_shft);
++		g->slot_w = 1 << (SLOT_WIDTH_BITS - g->x_shft);
++		g->slot_h = 1 << (SLOT_HEIGHT_BITS - g->y_shft);
++	}
++}
+diff --git a/drivers/misc/tiler/tiler-geom.h b/drivers/misc/tiler/tiler-geom.h
 new file mode 100644
-index 0000000..400c2fe
+index 0000000..f73bcf2
 --- /dev/null
-+++ b/drivers/misc/tiler/tcm/tcm-utils.h
-@@ -0,0 +1,51 @@
++++ b/drivers/misc/tiler/tiler-geom.h
+@@ -0,0 +1,48 @@
 +/*
-+ * Utility functions for implementing TILER container managers.
++ * TI TILER driver internal shared definitions.
 + *
 + * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com/
 + *
@@ -236,40 +428,37 @@ index 0000000..400c2fe
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef TCM_UTILS_H
-+#define TCM_UTILS_H
++#ifndef TILER_GEOM_H
++#define TILER_GEOM_H
 +
-+#include "../tcm.h"
++#include <linux/kernel.h>
++#include <linux/tiler.h>
++#include "tcm.h"
 +
-+/* TCM_ALG_NAME must be defined to use the debug methods */
++#define TILER_FORMATS		(TILFMT_MAX - TILFMT_MIN + 1)
 +
-+#ifdef DEBUG
-+#define IFDEBUG(x) x
-+#else
-+/* compile-check debug statements even if not DEBUG */
-+#define IFDEBUG(x) do { if (0) x; } while (0)
-+#endif
++/* tiler geometry information */
++struct tiler_geom {
++	u32 x_shft;	/* unused X-bits (as part of bpp) */
++	u32 y_shft;	/* unused Y-bits (as part of bpp) */
++	u32 bpp;	/* bytes per pixel */
++	u32 slot_w;	/* width of each slot (in pixels) */
++	u32 slot_h;	/* height of each slot (in pixels) */
++};
 +
-+#define P(level, fmt, ...) \
-+	IFDEBUG(printk(level TCM_ALG_NAME ":%d:%s()" fmt "\n", \
-+			__LINE__, __func__, ##__VA_ARGS__))
++/* methods and variables shared between source files */
++struct tiler_ops {
++	/* geometry operations */
++	void (*xy) (u32 ssptr, u32 *x, u32 *y);
++	u32 (*addr) (enum tiler_fmt fmt, u32 x, u32 y);
++	const struct tiler_geom * (*geom) (enum tiler_fmt fmt);
 +
-+#define P1(fmt, ...) P(KERN_NOTICE, fmt, ##__VA_ARGS__)
-+#define P2(fmt, ...) P(KERN_INFO, fmt, ##__VA_ARGS__)
-+#define P3(fmt, ...) P(KERN_DEBUG, fmt, ##__VA_ARGS__)
++	u32 page;		/* page size */
++	u32 width;		/* container width */
++	u32 height;		/* container height */
++};
 +
-+#define PA(level, msg, p_area) P##level(msg " (%03d %03d)-(%03d %03d)\n", \
-+	(p_area)->p0.x, (p_area)->p0.y, (p_area)->p1.x, (p_area)->p1.y)
-+
-+/* assign coordinates to area */
-+static inline
-+void assign(struct tcm_area *a, u16 x0, u16 y0, u16 x1, u16 y1)
-+{
-+	a->p0.x = x0;
-+	a->p0.y = y0;
-+	a->p1.x = x1;
-+	a->p1.y = y1;
-+}
++void tiler_geom_init(struct tiler_ops *tiler);
 +
 +#endif
 -- 
