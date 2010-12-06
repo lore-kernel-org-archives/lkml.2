@@ -1,421 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab0LFQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:08:56 -0500
-Received: from smtp-tls1.univ-nantes.fr ([193.52.101.145]:43808 "EHLO
-	smtp-tls.univ-nantes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab0LFQIy (ORCPT
+	id S1753681Ab0LFQJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:09:00 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37874 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751942Ab0LFQI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:08:54 -0500
-Message-ID: <4CFD0A8F.8010906@univ-nantes.fr>
-Date: Mon, 06 Dec 2010 17:08:47 +0100
-From: Menil Jean-Philippe <jean-philippe.menil@univ-nantes.fr>
-Reply-To: jean-philippe.menil@univ-nantes.fr
-Organization: =?ISO-8859-1?Q?Univerist=E9_de_Nantes?=
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 6 Dec 2010 11:08:57 -0500
 MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: Michael Leun <lkml20100708@newton.leun.net>,
-        David Lamparter <equinox@diac24.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free (adding
- ipv6 address to interface)
-References: <20100710235323.5336f627@xenia.leun.net>	<20100711192939.1c25dcaf@xenia.leun.net>	<20100804153543.56f6ecad@xenia.leun.net>	<20100804214618.GA6289@kroah.com>	<20100805001105.5a3453ed@xenia.leun.net>	<m1lj8l29zm.fsf@fess.ebiederm.org>	<20100805112538.60a46cb1@xenia.leun.net>	<m1y6clz8ta.fsf_-_@fess.ebiederm.org>	<20100805134707.0442a7b1@xenia.leun.net>	<20101021171532.54af5e97@xenia.leun.net>	<20101022124858.GA719746@jupiter.n2.diac24.net>	<20101022190532.00e9e5d8@xenia.leun.net> <20101024151541.161bf46c@xenia.leun.net>
-In-Reply-To: <20101024151541.161bf46c@xenia.leun.net>
-Content-Type: multipart/mixed;
- boundary="------------080504030802060008020209"
+In-Reply-To: <4CFCB08F.4010509@jp.fujitsu.com>
+References: <4CFCB08F.4010509@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 6 Dec 2010 08:08:06 -0800
+Message-ID: <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: jaxboe@fusionio.com, vgoyal@redhat.com, jmarchan@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=001485eba1e823a9db0496c019cb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080504030802060008020209
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+--001485eba1e823a9db0496c019cb
+Content-Type: text/plain; charset=ISO-8859-1
 
-Le 24/10/2010 15:15, Michael Leun a écrit :
-> On Fri, 22 Oct 2010 19:05:32 +0200
-> Michael Leun<lkml20100708@newton.leun.net>  wrote:
+2010/12/6 Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>:
 >
->> On Fri, 22 Oct 2010 14:48:58 +0200
->> David Lamparter<equinox@diac24.net>  wrote:
->>
->>> On Thu, Oct 21, 2010 at 05:15:32PM +0200, Michael Leun wrote:
->>>> unfortunately the bug described below originally reported in
->>>> 2.6.35-rcX is still there in 2.6.36.
->>>
->>> can you post your full kernel .config?
->>
->> Please find below.
->>
->>> I'm using network namespaces quite extensively - OpenVPN and IPv6
->>> included - and i haven't hit this bug. That makes it rather likely
->>> it depends on some option difference.
->>
->> I take candidates for options to change for test... ;-)
->>
->> Maybe I will try to strip it down for test towards a minimal config.
->
-> Now I have tried a kernel config with almost everything disabled -
-> please find below.
->
-> If I have overlooked anything I should disable (or if you suggest I
-> should not disable, but enable any option) - please tell me.
->
-> I've created an ~2.5MB bootable ISO image based on buildroot/busybox
-> with this kernel, which also shows this bug (e.g. when run in
-> VirtualBox).
->
-> If anybody is interested I could send this image as mail attachment or
-> provide a download link.
->
-> ml@xenia:~>  grep -v "^#" .config |grep -v "^ *$"
-> CONFIG_X86_32=y
-> CONFIG_X86=y
-> CONFIG_INSTRUCTION_DECODER=y
-> CONFIG_OUTPUT_FORMAT="elf32-i386"
-> CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
-> CONFIG_GENERIC_CMOS_UPDATE=y
-> CONFIG_CLOCKSOURCE_WATCHDOG=y
-> CONFIG_GENERIC_CLOCKEVENTS=y
-> CONFIG_LOCKDEP_SUPPORT=y
-> CONFIG_STACKTRACE_SUPPORT=y
-> CONFIG_HAVE_LATENCYTOP_SUPPORT=y
-> CONFIG_MMU=y
-> CONFIG_ZONE_DMA=y
-> CONFIG_NEED_SG_DMA_LENGTH=y
-> CONFIG_GENERIC_ISA_DMA=y
-> CONFIG_GENERIC_IOMAP=y
-> CONFIG_GENERIC_BUG=y
-> CONFIG_GENERIC_HWEIGHT=y
-> CONFIG_ARCH_MAY_HAVE_PC_FDC=y
-> CONFIG_RWSEM_XCHGADD_ALGORITHM=y
-> CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-> CONFIG_GENERIC_CALIBRATE_DELAY=y
-> CONFIG_ARCH_HAS_CPU_RELAX=y
-> CONFIG_ARCH_HAS_DEFAULT_IDLE=y
-> CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
-> CONFIG_HAVE_SETUP_PER_CPU_AREA=y
-> CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
-> CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
-> CONFIG_ARCH_HIBERNATION_POSSIBLE=y
-> CONFIG_ARCH_SUSPEND_POSSIBLE=y
-> CONFIG_ARCH_POPULATES_NODE_MAP=y
-> CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
-> CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
-> CONFIG_HAVE_EARLY_RES=y
-> CONFIG_GENERIC_HARDIRQS=y
-> CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
-> CONFIG_GENERIC_IRQ_PROBE=y
-> CONFIG_X86_32_LAZY_GS=y
-> CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-ecx -fcall-saved-edx"
-> CONFIG_KTIME_SCALAR=y
-> CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-> CONFIG_CONSTRUCTORS=y
-> CONFIG_EXPERIMENTAL=y
-> CONFIG_BROKEN_ON_SMP=y
-> CONFIG_INIT_ENV_ARG_LIMIT=32
-> CONFIG_CROSS_COMPILE=""
-> CONFIG_LOCALVERSION=""
-> CONFIG_HAVE_KERNEL_GZIP=y
-> CONFIG_HAVE_KERNEL_BZIP2=y
-> CONFIG_HAVE_KERNEL_LZMA=y
-> CONFIG_HAVE_KERNEL_LZO=y
-> CONFIG_KERNEL_LZMA=y
-> CONFIG_TREE_RCU=y
-> CONFIG_RCU_FANOUT=32
-> CONFIG_IKCONFIG=y
-> CONFIG_IKCONFIG_PROC=y
-> CONFIG_LOG_BUF_SHIFT=18
-> CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
-> CONFIG_NAMESPACES=y
-> CONFIG_NET_NS=y
-> CONFIG_BLK_DEV_INITRD=y
-> CONFIG_INITRAMFS_SOURCE=""
-> CONFIG_RD_GZIP=y
-> CONFIG_RD_BZIP2=y
-> CONFIG_RD_LZMA=y
-> CONFIG_RD_LZO=y
-> CONFIG_SYSCTL=y
-> CONFIG_ANON_INODES=y
-> CONFIG_UID16=y
-> CONFIG_SYSCTL_SYSCALL=y
-> CONFIG_KALLSYMS=y
-> CONFIG_HOTPLUG=y
-> CONFIG_PRINTK=y
-> CONFIG_BUG=y
-> CONFIG_ELF_CORE=y
-> CONFIG_PCSPKR_PLATFORM=y
-> CONFIG_BASE_FULL=y
-> CONFIG_FUTEX=y
-> CONFIG_EPOLL=y
-> CONFIG_SIGNALFD=y
-> CONFIG_TIMERFD=y
-> CONFIG_EVENTFD=y
-> CONFIG_SHMEM=y
-> CONFIG_AIO=y
-> CONFIG_HAVE_PERF_EVENTS=y
-> CONFIG_PERF_EVENTS=y
-> CONFIG_VM_EVENT_COUNTERS=y
-> CONFIG_PCI_QUIRKS=y
-> CONFIG_SLUB_DEBUG=y
-> CONFIG_SLUB=y
-> CONFIG_HAVE_OPROFILE=y
-> CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
-> CONFIG_HAVE_IOREMAP_PROT=y
-> CONFIG_HAVE_KPROBES=y
-> CONFIG_HAVE_KRETPROBES=y
-> CONFIG_HAVE_OPTPROBES=y
-> CONFIG_HAVE_ARCH_TRACEHOOK=y
-> CONFIG_HAVE_DMA_ATTRS=y
-> CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
-> CONFIG_HAVE_DMA_API_DEBUG=y
-> CONFIG_HAVE_HW_BREAKPOINT=y
-> CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
-> CONFIG_HAVE_USER_RETURN_NOTIFIER=y
-> CONFIG_HAVE_PERF_EVENTS_NMI=y
-> CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-> CONFIG_SLABINFO=y
-> CONFIG_RT_MUTEXES=y
-> CONFIG_BASE_SMALL=0
-> CONFIG_BLOCK=y
-> CONFIG_LBDAF=y
-> CONFIG_IOSCHED_NOOP=y
-> CONFIG_DEFAULT_NOOP=y
-> CONFIG_DEFAULT_IOSCHED="noop"
-> CONFIG_INLINE_SPIN_UNLOCK=y
-> CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
-> CONFIG_INLINE_READ_UNLOCK=y
-> CONFIG_INLINE_READ_UNLOCK_IRQ=y
-> CONFIG_INLINE_WRITE_UNLOCK=y
-> CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
-> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-> CONFIG_M586=y
-> CONFIG_X86_CPU=y
-> CONFIG_X86_INTERNODE_CACHE_SHIFT=5
-> CONFIG_X86_CMPXCHG=y
-> CONFIG_X86_L1_CACHE_SHIFT=5
-> CONFIG_X86_XADD=y
-> CONFIG_X86_F00F_BUG=y
-> CONFIG_X86_WP_WORKS_OK=y
-> CONFIG_X86_INVLPG=y
-> CONFIG_X86_BSWAP=y
-> CONFIG_X86_POPAD_OK=y
-> CONFIG_X86_ALIGNMENT_16=y
-> CONFIG_X86_MINIMUM_CPU_FAMILY=4
-> CONFIG_CPU_SUP_INTEL=y
-> CONFIG_CPU_SUP_CYRIX_32=y
-> CONFIG_CPU_SUP_AMD=y
-> CONFIG_CPU_SUP_CENTAUR=y
-> CONFIG_CPU_SUP_TRANSMETA_32=y
-> CONFIG_CPU_SUP_UMC_32=y
-> CONFIG_DMI=y
-> CONFIG_NR_CPUS=1
-> CONFIG_PREEMPT_NONE=y
-> CONFIG_VM86=y
-> CONFIG_HIGHMEM4G=y
-> CONFIG_PAGE_OFFSET=0xC0000000
-> CONFIG_HIGHMEM=y
-> CONFIG_NEED_NODE_MEMMAP_SIZE=y
-> CONFIG_ARCH_FLATMEM_ENABLE=y
-> CONFIG_ARCH_SPARSEMEM_ENABLE=y
-> CONFIG_ARCH_SELECT_MEMORY_MODEL=y
-> CONFIG_ILLEGAL_POINTER_VALUE=0
-> CONFIG_SELECT_MEMORY_MODEL=y
-> CONFIG_SPARSEMEM_MANUAL=y
-> CONFIG_SPARSEMEM=y
-> CONFIG_HAVE_MEMORY_PRESENT=y
-> CONFIG_SPARSEMEM_STATIC=y
-> CONFIG_SPLIT_PTLOCK_CPUS=4
-> CONFIG_ZONE_DMA_FLAG=1
-> CONFIG_BOUNCE=y
-> CONFIG_VIRT_TO_BUS=y
-> CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
-> CONFIG_MTRR=y
-> CONFIG_X86_PAT=y
-> CONFIG_ARCH_USES_PG_UNCACHED=y
-> CONFIG_HZ_1000=y
-> CONFIG_HZ=1000
-> CONFIG_PHYSICAL_START=0x1000000
-> CONFIG_PHYSICAL_ALIGN=0x1000000
-> CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
-> CONFIG_PCI=y
-> CONFIG_PCI_GOANY=y
-> CONFIG_PCI_BIOS=y
-> CONFIG_PCI_DIRECT=y
-> CONFIG_PCI_DOMAINS=y
-> CONFIG_ISA_DMA_API=y
-> CONFIG_K8_NB=y
-> CONFIG_BINFMT_ELF=y
-> CONFIG_HAVE_AOUT=y
-> CONFIG_HAVE_ATOMIC_IOMAP=y
-> CONFIG_NET=y
-> CONFIG_UNIX=y
-> CONFIG_INET=y
-> CONFIG_IP_FIB_HASH=y
-> CONFIG_TCP_CONG_CUBIC=y
-> CONFIG_DEFAULT_TCP_CONG="cubic"
-> CONFIG_IPV6=y
-> CONFIG_UEVENT_HELPER_PATH=""
-> CONFIG_DEVTMPFS=y
-> CONFIG_DEVTMPFS_MOUNT=y
-> CONFIG_PREVENT_FIRMWARE_BUILD=y
-> CONFIG_FW_LOADER=y
-> CONFIG_EXTRA_FIRMWARE=""
-> CONFIG_HAVE_IDE=y
-> CONFIG_SCSI_MOD=y
-> CONFIG_NETDEVICES=y
-> CONFIG_VETH=y
-> CONFIG_INPUT=y
-> CONFIG_INPUT_MOUSEDEV=y
-> CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
-> CONFIG_INPUT_MOUSEDEV_SCREEN_Y=576
-> CONFIG_INPUT_KEYBOARD=y
-> CONFIG_KEYBOARD_ATKBD=y
-> CONFIG_SERIO=y
-> CONFIG_SERIO_I8042=y
-> CONFIG_SERIO_LIBPS2=y
-> CONFIG_VT=y
-> CONFIG_CONSOLE_TRANSLATIONS=y
-> CONFIG_VT_CONSOLE=y
-> CONFIG_HW_CONSOLE=y
-> CONFIG_FIX_EARLYCON_MEM=y
-> CONFIG_UNIX98_PTYS=y
-> CONFIG_DEVPORT=y
-> CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
-> CONFIG_SSB_POSSIBLE=y
-> CONFIG_VGA_ARB=y
-> CONFIG_VGA_ARB_MAX_GPUS=16
-> CONFIG_VGA_CONSOLE=y
-> CONFIG_VGACON_SOFT_SCROLLBACK=y
-> CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=64
-> CONFIG_DUMMY_CONSOLE=y
-> CONFIG_FIRMWARE_MEMMAP=y
-> CONFIG_FILE_LOCKING=y
-> CONFIG_PROC_FS=y
-> CONFIG_PROC_SYSCTL=y
-> CONFIG_PROC_PAGE_MONITOR=y
-> CONFIG_SYSFS=y
-> CONFIG_MSDOS_PARTITION=y
-> CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-> CONFIG_FRAME_WARN=2048
-> CONFIG_DEBUG_BUGVERBOSE=y
-> CONFIG_DEBUG_MEMORY_INIT=y
-> CONFIG_ARCH_WANT_FRAME_POINTERS=y
-> CONFIG_USER_STACKTRACE_SUPPORT=y
-> CONFIG_HAVE_FUNCTION_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
-> CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-> CONFIG_HAVE_DYNAMIC_FTRACE=y
-> CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-> CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
-> CONFIG_TRACING_SUPPORT=y
-> CONFIG_HAVE_ARCH_KGDB=y
-> CONFIG_HAVE_ARCH_KMEMCHECK=y
-> CONFIG_EARLY_PRINTK=y
-> CONFIG_DOUBLEFAULT=y
-> CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-> CONFIG_IO_DELAY_TYPE_0X80=0
-> CONFIG_IO_DELAY_TYPE_0XED=1
-> CONFIG_IO_DELAY_TYPE_UDELAY=2
-> CONFIG_IO_DELAY_TYPE_NONE=3
-> CONFIG_IO_DELAY_0X80=y
-> CONFIG_DEFAULT_IO_DELAY_TYPE=0
-> CONFIG_DEFAULT_SECURITY_DAC=y
-> CONFIG_DEFAULT_SECURITY=""
-> CONFIG_HAVE_KVM=y
-> CONFIG_GENERIC_FIND_FIRST_BIT=y
-> CONFIG_GENERIC_FIND_NEXT_BIT=y
-> CONFIG_GENERIC_FIND_LAST_BIT=y
-> CONFIG_ZLIB_INFLATE=y
-> CONFIG_LZO_DECOMPRESS=y
-> CONFIG_DECOMPRESS_GZIP=y
-> CONFIG_DECOMPRESS_BZIP2=y
-> CONFIG_DECOMPRESS_LZMA=y
-> CONFIG_DECOMPRESS_LZO=y
-> CONFIG_HAS_IOMEM=y
-> CONFIG_HAS_IOPORT=y
-> CONFIG_HAS_DMA=y
-> CONFIG_NLATTR=y
->
+> The problem is caused by merging different partition's I/Os. So the patch
+> check whether a merging bio or request is a same partition as a request or not
+> by using a partition's start sector and size.
 
-Hi,
+I really think this is wrong.
 
-curiously, i'm facing a similar problem in 2.6.36.1
+We should just carry the partition information around in the req and
+the bio, and just compare the pointers, rather than compare the range.
+No need to even dereference the pointers, you should be able to just
+do
 
-in my container, when i configure ipv6 adress on the interfaces, 
-everything seems good on the first boot of the host. If i shutdown my 
-container (lxc), then boot it, i observe the following logs:
-Dec  6 17:04:12 suntory.u06.univ-nantes.prive kernel: [  368.192019] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:04:22 suntory.u06.univ-nantes.prive kernel: [  378.432018] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:04:32 suntory.u06.univ-nantes.prive kernel: [  388.672015] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:04:42 suntory.u06.univ-nantes.prive kernel: [  398.912016] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:04:53 suntory.u06.univ-nantes.prive kernel: [  409.152016] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:05:03 suntory.u06.univ-nantes.prive kernel: [  419.392018] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:05:13 suntory.u06.univ-nantes.prive kernel: [  429.632018] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:05:23 suntory.u06.univ-nantes.prive kernel: [  439.876016] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:05:34 suntory.u06.univ-nantes.prive kernel: [  450.116015] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:05:44 suntory.u06.univ-nantes.prive kernel: [  460.356019] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:05:54 suntory.u06.univ-nantes.prive kernel: [  470.596020] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:06:04 suntory.u06.univ-nantes.prive kernel: [  480.836019] 
-unregister_netdevice: waiting for lo to become free. Usage count = 4
-Dec  6 17:06:05 suntory.u06.univ-nantes.prive kernel: [  481.468021] 
-INFO: task lxc-start:3805 blocked for more than 120 seconds.
+   /* don't merge if not on the same partition */
+   if (bio->part != req->part)
+      return 0;
 
-Then i must reboot the host.
-The same on kernel 2.6.34, but everything is good on a 2.6.32
+or something.
 
-Some relvant informations about the kernel:
-root@suntory:~# cat /boot/config-2.6.36.1-dsiun-1d | grep -i sysfs
-# CONFIG_SYSFS_DEPRECATED_V2 is not set
-CONFIG_ACPI_SYSFS_POWER=y
-# CONFIG_WIRELESS_EXT_SYSFS is not set
-CONFIG_ISCSI_BOOT_SYSFS=m
-CONFIG_RTC_INTF_SYSFS=y
-CONFIG_SYSFS=y
-root@suntory:~# cat /boot/config-2.6.36.1-dsiun-1d | grep -i net_ns
-CONFIG_NET_NS=y
+This is doubly true since the accounting already does that horrible
+partition lookup: rather than look it up, we should just _set_ it in
+__generic_make_request(), where I think we already know it since we do
+that whole blk_partition_remap().
 
-Is there anything in my configuration, i must check in order to get ipv6 
-working fully in the container?
+So just something like the appended (TOTALLY UNTESTED) perhaps?
 
-Regards.
+Note that this should get it right even for overlapping partitions etc.
 
---------------080504030802060008020209
-Content-Type: text/x-vcard; charset=utf-8;
- name="jean-philippe_menil.vcf"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="jean-philippe_menil.vcf"
+                     Linus
 
-begin:vcard
-fn:Jean-Philippe Menil
-n:Menil;Jean-Philippe
-org;quoted-printable:Universit=C3=A9 de Nantes;IRTS
-adr;quoted-printable:;;2 rue de la Houssini=C3=A8re;Nantes;;44322;France
-email;internet:jean-philippe.menil@univ-nantes.fr
-title:Reseau
-tel;work:02 53 48 49 27
-tel;fax:(33)2 51 12 58 60 
-tel;cell:06 45 38 87 75
-url:http://www.cri.univ-nantes.fr
-version:2.1
-end:vcard
+--001485eba1e823a9db0496c019cb
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ghdk1p780
 
-
---------------080504030802060008020209--
+IGJsb2NrL2Jsay1jb3JlLmMgICAgICAgICAgfCAgICAyICsrCiBibG9jay9ibGstbWVyZ2UuYyAg
+ICAgICAgIHwgICAgOSArKysrKysrKysKIGluY2x1ZGUvbGludXgvYmxrX3R5cGVzLmggfCAgICAy
+ICstCiBpbmNsdWRlL2xpbnV4L2Jsa2Rldi5oICAgIHwgICAgMSArCiA0IGZpbGVzIGNoYW5nZWQs
+IDEzIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvYmxvY2svYmxr
+LWNvcmUuYyBiL2Jsb2NrL2Jsay1jb3JlLmMKaW5kZXggNGNlOTUzZi4uYTBjMTNhOSAxMDA2NDQK
+LS0tIGEvYmxvY2svYmxrLWNvcmUuYworKysgYi9ibG9jay9ibGstY29yZS5jCkBAIC0xMzIzLDYg
+KzEzMjMsNyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgYmxrX3BhcnRpdGlvbl9yZW1hcChzdHJ1Y3Qg
+YmlvICpiaW8pCiB7CiAJc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiA9IGJpby0+YmlfYmRldjsK
+IAorCWJpby0+YmlfcGFydCA9IGJkZXY7CiAJaWYgKGJpb19zZWN0b3JzKGJpbykgJiYgYmRldiAh
+PSBiZGV2LT5iZF9jb250YWlucykgewogCQlzdHJ1Y3QgaGRfc3RydWN0ICpwID0gYmRldi0+YmRf
+cGFydDsKIApAQCAtMjQzNyw2ICsyNDM4LDcgQEAgdm9pZCBibGtfcnFfYmlvX3ByZXAoc3RydWN0
+IHJlcXVlc3RfcXVldWUgKnEsIHN0cnVjdCByZXF1ZXN0ICpycSwKIAlycS0+X19kYXRhX2xlbiA9
+IGJpby0+Ymlfc2l6ZTsKIAlycS0+YmlvID0gcnEtPmJpb3RhaWwgPSBiaW87CiAKKwlycS0+cnFf
+cGFydCA9IGJpby0+YmlfcGFydDsKIAlpZiAoYmlvLT5iaV9iZGV2KQogCQlycS0+cnFfZGlzayA9
+IGJpby0+YmlfYmRldi0+YmRfZGlzazsKIH0KZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1tZXJnZS5j
+IGIvYmxvY2svYmxrLW1lcmdlLmMKaW5kZXggNzdiN2MyNi4uMzkxM2Y1ZiAxMDA2NDQKLS0tIGEv
+YmxvY2svYmxrLW1lcmdlLmMKKysrIGIvYmxvY2svYmxrLW1lcmdlLmMKQEAgLTIzMCw2ICsyMzAs
+OSBAQCBpbnQgbGxfYmFja19tZXJnZV9mbihzdHJ1Y3QgcmVxdWVzdF9xdWV1ZSAqcSwgc3RydWN0
+IHJlcXVlc3QgKnJlcSwKIHsKIAl1bnNpZ25lZCBzaG9ydCBtYXhfc2VjdG9yczsKIAorCWlmIChy
+ZXEtPnJxX3BhcnQgIT0gYmlvLT5iaV9wYXJ0KQorCQlyZXR1cm4gMDsKKwogCWlmICh1bmxpa2Vs
+eShyZXEtPmNtZF90eXBlID09IFJFUV9UWVBFX0JMT0NLX1BDKSkKIAkJbWF4X3NlY3RvcnMgPSBx
+dWV1ZV9tYXhfaHdfc2VjdG9ycyhxKTsKIAllbHNlCkBAIC0yNTQsNiArMjU3LDkgQEAgaW50IGxs
+X2Zyb250X21lcmdlX2ZuKHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgcmVxdWVzdCAq
+cmVxLAogewogCXVuc2lnbmVkIHNob3J0IG1heF9zZWN0b3JzOwogCisJaWYgKGJpby0+YmlfcGFy
+dCAhPSByZXEtPnJxX3BhcnQpCisJCXJldHVybiAwOworCiAJaWYgKHVubGlrZWx5KHJlcS0+Y21k
+X3R5cGUgPT0gUkVRX1RZUEVfQkxPQ0tfUEMpKQogCQltYXhfc2VjdG9ycyA9IHF1ZXVlX21heF9o
+d19zZWN0b3JzKHEpOwogCWVsc2UKQEAgLTM5Miw2ICszOTgsOSBAQCBzdGF0aWMgaW50IGF0dGVt
+cHRfbWVyZ2Uoc3RydWN0IHJlcXVlc3RfcXVldWUgKnEsIHN0cnVjdCByZXF1ZXN0ICpyZXEsCiAJ
+ICAgIHx8IG5leHQtPnNwZWNpYWwpCiAJCXJldHVybiAwOwogCisJaWYgKHJlcS0+cnFfcGFydCAh
+PSBuZXh0LT5ycV9wYXJ0KQorCQlyZXR1cm4gMDsKKwogCS8qCiAJICogSWYgd2UgYXJlIGFsbG93
+ZWQgdG8gbWVyZ2UsIHRoZW4gYXBwZW5kIGJpbyBsaXN0CiAJICogZnJvbSBuZXh0IHRvIHJxIGFu
+ZCByZWxlYXNlIG5leHQuIG1lcmdlX3JlcXVlc3RzX2ZuCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xp
+bnV4L2Jsa190eXBlcy5oIGIvaW5jbHVkZS9saW51eC9ibGtfdHlwZXMuaAppbmRleCA0NmFkNTE5
+Li4wOTQwNDgwIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2Jsa190eXBlcy5oCisrKyBiL2lu
+Y2x1ZGUvbGludXgvYmxrX3R5cGVzLmgKQEAgLTM0LDcgKzM0LDcgQEAgc3RydWN0IGJpbyB7CiAJ
+c2VjdG9yX3QJCWJpX3NlY3RvcjsJLyogZGV2aWNlIGFkZHJlc3MgaW4gNTEyIGJ5dGUKIAkJCQkJ
+CSAgIHNlY3RvcnMgKi8KIAlzdHJ1Y3QgYmlvCQkqYmlfbmV4dDsJLyogcmVxdWVzdCBxdWV1ZSBs
+aW5rICovCi0Jc3RydWN0IGJsb2NrX2RldmljZQkqYmlfYmRldjsKKwlzdHJ1Y3QgYmxvY2tfZGV2
+aWNlCSpiaV9iZGV2LCAqYmlfcGFydDsKIAl1bnNpZ25lZCBsb25nCQliaV9mbGFnczsJLyogc3Rh
+dHVzLCBjb21tYW5kLCBldGMgKi8KIAl1bnNpZ25lZCBsb25nCQliaV9ydzsJCS8qIGJvdHRvbSBi
+aXRzIFJFQUQvV1JJVEUsCiAJCQkJCQkgKiB0b3AgYml0cyBwcmlvcml0eQpkaWZmIC0tZ2l0IGEv
+aW5jbHVkZS9saW51eC9ibGtkZXYuaCBiL2luY2x1ZGUvbGludXgvYmxrZGV2LmgKaW5kZXggYWFl
+ODZmZC4uZjMxYmQ0ZiAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9ibGtkZXYuaAorKysgYi9p
+bmNsdWRlL2xpbnV4L2Jsa2Rldi5oCkBAIC0xMTQsNiArMTE0LDcgQEAgc3RydWN0IHJlcXVlc3Qg
+ewogCXZvaWQgKmVsZXZhdG9yX3ByaXZhdGUyOwogCXZvaWQgKmVsZXZhdG9yX3ByaXZhdGUzOwog
+CisJc3RydWN0IGJsb2NrX2RldmljZSAqcnFfcGFydDsKIAlzdHJ1Y3QgZ2VuZGlzayAqcnFfZGlz
+azsKIAl1bnNpZ25lZCBsb25nIHN0YXJ0X3RpbWU7CiAjaWZkZWYgQ09ORklHX0JMS19DR1JPVVAK
+--001485eba1e823a9db0496c019cb--
