@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab0LFNV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:21:27 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:49115 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab0LFNV0 (ORCPT
+	id S1752352Ab0LFNWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:22:05 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:60496 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab0LFNWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 08:21:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=pwYAgBzpUWvfi70mMLUWwTQuvgfbuFJSroBQW955676qYzcTjIeWczkoV1EEDJfXdY
-         jW+MsKcDEZoxJ5fVdNK6K9zosYuQiPnVxQxEF6rzbYk3+klkEPbzwAV2BJQ3vDETJ2K1
-         OpvHt2WJ4Kqt4T8ipX1oQtHIDIJczTkGi/Jdc=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] omap1: pm_bus: Fix compilation warning.
-Date: Mon,  6 Dec 2010 14:23:48 +0100
-Message-Id: <1291641828-19909-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 6 Dec 2010 08:22:03 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: David Sharp <dhsharp@google.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com
+Subject: Re: [Patch 00/15] Reduce tracing payload size.
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+Date: Mon, 06 Dec 2010 14:22:00 +0100
+In-Reply-To: <1291421609-14665-1-git-send-email-dhsharp@google.com> (David
+	Sharp's message of "Fri, 3 Dec 2010 16:13:14 -0800")
+Message-ID: <878w03t4sn.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following compilation warning:
-arch/arm/mach-omap1/pm_bus.c: In function 'omap1_pm_runtime_resume':
-arch/arm/mach-omap1/pm_bus.c:51: warning: unused variable 'ret'
+David Sharp <dhsharp@google.com> writes:
+>
+> These patches are just a start to shrinking the size of trace events. I am
+> planning to also make small versions of trace events that are used when
+> CONFIG_SMALL_TRACES is enabled. I'm also open to discussion of other ways to
+> shrink event sizes.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- arch/arm/mach-omap1/pm_bus.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Maybe the simplest would be to lzo them as they get logged?
+I assume you already considered that?
 
-diff --git a/arch/arm/mach-omap1/pm_bus.c b/arch/arm/mach-omap1/pm_bus.c
-index 8b66392..f97c6e9 100644
---- a/arch/arm/mach-omap1/pm_bus.c
-+++ b/arch/arm/mach-omap1/pm_bus.c
-@@ -48,7 +48,6 @@ static int omap1_pm_runtime_suspend(struct device *dev)
- 
- static int omap1_pm_runtime_resume(struct device *dev)
- {
--	int ret = 0;
- 	struct clk *iclk, *fclk;
- 
- 	dev_dbg(dev, "%s\n", __func__);
--- 
-1.7.1
+-Andi
 
