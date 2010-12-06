@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab0LFFoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 00:44:30 -0500
-Received: from mail.perches.com ([173.55.12.10]:2284 "EHLO mail.perches.com"
+	id S1751516Ab0LFFo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 00:44:27 -0500
+Received: from mail.perches.com ([173.55.12.10]:2273 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733Ab0LFFo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 00:44:28 -0500
+	id S1750733Ab0LFFoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 00:44:25 -0500
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
         Matt Mackall <mpm@selenic.com>, David Woodhouse <dwmw2@infradead.org>,
         linux-embedded@vger.kernel.org
-Subject: [PATCH 4/7] include/linux/printk.h: Add pr_<level>_once macros
-Date: Sun,  5 Dec 2010 21:44:18 -0800
-Message-Id: <44c658626c01f8005b43a663f03513d8bab7c7b4.1291611192.git.joe@perches.com>
+Subject: [PATCH 2/7] include/linux/printk.h: Use space after #define
+Date: Sun,  5 Dec 2010 21:44:16 -0800
+Message-Id: <c35312ec9dc69053ceee9a3bf6200867e9c526d8.1291611191.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1291611190.git.joe@perches.com>
 References: <cover.1291611190.git.joe@perches.com>
@@ -21,98 +21,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move printk_once definitions and add an #ifdef CONFIG_PRINTK
-Add pr_<level>_once so printks can use pr_fmt
-
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/printk.h |   59 +++++++++++++++++++++++++++++++++++------------
- 1 files changed, 44 insertions(+), 15 deletions(-)
+ include/linux/printk.h |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/include/linux/printk.h b/include/linux/printk.h
-index e3858f2..8a9a2ee 100644
+index 0b4513b..b6218d3 100644
 --- a/include/linux/printk.h
 +++ b/include/linux/printk.h
-@@ -111,18 +111,6 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- extern int printk_delay_msec;
- extern int dmesg_restrict;
+@@ -4,14 +4,14 @@
+ extern const char linux_banner[];
+ extern const char linux_proc_banner[];
  
--/*
-- * Print a one-time message (analogous to WARN_ONCE() et al):
-- */
--#define printk_once(x...) ({			\
--	static bool __print_once;		\
--						\
--	if (!__print_once) {			\
--		__print_once = true;		\
--		printk(x);			\
--	}					\
--})
--
- void log_buf_kexec_setup(void);
- #else
- static inline __attribute__ ((format (printf, 1, 0)))
-@@ -145,9 +133,6 @@ static inline bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- 	return false;
- }
+-#define	KERN_EMERG	"<0>"	/* system is unusable			*/
+-#define	KERN_ALERT	"<1>"	/* action must be taken immediately	*/
+-#define	KERN_CRIT	"<2>"	/* critical conditions			*/
+-#define	KERN_ERR	"<3>"	/* error conditions			*/
+-#define	KERN_WARNING	"<4>"	/* warning conditions			*/
+-#define	KERN_NOTICE	"<5>"	/* normal but significant condition	*/
+-#define	KERN_INFO	"<6>"	/* informational			*/
+-#define	KERN_DEBUG	"<7>"	/* debug-level messages			*/
++#define KERN_EMERG	"<0>"	/* system is unusable			*/
++#define KERN_ALERT	"<1>"	/* action must be taken immediately	*/
++#define KERN_CRIT	"<2>"	/* critical conditions			*/
++#define KERN_ERR	"<3>"	/* error conditions			*/
++#define KERN_WARNING	"<4>"	/* warning conditions			*/
++#define KERN_NOTICE	"<5>"	/* normal but significant condition	*/
++#define KERN_INFO	"<6>"	/* informational			*/
++#define KERN_DEBUG	"<7>"	/* debug-level messages			*/
  
--/* No effect, but we still get type checking even in the !PRINTK case: */
--#define printk_once(fmt, ...) no_printk(fmt, ##__VA_ARGS__)
--
- static inline void log_buf_kexec_setup(void)
- {
- }
-@@ -214,6 +199,50 @@ extern void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
- #endif
- 
- /*
-+ * Print a one-time message (analogous to WARN_ONCE() et al):
-+ */
-+
-+#ifdef CONFIG_PRINTK
-+#define printk_once(fmt, ...)			\
-+({						\
-+	static bool __print_once;		\
-+						\
-+	if (!__print_once) {			\
-+		__print_once = true;		\
-+		printk(fmt, ##__VA_ARGS__);	\
-+	}					\
-+})
-+#else
-+#define printk_once(fmt, ...)			\
-+	no_printk(fmt, ##__VA_ARGS__)
-+#endif
-+
-+#define pr_emerg_once(fmt, ...)					\
-+	printk_once(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_alert_once(fmt, ...)					\
-+	printk_once(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_crit_once(fmt, ...)					\
-+	printk_once(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_err_once(fmt, ...)					\
-+	printk_once(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_warn_once(fmt, ...)					\
-+	printk_once(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_notice_once(fmt, ...)				\
-+	printk_once(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_info_once(fmt, ...)					\
-+	printk_once(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_cont_once(fmt, ...)					\
-+	printk_once(KERN_CONT pr_fmt(fmt), ##__VA_ARGS__)
-+/* If you are writing a driver, please use dev_dbg instead */
-+#if defined(DEBUG)
-+#define pr_debug_once(fmt, ...)					\
-+	printk_once(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#else
-+#define pr_debug_once(fmt, ...)					\
-+	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#endif
-+
-+/*
-  * ratelimited messages with local ratelimit_state,
-  * no local ratelimit_state used in the !PRINTK case
+ /* Use the default kernel loglevel */
+ #define KERN_DEFAULT	"<d>"
+@@ -20,7 +20,7 @@ extern const char linux_proc_banner[];
+  * line that had no enclosing \n). Only to be used by core/arch code
+  * during early bootup (a continued line is not SMP-safe otherwise).
   */
+-#define	KERN_CONT	"<c>"
++#define KERN_CONT	"<c>"
+ 
+ extern int console_printk[];
+ 
 -- 
 1.7.3.2.245.g03276.dirty
 
