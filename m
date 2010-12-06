@@ -1,123 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab0LFXEC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:04:02 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:63542 "EHLO
+	id S1753655Ab0LFXHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 18:07:34 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:56400 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab0LFXEA (ORCPT
+	with ESMTP id S1751955Ab0LFXHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:04:00 -0500
+	Mon, 6 Dec 2010 18:07:32 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Charles Manning <manningc2@actrix.gen.nz>
-Subject: Re: [PATCH 3/8] Add yaffs2 file system: guts code
-Date: Tue, 7 Dec 2010 00:03:41 +0100
+To: Vitaly Wool <vitalywool@gmail.com>
+Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
+Date: Tue, 7 Dec 2010 00:07:19 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com> <201012061355.44032.arnd@arndb.de> <201012071113.51408.manningc2@actrix.gen.nz>
-In-Reply-To: <201012071113.51408.manningc2@actrix.gen.nz>
+Cc: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <201012061754.44592.arnd@arndb.de> <AANLkTin_VOjz=bGCnANgp8G2SFFFOkT3TKRh50p5L1Gj@mail.gmail.com>
+In-Reply-To: <AANLkTin_VOjz=bGCnANgp8G2SFFFOkT3TKRh50p5L1Gj@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012070003.42224.arnd@arndb.de>
-X-Provags-ID: V02:K0:l+W4rLkdEUUa7YfV4dOslkRZ85EBtHIoUAXA5zD2t8T
- Tld6f+QwDBEU5sbcn/424sFh0iRGneSry22u8rxJeZN+FpdLZT
- CS7LW2mPJHuAfNxG/t/WzGSLis+9ysLVVGH6lqUxtEYxtNKjmu
- 0ur20vrpmpkMBwf8oiGFWDHFSq3M86Ds834pKLVWJWsO8ZfUx7
- PGmBAKWF5W1sAgBQWRwPg==
+Message-Id: <201012070007.19239.arnd@arndb.de>
+X-Provags-ID: V02:K0:pRoO2mXSUavw8fZgccW0EgHXALGgvK9OvyCWrO+Cmv4
+ V9WgxFIr/gAEY/llomfupKA/j09STx0iuJbbU7e1HAbLah50+d
+ IvFV18JLsc7tJ4BXeHiJsC8uWFtGTH3TBu5NEnR7/zJ7QshADE
+ 4HfaQXQPFNhbsWCPVFyMEv7ZlyQPUOZSKKKAOLygEEt2D3LRqW
+ CdkVOrDVDPnxAKdEYYeWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010 23:13:51 Charles Manning wrote:
-> On Tuesday 07 December 2010 01:55:43 Arnd Bergmann wrote:
-> > On Monday 06 December 2010, Charles Manning wrote:
-> > > On Wednesday 01 December 2010 11:23:53 you wrote:
-> > > > On Tuesday 30 November 2010 22:57:29 Charles Manning wrote:
-> > > > It would be better to reorder the functions in each file so that
-> > > > you don't need forward declarations. This generally makes reading
-> > > > the code easier because it is what people expect to see. It
-> > > > also makes it clearer where you have possible recursions in the code.
-> > >
-> > > Hmmm..
-> > > I too prefer minimal use of forward declaration.
-> > > Some of them are because I copied the layout of existing kernel code
-> > > which uses fwd declarations a lot. eg. fs/jffs2/dir.c  and many of the
-> > > examples in Rubini & Corbet.
-> >
-> > There is not much point in changing the legacy code that's already in
-> > the kernel, but let's try to keep it clean for new code. We have a lot
-> > of bad examples for coding style that we wouldn't merge these days.
-> >
-> > In this case, it should be an obvious change with no real downsides.
+On Monday 06 December 2010 22:24:34 Vitaly Wool wrote:
+> On Mon, Dec 6, 2010 at 5:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> Arnd thanks for your input, I appreciate it immensely.
+> >> But I was trying to make a different point here. On a basic level,
+> >> there's this cg2000 chip from STE that does BT, FM and GPS. There's
+> >> the chip from TI that does BT, FM and GPS, and there's the Broadcom
+> >> chip that does BT+FM. They all use HCI to access the other functions
+> >> of the combo chip and they do it in a really simiar way, with the
+> >> differences mostly in power management techniques. So I think it's
+> >> quite sensible to have some kind of framework that is suitable for
+> >> such devices.
+> >
+> > Yes, I agree 100% in principle. I could not find the code that
+> > Broadcom/TI FM and GPS stuff so far, can you point us to that?
 > 
-> Is this objection to forward declarations just your personal taste or is this 
-> a real issue?
+> Sure, the TI "shared transport" code is mostly at drivers/misc/ti-st.
 > 
-> I can't find any references to forward declarations in any of the coding style 
-> docs. I would therefore expect it to be an issue of little consequence. 
-> Perhaps I did not look in the right places.
+> Some Broadcom BCM43xx chips work in a similar way AFAIK but I'm not
+> sure about the mainline support for those.
 
-It's not very important and a lot of people don't care, though I have never
-seen anyone argue in favour of adding forward declarations. I consider
-it similar to the argument about function sizes: We don't have a hard
-limit about how many lines a function is allowed to have, and there are
-some cases where it makes sense to have a really long function, but
-you can tell how much effort people put into making code readable when
-you see a multi-page function that could easily be split into reasonable
-smaller ones. Code readability is mostly subjective, just like taste, but
-with some experience, you see when something is done wrong.
+Ah, it had not occured to me to look in drivers/misc. Looking at the
+code over there, it becomes much clearer what your point is. Evidently
+the ti-st driver implements a line discipline similar to, but conflicting
+with hci_ldisc, and it has its own copy of the hci_ll code.
 
-> It is perhaps also worth considering that yaffs has been in use for 8 years 
-> and is more widely used than many of the file systems already in the kernel  
-> and thus, by some measures, does constitute legacy code.
+I guess this is exactly what we're trying to avoid having with the
+cg2900 code ;-).
 
-I see this argument a lot about code that gets upstream after a long time.
-My counterargument to this is that often enough the reason for being outside
-of mainline is that the code was written in obscure ways to start with ;-)
-
-In general, the initial merge of new code is the only time we can really
-influence code from other people. Once it gets merged, I'm going to have
-a really hard time making the maintainers change it again in fundamental
-ways.
-
-> > > yaffs_trace(YAFFS_TRACE_BUFFERS,
-> > > 	"Out of temp buffers at line %d, other held by lines:",line_no);
-> > > for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++)
-> > > 	yaffs_trace(YAFFS_TRACE_BUFFERS," %d ", dev->temp_buffer[i].line);
-> > > yaffs_trace(YAFFS_TRACE_BUFFERS, "\n");
-> > >
-> > > Would that be OK?
-> > >
-> > > I am loath to have to pull out useful code then plug it back in again.
-> >
-> > I don't think the yaffs_trace() function would be much better than the T()
-> > macro, I was talking more about the fact that you have your own nonstandard
-> > tracing infrastructure than the ugliness of the interface.
-> >
-> > The point of pulling it out now would be force you to rethink the
-> > tracing. If you think that you'd arrive at the same conclusion, just
-> > save the diff between the code with and without tracing so you can
-> > submit that patch again later.
-> >
-> > Having some sort of tracing is clearly useful, but it's also not essential
-> > for the basic yaffs2 operation. We want to keep a consistent way of
-> > presenting trace points across the kernel, so as long as you do it
-> > differently, your code is going to be viewed with some suspicion.
-> >
-> > Please have a look at how ext4, gfs2 and xfs do tracing.
+> > The cg2900 solution for this was to use MFD (plus another layer
+> > in the posted version, but that will go away I assume). Using
+> > MFD is not the only possibility here, but I could not see anything
+> > wrong with it either. Do you think we can move them all over to
+> > use MFD infrastructure?
 > 
-> Looking in Linus' tree, all of those contain custom tracing of the form I 
-> propose.
+> I guess so but it's probably more of a detail than what I'm up to now :)
 
-Hmm, yes I guess that's right...
+Agreed.
+ 
+> >> But generally speaking, isn't a line discipline/driver attached to a
+> >> tty? We can use dumb tty for e. g. SPI and still be able to use
+> >> hci_ll, right?
+> >
+> > I suggested that as well, but the point was made that this would
+> > add an unnecessary indirection for the SPI case, which is not
+> > really much like a serial port. It's certainly possible to do it
+> > like you say, but if we add a way to register the high-level
+> > protocols with an HCI-like multi-function device, we could
+> > also do it in a way that does not rely on tty-ldisc but keeps it
+> > as one of the options.
+> 
+> I actually don't think it's such a big indirection, I prefer to think
+> of it more as of the abstraction layer. If not use this, are we going
+> to have direct SPI device drivers? I'm afraid we might end up with a
+> huge duplication of code in that case.
 
-I was specifically talking about the include/trace/* based trace events
-as something to look at, not the random printk based tracing stuff.
-Maybe Steven or Frederic can give some more insight on that.
+The question is how it should be modeled in a better way than today.
+
+I believe we already agree it should be something like
+
+   bt   ti-radio    st-e-radio    ti-gps   st-e-gps  broadcom-radio ...
+   |         |          |            |          |          |         |
+   +---------+----------+---------+--+----------+----------+---------+
+                                  |
+                          common-hci-module
+                                  |
+                      +-----------+-----------+
+                      |        |       |      |
+                    serial    spi     i2c    ...
+
+
+Any objections to this?
+
+If you agree, I think we should discuss the alternatives for the common
+module. I think you are saying we should make the common module a single
+ldisc doing the multiplexing and have all transports register as ttys into
+it, right?
+
+What we discussed before was to split it into multiple modules, one for
+the tty ldisc and one for the common code, and then have the spi/i2c/...
+drivers feed into the common multiplexer without going through tty.
+
+I don't currently see a significant advantage or disadvantage with either
+approach.
 
 	Arnd
