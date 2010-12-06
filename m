@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab0LFWcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 17:32:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:59336 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753174Ab0LFWcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 17:32:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v5 resend] OLPC: Add XO-1 suspend/resume support
-Date: Mon, 6 Dec 2010 23:31:26 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Daniel Drake <dsd@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andres Salomon <dilinger@queued.net>
-References: <20101203141828.33E8F9D401B@zog.reactivated.net> <alpine.LFD.2.00.1012062119350.2653@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012062119350.2653@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012062331.26953.rjw@sisk.pl>
+	id S1754212Ab0LFWmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 17:42:17 -0500
+Received: from passoire.arboi.fr.eu.org ([81.57.108.63]:38591 "EHLO
+	passoire.arboi.fr.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab0LFWmQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 17:42:16 -0500
+Date: Mon, 6 Dec 2010 23:42:13 +0100
+From: Michel Arboi <michel@arboi.fr.eu.org>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: Hans de Goede <hdegoede@redhat.com>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Patch for Fintek F71869 watchdoh
+Message-ID: <20101206234213.4e3c6ae6@marmite>
+In-Reply-To: <20101206202155.GB3188@salidar.me.mortis.eu>
+References: <4CFCB76D.2060405@redhat.com>
+	<20101206191930.GA3188@salidar.me.mortis.eu>
+	<20101206205345.639f31bb@marmite>
+	<20101206202155.GB3188@salidar.me.mortis.eu>
+Organization: Compilo ergo sum
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 06, 2010, Thomas Gleixner wrote:
-> On Fri, 3 Dec 2010, Daniel Drake wrote:
-...
-> > diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-> > index 7335952..c320724 100644
-> > --- a/kernel/power/suspend.c
-> > +++ b/kernel/power/suspend.c
-> > @@ -42,6 +42,7 @@ void suspend_set_ops(struct platform_suspend_ops *ops)
-> >  	suspend_ops = ops;
-> >  	mutex_unlock(&pm_mutex);
-> >  }
-> > +EXPORT_SYMBOL_GPL(suspend_set_ops);
-> 
-> Has this been acked by the PM folks ?
+On Mon, 6 Dec 2010 21:21:55 +0100
+Giel van Schijndel <me@mortis.eu> wrote:
 
-Nope.
+> That's intended behaviour and probably sufficient for testing.  Most
+> of the behaviour isn't chip-specific, only the initialisation and
+> configuration of the chip is specific to that chip AFAIK.
 
-Rafael
+OK. Hans, if you need some tests for the sensors part, you can send me a
+patch and I'll try to help.
+[I suspect that the current Linux code works, sensors reports 62 °C /
+59 °C for the CPU]
+
+> PS You might want to include patches inline (i.e. as part of the
+> message text) as that's standard procedure for Linux MLs.  That
+> allows easy reviewing and commenting on patches.
+
+OK. In fact I did not know how to submit a kernel patch. 
