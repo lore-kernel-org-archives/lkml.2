@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab0LFNFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 08:05:42 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50828 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab0LFNFl (ORCPT
+	id S1752001Ab0LFNLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 08:11:40 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42032 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab0LFNLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 08:05:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=KiiNM2ODC517D/DzhjAx52M1QfX0RWZtOcyyNzao2OZJ71/nvK4npXT55G+DMO0MvP
-         8CoQ61ClbJPnJJPrv38lQ6qi1C8+kUggzNYFpewz7I6u7RlE2r85A2VJxIVM8cAE619U
-         qHrYGHP0r4pxkTCDO/sV2RZlsSB8TxqvZiUaE=
-Subject: Re: [PATCH] USB: whci-hcd: fix compiler warning
-From: Namhyung Kim <namhyung@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101201173604.GA30708@suse.de>
-References: <1291177721-17598-1-git-send-email-namhyung@gmail.com>
-	 <20101201161039.GB29318@suse.de> <1291222151.1684.46.camel@leonhard>
-	 <20101201173604.GA30708@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Dec 2010 22:05:30 +0900
-Message-ID: <1291640730.1696.29.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 6 Dec 2010 08:11:39 -0500
+Content-Type: text/plain; charset=UTF-8
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/3] perf record/report: Process events in order
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+In-reply-to: <alpine.LFD.2.00.1012061359140.2653@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1012051220450.2653@localhost6.localdomain6> <1291603026-11785-4-git-send-email-imunsie@au1.ibm.com> <alpine.LFD.2.00.1012061014180.2653@localhost6.localdomain6> <1291637998-sup-4601@au1.ibm.com> <alpine.LFD.2.00.1012061359140.2653@localhost6.localdomain6>
+Date: Tue, 07 Dec 2010 00:11:28 +1100
+Message-Id: <1291640985-sup-4443@au1.ibm.com>
+User-Agent: Sup/0.11
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-12-01 (수), 09:36 -0800, Greg KH:
-> On Thu, Dec 02, 2010 at 01:49:11AM +0900, Namhyung Kim wrote:
-> > 2010-12-01 (수), 08:10 -0800, Greg KH:
-> > > On Wed, Dec 01, 2010 at 01:28:41PM +0900, Namhyung Kim wrote:
-> > > > Annotate whci_hcd_id_table as '__used' to fix following warning:
-> > > > 
-> > > >   CC      drivers/usb/host/whci/hcd.o
-> > > > drivers/usb/host/whci/hcd.c:359: warning: ‘whci_hcd_id_table’ defined but not used
-> > > 
-> > > Are you seeing this warning when you build the module into the kernel,
-> > > or as a module?
-> > > 
-> > > thanks,
-> > > 
-> > > greg k-h
+Excerpts from Thomas Gleixner's message of Tue Dec 07 00:04:20 +1100 2010:
+> > I just moved them into this routine to keep all the dispatching in one
+> > place, whether delayed or not. These particular events will still be
+> > processed immediately when encountered in the file. Only >=
+> > PERF_RECORD_MMAP && <= PERF_RECORD_SAMPLE will be delayed via the
+> > perf_session__process_timed function.
+> 
+> Gah. This is nasty. I really prefer the explicit split of instant
+> processed and possibly delayed events. That makes the code clear and
+> easy to extend. I just want to add a new event type at the right place
+> and not worry about magic comparisions in some other place.
+
+Fair enough, I'll split them back out.
+
+> > For instance, suppose we ran this on an old kernel without support for
+> > timestamps on every event (so timestamps are only on sample events):
 > > 
-> > I saw it during allyesconfig build but not on allmodconfig.
-> > Maybe we can wrap it up in #ifdef CONFIG_MODULES ?
+> > perf record -T
+> > perf report
+> > 
+> > If perf report tried to process the events in order, all the events
+> > without timestamps would be processed first -- including the
+> > PERF_RECORD_EXIT event, which would cause every sample not to be
+> > attributed. Falling back means we should get no worse than the old
+> > behaviour, while an upgraded kernel will provide the timestamps and
+> > should not fall back.
 > 
-> No, don't do that, your __used is the correct thing here, I just wanted
-> to make sure why you were seeing this warning.
-> 
-> thanks,
-> 
-> greg k-h
+> Ok, but you'll break existing code which does only care about sample
+> ordering if you do that at the session level unconditionally.
 
-Hi, Greg
+Good point. I'll give this some thought overnight.
 
-It seems this one is not applied in your tree yet. Do you need a resend?
-
-Thanks.
-
-
--- 
-Regards,
-Namhyung Kim
-
-
+Cheers,
+-Ian
