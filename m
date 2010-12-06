@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0LFQl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:41:56 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54681 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab0LFQly (ORCPT
+	id S1753741Ab0LFQp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:45:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49835 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab0LFQpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:41:54 -0500
-Date: Mon, 6 Dec 2010 17:41:50 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "Ted Ts'o" <tytso@mit.edu>,
-        David Sharp <dhsharp@google.com>, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, mrubin@google.com
-Subject: Re: [Patch 00/15] Reduce tracing payload size.
-Message-ID: <20101206164150.GD24977@basil.fritz.box>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <878w03t4sn.fsf@basil.nowhere.org>
- <20101206135637.GC8135@thunk.org>
- <20101206145852.GA24977@basil.fritz.box>
- <AANLkTin9=zCbfwdt0GxaGMynTqUsf8R4GWJy88qw87A_@mail.gmail.com>
+	Mon, 6 Dec 2010 11:45:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=jXxRAhbCUlen1W1Rzaxt+dYa4Us6t/6BUek0AEdk3NQWT01nXQsktxsHB4eaHGJOKX
+         /9OQHOIU/aw4ddRkmWWXs3HmPlBi3R9jPcDyBqpLFCKZmr9NTytiNgT6u4p8WNmyCMGs
+         367pFAEFkOtcj1zt80QbQei+1EHn+tXkHzIEc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin9=zCbfwdt0GxaGMynTqUsf8R4GWJy88qw87A_@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTing7+SK+pavFehR4AGDbRRfFwvvzNxgWQ3zRp+O@mail.gmail.com>
+References: <AANLkTing7+SK+pavFehR4AGDbRRfFwvvzNxgWQ3zRp+O@mail.gmail.com>
+Date: Mon, 6 Dec 2010 17:45:23 +0100
+Message-ID: <AANLkTikYF-V2WaEB3a04OhFuzOm2qjx3fWxJ6fOwED5T@mail.gmail.com>
+Subject: Re: Atomic non-durable file write API
+From: Olaf van der Spek <olafvdspek@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That is true for the decompression step but not for the compression
-> one, which takes more than 10 memcpys().
+On Mon, Nov 29, 2010 at 1:37 PM, Olaf van der Spek <olafvdspek@gmail.com> wrote:
+> Hi,
+>
+> Since the introduction of ext4, some apps/users have had issues with
+> file corruption after a system crash. It's not a bug in the FS AFAIK
+> and it's not exclusive to ext4.
+> Writing a temp file, fsync, rename is often proposed. However, the
+> durable aspect of fsync isn't always required and this way has other
+> issues.
+> What is the recommended way for atomic non-durable (complete) file writes?
+>
+> I'm also wondering why FSs commit after open/truncate but before
+> write/close. AFAIK this isn't necessary and thus suboptimal.
 
-That's a good point. At 10x it's definitely too slow. Too bad, would have been too easy.
-
-I guess one could still consider some very cheap data specific delta compressions 
-(I assume there's a lot of redundancy in a tracing stream with similar events
-occurring in a row or nearby) I used this technique successfully with large log files 
-in the past and overall moving less data around ends up being cheaper.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Somebody?
