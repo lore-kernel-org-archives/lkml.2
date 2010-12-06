@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab0LFQDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 11:03:38 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58917 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0LFQDh (ORCPT
+	id S1753404Ab0LFQDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 11:03:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33803 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab0LFQDk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 11:03:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=gqw3RYDVdg7oEaXx3wvF01pknqJ5C+9pRy41iMh9bu+PytK1Y4xOUZDkx4qm6Xb567
-         AKnf52VY8Qf6FUXSw9Lp3cyW1p/EozpSrgMdUutYsFusRQj+NsbGiz1lz1x8yZPDz4g7
-         lDTGA1uP4UWT89OvsaXVrGUnKQJfkXSKOO9QE=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] USB: whci-hcd: fix compiler warning
-Date: Tue,  7 Dec 2010 01:03:32 +0900
-Message-Id: <1291651412-8467-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20101206155625.GC23214@kroah.com>
-References: <20101206155625.GC23214@kroah.com>
+	Mon, 6 Dec 2010 11:03:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,305,1288594800"; 
+   d="scan'208";a="684369876"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Mai, Leonard" <leonard.mai@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Date: Tue, 7 Dec 2010 00:03:02 +0800
+Subject: RE: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+Thread-Topic: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+Thread-Index: AcuRVoyV+jZQmGJ7QUmtxU7X3MA6YQEB8Wig
+Message-ID: <5D8008F58939784290FAB48F54975198320B3E4A2D@shsmsx502.ccr.corp.intel.com>
+References: <20101201124842.GA5421@intel.com>
+In-Reply-To: <20101201124842.GA5421@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Annotate whci_hcd_id_table as '__used' to fix following warning:
+Hello all,
+How about these patches? It implemented HW reset feature. When card occurred a timeout error during reading/writing/erasing, these patches will allow driver to reset eMMC card by trigger a HW reset signal.
+Does anyone have any comments about the implementation of these patches? Wolfram and Arnd already pointed out the unsuitable patch headers. Thanks! :)
 
-  CC      drivers/usb/host/whci/hcd.o
-drivers/usb/host/whci/hcd.c:359: warning: ‘whci_hcd_id_table’ defined but not used
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- drivers/usb/host/whci/hcd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/host/whci/hcd.c b/drivers/usb/host/whci/hcd.c
-index 72b6892..9546f6c 100644
---- a/drivers/usb/host/whci/hcd.c
-+++ b/drivers/usb/host/whci/hcd.c
-@@ -356,7 +356,7 @@ static void __exit whci_hc_driver_exit(void)
- module_exit(whci_hc_driver_exit);
- 
- /* PCI device ID's that we handle (so it gets loaded) */
--static struct pci_device_id whci_hcd_id_table[] = {
-+static struct pci_device_id __used whci_hcd_id_table[] = {
- 	{ PCI_DEVICE_CLASS(PCI_CLASS_WIRELESS_WHCI, ~0) },
- 	{ /* empty last entry */ }
- };
--- 
-1.7.0.4
-
+> -----Original Message-----
+> From: linux-mmc-owner@vger.kernel.org
+> [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chuanxiao Dong
+> Sent: Wednesday, December 01, 2010 8:49 PM
+> To: linux-mmc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; cjb@laptop.org; arjan@linux.intel.com;
+> alan@linux.intel.com; akpm@linux-foundation.org
+> Subject: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+> 
+> Hi,
+> 	These are the version 4 patches to implement eMMC4.4 HW reset
+> 	feature. Host controller can use this feature by trigger RST_n signal.
+> 	To enable this, byte 162 of EXT_CSD register should be set.
+> 	HW reset is implemented in mmc core layer and sdhci host layer, and it
+> 	will be used after each reading/writing/erasing timeout error occures.
+> 
+> 	change-log:
+> 	This version change the way to detect timeout error conditions. Added a
+> 	new routine mmc_handle_timeout_error to do this instead to do this in
+> 	mmc_wait_for_req. Each timeout read/write/erase command can use this
+> 	routine to do HW reset.
+> 
+> 	patch1: enable HW reset capability if card support.
+> 
+> 	patch2: add two new callback to implement HW reset in mmc core layer. In
+> 	this patch, routine mmc_handle_timeout_error was added.
+> 
+> 	patch3: implement hardware_reset callback for sdhci host. A new callback
+> 	reset_emmc was defined which will be each sdhci host controller to
+> 	implement separately.
+> 
+> 	patch4: did a HW reset after each read/write/erase command.
+> 
+> Thanks
+> Chuanxiao
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
