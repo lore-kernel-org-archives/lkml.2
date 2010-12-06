@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab0LFPPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 10:15:42 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:54810 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab0LFPPj (ORCPT
+	id S1753455Ab0LFPQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 10:16:39 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57702 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab0LFPQi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 10:15:39 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vitaly Wool <vitalywool@gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-Date: Mon, 6 Dec 2010 16:15:27 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <201012061506.04364.arnd@arndb.de> <AANLkTikUeH2BL3svwydt1kGGuzn7C8QxiqRqMZPXHhZ_@mail.gmail.com>
-In-Reply-To: <AANLkTikUeH2BL3svwydt1kGGuzn7C8QxiqRqMZPXHhZ_@mail.gmail.com>
+	Mon, 6 Dec 2010 10:16:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KgIhMKMXjzc7rYEZ8T9DeXhv/tc7TsJS48TKFIR7D083hLfZn08ba56gMiU+Ztvr0B
+         rqHNcJrh18o7mXwMOCwKh3r9eKYSGzalzg+AYkWkts7lDXvo7/bgIAyib6LUK1QBqoe7
+         amxZrkkAwJteCTFjUiz6ZHOaLII6jF/+TBNCQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012061615.28093.arnd@arndb.de>
-X-Provags-ID: V02:K0:/KCFo9nCJYvkX8D9ielJm9+VfEjaoMgow2QOi6C4SL5
- XDW3szXY9BmPANAi8md6KgO1wUtnf9rKq/3triUJAsXLS2rXNF
- Nd/vqUiivRqGz9EqMTeqx9MhH6WpeP6TtMI5K9YcANSJIi3b/o
- ViK5bY++teDwp+sH9ImFagOf3n+OOta2vu+mWTAedryAerO+58
- zPMYcGc2X9nhZyfMhF/OQ==
+In-Reply-To: <alpine.LNX.2.00.1012060120590.16078@swampdragon.chaosbits.net>
+References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com>
+	<alpine.LNX.2.00.1012060120590.16078@swampdragon.chaosbits.net>
+Date: Mon, 6 Dec 2010 17:16:36 +0200
+Message-ID: <AANLkTinbq+NPHBQ=zqVNjUDL+G3fKdC6S9gYB5e4isNR@mail.gmail.com>
+Subject: Re: [PATCH 01/45] kstrtox: converting strings to integers done
+ (hopefully) right
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010, Vitaly Wool wrote:
-> On Mon, Dec 6, 2010 at 3:06 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > hci_ll is not the line discipline but the a TI specific uart protocol.
-> > The line discipline driver (hci_ldisc.c) is shared across all protocols
-> > (h4, ll, ...) and gets extended slightly so it can deal with cg2900
-> > in addition to the existing HCIs. The rest of the cg2900 support is
-> > about adding more hci_uart_protos.
-> 
-> I was referring to hci_ll as to the line discipline driver, not the
-> line discipline itself.
-> 
-> The thing is, there are different Bluetooth combo chips which use HCI
-> to encapsulate commands to the sub-chips behind, and there's also the
-> implementation for TI chip doing that which is in the mainline. So
-> instead of keeping reinventing the wheel, I think it's fairly
-> beneficial for everything if we finally agree on something that works
-> for all the combo chips of the type.
+On Mon, Dec 6, 2010 at 2:25 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Sun, 5 Dec 2010, Alexey Dobriyan wrote:
+>> Note: sizeof and __alignof__ trick is done to save function call
+>>       where types aren't distinguishable.
+>>
+>> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+>> ---
+> <snip>
+>> +/* Internal, do not use. */
+>> +int _kstrtol(const char *s, unsigned int base, long *res)
+>> +{
+>> +     long long tmp;
+>> +     int rv;
+>> +
+>> +     rv = kstrtoll(s, base, &tmp);
+>> +     if (rv < 0)
+>> +             return rv;
+>> +     if (tmp != (long long)(long)tmp)
+>> +             return -EINVAL;
+>> +     *res = tmp;
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL(_kstrtol);
+>
+> Ok, probably I'm just being dense, but the "_" prefix tells me I probably
+> shouldn't use this function. The comment clearly tells me I shouldn't use
+> this function.
+> So, why is this exported? And if it is not/should not be exported, then
+> why is it not static?
+> (goes for other functions in this patch as well).
 
-Yes, that makes sense. I'm probably missing something here, but
-it seems to me that hci_ll is only about the power management stuff
-on TI (and broadcom, as you say) chips, and the multi-protocol
-support is currently handled in hci_ldisc by allowing multiple
-protocols like h4 and ll to be registered. It that correct?
-
-One aspect that Par-Gunnar mentioned was that the multi-protocol
-stuff for cg2900 and I suspect other similar devices would also
-need to work with non-UART-based HCIs, which don't use hci_uart_proto
-but would need something similar. Also, hci_uart is currently not
-modular, e.g. you cannot build hci_ll as a loadable module
-as you'd need for dynamic registration.
-
-	Arnd
+It is used by kstrtol() if "long" and "long long" aren't the same type.
+I can't ifdef it because gcc doesn't allow "#if sizeof(long long) == ".
+"Do not use" hints "use kstrtol()".
