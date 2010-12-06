@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab0LFBx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 20:53:59 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:47971 "HELO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751732Ab0LFBx6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 20:53:58 -0500
-From: Philip Rakity <prakity@marvell.com>
-To: Chris Ball <cjb@laptop.org>
-CC: Takashi Iwai <tiwai@suse.de>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Aries Lee <arieslee@jmicron.com>
-Date: Sun, 5 Dec 2010 17:53:49 -0800
-Subject: Re: [PATCH 2/2] mmc: Test bus-width for old MMC devices
-Thread-Topic: [PATCH 2/2] mmc: Test bus-width for old MMC devices
-Thread-Index: AcuU6G3bOmnn+ovjTAuuMpfnK2VFig==
-Message-ID: <D8F224E6-5973-4CCB-97BC-0CE6102B4F6F@marvell.com>
-References: <1290579674-4616-1-git-send-email-tiwai@suse.de>
- <1290579674-4616-3-git-send-email-tiwai@suse.de>
- <20101205040221.GA24547@void.printf.net> <s5h1v5wv6gv.wl%tiwai@suse.de>
- <20101205184031.GA30957@void.printf.net>
-In-Reply-To: <20101205184031.GA30957@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752909Ab0LFB7j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 20:59:39 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40674 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab0LFB7i convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Dec 2010 20:59:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=x2QcQzxglfqL/S2qSLbCiJrI2AGHfj6y/geqU18Nr2w6H4kieahFYro0rpd2At2+Wg
+         wno/EhMq8uQUM5iBx3dsqSi9g0CWoNYZ2UFKnlZ4AN1lrOSevoYLFIc3T5i50C8wBDBe
+         ZjyXTX0CyTv+tWIAAtOI4C1iQeHt9zCa+xTMA=
 MIME-Version: 1.0
+In-Reply-To: <AANLkTimnSPSEx+B+wgxJaaAO8-HxcnLW+Nob4O3mjxBn@mail.gmail.com>
+References: <1291432752-2466-1-git-send-email-bookjovi@gmail.com>
+	<AANLkTimnSPSEx+B+wgxJaaAO8-HxcnLW+Nob4O3mjxBn@mail.gmail.com>
+Date: Mon, 6 Dec 2010 09:59:37 +0800
+Message-ID: <AANLkTimFjH6JZjOhPBrHmfpRycs4gDJuCpa+koxEyNgY@mail.gmail.com>
+Subject: Re: [PATCH] perf_event: fix error handling path
+From: jovi zhang <bookjovi@gmail.com>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Dec 5, 2010 at 8:29 PM, Thiago Farina <tfransosi@gmail.com> wrote:
+>
+> On Sat, Dec 4, 2010 at 1:19 AM,  <bookjovi@gmail.com> wrote:
+> > fix error handling path
+> >
+> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> >  kernel/perf_event.c |    2 --
+> >  1 files changed, 0 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> > index cb6c0d2..62f9e9d 100644
+> > --- a/kernel/perf_event.c
+> > +++ b/kernel/perf_event.c
+> > @@ -1918,8 +1918,6 @@ static int get_callchain_buffers(void)
+> >        }
+> >
+> >        err = alloc_callchain_buffers();
+> > -       if (err)
+> > -               release_callchain_buffers();
+>
+> Care to explain in the change log message? As I reader, is not clear
+> to me what is wrong with this.
 
-Chris,
-
-One other difference I have been told between the patches but NOT verified is
-
-a) Takasi code was not tested with Dual Data Rate
-
-b) Performance is not an issue since we are dealing with uSeconds and the code is called once
-when mmc is detected.  
-
-c)  I will adapt my code to what Takahi did over the next few days and post changes to the CAP
-
-d) The work was independent and done at the same time !! (amazing)
-
-
-On Dec 5, 2010, at 10:40 AM, Chris Ball wrote:
-
-> Hi Takashi, Philip,
-> 
-> On Sun, Dec 05, 2010 at 11:50:40AM +0100, Takashi Iwai wrote:
->>> I'm planning on taking Takashi's since it looks a little cleaner; Philip,
->>> please could you take a look at Takashi's patch and add anything you
->>> think should be present from your own patch as a new incremental patch?
->> 
->> One missing thing in my (originally Aries') patch is the quirk bit to
->> enable/disable the bus-width test.  In Philip's latest patch, the
->> default is off.
->> 
->> I'm also not sure whether this bus-width test should be enabled as
->> default.  I guess it's better for performance, so I'd vote for turning
->> on as default.  But, having a quirk for turning off would be safer for
->> working around old hardware problems, of course.
-> 
-> Sounds good, although we're trying hard not to add new quirk bits.
-> I don't see a way around doing that here, though.
-> 
-> We've got plenty of time until the .38 release -- let's turn it on by
-> default and test during .38-rc, and we can revisit whether to leave it
-> on closer to the release.  It's not as simple as "turning it on could
-> cause problems so let's not do that", because we're *already* seeing
-> problems from things like enabling 8-bit width on setups that don't
-> support it.
-> 
-> Thanks!
-> 
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-
+Sorry, the description should be as:
+fix error handling path. alloc_callchain_buffers() can return -ENOMEM,
+in this time callchain_cpus_entries maybe is NULL, It will oops if
+invoke release_callchain_buffers() when callchain_cpus_entries is
+NULL.
