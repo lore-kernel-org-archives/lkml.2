@@ -1,42 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab0LFOvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 09:51:45 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55661 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204Ab0LFOvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 09:51:44 -0500
-Date: Mon, 6 Dec 2010 14:50:28 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Uwe =?ISO-8859-14?B?S2xlaW5lLUv2bmln?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] drivers/char/applicom.c: remove cvs ID and French
- in-file changelog
-Message-ID: <20101206145028.14757216@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101206144649.GN10693@pengutronix.de>
-References: <1291645622-10430-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<20101206143807.3f065493@lxorguk.ukuu.org.uk>
-	<20101206144649.GN10693@pengutronix.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753258Ab0LFOxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 09:53:55 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:49903 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204Ab0LFOxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 09:53:54 -0500
+Date: Mon, 6 Dec 2010 14:53:36 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+Message-ID: <20101206145336.GF21406@csn.ul.ie>
+References: <cover.1291568905.git.minchan.kim@gmail.com> <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Something like just adding
+On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
+> Recently, there are reported problem about thrashing.
+> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+> It happens by backup workloads(ex, nightly rsync).
+> That's because the workload makes just use-once pages
+> and touches pages twice. It promotes the page into
+> active list so that it results in working set page eviction.
 > 
-> 	/* several changes by J. Paget and F. Laforse */
+> Some app developer want to support POSIX_FADV_NOREUSE.
+> But other OSes don't support it, either.
+> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
+> 
+> By other approach, app developers use POSIX_FADV_DONTNEED.
+> But it has a problem. If kernel meets page is writing
+> during invalidate_mapping_pages, it can't work.
+> It is very hard for application programmer to use it.
+> Because they always have to sync data before calling
+> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
+> be discardable. At last, they can't use deferred write of kernel
+> so that they could see performance loss.
+> (http://insights.oetiker.ch/linux/fadvise.html)
+> 
+> In fact, invalidation is very big hint to reclaimer.
+> It means we don't use the page any more. So let's move
+> the writing page into inactive list's head.
+> 
+> Why I need the page to head, Dirty/Writeback page would be flushed
+> sooner or later. It can prevent writeout of pageout which is less
+> effective than flusher's writeout.
+> 
+> Originally, I reused lru_demote of Peter with some change so added
+> his Signed-off-by.
+> 
+> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> 
+> Andrew. Before applying this series, please drop below two patches.
+>  mm-deactivate-invalidated-pages.patch
+>  mm-deactivate-invalidated-pages-fix.patch
+> 
+> Changelog since v3:
+>  - Change function comments - suggested by Johannes
+>  - Change function name - suggested by Johannes
+>  - add only dirty/writeback pages to deactive pagevec
+> 
+> Changelog since v2:
+>  - mapped page leaves alone - suggested by Mel
+>  - pass part related PG_reclaim in next patch.
+> 
+> Changelog since v1:
+>  - modify description
+>  - correct typo
+>  - add some comment
+> 
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  include/linux/swap.h |    1 +
+>  mm/swap.c            |   78 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/truncate.c        |   17 ++++++++--
+>  3 files changed, 92 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index eba53e7..605ab62 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -213,6 +213,7 @@ extern void mark_page_accessed(struct page *);
+>  extern void lru_add_drain(void);
+>  extern int lru_add_drain_all(void);
+>  extern void rotate_reclaimable_page(struct page *page);
+> +extern void deactivate_page(struct page *page);
+>  extern void swap_setup(void);
+>  
+>  extern void add_page_to_unevictable_list(struct page *page);
+> diff --git a/mm/swap.c b/mm/swap.c
+> index d5822b0..1f36f6f 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -39,6 +39,8 @@ int page_cluster;
+>  
+>  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+>  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+> +static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+> +
+>  
+>  /*
+>   * This path almost never happens for VM activity - pages are normally
 
-Yeah
+Unnecessary whitespace change there but otherwise;
 
-(if I read the french right - which is unlikely ;) then somthing like
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-	/* Port to Linux 2.4 and 2.6 by ... */
-
-but perhaps a French speaker can suggest the right wording to use)
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
