@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab0LFB7j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 20:59:39 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40674 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab0LFB7i convert rfc822-to-8bit (ORCPT
+	id S1752166Ab0LFCYI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 21:24:08 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44049 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab0LFCYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 20:59:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=x2QcQzxglfqL/S2qSLbCiJrI2AGHfj6y/geqU18Nr2w6H4kieahFYro0rpd2At2+Wg
-         wno/EhMq8uQUM5iBx3dsqSi9g0CWoNYZ2UFKnlZ4AN1lrOSevoYLFIc3T5i50C8wBDBe
-         ZjyXTX0CyTv+tWIAAtOI4C1iQeHt9zCa+xTMA=
+	Sun, 5 Dec 2010 21:24:06 -0500
+X-AuditID: b753bd60-a55a3ba000003e7d-1f-4cfc49434259
+Message-ID: <4CFC493D.6010605@hitachi.com>
+Date: Mon, 06 Dec 2010 11:23:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimnSPSEx+B+wgxJaaAO8-HxcnLW+Nob4O3mjxBn@mail.gmail.com>
-References: <1291432752-2466-1-git-send-email-bookjovi@gmail.com>
-	<AANLkTimnSPSEx+B+wgxJaaAO8-HxcnLW+Nob4O3mjxBn@mail.gmail.com>
-Date: Mon, 6 Dec 2010 09:59:37 +0800
-Message-ID: <AANLkTimFjH6JZjOhPBrHmfpRycs4gDJuCpa+koxEyNgY@mail.gmail.com>
-Subject: Re: [PATCH] perf_event: fix error handling path
-From: jovi zhang <bookjovi@gmail.com>
-To: Thiago Farina <tfransosi@gmail.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
-        linux-kernel@vger.kernel.org
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH -tip  1/7] perf: add OPT_CALLBACK_DEFAULT_NOOPT
+References: <20101203035832.7827.16528.stgit@localhost6.localdomain6> <20101203035853.7827.17502.stgit@localhost6.localdomain6>
+In-Reply-To: <20101203035853.7827.17502.stgit@localhost6.localdomain6>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 5, 2010 at 8:29 PM, Thiago Farina <tfransosi@gmail.com> wrote:
->
-> On Sat, Dec 4, 2010 at 1:19 AM,  <bookjovi@gmail.com> wrote:
-> > fix error handling path
-> >
-> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-> >  kernel/perf_event.c |    2 --
-> >  1 files changed, 0 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> > index cb6c0d2..62f9e9d 100644
-> > --- a/kernel/perf_event.c
-> > +++ b/kernel/perf_event.c
-> > @@ -1918,8 +1918,6 @@ static int get_callchain_buffers(void)
-> >        }
-> >
-> >        err = alloc_callchain_buffers();
-> > -       if (err)
-> > -               release_callchain_buffers();
->
-> Care to explain in the change log message? As I reader, is not clear
-> to me what is wrong with this.
+(2010/12/03 12:58), Akihiro Nagai wrote:
+> Add new macro OPT_CALLBACK_DEFAULT_NOOPT for parse_options.
+> It enables to pass the default value (opt->defval) to the callback function
+> processing options require no argument.
+> 
+> Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 
-Sorry, the description should be as:
-fix error handling path. alloc_callchain_buffers() can return -ENOMEM,
-in this time callchain_cpus_entries maybe is NULL, It will oops if
-invoke release_callchain_buffers() when callchain_cpus_entries is
-NULL.
+This could be useful for perf probe too. :)
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+> 
+>  tools/perf/util/parse-options.h |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+> index c7d72dc..abc31a1 100644
+> --- a/tools/perf/util/parse-options.h
+> +++ b/tools/perf/util/parse-options.h
+> @@ -119,6 +119,10 @@ struct option {
+>  	{ .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l), .value = (v), (a), .help = (h), .callback = (f), .flags = PARSE_OPT_NOARG }
+>  #define OPT_CALLBACK_DEFAULT(s, l, v, a, h, f, d) \
+>  	{ .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l), .value = (v), (a), .help = (h), .callback = (f), .defval = (intptr_t)d, .flags = PARSE_OPT_LASTARG_DEFAULT }
+> +#define OPT_CALLBACK_DEFAULT_NOOPT(s, l, v, a, h, f, d) \
+> +	{ .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l),\
+> +	.value = (v), (a), .help = (h), .callback = (f), .defval = (intptr_t)d,\
+> +	.flags = PARSE_OPT_LASTARG_DEFAULT | PARSE_OPT_NOARG}
+>  
+>  /* parse_options() will filter out the processed options and leave the
+>   * non-option argments in argv[].
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
