@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab0LFUfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 15:35:40 -0500
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:55274 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753172Ab0LFUfj (ORCPT
+	id S1754534Ab0LFUiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 15:38:51 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:34196 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab0LFUiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 15:35:39 -0500
-From: Daniel Drake <dsd@laptop.org>
-To: cbou@mail.ru
-To: dwmw2@infradead.org
-Cc: pgf@laptop.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] olpc_battery: Hide ambient temperature attribute on XO-1.5
-Message-Id: <20101206203535.59D959D401B@zog.reactivated.net>
-Date: Mon,  6 Dec 2010 20:35:35 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=X0sWjjQ37bMP4yB/pNNinY3VxVB2n/hmdAjhihaCFGs= c=1 sm=0 a=bR5GZkS9C54A:10 a=Op-mwl0xAAAA:8 a=sMi1VdoOrEbKczwXpg4A:9 a=R3GBjH34jmDMXMOQepgA:7 a=rT6GSCVq1AmNEZAGeriISbeGoGsA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Mon, 6 Dec 2010 15:38:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=sudrAoDBCzwii4HHM+8TAEvQnIz3i5uNpHNYaCYbCtNKId21y4c+77HkHVSFUQQlLo
+         UQgk1VkoGyYrOslxdNQA==
+MIME-Version: 1.0
+In-Reply-To: <4CF9F7AB.8050802@redhat.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+ <1291421609-14665-8-git-send-email-dhsharp@google.com> <4CF9F7AB.8050802@redhat.com>
+From: David Sharp <dhsharp@google.com>
+Date: Mon, 6 Dec 2010 12:38:26 -0800
+Message-ID: <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>
+Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
+To: Avi Kivity <avi@redhat.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com,
+        kvm-devel <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB6Kd2xg018873
 
-This attribute is not available on the XO-1.5 laptop, but remains
-functional on the XO-1.
+On Sat, Dec 4, 2010 at 12:11 AM, Avi Kivity <avi@redhat.com> wrote:
+> On 12/04/2010 02:13 AM, David Sharp wrote:
+>>
+>> Signed-off-by: David Sharp<dhsharp@google.com>
+>> ---
+>>  arch/x86/kvm/trace.h |    8 ++++----
+>>  1 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+>> index a6544b8..ab41fb0 100644
+>> --- a/arch/x86/kvm/trace.h
+>> +++ b/arch/x86/kvm/trace.h
+>> @@ -62,21 +62,21 @@ TRACE_EVENT(kvm_hv_hypercall,
+>>        TP_ARGS(code, fast, rep_cnt, rep_idx, ingpa, outgpa),
+>>
+>>        TP_STRUCT__entry(
+>> -               __field(        __u16,          code            )
+>> -               __field(        bool,           fast            )
+>>                __field(        __u16,          rep_cnt         )
+>>                __field(        __u16,          rep_idx         )
+>>                __field(        __u64,          ingpa           )
+>>                __field(        __u64,          outgpa          )
+>> +               __field(        __u16,          code            )
+>> +               __field(        bool,           fast            )
+>>        ),
+>>
+>
+> Looks like a pessimisation.
+>
+> Before: 24 bytes
+> After: 32 bytes
+>
+> (on a 64-bit machine, assuming no packing)
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- drivers/power/olpc_battery.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+This patch is predicated on packing the event structures. And since
+the ring buffer is 32-bit addressable, I don't attempt to improve
+alignment beyond 32-bit boundaries.
 
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 5bc1dcf..8986701 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -204,6 +204,16 @@ static int olpc_bat_get_tech(union power_supply_propval *val)
- /*********************************************************************
-  *		Battery properties
-  *********************************************************************/
-+static bool olpc_bat_property_is_available(struct power_supply *psy,
-+					   enum power_supply_property psp)
-+{
-+	/* Ambient temperature is only available on XO-1 */
-+	if (olpc_platform_info.boardrev >= olpc_board_pre(0xd0) &&
-+			psp == POWER_SUPPLY_PROP_TEMP_AMBIENT)
-+		return false;
-+	return true;
-+}
-+
- static int olpc_bat_get_property(struct power_supply *psy,
- 				 enum power_supply_property psp,
- 				 union power_supply_propval *val)
-@@ -301,7 +311,7 @@ static int olpc_bat_get_property(struct power_supply *psy,
- 
- 		val->intval = (s16)be16_to_cpu(ec_word) * 100 / 256;
- 		break;
--	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
-+	case POWER_SUPPLY_PROP_TEMP_AMBIENT: /* XO-1 only */
- 		ret = olpc_ec_cmd(EC_AMB_TEMP, NULL, 0, (void *)&ec_word, 2);
- 		if (ret)
- 			return ret;
-@@ -421,6 +431,7 @@ static struct platform_device *bat_pdev;
- static struct power_supply olpc_bat = {
- 	.properties = olpc_bat_props,
- 	.num_properties = ARRAY_SIZE(olpc_bat_props),
-+	.property_is_available = olpc_bat_property_is_available,
- 	.get_property = olpc_bat_get_property,
- 	.use_for_apm = 1,
- };
--- 
-1.7.3.2
-
+>
+> --
+> I have a truly marvellous patch that fixes the bug which this
+> signature is too narrow to contain.
+>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
