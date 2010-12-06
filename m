@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab0LFWXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 17:23:22 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:59270 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753465Ab0LFWXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 17:23:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Karel Zak <kzak@redhat.com>
-Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature to avoid user space breakage
-Date: Mon, 6 Dec 2010 23:22:45 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Bojan Smojver <bojan@rexursive.com>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>
-References: <201012052324.30231.rjw@sisk.pl> <1291592215.2866.3.camel@shrek.rexursive.com> <20101206132613.GB9421@nb.net.home>
-In-Reply-To: <20101206132613.GB9421@nb.net.home>
+	id S1754672Ab0LFWX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 17:23:26 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19108 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465Ab0LFWXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 17:23:24 -0500
+Date: Mon, 6 Dec 2010 23:16:32 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Charles Manning <manningc2@actrix.gen.nz>
+cc: Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/8] Add yaffs2 file system: guts code
+In-Reply-To: <201012071113.51408.manningc2@actrix.gen.nz>
+Message-ID: <alpine.LNX.2.00.1012062311500.17486@swampdragon.chaosbits.net>
+References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com> <201012061450.41675.manningc2@actrix.gen.nz> <201012061355.44032.arnd@arndb.de> <201012071113.51408.manningc2@actrix.gen.nz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012062322.45922.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 06, 2010, Karel Zak wrote:
-> On Mon, Dec 06, 2010 at 10:36:55AM +1100, Bojan Smojver wrote:
-> > On Sun, 2010-12-05 at 23:24 +0100, Rafael J. Wysocki wrote:
-> > > Commit 3624eb0 (PM / Hibernate: Modify signature used to mark swap)
-> > > modified hibernate signature used to mark swap partitions containing
-> > > hibernation images, but that turns out to have caused problems in
-> > > libblkid on recent Ubuntu.  Restore the old signature to avoid those
-> > > problems. 
-> > 
-> > Don't quite understand this change (sorry, probably just being obtuse).
-> 
->  I too.
-> 
-> > The signature was changed to make sure older kernels don't handle
-> > compressed images by accident, right? If so, this would seem like a bad
-> > idea, because this is what can actually happen now.
-> > 
-> > Shouldn't user space learn how to handle both signatures instead?
-> 
->  The upstream libblkid has been updated, there is not a problem to
->  support more signatures.
+On Tue, 7 Dec 2010, Charles Manning wrote:
 
-Cool.
+> On Tuesday 07 December 2010 01:55:43 Arnd Bergmann wrote:
+> > On Monday 06 December 2010, Charles Manning wrote:
+> > > On Wednesday 01 December 2010 11:23:53 you wrote:
+> > > > On Tuesday 30 November 2010 22:57:29 Charles Manning wrote:
+> > > > It would be better to reorder the functions in each file so that
+> > > > you don't need forward declarations. This generally makes reading
+> > > > the code easier because it is what people expect to see. It
+> > > > also makes it clearer where you have possible recursions in the code.
+> > >
+> > > Hmmm..
+> > > I too prefer minimal use of forward declaration.
+> > > Some of them are because I copied the layout of existing kernel code
+> > > which uses fwd declarations a lot. eg. fs/jffs2/dir.c  and many of the
+> > > examples in Rubini & Corbet.
+> >
+> > There is not much point in changing the legacy code that's already in
+> > the kernel, but let's try to keep it clean for new code. We have a lot
+> > of bad examples for coding style that we wouldn't merge these days.
+> >
+> > In this case, it should be an obvious change with no real downsides.
+> 
+> Arnd thanks for your input, I appreciate it immensely.
+> 
+> Is this objection to forward declarations just your personal taste or is this 
+> a real issue?
+> 
 
-I'm withdrawing the patch, then.
+I can only speak for myself here (which obviously makes this comment a 
+"personal taste thing).  I personally hate all those forward declarations 
+and whenever I'm modifying kernel code I try to see if I can move stuff 
+around to get rid of some.
+We have to live with what's already in the tree, but there's no reason to 
+add more gunk. It's easy to just re-order functions to get rid of the 
+forward declarations, so why not just do that - makes it so much nicer to 
+read (now and in the future - by thousands of people).
 
-Thanks,
-Rafael
+
+> I can't find any references to forward declarations in any of the coding style 
+> docs. I would therefore expect it to be an issue of little consequence. 
+> Perhaps I did not look in the right places.
+> 
+
+I don't think it's written in stone anywhere, it's just one of those 
+thiings where one alternative is obviously so much nicer than the other...
+
+
+> It is perhaps also worth considering that yaffs has been in use for 8 years 
+> and is more widely used than many of the file systems already in the kernel  
+> and thus, by some measures, does constitute legacy code.
+> 
+
+In terms of mainline Linux kernel inclusion it does not.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
