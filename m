@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0LFWGw (ORCPT <rfc822;w@1wt.eu>);
+	id S1754647Ab0LFWGw (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Dec 2010 17:06:52 -0500
-Received: from mail.perches.com ([173.55.12.10]:2332 "EHLO mail.perches.com"
+Received: from mail.perches.com ([173.55.12.10]:2333 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab0LFWFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754415Ab0LFWFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Dec 2010 17:05:24 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 22/29] kernel/irq: Update WARN uses
-Date: Mon,  6 Dec 2010 14:05:12 -0800
-Message-Id: <c706eb4e5124075b8a228b23e7b405e6cf60bd1d.1291670105.git.joe@perches.com>
+Subject: [PATCH 23/29] kernel/panic.c: Update warn_slowpath to use %pV
+Date: Mon,  6 Dec 2010 14:05:13 -0800
+Message-Id: <345027d59c242352e7f9dcc319f3a97a21b9dfbe.1291670105.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <cover.1291670104.git.joe@perches.com>
 References: <cover.1291670104.git.joe@perches.com>
@@ -19,40 +19,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove KERN_<level>.
+Replace struct slowpath_args with struct va_format.
+Add KERN_WARNING to output.
+Remove space after pointer in panic declaration.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- kernel/irq/chip.c   |    2 +-
- kernel/irq/manage.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/panic.c |   40 ++++++++++++++++++----------------------
+ 1 files changed, 18 insertions(+), 22 deletions(-)
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index baa5c4a..1418f0a 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -29,7 +29,7 @@ int set_irq_chip(unsigned int irq, struct irq_chip *chip)
- 	unsigned long flags;
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4c13b1a..8943c8f 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -56,7 +56,7 @@ EXPORT_SYMBOL(panic_blink);
+  *
+  *	This function never returns.
+  */
+-NORET_TYPE void panic(const char * fmt, ...)
++NORET_TYPE void panic(const char *fmt, ...)
+ {
+ 	static char buf[1024];
+ 	va_list args;
+@@ -357,13 +357,9 @@ void oops_exit(void)
+ }
  
- 	if (!desc) {
--		WARN(1, KERN_ERR "Trying to install chip for IRQ%d\n", irq);
-+		WARN(1, "Trying to install chip for IRQ%d\n", irq);
- 		return -EINVAL;
- 	}
+ #ifdef WANT_WARN_ON_SLOWPATH
+-struct slowpath_args {
+-	const char *fmt;
+-	va_list args;
+-};
  
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 91a5fa2..be8e055 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -288,7 +288,7 @@ void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
- 	switch (desc->depth) {
- 	case 0:
-  err_out:
--		WARN(1, KERN_WARNING "Unbalanced enable for IRQ %d\n", irq);
-+		WARN(1, "Unbalanced enable for IRQ %d\n", irq);
- 		break;
- 	case 1: {
- 		unsigned int status = desc->status & ~IRQ_DISABLED;
+ static void warn_slowpath_common(const char *file, int line, void *caller,
+-				 unsigned taint, struct slowpath_args *args)
++				 unsigned taint, struct va_format *vaf)
+ {
+ 	const char *board;
+ 
+@@ -372,10 +368,8 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	if (board)
+ 		printk(KERN_WARNING "Hardware name: %s\n", board);
+-
+-	if (args)
+-		vprintk(args->fmt, args->args);
+-
++	if (vaf)
++		printk(KERN_WARNING "%pV", vaf);
+ 	print_modules();
+ 	dump_stack();
+ 	print_oops_end_marker();
+@@ -384,26 +378,28 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ 
+ void warn_slowpath_fmt(const char *file, int line, const char *fmt, ...)
+ {
+-	struct slowpath_args args;
+-
+-	args.fmt = fmt;
+-	va_start(args.args, fmt);
++	struct va_format vaf;
++	va_list va;
++	va_start(va, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &va;
+ 	warn_slowpath_common(file, line, __builtin_return_address(0),
+-			     TAINT_WARN, &args);
+-	va_end(args.args);
++			     TAINT_WARN, &vaf);
++	va_end(va);
+ }
+ EXPORT_SYMBOL(warn_slowpath_fmt);
+ 
+ void warn_slowpath_fmt_taint(const char *file, int line,
+ 			     unsigned taint, const char *fmt, ...)
+ {
+-	struct slowpath_args args;
+-
+-	args.fmt = fmt;
+-	va_start(args.args, fmt);
++	struct va_format vaf;
++	va_list va;
++	va_start(va, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &va;
+ 	warn_slowpath_common(file, line, __builtin_return_address(0),
+-			     taint, &args);
+-	va_end(args.args);
++			     taint, &vaf);
++	va_end(va);
+ }
+ EXPORT_SYMBOL(warn_slowpath_fmt_taint);
+ 
 -- 
 1.7.3.2.245.g03276.dirty
 
