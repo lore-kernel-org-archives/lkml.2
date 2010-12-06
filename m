@@ -1,52 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0LFEFy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Dec 2010 23:05:54 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39281 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752331Ab0LFEFx (ORCPT
+	id S1752964Ab0LFEKI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Dec 2010 23:10:08 -0500
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:46544 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752439Ab0LFEKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Dec 2010 23:05:53 -0500
-X-Sasl-enc: WLQ5PgtGW5cxPRcIk9FD8HUqhuAGpxU2lCkrWWx7Mybq 1291608352
-Subject: Re: [PATCH] autofs4 - remove ioctl mutex
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        autofs mailing list <autofs@linux.kernel.org>
-In-Reply-To: <AANLkTinaxtTZzWymJfXv2=HBgya2MJ3m21myjMZQ_rxT@mail.gmail.com>
-References: <20101206035123.28966.79954.stgit@localhost6.localdomain6>
-	 <AANLkTinaxtTZzWymJfXv2=HBgya2MJ3m21myjMZQ_rxT@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Dec 2010 12:05:46 +0800
-Message-ID: <1291608346.9376.7.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Dec 2010 23:10:06 -0500
+Date: Mon, 6 Dec 2010 15:09:40 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Spelic <spelic@shiftmail.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, linux-lvm@redhat.com
+Subject: Re: Bugs in mkfs.xfs, device mapper, xfs, and /dev/ram
+Message-ID: <20101206040940.GA16103@dastard>
+References: <4CF7A539.1050206@shiftmail.org>
+ <4CF7A9CF.2020904@shiftmail.org>
+ <20101202230743.GZ16922@dastard>
+ <4CF8F9BE.6000604@shiftmail.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CF8F9BE.6000604@shiftmail.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-05 at 19:55 -0800, Linus Torvalds wrote:
-> On Sun, Dec 5, 2010 at 7:51 PM, Ian Kent <raven@themaw.net> wrote:
-> > With the recent changes to remove the BKL a mutex was added to the
-> > ioctl entry point for calls to the old ioctl interface. This mutex
-> > needs to be removed because of the need for the expire ioctl to call
-> > back to the daemon to perform a umount and receive a completion
-> > status (via another ioctl).
+On Fri, Dec 03, 2010 at 03:07:58PM +0100, Spelic wrote:
+> On 12/03/2010 12:07 AM, Dave Chinner wrote:
+> >This is a classic ENOSPC vs NFS client writeback overcommit caching
+> >issue.  Have a look at the block map output - I bet theres holes in
+> >the file and it's only consuming 1.5GB of disk space. use xfs_bmap
+> >to check this. du should tell you the same thing.
 > >
-> > This should be fine as the new ioctl interface uses much of the same
-> > code and it has been used without a mutex for around a year without
-> > issue, as was the original intention.
 > 
-> Sign-off?
+> Yes you are right!
+....
+> root@server:/mnt/ram# xfs_bmap zerofile
+> zerofile:
+....
+>         30: [3473240..3485567]: 2265328..2277655
+>         31: [3485568..3632983]: hole
+>         32: [3632984..3645311]: 2277656..2289983
+>         33: [3645312..3866455]: hole
+>         34: [3866456..3878783]: 2289984..2302311
+> 
+> (many delayed allocation extents cannot be filled because space on
+> device is finished)
+> 
+> However ...
+> 
+> 
+> >Basically, the NFS client overcommits the server filesystem space by
+> >doing local writeback caching. Hence it caches 1.9GB of data before
+> >it gets the first ENOSPC error back from the server at around 1.5GB
+> >of written data. At that point, the data that gets ENOSPC errors is
+> >tossed by the NFS client, and a ENOSPC error is placed on the
+> >address space to be reported to the next write/sync call. That gets
+> >to the dd process when it's 1.9GB into the write.
+> 
+> I'm no great expert but isn't this a design flaw in NFS?
 
-Oops, sorry.
-Would you like me to re-send after asking those concerned if I can add
-their sign-off, and adding mine of course?
+Yes, sure is.
 
-Ian
+[ Well, to be precise the original NFSv2 specification
+didn't have this flaw because all writes were synchronous. NFSv3
+introduced asynchronous writes (writeback caching) and with it this
+problem. NFSv4 does not fix this flaw. ]
+
+> Ok in this case we were lucky it was all zeroes so XFS made a sparse
+> file and could fit a 1.9GB into 1.5GB device size.
+> 
+> In general with nonzero data it seems to me you will get data
+> corruption because the NFS client thinks it has written the data
+> while the NFS server really can't write more data than the device
+> size.
+
+Yup, well known issue. Simple rule: don't run your NFS server out of
+space.
+
+> It's nice that the NFS server does local writeback caching but it
+> should also cache the filesystem's free space (and check it
+> periodically, since nfs-server is presumably not the only process
+> writing in that filesystem) so that it doesn't accept more data than
+> it can really write. Alternatively, when free space drops below 1GB
+> (or a reasonable size based on network speed), nfs-server should
+> turn off filesystem writeback caching.
+
+This isn't a NFS server problem, or one that canbe worked around at
+the server. it's a NFS _client_ problem in that it does not get
+synchronous ENOSPC errors when using writeback caching. There is no
+way for the NFS client to know the server is near ENOSPC conditions
+prior to writing the data to the server as clients operate
+independently.
+
+If you really want your NFS clients to behave correctly when the
+server goes ENOSPC, turn off writeback caching at the client side,
+not the server (i.e. use sync mounts on the client side).
+Write performance will suck, but if you want sane ENOSPC behaviour...
+
+.....
+
+> Holes in a random file!
+> This is data corruption, and nobody is notified of this data
+> corruption: no error at client side or server side!
+> Is it good semantics? How could client get notified of this? Some
+> kind of fsync maybe?
+
+Use wireshark to determine if the server sends an ENOSPC to the
+client when the first background write fails. I bet it does and that
+your dd write failed with ENOSPC, too. Something stopped it writing
+at 1.9GB....
+
+What happens to the remaining cached writeback data in the NFS
+client once the server runs out of space is NFS client specific
+behaviour. If you end up with only bits of the file on the server,
+ending up on the server, then that's a result of NFS client
+behaviour, not a NFS server problem.
+
+Cheers,
+
+Dave.
 
 
+-- 
+Dave Chinner
+david@fromorbit.com
