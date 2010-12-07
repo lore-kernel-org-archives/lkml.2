@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0LGVB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 16:01:29 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:58922 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab0LGVB1 convert rfc822-to-8bit (ORCPT
+	id S1755223Ab0LGVDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 16:03:01 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:38839 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab0LGVDA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 16:01:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101207193514.GA2921@thunk.org>
-References: <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Tue, 7 Dec 2010 15:01:05 -0600
-Message-ID: <AANLkTi=4K=qXm1kqKZ=z7W0jnLKQzzh6h0QVGD0YFmYx@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Mike Snitzer <snitzer@redhat.com>,
-        Jon Nelson <jnelson@jamponi.net>, Chris Mason <chris.mason@oracle.com>,
-        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 7 Dec 2010 16:03:00 -0500
+Subject: Re: bugs/regressions: report in LKML or in bugzilla?
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <1291738321.2695.338.camel@edumazet-laptop>
+References: <201012071639.58884.Martin@lichtvoll.de>
+	 <1291738321.2695.338.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Tue, 07 Dec 2010 21:02:56 +0000
+Message-ID: <1291755776.21627.13.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 07 Dec 2010 21:02:59.0290 (UTC) FILETIME=[20DB03A0:01CB9652]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17814.005
+X-TM-AS-Result: No--27.356100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 1:35 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Tue, Dec 07, 2010 at 01:22:43PM -0500, Mike Snitzer wrote:
->> > 1. create a database (from bash):
->> >
->> > createdb test
->> >
->> > 2. place the following contents in a file (I used 't.sql'):
->> >
->> > begin;
->> > create temporary table foo as select x as a, ARRAY[x] as b FROM
->> > generate_series(1, 10000000 ) AS x;
->> > create index foo_a_idx on foo (a);
->> > create index foo_b_idx on foo USING GIN (b);
->> > rollback;
->> >
->> > 3. execute that sql:
->> >
->> > psql -f t.sql --echo-all test
->> >
->> > With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
->> > without issue.
->> >
->> > With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
->> > pretty frequently.
->
-> So I just tried to reproduce this on an Ubuntu 10.04 system running
-> 2.6.37-rc5 (completely stock except for a few apparmor patches that I
-> needed to keep the apparmor userspace from complaining).  I'm using
-> Postgres 8.4.5-0ubuntu10.04.
->
-> Using the above procedure, I wasn't able to reproduce.  Then I
-> realized this might have been because I was using an SSD root file
-> system (which is secured using LUKS/dm-crypt, with LVM on top of
-> dm-crypt).  So I mounted a file system on a 5400 rpm SSD disk, which
-> is also protected using LUKS/dm-crypt with LVM on top.  I then
-> executed the PostgresQL commands:
->
-> CREATE TABLESPACE test LOCATION '/kbuild/postgres';
-> SET default_tablespace = test;
-> COMMIT
-> \quit
->
-> I then re-ran the above proceduing, and verified that all of the I/O
-> was going to the 5400rpm laptop disk.
->
-> I then ran the above procedure a half-dozen times, and I still haven't
-> been able to reproduce any Postgresql errors or kernel errors.
->
-> Jon, can you help me identify what might be different with your run
-> and mine?  What version of Postgres are you using?
+On Tue, 2010-12-07 at 17:12 +0100, Eric Dumazet wrote:
+> Le mardi 07 décembre 2010 à 16:39 +0100, Martin Steigerwald a écrit :
+> 
+> > A participant of a linux performance training I hold found a bug with 
+> > window scaling which did not receive any reply as well:
+> > 
+> > Bug 20312 -  System freeze with multiples of 32 in 
+> > /proc/sys/net/ipv4/tcp_adv_win_scale
+> > https://bugzilla.kernel.org/show_bug.cgi?id=20312
+> > 
+> 
+> User bug ?
+> 
+> Documentation/networking/ip-sysctl.txt
+> 
+> tcp_adv_win_scale - INTEGER
+> 	Count buffering overhead as bytes/2^tcp_adv_win_scale 
+> 	(if tcp_adv_win_scale > 0) or bytes-bytes/2^(-tcp_adv_win_scale),
+> 	if it is <= 0.
+> 	Default: 2
+> 
+> Given we use 32bit numbers, using values outside of [-31 ... 31] makes litle sense.
+> 
+> We could add sysctl range limit, but user should not mess with 
+> /proc/sys/net/ipv4/parameters unless he knows what he is doing ?
+[...]
 
-I am using postgres 8.4.5 on openSUSE 11.3 x86_64.
-The problems were observed on both "real" hardware (thinkpad T61p) and
-in virtualbox, where all current testing is taking place. The current
-kernel is a "vanilla" (unpatched) kernel. I *did* set wal_sync_method
-to fdatasync, however, if that is relevant. Otherwise, the pg config
-is stock. With no crypt involved, I did have to iterate the tests to
-observe the issue - a half-dozen times or more were necessary.
-Typically, when crypt was involved, the issue would manifest much more
-rapidly.
+For mere humans, the range is not quite os obvious.  Which is why this
+has been fixed in net-2.6 (as noted on that bug report now).
+
+Ben.
 
 -- 
-Jon
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
