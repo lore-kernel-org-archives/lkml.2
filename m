@@ -1,86 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab0LGSQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:16:28 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31501 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab0LGSQ0 (ORCPT
+	id S1753320Ab0LGSTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:19:09 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:50447 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab0LGSTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:16:26 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Jon Nelson <jnelson@jamponi.net>
-Cc: Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier support is effective)
-In-reply-to: <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
-References: <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com> <20101201165229.GC13415@redhat.com> <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com> <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com> <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com> <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com> <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com> <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
-Date: Tue, 07 Dec 2010 13:15:14 -0500
-Message-Id: <1291745630-sup-878@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	Tue, 7 Dec 2010 13:19:07 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 7 Dec 2010 19:18:55 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Robin Cook <rcook@wyrms.net>,
+        Jonathan Isom <jeisom@gmail.com>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH 1/2] firewire: ohci: fix regression with Agere FW643 rev 06,
+ disable MSI
+Message-ID: <20101207191855.4aae8bf9@stein>
+In-Reply-To: <20101207191602.50419f9e@stein>
+References: <20101207191602.50419f9e@stein>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Jon Nelson's message of 2010-12-07 13:10:49 -0500:
-> I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
-> KOTD kernel) I easily encounter the issue.
-> 
-> Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
-> install, installed all updates, installed postgresql and the 'KOTD'
-> (Kernel of the Day)
-> kernel, and ran the following tests (as postgres user because I'm
-> lazy).
-> 
-> 1. create a database (from bash):
-> 
-> createdb test
-> 
-> 2. place the following contents in a file (I used 't.sql'):
-> 
-> begin;
-> create temporary table foo as select x as a, ARRAY[x] as b FROM
-> generate_series(1, 10000000 ) AS x;
-> create index foo_a_idx on foo (a);
-> create index foo_b_idx on foo USING GIN (b);
-> rollback;
-> 
-> 3. execute that sql:
-> 
-> psql -f t.sql --echo-all test
-> 
-> 
-> With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
-> without issue.
-> 
-> With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
-> pretty frequently.
-> 
-> Then I tested with the 'vanilla' kernel available here:
-> 
-> http://download.opensuse.org/repositories/Kernel:/vanilla/standard/
-> 
-> The 'vanilla' kernel exhibited the same problems.
-> The version I tested:  2.6.37-rc4-219-g771f8bc-vanilla.
-> 
-> Incidentally, quick tests of jfs, xfs, and ext3 do _not_ show the same
-> problems, although I will note that I usually saw failure at least 1
-> in 3, but sometimes had to re-run the sql test 4 or 5 times before I
-> saw failure.
-> 
-> I will continue to do some testing, but I will hold off on testing the
-> commits above until I receive further testing suggestions.
-> 
+Agere FW643 rev 06, listed as "11c1:5901 (rev 06) (prog-if 10 [OHCI])",
+produced SBP-2 I/O errors since kernel 2.6.36.  Disabling MSI fixes it.
 
-Sorry if you already detailed this in another message, could you please
-give information about how it fails?  Please include any kernel messages
-(or point me at the past messages where you had them).
+Since MSI work on Agere FW643-E (same vendor and device ID, but rev 07),
+introduce a device revision field into firewire-ohci's quirks list so
+that different quirks can be defined for older and newer revisions.
 
-thanks
-Chris
+Reported-by: Jonathan Isom <jeisom@gmail.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: <stable@kernel.org> # 2.6.36.y
+---
+Jonathan, can you confirm that this changed blacklist setup works for you?
+You need to apply patch 1/2 first to get patch 2/2 to apply without editing.
+
+ drivers/firewire/ohci.c |   49 ++++++++++++++++++++++++++++------------
+ 1 file changed, 34 insertions(+), 15 deletions(-)
+
+Index: b/drivers/firewire/ohci.c
+===================================================================
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -242,6 +242,8 @@ static inline struct fw_ohci *fw_ohci(st
+ 
+ static char ohci_driver_name[] = KBUILD_MODNAME;
+ 
++#define PCI_VENDOR_ID_AGERE		PCI_VENDOR_ID_ATT
++#define PCI_DEVICE_ID_FW643		0x5901
+ #define PCI_DEVICE_ID_JMICRON_JMB38X_FW	0x2380
+ #define PCI_DEVICE_ID_TI_TSB12LV22	0x8009
+ 
+@@ -253,19 +255,34 @@ static char ohci_driver_name[] = KBUILD_
+ 
+ /* In case of multiple matches in ohci_quirks[], only the first one is used. */
+ static const struct {
+-	unsigned short vendor, device, flags;
++	unsigned short vendor, device, revision, flags;
+ } ohci_quirks[] = {
+-	{PCI_VENDOR_ID_TI,	PCI_DEVICE_ID_TI_TSB12LV22, QUIRK_CYCLE_TIMER |
+-							    QUIRK_RESET_PACKET |
+-							    QUIRK_NO_1394A},
+-	{PCI_VENDOR_ID_TI,	PCI_ANY_ID,	QUIRK_RESET_PACKET},
+-	{PCI_VENDOR_ID_AL,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
+-	{PCI_VENDOR_ID_JMICRON,	PCI_DEVICE_ID_JMICRON_JMB38X_FW, QUIRK_NO_MSI},
+-	{PCI_VENDOR_ID_NEC,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
+-	{PCI_VENDOR_ID_VIA,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER |
+-						QUIRK_NO_MSI},
+-	{PCI_VENDOR_ID_RICOH,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
+-	{PCI_VENDOR_ID_APPLE,	PCI_DEVICE_ID_APPLE_UNI_N_FW, QUIRK_BE_HEADERS},
++	{PCI_VENDOR_ID_AGERE, PCI_DEVICE_ID_FW643, 6,
++		QUIRK_NO_MSI},
++
++	{PCI_VENDOR_ID_AL, PCI_ANY_ID, PCI_ANY_ID,
++		QUIRK_CYCLE_TIMER},
++
++	{PCI_VENDOR_ID_APPLE, PCI_DEVICE_ID_APPLE_UNI_N_FW, PCI_ANY_ID,
++		QUIRK_BE_HEADERS},
++
++	{PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB38X_FW, PCI_ANY_ID,
++		QUIRK_NO_MSI},
++
++	{PCI_VENDOR_ID_NEC, PCI_ANY_ID, PCI_ANY_ID,
++		QUIRK_CYCLE_TIMER},
++
++	{PCI_VENDOR_ID_RICOH, PCI_ANY_ID, PCI_ANY_ID,
++		QUIRK_CYCLE_TIMER},
++
++	{PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_TSB12LV22, PCI_ANY_ID,
++		QUIRK_CYCLE_TIMER | QUIRK_RESET_PACKET | QUIRK_NO_1394A},
++
++	{PCI_VENDOR_ID_TI, PCI_ANY_ID, PCI_ANY_ID,
++		QUIRK_RESET_PACKET},
++
++	{PCI_VENDOR_ID_VIA, PCI_ANY_ID, PCI_ANY_ID,
++		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
+ };
+ 
+ /* This overrides anything that was found in ohci_quirks[]. */
+@@ -2931,9 +2948,11 @@ static int __devinit pci_probe(struct pc
+ 	}
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ohci_quirks); i++)
+-		if (ohci_quirks[i].vendor == dev->vendor &&
+-		    (ohci_quirks[i].device == dev->device ||
+-		     ohci_quirks[i].device == (unsigned short)PCI_ANY_ID)) {
++		if ((ohci_quirks[i].vendor == dev->vendor) &&
++		    (ohci_quirks[i].device == (unsigned short)PCI_ANY_ID ||
++		     ohci_quirks[i].device == dev->device) &&
++		    (ohci_quirks[i].revision == (unsigned short)PCI_ANY_ID ||
++		     ohci_quirks[i].revision >= dev->revision)) {
+ 			ohci->quirks = ohci_quirks[i].flags;
+ 			break;
+ 		}
+
+
+-- 
+Stefan Richter
+-=====-==-=- ==-- --===
+http://arcgraph.de/sr/
