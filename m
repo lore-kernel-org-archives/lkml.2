@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab0LGPbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:31:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38110 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098Ab0LGPbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:31:13 -0500
-Date: Tue, 7 Dec 2010 16:31:12 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        lrg@slimlogic.co.uk
-Subject: Re: [PATCH 29/29] drivers/regulator: Update WARN uses
-In-Reply-To: <20101207151608.GC9689@rakim.wolfsonmicro.main>
-Message-ID: <alpine.LNX.2.00.1012071629460.14806@pobox.suse.cz>
-References: <b0588ea464d551f9dbd80c0fee68a780d6279b50.1291670106.git.joe@perches.com> <20101207114346.GC10722@sirena.org.uk> <alpine.LNX.2.00.1012071549150.14806@pobox.suse.cz> <20101207151608.GC9689@rakim.wolfsonmicro.main>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754731Ab0LGPbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:31:53 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:37701 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab0LGPbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:31:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=yBuWVRHE+9MzPRE0e45ZQit2jnXrPZI93KpSGvCtxdGPf6NKmNkMWzwVvNfnXDcVKA
+         v/8EiGS7/nQcajbbn+3MEuTvXsfSweyJ7O/Uv8hoVZbl9938dUcu/E3iEVRSONuJi7my
+         3c0zjJ0cTTWfkeU67kfSWOuAiS3C6FJ3hP42Y=
+From: Namhyung Kim <namhyung@gmail.com>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+Subject: [PATCH 1/3] [SCSI] dpt_i2o: fix compiler warning on dptids
+Date: Wed,  8 Dec 2010 00:31:34 +0900
+Message-Id: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, Mark Brown wrote:
+Annotate dptids as '__used' to fix following warning:
 
-> > > > Align arguments.
-> 
-> > > > Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> > > but please do remember to send patches to maintainers - trying to merge
-> > > patches without going through the maintainers means that people working
-> > > on the actual tree concerned may either replicate your work or introduce
-> > > conflicts with your patches, neither of which is good.
-> 
-> > That happened here:
-> 
-> > 	https://lkml.org/lkml/2010/11/1/107
-> 
-> > but the patch is not in linux-next after more than one month. Which is why 
-> > Joe is resending it for inclusion through my queue.
-> 
-> That's not a reason to drop people from the CCs when reposting, and when
-> reposting it's always good to include any reviews you got previously.
+  CC      drivers/scsi/dpt_i2o.o
+drivers/scsi/dpt_i2o.c:183: warning: ‘dptids’ defined but not used
 
-Yes, collecting of the previously collected Acked-by: would definitely be 
-good. Joe, could you please include it next time?
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+---
+ drivers/scsi/dpt_i2o.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Indeed, looking at the original posting you'll see he sent it directly
-> to you first time around as well as CCing the maintainers.
-
-Yes, but I am not merging these large series which span gazillion of 
-subsystems at first. I only tend to act as a fallback for those parts of 
-the series which were not merged by maintainers.
-
+diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+index cffcb10..b276077 100644
+--- a/drivers/scsi/dpt_i2o.c
++++ b/drivers/scsi/dpt_i2o.c
+@@ -180,7 +180,7 @@ static u8 adpt_read_blink_led(adpt_hba* host)
+  *============================================================================
+  */
+ 
+-static struct pci_device_id dptids[] = {
++static struct pci_device_id dptids[] __used = {
+ 	{ PCI_DPT_VENDOR_ID, PCI_DPT_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID,},
+ 	{ PCI_DPT_VENDOR_ID, PCI_DPT_RAPTOR_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID,},
+ 	{ 0, }
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.0.4
+
