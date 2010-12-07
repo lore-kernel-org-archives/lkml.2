@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab0LGRzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 12:55:09 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51404 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751872Ab0LGRzI (ORCPT
+	id S1752701Ab0LGSF3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:05:29 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:46850 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab0LGSF2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 12:55:08 -0500
-Date: Tue, 7 Dec 2010 17:55:05 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
-        lennart@poettering.net
-Subject: Re: [RFC/PATCH v6 03/12] media: Entities, pads and links
-Message-ID: <20101207175505.GI9689@rakim.wolfsonmicro.main>
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>
- <201012031450.59137.laurent.pinchart@ideasonboard.com>
- <20101203145408.GW859@rakim.wolfsonmicro.main>
- <201012071813.35501.hverkuil@xs4all.nl>
+	Tue, 7 Dec 2010 13:05:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cMXzkuihtlw02TSjpQUhcMv8/SCKUSuhCkYSPQp3swCvHhBnxXgGThH7uW5VKeihNF
+         b8bhWYGF5j6vyBVLoS8CzNg6l5VnG5ochrh1aRaU0T/kF3n2haEDlT1ckJbU1gYKV+WW
+         p/2hJRdY4w7MtnnumozOK6MuFyZsoLsNKQulg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012071813.35501.hverkuil@xs4all.nl>
-X-Cookie: E Pluribus Unix
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikTMvBaw+3g3WCNaqoGkDvdiHqbjqDi+M+_A+Yp@mail.gmail.com>
+References: <AANLkTinNBVkYRJN+5ne9N4V4oC06Q85FNCZsfw2ZH=Ca@mail.gmail.com>
+	<AANLkTikTMvBaw+3g3WCNaqoGkDvdiHqbjqDi+M+_A+Yp@mail.gmail.com>
+Date: Tue, 7 Dec 2010 20:05:27 +0200
+Message-ID: <AANLkTikZQm=yYXrzia8vkCq_Oy7hBp3vwkuPSkbrz0b4@mail.gmail.com>
+Subject: Re: Linux 2.6.37-rc5
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 06:13:35PM +0100, Hans Verkuil wrote:
+On Tue, Dec 7, 2010 at 7:34 PM, Tony Luck <tony.luck@intel.com> wrote:
+> On Mon, Dec 6, 2010 at 9:41 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> Well, no surprises this week.
+>
+> Counting on my fingers & toes that puts -rc6 on December 13th, and
+> since things seem
+> to be going so smoothly in this release we could have 2.6.37 out on
+> the 20th ... which
+> puts the merge window from 21st December to Jan 4th.  Some people may have some
+> other plans for those two weeks :-)
+>
+> Any thoughts on what is really going to happen?
 
-> Personally I think this is perfectly clear. The original confusion came from
-> the word 'active', which I understand means 'streaming' in alsa. By adding
-> a 'streaming' flag in addition to the active flag I think it will be clear
-> that 'active' and 'streaming' are two different things.
-
-It's not that, it's the fact that active sounds to me like the link
-ought to be powered up which isn't the case - it's too verby.  Like I
-say, I think I'd prefer a more passive name like "connected".
-
-I guess if nobody else finds it confusing I can live with it.
+http://www.phoronix.com/scan.php?page=news_item&px=ODg3OA
