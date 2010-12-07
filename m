@@ -1,158 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab0LGJWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:22:20 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:8110 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab0LGJWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:22:17 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65778729"
-Message-ID: <4CFDFCC3.5000700@codeaurora.org>
-Date: Tue, 07 Dec 2010 14:52:11 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754917Ab0LGJXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:23:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57224 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752444Ab0LGJXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 04:23:03 -0500
+Message-ID: <4CFDFCEF.3080708@redhat.com>
+Date: Tue, 07 Dec 2010 11:22:55 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC v1 PATCH 2/6] input: pm8058_keypad: Qualcomm PMIC8058 keypad
- controller driver
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-3-git-send-email-tsoni@codeaurora.org> <20101206181427.GA18567@core.coreip.homeip.net>
-In-Reply-To: <20101206181427.GA18567@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Sharp <dhsharp@google.com>
+CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com,
+        kvm-devel <kvm@vger.kernel.org>
+Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com> <1291421609-14665-8-git-send-email-dhsharp@google.com> <4CF9F7AB.8050802@redhat.com> <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>
+In-Reply-To: <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry
+On 12/06/2010 10:38 PM, David Sharp wrote:
+> On Sat, Dec 4, 2010 at 12:11 AM, Avi Kivity<avi@redhat.com>  wrote:
+> >  On 12/04/2010 02:13 AM, David Sharp wrote:
+> >>
+> >>  Signed-off-by: David Sharp<dhsharp@google.com>
+> >>  ---
+> >>    arch/x86/kvm/trace.h |    8 ++++----
+> >>    1 files changed, 4 insertions(+), 4 deletions(-)
+> >>
+> >>  diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+> >>  index a6544b8..ab41fb0 100644
+> >>  --- a/arch/x86/kvm/trace.h
+> >>  +++ b/arch/x86/kvm/trace.h
+> >>  @@ -62,21 +62,21 @@ TRACE_EVENT(kvm_hv_hypercall,
+> >>          TP_ARGS(code, fast, rep_cnt, rep_idx, ingpa, outgpa),
+> >>
+> >>          TP_STRUCT__entry(
+> >>  -               __field(        __u16,          code            )
+> >>  -               __field(        bool,           fast            )
+> >>                  __field(        __u16,          rep_cnt         )
+> >>                  __field(        __u16,          rep_idx         )
+> >>                  __field(        __u64,          ingpa           )
+> >>                  __field(        __u64,          outgpa          )
+> >>  +               __field(        __u16,          code            )
+> >>  +               __field(        bool,           fast            )
+> >>          ),
+> >>
+> >
+> >  Looks like a pessimisation.
+> >
+> >  Before: 24 bytes
+> >  After: 32 bytes
+> >
+> >  (on a 64-bit machine, assuming no packing)
+>
+> This patch is predicated on packing the event structures. And since
+> the ring buffer is 32-bit addressable, I don't attempt to improve
+> alignment beyond 32-bit boundaries.
 
-On 12/6/2010 11:44 PM, Dmitry Torokhov wrote:
-> Hi Trilok,
-> 
-> On Wed, Nov 10, 2010 at 06:17:57PM +0530, Trilok Soni wrote:
->> Add Qualcomm PMIC8058 based keypad controller driver
->> supporting upto 18x8 matrix configuration.
->>
-> 
-> Looks very good, just a couple of small things:
-
-Thanks for reviewing same revision of the patch again :)
-
-> 
->> +
->> +#include <linux/input/pmic8058-keypad.h>
-> 
-> Move to MFD directory with the rest of pmic8058 definitions?
-
-As discussed earlier we can either have one big header file having all of the
-sub-device(s) or have separate file for each sub-device driver, I need to check
-which one would be better but I will atleast move pmic8058-keypad.h header
-to "mfd" directory, as these patch series is in RFC state, we can have final
-changes like along with when core-driver gets submitted for review.
-
-> 
->> + */
->> +struct pmic8058_kp {
->> +	const struct pmic8058_keypad_data *pdata;
->> +	struct input_dev *input;
->> +	int key_sense_irq;
->> +	int key_stuck_irq;
->> +
->> +	unsigned short *keycodes;
-> 
-> I'd pull the keycodes into this structure (at the end) so it can be
-> allocated in one shot. Hmm it even appears to be constant-sized. So just
-> declare it right here and be done with it.
-
-Done. You had already commented on it during the 1st review :)
-
-> 
->> +
->> +static int pmic8058_detect_ghost_keys(struct pmic8058_kp *kp, u16 *new_state)
-> 
-> bool
-
-Done.
-
-> 
->> +{
->> +	int row, found_first = -1;
->> +	u16 check, row_state;
->> +
->> +	check = 0;
->> +	for (row = 0; row < kp->pdata->num_rows; row++) {
->> +		row_state = (~new_state[row]) &
->> +				 ((1 << kp->pdata->num_cols) - 1);
->> +
->> +		if (hweight16(row_state) > 1) {
->> +			if (found_first == -1)
->> +				found_first = row;
->> +			if (check & row_state) {
->> +				dev_dbg(kp->dev, "detected ghost key on row[%d]"
->> +					 " and row[%d]\n", found_first, row);
->> +				return 1;
-> 
-> true
-> 
->> +			}
->> +		}
->> +		check |= row_state;
->> +	}
->> +	return 0;
-> 
-> false
-
-Done.
-
-> 
->> +
->> +static int pmic8058_kpd_init(struct pmic8058_kp *kp)
->> +{
->> +	int bits, rc, cycles;
->> +	u8 scan_val = 0, ctrl_val = 0;
->> +	static u8 row_bits[] = {
-> 
-> const?
-> 
->> +		0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7,
->> +	};
-
-Sure.
-
->> +
->> +static int pmic8058_kp_open(struct input_dev *dev)
->> +{
->> +	struct pmic8058_kp *kp = input_get_drvdata(dev);
->> +
->> +	return pmic8058_kp_enable(kp);
->> +}
->> +
->> +static void pmic8058_kp_close(struct input_dev *dev)
->> +{
->> +	struct pmic8058_kp *kp = input_get_drvdata(dev);
->> +
->> +	pmic8058_kp_disable(kp);
->> +}
->> +
-> 
-> You need to protect suspend/resume from racing with open_close. Take
-> dev->mutex and act depending on whether there are users of the device.
-
-Sure.
-
-> 
->> +	if (pdata->rows_gpio_start < 0 || pdata->cols_gpio_start < 0) {
->> +		dev_err(&pdev->dev, "invalid gpio_start platform data\n");
->> +		return -EINVAL;
-> 
-> These are declared as unsigned. Hmm, doesn't sparse catch it?
-
-I will fix it.
-
----Trilok Soni
+I don't understand this.  Can you elaborate?  What does "32-bit 
+addressable" mean?  And "predicated on packing the event structures"?  
+Is the structure __attribute__((packed)), or is it not?
 
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+error compiling committee.c: too many arguments to function
+
