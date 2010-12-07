@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab0LGHCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 02:02:40 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:47733 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab0LGHCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 02:02:39 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAC1o/Ux5LdIm/2dsb2JhbACjNnLAA4VJBJAH
-Date: Tue, 7 Dec 2010 18:02:33 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [RFC][PATCH 02/10] mm: Remove likely() from
-  mapping_unevictable()
-Message-ID: <20101207070233.GB3307@amd>
-References: <20101207015834.196176991@goodmis.org>
- <20101207021328.569328536@goodmis.org>
- <1291688533.16223.119.camel@gandalf.stny.rr.com>
+	id S1753384Ab0LGHIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 02:08:25 -0500
+Received: from hera.kernel.org ([140.211.167.34]:57744 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425Ab0LGHIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 02:08:23 -0500
+Date: Tue, 7 Dec 2010 07:06:49 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf record: Fix eternal wait for stillborn child
+Message-ID: <tip-18483b81ee7e70ee68d4b18be618be5cfcc0b290@git.kernel.org>
+Git-Commit-ID: 18483b81ee7e70ee68d4b18be618be5cfcc0b290
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1291688533.16223.119.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 07:06:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 09:22:13PM -0500, Steven Rostedt wrote:
-> [ Resending to Nick's real email ]
-> 
-> 
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> The mapping_unevictable() has a likely() around the mapping parameter.
-> This mapping parameter comes from page_mapping() which has an
-> unlikely() that the page will be set as PAGE_MAPPING_ANON, and if
-> so, it will return NULL. One would think that this unlikely() means
-> that the mapping returned by page_mapping() would not be NULL, but
-> where page_mapping() is used just above mapping_unevictable(), that
-> unlikely() is incorrect most of the time. This means that the
-> "likely(mapping)" in mapping_unevictable() is incorrect most of the
-> time.
-> 
-> Running the annotated branch profiler on my main box which runs firefox,
-> evolution, xchat and is part of my distcc farm, I had this:
-> 
->  correct incorrect  %        Function                  File              Line
->  ------- ---------  -        --------                  ----              ----
-> 12872836 1269443893  98 mapping_unevictable            pagemap.h            51
-> 35935762 1270265395  97 page_mapping                   mm.h                 659
-> 1306198001   143659   0 page_mapping                   mm.h                 657
-> 203131478   121586   0 page_mapping                   mm.h                 657
->  5415491     1116   0 page_mapping                   mm.h                 657
-> 74899487     1116   0 page_mapping                   mm.h                 657
-> 203132845      224   0 page_mapping                   mm.h                 659
->  5415464       27   0 page_mapping                   mm.h                 659
->    13552        0   0 page_mapping                   mm.h                 657
->    13552        0   0 page_mapping                   mm.h                 659
->   242630        0   0 page_mapping                   mm.h                 657
->   242630        0   0 page_mapping                   mm.h                 659
-> 74899487        0   0 page_mapping                   mm.h                 659
-> 
-> The page_mapping() is a static inline, which is why it shows up multiple
-> times. The mapping_unevictable() is also a static inline but seems to
-> be used only once in my setup.
-> 
-> The unlikely in page_mapping() was correct a total of 1909540379 times and
-> incorrect 1270533123 times, with a 39% being incorrect. Perhaps this is
-> enough to remove the unlikely from page_mapping() as well.
+Commit-ID:  18483b81ee7e70ee68d4b18be618be5cfcc0b290
+Gitweb:     http://git.kernel.org/tip/18483b81ee7e70ee68d4b18be618be5cfcc0b290
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 6 Dec 2010 15:13:38 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 6 Dec 2010 15:13:38 -0200
 
-I think so. We don't have good guidelines or empirical numbers on this,
-unfortunately, but I think it would be somewhere over 90%, given that it
-tends to add jumps to and from out of line icache in the incorrect case.
+perf record: Fix eternal wait for stillborn child
 
-Acked-by: Nick Piggin <npiggin@kernel.dk>
+When execvp fails to find the specified command on the path we won't get
+SIGCHLD, so send a SIGUSR1 and exit right away.
 
+Current situation would require a SIGINT performed by the user and would
+produce meaningless summary.
+
+Now:
+
+[acme@emilia linux]$ ./foo
+-bash: ./foo: No such file or directory
+[acme@emilia linux]$ perf record ./foo
+./foo: No such file or directory
+[acme@emilia linux]$
+
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index e2c2de2..564491f 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -197,7 +197,7 @@ static void sig_atexit(void)
+ 	if (child_pid > 0)
+ 		kill(child_pid, SIGTERM);
+ 
+-	if (signr == -1)
++	if (signr == -1 || signr == SIGUSR1)
+ 		return;
+ 
+ 	signal(signr, SIG_DFL);
+@@ -515,6 +515,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	atexit(sig_atexit);
+ 	signal(SIGCHLD, sig_handler);
+ 	signal(SIGINT, sig_handler);
++	signal(SIGUSR1, sig_handler);
+ 
+ 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+ 		perror("failed to create pipes");
+@@ -606,6 +607,7 @@ static int __cmd_record(int argc, const char **argv)
+ 			execvp(argv[0], (char **)argv);
+ 
+ 			perror(argv[0]);
++			kill(getppid(), SIGUSR1);
+ 			exit(-1);
+ 		}
+ 
+@@ -762,7 +764,7 @@ static int __cmd_record(int argc, const char **argv)
+ 		}
+ 	}
+ 
+-	if (quiet)
++	if (quiet || signr == SIGUSR1)
+ 		return 0;
+ 
+ 	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
