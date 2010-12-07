@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0LGPB2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:01:28 -0500
-Received: from hera.kernel.org ([140.211.167.34]:51908 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983Ab0LGPB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:01:27 -0500
-Message-ID: <4CFE4BE0.9040203@kernel.org>
-Date: Tue, 07 Dec 2010 15:59:44 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [Use cpuops V1 04/11] x86: Use this_cpu_ops for current_cpu_data
- accesses
-References: <20101206171618.302060721@linux.com> <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org> <4CFE4294.30001@kernel.org> <alpine.DEB.2.00.1012070846050.25976@router.home>
-In-Reply-To: <alpine.DEB.2.00.1012070846050.25976@router.home>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 14:59:46 +0000 (UTC)
+	id S1754408Ab0LGPCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:02:07 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:36192 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab0LGPCE convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:1:1>);
+	Tue, 7 Dec 2010 10:02:04 -0500
+Message-Id: <4CFE5A7B020000780002671D@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 07 Dec 2010 15:02:03 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] name_to_dev_t() must not call __init code
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 03:46 PM, Christoph Lameter wrote:
-> On Tue, 7 Dec 2010, Tejun Heo wrote:
-> 
->>> This belongs to the previous patch, right?  I'll move it over and
->>> apply 03 and 04.  I think routing these through percpu is okay but if
->>> anyone wants these to go through x86, scream.
->>
->> Ooh, was too fast.  I think mixing the use of percpu accesses to
->> cpu_info and the wrapper macro current_cpu_data is quite confusing.
->> There aren't too many current_cpu_data users in x86 anyway.  Can you
->> please make the conversion complete?  I'm moving the above misplaced
->> chunk into 03 and not applying 04 for now.
-> 
-> We cannot make that conversion complete since we cannot obtain the address
-> if we use a this_cpu operation. Then its better to drop this patch.
+The function can't be __init itself (being called from some sysfs
+handler), and hence none of the functions it call can be either.
 
-No, I was talking about dropping current_cpu_data macro.  We can use
-__this_cpu_ptr() for addresses.  I just find it very confusing to mix
-current_cpu_data and using direct percpu accessors on cpu_info.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Thanks.
+---
+ init/do_mounts.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-tejun
+--- linux-2.6.37-rc5/init/do_mounts.c
++++ 2.6.37-rc5-do_mounts-sections/init/do_mounts.c
+@@ -93,7 +93,7 @@ no_match:
+  *
+  * Returns the matching dev_t on success or 0 on failure.
+  */
+-static dev_t __init devt_from_partuuid(char *uuid_str)
++static dev_t devt_from_partuuid(char *uuid_str)
+ {
+ 	dev_t res = 0;
+ 	struct device *dev = NULL;
+
+
+
