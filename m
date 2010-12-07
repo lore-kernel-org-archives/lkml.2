@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab0LGSJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:09:14 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59755 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab0LGSJM (ORCPT
+	id S1752868Ab0LGSLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:11:13 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:40264 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab0LGSLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:09:12 -0500
-Date: Tue, 7 Dec 2010 10:08:24 -0800
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, akpm@linux-foundation.org, matthew@wil.cx,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
-        jeremy@goop.org, kurt.hackel@oracle.com, npiggin@kernel.dk,
-        riel@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        mel@csn.ul.ie, minchan.kim@gmail.com
-Subject: [PATCH V0 4/4] kztmem: misc build/config
-Message-ID: <20101207180824.GA28189@ca-server1.us.oracle.com>
+	Tue, 7 Dec 2010 13:11:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
+In-Reply-To: <20101207142145.GA27861@think>
+References: <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
+ <20101201165229.GC13415@redhat.com> <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Tue, 7 Dec 2010 12:10:49 -0600
+Message-ID: <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
+        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org, Jon Nelson <jnelson@jamponi.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V0 4/4] kztmem: misc build/config
+I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
+KOTD kernel) I easily encounter the issue.
 
-Makefiles and Kconfigs to build kztmem in drivers/staging
+Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
+install, installed all updates, installed postgresql and the 'KOTD'
+(Kernel of the Day)
+kernel, and ran the following tests (as postgres user because I'm
+lazy).
 
-There is a dependency on xvmalloc.* which in 2.6.36 resides
-in drivers/staging/zram.  Should this move or disappear,
-some Makefile/Kconfig changes will be required.
+1. create a database (from bash):
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+createdb test
 
----
+2. place the following contents in a file (I used 't.sql'):
 
-Diffstat:
- drivers/staging/Kconfig                  |    2 ++
- drivers/staging/Makefile                 |    1 +
- drivers/staging/kztmem/Kconfig           |    8 ++++++++
- drivers/staging/kztmem/Makefile          |    1 +
- 4 files changed, 12 insertions(+)
+begin;
+create temporary table foo as select x as a, ARRAY[x] as b FROM
+generate_series(1, 10000000 ) AS x;
+create index foo_a_idx on foo (a);
+create index foo_b_idx on foo USING GIN (b);
+rollback;
 
---- linux-2.6.36/drivers/staging/kztmem/Makefile	1969-12-31 17:00:00.000000000 -0700
-+++ linux-2.6.36-kztmem/drivers/staging/kztmem/Makefile	2010-12-02 11:57:51.000000000 -0700
-@@ -0,0 +1 @@
-+obj-$(CONFIG_KZTMEM)	+=	kztmem.o tmem.o sadix-tree.o
---- linux-2.6.36/drivers/staging/kztmem/Kconfig	1969-12-31 17:00:00.000000000 -0700
-+++ linux-2.6.36-kztmem/drivers/staging/kztmem/Kconfig	2010-11-29 09:10:32.000000000 -0700
-@@ -0,0 +1,8 @@
-+config KZTMEM
-+	tristate "In-kernel transcendent memory using compression"
-+	select XVMALLOC
-+	select LZO_COMPRESS
-+	select LZO_DECOMPRESS
-+	default n
-+	help
-+	  In-kernel transcendent memory using compression
---- linux-2.6.36/drivers/staging/Makefile	2010-10-20 14:30:22.000000000 -0600
-+++ linux-2.6.36-kztmem/drivers/staging/Makefile	2010-11-29 09:07:07.000000000 -0700
-@@ -40,6 +40,7 @@ obj-$(CONFIG_VME_BUS)		+= vme/
- obj-$(CONFIG_MRST_RAR_HANDLER)	+= memrar/
- obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_ZRAM)		+= zram/
-+obj-$(CONFIG_KZTMEM)		+= kztmem/
- obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
- obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
- obj-$(CONFIG_BATMAN_ADV)	+= batman-adv/
---- linux-2.6.36/drivers/staging/Kconfig	2010-10-20 14:30:22.000000000 -0600
-+++ linux-2.6.36-kztmem/drivers/staging/Kconfig	2010-11-29 09:07:22.000000000 -0700
-@@ -117,6 +117,8 @@ source "drivers/staging/iio/Kconfig"
- 
- source "drivers/staging/zram/Kconfig"
- 
-+source "drivers/staging/kztmem/Kconfig"
-+
- source "drivers/staging/wlags49_h2/Kconfig"
- 
- source "drivers/staging/wlags49_h25/Kconfig"
+3. execute that sql:
+
+psql -f t.sql --echo-all test
+
+
+With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
+without issue.
+
+With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
+pretty frequently.
+
+Then I tested with the 'vanilla' kernel available here:
+
+http://download.opensuse.org/repositories/Kernel:/vanilla/standard/
+
+The 'vanilla' kernel exhibited the same problems.
+The version I tested:  2.6.37-rc4-219-g771f8bc-vanilla.
+
+Incidentally, quick tests of jfs, xfs, and ext3 do _not_ show the same
+problems, although I will note that I usually saw failure at least 1
+in 3, but sometimes had to re-run the sql test 4 or 5 times before I
+saw failure.
+
+I will continue to do some testing, but I will hold off on testing the
+commits above until I receive further testing suggestions.
+
+-- 
+Jon
