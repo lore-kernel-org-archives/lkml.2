@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab0LGOVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 09:21:48 -0500
-Received: from hera.kernel.org ([140.211.167.34]:54369 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab0LGOVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 09:21:47 -0500
-Message-ID: <4CFE4294.30001@kernel.org>
-Date: Tue, 07 Dec 2010 15:20:04 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1753590Ab0LGOWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 09:22:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26230 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab0LGOWO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 09:22:14 -0500
+Date: Tue, 7 Dec 2010 09:21:45 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Matt <jackdachef@gmail.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org, Jon Nelson <jnelson@jamponi.net>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101207142145.GA27861@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
+	Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	dm-devel <dm-devel@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	htd <htd@fancy-poultry.org>, htejun@gmail.com,
+	linux-ext4@vger.kernel.org, Jon Nelson <jnelson@jamponi.net>
+References: <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
+ <20101201165229.GC13415@redhat.com>
+ <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com>
+ <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com>
+ <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com>
+ <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [Use cpuops V1 04/11] x86: Use this_cpu_ops for current_cpu_data
- accesses
-References: <20101206171618.302060721@linux.com> <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org>
-In-Reply-To: <4CFE41F8.7040400@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 14:20:06 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 03:17 PM, Tejun Heo wrote:
-> On 12/06/2010 06:16 PM, Christoph Lameter wrote:
->> Current_cpu_data accesses are per cpu accesses. We can also use
->> this_cpu_ops if a scalar is retrieved.
->>
->> Cc: Yinghai Lu <yinghai@kernel.org>
->> Cc: Ingo Molnar <mingo@elte.hu>
->> Signed-off-by: Christoph Lameter <cl@linux.com>
->>
->> ---
->>  arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    2 +-
->>  arch/x86/kernel/cpu/intel_cacheinfo.c     |    4 ++--
->>  arch/x86/kernel/smpboot.c                 |   10 +++++-----
->>  3 files changed, 8 insertions(+), 8 deletions(-)
->>
->> Index: linux-2.6/arch/x86/kernel/smpboot.c
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/kernel/smpboot.c	2010-11-30 11:53:03.000000000 -0600
->> +++ linux-2.6/arch/x86/kernel/smpboot.c	2010-11-30 11:57:02.000000000 -0600
->> @@ -430,7 +430,7 @@ void __cpuinit set_cpu_sibling_map(int c
->>  
->>  	cpumask_set_cpu(cpu, c->llc_shared_map);
->>  
->> -	if (current_cpu_data.x86_max_cores == 1) {
->> +	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
->>  		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
->>  		c->booted_cores = 1;
->>  		return;
->> @@ -1377,7 +1377,7 @@ void play_dead_common(void)
->>  
->>  	mb();
->>  	/* Ack it */
->> -	__get_cpu_var(cpu_state) = CPU_DEAD;
->> +	__this_cpu_write(cpu_state, CPU_DEAD);
+On Sun, Dec 05, 2010 at 12:47:11AM +0100, Matt wrote:
+> > OK.
 > 
-> This belongs to the previous patch, right?  I'll move it over and
-> apply 03 and 04.  I think routing these through percpu is okay but if
-> anyone wants these to go through x86, scream.
+> meanwhile I think I got some interesting news:
+> 
+> after some time of running (around 1 to 1.5 hours) I noticed the
+> following BUG with ext4:
+> 
+> [ 4421.503477] ------------[ cut here ]------------
+> [ 4421.503482] kernel BUG at fs/ext4/inode.c:2714!
+>
+> kernel compiled was from sources checked out at
+> 1de3e3df917459422cb2aecac440febc8879d410
 
-Ooh, was too fast.  I think mixing the use of percpu accesses to
-cpu_info and the wrapper macro current_cpu_data is quite confusing.
-There aren't too many current_cpu_data users in x86 anyway.  Can you
-please make the conversion complete?  I'm moving the above misplaced
-chunk into 03 and not applying 04 for now.
+Looking at 1de3e3df917459422cb2aecac440febc8879d410:
 
-Thank you.
+Line 2714 in fs/ext4/inode.c is this:
 
--- 
-tejun
+       /*
+         * If the page does not have buffers (for whatever reason),
+         * try to create them using block_prepare_write.  If this
+         * fails, redirty the page and move on.
+         */
+        if (!page_buffers(page)) {
+	^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                if (block_prepare_write(page, 0, len,
+                                        noalloc_get_block_write)) {
+                redirty_page:
+                        redirty_page_for_writepage(wbc, page);
+                        unlock_page(page);
+                        return 0;
+                }
+                commit_write = 1;
+        }
+
+Which means we're really hitting this:
+
+/* If we *know* page->private refers to buffer_heads */
+#define page_buffers(page)                                      \
+        ({                                                      \
+                BUG_ON(!PagePrivate(page));                     \
+		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                ((struct buffer_head *)page_private(page));     \
+        })
+#define page_has_buffers(page)  PagePrivate(page)
+
+Looks like Ted fixed it here:
+
+commit b1142e8fec6a594723e5054055a7b53379b90490
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Thu Oct 28 17:33:57 2010 -0400
+
+    ext4: BUG_ON fix: check if page has buffers before calling page_buffers()
+
+
+Basically, once you hit this oops, ext4 is done.  No files you created
+after the oops will be there when you reboot, and the rest of your
+lockups etc are because the jbd process had some locks held when it
+crashed.
+
+Was there also a report of corruption w/dm-crypt and XFS?
+
+Last night I ran dm-crypt + the cpu scalability patch + ext4 +
+2.6.37-rc3 in a long stress, and it passed without any problems.  If
+dm-crypt were not doing the IO properly, this test probably would have
+found it (+/- strange block sizes, races with O_DIRECT and other exotic
+fun).
+
+-chris
+
