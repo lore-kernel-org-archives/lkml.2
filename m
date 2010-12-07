@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab0LGWdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 17:33:15 -0500
-Received: from www.tglx.de ([62.245.132.106]:34562 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754215Ab0LGWdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 17:33:14 -0500
-Date: Tue, 7 Dec 2010 23:32:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Feng Tang <feng.tang@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
- IRQ info
-In-Reply-To: <4CFE8045.2030101@kernel.org>
-Message-ID: <alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
-References: <1291349518-3502-1-git-send-email-feng.tang@intel.com> <tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org> <4CFD226C.60308@kernel.org> <20101207133204.4d913c5a@feng-i7> <alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6>
- <4CFE8045.2030101@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754378Ab0LGWet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 17:34:49 -0500
+Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:35956 "EHLO
+	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754226Ab0LGWes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 17:34:48 -0500
+X-Greylist: delayed 915 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 17:34:47 EST
+From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Message-Id: <201012072219.oB7MJBgm020656@turbo.physics.adelaide.edu.au>
+Subject: Re: [PATCH] fujitsu-laptop: fix compiler warning on pnp_ids
+To: namhyung@gmail.com (Namhyung Kim)
+Date: Wed, 8 Dec 2010 08:49:11 +1030 (CST)
+Cc: jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
+        mjg@redhat.com (Matthew Garrett), platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291734254-12250-1-git-send-email-namhyung@gmail.com> from "Namhyung Kim" at Dec 08, 2010 12:04:14 AM
+X-Mailer: ELM [version 2.5 PL6]
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, Yinghai Lu wrote:
-> On 12/07/2010 07:56 AM, Thomas Gleixner wrote:
-> > 
-> >   Same here. No caller is interested in the detailed return value.
-> > 
+Looks fine to me.
+
+Acked-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+
+> Annotate pnp_ids as '__used' to fix following warning:
 > 
-
-> ok, after look at code and git log, i knew the reasons for those
-> strange duplicated functions.
->
-> Alexy changed
+>   CC      drivers/platform/x86/fujitsu-laptop.o
+> drivers/platform/x86/fujitsu-laptop.c:1243: warning: ‘pnp_ids’ defined but not used
 > 
->  /* MP IRQ source entries */
-> -struct mpc_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
-> +struct mp_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  drivers/platform/x86/fujitsu-laptop.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> to make it decouple that with mpstable definition. so mptable will
-> have mpc_intsrc, and acpi etc will use mp_config_intsrc
->
-> and he planed to add more member to mp_config_intsrc .... never happened.
-> 
-> then I added those functions with different parameters.
-> 
-> one year later JSR changed all back to mpc_instr...
-> 
-> so now have some duplicated functions....
+> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+> index f44cd26..ad88b2e 100644
+> --- a/drivers/platform/x86/fujitsu-laptop.c
+> +++ b/drivers/platform/x86/fujitsu-laptop.c
+> @@ -1240,7 +1240,7 @@ MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1D3:*:cvrS6410:*");
+>  MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1E6:*:cvrS6420:*");
+>  MODULE_ALIAS("dmi:*:svnFUJITSU:*:pvr:rvnFUJITSU:rnFJNB19C:*:cvrS7020:*");
+>  
+> -static struct pnp_device_id pnp_ids[] = {
+> +static struct pnp_device_id pnp_ids[] __used = {
+>  	{.id = "FUJ02bf"},
+>  	{.id = "FUJ02B1"},
+>  	{.id = "FUJ02E3"},
+> -- 
+> 1.7.0.4
 
-> So yes, we should use simple versions in
-> arch/x86/kernel/acpi/boot.c. ( assume functions mrst.c are copied
-> from there)
->
-> and should kill print_mp_irq_info or print_MP_intsrc_info...
-
-Nice archaelogical detective work ! :)
-
-So now I have Fengs patch plus Yinghais series which seem to go nicely
-together, but I have the feeling that there is some stuff unresolved.
-
-Yinghai, Feng: could you please work out the missing bits an pieces
-(if any) and provide me a delta patch on top of the existing patches?
-
-Thanks,
-
-	tglx
