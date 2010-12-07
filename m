@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab0LGIRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 03:17:34 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41128 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab0LGIRd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 03:17:33 -0500
-Date: Tue, 7 Dec 2010 08:17:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        arve@android.com, David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: Re: [PATCH 3/5] msm: timer: SMP timer support for msm
-Message-ID: <20101207081701.GA18336@n2100.arm.linux.org.uk>
-References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org> <1291619778-30289-4-git-send-email-johlstei@codeaurora.org> <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6>
+	id S1754502Ab0LGIXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 03:23:53 -0500
+Received: from 8bytes.org ([88.198.83.132]:40347 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753113Ab0LGIXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 03:23:51 -0500
+Date: Tue, 7 Dec 2010 09:23:50 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/12] KVM: SVM: Add clean-bit for interrupt state
+Message-ID: <20101207082349.GC29502@8bytes.org>
+References: <1291373159-4822-1-git-send-email-joerg.roedel@amd.com> <1291373159-4822-6-git-send-email-joerg.roedel@amd.com> <20101206192924.GB13545@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101206192924.GB13545@amt.cnet>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 10:56:14AM +0100, Thomas Gleixner wrote:
-> On Sun, 5 Dec 2010, Jeff Ohlstein wrote:
-> > +#ifdef CONFIG_HOTPLUG_CPU
-> > +void __cpuexit local_timer_stop(void)
-> > +{
-> > +	local_clock_event->set_mode(CLOCK_EVT_MODE_SHUTDOWN, local_clock_event);
+On Mon, Dec 06, 2010 at 05:29:24PM -0200, Marcelo Tosatti wrote:
+> On Fri, Dec 03, 2010 at 11:45:52AM +0100, Joerg Roedel wrote:
+> > This patch implements the clean-bit for all interrupt
+> > related state in the vmcb. This corresponds to vmcb offset
+> > 0x60-0x67.
+> > 
+> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 > 
-> Aarg. No. The generic code already handles cpu hotplug. 
+> Don't you have to mark dirty on sync_lapic_to_cr8?
 
-Can you show where this is handled by the generic code?  I can't find
-where this is handled.
+In theory yes, but sync_lapic_to_cr8 is called in every vmexit/vmrun
+cycle. Thats why I added the interrupt bit to the always-dirty mask. I
+left this as a future optimization to only write cr8 to the vmcb when it
+actually changes.
+
+	Joerg
+
