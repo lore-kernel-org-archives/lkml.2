@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab0LGPL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:11:59 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63363 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754579Ab0LGPL5 (ORCPT
+	id S1754595Ab0LGPQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:16:17 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54109 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754353Ab0LGPQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:11:57 -0500
-Message-ID: <4CFE4EAC.9000606@metafoo.de>
-Date: Tue, 07 Dec 2010 16:11:40 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+	Tue, 7 Dec 2010 10:16:15 -0500
+Date: Tue, 7 Dec 2010 15:16:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        lrg@slimlogic.co.uk
+Subject: Re: [PATCH 29/29] drivers/regulator: Update WARN uses
+Message-ID: <20101207151608.GC9689@rakim.wolfsonmicro.main>
+References: <b0588ea464d551f9dbd80c0fee68a780d6279b50.1291670106.git.joe@perches.com>
+ <20101207114346.GC10722@sirena.org.uk>
+ <alpine.LNX.2.00.1012071549150.14806@pobox.suse.cz>
 MIME-Version: 1.0
-To: Trilok Soni <tsoni@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-4-git-send-email-tsoni@codeaurora.org> <4CDB0451.3090303@metafoo.de> <4CDBDE5D.4040801@codeaurora.org> <4CFCE8B7.8080305@codeaurora.org>
-In-Reply-To: <4CFCE8B7.8080305@codeaurora.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1012071549150.14806@pobox.suse.cz>
+X-Cookie: E Pluribus Unix
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 02:44 PM, Trilok Soni wrote:
-> Hi Peter,
-> 
->>
->>>> +
->>>> +/**
->>>> + * struct pmic8058_led - per led data
->>>> + * @name - name of the led
->>>> + * @default_trigger - default trigger which needs to e attached
->>>> + * @max_brightness - maximum brightness level supported by the led
->>>> + * @id - supported led id
->>>> + */
->>>> +struct pmic8058_led {
->>>> +	const char	*name;
->>>> +	const char	*default_trigger;
->>>> +	unsigned	max_brightness;
->>> Should max_brightness not rather be hardcoded in the driver? As far as I can tell it
->>> depend on the hardware and is 4 bits wide for flash and bl leds and 5 bits for the
->>> others.
->>>> +	int		id;
->>>
->>> enum pmic8058_leds instead of int
->>
->> Ack.
->>
->>>> +struct pmic8058_leds_platform_data {
->>>> +	int			num_leds;
->>> size_t
->>
->> Ack.
->>
->>>> +	struct pmic8058_led	*leds;
->>>> +};
->>>
->>>
->>> If max_brightness is hardcoded in the driver you can reuse "struct led_info" and
->>> "struct struct led_platform_data" instead of adding your own structs.
->>
-> 
-> I couldn't remove these pmic8058_led structure due to the "enum pmic8058_led id" member
-> info which I need from every led. This can be removed completely only if I abuse
-> the "flags" parameter in struct led_info to pass the led id. Let me know what you think.
-> 
-> ---Trilok Soni
-> 
+On Tue, Dec 07, 2010 at 03:50:32PM +0100, Jiri Kosina wrote:
+> On Tue, 7 Dec 2010, Mark Brown wrote:
 
-Hi
+> > On Mon, Dec 06, 2010 at 02:05:19PM -0800, Joe Perches wrote:
+> > > Align arguments.
 
-I think that would be ok, other drivers seem to do the same.
+> > > Signed-off-by: Joe Perches <joe@perches.com>
 
-- Lars
+> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+> > but please do remember to send patches to maintainers - trying to merge
+> > patches without going through the maintainers means that people working
+> > on the actual tree concerned may either replicate your work or introduce
+> > conflicts with your patches, neither of which is good.
+
+> That happened here:
+
+> 	https://lkml.org/lkml/2010/11/1/107
+
+> but the patch is not in linux-next after more than one month. Which is why 
+> Joe is resending it for inclusion through my queue.
+
+That's not a reason to drop people from the CCs when reposting, and when
+reposting it's always good to include any reviews you got previously.
+Indeed, looking at the original posting you'll see he sent it directly
+to you first time around as well as CCing the maintainers.
