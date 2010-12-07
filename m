@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab0LGUps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 15:45:48 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27941 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab0LGUpr convert rfc822-to-8bit (ORCPT
+	id S1755005Ab0LGUtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 15:49:22 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:52829 "EHLO
+	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab0LGUtU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 15:45:47 -0500
+	Tue, 7 Dec 2010 15:49:20 -0500
 MIME-Version: 1.0
-Message-ID: <dd88185d-bc2c-4d65-8730-8b1fc712306a@default>
-Date: Tue, 7 Dec 2010 12:43:28 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Chris Mason <chris.mason@oracle.com>, akpm@linux-foundation.org,
-        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        ngupta@vflare.org, jeremy@goop.org,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        minchan.kim@gmail.com
-Subject: RE: [PATCH V0 1/4] kztmem: simplified radix tree data structure
- support
-References: <20101207180653.GA28115@ca-server1.us.oracle.com>
-In-Reply-To: <20101207180653.GA28115@ca-server1.us.oracle.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6539.5000]
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1291754340-sup-1631@think>
+References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+ <20101207182243.GB21112@redhat.com> <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
+ <1291747731-sup-3099@think> <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com>
+ <1291751698-sup-9297@think> <AANLkTin79GzUbfuZNKyTtqcyoUSO9AJimO77_ZOvqggH@mail.gmail.com>
+ <1291754340-sup-1631@think>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Tue, 7 Dec 2010 14:48:58 -0600
+Message-ID: <AANLkTim8uCmFK=LjkMmq_1O0KE3AiN_7g41AO0woxMv7@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Matt <jackdachef@gmail.com>,
+        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH V0 1/4] kztmem: simplified radix tree data structure support
-> 
-> [PATCH V0 1/4] kztmem: simplified radix tree data structure support
+On Tue, Dec 7, 2010 at 2:41 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> Excerpts from Jon Nelson's message of 2010-12-07 15:25:47 -0500:
+>> On Tue, Dec 7, 2010 at 2:02 PM, Chris Mason <chris.mason@oracle.com> wrote:
+>> > Excerpts from Jon Nelson's message of 2010-12-07 14:34:40 -0500:
+>> >> On Tue, Dec 7, 2010 at 12:52 PM, Chris Mason <chris.mason@oracle.com> wrote:
+>> >> >> postgresql errors. Typically, header corruption but from the limited
+>> >> >> visibility I've had into this via strace, what I see is zeroed pages
+>> >> >> where there shouldn't be.
+>> >> >
+>> >> > This sounds a lot like a bug higher up than dm-crypt.  Zeros tend to
+>> >> > come from some piece of code explicitly filling a page with zeros, and
+>> >> > that often happens in the corner cases for O_DIRECT and a few other
+>> >> > places in the filesystem.
+>> >> >
+>> >> > Have you tried triggering this with a regular block device?
+>> >>
+>> >> I just tried the whole set of tests, but with /dev/sdb directly (as
+>> >> ext4) without any crypt-y bits.
+>> >> It takes more iterations but out of 6 tests I had one failure: same
+>> >> type of thing, 'invalid page header in block ....'.
+>> >>
+>> >> I can't guarantee that it is a full-page of zeroes, just what I saw
+>> >> from the (limited) stracing I did.
+>> >
+>> > Fantastic. Now for our usual suspects:
+>> >
+>> > 1) Is postgres using O_DIRECT?  If yes, please turn it off
+>>
+>> According to strace, O_DIRECT didn't show up once during the test.
+>>
+>> > 2) Is postgres allocating sparse files?  If yes, please have it fully
+>> > allocate the file instead.
+>>
+>> That's a tough one. I don't think postgresql does that, but I'm not an
+>> expert here.
+>
+> Ok, please compare du -k and du -k --apparent-size for each of the
+> files involved in the postgres run.
 
-A monolithic patch containing all of kztmem, cleancache, and frontswap
-that applies cleanly to 2.6.36 can be found at:
+Because this is all done in a transaction (which fails), and because
+the table is a TEMPORARY table, there *are* no files once the
+transaction fails because postgresql unlinks them.
 
-http://oss.oracle.com/projects/tmem/dist/files/kztmem/kztmem-linux-2.6.36-101207.patch 
+I can modify the test to use real tables and do things outside of a
+transaction, however.
 
-(Or http://oss.oracle.com/projects/tmem and Downloads and kztmem patches)
-       
-I'm a git novice but can prepare a git tree also if desired.
+I was using fdatasync[1] and now I'm using sync. I'm on 9 iterations
+without a failure (on ext4 - no crypt). Theoretically, these settings
+only make a difference in the event of a crash. However, could they
+make a difference in terms of the paths taken in the kernel?
 
-To try kztmem:
 
-1) apply the monolithic patch to 2.6.36
-2) rebuild your config ensuring that CONFIG_KZTMEM, CONFIG_CLEANCACHE,
-   CONFIG_FRONTSWAP, and CONFIG_ZRAM (for xvMalloc) become enabled
-3) rebuild and reboot with "kztmem" as a kernel boot parameter
-4) see /sys/kernel/mm/kztmem/* for statistics... note that with
-   lots of RAM and no swapping, little or no activity will be seen
+[1] for wal_sync_method
 
-As I said, there are known weird bugs that may or may not show
-up in your configuration and build environment, so be prepared
-in advance that the kernel may crash... removing kztmem as
-a boot parameter should disable kztmem and result in a normal boot.
-
-Thanks in advance for trying and testing (and, if you are so
-inclined, debugging) kztmem!  I'll be happy to answer any
-questions on- or off-list!
-
-Dan
+-- 
+Jon
