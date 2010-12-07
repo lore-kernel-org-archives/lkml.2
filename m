@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0LGI4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 03:56:55 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22678 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab0LGI4p (ORCPT
+	id S1754821Ab0LGI7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 03:59:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36997 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab0LGI7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 03:56:45 -0500
-Message-ID: <4CFDF69C.9070501@kernel.org>
-Date: Tue, 07 Dec 2010 00:55:56 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] x86, x2apic: Don't map lapic addr for preenabled x2apic
- system
-References: <4CFDF544.8020309@kernel.org>
-In-Reply-To: <4CFDF544.8020309@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Dec 2010 03:59:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=qfBT9XsjpHy18P7iDN9dS8ffZdE5jnQ3pDFHBDW72TTTHNLNkhexoEO8NFclDmsqqX
+         m1yPGkWtLB2+Jda2olt5fkaez451dTiai0v/GtMkaJbcfnxSh9bKTLuoKr8UO3NB7884
+         l3OR5UYazyc0qjYVbYeB0wSyMxeb57RfbOaxc=
+Subject: [PATCH] ASoC: Fix snd_soc_instantiate_card error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain
+Date: Tue, 07 Dec 2010 17:06:02 +0800
+Message-Id: <1291712762.4776.11.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 0443551476ee6fabe45a0fbc7460dca8e0f6a965 Mon Sep 17 00:00:00 2001
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 7 Dec 2010 16:12:29 +0800
+Subject: [PATCH] ASoC: Fix snd_soc_instantiate_card error path
 
-If x2apic is reenabled, and used in kernel, We don't need to map that lapic
-address. That mapping will never be used.
+Properly free the resources in the case of snd_card_register failure
+and soc_register_ac97_dai_link failure.
 
-So just skip that in register_lapic_address()
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/x86/kernel/apic/apic.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/apic/apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/apic.c
-+++ linux-2.6/arch/x86/kernel/apic/apic.c
-@@ -1676,9 +1676,11 @@ void __init register_lapic_address(unsig
- {
- 	mp_lapic_addr = address;
+This patch is against linux-next tree.
+
+In the case of soc_register_ac97_dai_link failure,
+I think we need below fix for Linus's tree:
+Add 
+while (--i >= 0)
+	soc_unregister_ac97_dai_link(&card->rtd[i]);
+just before goto probe_dai_err;
+Should I also send a patch against Linus's tree?
+
+Regards,
+Axel
+
+ sound/soc/soc-core.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 392d336..b4c8c38 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -1839,18 +1839,20 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
+ 	ret = snd_card_register(card->snd_card);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "asoc: failed to register soundcard for %s\n", card->name);
+-		goto probe_dai_err;
++		goto probe_aux_dev_err;
+ 	}
  
--	set_fixmap_nocache(FIX_APIC_BASE, address);
--	apic_printk(APIC_VERBOSE, "mapped APIC to %16lx (%16lx)\n",
--		    APIC_BASE, mp_lapic_addr);
-+	if (!x2apic_mode) {
-+		set_fixmap_nocache(FIX_APIC_BASE, address);
-+		apic_printk(APIC_VERBOSE, "mapped APIC to %16lx (%16lx)\n",
-+			    APIC_BASE, mp_lapic_addr);
+ #ifdef CONFIG_SND_SOC_AC97_BUS
+ 	/* register any AC97 codecs */
+ 	for (i = 0; i < card->num_rtd; i++) {
+-			ret = soc_register_ac97_dai_link(&card->rtd[i]);
+-			if (ret < 0) {
+-				printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
+-				goto probe_dai_err;
+-			}
++		ret = soc_register_ac97_dai_link(&card->rtd[i]);
++		if (ret < 0) {
++			printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
++			while (--i >= 0)
++				soc_unregister_ac97_dai_link(&card->rtd[i]);
++			goto probe_aux_dev_err;
+ 		}
 +	}
- 	if (boot_cpu_physical_apicid == -1U) {
- 		boot_cpu_physical_apicid  = read_apic_id();
- 		apic_version[boot_cpu_physical_apicid] =
+ #endif
+ 
+ 	card->instantiated = 1;
+-- 
+1.7.2
+
+
+
