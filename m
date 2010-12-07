@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab0LGJXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:23:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab0LGJXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:23:03 -0500
-Message-ID: <4CFDFCEF.3080708@redhat.com>
-Date: Tue, 07 Dec 2010 11:22:55 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755009Ab0LGJ2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:28:00 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:35939 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab0LGJ16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 04:27:58 -0500
+Date: Tue, 7 Dec 2010 04:27:49 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        James Bottomley <james.bottomley@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso <tytso@mit.edu>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        sandeen <sandeen@redhat.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+Message-ID: <20101207092749.GA26100@infradead.org>
+References: <20101118130630.GJ6178@parisc-linux.org>
+ <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org>
+ <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site>
+ <4CE59C9E.6050902@teksavvy.com>
+ <1290177488-sup-6540@think>
+ <4CE68F80.7000607@teksavvy.com>
+ <20101119145748.GB27919@infradead.org>
+ <4CE695FF.20601@teksavvy.com>
 MIME-Version: 1.0
-To: David Sharp <dhsharp@google.com>
-CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com,
-        kvm-devel <kvm@vger.kernel.org>
-Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com> <1291421609-14665-8-git-send-email-dhsharp@google.com> <4CF9F7AB.8050802@redhat.com> <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>
-In-Reply-To: <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE695FF.20601@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 10:38 PM, David Sharp wrote:
-> On Sat, Dec 4, 2010 at 12:11 AM, Avi Kivity<avi@redhat.com>  wrote:
-> >  On 12/04/2010 02:13 AM, David Sharp wrote:
-> >>
-> >>  Signed-off-by: David Sharp<dhsharp@google.com>
-> >>  ---
-> >>    arch/x86/kvm/trace.h |    8 ++++----
-> >>    1 files changed, 4 insertions(+), 4 deletions(-)
-> >>
-> >>  diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-> >>  index a6544b8..ab41fb0 100644
-> >>  --- a/arch/x86/kvm/trace.h
-> >>  +++ b/arch/x86/kvm/trace.h
-> >>  @@ -62,21 +62,21 @@ TRACE_EVENT(kvm_hv_hypercall,
-> >>          TP_ARGS(code, fast, rep_cnt, rep_idx, ingpa, outgpa),
-> >>
-> >>          TP_STRUCT__entry(
-> >>  -               __field(        __u16,          code            )
-> >>  -               __field(        bool,           fast            )
-> >>                  __field(        __u16,          rep_cnt         )
-> >>                  __field(        __u16,          rep_idx         )
-> >>                  __field(        __u64,          ingpa           )
-> >>                  __field(        __u64,          outgpa          )
-> >>  +               __field(        __u16,          code            )
-> >>  +               __field(        bool,           fast            )
-> >>          ),
-> >>
-> >
-> >  Looks like a pessimisation.
-> >
-> >  Before: 24 bytes
-> >  After: 32 bytes
-> >
-> >  (on a 64-bit machine, assuming no packing)
->
-> This patch is predicated on packing the event structures. And since
-> the ring buffer is 32-bit addressable, I don't attempt to improve
-> alignment beyond 32-bit boundaries.
+On Fri, Nov 19, 2010 at 10:21:35AM -0500, Mark Lord wrote:
+> >I really hate to rely on this third party hearsay (from all sides), and
+> >have implement TRIM support in qemu now.  I'll soon install win7 and
+> >will check out the TRIM patters myself.
+> 
+> Excellent!
 
-I don't understand this.  Can you elaborate?  What does "32-bit 
-addressable" mean?  And "predicated on packing the event structures"?  
-Is the structure __attribute__((packed)), or is it not?
+I did a Windows 7 installation under qemu today, and the result is:
 
--- 
-error compiling committee.c: too many arguments to function
-
+ - it TRIMs the whole device early during the installation
+ - after that I see a constant stream of small trims during the
+   installation.  It's using lots of non-contiguous ranges in a single
+   TRIM command, with sizes down to 8 sectors (4k) for a single range.
+ - after installation there's is some background-trimming going on
+   even when doing no user interaction with the VM at all.
+ - removing files leads to an instant stream of TRIMs, again vectored
+   and of all sizes down to 4k.  Note that the TRIMs are a lot more
+   instant than even with btrfs and -o discard, which delays most
+   TRIMs until doing a sync.
