@@ -1,34 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab0LGXoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 18:44:14 -0500
-Received: from ecb-mx-out1.episd.org ([216.248.224.69]:35671 "EHLO
-	ecb-mx-out1.episd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab0LGXoN convert rfc822-to-8bit (ORCPT
+	id S1754472Ab0LGXrr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 18:47:47 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:40400 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab0LGXrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 18:44:13 -0500
-X-Greylist: delayed 1340 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 18:44:13 EST
-Message-Id: <4CFE5F150200006100078940@episd14.episd.org>
-X-Mailer: Novell GroupWise Internet Agent 7.0.3 
-Date: Tue, 07 Dec 2010 16:21:38 -0700
-From: "Chad Moltane" <ccmoltan@episd.org>
-Subject: Dear mail User,
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-To: undisclosed-recipients:;
+	Tue, 7 Dec 2010 18:47:46 -0500
+Content-Type: text/plain; charset=UTF-8
+Cc: Avantika Mathur <mathur@linux.vnet.ibm.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] trace syscalls: Remove redundant syscall_nr checks
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+In-reply-to: <1291733682.16223.244.camel@gandalf.stny.rr.com>
+References: <1291696151-4336-1-git-send-email-imunsie@au1.ibm.com> <1291696151-4336-3-git-send-email-imunsie@au1.ibm.com> <1291733682.16223.244.camel@gandalf.stny.rr.com>
+Date: Wed, 08 Dec 2010 10:47:42 +1100
+Message-Id: <1291765620-sup-3222@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear mail User,
-Due to the congestion in our mail servers,there would be removal of all unused mail Accounts.To re-validate your mailbox please click below.
+Excerpts from Steven Rostedt's message of Wed Dec 08 01:54:42 +1100 2010:
+> On Tue, 2010-12-07 at 15:29 +1100, Ian Munsie wrote:
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> > 
+> > With the ftrace events now checking if the syscall_nr is valid upon
+> > initialisation, there is no need to verify it when registering and
+> > unregistering the events, so remove the check.
+> 
+> I still like to keep these checks. I don't mind redundant checks that
+> are in slow paths, as they may catch a bug on a change in the future.
+> 
+> What you could do is change these to:
+> 
+>     if (WARN_ON_ONCE(num < 0 || num >= NR_syscalls))
 
-http://plastination.org/ispmail/use/file/form1.html
+Hi Steve,
 
-Note: This email is only for Account owner.
-    Thank you for using mail !
-      The mail Team
+Thanks for the feedback. Will update and resubmit.
 
-
+Cheers,
+-Ian
