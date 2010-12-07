@@ -1,266 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab0LGFS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 00:18:57 -0500
-Received: from nwd2mail11.analog.com ([137.71.25.57]:38273 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab0LGFSz convert rfc822-to-8bit (ORCPT
+	id S1751839Ab0LGFa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 00:30:56 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61392 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab0LGFaz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 00:18:55 -0500
-X-IronPort-AV: E=Sophos;i="4.59,309,1288584000"; 
-   d="scan'208";a="25753438"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drivers <Drivers@analog.com>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Date: Tue, 7 Dec 2010 05:18:48 +0000
-Subject: RE: [RFC 1/3] IIO: Direct digital synthesis abi documentation
-Thread-Topic: [RFC 1/3] IIO: Direct digital synthesis abi documentation
-Thread-Index: AcuS2QJtwSlV7XY8TXeCmbhRCEzsAQC7Bu9Q
-Message-ID: <544AC56F16B56944AEC3BD4E3D591771312F0E1BB3@LIMKCMBX1.ad.analog.com>
-References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com>
- <1291292489-32362-2-git-send-email-michael.hennerich@analog.com>
- <4CF8CED9.9060306@cam.ac.uk>
-In-Reply-To: <4CF8CED9.9060306@cam.ac.uk>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Dec 2010 00:30:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Va4iXZUD3J7PwjMDuVAoTHtpXC3W5+jtQraP6QzjmNImjyc/Mm/NhNX+/JzVkZsjQq
+         Eavh4osxLnoh+vH0bmaEKnkKzJXwzxKWjYk+hl5rO4vsCULhhIKsWl/ux5AFqfWgQzwv
+         N+xME6DljF+DV2skVkwsPvwb3K0jRIOdoZEc0=
 MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1012062005040.8572@tigran.mtv.corp.google.com>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+	<807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
+	<alpine.LSU.2.00.1012062005040.8572@tigran.mtv.corp.google.com>
+Date: Tue, 7 Dec 2010 14:30:54 +0900
+Message-ID: <AANLkTi=5CQ=c-NmwLoP3SJ6EMYwqf=Rvs5wzk2RdpO3g@mail.gmail.com>
+Subject: Re: [PATCH v4 6/7] Remove zap_details NULL dependency
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jonathan Cameron wrote on 2010-12-03:
-> On 12/02/10 12:21, michael.hennerich@analog.com wrote:
-> > From: Michael Hennerich <michael.hennerich@analog.com>
-> >
-> > Proposed ABI documentation
-> >
-> Hi Michael,
+Hi Hugh,
+
+On Tue, Dec 7, 2010 at 1:26 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Mon, 6 Dec 2010, Minchan Kim wrote:
 >
-> Couple of comments inline.
+>> Some functions used zap_details depends on assumption that
+>> zap_details parameter should be NULLed if some fields are 0.
+>>
+>> This patch removes that dependency for next patch easy review/merge.
+>> It should not chanage behavior.
+>>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>> Cc: Hugh Dickins <hughd@google.com>
 >
-> I've raised a few questions that I don't have a clear answer two.
+> Sorry, while I do like that you're now using the details block,
+> you seem to be adding overhead in various places without actually
+> simplifying anything - you insist that everything passes down an
+> initialized details block, and then in the end force the pointer
+> to NULL again in all the common cases.
 >
-> The other comments are nitpicks about exact ordering of the elements
-> of the attribute names.
+> Which seems odd.  I could understand if you were going to scrap
+> the NULL details optimization altogether; but I think that (for
+> the original optimization reasons) you're right to force it to NULL
+> in the end, so then why initialize the block at all those call sites?
 >
-> > Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> > ---
-> >  .../staging/iio/Documentation/sysfs-bus-iio-dds    |  103
-> ++++++++++++++++++++
-> >  1 files changed, 103 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-
-> dds
-> >
-> > diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> > new file mode 100644
-> > index 0000000..2c99889
-> > --- /dev/null
-> > +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> > @@ -0,0 +1,103 @@
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_freqY
-> Here we deviate a little from what we did with input channels.
-> In that case there was the existing interface (from hwmon) to match
-> so we already had an _input designation to tell us that the number
-> was in the relevant base units (here it would be Hz).  Hence we added
-> a _raw label to say it wasn't and tell userspace to apply scale and
-> offset.
-> This is stretching a point somewhat, but looking at the hwmon docs,
-> they
-> have pwmX_freq as a value in Hz. That's obviously going to make
-> consistency
-> rather tricky to achieve!
+>> ---
+>>  include/linux/mm.h |    8 ++++++++
+>>  mm/madvise.c       |   15 +++++++++------
+>>  mm/memory.c        |   14 ++++++++------
+>>  mm/mmap.c          |    6 ++++--
+>>  4 files changed, 29 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index e097df6..6522ae4 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -773,6 +773,14 @@ struct zap_details {
+>>       unsigned long truncate_count;           /* Compare vm_truncate_count */
+>>  };
+>>
+>> +#define __ZAP_DETAILS_INITIALIZER(name) \
+>> +             { .nonlinear_vma = NULL \
+>> +             , .check_mapping = NULL \
+>> +             , .i_mmap_lock = NULL }
+>> +
+>> +#define DEFINE_ZAP_DETAILS(name)             \
+>> +     struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
 >
-> Do you think we should leave all _freq without modifier as being in Hz
-> and
-> have ddsX_freqY_raw. Or should we rely on userspace verifying if there
-> are
-> appropriate scale / offset parameters to be applied and hence working
-> out
-> for itself whether the value in ddsX_freqY is in Hz or not?
+> Okay.
 >
-> I'm think I marginally favour leaving it as you have it here but others
-> may
-> have different opinions.
-
-Offset is not likely to be used here - but
-these devices actually provide sub Hertz resolution. It's very likely to occur,
-that we want to have scale being 1000 and the user writes frequency in mHz.
-I might even consider using mHz for the sample driver as well.
-
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Stores frequency into tuning word register Y.
-> > +           There can be more than one ddsX_freqY file, which allows
-> for
-> > +           pin controlled FSK Frequency Shift Keying
-> > +           (ddsX_pincontrol_freq_en is active) or the user can control
-> > +           the desired active tuning word by writing Y to the
-> > +           ddsX_freqsymbol file.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_freq_scaleY
-> Would the association be clearer if we went with ddsX_freqY_scale?  I
-> think
-> that is more consistent with what we have elsewhere in IIO (though this
-> particular
-> double index case hasn't happened before)
-
-Well - I thought use ddsX_freqY_scale whenever scale is different upon Y.
-And leave without index if it is common between ddsX_freqY.
-The Y after scale is just a typo.
-
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Scale to be applied to ddsX_freqY in order to obtain the
-> > +           desired value in Hz. If shared across all frequency
-> registers
-> > +           Y is not present.
-> Please add that it is also possible X is not present if shared across
-> all channels.  In weird cases X might not be present whilst Y is...
-
-ok
-
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_freqsymbol
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Specifies the active output frequency tuning word. The
-> value
-> > +           corresponds to the Y in ddsX_freqY. To exit this mode the
-> user
-> > +           can write ddsX_pincontrol_freq_en or ddsX_out_disable file.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_phaseY
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Stores phase into phase register Y.
-> > +           There can be more than one ddsX_phaseY file, which allows
-> for
-> > +           pin controlled PSK Phase Shift Keying
-> > +           (ddsX_pincontrol_phase_en is active) or the user can
-> > +           control the desired phase Y which is added to the phase
-> > +           accumulator output by writing Y to the en_phase file.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_phase_scaleY
-> Same reordering suggestion as per the frequency one above.
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Scale to be applied to ddsX_phaseY in order to obtain the
-> > +           desired value in rad. If shared across all phase registers
-> > +           Y is not present.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_phasesymbol
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Specifies the active phase Y which is added to the phase
-> > +           accumulator output. The value corresponds to the Y in
-> > +           ddsX_phaseY. To exit this mode the user can write
-> > +           ddsX_pincontrol_phase_en or disable file.
-> > +
+>> +
+>>  struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+>>               pte_t pte);
+>>
+>> diff --git a/mm/madvise.c b/mm/madvise.c
+>> index 319528b..bfa17aa 100644
+>> --- a/mm/madvise.c
+>> +++ b/mm/madvise.c
+>> @@ -162,18 +162,21 @@ static long madvise_dontneed(struct vm_area_struct * vma,
+>>                            struct vm_area_struct ** prev,
+>>                            unsigned long start, unsigned long end)
+>>  {
+>> +     DEFINE_ZAP_DETAILS(details);
+>> +
+>>       *prev = vma;
+>>       if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
+>>               return -EINVAL;
+>>
+>>       if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
+>> -             struct zap_details details = {
+>> -                     .nonlinear_vma = vma,
+>> -                     .last_index = ULONG_MAX,
+>> -             };
+>> +             details.nonlinear_vma = vma;
+>> +             details.last_index = ULONG_MAX;
+>> +
+>>               zap_page_range(vma, start, end - start, &details);
+>> -     } else
+>> -             zap_page_range(vma, start, end - start, NULL);
+>> +     } else {
+>> +
+>> +             zap_page_range(vma, start, end - start, &details);
+>> +     }
 >
-> It might make sense to group the next three by having multiple What
-> lines
-> and then an explanation covering all three.
+> You end up with two identical zap_page_range() lines:
+> better have one after the if {} without an else.
+>
 
-Makes sense, thanks.
+Okay. Will fix.
 
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Both, the active frequency and phase is controlled by the
-> > +           respective phase and frequency control inputs.
-> > +
-> > +What:
->       /sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           The active frequency is controlled by the respective
-> > +           frequency control/select inputs.
-> > +
-> > +What:
->       /sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           The active phase is controlled by the respective
-> > +           phase control/select inputs.
-> > +
-> Could group the next two sections of documentation into one and
-> describe
-> both versions together.  See how it's done in the latest main IIO docs.
-> I think it tends to make it apparent when there are multiple very
-> similar
-> attributes that may affect the same signals.
+>>       return 0;
+>>  }
+>>
+>> diff --git a/mm/memory.c b/mm/memory.c
+>> index ebfeedf..c0879bb 100644
+>> --- a/mm/memory.c
+>> +++ b/mm/memory.c
+>> @@ -900,6 +900,9 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
+>>
+>>       init_rss_vec(rss);
+>>
+>> +     if (!details->check_mapping && !details->nonlinear_vma)
+>> +             details = NULL;
+>> +
+>
+> Aside from its necessity in the next patch, I thoroughly approve of
+> your moving this optimization here: it is confusing, and better that
+> it be done near where the fields are used, than off at the higher level.
 
-ok
+Thanks.
 
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_out_disable
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Disables any signal generation on all outputs.
-> With the X in there you need to say for dds X.
-> On everything else so far we have tended to go with enable attributes
-> rather than
-> this way around.  Why do it as disable here?
+>
+>>       pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+>>       arch_enter_lazy_mmu_mode();
+>>       do {
+>> @@ -1038,9 +1041,6 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
+>>       pgd_t *pgd;
+>>       unsigned long next;
+>>
+>> -     if (details && !details->check_mapping && !details->nonlinear_vma)
+>> -             details = NULL;
+>> -
+>
+> Yes, I put it there because that was the highest point at which
+> it could then be done, so it was optimal from a do-it-fewest-times
+> point of view; but not at all helpful in understanding what's going
+> on, much better as you have it.
+>
+>>       BUG_ON(addr >= end);
+>>       mem_cgroup_uncharge_start();
+>>       tlb_start_vma(tlb, vma);
+>> @@ -1102,7 +1102,7 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
+>>       unsigned long tlb_start = 0;    /* For tlb_finish_mmu */
+>>       int tlb_start_valid = 0;
+>>       unsigned long start = start_addr;
+>> -     spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
+>> +     spinlock_t *i_mmap_lock = details->i_mmap_lock;
+>
+> This appears to be the sole improvement from insisting that everywhere
+> sets up an initialized details block.  I don't think this is worth it.
+>
+>>       int fullmm = (*tlbp)->fullmm;
+>>       struct mm_struct *mm = vma->vm_mm;
+>>
+>> @@ -1217,10 +1217,11 @@ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
+>>  int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
+>>               unsigned long size)
+>>  {
+>> +     DEFINE_ZAP_DETAILS(details);
+>
+> Overhead.
+>
+>>       if (address < vma->vm_start || address + size > vma->vm_end ||
+>>                       !(vma->vm_flags & VM_PFNMAP))
+>>               return -1;
+>> -     zap_page_range(vma, address, size, NULL);
+>> +     zap_page_range(vma, address, size, &details);
+>>       return 0;
+>>  }
+>>  EXPORT_SYMBOL_GPL(zap_vma_ptes);
+>> @@ -2577,7 +2578,8 @@ restart:
+>>  void unmap_mapping_range(struct address_space *mapping,
+>>               loff_t const holebegin, loff_t const holelen, int even_cows)
+>>  {
+>> -     struct zap_details details;
+>> +     DEFINE_ZAP_DETAILS(details);
+>> +
+>>       pgoff_t hba = holebegin >> PAGE_SHIFT;
+>>       pgoff_t hlen = (holelen + PAGE_SIZE - 1) >> PAGE_SHIFT;
+>>
+>> diff --git a/mm/mmap.c b/mm/mmap.c
+>> index b179abb..31d2594 100644
+>> --- a/mm/mmap.c
+>> +++ b/mm/mmap.c
+>> @@ -1900,11 +1900,12 @@ static void unmap_region(struct mm_struct *mm,
+>>       struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
+>>       struct mmu_gather *tlb;
+>>       unsigned long nr_accounted = 0;
+>> +     DEFINE_ZAP_DETAILS(details);
+>
+> Overhead.
+>
+>>
+>>       lru_add_drain();
+>>       tlb = tlb_gather_mmu(mm, 0);
+>>       update_hiwater_rss(mm);
+>> -     unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
+>> +     unmap_vmas(&tlb, vma, start, end, &nr_accounted, &details);
+>>       vm_unacct_memory(nr_accounted);
+>>       free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
+>>                                next? next->vm_start: 0);
+>> @@ -2254,6 +2255,7 @@ void exit_mmap(struct mm_struct *mm)
+>>       struct vm_area_struct *vma;
+>>       unsigned long nr_accounted = 0;
+>>       unsigned long end;
+>> +     DEFINE_ZAP_DETAILS(details);
+>
+> Overhead.
+>
+>>
+>>       /* mm's last user has gone, and its about to be pulled down */
+>>       mmu_notifier_release(mm);
+>> @@ -2278,7 +2280,7 @@ void exit_mmap(struct mm_struct *mm)
+>>       tlb = tlb_gather_mmu(mm, 1);
+>>       /* update_hiwater_rss(mm) here? but nobody should be looking */
+>>       /* Use -1 here to ensure all VMAs in the mm are unmapped */
+>> -     end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
+>> +     end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, &details);
+>>       vm_unacct_memory(nr_accounted);
+>>
+>>       free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
+>> --
+>
+> Am I being too fussy?
 
-We can change the logic. The sample driver enables the output once the
-ddsX_outY_wavetype file is written.
+Never. It's a good comment.
+I don't want add overhead unnecessary.
 
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_outY_disable
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Disables any signal generation on output Y.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Specifies the output waveform.
-> > +           (sine, triangle, ramp, square, ...)
-> > +           For a list of available output waveform options read
-> > +           available_output_modes.
-> > +
-> > +What:
->       /sys/bus/iio/devices/device[n]/ddsX_outY_available_wavetypes
-> Convention so far in IIO (because it's easy to handle in code) would
-> make this
-> ddsX_outY_wavetype_available.
+will fix and resend.
 
-ok
+Thanks for the review, Hugh.
 
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Lists all available output waveform options.
-> > --
-> > 1.6.0.2
+>
+> Hugh
+>
 
-Thanks for your review.
 
-Greetings,
-Michael
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
+-- 
+Kind regards,
+Minchan Kim
