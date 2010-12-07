@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab0LGWNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 17:13:20 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38772 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753275Ab0LGWNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 17:13:19 -0500
-Date: Tue, 7 Dec 2010 14:13:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linux Containers <containers@lists.osdl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH] user_ns: Improve the user_ns on-the-slab packaging
-Message-Id: <20101207141315.5ea45abf.akpm@linux-foundation.org>
-In-Reply-To: <4CFE40D1.5000309@parallels.com>
-References: <4CFE40D1.5000309@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754094Ab0LGWQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 17:16:55 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:25959 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561Ab0LGWQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 17:16:54 -0500
+X-IronPort-AV: E=Sophos;i="4.59,312,1288594800"; 
+   d="scan'208";a="492134128"
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] NFS: nfs_readdir_search_for_cookie() don't mark as eof if cookie not found
+Date: Tue,  7 Dec 2010 17:16:47 -0500
+Message-Id: <1291760208-11251-1-git-send-email-Trond.Myklebust@netapp.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Dec 2010 17:12:33 +0300
-Pavel Emelyanov <xemul@parallels.com> wrote:
+If we're searching for a specific cookie, and it isn't found in the page
+cache, we should try an uncached_readdir(). To do so, we return EBADCOOKIE,
+but we don't set desc->eof.
 
-> @@ -126,3 +128,11 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
->  	/* No useful relationship so no mapping */
->  	return overflowgid;
->  }
-> +
-> +static __init int user_namespaces_init(void)
-> +{
-> +	user_ns_cachep = KMEM_CACHE(user_namespace, SLAB_PANIC);
-> +	return 0;
-> +}
-> +
-> +__initcall(user_namespaces_init);
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+ fs/nfs/dir.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-checkpatch (which you apparently didn't use) says
-
-WARNING: please use device_initcall() instead of __initcall()
-#81: FILE: kernel/user_namespace.c:138:
-+__initcall(user_namespaces_init);
-
-which was a somewhat random recommendation.  I think I'll switch it to
-plain old module_init().
-
-Presumably user-namespaces don't get used prior to initcalls being run.
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index d529e0e..ad2fde2 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -316,8 +316,9 @@ int nfs_readdir_search_for_cookie(struct nfs_cache_array *array, nfs_readdir_des
+ 		}
+ 	}
+ 	if (i == array->eof_index) {
+-		desc->eof = 1;
+ 		status = -EBADCOOKIE;
++		if (*desc->dir_cookie == array->last_cookie)
++			desc->eof = 1;
+ 	}
+ out:
+ 	return status;
+-- 
+1.7.3.2
 
