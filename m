@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab0LGCOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:14:48 -0500
+	id S1754723Ab0LGCOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:14:03 -0500
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34314 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046Ab0LGCNb (ORCPT
+	with ESMTP id S1753188Ab0LGCNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:13:31 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=Agm1GSuzf5sA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=meVymXHHAAAA:8 a=HE3f-QE9bJ1rzL6B5SoA:9 a=Ii7i9yHk4dDRN9hEFlwRcgnY-qkA:4 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 6 Dec 2010 21:13:32 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=CTAM43dMmdwA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=u3tpQZKja4MypRY0GqAA:9 a=zjpdu7LmVJVIUjEjO4xvlQtuk3UA:4 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101207021330.322372192@goodmis.org>
+Message-Id: <20101207021330.050417380@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 06 Dec 2010 20:58:42 -0500
+Date: Mon, 06 Dec 2010 20:58:41 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][PATCH 08/10] fs: Remove unlikely() from fput_light()
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC][PATCH 07/10] x86: Remove unlikey()s from sched_switch segment tests
 References: <20101207015834.196176991@goodmis.org>
-Content-Disposition: inline; filename=0008-fs-Remove-unlikely-from-fput_light.patch
+Content-Disposition: inline; filename=0007-x86-Remove-unlikey-s-from-sched_switch-segment-tests.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-In fput_light(), there's an unlikely(fput_needed), which running on
-my normal desktop doing firefox, xchat, evolution and part of my distcc farm,
-and running the annotate branch profiler shows that the unlikely is not
-very unlikely.
+On a 64bit distro, the chances of having a process using segment registers
+is very unlikely. But if the userspace is 32bit running on top of
+a 64bit kernel (very common), then this will be very likely that
+processes have segment registers in use.
+
+Running on my main desktop (which is a 32bit userspace on top of
+a 64bit kernel) the annotated branch profiler showed the following:
 
  correct incorrect  %        Function             File              Line
  ------- ---------  -        --------             ----              ----
-       0       48 100 fput_light                file.h               26
-115828710 897415279  88 fput_light              file.h               26
-865271179 5286128445  85 fput_light             file.h               26
-19568539  8923664  31 fput_light                file.h               26
-12353677  3562279  22 fput_light                file.h               26
-  267691    67062  20 fput_light                file.h               26
-15014853   348172   2 fput_light                file.h               26
-  209258      205   0 fput_light                file.h               26
- 1364164        0   0 fput_light                file.h               26
+25522442 304125815  92 __switch_to               process_64.c         408
+25522430 304123341  92 __switch_to               process_64.c         412
+25743877 303891250  92 __switch_to               process_64.c         464
 
-Which gives 1032903812 times it was correct and 6203351846 times it was
-incorrect, or 85% incorrect.
+Instead of punishing 32bit userspace systems with an unlikely, just remove
+the unlikely and let gcc optimize for what it thinks is good and let
+the branch prediction (hopefully) work.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/file.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/process_64.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/file.h b/include/linux/file.h
-index b1e1297..e85baeb 100644
---- a/include/linux/file.h
-+++ b/include/linux/file.h
-@@ -23,7 +23,7 @@ extern struct file *alloc_file(struct path *, fmode_t mode,
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index b3d7a3a..22de90c 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -405,11 +405,11 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	 * This won't pick up thread selector changes, but I guess that is ok.
+ 	 */
+ 	savesegment(es, prev->es);
+-	if (unlikely(next->es | prev->es))
++	if (next->es | prev->es)
+ 		loadsegment(es, next->es);
  
- static inline void fput_light(struct file *file, int fput_needed)
- {
--	if (unlikely(fput_needed))
-+	if (fput_needed)
- 		fput(file);
- }
+ 	savesegment(ds, prev->ds);
+-	if (unlikely(next->ds | prev->ds))
++	if (next->ds | prev->ds)
+ 		loadsegment(ds, next->ds);
  
+ 
+@@ -461,7 +461,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 		wrmsrl(MSR_FS_BASE, next->fs);
+ 	prev->fsindex = fsindex;
+ 
+-	if (unlikely(gsindex | next->gsindex | prev->gs)) {
++	if (gsindex | next->gsindex | prev->gs) {
+ 		load_gs_index(next->gsindex);
+ 		if (gsindex)
+ 			prev->gs = 0;
 -- 
 1.7.2.3
 
