@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab0LGL31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 06:29:27 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:49528 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752184Ab0LGL3Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 06:29:25 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] input: mt: Add an envelope tool type
-Date: Tue,  7 Dec 2010 12:29:00 +0100
-Message-Id: <1291721340-22652-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PPvjG-0002Ob-Ch.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PPvjG-0002Ob-Ch a53079a8c984bd697f611bb097e4be98
+	id S1753732Ab0LGL3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 06:29:40 -0500
+Received: from web31702.mail.mud.yahoo.com ([68.142.201.182]:46004 "HELO
+	web31702.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753105Ab0LGL3j convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 06:29:39 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=ZOhZofNd5ZT5aeAheHMp8zuKZoigcGtgibfX62Q7IGys7Vw+H60fMsOiZOrx1gq3/ZmtTyi3IqGlCV06HuUfeQnkm2DdEy8j8ONZbJLChX/OUBFjrAyUeQ40j8zIw/hEDKW1d8obSH/vLAQ/qMbxYfNzR//lIEhiNpzJPK4AAHE=;
+Message-ID: <712019.56679.qm@web31702.mail.mud.yahoo.com>
+X-YMail-OSG: F4UawI0VM1lhC9zOfP_PgKJ8hYaDHo1d4xEElQD.9PqqzLy
+ IMR5yuk68RPv5h6qZ_3go6QJWvYDc1N_JfKMsGPqpTzDY4kBOEKnswzDRtfw
+ _S7Bq.XRcAvwlRTj6b_BGtJJK7EIzhfflcYJfEBWkLJ3MyPWVzdgX1abI2zJ
+ tyiiLw.PllgiHthOk2HV3iy_yuoqdjDk4kWez5vrCdVNhlLqb6jeb243mSVm
+ lu0lYgq2oteC8cObqHPOStTub7MVLoHXWC.lU3BSq6mEG.O_Yljbfe1ZoFQV
+ _Z8I35PB_h_YQdbOM9_KS9BMmNT0bkPWijUeVS3.HISwEiZh.b70T7G7eXjK
+ 7L1FZ
+X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
+Date: Tue, 7 Dec 2010 03:29:37 -0800 (PST)
+From: Sanka Piyaratna <cesanka@yahoo.com>
+Subject: Posted Write onto a PCI end point device using Linux
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some touch devices are capable of detecting the envelope or hull
-of the touches, but not the touches themselves. This patch adds
-the MT_TOOL_ENVELOPE touch type to be used for such devices.
+Hi,
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi all,
 
-This patch represents an MT solution for those devices that can detect
-and report some effects of dual touch, but cannot report individual
-contacts. Synaptics and elantech are two examples. Having the drivers
-report the bounding rectangle of the touches is useful in userland,
-since the information makes it possible to implement zooming
-gestures. At the same time, it would be confusing to send these
-envelope points as fingers, since they clearly are not. As a remedy,
-introduce MT_TOOL_ENVELOPE, which tells applications that care about
-details that these are not real fingers, at the same time as it allows
-gesture applications based on MT data to function without
-modification.
+I am wondering whether it is possible to issue a posted write using the host 
+computer's root complex towards an PCI express end point. I have done this using 
+
+DMA in the past. However, if posted writes are possible that would save a lot of 
+
+time and effort and would be quicker too.
 
 Thanks,
-Henrik
+Sanka
 
- Documentation/input/multi-touch-protocol.txt |    5 +++--
- include/linux/input.h                        |    2 ++
- 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/input/multi-touch-protocol.txt b/Documentation/input/multi-touch-protocol.txt
-index bdcba15..690dd11 100644
---- a/Documentation/input/multi-touch-protocol.txt
-+++ b/Documentation/input/multi-touch-protocol.txt
-@@ -240,7 +240,7 @@ ABS_MT_TOOL_TYPE
- The type of approaching tool. A lot of kernel drivers cannot distinguish
- between different tool types, such as a finger or a pen. In such cases, the
- event should be omitted. The protocol currently supports MT_TOOL_FINGER and
--MT_TOOL_PEN [2].
-+MT_TOOL_PEN and MT_TOOL_ENVELOPE [2].
- 
- ABS_MT_BLOB_ID
- 
-@@ -312,7 +312,8 @@ where examples can be found.
- [1] With the extension ABS_MT_APPROACH_X and ABS_MT_APPROACH_Y, the
- difference between the contact position and the approaching tool position
- could be used to derive tilt.
--[2] The list can of course be extended.
-+[2] ABS_MT_ENVELOPE contacts represent an envelope of the contacts rather
-+than the actual contacts. Used with older, not fully MT capable, devices.
- [3] Multitouch X driver project: http://bitmath.org/code/multitouch/.
- [4] See the section on event computation.
- [5] See the section on finger tracking.
-diff --git a/include/linux/input.h b/include/linux/input.h
-index dd7c0fc..329dc0e 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -848,6 +848,8 @@ struct input_keymap_entry {
-  */
- #define MT_TOOL_FINGER		0
- #define MT_TOOL_PEN		1
-+#define MT_TOOL_ENVELOPE	2
-+#define MT_TOOL_MAX		2
- 
- /*
-  * Values describing the status of a force-feedback effect
--- 
-1.7.1
-
+      
