@@ -1,163 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab0LGEtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 23:49:13 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29257 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab0LGEtM (ORCPT
+	id S1754748Ab0LGE5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 23:57:12 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35589 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab0LGE5L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 23:49:12 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65753965"
-Message-ID: <4CFDBCC7.60702@codeaurora.org>
-Date: Mon, 06 Dec 2010 20:49:11 -0800
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+	Mon, 6 Dec 2010 23:57:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=ks7bCdrfnQ2IRgIPWC+5vVz7E0WtVkJcDqg3BVPGKGKi2tIToEVnYdVCiG20d0c5ID
+         i5YZ7/nK/4svQrRDndVD/W6xn7eqEw20/GKk7NtRFkfaZ76m5clKg0MubBHcbXSqo+EC
+         +6YBO1SqUL+SPy2m3VqHI2tplekjC6U5uHHtc=
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        Gregory Bean <gbean@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dima Zavin <dima@android.com>,
-        arve@android.com, Steve Muckle <smuckle@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/5] msm: timer: SMP timer support for msm
-References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>	<1291619778-30289-4-git-send-email-johlstei@codeaurora.org> <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1291696151-4336-5-git-send-email-imunsie@au1.ibm.com>
+References: <1291696151-4336-1-git-send-email-imunsie@au1.ibm.com> <1291696151-4336-5-git-send-email-imunsie@au1.ibm.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 6 Dec 2010 23:56:49 -0500
+X-Google-Sender-Auth: bCPm915vsj4lt3YvIMki-w8aDn0
+Message-ID: <AANLkTik7O=xVP2WuD+AV-oQqg9heT4fVbEa65W+BRq11@mail.gmail.com>
+Subject: Re: [PATCH 4/6] ftrace syscalls: Allow arch specific syscall symbol matching
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Avantika Mathur <mathur@linux.vnet.ibm.com>,
+        Jason Baron <jbaron@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
-> On Sun, 5 Dec 2010, Jeff Ohlstein wrote:
->>  static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
->>  {
->>  	struct clock_event_device *evt = dev_id;
->> +	if (smp_processor_id() != 0)
->> +		evt = local_clock_event;
+On Mon, Dec 6, 2010 at 23:29, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
 >
-> Why is dev_id not pointing to the correct device in the first place?
-dev_id is specified per struct irqaction, which is registered once per 
-irq number. However, each core has a separate clock_event_device. Since 
-the timer irq has the same irq number on both cores, we need to know 
-what core we are on to know which clock_event_device is the correct one.
->>  
->> +static uint32_t msm_read_timer_count(struct msm_clock *clock,
->> +				     enum timer_location global)
->> +{
->> +	uint32_t t1;
->> +
->> +	if (global)
->> +		t1 = readl(clock->regbase + TIMER_COUNT_VAL + MSM_TMR_GLOBAL);
->> +	else
->> +		t1 = readl(clock->regbase + TIMER_COUNT_VAL);
->> +
->> +	return t1;
+> Some architectures have unusual symbol names and the generic code to
+> match the symbol name with the function name for the syscall metadata
+> will fail. For example, symbols on PPC64 start with a period and the
+> generic code will fail to match them.
 >
-> Adding such conditionals into a fast path is brilliant. Granted, gcc
-> might optimize it out, but I'm not sure given the number of call sites.
+> This patch splits out the match logic into a standalone weak function
+> that can be overridden on archs with unusual symbol names.
 >
-> What's the point of this exercise ?
-The reason is I had a common function for reading a timer count, but 
-sometimes we want to read the cpu local timer, such as in the case of 
-set_next_event, but sometimes I want to read a global timer, which is at 
-a different address. However, you are right that it is silly to put a 
-conditional there, especially when which branch I want is static at the 
-callsite.
->> +}
->> +
->>  static cycle_t msm_gpt_read(struct clocksource *cs)
->>  {
->> -	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
->> +	struct msm_clock *clock = &msm_clocks[MSM_CLOCK_GPT];
->> +	return msm_read_timer_count(clock, GLOBAL_TIMER);
+> --- a/include/linux/ftrace.h
+> +++ b/include/linux/ftrace.h
+> @@ -527,6 +527,7 @@ extern enum ftrace_dump_mode ftrace_dump_on_oops;
+>  #ifdef CONFIG_FTRACE_SYSCALLS
 >
-> Why don't you store the address of the read register including the
-> shift value into the msm_clock structure ?
+>  unsigned long arch_syscall_addr(int nr);
+> +bool arch_syscall_match_sym_name(const char *sym, const char *name);
 >
->       clock->counter_reg
->       clock->counter_shift
+>  #endif /* CONFIG_FTRACE_SYSCALLS */
 >
-> And then embedd the clocksource struct there as well, so you can
-> dereference msm_clock with container_of() and reduce the 3 read
-> functions to a single one.
-Done.
->> +static struct msm_clock *clockevent_to_clock(struct clock_event_device *evt)
->> +{
->> +#ifdef CONFIG_SMP
->> +	int i;
->> +	for (i = 0; i < NR_TIMERS; i++)
->> +		if (evt == &(msm_clocks[i].clockevent))
->> +			return &msm_clocks[i];
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -81,13 +81,7 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+>        kallsyms_lookup(syscall, NULL, NULL, NULL, str);
 >
-> Why don't you use container_of here as well ?
-The clockevent could be the local_clock_event, which is not embedded 
-into a struct msm_clock. However, its parameters will be the same as one 
-of the existing msm_clock entries, so use that.
->>  	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
->> -		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
->> -		       "alarm already expired, now %x, alarm %x, late %d\n",
->> -		       cycles, clock->clockevent.name, now, alarm, late);
->> +		static int print_limit = 10;
->> +		if (print_limit > 0) {
->> +			print_limit--;
->> +			printk(KERN_NOTICE "msm_timer_set_next_event(%lu) "
->> +			       "clock %s, alarm already expired, now %x, "
->> +			       "alarm %x, late %d%s\n",
->> +			       cycles, clock->clockevent.name, now, alarm, late,
->> +			       print_limit ? "" : " stop printing");
->> +		}
+>        for ( ; start < stop; start++) {
+> -               /*
+> -                * Only compare after the "sys" prefix. Archs that use
+> -                * syscall wrappers may have syscalls symbols aliases prefixed
+> -                * with "SyS" instead of "sys", leading to an unwanted
+> -                * mismatch.
+> -                */
+> -               if (start->name && !strcmp(start->name + 3, str + 3))
+> +               if (start->name && arch_syscall_match_sym_name(str, start->name))
+>                        return start;
+>        }
+>        return NULL;
+> @@ -452,6 +446,17 @@ unsigned long __init __weak arch_syscall_addr(int nr)
+>        return (unsigned long)sys_call_table[nr];
+>  }
 >
-> The generic clockevents layer has already a check for this. No need
-> for extra printk spam.
-Done.
->> @@ -107,7 +171,11 @@ static int msm_timer_set_next_event(unsigned long cycles,
->>  static void msm_timer_set_mode(enum clock_event_mode mode,
->>  			      struct clock_event_device *evt)
->>  {
->> -	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
->> +	struct msm_clock *clock = clockevent_to_clock(evt);
->> +	unsigned long irq_flags;
->> +
->> +	local_irq_save(irq_flags);
->
-> Always called with interrupts disabled.
-Done.
->> +	local_clock_event = evt;
->> +
->> +	local_irq_save(flags);
->> +	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
-> Why are you fiddling wiht the irqchip functions directly ? Please use
-> disable_irq/enable_irq if at all.
-As stated by Russell, this is due to the fact that the timer interrupts 
-are private to each core, and share the same irq number on each core.
->> +int local_timer_ack(void)
->> +{
->> +	return 1;
->
-> Shouldn't that be an inline ? Why calling code which the compiler
-> could optimize out.
-Done.
->> +#ifdef CONFIG_HOTPLUG_CPU
->> +void __cpuexit local_timer_stop(void)
->> +{
->> +	local_clock_event->set_mode(CLOCK_EVT_MODE_SHUTDOWN, local_clock_event);
->
-> Aarg. No. The generic code already handles cpu hotplug. 
-So what needs to be done in local_timer_stop? Just stopping the timer 
-from ticking? Aren't I going to want to do all the same things my 
-set_mode function does in the shutdown case? I understand not calling 
-into the clockevents functions, would you be opposed to me directly 
-calling my set_mode function?
+> +bool __weak arch_syscall_match_sym_name(const char *sym, const char *name)
+> +{
+> +       /*
+> +        * Only compare after the "sys" prefix. Archs that use
+> +        * syscall wrappers may have syscalls symbols aliases prefixed
+> +        * with "SyS" instead of "sys", leading to an unwanted
+> +        * mismatch.
+> +        */
+> +       return (!strcmp(sym + 3, name + 3));
+> +}
 
--Jeff
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+useless set of parenthesis, and this overhead sucks.  weak +
+additional function call just for a strcmp for most people ?  why not
+make it into a define in the header:
+#ifndef arch_syscall_match_sym_name
+#define arch_syscall_match_sym_name(sym, name) !strcmp(sym + 3, name + 3)
+#endif
+-mike
