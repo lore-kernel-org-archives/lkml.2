@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0LGU0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 15:26:12 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:34240 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab0LGU0J convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 15:26:09 -0500
+	id S1754794Ab0LGU0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 15:26:46 -0500
+Received: from kroah.org ([198.145.64.141]:36150 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab0LGU0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 15:26:44 -0500
+Date: Tue, 7 Dec 2010 12:18:51 -0800
+From: Greg KH <greg@kroah.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Thomas Meyer <thomas@m3y3r.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [00/66] 2.6.36.1-stable review
+Message-ID: <20101207201851.GA11264@kroah.com>
+References: <20101119220309.GA15562@kroah.com>
+ <1290268602.10615.2.camel@localhost.localdomain>
+ <20101120155039.GA28803@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <1291751698-sup-9297@think>
-References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com> <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
- <1291747731-sup-3099@think> <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com>
- <1291751698-sup-9297@think>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Tue, 7 Dec 2010 14:25:47 -0600
-Message-ID: <AANLkTin79GzUbfuZNKyTtqcyoUSO9AJimO77_ZOvqggH@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Matt <jackdachef@gmail.com>,
-        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101120155039.GA28803@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 2:02 PM, Chris Mason <chris.mason@oracle.com> wrote:
-> Excerpts from Jon Nelson's message of 2010-12-07 14:34:40 -0500:
->> On Tue, Dec 7, 2010 at 12:52 PM, Chris Mason <chris.mason@oracle.com> wrote:
->> >> postgresql errors. Typically, header corruption but from the limited
->> >> visibility I've had into this via strace, what I see is zeroed pages
->> >> where there shouldn't be.
->> >
->> > This sounds a lot like a bug higher up than dm-crypt.  Zeros tend to
->> > come from some piece of code explicitly filling a page with zeros, and
->> > that often happens in the corner cases for O_DIRECT and a few other
->> > places in the filesystem.
->> >
->> > Have you tried triggering this with a regular block device?
->>
->> I just tried the whole set of tests, but with /dev/sdb directly (as
->> ext4) without any crypt-y bits.
->> It takes more iterations but out of 6 tests I had one failure: same
->> type of thing, 'invalid page header in block ....'.
->>
->> I can't guarantee that it is a full-page of zeroes, just what I saw
->> from the (limited) stracing I did.
->
-> Fantastic. Now for our usual suspects:
->
-> 1) Is postgres using O_DIRECT?  If yes, please turn it off
+On Sat, Nov 20, 2010 at 07:50:39AM -0800, Greg KH wrote:
+> On Sat, Nov 20, 2010 at 04:56:42PM +0100, Thomas Meyer wrote:
+> > Am Freitag, den 19.11.2010, 14:03 -0800 schrieb Greg KH:
+> > > This is the start of the stable review cycle for the 2.6.36.1 release.
+> > > There are 66 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > > wants to add a Signed-off-by: line to the patch, please respond with it.
+> > 
+> > This one is missing and crashes my 2.6.36 kernel:
+> > 
+> > https://bugzilla.kernel.org/show_bug.cgi?id=22922
+> > 
+> > This was fixed in 2.6.37-rc1 in commit: a1c6c5698d53 (ext4: fix
+> > NULL pointer dereference in print_daily_error_info())
+> 
+> You need to get the ext4 maintainers to ack that and let me know about
+> it before I can add it.
 
-According to strace, O_DIRECT didn't show up once during the test.
+As the ext4 maintainers seem to ignoring the stable trees now for some
+reason, I'll just apply this and see who complains :)
 
-> 2) Is postgres allocating sparse files?  If yes, please have it fully
-> allocate the file instead.
+thanks,
 
-That's a tough one. I don't think postgresql does that, but I'm not an
-expert here.
-
-> 3) Is postgres using preallocation (fallocate)?  If yes, please have it
-> fully allocate the file instead
-
-As far as strace is concerned, postgreql is not using fallocate in
-this version.
-
--- 
-Jon
+greg k-h
