@@ -1,114 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab0LGUjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 15:39:36 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51401 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab0LGUjf convert rfc822-to-8bit (ORCPT
+	id S1754933Ab0LGUk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 15:40:58 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60171 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754758Ab0LGUk4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 15:39:35 -0500
+	Tue, 7 Dec 2010 15:40:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=sV+o3mepSNFnkdyMZVGK9O0T4DrPDnh5Ygz3tZ43DlnCvFLwxAqq38DEHxrMLPFFj6
-         pGgLwAcshE9rd7f9ch/CkYVcaMmbdiUrdC4Bv4Cx3DX1/nQxNkMQa0T6c+DG2fhMEdpn
-         XTx9iobMUPXlgvuRO4EtqjE4qLpG7/LXkjfWg=
+        b=melD1p2iJI9CqczJB8KV3KLdf7ARLTEU4mE6trox9wiZPACd0LLMNUwr8eKw3KOQZv
+         7Gmx0GQzxfHnTt6Lce7NQ4O1EMemXdoPtx4dQgx4o6wEhlS5dIfKmfAkMLjRi/A1W0bA
+         VENO2LCNHgX98BzrJ0kLJ9ZF1apyqBoxj1q+0=
 MIME-Version: 1.0
-In-Reply-To: <4CFE934D.4040309@euromail.se>
-References: <1291722357-22820-1-git-send-email-rydberg@euromail.se>
-	<alpine.LNX.2.00.1012071553100.14806@pobox.suse.cz>
-	<4CFE934D.4040309@euromail.se>
-Date: Tue, 7 Dec 2010 12:39:32 -0800
-Message-ID: <AANLkTik=A5xc2RexWqDMvumFqbA6HtzynWmP=Fz6+SvE@mail.gmail.com>
-Subject: Re: [PATCH v3] input: mt: Move tracking and pointer emulation to input-mt
-From: Ping Cheng <pinglinux@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTik2SWrmVJ1o98-e2CwJP9SAo6oMmnuLc4K+rT1R@mail.gmail.com>
+References: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
+	<AANLkTi=iH6QOAph0iW6MR2khD5KCe8mRLPe8Y3QnTTTW@mail.gmail.com>
+	<AANLkTik2SWrmVJ1o98-e2CwJP9SAo6oMmnuLc4K+rT1R@mail.gmail.com>
+Date: Tue, 7 Dec 2010 15:40:55 -0500
+Message-ID: <AANLkTikdNXdDoixEzGbirH+U_v62vDeEMGaRRpvTsJpu@mail.gmail.com>
+Subject: Re: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        brueckner@linux.vnet.ibm.com, mchehab@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 12:04 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> On 12/07/2010 03:53 PM, Jiri Kosina wrote:
->
->> On Tue, 7 Dec 2010, Henrik Rydberg wrote:
->>
->>> The drivers using the type B protocol all report tracking information
->>> the same way. The contact id is semantically equivalent to
->>> ABS_MT_SLOT, and the handling of ABS_MT_TRACKING_ID only complicates
->>> the driver. The situation can be improved upon by providing a common
->>> pointer emulation code, thereby removing the need for the tracking id
->>> in the driver.  This patch moves all tracking event handling over to
->>> the input core, simplifying both the existing drivers and the ones
->>> currently in preparation.
+Hi,
+
+On Tue, Dec 7, 2010 at 3:31 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Tue, Dec 7, 2010 at 20:51, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> On Tue, Dec 7, 2010 at 2:07 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>> On Sat, Dec 4, 2010 at 14:57, Michal Marek <mmarek@suse.cz> wrote:
+>>>> please pull these kbuild/kconfig fixes for the next -rc. The largest
+>>>> part are fixes for the annoying kconfig warnings, contributed by Arnaud
+>>>> Lacombe and Mauro Carvalho Chehab. The solution adds a new 'visible if'
+>>>> keyword to the Kconfig language, so it's not exactly something that one
+>>>> would expect in the rc phase, but the kconfig change is not huge (the
+>>>> large diff is due to generated files) and it is deployed only in those
+>>>> five Kconfig files that had the warnings and were hard to fix by other
+>>>> means.  The second part is a forgotten patch by Hendrik Brueckner to
+>>>> usr/initramfs, that fixes build for Blackfin and h8300.
 >>>
->>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->>> ---
->>> This is revision three of the patch, with changes to incorporate the
->>> active use of ABS_MT_TOOL_TYPE. Example usages are found in pen and
->>> touch tablets and simple dual touch devices. The report_slot_state()
->>> function now takes the tool type as argument, since a change in either
->>> tool type of touch state should trigger a new tracking id.
+>>>> Arnaud Lacombe (5):
+>>>>      kconfig: add an option to determine a menu's visibility
 >>>
->>> Thanks,
->>> Henrik
+>>> Hmm, this changeset also went in through the v4l tree?
 >>>
->>>  drivers/hid/hid-3m-pct.c                |   30 +---------
->>
->> Acked-by: Jiri Kosina <jkosina@suse.cz>
-
-Acked-by: Ping Cheng <pingc@wacom.com>
-
-I do see an issue when pen coming in prox while fingers were on the
-tablet. Fingers up events are missing.
-
-Since it is unrelated to this patch, I'll submit another patch as a
-bug fix later.
-
-Ping
-
-> Thanks Jiri. Ping, you acked a previous version, but I did not want to presume
-> this version was ok as well. And, as it turned out, I managed to introduce an
-> error (pressure is zero or one). Corrected and properly tested on a Bamboo
-> Touch. With the patch below folded in, do I have your ack?
+>> Mauro merely imported the set in his tree to give them visibility and
+>> testing, but they went in trough the kbuild tree after being in -next
+>> for a week.
 >
-> Thanks,
-> Henrik
-> ---
-> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-> index 4e59b93..0104e1a 100644
-> --- a/drivers/input/tablet/wacom_wac.c
-> +++ b/drivers/input/tablet/wacom_wac.c
-> @@ -866,17 +866,18 @@ static int wacom_bpt_touch(struct wacom_wac *wacom)
->        int i;
+> Hmm, git show 86e187ff9bce9fbed7bfed92ae34f491cf1af50f doesn't
+> show a SoB from Michal...
 >
->        for (i = 0; i < 2; i++) {
-> -               int p = data[9 * i + 2] && !wacom->shared->stylus_in_proximity;
-> +               int p = data[9 * i + 2];
-> +               bool touch = p && !wacom->shared->stylus_in_proximity;
+Why would you expect it to ? Most of the commit in Linus' tree are not
+personally SoB by him.
+
+>>> BTW, I got confused:
+>>>  - make allmodconfig causes e.g.:
+>>>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>>>        CONFIG_VIDEO_TVAUDIO=m
+>>>    => good
+>>>  - make oldconfig for my config with almost everything selected,
+>>> except for stuff I know that breaks:
+>>>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>>>        # CONFIG_VIDEO_TVAUDIO is not set
+>>>    and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
+>>>    => bad!
+>> that's difficult to judge without your old configuration.
+>> VIDEO_TVAUDIO is only selected by VIDEO_BT848 which you don't give
+>> information about.
 >
->                input_mt_slot(input, i);
-> -               input_mt_report_slot_state(input, MT_TOOL_FINGER, p);
-> +               input_mt_report_slot_state(input, MT_TOOL_FINGER, touch);
->                /*
->                 * Touch events need to be disabled while stylus is
->                 * in proximity because user's hand is resting on touchpad
->                 * and sending unwanted events.  User expects tablet buttons
->                 * to continue working though.
->                 */
-> -               if (p) {
-> +               if (touch) {
->                        int x = get_unaligned_be16(&data[9 * i + 3]) & 0x7ff;
->                        int y = get_unaligned_be16(&data[9 * i + 5]) & 0x7ff;
->                        if (features->quirks & WACOM_QUIRK_BBTOUCH_LOWRES) {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I don't have PCI, so I cannot enable VIDEO_BT848.
 >
+so why do you expect VIDEO_TVAUDIO to be enabled ?
+
+ - Arnaud
