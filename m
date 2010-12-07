@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0LGPgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:36:09 -0500
-Received: from www.tglx.de ([62.245.132.106]:32931 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842Ab0LGPgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:36:08 -0500
-Date: Tue, 7 Dec 2010 16:35:31 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] genirq fixes for 2.6.37
-Message-ID: <alpine.LFD.2.00.1012071634140.2653@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754746Ab0LGPgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:36:16 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:30865 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754599Ab0LGPgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:36:13 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 0Bals4UVM1nLt_gJKAszY8OaQ5KVfaWXK_jQHe3ABdMXBUu
+ b.h_RKRrvtdzuwbZ_XAjE_kOuIYRl.2ZZ2w_p57AF3L3uXyaXeCLUtlk_ZVO
+ fOg4fm4egkFjLxYfOY7piZAFtpN4Xj0K0pD0fHSKU_L2vdQZhlb0S4hzokee
+ 0buyQpIlKxJ9ztAVJsZJhx6yuTXZMhZ8WYRW0zh1dIpGRpnBEgSDqizrfgZV
+ iC43rCOkoyG0-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 7 Dec 2010 09:36:09 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: akpm@linux-foundation.org, Scott James Remnant <scott@ubuntu.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [Use cpuops V1 09/11] Connector: Use this_cpu operations
+In-Reply-To: <4CFE4DDF.7010104@kernel.org>
+Message-ID: <alpine.DEB.2.00.1012070935420.26552@router.home>
+References: <20101206171618.302060721@linux.com> <20101206171641.471462516@linux.com> <4CFE4DDF.7010104@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 7 Dec 2010, Tejun Heo wrote:
 
-Please pull the latest irq-fixes-for-linus git tree from:
+> > Index: linux-2.6/drivers/connector/cn_proc.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/connector/cn_proc.c	2010-11-30 09:38:33.000000000 -0600
+> > +++ linux-2.6/drivers/connector/cn_proc.c	2010-11-30 09:39:38.000000000 -0600
+> > @@ -43,9 +43,10 @@ static DEFINE_PER_CPU(__u32, proc_event_
+> >
+> >  static inline void get_seq(__u32 *ts, int *cpu)
+> >  {
+> > -	*ts = get_cpu_var(proc_event_counts)++;
+> > +	preempt_disable();
+> > +	*ts = __this_cpu_inc(proc_event_counts);
+>
+> Eh?  __this_cpu_inc() evaluates to the incremented value?
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
+Err no. Drop this and I will add it to the series that depends on the inc.
 
-Thanks,
-
-	tglx
-
------------------->
-Kenji Kaneshige (1):
-      genirq: Fix incorrect proc spurious output
-
-
- kernel/irq/proc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 01b1d3a..6c8a2a9 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -214,7 +214,7 @@ static int irq_spurious_proc_show(struct seq_file *m, void *v)
- 
- static int irq_spurious_proc_open(struct inode *inode, struct file *file)
- {
--	return single_open(file, irq_spurious_proc_show, NULL);
-+	return single_open(file, irq_spurious_proc_show, PDE(inode)->data);
- }
- 
- static const struct file_operations irq_spurious_proc_fops = {
