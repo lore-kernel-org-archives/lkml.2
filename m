@@ -1,249 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab0LGE1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 23:27:04 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:40452 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab0LGE1B (ORCPT
+	id S1754807Ab0LGE3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 23:29:30 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55342 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab0LGE30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 23:27:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=dwFXaqGxLNbiRaY5u+sRrnPvPfKAA3MNn6VR4nwEvXblPhEKEcoT0Ts6EnBEgL2tnU
-         4zLnSEhYM6DlGTOwmCnA==
-Date: Mon, 6 Dec 2010 20:26:43 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 6/7] Remove zap_details NULL dependency
-In-Reply-To: <807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
-Message-ID: <alpine.LSU.2.00.1012062005040.8572@tigran.mtv.corp.google.com>
-References: <cover.1291568905.git.minchan.kim@gmail.com> <807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Mon, 6 Dec 2010 23:29:26 -0500
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: Avantika Mathur <mathur@linux.vnet.ibm.com>
+Cc: Jason Baron <jbaron@redhat.com>, Ian Munsie <imunsie@au1.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] ftrace syscalls: don't add events for unmapped syscalls
+Date: Tue,  7 Dec 2010 15:29:06 +1100
+Message-Id: <1291696151-4336-2-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1291696151-4336-1-git-send-email-imunsie@au1.ibm.com>
+References: <1291696151-4336-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010, Minchan Kim wrote:
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-> Some functions used zap_details depends on assumption that
-> zap_details parameter should be NULLed if some fields are 0.
-> 
-> This patch removes that dependency for next patch easy review/merge.
-> It should not chanage behavior.
-> 
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Hugh Dickins <hughd@google.com>
+FTRACE_SYSCALLS would create events for each and every system call, even
+if it had failed to map the system call's name with it's number. This
+resulted in a number of events being created that would not behave as
+expected.
 
-Sorry, while I do like that you're now using the details block,
-you seem to be adding overhead in various places without actually
-simplifying anything - you insist that everything passes down an
-initialized details block, and then in the end force the pointer
-to NULL again in all the common cases.
+This could happen, for example, on architectures who's symbol names are
+unusual and will not match the system call name. It could also happen
+with system calls which were mapped to sys_ni_syscall.
 
-Which seems odd.  I could understand if you were going to scrap
-the NULL details optimization altogether; but I think that (for
-the original optimization reasons) you're right to force it to NULL
-in the end, so then why initialize the block at all those call sites?
+This patch changes the default system call number in the metadata to -1.
+If the system call name from the metadata is not successfully mapped to
+a system call number during boot, than the event initialisation routine
+will now return an error, preventing the event from being created.
 
-> ---
->  include/linux/mm.h |    8 ++++++++
->  mm/madvise.c       |   15 +++++++++------
->  mm/memory.c        |   14 ++++++++------
->  mm/mmap.c          |    6 ++++--
->  4 files changed, 29 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e097df6..6522ae4 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -773,6 +773,14 @@ struct zap_details {
->  	unsigned long truncate_count;		/* Compare vm_truncate_count */
->  };
->  
-> +#define __ZAP_DETAILS_INITIALIZER(name) \
-> +		{ .nonlinear_vma = NULL \
-> +		, .check_mapping = NULL \
-> +		, .i_mmap_lock = NULL }
-> +
-> +#define DEFINE_ZAP_DETAILS(name)		\
-> +	struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ include/linux/syscalls.h      |    2 ++
+ kernel/trace/trace_syscalls.c |    8 ++++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-Okay.
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 18cd068..2e5a68d 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -160,6 +160,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta_##sname = {				\
+ 		.name 		= "sys"#sname,			\
++		.syscall_nr	= -1,	/* Filled in at boot */	\
+ 		.nb_args 	= nb,				\
+ 		.types		= types_##sname,		\
+ 		.args		= args_##sname,			\
+@@ -176,6 +177,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta__##sname = {				\
+ 		.name 		= "sys_"#sname,			\
++		.syscall_nr	= -1,	/* Filled in at boot */	\
+ 		.nb_args 	= 0,				\
+ 		.enter_event	= &event_enter__##sname,	\
+ 		.exit_event	= &event_exit__##sname,		\
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index bac752f..14f4c02 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -432,6 +432,14 @@ void unreg_event_syscall_exit(struct ftrace_event_call *call)
+ int init_syscall_trace(struct ftrace_event_call *call)
+ {
+ 	int id;
++	int num;
++
++	num = ((struct syscall_metadata *)call->data)->syscall_nr;
++	if (num < 0 || num >= NR_syscalls) {
++		pr_debug("syscall %s metadata not mapped, disabling ftrace event\n",
++				((struct syscall_metadata *)call->data)->name);
++		return -ENOSYS;
++	}
+ 
+ 	if (set_syscall_print_fmt(call) < 0)
+ 		return -ENOMEM;
+-- 
+1.7.2.3
 
-> +
->  struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
->  		pte_t pte);
->  
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 319528b..bfa17aa 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -162,18 +162,21 @@ static long madvise_dontneed(struct vm_area_struct * vma,
->  			     struct vm_area_struct ** prev,
->  			     unsigned long start, unsigned long end)
->  {
-> +	DEFINE_ZAP_DETAILS(details);
-> +
->  	*prev = vma;
->  	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
->  		return -EINVAL;
->  
->  	if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
-> -		struct zap_details details = {
-> -			.nonlinear_vma = vma,
-> -			.last_index = ULONG_MAX,
-> -		};
-> +		details.nonlinear_vma = vma;
-> +		details.last_index = ULONG_MAX;
-> +
->  		zap_page_range(vma, start, end - start, &details);
-> -	} else
-> -		zap_page_range(vma, start, end - start, NULL);
-> +	} else {
-> +
-> +		zap_page_range(vma, start, end - start, &details);
-> +	}
-
-You end up with two identical zap_page_range() lines:
-better have one after the if {} without an else.
-
->  	return 0;
->  }
->  
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ebfeedf..c0879bb 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -900,6 +900,9 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->  
->  	init_rss_vec(rss);
->  
-> +	if (!details->check_mapping && !details->nonlinear_vma)
-> +		details = NULL;
-> +
-
-Aside from its necessity in the next patch, I thoroughly approve of
-your moving this optimization here: it is confusing, and better that
-it be done near where the fields are used, than off at the higher level.
-
->  	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
->  	arch_enter_lazy_mmu_mode();
->  	do {
-> @@ -1038,9 +1041,6 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
->  	pgd_t *pgd;
->  	unsigned long next;
->  
-> -	if (details && !details->check_mapping && !details->nonlinear_vma)
-> -		details = NULL;
-> -
-
-Yes, I put it there because that was the highest point at which
-it could then be done, so it was optimal from a do-it-fewest-times
-point of view; but not at all helpful in understanding what's going
-on, much better as you have it.
-
->  	BUG_ON(addr >= end);
->  	mem_cgroup_uncharge_start();
->  	tlb_start_vma(tlb, vma);
-> @@ -1102,7 +1102,7 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
->  	unsigned long tlb_start = 0;	/* For tlb_finish_mmu */
->  	int tlb_start_valid = 0;
->  	unsigned long start = start_addr;
-> -	spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
-> +	spinlock_t *i_mmap_lock = details->i_mmap_lock;
-
-This appears to be the sole improvement from insisting that everywhere
-sets up an initialized details block.  I don't think this is worth it.
-
->  	int fullmm = (*tlbp)->fullmm;
->  	struct mm_struct *mm = vma->vm_mm;
->  
-> @@ -1217,10 +1217,11 @@ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
->  int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
->  		unsigned long size)
->  {
-> +	DEFINE_ZAP_DETAILS(details);
-
-Overhead.
-
->  	if (address < vma->vm_start || address + size > vma->vm_end ||
->  	    		!(vma->vm_flags & VM_PFNMAP))
->  		return -1;
-> -	zap_page_range(vma, address, size, NULL);
-> +	zap_page_range(vma, address, size, &details);
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(zap_vma_ptes);
-> @@ -2577,7 +2578,8 @@ restart:
->  void unmap_mapping_range(struct address_space *mapping,
->  		loff_t const holebegin, loff_t const holelen, int even_cows)
->  {
-> -	struct zap_details details;
-> +	DEFINE_ZAP_DETAILS(details);
-> +
->  	pgoff_t hba = holebegin >> PAGE_SHIFT;
->  	pgoff_t hlen = (holelen + PAGE_SIZE - 1) >> PAGE_SHIFT;
->  
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index b179abb..31d2594 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1900,11 +1900,12 @@ static void unmap_region(struct mm_struct *mm,
->  	struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
->  	struct mmu_gather *tlb;
->  	unsigned long nr_accounted = 0;
-> +	DEFINE_ZAP_DETAILS(details);
-
-Overhead.
-
->  
->  	lru_add_drain();
->  	tlb = tlb_gather_mmu(mm, 0);
->  	update_hiwater_rss(mm);
-> -	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
-> +	unmap_vmas(&tlb, vma, start, end, &nr_accounted, &details);
->  	vm_unacct_memory(nr_accounted);
->  	free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
->  				 next? next->vm_start: 0);
-> @@ -2254,6 +2255,7 @@ void exit_mmap(struct mm_struct *mm)
->  	struct vm_area_struct *vma;
->  	unsigned long nr_accounted = 0;
->  	unsigned long end;
-> +	DEFINE_ZAP_DETAILS(details);
-
-Overhead.
-
->  
->  	/* mm's last user has gone, and its about to be pulled down */
->  	mmu_notifier_release(mm);
-> @@ -2278,7 +2280,7 @@ void exit_mmap(struct mm_struct *mm)
->  	tlb = tlb_gather_mmu(mm, 1);
->  	/* update_hiwater_rss(mm) here? but nobody should be looking */
->  	/* Use -1 here to ensure all VMAs in the mm are unmapped */
-> -	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
-> +	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, &details);
->  	vm_unacct_memory(nr_accounted);
->  
->  	free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
-> -- 
-
-Am I being too fussy?
-
-Hugh
