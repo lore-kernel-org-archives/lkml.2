@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab0LGOE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 09:04:26 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:47582 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab0LGOEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 09:04:24 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 7 Dec 2010 15:04:11 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-kernel@vger.kernel.org,
-        linux1394-devel <linux1394-devel@lists.sourceforge.net>,
-        Robin Cook <rcook@wyrms.net>, Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: Issue with firewire from 2.6.35.9 to 2.6.36.1
-Message-ID: <20101207150411.11bb5889@stein>
-In-Reply-To: <4CFDFBB0.8050804@ladisch.de>
-References: <1291592226.7134.1.camel@pheuri.wyrms.net>
-	<1291594279.9196.2.camel@maxim-laptop>
-	<20101206082918.6d1ccc41@stein>
-	<1291673087.4022.2.camel@pheuri.wyrms.net>
-	<20101207092735.48b82c40@stein>
-	<4CFDFBB0.8050804@ladisch.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752344Ab0LGOHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 09:07:53 -0500
+Received: from www.tglx.de ([62.245.132.106]:37709 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab0LGOHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 09:07:52 -0500
+Date: Tue, 7 Dec 2010 15:07:36 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] "perf top" results in "NOHZ: local_softirq_pending 100"
+In-Reply-To: <1291729867.2032.534.camel@laptop>
+Message-ID: <alpine.LFD.2.00.1012071507180.2653@localhost6.localdomain6>
+References: <20101207124448.GA10927@osiris.boeblingen.de.ibm.com>  <20101207132951.GB10927@osiris.boeblingen.de.ibm.com> <1291729867.2032.534.camel@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 07 Clemens Ladisch wrote:
-> Stefan Richter wrote:
-> > I wonder which of our options is preferable:
-> >   - Change fw-ohci from MSI blacklisting to whitelisting.  Agere FW643
-> >     rev 07 is the only chip that can be whitelisted.
-> >   - Simply drop MSI support altogether.
+On Tue, 7 Dec 2010, Peter Zijlstra wrote:
+> On Tue, 2010-12-07 at 14:29 +0100, Heiko Carstens wrote:
+> > > As far as I could see this function gets called from process context with
+> > > a spinlock held and hence we don't have any guarantee that this pending
+> > > softirq get executed before the idle task gets scheduled and tries to
+> > > disable the tick.
+> > > 
+> > > The easiest fix would be to set wakeup to one (see patch below), but I guess
+> > > there is a reason why its zero. Anybody?
+> 
+> We can start that hrtimer from within the scheduler function while
+> holding the rq->lock, doing a wakeup from there is not sane.
+> 
+> The best solution would be to fix the hrtimer_start*() interface,
+> something Thomas and I have wanted to do for ages but because we've
+> procrastinated is now a much larger job than it was :/
+> 
+> The whole HRTIMER_SOFTIRQ thing should die.. but for that to happen its
+> only use-case today must first go.
+> 
+> The problem is trying to start a timer with already elapsed time.
+> Preferably hrtimer_start*() would simply return -ETIME and let the
+> caller sort it, sadly the current behaviour is to 'fix' it for the
+> caller by enqueueing the timer onto the softirq list and raising the
+> softirq.
+> 
+> I guess we could make hrtimer_start*(.wakeup=false) return the -ENOTIME
+> thing and audit those few use-cases.
 
-Blacklisting is also still an option if we extend the table by a
-revision field:
-   match = ... && (ohci_quirks[i].revision == ANY_REVISION ||
-                   dev->revision <= ohci_quirks[i].revision) && ...;
-If we ever need an dev->revision >= ohci_quirks[i].revision match, the
-"break after first match" rule can be put to use or more tricks be
-added.
-
-> That depends on whether the maintainer can afford the effort of
-> maintaining the whitelist.
-
-I heard the maintainer is an FW643-E owner.  Maybe he accepts the
-maintenance burden for personal gain (less MMIO reads than with shared
-IRQs).  He might get fed up when new 1394 controllers with working MSI
-support start to appear on the market in a monthly rhythm or so.
-
-Blacklist maintenance OTOH would be worse for all concerned, since
-evidently not every MSI related bug is so easy to identify like with
-JMB38x and VT6315.  Even such simple cases will become more problematic
-as more time goes by since the 2.6.36 release.  Though with the current
-rate of OHCI 1394 product releases, blacklisting seems not to be a big
-deal either.
--- 
-Stefan Richter
--=====-==-=- ==-- --===
-http://arcgraph.de/sr/
+That would be sensible anyway.
+ 
