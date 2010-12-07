@@ -1,58 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab0LGJul (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:50:41 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26441 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754616Ab0LGJuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:50:40 -0500
-Message-ID: <175BA60FBA444BE6B858D42E7B602A40@hacdom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <andrew.chih.howe.khor@intel.com>,
-        <joel.clark@intel.com>, <kok.howg.ewe@intel.com>,
-        <margie.foster@intel.com>
-Subject: Re: [PATCH net-next-2.6 8/17 v2] can: EG20T PCH: Change Copyright and module description
-Date: Tue, 7 Dec 2010 18:50:37 +0900
+	id S1755187Ab0LGJw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:52:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41349 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754616Ab0LGJw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 04:52:27 -0500
+Message-ID: <4CFE03D3.3080507@redhat.com>
+Date: Tue, 07 Dec 2010 11:52:19 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-2022-jp";
-	reply-type=response
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] KVM: MMU: rename 'no_apf' to 'prefault'
+References: <4CFD9D12.30709@cn.fujitsu.com>
+In-Reply-To: <4CFD9D12.30709@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In case single destination address is OK, but in case multiple address is 
-> set,
-> I can see the following error.
-> Relay access denied
+On 12/07/2010 04:33 AM, Xiao Guangrong wrote:
+> It's the speculative path if 'no_apf = 1' and we will specially handle this
+> speculative path in the later patch, so 'prefault' is better to fit the sense
 
-The above was not true.
-It seems in case destination mail domain is external, (except 
-"@okisemi.com"),
-this error is occurred.
-In fact, in case multiple address with internal domain,
-it is success to send patch.
+Applied all, thanks.
 
-Our smtp server may have restriction of something.
-
-It seems I must use mailer "thunderbird" again.
-
-Thanks,
-
-/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_
-Tomoya Morinaga
-OKI SEMICONDUCTOR CO., LTD. 
+-- 
+error compiling committee.c: too many arguments to function
 
