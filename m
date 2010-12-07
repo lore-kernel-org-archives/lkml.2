@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab0LGP5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:57:32 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:33733 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754025Ab0LGP5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:57:11 -0500
-Date: Tue, 7 Dec 2010 16:56:46 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
-Message-ID: <20101207155645.GG2356@cmpxchg.org>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
- <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
- <20101207144923.GB2356@cmpxchg.org>
- <20101207150710.GA26613@barrios-desktop>
- <20101207151939.GF2356@cmpxchg.org>
- <20101207152625.GB608@barrios-desktop>
+	id S1754877Ab0LGP7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:59:16 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:53511 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab0LGP7O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:59:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iBs4+aUf8BxA7d5RGzTGe1MQOQwwo+/Tq0KP9t5doEdt55IXeYNHJoDFRu1LQgyYTX
+         JGLR12yHPU8wye1Gy65rQ4otWeLXrDgAR/qwdV7nssW3hLDJvULSoQlAhZtE9SJlHjx0
+         dHqSYKrDBV7eU/Ijfs57jfzrppN0dvYmS2zFc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101207152625.GB608@barrios-desktop>
+In-Reply-To: <1291736974.2032.665.camel@laptop>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<20101207112555.GE16103@dastard>
+	<AANLkTinAt9PEWMCP55o64E7wsfZ=depU+YXbG8DdGYdO@mail.gmail.com>
+	<1291736974.2032.665.camel@laptop>
+Date: Wed, 8 Dec 2010 02:59:12 +1100
+Message-ID: <AANLkTim=aqwYsyR9fb=DTj2BNA5BmwsXRAPz-+OvUZPV@mail.gmail.com>
+Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
+From: Nick Piggin <npiggin@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 12:26:25AM +0900, Minchan Kim wrote:
-> On Tue, Dec 07, 2010 at 04:19:39PM +0100, Johannes Weiner wrote:
-> > On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
-> > > On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
-> > > > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
-> > > > > Changelog since v3:
-> > > > >  - Change function comments - suggested by Johannes
-> > > > >  - Change function name - suggested by Johannes
-> > > > >  - add only dirty/writeback pages to deactive pagevec
-> > > > 
-> > > > Why the extra check?
-> > > > 
-> > > > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
-> > > > >  			if (lock_failed)
-> > > > >  				continue;
-> > > > >  
-> > > > > -			ret += invalidate_inode_page(page);
-> > > > > -
-> > > > > +			ret = invalidate_inode_page(page);
-> > > > > +			/*
-> > > > > +			 * If the page is dirty or under writeback, we can not
-> > > > > +			 * invalidate it now.  But we assume that attempted
-> > > > > +			 * invalidation is a hint that the page is no longer
-> > > > > +			 * of interest and try to speed up its reclaim.
-> > > > > +			 */
-> > > > > +			if (!ret && (PageDirty(page) || PageWriteback(page)))
-> > > > > +				deactivate_page(page);
-> > > > 
-> > > > The writeback completion handler does not take the page lock, so you
-> > > > can still miss pages that finish writeback before this test, no?
-> > > 
-> > > Yes. but I think it's rare and even though it happens, it's not critical.
-> > > > 
-> > > > Can you explain why you felt the need to add these checks?
-> > > 
-> > > invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
-> > > Look invalidate_complete_page. As easiest example, if the page has buffer and
-> > > try_to_release_page can't release the buffer, it could return 0.
-> > 
-> > Ok, but somebody still tried to truncate the page, so why shouldn't we
-> > try to reclaim it?  The reason for deactivating at this location is
-> > that truncation is a strong hint for reclaim, not that it failed due
-> > to dirty/writeback pages.
-> > 
-> > What's the problem with deactivating pages where try_to_release_page()
-> > failed?
-> 
-> If try_to_release_page fails and the such pages stay long time in pagevec,
-> pagevec drain often happens.
+On Wed, Dec 8, 2010 at 2:49 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2010-12-08 at 02:24 +1100, Nick Piggin wrote:
+>>
+>>  repeat:
+>>     spin_lock(&parent->d_lock);
+>>     spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+>>     /* do stuff */
+>>     spin_unlock(&parent->d_lock);
+>>     spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
+>>     parent = dentry;
+>>     spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
+>>     goto repeat;
+>
+> shouldn't that be s/this_parent/parent/ ?
 
-You mean because the pagevec becomes full more often?  These are not
-many pages you get extra without the checks, the race window is very
-small after all.
+Yes, typo in my pseudo code.
 
-> I think such pages are rare so skip such pages doesn't hurt goal of
-> this patch.
 
-Well, you add extra checks, extra detail to this mechanism.  Instead
-of just saying 'tried to truncate, failed, deactivate the page', you
-add more ifs and buts.
+> So what you're trying to do is:
+>
+>  A -> B -> C -> ...
+>
+> lock A
+> lock B, nested
+> unlock A
+> flip B from nested to top
+> lock C, nested
+> unlock B
+> flip C from nested to top
+> lock ...
+>
+> Anyway, the way to write that is something like:
+>
+>  lock_set_subclass(&detry->d_lock.dep_map, 0, _RET_IP_);
+>
+> Which will reset the subclass of the held lock from DENTRY_D_LOCK_NESTED
+> to 0.
 
-There should be a real justification for it.  'It can not hurt' is not
-a good justification for extra code and making a simple model more
-complex.
+OK, thanks. My version should not have caused any problems though,
+right? Any idea what might have caused Dave's crash?
 
-'It will hurt without treating these pages differently' is a good
-justification.  Remember that we have to understand and maintain all
-this.  The less checks and operations we need to implement a certain
-idea, the better.
 
-Sorry for being so adamant about this, but I think these random checks
-are a really sore point of mm code already.
+> This is also used in double_unlock_balance(), we go into
+> double_lock_balance() with this_rq locked and want to lock busiest,
+> because of the lock ordering we might need to unlock this_rq and lock
+> busiest first, at which point this_rq is nested.
+>
+> On unlock we thus need to map this_rq back to subclass 0 (which it had
+> before double_lock_balance(), because otherwise subsequent lock
+> operations will be done against the subclass and confuse things.
 
-[ For example, we tried discussing lumpy reclaim mode recently and
-  none of us could reliably remember how it actually behaved.  There
-  are so many special conditions in there that we already end up with
-  some of them being dead code and the checks even contradicting each
-  other. ]
+Thanks,
+Nick
