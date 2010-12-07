@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0LGVRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 16:17:13 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:13845 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165Ab0LGVRL convert rfc822-to-8bit (ORCPT
+	id S1755383Ab0LGVR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 16:17:27 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54823 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab0LGVRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 16:17:11 -0500
+	Tue, 7 Dec 2010 16:17:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=SecWFonn8SHWI4CE8lIK+9ni+8Q4ow7WY4gDJE99U74VQ0o6RwfWdCwachR0l3lpKm
-         10MoB0T/9cvEZFAl6jgg==
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wdgAiigYIL0m61CJrZdaDLTy08tsy0n6dekGMuYjS+0/Vw194oRbolYvjIjdFP2Sqe
+         e1sXFP4PDXjhvD5FwoDsTl2VWQ6oqaNSpFVM9rS41cwucgbjHQmQvLAnt+lciTFF6I5F
+         1fnbg/FwyRANvnzlOkHlfIk2Dsbv0hgIhOOjE=
 MIME-Version: 1.0
-In-Reply-To: <4CFDFCEF.3080708@redhat.com>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <1291421609-14665-8-git-send-email-dhsharp@google.com> <4CF9F7AB.8050802@redhat.com>
- <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com> <4CFDFCEF.3080708@redhat.com>
-From: David Sharp <dhsharp@google.com>
-Date: Tue, 7 Dec 2010 13:16:48 -0800
-Message-ID: <AANLkTinK7Zqh=GfFLeyJLxA4u2ozyVj-Ja435iBJPV13@mail.gmail.com>
-Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
-To: Avi Kivity <avi@redhat.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com,
-        kvm-devel <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <4CFE9FF6.2080800@euromail.se>
+References: <1291722357-22820-1-git-send-email-rydberg@euromail.se>
+	<alpine.LNX.2.00.1012071553100.14806@pobox.suse.cz>
+	<4CFE934D.4040309@euromail.se>
+	<AANLkTik=A5xc2RexWqDMvumFqbA6HtzynWmP=Fz6+SvE@mail.gmail.com>
+	<4CFE9FF6.2080800@euromail.se>
+Date: Tue, 7 Dec 2010 13:17:23 -0800
+Message-ID: <AANLkTikzDbsw8Umrwjb4ij89NcNp3y41gP9kZ_zk2JPE@mail.gmail.com>
+Subject: Re: [PATCH v3] input: mt: Move tracking and pointer emulation to input-mt
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 1:22 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 12/06/2010 10:38 PM, David Sharp wrote:
->> On Sat, Dec 4, 2010 at 12:11 AM, Avi Kivity<avi@redhat.com>  wrote:
->> >  On 12/04/2010 02:13 AM, David Sharp wrote:
->> >>
->> >>  Signed-off-by: David Sharp<dhsharp@google.com>
->> >>  ---
->> >>    arch/x86/kvm/trace.h |    8 ++++----
->> >>    1 files changed, 4 insertions(+), 4 deletions(-)
->> >>
->> >>  diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
->> >>  index a6544b8..ab41fb0 100644
->> >>  --- a/arch/x86/kvm/trace.h
->> >>  +++ b/arch/x86/kvm/trace.h
->> >>  @@ -62,21 +62,21 @@ TRACE_EVENT(kvm_hv_hypercall,
->> >>          TP_ARGS(code, fast, rep_cnt, rep_idx, ingpa, outgpa),
->> >>
->> >>          TP_STRUCT__entry(
->> >>  -               __field(        __u16,          code            )
->> >>  -               __field(        bool,           fast            )
->> >>                  __field(        __u16,          rep_cnt         )
->> >>                  __field(        __u16,          rep_idx         )
->> >>                  __field(        __u64,          ingpa           )
->> >>                  __field(        __u64,          outgpa          )
->> >>  +               __field(        __u16,          code            )
->> >>  +               __field(        bool,           fast            )
->> >>          ),
->> >>
->> >
->> >  Looks like a pessimisation.
->> >
->> >  Before: 24 bytes
->> >  After: 32 bytes
->> >
->> >  (on a 64-bit machine, assuming no packing)
+On Tue, Dec 7, 2010 at 12:58 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>
+>> I do see an issue when pen coming in prox while fingers were on the
+>> tablet. Fingers up events are missing.
 >>
->> This patch is predicated on packing the event structures. And since
->> the ring buffer is 32-bit addressable, I don't attempt to improve
->> alignment beyond 32-bit boundaries.
+>> Since it is unrelated to this patch, I'll submit another patch as a
+>> bug fix later.
 >
-> I don't understand this.  Can you elaborate?  What does "32-bit addressable"
-> mean?
+> Actually, I believe it is correct as is. One could always argue (and I did at
+> the time of that change) whether touch up is the right thing to do in the
+> proximity of the pen, but that is what the code does now. As proof, check how
+> input_mt_report_slot_state() is used.
 
-The ring buffer gives you space that is a multiple of 4 bytes in
-length, and 32-bit aligned. Therefore it is useless to attempt to
-align the structure beyond 32-bit boundaries, eg, a 64-bit boundary,
-because it is unpredictable if the memory the structure will be
-written to is at a 64-bit boundary (addr % 8 could be 0 or 4).
+I see.  input_mt_report_slot_state does take care of the case. That
+unifies the code a lot more than I expected. Thank you.
 
-> And "predicated on packing the event structures"?  Is the structure
-> __attribute__((packed)), or is it not?
-
-It is not packed in Linus' tree, but one of the patches before this
-patch in this patch series adds __attribute__((packed)). This patch
-assumes that the event packing patch has been applied. This patch
-should not be applied if the packing patch is not (hence,
-"predicated").
-
->
-> --
-> error compiling committee.c: too many arguments to function
->
->
+Ping
