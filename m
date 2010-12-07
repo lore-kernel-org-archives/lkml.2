@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab0LGBqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 20:46:36 -0500
-Received: from sh.osrg.net ([192.16.179.4]:38207 "EHLO sh.osrg.net"
+	id S1754237Ab0LGB4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 20:56:37 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:58489 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753404Ab0LGBqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 20:46:35 -0500
-Date: Tue, 7 Dec 2010 10:45:46 +0900
-To: fernando.lugo@ti.com
-Cc: linux@arm.linux.org.uk, fujita.tomonori@lab.ntt.co.jp,
-        linux-arm-kernel@lists.infradead.org, Hiroshi.DOYU@nokia.com,
-        linux-kernel@vger.kernel.org, omar.ramirez@ti.com, bshah@ti.com,
-        vpasam@ti.com
-Subject: Re: [PATCH] ARM: Add Kconfig entry for SG chain support
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1291686036-32562-1-git-send-email-fernando.lugo@ti.com>
-References: <1291686036-32562-1-git-send-email-fernando.lugo@ti.com>
+	id S1753968Ab0LGB4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 20:56:36 -0500
+Date: Tue, 7 Dec 2010 12:56:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (tip
+ tree related)
+Message-Id: <20101207125626.1be6cf17.sfr@canb.auug.org.au>
+In-Reply-To: <20101129135045.15aec5ed.sfr@canb.auug.org.au>
+References: <20101129135045.15aec5ed.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20101207104451X.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 07 Dec 2010 10:45:48 +0900 (JST)
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__7_Dec_2010_12_56_26_+1100_NGyhjl5x3tsHIkyF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  6 Dec 2010 19:40:36 -0600
-Fernando Guzman Lugo <fernando.lugo@ti.com> wrote:
+--Signature=_Tue__7_Dec_2010_12_56_26_+1100_NGyhjl5x3tsHIkyF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Add a entry to make possible SG chaining under ARM
-> architecture.
-> 
-> Tidspbridge driver needs SG chaining, however SG chain has not
-> been tested under all platforms. Adding this option OMAP
-> platform can enable it and if other platforms have issues they
-> would not enable it.
-> 
-> This patch is base on this discussion:
-> 
-> http://marc.info/?l=linux-arm-kernel&m=129166415415541&w=2
-> 
-> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
-> ---
->  arch/arm/Kconfig                   |    6 ++++++
->  arch/arm/include/asm/scatterlist.h |    4 ++++
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index dd944bd..f5cfd42 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1017,6 +1017,12 @@ config CPU_HAS_PMU
->  	default y
->  	bool
->  
-> +config ARM_SG_CHAIN
-> +	bool "Enable SG chain support"
-> +	default n
-> +	help
-> +	  Enable support for SG chaining for ARM
-> +
+On Mon, 29 Nov 2010 13:50:45 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+>=20
+> arch/sparc/kernel/perf_event.c:1326: error: 'init_hw_perf_event' undeclar=
+ed here (not in a function)
+>=20
+> Caused by commit 004417a6d468e24399e383645c068b498eed84ad ("perf, arch:
+> Cleanup perf-pmu init vs lockup-detector").
+>=20
+> I reverted that commit for today.
 
-I thought that you simply add something like the following to
-arch/arm/include/asm/scatterlist.h?
+I am still reverting that commit.
 
-#ifdef CONFIG_ARCH_OMAP
-#define ARCH_HAS_SG_CHAIN
-#endif
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Because you can't enable sg chaining on some arm architectures. Some
-arm SCSI drivers can't handle sg chaining but they are not available
-on omap, right? Why do you make this configurable on all arm archs
-like the above?
+--Signature=_Tue__7_Dec_2010_12_56_26_+1100_NGyhjl5x3tsHIkyF
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
->  if !MMU
->  source "arch/arm/Kconfig-nommu"
->  endif
-> diff --git a/arch/arm/include/asm/scatterlist.h b/arch/arm/include/asm/scatterlist.h
-> index 2f87870..eab7c4f 100644
-> --- a/arch/arm/include/asm/scatterlist.h
-> +++ b/arch/arm/include/asm/scatterlist.h
-> @@ -5,4 +5,8 @@
->  #include <asm/types.h>
->  #include <asm-generic/scatterlist.h>
->  
-> +#ifdef CONFIG_ARM_SG_CHAIN
-> +#define ARCH_HAS_SG_CHAIN
-> +#endif
-> +
->  #endif /* _ASMARM_SCATTERLIST_H */
+iQEcBAEBAgAGBQJM/ZRKAAoJEDMEi1NhKgbsEYkH/R0Ws9CZ9eGz3Xvrd/xGyKmJ
+14fp4+Xr7CGP/8MOcpHycQrhEFmT04Kbp9RuAfN/XIYNvtWdDqkRxEjIjgrSPtjZ
+WcyoLuBybuZ6tP23SLZBVsqpQG01wQPs023VrVtiRdDoMGULuj4HunfaTbN/pL9O
+RJ1nmfuBnNGweYIRGRpR5mir0exsyhvfx/5dWqa/vA132vEXMkZnWEQyTN9ktm6w
+pzQyRKZ+e7l+Hr7DwyHNIi7/ryWIH5fRzZ8kbw9+7ql5Mf+WvcltZnRTMyCmsbnr
+S6Ee/caQNxeasgTk2dSxqGEOaRMGFO1mPWdogi938/k704bYAwspn4JYgMx2E2k=
+=V1tx
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Dec_2010_12_56_26_+1100_NGyhjl5x3tsHIkyF--
