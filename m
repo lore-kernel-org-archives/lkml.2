@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab0LGPHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:07:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35150 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0LGPG6 convert rfc822-to-8bit (ORCPT
+	id S1754224Ab0LGPHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:07:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64718 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab0LGPHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:06:58 -0500
+	Tue, 7 Dec 2010 10:07:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BgGLiTJyzbqJJppkobTWnL6EGp1JjifkwYCVkVdmxR7n/Mpt5d73cqPalCXvxcBUWF
-         mceFfVLDfozFGreEyeglDXwp53VoQyGOwDkhHI1AewusThU5KfJFvtp7IVXl5V1d25g1
-         K+ZDjZLzKPhVD+70gyF97ZoIiwmnhW/Pa5CDU=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DBaZhIEtTMNre6wA8OckSmUHJxI8EriHG5OQSBDNFHlF4bn1kmCwJ8HiWarjR5b/Pt
+         1RSUzJWs6vAWTYj/NxaJWokEwxz1GBAx36gOG6eHr4H6rbIsTR+gNlz5o/JiKOB1gmmy
+         RNOnxCi/pyVnyp/eOuFuY6D4lXCYg+iBffhMc=
+Date: Wed, 8 Dec 2010 00:07:10 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+Message-ID: <20101207150710.GA26613@barrios-desktop>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+ <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+ <20101207144923.GB2356@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
-	<1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
-Date: Tue, 7 Dec 2010 17:06:58 +0200
-X-Google-Sender-Auth: -QvUEpdmdPoMHIjxI_Z8V7mJ-yA
-Message-ID: <AANLkTimqyvHrCAq1ouCz9ovEiPsD5SBTN7K0VT6ghe=F@mail.gmail.com>
-Subject: Re: [PATCH 7/8] Add yaffs2 file system: verification code and other headers
-From: Pekka Enberg <penberg@kernel.org>
-To: Charles Manning <cdhmanning@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101207144923.GB2356@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 30, 2010 at 11:57 PM, Charles Manning <cdhmanning@gmail.com> wrote:
-> +#define YCHAR char
-> +#define YUCHAR unsigned char
-> +#define _Y(x)     x
-> +#define yaffs_strcat(a, b)     strcat(a, b)
-> +#define yaffs_strcpy(a, b)     strcpy(a, b)
-> +#define yaffs_strncpy(a, b, c) strncpy(a, b, c)
-> +#define yaffs_strncmp(a, b, c) strncmp(a, b, c)
-> +#define yaffs_strnlen(s,m)     strnlen(s,m)
-> +#define yaffs_sprintf         sprintf
-> +#define yaffs_toupper(a)       toupper(a)
-> +
-> +#define yaffs_sort(base, n, sz, cmp_fn)        sort(base, n, sz, cmp_fn, NULL)
-> +
-> +#define Y_INLINE __inline__
-> +
-> +#define YAFFS_LOSTNFOUND_NAME          "lost+found"
-> +#define YAFFS_LOSTNFOUND_PREFIX                "obj"
-> +
-> +#define YMALLOC(x) kmalloc(x, GFP_NOFS)
-> +#define YFREE(x)   kfree(x)
-> +#define YMALLOC_ALT(x) vmalloc(x)
-> +#define YFREE_ALT(x)   vfree(x)
-> +#define YMALLOC_DMA(x) YMALLOC(x)
-> +
-> +#define YYIELD() schedule()
-> +#define Y_DUMP_STACK() dump_stack()
-> +
-> +#define YAFFS_ROOT_MODE                        0755
-> +#define YAFFS_LOSTNFOUND_MODE          0700
-> +
-> +#define Y_CURRENT_TIME CURRENT_TIME.tv_sec
-> +#define Y_TIME_CONVERT(x) (x).tv_sec
-> +
-> +#define yaffs_sum_cmp(x, y) ((x) == (y))
-> +#define yaffs_strcmp(a, b) strcmp(a, b)
-> +
-> +#define TENDSTR "\n"
-> +#define TSTR(x) KERN_DEBUG x
-> +#define TCONT(x) x
-> +#define TOUT(p) printk p
-> +
-> +#define compile_time_assertion(assertion) \
-> +       ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
-> +
-> +#ifndef Y_DUMP_STACK
-> +#define Y_DUMP_STACK() do { } while (0)
-> +#endif
-> +
-> +#ifndef YBUG
-> +#define YBUG() do {\
-> +       T(YAFFS_TRACE_BUG,\
-> +               (TSTR("==>> yaffs bug: " __FILE__ " %d" TENDSTR),\
-> +               __LINE__));\
-> +       Y_DUMP_STACK();\
-> +} while (0)
-> +#endif
+On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
+> On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
+> > Changelog since v3:
+> >  - Change function comments - suggested by Johannes
+> >  - Change function name - suggested by Johannes
+> >  - add only dirty/writeback pages to deactive pagevec
+> 
+> Why the extra check?
+> 
+> > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> >  			if (lock_failed)
+> >  				continue;
+> >  
+> > -			ret += invalidate_inode_page(page);
+> > -
+> > +			ret = invalidate_inode_page(page);
+> > +			/*
+> > +			 * If the page is dirty or under writeback, we can not
+> > +			 * invalidate it now.  But we assume that attempted
+> > +			 * invalidation is a hint that the page is no longer
+> > +			 * of interest and try to speed up its reclaim.
+> > +			 */
+> > +			if (!ret && (PageDirty(page) || PageWriteback(page)))
+> > +				deactivate_page(page);
+> 
+> The writeback completion handler does not take the page lock, so you
+> can still miss pages that finish writeback before this test, no?
 
-Please drop these wrapper macros.
+Yes. but I think it's rare and even though it happens, it's not critical.
+> 
+> Can you explain why you felt the need to add these checks?
+
+invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
+Look invalidate_complete_page. As easiest example, if the page has buffer and
+try_to_release_page can't release the buffer, it could return 0.
+
+I want to check this.
+
+> 
+> Thanks!
+> 
+> 	Hannes
+
+-- 
+Kind regards,
+Minchan Kim
