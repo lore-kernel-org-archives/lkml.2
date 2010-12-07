@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab0LGBot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 20:44:49 -0500
-Received: from mail-qw0-f43.google.com ([209.85.216.43]:55745 "EHLO
-	mail-qw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab0LGBor convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 20:44:47 -0500
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 20:44:47 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=wWQtrWfgoJLyYXzSQ80CU18I/Srf9wAXdOgcOxkDGAwFzrb2dEqYfQkNi46kbva2ET
-         R6KWHsrWP3V94Sy3lr22P9f4CNi3Fbd1VBxo4TIvklQcEBR4Q+sniFeVlcAAVcyqDZ+/
-         sAn0vOSluBQH335yG/1xXDIfeGQYlyZEd5RFY=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1012061734590.13430@utopia.booyaka.com>
-References: <alpine.DEB.2.00.1012061734590.13430@utopia.booyaka.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 7 Dec 2010 09:36:09 +0800
-X-Google-Sender-Auth: 1o0sU_81zceaiwLYihbCdBg2kks
-Message-ID: <AANLkTimXPFROMQ_fF4Od-jw3aDY0WZQgc=x14=VcFM3d@mail.gmail.com>
-Subject: Re: [PATCH] MFD: TWL/TPS: fix twl_probe section mismatch warning in mfd/twl-core.c
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754395Ab0LGBqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 20:46:36 -0500
+Received: from sh.osrg.net ([192.16.179.4]:38207 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753404Ab0LGBqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 20:46:35 -0500
+Date: Tue, 7 Dec 2010 10:45:46 +0900
+To: fernando.lugo@ti.com
+Cc: linux@arm.linux.org.uk, fujita.tomonori@lab.ntt.co.jp,
+        linux-arm-kernel@lists.infradead.org, Hiroshi.DOYU@nokia.com,
+        linux-kernel@vger.kernel.org, omar.ramirez@ti.com, bshah@ti.com,
+        vpasam@ti.com
+Subject: Re: [PATCH] ARM: Add Kconfig entry for SG chain support
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1291686036-32562-1-git-send-email-fernando.lugo@ti.com>
+References: <1291686036-32562-1-git-send-email-fernando.lugo@ti.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101207104451X.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 07 Dec 2010 10:45:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 8:35 AM, Paul Walmsley <paul@pwsan.com> wrote:
->
-> Fix the following section mismatch warning when building omap2plus_defconfig:
->
-> WARNING: vmlinux.o(.data+0x47d7c): Section mismatch in reference from the variable twl_driver to the function .init.text:twl_probe()
->
-> Signed-off-by: Paul Walmsley <paul@pwsan.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
+On Mon,  6 Dec 2010 19:40:36 -0600
+Fernando Guzman Lugo <fernando.lugo@ti.com> wrote:
+
+> Add a entry to make possible SG chaining under ARM
+> architecture.
+> 
+> Tidspbridge driver needs SG chaining, however SG chain has not
+> been tested under all platforms. Adding this option OMAP
+> platform can enable it and if other platforms have issues they
+> would not enable it.
+> 
+> This patch is base on this discussion:
+> 
+> http://marc.info/?l=linux-arm-kernel&m=129166415415541&w=2
+> 
+> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
 > ---
->  drivers/mfd/twl-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-> index 35275ba..615cf38 100644
-> --- a/drivers/mfd/twl-core.c
-> +++ b/drivers/mfd/twl-core.c
-> @@ -969,7 +969,7 @@ static int twl_remove(struct i2c_client *client)
->  }
->
->  /* NOTE:  this driver only handles a single twl4030/tps659x0 chip */
-> -static int __init
-> +static int
+>  arch/arm/Kconfig                   |    6 ++++++
+>  arch/arm/include/asm/scatterlist.h |    4 ++++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index dd944bd..f5cfd42 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1017,6 +1017,12 @@ config CPU_HAS_PMU
+>  	default y
+>  	bool
+>  
+> +config ARM_SG_CHAIN
+> +	bool "Enable SG chain support"
+> +	default n
+> +	help
+> +	  Enable support for SG chaining for ARM
+> +
 
-I think we might change __init to __devinit.
+I thought that you simply add something like the following to
+arch/arm/include/asm/scatterlist.h?
 
->  twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
->  {
->        int                             status;
-> --
+#ifdef CONFIG_ARCH_OMAP
+#define ARCH_HAS_SG_CHAIN
+#endif
 
-Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.138-1617-6545 Mobile
-Ubuntu Kernel Team
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Because you can't enable sg chaining on some arm architectures. Some
+arm SCSI drivers can't handle sg chaining but they are not available
+on omap, right? Why do you make this configurable on all arm archs
+like the above?
+
+
+>  if !MMU
+>  source "arch/arm/Kconfig-nommu"
+>  endif
+> diff --git a/arch/arm/include/asm/scatterlist.h b/arch/arm/include/asm/scatterlist.h
+> index 2f87870..eab7c4f 100644
+> --- a/arch/arm/include/asm/scatterlist.h
+> +++ b/arch/arm/include/asm/scatterlist.h
+> @@ -5,4 +5,8 @@
+>  #include <asm/types.h>
+>  #include <asm-generic/scatterlist.h>
+>  
+> +#ifdef CONFIG_ARM_SG_CHAIN
+> +#define ARCH_HAS_SG_CHAIN
+> +#endif
+> +
+>  #endif /* _ASMARM_SCATTERLIST_H */
