@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab0LGQa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 11:30:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39855 "EHLO mx2.suse.de"
+	id S1754203Ab0LGQjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 11:39:12 -0500
+Received: from THUNK.ORG ([69.25.196.29]:56968 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753603Ab0LGQaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 11:30:55 -0500
-Subject: Re: [PATCH 1/3] [SCSI] dpt_i2o: fix compiler warning on dptids
-From: James Bottomley <James.Bottomley@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291738348.1638.9.camel@leonhard>
-References: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-	 <1291737421.17668.5.camel@mulgrave.site> <1291738348.1638.9.camel@leonhard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Dec 2010 10:30:49 -0600
-Message-ID: <1291739449.17668.9.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 8bit
+	id S1751412Ab0LGQjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 11:39:09 -0500
+Date: Tue, 7 Dec 2010 11:38:20 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: ext4 memory leak?
+Message-ID: <20101207163820.GF24607@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Rik van Riel <riel@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Chris Mason <chris.mason@oracle.com>,
+	Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+	Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+References: <20101205064430.GA15027@localhost>
+ <4CFB9BE1.3030902@redhat.com>
+ <20101207131136.GA20366@localhost>
+ <20101207143351.GA23377@localhost>
+ <20101207152120.GA28220@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101207152120.GA28220@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 01:12 +0900, Namhyung Kim wrote:
-> 2010-12-07 (화), 09:57 -0600, James Bottomley:
-> > Um so this is definitely used in the MODULE_DEVICE_TABLE just below.
+On Tue, Dec 07, 2010 at 11:21:20PM +0800, Wu Fengguang wrote:
+> On Tue, Dec 07, 2010 at 10:33:51PM +0800, Wu Fengguang wrote:
+> > > In a simple dd test on a 8p system with "mem=256M", I find the light
 > > 
-> > I deduce you have some type of config which causes that to be a nop
-> > (say !CONFIG_MODULE)?  In which case, surely the correct fix is in
-> > module.h?
-> > 
-> 
-> Hi,
-> 
-> MODULE_DEVICE_TABLE expands to nop when !MODULE (not !CONFIG_MODULE) so
-> allyesconfig build always emits the warnings. Possible patch for this
-> would be wraping it up in #ifdefs but when I sent a same patch to Greg
-> KH he didn't want to add more #ifdefs in .c files.
+> > When increasing to 10 concurrent dd tasks, I managed to crash ext4..
+> > (2 concurrent dd's are OK, with very good write performance.)
 
-I didn't mean changing any c files.  I meant fixing the module include
-to make the table used even in the !MODULE case.  That way we only alter
-one file instead of a significant proportion of the drivers.
+What was the dd command line?  Specifically, how big were the file
+writes?  I haven't been able to replicate a leak.  I'll try on a small
+system seeing if I can replicate an OOM kill, but I'm not seeing a
+leak.  (i.e., after the dd if=/dev/zero of=/test/$i" jobs) are
+finished, the memory utilization looks normal and I don't see any
+obvious slab leaks.
 
-James
-
----
-
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 7575bbb..d49aa9c 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -90,7 +90,10 @@ extern const struct gtype##_id __mod_##gtype##_table		\
- extern struct module __this_module;
- #define THIS_MODULE (&__this_module)
- #else  /* !MODULE */
--#define MODULE_GENERIC_TABLE(gtype,name)
-+/* Flag name as used to avoid warnings about the unused device id table */
-+#define MODULE_GENERIC_TABLE(gtype,name)			\
-+static const struct gtype##_id __mod_##gtype##_table		\
-+  __attribute__ ((unused, alias(__stringify(name))))
- #define THIS_MODULE ((struct module *)0)
- #endif
- 
-
-
-
+       	      	       		    	- Ted
