@@ -1,116 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab0LGPWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:22:00 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43962 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab0LGPV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:21:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nEVSWHgypvC2wi6hAZ7lL+LpdhmTXtovxK9Qdp4U1T5PwKnfZISIeun5oVi2S/SERd
-         lOCK3yE75lzCp5b6ydaeF0HgPJiQRaws4jZubiiHptV2U1IgFDbMdJU0YgNoeCvEanM4
-         ndr0xFYfLACQVXcLNESKsLlj79lG8Hkt/9QpA=
-Date: Wed, 8 Dec 2010 00:21:47 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH v4 4/7] Reclaim invalidated page ASAP
-Message-ID: <20101207152147.GA608@barrios-desktop>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
- <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
- <20101207150525.GD2356@cmpxchg.org>
+	id S1754663Ab0LGPWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:22:46 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45304 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752307Ab0LGPWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:22:45 -0500
+Message-ID: <4CFE510E.2010007@kernel.org>
+Date: Tue, 07 Dec 2010 16:21:50 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101207150525.GD2356@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [Use cpuops V1 05/11] core: Replace __get_cpu_var with __this_cpu_read
+ if not used for an address.
+References: <20101206171618.302060721@linux.com> <20101206171639.183187260@linux.com> <4CFE44E2.9050408@kernel.org> <alpine.DEB.2.00.1012070850060.25976@router.home>
+In-Reply-To: <alpine.DEB.2.00.1012070850060.25976@router.home>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 15:21:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 04:05:25PM +0100, Johannes Weiner wrote:
-> On Mon, Dec 06, 2010 at 02:29:12AM +0900, Minchan Kim wrote:
-> > --- a/mm/swap.c
-> > +++ b/mm/swap.c
-> > @@ -275,26 +275,59 @@ void add_page_to_unevictable_list(struct page *page)
-> >   * head of the list, rather than the tail, to give the flusher
-> >   * threads some time to write it out, as this is much more
-> >   * effective than the single-page writeout from reclaim.
-> > + *
-> > + * If the page isn't page_mapped and dirty/writeback, the page
-> > + * could reclaim asap using PG_reclaim.
-> > + *
-> > + * 1. active, mapped page -> none
-> > + * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-> > + * 3. inactive, mapped page -> none
-> > + * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-> 
->          inactive, clean -> inactive, tail
+Hello, again.
 
-Indeed. I missed it.
-
+On 12/07/2010 03:51 PM, Christoph Lameter wrote:
+> On Tue, 7 Dec 2010, Tejun Heo wrote:
 > 
-> > + * 5. Others -> none
-> > + *
-> > + * In 4, why it moves inactive's head, the VM expects the page would
-> > + * be write it out by flusher threads as this is much more effective
-> > + * than the single-page writeout from reclaim.
-> >   */
-> >  static void lru_deactivate(struct page *page, struct zone *zone)
-> >  {
-> >  	int lru, file;
-> > +	bool active;
-> >  
-> > -	if (!PageLRU(page) || !PageActive(page))
-> > +	if (!PageLRU(page))
-> >  		return;
-> >  
-> >  	/* Some processes are using the page */
-> >  	if (page_mapped(page))
-> >  		return;
-> >  
-> > +	active = PageActive(page);
-> > +
-> >  	file = page_is_file_cache(page);
-> >  	lru = page_lru_base_type(page);
-> > -	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
-> > +	del_page_from_lru_list(zone, page, lru + active);
-> >  	ClearPageActive(page);
-> >  	ClearPageReferenced(page);
-> >  	add_page_to_lru_list(zone, page, lru);
-> > -	__count_vm_event(PGDEACTIVATE);
-> >
-> > +	if (PageWriteback(page) || PageDirty(page)) {
-> > +		/*
-> > +		 * PG_reclaim could be raced with end_page_writeback
-> > +		 * It can make readahead confusing.  But race window
-> > +		 * is _really_ small and  it's non-critical problem.
-> > +		 */
-> > +		SetPageReclaim(page);
-> > +	} else {
-> > +		/*
-> > +		 * The page's writeback ends up during pagevec
-> > +		 * We moves tha page into tail of inactive.
-> > +		 */
-> > +		list_move_tail(&page->lru, &zone->lru[lru].list);
-> > +		mem_cgroup_rotate_reclaimable_page(page);
+>>>  	if (&per_cpu(tasklet_hi_vec, cpu).head != per_cpu(tasklet_hi_vec, cpu).tail) {
+>>> -		*__get_cpu_var(tasklet_hi_vec).tail = per_cpu(tasklet_hi_vec, cpu).head;
+>>> -		__get_cpu_var(tasklet_hi_vec).tail = per_cpu(tasklet_hi_vec, cpu).tail;
+>>> +		*__this_cpuo_read(tasklet_hi_vec.tail) = per_cpu(tasklet_hi_vec, cpu).head;
+>>> +		__this_cpu_write(tasklet_hi_vec.tail, per_cpu(tasklet_hi_vec, cpu).tail;
+>>
+>> I don't think __this_cpuo_read() would build.
 > 
-> I think you also need to increase PGROTATED here.
-
-Absolutely.
-
-Thanks, Hannes. :)
+> A CONFIG_HOTPLUG_CPU section.
 > 
-> Other than that,
-> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+> Fix up CONFIG_HOTPLUG_CPU compilation
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Can you please fold this into the original patch and resend?  I
+skipped 04, 05 and 09.  percpu#for-next now contains other patches.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-next
+
+Thanks.
 
 -- 
-Kind regards,
-Minchan Kim
+tejun
