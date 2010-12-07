@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0LGPQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:16:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54109 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754353Ab0LGPQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:16:15 -0500
-Date: Tue, 7 Dec 2010 15:16:10 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        lrg@slimlogic.co.uk
-Subject: Re: [PATCH 29/29] drivers/regulator: Update WARN uses
-Message-ID: <20101207151608.GC9689@rakim.wolfsonmicro.main>
-References: <b0588ea464d551f9dbd80c0fee68a780d6279b50.1291670106.git.joe@perches.com>
- <20101207114346.GC10722@sirena.org.uk>
- <alpine.LNX.2.00.1012071549150.14806@pobox.suse.cz>
+	id S1754608Ab0LGPRg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:17:36 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59343 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753015Ab0LGPRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:17:35 -0500
+Message-ID: <4CFE4FB4.9070408@kernel.org>
+Date: Tue, 07 Dec 2010 16:16:04 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1012071549150.14806@pobox.suse.cz>
-X-Cookie: E Pluribus Unix
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Wu Fengguang <fengguang.wu@intel.com>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [Use cpuops V1 10/11] fs: Use this_cpu_xx operations in buffer.c
+References: <20101206171618.302060721@linux.com> <20101206171642.042645708@linux.com>
+In-Reply-To: <20101206171642.042645708@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 15:16:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 03:50:32PM +0100, Jiri Kosina wrote:
-> On Tue, 7 Dec 2010, Mark Brown wrote:
+On 12/06/2010 06:16 PM, Christoph Lameter wrote:
+> Optimize various per cpu area operations through the new this cpu
+> operations. These operations avoid address calculations through the use
+> of segment prefixes avoid multiple memory references through RMW
+> instructions etc.
+> 
+> Reduces code size:
+> 
+> Before:
+> 
+> christoph@linux-2.6$ size fs/buffer.o
+>    text	   data	    bss	    dec	    hex	filename
+>   19169	     80	     28	  19277	   4b4d	fs/buffer.o
+> 
+> After:
+> 
+> christoph@linux-2.6$ size fs/buffer.o
+>    text	   data	    bss	    dec	    hex	filename
+>   19138	     80	     28	  19246	   4b2e	fs/buffer.o
+> 
+> V3->V4:
+> 	- Move the use of this_cpu_inc_return into a later patch so that
+> 	  this one can go in without percpu infrastructure changes.
+> 
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> > On Mon, Dec 06, 2010 at 02:05:19PM -0800, Joe Perches wrote:
-> > > Align arguments.
+applied 10 and 11.
 
-> > > Signed-off-by: Joe Perches <joe@perches.com>
-
-> > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-> > but please do remember to send patches to maintainers - trying to merge
-> > patches without going through the maintainers means that people working
-> > on the actual tree concerned may either replicate your work or introduce
-> > conflicts with your patches, neither of which is good.
-
-> That happened here:
-
-> 	https://lkml.org/lkml/2010/11/1/107
-
-> but the patch is not in linux-next after more than one month. Which is why 
-> Joe is resending it for inclusion through my queue.
-
-That's not a reason to drop people from the CCs when reposting, and when
-reposting it's always good to include any reviews you got previously.
-Indeed, looking at the original posting you'll see he sent it directly
-to you first time around as well as CCing the maintainers.
+-- 
+tejun
