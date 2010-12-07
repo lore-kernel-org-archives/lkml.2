@@ -1,171 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab0LGEs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 23:48:27 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:24719 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab0LGEs0 (ORCPT
+	id S1754855Ab0LGEtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 23:49:13 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29257 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754455Ab0LGEtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 23:48:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=U9LSnSupgsWmvCSeNQAYUeHlVSrxhMMb8e4AbSk1ON0GuBJ/VxENCXaJZ+HiN01xS+
-         dg47QtcA+kfko6M8dqkA==
-Date: Mon, 6 Dec 2010 20:48:18 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 7/7] Prevent activation of page in madvise_dontneed
-In-Reply-To: <ca25c4e33beceeb3a96e8437671e5e0a188602fa.1291568905.git.minchan.kim@gmail.com>
-Message-ID: <alpine.LSU.2.00.1012062027100.8572@tigran.mtv.corp.google.com>
-References: <cover.1291568905.git.minchan.kim@gmail.com> <ca25c4e33beceeb3a96e8437671e5e0a188602fa.1291568905.git.minchan.kim@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 6 Dec 2010 23:49:12 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65753965"
+Message-ID: <4CFDBCC7.60702@codeaurora.org>
+Date: Mon, 06 Dec 2010 20:49:11 -0800
+From: Jeff Ohlstein <johlstei@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        Gregory Bean <gbean@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dima Zavin <dima@android.com>,
+        arve@android.com, Steve Muckle <smuckle@codeaurora.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Brian Swetland <swetland@google.com>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/5] msm: timer: SMP timer support for msm
+References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>	<1291619778-30289-4-git-send-email-johlstei@codeaurora.org> <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1012061025240.2653@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010, Minchan Kim wrote:
+Thomas Gleixner wrote:
+> On Sun, 5 Dec 2010, Jeff Ohlstein wrote:
+>>  static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
+>>  {
+>>  	struct clock_event_device *evt = dev_id;
+>> +	if (smp_processor_id() != 0)
+>> +		evt = local_clock_event;
+>
+> Why is dev_id not pointing to the correct device in the first place?
+dev_id is specified per struct irqaction, which is registered once per 
+irq number. However, each core has a separate clock_event_device. Since 
+the timer irq has the same irq number on both cores, we need to know 
+what core we are on to know which clock_event_device is the correct one.
+>>  
+>> +static uint32_t msm_read_timer_count(struct msm_clock *clock,
+>> +				     enum timer_location global)
+>> +{
+>> +	uint32_t t1;
+>> +
+>> +	if (global)
+>> +		t1 = readl(clock->regbase + TIMER_COUNT_VAL + MSM_TMR_GLOBAL);
+>> +	else
+>> +		t1 = readl(clock->regbase + TIMER_COUNT_VAL);
+>> +
+>> +	return t1;
+>
+> Adding such conditionals into a fast path is brilliant. Granted, gcc
+> might optimize it out, but I'm not sure given the number of call sites.
+>
+> What's the point of this exercise ?
+The reason is I had a common function for reading a timer count, but 
+sometimes we want to read the cpu local timer, such as in the case of 
+set_next_event, but sometimes I want to read a global timer, which is at 
+a different address. However, you are right that it is silly to put a 
+conditional there, especially when which branch I want is static at the 
+callsite.
+>> +}
+>> +
+>>  static cycle_t msm_gpt_read(struct clocksource *cs)
+>>  {
+>> -	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
+>> +	struct msm_clock *clock = &msm_clocks[MSM_CLOCK_GPT];
+>> +	return msm_read_timer_count(clock, GLOBAL_TIMER);
+>
+> Why don't you store the address of the read register including the
+> shift value into the msm_clock structure ?
+>
+>       clock->counter_reg
+>       clock->counter_shift
+>
+> And then embedd the clocksource struct there as well, so you can
+> dereference msm_clock with container_of() and reduce the 3 read
+> functions to a single one.
+Done.
+>> +static struct msm_clock *clockevent_to_clock(struct clock_event_device *evt)
+>> +{
+>> +#ifdef CONFIG_SMP
+>> +	int i;
+>> +	for (i = 0; i < NR_TIMERS; i++)
+>> +		if (evt == &(msm_clocks[i].clockevent))
+>> +			return &msm_clocks[i];
+>
+> Why don't you use container_of here as well ?
+The clockevent could be the local_clock_event, which is not embedded 
+into a struct msm_clock. However, its parameters will be the same as one 
+of the existing msm_clock entries, so use that.
+>>  	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
+>> -		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
+>> -		       "alarm already expired, now %x, alarm %x, late %d\n",
+>> -		       cycles, clock->clockevent.name, now, alarm, late);
+>> +		static int print_limit = 10;
+>> +		if (print_limit > 0) {
+>> +			print_limit--;
+>> +			printk(KERN_NOTICE "msm_timer_set_next_event(%lu) "
+>> +			       "clock %s, alarm already expired, now %x, "
+>> +			       "alarm %x, late %d%s\n",
+>> +			       cycles, clock->clockevent.name, now, alarm, late,
+>> +			       print_limit ? "" : " stop printing");
+>> +		}
+>
+> The generic clockevents layer has already a check for this. No need
+> for extra printk spam.
+Done.
+>> @@ -107,7 +171,11 @@ static int msm_timer_set_next_event(unsigned long cycles,
+>>  static void msm_timer_set_mode(enum clock_event_mode mode,
+>>  			      struct clock_event_device *evt)
+>>  {
+>> -	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
+>> +	struct msm_clock *clock = clockevent_to_clock(evt);
+>> +	unsigned long irq_flags;
+>> +
+>> +	local_irq_save(irq_flags);
+>
+> Always called with interrupts disabled.
+Done.
+>> +	local_clock_event = evt;
+>> +
+>> +	local_irq_save(flags);
+>> +	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
+> Why are you fiddling wiht the irqchip functions directly ? Please use
+> disable_irq/enable_irq if at all.
+As stated by Russell, this is due to the fact that the timer interrupts 
+are private to each core, and share the same irq number on each core.
+>> +int local_timer_ack(void)
+>> +{
+>> +	return 1;
+>
+> Shouldn't that be an inline ? Why calling code which the compiler
+> could optimize out.
+Done.
+>> +#ifdef CONFIG_HOTPLUG_CPU
+>> +void __cpuexit local_timer_stop(void)
+>> +{
+>> +	local_clock_event->set_mode(CLOCK_EVT_MODE_SHUTDOWN, local_clock_event);
+>
+> Aarg. No. The generic code already handles cpu hotplug. 
+So what needs to be done in local_timer_stop? Just stopping the timer 
+from ticking? Aren't I going to want to do all the same things my 
+set_mode function does in the shutdown case? I understand not calling 
+into the clockevents functions, would you be opposed to me directly 
+calling my set_mode function?
 
-> Now zap_pte_range alwayas activates pages which are pte_young &&
-> !VM_SequentialReadHint(vma). But in case of calling MADV_DONTNEED,
-> it's unnecessary since the page wouldn't use any more.
-> 
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> 
-> Changelog since v3:
->  - Change variable name - suggested by Johannes
->  - Union ignore_references with zap_details - suggested by Hugh
-> 
-> Changelog since v2:
->  - remove unnecessary description
-> 
-> Changelog since v1:
->  - change word from promote to activate
->  - add activate argument to zap_pte_range and family function
-> ---
->  include/linux/mm.h |    4 +++-
->  mm/madvise.c       |    6 +++---
->  mm/memory.c        |    5 ++++-
->  3 files changed, 10 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 6522ae4..e57190f 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -771,12 +771,14 @@ struct zap_details {
->  	pgoff_t last_index;			/* Highest page->index to unmap */
->  	spinlock_t *i_mmap_lock;		/* For unmap_mapping_range: */
->  	unsigned long truncate_count;		/* Compare vm_truncate_count */
-> +	bool ignore_references;			/* For page activation */
->  };
->  
->  #define __ZAP_DETAILS_INITIALIZER(name) \
->                  { .nonlinear_vma = NULL \
->  		, .check_mapping = NULL \
-> -		, .i_mmap_lock = NULL }
-> +		, .i_mmap_lock = NULL	\
-> +		, .ignore_references = false }
+-Jeff
 
-Okay.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
->  
->  #define DEFINE_ZAP_DETAILS(name)		\
->  	struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index bfa17aa..8e7aba3 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -163,6 +163,7 @@ static long madvise_dontneed(struct vm_area_struct * vma,
->  			     unsigned long start, unsigned long end)
->  {
->  	DEFINE_ZAP_DETAILS(details);
-> +	details.ignore_references = true;
->  
->  	*prev = vma;
->  	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
-> @@ -173,10 +174,9 @@ static long madvise_dontneed(struct vm_area_struct * vma,
->  		details.last_index = ULONG_MAX;
->  
->  		zap_page_range(vma, start, end - start, &details);
-> -	} else {
-> -
-> +	} else
->  		zap_page_range(vma, start, end - start, &details);
-> -	}
-> +
-
-As in the previous patch, you have the same in the if {} and the else.
-
->  	return 0;
->  }
->  
-> diff --git a/mm/memory.c b/mm/memory.c
-> index c0879bb..44d87e1 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -897,6 +897,7 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->  	pte_t *pte;
->  	spinlock_t *ptl;
->  	int rss[NR_MM_COUNTERS];
-> +	bool ignore_references = details->ignore_references;
->  
->  	init_rss_vec(rss);
->  
-> @@ -952,7 +953,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->  				if (pte_dirty(ptent))
->  					set_page_dirty(page);
->  				if (pte_young(ptent) &&
-> -				    likely(!VM_SequentialReadHint(vma)))
-> +				    likely(!VM_SequentialReadHint(vma)) &&
-> +					!ignore_references)
-
-I think ignore_references is about as likely as VM_SequentialReadHint:
-I'd probably just omit that "likely()" nowadays, but you might prefer
-to put your "|| !ignore_references" inside.
-
-Hmm, actually it would probably be better to say something like
-
-	mark_accessed = true;
-	if (VM_SequentialReadHint(vma) ||
-            (details && details->ignore_references))
-		mark_accessed = false;
-
-on entry to zap_pte_range().
-
->  					mark_page_accessed(page);
->  				rss[MM_FILEPAGES]--;
->  			}
-> @@ -1218,6 +1220,7 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
->  		unsigned long size)
->  {
->  	DEFINE_ZAP_DETAILS(details);
-> +	details.ignore_references = true;
->  	if (address < vma->vm_start || address + size > vma->vm_end ||
->  	    		!(vma->vm_flags & VM_PFNMAP))
->  		return -1;
-> -- 
-
-Unnecessary here (would make more sense in the truncation case,
-but not necessary there either): zap_vma_ptes() is only being used on
-GRU's un-cowable VM_PFNMAP area, so vm_normal_page() won't even give
-you a non-NULL page to mark.
-
-Hugh
