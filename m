@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0LGPrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:47:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62377 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab0LGPrc (ORCPT
+	id S1754800Ab0LGPtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:49:49 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:35098 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab0LGPts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:47:32 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65811550"
-Message-ID: <4CFE5707.6030702@codeaurora.org>
-Date: Tue, 07 Dec 2010 21:17:19 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-4-git-send-email-tsoni@codeaurora.org> <4CDB0451.3090303@metafoo.de> <4CDBDE5D.4040801@codeaurora.org> <4CFCE8B7.8080305@codeaurora.org> <4CFE4EAC.9000606@metafoo.de>
-In-Reply-To: <4CFE4EAC.9000606@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Dec 2010 10:49:48 -0500
+Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinAt9PEWMCP55o64E7wsfZ=depU+YXbG8DdGYdO@mail.gmail.com>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	 <20101207112555.GE16103@dastard>
+	 <AANLkTinAt9PEWMCP55o64E7wsfZ=depU+YXbG8DdGYdO@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 07 Dec 2010 16:49:34 +0100
+Message-ID: <1291736974.2032.665.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
->>>>
->>>> If max_brightness is hardcoded in the driver you can reuse "struct led_info" and
->>>> "struct struct led_platform_data" instead of adding your own structs.
->>>
->>
->> I couldn't remove these pmic8058_led structure due to the "enum pmic8058_led id" member
->> info which I need from every led. This can be removed completely only if I abuse
->> the "flags" parameter in struct led_info to pass the led id. Let me know what you think.
+On Wed, 2010-12-08 at 02:24 +1100, Nick Piggin wrote:
 > 
-> Hi
-> 
-> I think that would be ok, other drivers seem to do the same.
+>  repeat:
+>     spin_lock(&parent->d_lock);
+>     spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+>     /* do stuff */
+>     spin_unlock(&parent->d_lock);
+>     spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
+>     parent = dentry;
+>     spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
+>     goto repeat; 
 
-Thanks. I will use "flags" parameter for "id" then and submit the re-worked version as V2.
+shouldn't that be s/this_parent/parent/ ?
 
----Trilok Soni
+So what you're trying to do is:
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+  A -> B -> C -> ...
+
+lock A
+lock B, nested
+unlock A
+flip B from nested to top
+lock C, nested
+unlock B
+flip C from nested to top
+lock ...
+
+Anyway, the way to write that is something like:
+
+  lock_set_subclass(&detry->d_lock.dep_map, 0, _RET_IP_);
+
+Which will reset the subclass of the held lock from DENTRY_D_LOCK_NESTED
+to 0.
+
+This is also used in double_unlock_balance(), we go into
+double_lock_balance() with this_rq locked and want to lock busiest,
+because of the lock ordering we might need to unlock this_rq and lock
+busiest first, at which point this_rq is nested.
+
+On unlock we thus need to map this_rq back to subclass 0 (which it had
+before double_lock_balance(), because otherwise subsequent lock
+operations will be done against the subclass and confuse things.
+
+
