@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab0LGPSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:18:00 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:52059 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab0LGPR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:17:59 -0500
-Date: Tue, 7 Dec 2010 15:17:53 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: [GIT PULL] x86 platform driver tree
-Message-ID: <20101207151753.GA18490@srcf.ucam.org>
+	id S1754617Ab0LGPUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:20:08 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:34358 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753446Ab0LGPUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:20:07 -0500
+Date: Tue, 7 Dec 2010 16:19:39 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+Message-ID: <20101207151939.GF2356@cmpxchg.org>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+ <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+ <20101207144923.GB2356@cmpxchg.org>
+ <20101207150710.GA26613@barrios-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20101207150710.GA26613@barrios-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
+> On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
+> > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
+> > > Changelog since v3:
+> > >  - Change function comments - suggested by Johannes
+> > >  - Change function name - suggested by Johannes
+> > >  - add only dirty/writeback pages to deactive pagevec
+> > 
+> > Why the extra check?
+> > 
+> > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> > >  			if (lock_failed)
+> > >  				continue;
+> > >  
+> > > -			ret += invalidate_inode_page(page);
+> > > -
+> > > +			ret = invalidate_inode_page(page);
+> > > +			/*
+> > > +			 * If the page is dirty or under writeback, we can not
+> > > +			 * invalidate it now.  But we assume that attempted
+> > > +			 * invalidation is a hint that the page is no longer
+> > > +			 * of interest and try to speed up its reclaim.
+> > > +			 */
+> > > +			if (!ret && (PageDirty(page) || PageWriteback(page)))
+> > > +				deactivate_page(page);
+> > 
+> > The writeback completion handler does not take the page lock, so you
+> > can still miss pages that finish writeback before this test, no?
+> 
+> Yes. but I think it's rare and even though it happens, it's not critical.
+> > 
+> > Can you explain why you felt the need to add these checks?
+> 
+> invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
+> Look invalidate_complete_page. As easiest example, if the page has buffer and
+> try_to_release_page can't release the buffer, it could return 0.
 
-A few small fixes and one fairly significant one in WMI (strcmp/memcmp 
-confusion), along with relaxing the check in the IBM RTL driver so it 
-works on all the hardware that supports it:
+Ok, but somebody still tried to truncate the page, so why shouldn't we
+try to reclaim it?  The reason for deactivating at this location is
+that truncation is a strong hint for reclaim, not that it failed due
+to dirty/writeback pages.
 
-The following changes since commit 22a5b566c8c442b0b35b3b106795e2f2b3578096:
+What's the problem with deactivating pages where try_to_release_page()
+failed?
 
-  Merge branch 'for_linus' of git://github.com/at91linux/linux-2.6-at91 (2010-11-30 17:57:57 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
-
-Anisse Astier (2):
-      msi-wmi: Add mute key support
-      msi-wmi: fix semantically incorrect use of keycode instead of scancode
-
-Chris Bagwell (1):
-      eeepc-wmi: add cpufv sysfs documentation
-
-Corentin Chary (1):
-      asus-laptop: add wimax and wwan support
-
-Dmitry Torokhov (1):
-      eeepc-wmi: fix compiler warning
-
-Jon Dowland (1):
-      toshiba_acpi.c: Add key_entry for a lone FN keypress
-
-Julia Lawall (1):
-      drivers/platform/x86/thinkpad_acpi.c: delete double assignment
-
-Randy Dunlap (1):
-      ibm_rtl: fix printk format warning
-
-Thadeu Lima de Souza Cascardo (1):
-      wmi: use memcmp instead of strncmp to compare GUIDs
-
-Vernon Mauery (2):
-      ibm_rtl: Loosen the DMI criteria to all IBM machines
-      ibm_rtl: _RTL_ is not available in UEFI mode
-
-Zeng Zhaoming (1):
-      ACPI, hp-wmi: Fix memory leak in acpi query
-
- .../ABI/testing/sysfs-platform-asus-laptop         |   16 +++-
- Documentation/ABI/testing/sysfs-platform-eeepc-wmi |   10 ++
- drivers/platform/x86/asus-laptop.c                 |   97 +++++++++++++++++++-
- drivers/platform/x86/eeepc-wmi.c                   |    4 +-
- drivers/platform/x86/hp-wmi.c                      |    2 +
- drivers/platform/x86/ibm_rtl.c                     |   34 ++-----
- drivers/platform/x86/msi-wmi.c                     |   16 ++--
- drivers/platform/x86/thinkpad_acpi.c               |    1 -
- drivers/platform/x86/toshiba_acpi.c                |    1 +
- drivers/platform/x86/wmi.c                         |    2 +-
- 10 files changed, 144 insertions(+), 39 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-platform-eeepc-wmi
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I don't think we should add more logic than necessary.  If there is a
+good reason for it, it needs to get a code comment at least.
