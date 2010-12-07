@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab0LGJBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:01:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23868 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab0LGJBD (ORCPT
+	id S1754729Ab0LGJFU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:05:20 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63950 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab0LGJFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:01:03 -0500
-Message-ID: <4CFDF785.7010401@kernel.org>
-Date: Tue, 07 Dec 2010 00:59:49 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	Tue, 7 Dec 2010 04:05:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 01/45] kstrtox: converting strings to integers done (hopefully) right
+Date: Tue, 7 Dec 2010 10:04:58 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
+Cc: Jesper Juhl <jj@chaosbits.net>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+References: <1291571382-2719-1-git-send-email-adobriyan@gmail.com> <alpine.LNX.2.00.1012060120590.16078@swampdragon.chaosbits.net> <AANLkTinbq+NPHBQ=zqVNjUDL+G3fKdC6S9gYB5e4isNR@mail.gmail.com>
+In-Reply-To: <AANLkTinbq+NPHBQ=zqVNjUDL+G3fKdC6S9gYB5e4isNR@mail.gmail.com>
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org, bigeasy@linutronix.de
-Subject: [PATCH -v2] x86, ioapic: Don't write io_apic ID if it is not changed
-References: <20101126165020.GA26361@www.tglx.de> <tip-a38c5380ef9f088be9f49b6e4c5d80af8b1b5cd4@git.kernel.org>
-In-Reply-To: <tip-a38c5380ef9f088be9f49b6e4c5d80af8b1b5cd4@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012071004.58311.arnd@arndb.de>
+X-Provags-ID: V02:K0:xaKTXopd9/UG65xFSVDiEA2Jm2ReYh5Rd9tOUF+ggIh
+ 8Mix5dyKVBL1BkNYz6XW2bVOZ0O0SD63808PPpvB2RphKAH8cZ
+ IjbdmY9OPMvz/CnTthMxI8zEqQcTh6SXgyhBSAWFbYx2in1QyT
+ N8GFjx3zFQjGR6eCmdGMCUPrLlVi93twguXKm/+BfzRhDwAJSy
+ lJFOX71iOnOSDh8agLqaA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 06 December 2010 16:16:36 Alexey Dobriyan wrote:
+> > <snip>
+> >> +/* Internal, do not use. */
+> >> +int _kstrtol(const char *s, unsigned int base, long *res)
+> >> +{
+> >> +     long long tmp;
+> >> +     int rv;
+> >> +
+> >> +     rv = kstrtoll(s, base, &tmp);
+> >> +     if (rv < 0)
+> >> +             return rv;
+> >> +     if (tmp != (long long)(long)tmp)
+> >> +             return -EINVAL;
+> >> +     *res = tmp;
+> >> +     return 0;
+> >> +}
+> >> +EXPORT_SYMBOL(_kstrtol);
+> >
+> > Ok, probably I'm just being dense, but the "_" prefix tells me I probably
+> > shouldn't use this function. The comment clearly tells me I shouldn't use
+> > this function.
+> > So, why is this exported? And if it is not/should not be exported, then
+> > why is it not static?
+> > (goes for other functions in this patch as well).
+> 
+> It is used by kstrtol() if "long" and "long long" aren't the same type.
+> I can't ifdef it because gcc doesn't allow "#if sizeof(long long) == ".
+> "Do not use" hints "use kstrtol()".
 
-For 32bit mptable path, setup_ids_from_mpc() always write io apic id
-register, even there is no change needed.
+Can't you use #ifdef CONFIG_64BIT to see if long is 64 bit wide?
 
-So try to do that when they are different bewteen reading out and mptable
-
--v2: update to recent setup_ioapic_ids_from_mpc() split..
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/kernel/apic/io_apic.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -2006,9 +2006,12 @@ void __init setup_ioapic_ids_from_mpc_no
- 						= mp_ioapics[apic_id].apicid;
- 
- 		/*
--		 * Read the right value from the MPC table and
--		 * write it into the ID register.
-+		 * Update the ID register according to the right value from
-+		 *  the MPC table if they are different.
- 		 */
-+		if (mp_ioapics[apic_id].apicid == reg_00.bits.ID)
-+			continue;
-+
- 		apic_printk(APIC_VERBOSE, KERN_INFO
- 			"...changing IO-APIC physical APIC ID to %d ...",
- 			mp_ioapics[apic_id].apicid);
+	Arnd
