@@ -1,105 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab0LGWt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 17:49:58 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48942 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab0LGWt5 (ORCPT
+	id S1752964Ab0LGWv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 17:51:27 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43705 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab0LGWv0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 17:49:57 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=WT7wE6qrmEcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=drwWOgwSlDPRpsh2tVYA:9 a=pS7IGazhiC3bCg28GpUA:7 a=BtmUsKObgDSemaN21B_QZT32nD0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/8] Add yaffs2 file system: guts code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Charles Manning <manningc2@actrix.gen.nz>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
-In-Reply-To: <201012080943.48938.manningc2@actrix.gen.nz>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
-	 <201012071712.12772.manningc2@actrix.gen.nz>
-	 <1291733370.16223.242.camel@gandalf.stny.rr.com>
-	 <201012080943.48938.manningc2@actrix.gen.nz>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Dec 2010 17:49:54 -0500
-Message-ID: <1291762194.5015.5.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Dec 2010 17:51:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vk1c+779+Sgug2RUbWvTz8+hxdZjiFPaCF8O8Mgjm69cnIsH5Umw+ej3ap8eJSst5e
+         XH76zLOFSQcO7FR6Eila0ZZZUogmx0/9294l2Bnh7f7X5eOK8TB/0YYTBxS7GnIur6fP
+         A8EpUzWSAvWHKOPrLPKU24KCeo796H7t8Ax2o=
+MIME-Version: 1.0
+In-Reply-To: <20101207155645.GG2356@cmpxchg.org>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+	<d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+	<20101207144923.GB2356@cmpxchg.org>
+	<20101207150710.GA26613@barrios-desktop>
+	<20101207151939.GF2356@cmpxchg.org>
+	<20101207152625.GB608@barrios-desktop>
+	<20101207155645.GG2356@cmpxchg.org>
+Date: Wed, 8 Dec 2010 07:51:25 +0900
+Message-ID: <AANLkTi=iNGT_p_VfW9GxdaKXLt2xBHM2jdwmCbF_u8uh@mail.gmail.com>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 09:43 +1300, Charles Manning wrote:
+On Wed, Dec 8, 2010 at 12:56 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Wed, Dec 08, 2010 at 12:26:25AM +0900, Minchan Kim wrote:
+>> On Tue, Dec 07, 2010 at 04:19:39PM +0100, Johannes Weiner wrote:
+>> > On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
+>> > > On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
+>> > > > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
+>> > > > > Changelog since v3:
+>> > > > >  - Change function comments - suggested by Johannes
+>> > > > >  - Change function name - suggested by Johannes
+>> > > > >  - add only dirty/writeback pages to deactive pagevec
+>> > > >
+>> > > > Why the extra check?
+>> > > >
+>> > > > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+>> > > > >                       if (lock_failed)
+>> > > > >                               continue;
+>> > > > >
+>> > > > > -                     ret += invalidate_inode_page(page);
+>> > > > > -
+>> > > > > +                     ret = invalidate_inode_page(page);
+>> > > > > +                     /*
+>> > > > > +                      * If the page is dirty or under writeback, we can not
+>> > > > > +                      * invalidate it now.  But we assume that attempted
+>> > > > > +                      * invalidation is a hint that the page is no longer
+>> > > > > +                      * of interest and try to speed up its reclaim.
+>> > > > > +                      */
+>> > > > > +                     if (!ret && (PageDirty(page) || PageWriteback(page)))
+>> > > > > +                             deactivate_page(page);
+>> > > >
+>> > > > The writeback completion handler does not take the page lock, so you
+>> > > > can still miss pages that finish writeback before this test, no?
+>> > >
+>> > > Yes. but I think it's rare and even though it happens, it's not critical.
+>> > > >
+>> > > > Can you explain why you felt the need to add these checks?
+>> > >
+>> > > invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
+>> > > Look invalidate_complete_page. As easiest example, if the page has buffer and
+>> > > try_to_release_page can't release the buffer, it could return 0.
+>> >
+>> > Ok, but somebody still tried to truncate the page, so why shouldn't we
+>> > try to reclaim it?  The reason for deactivating at this location is
+>> > that truncation is a strong hint for reclaim, not that it failed due
+>> > to dirty/writeback pages.
+>> >
+>> > What's the problem with deactivating pages where try_to_release_page()
+>> > failed?
+>>
+>> If try_to_release_page fails and the such pages stay long time in pagevec,
+>> pagevec drain often happens.
+>
+> You mean because the pagevec becomes full more often?  These are not
+> many pages you get extra without the checks, the race window is very
+> small after all.
 
-> > Adding the TRACE_EVENT() code is also simple too ;)
-> 
-> For 500 traces?
+Right.
+It was a totally bad answer. The work in midnight makes my mind to be hurt. :)
 
-Are all of them for the BUFFER code?
+Another point is that we can move such pages(!try_to_release_page,
+someone else holding the ref) into tail of inactive.
+We can't expect such pages will be freed sooner or later and it can
+stir lru pages unnecessary.
+On the other hand it's a _really_ rare so couldn't we move the pages into tail?
+If it can be justified, I will remove the check.
+What do you think about it?
 
-> 
-> Please remember that yaffs is typically used in embedded systems - not big 
-> iron servers . Typical kernel sizes are between 1 and 3MB. Pretty much all 
-> the big iron features get turned off.
+>
+>> I think such pages are rare so skip such pages doesn't hurt goal of
+>> this patch.
+>
+> Well, you add extra checks, extra detail to this mechanism.  Instead
+> of just saying 'tried to truncate, failed, deactivate the page', you
+> add more ifs and buts.
+>
+> There should be a real justification for it.  'It can not hurt' is not
+> a good justification for extra code and making a simple model more
+> complex.
+>
+> 'It will hurt without treating these pages differently' is a good
+> justification.  Remember that we have to understand and maintain all
+> this.  The less checks and operations we need to implement a certain
+> idea, the better.
+>
+> Sorry for being so adamant about this, but I think these random checks
+> are a really sore point of mm code already.
 
-OK then what about just using printk(KERN_DEBUG, ...)
+Never mind. I totally support your opinion.
+It always make me confusing to review the mm codes.
+Nowadays, many reviewers want detail comment and description. Given
+that mm code changing are bigger, I believe it's a way to go
 
+>
+> [ For example, we tried discussing lumpy reclaim mode recently and
+>  none of us could reliably remember how it actually behaved.  There
+>  are so many special conditions in there that we already end up with
+>  some of them being dead code and the checks even contradicting each
+>  other. ]
+>
 
-> Yaffs is used in embedded systems (eg. phones). There is no operator. The only 
-> people that ever look at dmesg and the log are engineers during 
-> integration/testing.
-
-OK, then use pr_debug(), these can even be compiled out of the kernel
-for production.
-
-
-> 
-> > There's also levels of printks that you 
-> > can do:
-> >
-> > KERN_ERR, KERN_WARING, KERN_INFO, KERN_DEBUG, etc.
-> >
-> > But again, these go to the users console and into the message logs.
-> > If 
-> > it is something that is a high activity this can slow down the system as
-> > printk's are synchronous. That is, they don't continue work until they
-> > finished writing. If you have a serial console, that could really slow
-> > things down.
-> 
-> That is exactly why I use the bitmasks to be able to be able to select sets of 
-> messages to be enabled. [btw: Enabling sets of traces seems to be a feature 
-> that TRACE_EVENT() lacks, or perhaps I have not read enough].
-
-You can group trace_events into TRACE_SYSTEMS, and then enable a bunch
-of events under which system they are in. I thought about making this
-into a hierarchy, but have yet seen the true need for that.
-
-
-> 
-> The trace mask allows you to set up a test case very easily and delivers the 
-> output where it is readily available.
-> 
-> >
-> > printk's should not be used for real debugging anyway. But putting it
-> > into a tracepoint, then it opens up lots of options.
-> >
-> > Your T(YAFFS_TRACE_ALWAYS, ...) look like good candidates for printks.
-> >
-> > TRACE_EVENTS() are those that just want to analyze what is happening in
-> > the system.
-> 
-> All, well almost all, embedded systems have printk. Many don't have TRACE.
-> 
-> People using yaffs do not want to lose what they already have and like the way 
-> tracing is set up.
-> 
-> What I propose is just rewriting the current trace mechanism so the code looks 
-> cleaner.
-
-Fine, as it seems special purpose for embedded devices.
-
--- Steve
+Thanks for good comment, Hannes.
 
 
+
+
+-- 
+Kind regards,
+Minchan Kim
