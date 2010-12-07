@@ -1,103 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab0LGSXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:23:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752525Ab0LGSXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:23:01 -0500
-Date: Tue, 7 Dec 2010 13:22:43 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jon Nelson <jnelson@jamponi.net>
-Cc: Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101207182243.GB21112@redhat.com>
-References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com>
- <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com>
- <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com>
- <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think>
- <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+	id S1753554Ab0LGSad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:30:33 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48686 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab0LGSac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 13:30:32 -0500
+Date: Tue, 7 Dec 2010 11:24:20 -0700
+From: Eric B Munson <emunson@mgebm.net>
+To: shaohui.zheng@intel.com
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/7,v8] NUMA Hotplug Emulator: documentation
+Message-ID: <20101207182420.GA2038@mgebm.net>
+References: <20101207010033.280301752@intel.com>
+ <20101207010139.681125359@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
 Content-Disposition: inline
-In-Reply-To: <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101207010139.681125359@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07 2010 at  1:10pm -0500,
-Jon Nelson <jnelson@jamponi.net> wrote:
 
-> I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
-> KOTD kernel) I easily encounter the issue.
-> 
-> Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
-> install, installed all updates, installed postgresql and the 'KOTD'
-> (Kernel of the Day)
-> kernel, and ran the following tests (as postgres user because I'm
-> lazy).
-> 
-> 1. create a database (from bash):
-> 
-> createdb test
-> 
-> 2. place the following contents in a file (I used 't.sql'):
-> 
-> begin;
-> create temporary table foo as select x as a, ARRAY[x] as b FROM
-> generate_series(1, 10000000 ) AS x;
-> create index foo_a_idx on foo (a);
-> create index foo_b_idx on foo USING GIN (b);
-> rollback;
-> 
-> 3. execute that sql:
-> 
-> psql -f t.sql --echo-all test
-> 
-> 
-> With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
-> without issue.
-> 
-> With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
-> pretty frequently.
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How does it fail?  postgres errors?  kernel errors?
- 
-> Then I tested with the 'vanilla' kernel available here:
-> 
-> http://download.opensuse.org/repositories/Kernel:/vanilla/standard/
-> 
-> The 'vanilla' kernel exhibited the same problems.
-> The version I tested:  2.6.37-rc4-219-g771f8bc-vanilla.
->
-> Incidentally, quick tests of jfs, xfs, and ext3 do _not_ show the same
-> problems, although I will note that I usually saw failure at least 1
-> in 3, but sometimes had to re-run the sql test 4 or 5 times before I
-> saw failure.
-> 
-> I will continue to do some testing, but I will hold off on testing the
-> commits above until I receive further testing suggestions.
+Shaohui,
 
-OK, so to be clear: your testing is on dm-crypt + ext4?
+The documentation patch seems to be stale, it needs to be updated to match =
+the
+new file names.
 
-And you're testing upstream based kernels (meaning the dm-crypt
-scalability patch that has been in question is _not_ in the mix)?
+On Tue, 07 Dec 2010, shaohui.zheng@intel.com wrote:
 
-That is a very different report than the other 2 reports of corruption
-(those corruption instances were only seen once the dm-crypt scalability
-patch was introduced).
+> From: Shaohui Zheng <shaohui.zheng@intel.com>
+>=20
+> add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
+> to explain the usage for the hotplug emulator.
+>=20
+> Reviewed-By: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+> Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+> ---
+> Index: linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
+> +++ linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt	2010-12=
+-07 08:53:19.677622002 +0800
+> @@ -0,0 +1,102 @@
+> +NUMA Hotplug Emulator for x86_64
+> +---------------------------------------------------
+> +
+> +NUMA hotplug emulator is able to emulate NUMA Node Hotplug
+> +thru a pure software way. It intends to help people easily debug
+> +and test node/CPU/memory hotplug related stuff on a
+> +none-NUMA-hotplug-support machine, even a UMA machine and virtual
+> +environment.
+> +
+> +1) Node hotplug emulation:
+> +
+> +Adds a numa=3Dpossible=3D<N> command line option to set an additional N =
+nodes
+> +as being possible for memory hotplug.  This set of possible nodes
+> +control nr_node_ids and the sizes of several dynamically allocated node
+> +arrays.
+> +
+> +This allows memory hotplug to create new nodes for newly added memory
+> +rather than binding it to existing nodes.
+> +
+> +For emulation on x86, it would be possible to set aside memory for hotpl=
+ugged
+> +nodes (say, anything above 2G) and to add an additional four nodes as be=
+ing
+> +possible on boot with
+> +
+> +	mem=3D2G numa=3Dpossible=3D4
+> +
+> +and then creating a new 128M node at runtime:
+> +
+> +	# echo 128M@0x80000000 > /sys/kernel/debug/node/add_node
+> +	On node 1 totalpages: 0
+> +	init_memory_mapping: 0000000080000000-0000000088000000
+> +	 0080000000 - 0088000000 page 2M
+> +
+> +Once the new node has been added, its memory can be onlined.  If this
+> +memory represents memory section 16, for example:
+> +
+> +	# echo online > /sys/devices/system/memory/memory16/state
+> +	Built 2 zonelists in Node order, mobility grouping on.  Total pages: 51=
+4846
+> +	Policy zone: Normal
+> + [ The memory section(s) mapped to a particular node are visible via
+> +   /sys/devices/system/node/node1, in this example. ]
+> +
+> +2) CPU hotplug emulation:
+> +
+> +The emulator reserves CPUs thru grub parameter, the reserved CPUs can be
+> +hot-add/hot-remove in software method, it emulates the process of physic=
+al
+> +cpu hotplug.
+> +
+> +When hotplugging a CPU with emulator, we are using a logical CPU to emul=
+ate the
+> +CPU socket hotplug process. For the CPU supported SMT, some logical CPUs=
+ are in
+> +the same socket, but it may located in different NUMA node after we have
+> +emulator. We put the logical CPU into a fake CPU socket, and assign it a
+> +unique phys_proc_id. For the fake socket, we put one logical CPU in only.
+> +
+> + - to hide CPUs
+> +	- Using boot option "maxcpus=3DN" hide CPUs
+> +	  N is the number of CPUs to initialize; the reset will be hidden.
+> +	- Using boot option "cpu_hpe=3Don" to enable CPU hotplug emulation
+> +      when cpu_hpe is enabled, the rest CPUs will not be initialized
+> +
+> + - to hot-add CPU to node
+> +	# echo nid > cpu/probe
+> +
+> + - to hot-remove CPU
+> +	# echo nid > cpu/release
+> +
+> +3) Memory hotplug emulation:
+> +
+> +The emulator reserves memory before OS boots, the reserved memory region=
+ is
+> +removed from e820 table. Each online node has an add_memory interface, a=
+nd
+> +memory can be hot-added via the per-ndoe add_memory debugfs interface.
+> +
+> +The difficulty of Memory Release is well-known, we have no plan for it u=
+ntil
+> +now.
+> +
+> + - reserve memory thru a kernel boot paramter
+> + 	mem=3D1024m
+> +
+> + - add a memory section to node 3
+> +    # echo 0x40000000 > mem_hotplug/node3/add_memory
+> +	OR
+> +    # echo 1024m > mem_hotplug/node3/add_memory
+> +
+> +4) Script for hotplug testing
+> +
+> +These scripts provides convenience when we hot-add memory/cpu in batch.
+> +
+> +- Online all memory sections:
+> +for m in /sys/devices/system/memory/memory*;
+> +do
+> +	echo online > $m/state;
+> +done
+> +
+> +- CPU Online:
+> +for c in /sys/devices/system/cpu/cpu*;
+> +do
+> +	echo 1 > $c/online;
+> +done
+> +
+> +- David Rientjes <rientjes@google.com>
+> +- Haicheng Li <haicheng.li@intel.com>
+> +- Shaohui Zheng <shaohui.zheng@intel.com>
+> +  Nov 2010
+>=20
+> --=20
+> Thanks & Regards,
+> Shaohui
+>=20
+>=20
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=3Dmailto:"dont@kvack.org"> email@kvack.org </a>
+>=20
 
-Mike
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM/nvUAAoJEH65iIruGRnN4jQH/3wn/OE8ZwAXORWGOZhbNzzk
+3Ggrw2JfbvRiP9mYOusy6+jFnNA2P8hJKfhNq/kOjYQSHzYdik+Lq489ftlc1yc3
+Cph/d0fFne9zKJlKZAl/ZcZT97BSkEUdc0z3G9cy3cJHq93X7biwR+RlMs07U9GI
+/b/lz48ujG/ELvhYbXpW3oP0Fr30C6tjJ2WSvhRTZeRdakM3fPDSvHO88azkJZgo
+NKQQiEFYyS9IYVTJ4FinchpIs+A0V0t32pqsNYa8MYz+YJpLf2C1xa7+Cn2ynI5G
+HEnOSa5TEM2INWHAtRTN0Ww0zMk9HB216IQPfGARwFJi3Qi5/SVvZPIrNChOf4w=
+=Tsp+
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
