@@ -1,117 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab0LGTpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 14:45:22 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:54907 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab0LGTpU (ORCPT
+	id S1754602Ab0LGTvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 14:51:21 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:60694 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534Ab0LGTvT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 14:45:20 -0500
+	Tue, 7 Dec 2010 14:51:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=psc3KYUpOovdYq7SKVZfOJALHjt7ZuEpChb4AHDqe8mVjDP6ur4cjawHF/ifV9U2qI
-         kpSPorNmWrZTHVCqilOUkeH0I2w0aE8HXDZORr5G9JTovvBp9arDuso2fLPwHDmyWMs6
-         wxgEPcajEiw7oLPXlTCurmryQKI0wWglhkZDA=
-Date: Tue, 7 Dec 2010 11:37:37 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chris Bagwell <chris@cnpbagwell.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ping Cheng <pingc@wacom.com>
-Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
-Message-ID: <20101207193736.GB31411@core.coreip.homeip.net>
-References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
- <AANLkTi=JcekxsbUXXUmxkUug_+hwiYkDxbCEKEe-DWDg@mail.gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=imkE5gQKzChwMTHzx/agyqv+d4rcpaIK+T/3cBFAPpOFmQmER0cf5Of84eKM/MflVb
+         YGBPmwI3Vx35j+eeS//1hd+5GdyBRnbE83IR0BfMp+587uqDyA3goiS/zIUHYsmJDEnj
+         lkXWkUJj1omAme1UHR4RxsRVOjm8N4kiZ5Rlg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=JcekxsbUXXUmxkUug_+hwiYkDxbCEKEe-DWDg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
+References: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
+Date: Tue, 7 Dec 2010 14:51:18 -0500
+Message-ID: <AANLkTi=iH6QOAph0iW6MR2khD5KCe8mRLPe8Y3QnTTTW@mail.gmail.com>
+Subject: Re: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        brueckner@linux.vnet.ibm.com, mchehab@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 01:18:41PM -0600, Chris Bagwell wrote:
-> On Tue, Dec 7, 2010 at 1:25 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> > Today, userspace sets up an input device based on the data it emits.
-> > This is not always enough; a tablet and a touchscreen may emit exactly
-> > the same data, for instance, but the former should be set up with a
-> > pointer whereas the latter does not need to. Recently, a new type of
-> > touchpad has emerged where the buttons are under the pad, which changes
-> > handling logic without changing the emitted data. This patch introduces
-> > a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
-> > about the device resulting in proper setup.
-> >
-> > Suggested-by: Dmitry Torokhov <dtor@mail.ru>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > Cc: Ping Cheng <pingc@wacom.com>
-> > Cc: Chris Bagwell <chris@cnpbagwell.com>
-> > ---
-> > Hi all,
-> >
-> > Here is a patch attempting to formulate Dmitry's device type idea. It
-> > compiles, but further testing awaits a general consesus on the device
-> > types and capabilities to start out with. Are the ones listed here apt
-> > for the job?
-> >
-> > Cheers,
-> > Henrik
-> >
-> >  drivers/input/evdev.c |    6 ++++++
-> >  include/linux/input.h |   34 ++++++++++++++++++++++++++++++++++
-> >  2 files changed, 40 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> > index e3f7fc6..db78592 100644
-> > --- a/drivers/input/evdev.c
-> > +++ b/drivers/input/evdev.c
-> > @@ -632,6 +632,12 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
-> >                        return -EFAULT;
-> >                return 0;
-> >
-> > +       case EVIOCGDEVINFO:
-> > +               if (copy_to_user(p, &dev->devinfo,
-> > +                                sizeof(struct input_devinfo)))
-> > +                       return -EFAULT;
-> > +               return 0;
-> > +
-> >        case EVIOCGREP:
-> >                if (!test_bit(EV_REP, dev->evbit))
-> >                        return -ENOSYS;
-> > diff --git a/include/linux/input.h b/include/linux/input.h
-> > index 6ef4446..8c58d2a 100644
-> > --- a/include/linux/input.h
-> > +++ b/include/linux/input.h
-> > @@ -57,6 +57,21 @@ struct input_absinfo {
-> >  };
-> >
-> >  /**
-> > + * struct input_devinfo - device information via EVIOCGDEVINFO ioctl
-> > + * @types: bitmask of types (DEVTYPE_*) matching this device
-> > + * @capabilities: bitmask of capabilities (DEVCAPS_*) of this device
-> > + *
-> > + * This struct provides information about the device needed for
-> > + * automatic setup in userspace, such as if the device is direct
-> > + * (touchscreen) or indirect (touchpad), and if there are other
-> > + * special considerations, such as the touchpad also being a button.
-> > + */
-> > +struct input_devinfo {
-> > +       __u32 types;
-> > +       __u32 capabilities;
-> > +};
-> > +
-> 
-> "types" sounds like it can support being more then one thing at a time
-> but I don't think that is intent from below names.  Should rename to
-> "type"?
+Hi,
 
-I'd be wary of restricting device to be only one type. There are some
-that are mutually exclusive (toucscreen/touchpad/tablet) but I'd leave
-option of mixed-type devices open.
+On Tue, Dec 7, 2010 at 2:07 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sat, Dec 4, 2010 at 14:57, Michal Marek <mmarek@suse.cz> wrote:
+>> please pull these kbuild/kconfig fixes for the next -rc. The largest
+>> part are fixes for the annoying kconfig warnings, contributed by Arnaud
+>> Lacombe and Mauro Carvalho Chehab. The solution adds a new 'visible if'
+>> keyword to the Kconfig language, so it's not exactly something that one
+>> would expect in the rc phase, but the kconfig change is not huge (the
+>> large diff is due to generated files) and it is deployed only in those
+>> five Kconfig files that had the warnings and were hard to fix by other
+>> means.  The second part is a forgotten patch by Hendrik Brueckner to
+>> usr/initramfs, that fixes build for Blackfin and h8300.
+>
+>> Arnaud Lacombe (5):
+>>      kconfig: add an option to determine a menu's visibility
+>
+> Hmm, this changeset also went in through the v4l tree?
+>
+Mauro merely imported the set in his tree to give them visibility and
+testing, but they went in trough the kbuild tree after being in -next
+for a week.
 
--- 
-Dmitry
+> BTW, I got confused:
+>  - make allmodconfig causes e.g.:
+>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>        CONFIG_VIDEO_TVAUDIO=m
+>    => good
+>  - make oldconfig for my config with almost everything selected,
+> except for stuff I know that breaks:
+>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>        # CONFIG_VIDEO_TVAUDIO is not set
+>    and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
+>    => bad!
+that's difficult to judge without your old configuration.
+VIDEO_TVAUDIO is only selected by VIDEO_BT848 which you don't give
+information about.
+
+ - Arnaud
