@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab0LGPqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:46:33 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:44873 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753215Ab0LGPqc (ORCPT
+	id S1754778Ab0LGPrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:47:33 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:62377 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab0LGPrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:46:32 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 4hvlJJ4VM1nYFESi5slKesvPy0DW1zaMQ6pB86UaP6Ou1A1
- 5P7DSkyusKxnCkh_vSL3_YAbYC6xrF_WOdoenz55EMvkOjvHLF7251rQvSjL
- 4oAi5xLCWyOm7nQbT2pn.fT18ZTXrTzd3msda47v2zrCmJ.H7t3AikenAAMz
- y9uyRQKv6FwlUBZgHhJRoaQst_Qnj4WFsGg4ZokQd4XkRdhKCkF081imfJ6w
- .6LzdFQ45gS1DT0Jf.CT9xZaBzvou0AwSBF56w8kMO3pABW60Cs4OAO6_6yp
- 45HMv0fPapF2wZ8YeqQ1W
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 7 Dec 2010 09:46:29 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Straggler: Connector: Use this_cpu_operations
-In-Reply-To: <20101206173958.685460926@linux.com>
-Message-ID: <alpine.DEB.2.00.1012070945150.26552@router.home>
-References: <20101206173958.685460926@linux.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 7 Dec 2010 10:47:32 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65811550"
+Message-ID: <4CFE5707.6030702@codeaurora.org>
+Date: Tue, 07 Dec 2010 21:17:19 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
+References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-4-git-send-email-tsoni@codeaurora.org> <4CDB0451.3090303@metafoo.de> <4CDBDE5D.4040801@codeaurora.org> <4CFCE8B7.8080305@codeaurora.org> <4CFE4EAC.9000606@metafoo.de>
+In-Reply-To: <4CFE4EAC.9000606@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch was originally in the use cpuops patchset but it needs an
-inc_return and is therefore dependant on an extension of the cpu ops.
-Fixed up and verified that it compiles.
+Hi Peter,
 
+>>>>
+>>>> If max_brightness is hardcoded in the driver you can reuse "struct led_info" and
+>>>> "struct struct led_platform_data" instead of adding your own structs.
+>>>
+>>
+>> I couldn't remove these pmic8058_led structure due to the "enum pmic8058_led id" member
+>> info which I need from every led. This can be removed completely only if I abuse
+>> the "flags" parameter in struct led_info to pass the led id. Let me know what you think.
+> 
+> Hi
+> 
+> I think that would be ok, other drivers seem to do the same.
 
-Subject: Connector: Use this_cpu operations
+Thanks. I will use "flags" parameter for "id" then and submit the re-worked version as V2.
 
-get_seq can benefit from this_cpu_operations. Address calculation is avoided
-and the increment is done using an xadd.
+---Trilok Soni
 
-Cc: Scott James Remnant <scott@ubuntu.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
----
- drivers/connector/cn_proc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/connector/cn_proc.c
-===================================================================
---- linux-2.6.orig/drivers/connector/cn_proc.c	2010-12-07 09:40:48.000000000 -0600
-+++ linux-2.6/drivers/connector/cn_proc.c	2010-12-07 09:41:13.000000000 -0600
-@@ -43,9 +43,10 @@ static DEFINE_PER_CPU(__u32, proc_event_
-
- static inline void get_seq(__u32 *ts, int *cpu)
- {
--	*ts = get_cpu_var(proc_event_counts)++;
-+	preempt_disable();
-+	*ts = __this_cpu_inc_return(proc_event_counts) -1;
- 	*cpu = smp_processor_id();
--	put_cpu_var(proc_event_counts);
-+	preempt_enable();
- }
-
- void proc_fork_connector(struct task_struct *task)
-
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
