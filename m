@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab0LGPFo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:05:44 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:57895 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752454Ab0LGPFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:05:43 -0500
-Date: Tue, 7 Dec 2010 16:05:25 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH v4 4/7] Reclaim invalidated page ASAP
-Message-ID: <20101207150525.GD2356@cmpxchg.org>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
- <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
+	id S1753086Ab0LGPHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:07:00 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35150 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab0LGPG6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:06:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=BgGLiTJyzbqJJppkobTWnL6EGp1JjifkwYCVkVdmxR7n/Mpt5d73cqPalCXvxcBUWF
+         mceFfVLDfozFGreEyeglDXwp53VoQyGOwDkhHI1AewusThU5KfJFvtp7IVXl5V1d25g1
+         K+ZDjZLzKPhVD+70gyF97ZoIiwmnhW/Pa5CDU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
+In-Reply-To: <1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
+References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
+	<1291154254-22533-8-git-send-email-cdhmanning@gmail.com>
+Date: Tue, 7 Dec 2010 17:06:58 +0200
+X-Google-Sender-Auth: -QvUEpdmdPoMHIjxI_Z8V7mJ-yA
+Message-ID: <AANLkTimqyvHrCAq1ouCz9ovEiPsD5SBTN7K0VT6ghe=F@mail.gmail.com>
+Subject: Re: [PATCH 7/8] Add yaffs2 file system: verification code and other headers
+From: Pekka Enberg <penberg@kernel.org>
+To: Charles Manning <cdhmanning@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 02:29:12AM +0900, Minchan Kim wrote:
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -275,26 +275,59 @@ void add_page_to_unevictable_list(struct page *page)
->   * head of the list, rather than the tail, to give the flusher
->   * threads some time to write it out, as this is much more
->   * effective than the single-page writeout from reclaim.
-> + *
-> + * If the page isn't page_mapped and dirty/writeback, the page
-> + * could reclaim asap using PG_reclaim.
-> + *
-> + * 1. active, mapped page -> none
-> + * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-> + * 3. inactive, mapped page -> none
-> + * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-
-         inactive, clean -> inactive, tail
-
-> + * 5. Others -> none
-> + *
-> + * In 4, why it moves inactive's head, the VM expects the page would
-> + * be write it out by flusher threads as this is much more effective
-> + * than the single-page writeout from reclaim.
->   */
->  static void lru_deactivate(struct page *page, struct zone *zone)
->  {
->  	int lru, file;
-> +	bool active;
->  
-> -	if (!PageLRU(page) || !PageActive(page))
-> +	if (!PageLRU(page))
->  		return;
->  
->  	/* Some processes are using the page */
->  	if (page_mapped(page))
->  		return;
->  
-> +	active = PageActive(page);
+On Tue, Nov 30, 2010 at 11:57 PM, Charles Manning <cdhmanning@gmail.com> wrote:
+> +#define YCHAR char
+> +#define YUCHAR unsigned char
+> +#define _Y(x)     x
+> +#define yaffs_strcat(a, b)     strcat(a, b)
+> +#define yaffs_strcpy(a, b)     strcpy(a, b)
+> +#define yaffs_strncpy(a, b, c) strncpy(a, b, c)
+> +#define yaffs_strncmp(a, b, c) strncmp(a, b, c)
+> +#define yaffs_strnlen(s,m)     strnlen(s,m)
+> +#define yaffs_sprintf         sprintf
+> +#define yaffs_toupper(a)       toupper(a)
 > +
->  	file = page_is_file_cache(page);
->  	lru = page_lru_base_type(page);
-> -	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
-> +	del_page_from_lru_list(zone, page, lru + active);
->  	ClearPageActive(page);
->  	ClearPageReferenced(page);
->  	add_page_to_lru_list(zone, page, lru);
-> -	__count_vm_event(PGDEACTIVATE);
->
-> +	if (PageWriteback(page) || PageDirty(page)) {
-> +		/*
-> +		 * PG_reclaim could be raced with end_page_writeback
-> +		 * It can make readahead confusing.  But race window
-> +		 * is _really_ small and  it's non-critical problem.
-> +		 */
-> +		SetPageReclaim(page);
-> +	} else {
-> +		/*
-> +		 * The page's writeback ends up during pagevec
-> +		 * We moves tha page into tail of inactive.
-> +		 */
-> +		list_move_tail(&page->lru, &zone->lru[lru].list);
-> +		mem_cgroup_rotate_reclaimable_page(page);
+> +#define yaffs_sort(base, n, sz, cmp_fn)        sort(base, n, sz, cmp_fn, NULL)
+> +
+> +#define Y_INLINE __inline__
+> +
+> +#define YAFFS_LOSTNFOUND_NAME          "lost+found"
+> +#define YAFFS_LOSTNFOUND_PREFIX                "obj"
+> +
+> +#define YMALLOC(x) kmalloc(x, GFP_NOFS)
+> +#define YFREE(x)   kfree(x)
+> +#define YMALLOC_ALT(x) vmalloc(x)
+> +#define YFREE_ALT(x)   vfree(x)
+> +#define YMALLOC_DMA(x) YMALLOC(x)
+> +
+> +#define YYIELD() schedule()
+> +#define Y_DUMP_STACK() dump_stack()
+> +
+> +#define YAFFS_ROOT_MODE                        0755
+> +#define YAFFS_LOSTNFOUND_MODE          0700
+> +
+> +#define Y_CURRENT_TIME CURRENT_TIME.tv_sec
+> +#define Y_TIME_CONVERT(x) (x).tv_sec
+> +
+> +#define yaffs_sum_cmp(x, y) ((x) == (y))
+> +#define yaffs_strcmp(a, b) strcmp(a, b)
+> +
+> +#define TENDSTR "\n"
+> +#define TSTR(x) KERN_DEBUG x
+> +#define TCONT(x) x
+> +#define TOUT(p) printk p
+> +
+> +#define compile_time_assertion(assertion) \
+> +       ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
+> +
+> +#ifndef Y_DUMP_STACK
+> +#define Y_DUMP_STACK() do { } while (0)
+> +#endif
+> +
+> +#ifndef YBUG
+> +#define YBUG() do {\
+> +       T(YAFFS_TRACE_BUG,\
+> +               (TSTR("==>> yaffs bug: " __FILE__ " %d" TENDSTR),\
+> +               __LINE__));\
+> +       Y_DUMP_STACK();\
+> +} while (0)
+> +#endif
 
-I think you also need to increase PGROTATED here.
-
-Other than that,
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Please drop these wrapper macros.
