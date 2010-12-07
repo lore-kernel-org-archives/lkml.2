@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab0LGONT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 09:13:19 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:34678 "EHLO relay.sw.ru"
+	id S1752985Ab0LGOTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 09:19:06 -0500
+Received: from hera.kernel.org ([140.211.167.34]:33987 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232Ab0LGONS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 09:13:18 -0500
-Message-ID: <4CFE40D1.5000309@parallels.com>
-Date: Tue, 07 Dec 2010 17:12:33 +0300
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1751975Ab0LGOTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 09:19:04 -0500
+Message-ID: <4CFE41F8.7040400@kernel.org>
+Date: Tue, 07 Dec 2010 15:17:28 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Containers <containers@lists.osdl.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: [PATCH] user_ns: Improve the user_ns on-the-slab packaging
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [Use cpuops V1 04/11] x86: Use this_cpu_ops for current_cpu_data
+ accesses
+References: <20101206171618.302060721@linux.com> <20101206171638.595205962@linux.com>
+In-Reply-To: <20101206171638.595205962@linux.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 14:17:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently on 64-bit arch the user_namespace is 2096 and when
-being kmalloc-ed it resides on a 4k slab wasting 2003 bytes.
+On 12/06/2010 06:16 PM, Christoph Lameter wrote:
+> Current_cpu_data accesses are per cpu accesses. We can also use
+> this_cpu_ops if a scalar is retrieved.
+> 
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
+>  arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    2 +-
+>  arch/x86/kernel/cpu/intel_cacheinfo.c     |    4 ++--
+>  arch/x86/kernel/smpboot.c                 |   10 +++++-----
+>  3 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/kernel/smpboot.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/smpboot.c	2010-11-30 11:53:03.000000000 -0600
+> +++ linux-2.6/arch/x86/kernel/smpboot.c	2010-11-30 11:57:02.000000000 -0600
+> @@ -430,7 +430,7 @@ void __cpuinit set_cpu_sibling_map(int c
+>  
+>  	cpumask_set_cpu(cpu, c->llc_shared_map);
+>  
+> -	if (current_cpu_data.x86_max_cores == 1) {
+> +	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
+>  		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
+>  		c->booted_cores = 1;
+>  		return;
+> @@ -1377,7 +1377,7 @@ void play_dead_common(void)
+>  
+>  	mb();
+>  	/* Ack it */
+> -	__get_cpu_var(cpu_state) = CPU_DEAD;
+> +	__this_cpu_write(cpu_state, CPU_DEAD);
 
-If we allocate a separate cache for it and reduce the hash size
-from 128 to 64 chains the packaging becomes *much* better - the
-struct is 1072 bytes and the hole between is 98 bytes.
+This belongs to the previous patch, right?  I'll move it over and
+apply 03 and 04.  I think routing these through percpu is okay but if
+anyone wants these to go through x86, scream.
 
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+Thanks.
 
----
-
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index 8178156..faf4679 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -6,7 +6,7 @@
- #include <linux/sched.h>
- #include <linux/err.h>
- 
--#define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 8)
-+#define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
- #define UIDHASH_SZ	(1 << UIDHASH_BITS)
- 
- struct user_namespace {
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 2591583..8aafa80 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -12,6 +12,8 @@
- #include <linux/highuid.h>
- #include <linux/cred.h>
- 
-+static struct kmem_cache *user_ns_cachep __read_mostly;
-+
- /*
-  * Create a new user namespace, deriving the creator from the user in the
-  * passed credentials, and replacing that user with the new root user for the
-@@ -26,7 +28,7 @@ int create_user_ns(struct cred *new)
- 	struct user_struct *root_user;
- 	int n;
- 
--	ns = kmalloc(sizeof(struct user_namespace), GFP_KERNEL);
-+	ns = kmem_cache_alloc(user_ns_cachep, GFP_KERNEL);
- 	if (!ns)
- 		return -ENOMEM;
- 
-@@ -38,7 +40,7 @@ int create_user_ns(struct cred *new)
- 	/* Alloc new root user.  */
- 	root_user = alloc_uid(ns, 0);
- 	if (!root_user) {
--		kfree(ns);
-+		kmem_cache_free(user_ns_cachep, ns);
- 		return -ENOMEM;
- 	}
- 
-@@ -71,7 +73,7 @@ static void free_user_ns_work(struct work_struct *work)
- 	struct user_namespace *ns =
- 		container_of(work, struct user_namespace, destroyer);
- 	free_uid(ns->creator);
--	kfree(ns);
-+	kmem_cache_free(user_ns_cachep, ns);
- }
- 
- void free_user_ns(struct kref *kref)
-@@ -126,3 +128,11 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
- 	/* No useful relationship so no mapping */
- 	return overflowgid;
- }
-+
-+static __init int user_namespaces_init(void)
-+{
-+	user_ns_cachep = KMEM_CACHE(user_namespace, SLAB_PANIC);
-+	return 0;
-+}
-+
-+__initcall(user_namespaces_init);
+-- 
+tejun
