@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0LGCMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:12:52 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50870 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab0LGCMv (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 6 Dec 2010 21:12:51 -0500
-Date: Mon, 6 Dec 2010 21:12:27 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, konrad@kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [RFC PATCH] Utilize the PCI API in the AGP framework.
-Message-ID: <20101207021227.GA31774@dumpdata.com>
-References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
- <1291680126.8232.5.camel@clockmaker-el6>
- <20101207004844.GA31478@dumpdata.com>
- <1291684609.8232.8.camel@clockmaker-el6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291684609.8232.8.camel@clockmaker-el6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754257Ab0LGCNc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:13:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57095 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab0LGCNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:13:30 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=nxRCGEiJBjgA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=LX9nTfyjAAAA:8 a=cH6R9-kdAAAA:8 a=meVymXHHAAAA:8 a=dUc4MAc1oZC3lgTMv_kA:9 a=3l6rVmSj4Yux4Y_l2WwA:7 a=ymLzMuDYmgCtYr86sBMrWnxp8zAA:4 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=bt0zGP92IBIA:10 a=jeBq3FmKZ4MA:10 a=y5BLE-fxZx15SlpJ:21 a=yYSy4rwXnAOLAjL4:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101207021328.569328536@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 06 Dec 2010 20:58:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <nickpiggin@yahoo.com.au>, Rik van Riel <riel@redhat.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: [RFC][PATCH 02/10] mm: Remove likely() from mapping_unevictable()
+References: <20101207015834.196176991@goodmis.org>
+Content-Disposition: inline; filename=0002-mm-Remove-likely-from-mapping_unevictable.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Okay reading that I'm not sure you've started at the right end.
+From: Steven Rostedt <srostedt@redhat.com>
 
-I actually have all of those patches ready but figured I would start
-from the AGP side..
-> 
-> I just read 601341, and it concerns nouveau, which shouldn't on the hw
-> described be touching AGP at all. Its a PCIE machine, so the DRM/TTM
-> code won't use any of the AGP paths.
+The mapping_unevictable() has a likely() around the mapping parameter.
+This mapping parameter comes from page_mapping() which has an
+unlikely() that the page will be set as PAGE_MAPPING_ANON, and if
+so, it will return NULL. One would think that this unlikely() means
+that the mapping returned by page_mapping() would not be NULL, but
+where page_mapping() is used just above mapping_unevictable(), that
+unlikely() is incorrect most of the time. This means that the
+"likely(mapping)" in mapping_unevictable() is incorrect most of the
+time.
 
-I think most of them do touch PCIe cards. I swore that there were
-some AGP users out there, maybe they aren't on those bugs - let me search
-my mail archive. Maybe it just me who still uses AGP...
-> 
-> Now if we have fixes for TTM/nouveau/radeon that make it work under Xen
-> then that is a whole different story, however these patches are not
-> those.
+Running the annotated branch profiler on my main box which runs firefox,
+evolution, xchat and is part of my distcc farm, I had this:
 
-Nope. I just posted them: https://lkml.org/lkml/2010/12/6/516
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+12872836 1269443893  98 mapping_unevictable            pagemap.h            51
+35935762 1270265395  97 page_mapping                   mm.h                 659
+1306198001   143659   0 page_mapping                   mm.h                 657
+203131478   121586   0 page_mapping                   mm.h                 657
+ 5415491     1116   0 page_mapping                   mm.h                 657
+74899487     1116   0 page_mapping                   mm.h                 657
+203132845      224   0 page_mapping                   mm.h                 659
+ 5415464       27   0 page_mapping                   mm.h                 659
+   13552        0   0 page_mapping                   mm.h                 657
+   13552        0   0 page_mapping                   mm.h                 659
+  242630        0   0 page_mapping                   mm.h                 657
+  242630        0   0 page_mapping                   mm.h                 659
+74899487        0   0 page_mapping                   mm.h                 659
 
-> 
-> I'd suggest you reverse the priority, of the comment
-> 
-> a) Fix the GART/AGP backend (so drivers/char/agp/*.c) so they use the
-> PCI API.
->    Only the i915 and higher are using the PCI API and I've some of the older
->    boxes with i860 so can actually test it.
->  b) Fix the TTM to use the DMA API.
->  c) Lastly, get rid of _PAGE_IOMAP so we don't have to depend on radeon/nouveau/etc
->    to set the proper _PAGE_IOMAP on the PFNs/BARs..
-> 
-> to do c, then b, and finally figure out if anyone cares about a, unless there is a major dependency in the code that requires this ordering.
+The page_mapping() is a static inline, which is why it shows up multiple
+times. The mapping_unevictable() is also a static inline but seems to
+be used only once in my setup.
 
-There is a patch for c) that is nice and simple:
-http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=f5d630621f6616a8a14438c047332742e77c0739
+The unlikely in page_mapping() was correct a total of 1909540379 times and
+incorrect 1270533123 times, with a 39% being incorrect. Perhaps this is
+enough to remove the unlikely from page_mapping() as well.
 
-but we are working on making that obsolete by .. well I can go in details
-but it still is just on pieces of paper.
-> 
-> Dave.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nick Piggin <nickpiggin@yahoo.com.au>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/pagemap.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 2d1ffe3..9c66e99 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -48,7 +48,7 @@ static inline void mapping_clear_unevictable(struct address_space *mapping)
+ 
+ static inline int mapping_unevictable(struct address_space *mapping)
+ {
+-	if (likely(mapping))
++	if (mapping)
+ 		return test_bit(AS_UNEVICTABLE, &mapping->flags);
+ 	return !!mapping;
+ }
+-- 
+1.7.2.3
+
+
