@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab0LGKsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 05:48:08 -0500
-Received: from www.tglx.de ([62.245.132.106]:37469 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab0LGKsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 05:48:06 -0500
-Date: Tue, 7 Dec 2010 11:47:35 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ian Munsie <imunsie@au1.ibm.com>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/3] perf record/report: Process events in order
-In-Reply-To: <1291679635-sup-9860@au1.ibm.com>
-Message-ID: <alpine.LFD.2.00.1012070942070.2653@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1012051220450.2653@localhost6.localdomain6> <1291603026-11785-4-git-send-email-imunsie@au1.ibm.com> <alpine.LFD.2.00.1012061014180.2653@localhost6.localdomain6> <1291637998-sup-4601@au1.ibm.com> <alpine.LFD.2.00.1012061359140.2653@localhost6.localdomain6>
- <1291640985-sup-4443@au1.ibm.com> <alpine.LFD.2.00.1012061447080.2653@localhost6.localdomain6> <1291679635-sup-9860@au1.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755280Ab0LGKsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 05:48:46 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44021 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab0LGKso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 05:48:44 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101207091653.GA22416@core.coreip.homeip.net>
+References: <1291706726-8835-1-git-send-email-rydberg@euromail.se> <20101207091653.GA22416@core.coreip.homeip.net>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 7 Dec 2010 11:48:28 +0100
+Message-ID: <AANLkTimnSsfCG0WtDpa-qEu3N1uMOeo+CzzZ8wsaZN1v@mail.gmail.com>
+Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian,
+On Tue, Dec 7, 2010 at 10:16, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> Hi Henrik,
+>
+> On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
+>> Today, userspace sets up an input device based on the data it emits.
+>> This is not always enough; a tablet and a touchscreen may emit exactly
+>> the same data, for instance, but the former should be set up with a
+>> pointer whereas the latter does not need to. Recently, a new type of
+>> touchpad has emerged where the buttons are under the pad, which changes
+>> handling logic without changing the emitted data. This patch introduces
+>> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
+>> about the device resulting in proper setup.
+>
+> If we agree that the new ioctl is suitable we'llalso need to wireit up
+> through sysfs. Also, can we keep all definitions to INPUT_ namespace?
 
-On Tue, 7 Dec 2010, Ian Munsie wrote:
-> >      case PERF_RECORD_HEADER_ATTR:
-> > -        return ops->attr(event, session);
-> > +        /* This updates session->sample_id_all */
-> > +        ret = ops->attr(event, session);
-> > +        if (ops->ordering_requires_timestamps &&
-> > +            ops->ordered_samples && !session->sample_id_all) {
-> > +            session->ordered_samples.next_flush = ULLONG_MAX;
-> > +            flush_sample_queue(session, ops);
-> > +            ops->ordered_samples = false;
-> > +        }
-> 
-> Makes sense. I did something similar in the report layer that I was
-> about to send when I saw this email, but this way we have a generic
-> solution for other parts of perf that might want this.
-> The problem here is that we only get the PERF_RECORD_HEADER_ATTR if perf
-> record has been piped somewhere, so running perf record <load>; perf
-> report on an unpatched kernel results in the COMM, MMAP, etc events
-> being processed last (timestamp -1ULL) and no userspace samples are
-> attributed at all:
+Please don't add new ioctls which are not extensible. The ioctl should
+carry the length or the version of the structure it asks for, so it
+can be extended in the future. Sysfs should be good enough for such
+interface though.
 
-Ok. We need to treat timestamp ~0ULL the same as timestamp 0ULL then.
- 
-> > +    event__parse_sample(event, session, &sample);
-> > +    if (dump_trace)
-> > +        perf_session__print_tstamp(session, event, &sample);
-> 
-> Moving this here after the dump_printf("%#Lx [%#x]: PERF_RECORD_%s"...
-> changes the output of perf report -D in a bad way. Changing the spacing
-> in dump_printf can make up for it, or juggle the code around some more.
-
-Crap. I wanted to restrict the sample parsing to the real events w/o
-having this magic comparison in place as we filter out the synth stuff
-in the switch case already. 
-
-> How do you want to proceed? At this point either version of the patches
-> are pretty functionally equivelant. Mine does the perf report -D
-
-Hmm. Arnaldo merged my version already.
-
-> reordering as well, but that isn't really necessary to solve the bug.
-> Either way we only have a few minor fixups left.
-
-Having time ordered output of -D needs more than fixing the time stamp
-issue. The dump_printf/dump_trace stuff is scattered all over the
-place. So that needs more code churn, as you want to output the non
-synth events when the ordered queue is drained.
-
-Will send an update with that solved soon.
-
-Thanks,
-
-	tglx
-
+Kay
