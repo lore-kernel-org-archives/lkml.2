@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0LGUHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 15:07:49 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:39417 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753200Ab0LGUHs (ORCPT
+	id S1754568Ab0LGU0M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 15:26:12 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:34240 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab0LGU0J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 15:07:48 -0500
-Message-ID: <4CFE93C6.7020808@euromail.se>
-Date: Tue, 07 Dec 2010 21:06:30 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 7 Dec 2010 15:26:09 -0500
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] hid: egalax: Convert to MT slots
-References: <1291722851-22909-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1012071554050.14806@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1012071554050.14806@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQ3nz-0007fF-Ay.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQ3nz-0007fF-Ay 7eb9da499e30b1657468b142a6491d16
+In-Reply-To: <1291751698-sup-9297@think>
+References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+ <20101207182243.GB21112@redhat.com> <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
+ <1291747731-sup-3099@think> <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com>
+ <1291751698-sup-9297@think>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Tue, 7 Dec 2010 14:25:47 -0600
+Message-ID: <AANLkTin79GzUbfuZNKyTtqcyoUSO9AJimO77_ZOvqggH@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Matt <jackdachef@gmail.com>,
+        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 03:54 PM, Jiri Kosina wrote:
-
-> On Tue, 7 Dec 2010, Henrik Rydberg wrote:
-> 
->> The firmware in the joojoo reports touches sequentially, one per
->> report, which confuses the current driver. A further complication is
->> the absense of any indication of a touch frame. This patch converts
->> the driver to the MT slots protocol, and outputs one full touch frame
->> per report. This way, proper handling for both firmwares is ensured.
+On Tue, Dec 7, 2010 at 2:02 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> Excerpts from Jon Nelson's message of 2010-12-07 14:34:40 -0500:
+>> On Tue, Dec 7, 2010 at 12:52 PM, Chris Mason <chris.mason@oracle.com> wrote:
+>> >> postgresql errors. Typically, header corruption but from the limited
+>> >> visibility I've had into this via strace, what I see is zeroed pages
+>> >> where there shouldn't be.
+>> >
+>> > This sounds a lot like a bug higher up than dm-crypt.  Zeros tend to
+>> > come from some piece of code explicitly filling a page with zeros, and
+>> > that often happens in the corner cases for O_DIRECT and a few other
+>> > places in the filesystem.
+>> >
+>> > Have you tried triggering this with a regular block device?
 >>
->> Tested-by: Philipp Merkel <mail@philmerk.de>
->> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> 
-> Thanks,
-> 
+>> I just tried the whole set of tests, but with /dev/sdb directly (as
+>> ext4) without any crypt-y bits.
+>> It takes more iterations but out of 6 tests I had one failure: same
+>> type of thing, 'invalid page header in block ....'.
+>>
+>> I can't guarantee that it is a full-page of zeroes, just what I saw
+>> from the (limited) stracing I did.
+>
+> Fantastic. Now for our usual suspects:
+>
+> 1) Is postgres using O_DIRECT?  If yes, please turn it off
 
+According to strace, O_DIRECT didn't show up once during the test.
 
-Much obliged. As agreed, will appear through Dmitry's tree.
+> 2) Is postgres allocating sparse files?  If yes, please have it fully
+> allocate the file instead.
 
-Thanks,
-Henrik
+That's a tough one. I don't think postgresql does that, but I'm not an
+expert here.
 
+> 3) Is postgres using preallocation (fallocate)?  If yes, please have it
+> fully allocate the file instead
+
+As far as strace is concerned, postgreql is not using fallocate in
+this version.
+
+-- 
+Jon
