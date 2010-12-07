@@ -1,184 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0LGHIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 02:08:35 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:60505 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753621Ab0LGHIe (ORCPT
+	id S1752619Ab0LGHTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 02:19:20 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50771 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198Ab0LGHTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 02:08:34 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKZr/Ux5LdIm/2dsb2JhbACjNXK/foVJBIUZ
-Date: Tue, 7 Dec 2010 18:08:27 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>, Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@kernel.dk>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v4 2/3] Call the filesystem back whenever a page is
- removed from the page cache
-Message-ID: <20101207070827.GC3307@amd>
-References: <AANLkTi=LJaSTREikZg3M=QFkihEcQEGCJLW4wUPsDm9s@mail.gmail.com>
- <1291654748-8921-3-git-send-email-Trond.Myklebust@netapp.com>
+	Tue, 7 Dec 2010 02:19:18 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4CFDDFC3.2070107@jp.fujitsu.com>
+Date: Tue, 07 Dec 2010 16:18:27 +0900
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291654748-8921-3-git-send-email-Trond.Myklebust@netapp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, jaxboe@fusionio.com,
+        vgoyal@redhat.com, jmarchan@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
+References: <4CFCB08F.4010509@jp.fujitsu.com> <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com>
+In-Reply-To: <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 06, 2010 at 11:59:07AM -0500, Trond Myklebust wrote:
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> NFS needs to be able to release objects that are stored in the page
-> cache once the page itself is no longer visible from the page cache.
-> 
-> This patch adds a callback to the address space operations that allows
-> filesystems to perform page cleanups once the page has been removed
-> from the page cache.
-> 
-> Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
-> [trondmy: cover the cases of invalidate_inode_pages2() and
->           truncate_inode_pages()]
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
->  Documentation/filesystems/Locking |    7 ++++++-
->  Documentation/filesystems/vfs.txt |    7 +++++++
->  include/linux/fs.h                |    1 +
->  mm/filemap.c                      |    5 +++++
->  mm/truncate.c                     |    4 ++++
->  mm/vmscan.c                       |    7 +++++++
->  6 files changed, 30 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-> index a91f308..b6426f1 100644
-> --- a/Documentation/filesystems/Locking
-> +++ b/Documentation/filesystems/Locking
-> @@ -173,12 +173,13 @@ prototypes:
->  	sector_t (*bmap)(struct address_space *, sector_t);
->  	int (*invalidatepage) (struct page *, unsigned long);
->  	int (*releasepage) (struct page *, int);
-> +	void (*freepage)(struct page *);
->  	int (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
->  			loff_t offset, unsigned long nr_segs);
->  	int (*launder_page) (struct page *);
->  
->  locking rules:
-> -	All except set_page_dirty may block
-> +	All except set_page_dirty and freepage may block
->  
->  			BKL	PageLocked(page)	i_mutex
->  writepage:		no	yes, unlocks (see below)
-> @@ -193,6 +194,7 @@ perform_write:		no	n/a			yes
->  bmap:			no
->  invalidatepage:		no	yes
->  releasepage:		no	yes
-> +freepage:		no	yes
->  direct_IO:		no
->  launder_page:		no	yes
->  
-> @@ -288,6 +290,9 @@ buffers from the page in preparation for freeing it.  It returns zero to
->  indicate that the buffers are (or may be) freeable.  If ->releasepage is zero,
->  the kernel assumes that the fs has no private interest in the buffers.
->  
-> +	->freepage() is called when the kernel is done dropping the page
-> +from the page cache.
-> +
->  	->launder_page() may be called prior to releasing a page if
->  it is still found to be dirty. It returns zero if the page was successfully
->  cleaned, or an error value if not. Note that in order to prevent the page
-> diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-> index ed7e5ef..3b14a55 100644
-> --- a/Documentation/filesystems/vfs.txt
-> +++ b/Documentation/filesystems/vfs.txt
-> @@ -534,6 +534,7 @@ struct address_space_operations {
->  	sector_t (*bmap)(struct address_space *, sector_t);
->  	int (*invalidatepage) (struct page *, unsigned long);
->  	int (*releasepage) (struct page *, int);
-> +	void (*freepage)(struct page *);
->  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
->  			loff_t offset, unsigned long nr_segs);
->  	struct page* (*get_xip_page)(struct address_space *, sector_t,
-> @@ -679,6 +680,12 @@ struct address_space_operations {
->          need to ensure this.  Possibly it can clear the PageUptodate
->          bit if it cannot free private data yet.
->  
-> +  freepage: freepage is called once the page is no longer visible in
-> +        the page cache in order to allow the cleanup of any private
-> +	data. Since it may be called by the memory reclaimer, it
-> +	should not assume that the original address_space mapping still
-> +	exists, and it should not block.
+Hi Linus, Yasuaki,  and Jens
 
-Of course we still have bugs in this regard, without inode RCU and
-filesystem deregistration RCU, but when those things are implemented
-for RCU path-walk, this section should be updated somewhat, and we'll
-have to look at RCU protecting the final mapping manipulations after
-a page is removed from pagecache.
+(2010/12/07 1:08), Linus Torvalds wrote:
+> 2010/12/6 Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>:
+>>
+>> The problem is caused by merging different partition's I/Os. So the patch
+>> check whether a merging bio or request is a same partition as a request or not
+>> by using a partition's start sector and size.
+>
+> I really think this is wrong.
+>
+> We should just carry the partition information around in the req and
+> the bio, and just compare the pointers, rather than compare the range.
+> No need to even dereference the pointers, you should be able to just
+> do
+>
+>     /* don't merge if not on the same partition */
+>     if (bio->part != req->part)
+>        return 0;
+>
+> or something.
+>
+> This is doubly true since the accounting already does that horrible
+> partition lookup: rather than look it up, we should just _set_ it in
+> __generic_make_request(), where I think we already know it since we do
+> that whole blk_partition_remap().
+>
+> So just something like the appended (TOTALLY UNTESTED) perhaps?
+>
+> Note that this should get it right even for overlapping partitions etc.
+>
+>                       Linus
 
-But I'll help work on that after RCU inodes / filesystems is merged.
+The problem can occur even if your patches are applied. Think about a case
+like the following.
 
-> +
->    direct_IO: called by the generic read/write routines to perform
->          direct_IO - that is IO requests which bypass the page cache
->          and transfer data directly between the storage and the
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index c9e06cc..090f0ea 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -602,6 +602,7 @@ struct address_space_operations {
->  	sector_t (*bmap)(struct address_space *, sector_t);
->  	void (*invalidatepage) (struct page *, unsigned long);
->  	int (*releasepage) (struct page *, gfp_t);
-> +	void (*freepage)(struct page *);
->  	ssize_t (*direct_IO)(int, struct kiocb *, const struct iovec *iov,
->  			loff_t offset, unsigned long nr_segs);
->  	int (*get_xip_mem)(struct address_space *, pgoff_t, int,
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index ea89840..6b9aee2 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -143,13 +143,18 @@ void __remove_from_page_cache(struct page *page)
->  void remove_from_page_cache(struct page *page)
->  {
->  	struct address_space *mapping = page->mapping;
-> +	void (*freepage)(struct page *);
->  
->  	BUG_ON(!PageLocked(page));
->  
-> +	freepage = mapping->a_ops->freepage;
->  	spin_lock_irq(&mapping->tree_lock);
->  	__remove_from_page_cache(page);
->  	spin_unlock_irq(&mapping->tree_lock);
->  	mem_cgroup_uncharge_cache_page(page);
-> +
-> +	if (freepage)
-> +		freepage(page);
->  }
->  EXPORT_SYMBOL(remove_from_page_cache);
->  
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index ba887bf..3c2d5dd 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -390,6 +390,10 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
->  	__remove_from_page_cache(page);
->  	spin_unlock_irq(&mapping->tree_lock);
->  	mem_cgroup_uncharge_cache_page(page);
-> +
-> +	if (mapping->a_ops->freepage)
-> +		mapping->a_ops->freepage(page);
-> +
->  	page_cache_release(page);	/* pagecache ref */
->  	return 1;
->  failed:
+  1) There are 2 partition, sda1 and sda2, on sda.
+  2) Open sda and issue an IO to sda2's first sector. Then sda2's in_flight
+     is incremented though you open not sda2 but sda. It is because of
+     partition lookup method. It is based on which partition rq->__sector
+     sector belongs to.
+  3) Issue an IO to sda1's last sector and it merged to the IO issued in
+     step (2) because their part are both sda. In addition, rq->__sector
+     is modified to the sda1's region.
+  4) After completing the IO, sda1's in_flight is decremented and diskstat
+     is corrupted here.
 
-The generic parts of the code look OK to me, but why is there a
-difference in your sequences of loading the freepage function pointer
-here?
+I think fixing this case is difficult and would cause more complexity.
+
+I hit on another approach. Although it doesn'tprevent any merge as Linus
+preferred, it can fix the problem anyway. In this idea, in_flight is
+incremented and decremented for the partition which the request belonged
+to in its creation. It has the following merits.
+
+  - It can fix the problem which Yasuaki reported, including the cases which
+    I mentioned above.
+  - It only append one extra field to request.
+
+Although it would causes a bit gap, it doesn't have most influences because
+merging requests beyond partitions is the rare case.
+
+I confirmed the attached patch can be applied to 2.6.37-rc4 and succeeded
+to compile. If you can accept this idea, I'll test it soon.
+
+---
+  block/blk-core.c       |   12 +++++++-----
+  block/blk-merge.c      |    2 +-
+  include/linux/blkdev.h |    6 ++++++
+  3 files changed, 14 insertions(+), 6 deletions(-)
+
+Index: linux-2.6.37-rc4/block/blk-core.c
+===================================================================
+--- linux-2.6.37-rc4.orig/block/blk-core.c	2010-11-30 13:42:04.000000000 +0900
++++ linux-2.6.37-rc4/block/blk-core.c	2010-12-07 14:31:55.000000000 +0900
+@@ -64,11 +64,13 @@ static void drive_stat_acct(struct reque
+  		return;
+  
+  	cpu = part_stat_lock();
+-	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+  
+-	if (!new_io)
++	if (!new_io) {
++		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_init_pos(rq));
+  		part_stat_inc(cpu, part, merges[rw]);
+-	else {
++	} else {
++		rq->__initial_sector = rq->__sector;
++		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_init_pos(rq));
+  		part_round_stats(cpu, part);
+  		part_inc_in_flight(part, rw);
+  	}
+@@ -1776,7 +1778,7 @@ static void blk_account_io_completion(st
+  		int cpu;
+  
+  		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = disk_map_sector_rcu(req->rq_disk, blk_rq_init_pos(req));
+  		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
+  		part_stat_unlock();
+  	}
+@@ -1796,7 +1798,7 @@ static void blk_account_io_done(struct r
+  		int cpu;
+  
+  		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = disk_map_sector_rcu(req->rq_disk, blk_rq_init_pos(req));
+  
+  		part_stat_inc(cpu, part, ios[rw]);
+  		part_stat_add(cpu, part, ticks[rw], duration);
+Index: linux-2.6.37-rc4/block/blk-merge.c
+===================================================================
+--- linux-2.6.37-rc4.orig/block/blk-merge.c	2010-11-30 13:42:04.000000000 +0900
++++ linux-2.6.37-rc4/block/blk-merge.c	2010-12-07 14:14:55.000000000 +0900
+@@ -351,7 +351,7 @@ static void blk_account_io_merge(struct
+  		int cpu;
+  
+  		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = disk_map_sector_rcu(req->rq_disk, blk_rq_init_pos(req));
+  
+  		part_round_stats(cpu, part);
+  		part_dec_in_flight(part, rq_data_dir(req));
+Index: linux-2.6.37-rc4/include/linux/blkdev.h
+===================================================================
+--- linux-2.6.37-rc4.orig/include/linux/blkdev.h	2010-11-30 13:42:04.000000000 +0900
++++ linux-2.6.37-rc4/include/linux/blkdev.h	2010-12-07 14:13:11.000000000 +0900
+@@ -91,6 +91,7 @@ struct request {
+  	/* the following two fields are internal, NEVER access directly */
+  	unsigned int __data_len;	/* total data len */
+  	sector_t __sector;		/* sector cursor */
++	sector_t __initial_sector;
+  
+  	struct bio *bio;
+  	struct bio *biotail;
+@@ -730,6 +731,11 @@ static inline sector_t blk_rq_pos(const
+  	return rq->__sector;
+  }
+  
++static inline sector_t blk_rq_init_pos(const struct request *rq)
++{
++	return rq->__initial_sector;
++}
++
+  static inline unsigned int blk_rq_bytes(const struct request *rq)
+  {
+  	return rq->__data_len;
 
