@@ -1,219 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0LGLCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 06:02:10 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18044 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755302Ab0LGLCI (ORCPT
+	id S1755436Ab0LGLDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 06:03:00 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54882 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347Ab0LGLCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 06:02:08 -0500
-Message-ID: <4CFE14D7.6000507@dsn.okisemi.com>
-Date: Tue, 07 Dec 2010 20:04:55 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 7 Dec 2010 06:02:53 -0500
+Message-ID: <4CFE1454.90200@pengutronix.de>
+Date: Tue, 07 Dec 2010 12:02:44 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>, socketcan-core@lists.berlios.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v8 05/20] CAN : Fix warnings
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>, socketcan-core@lists.berlios.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: Re: [PATCH net-next-2.6 8/17 v2] can: EG20T PCH: Change Copyright
+ and module description
+References: <175BA60FBA444BE6B858D42E7B602A40@hacdom.okisemi.com> <4CFE0E8A.8000204@pengutronix.de> <CBA434C33CC34AE6BD224B8563771B6C@hacdom.okisemi.com>
+In-Reply-To: <CBA434C33CC34AE6BD224B8563771B6C@hacdom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig57FD80CCECFBF99F855F8DD6"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, in case CONFIG_PM is disabled, compiler outputs warnings.
-Move six functions which are used only CONFIG_PM is enabled,
-into "#ifdef CONFIG_PM" area.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig57FD80CCECFBF99F855F8DD6
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |  146 ++++++++++++++++++++++----------------------
- 1 files changed, 73 insertions(+), 73 deletions(-)
+On 12/07/2010 11:56 AM, Tomoya MORINAGA wrote:
+> On Tuesday, December 07, 2010 7:38 PM, Marc Kleine-Budde wrote:
+>> How do you send mail with thunderbord, then? I suppose you use smtp
+>> there, too.
+>=20
+> Yes,
+> The same SMTP server is used when thunderbird, too.
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index d646fbc..5fc99cb 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -245,23 +245,6 @@ static void pch_can_set_optmode(struct pch_can_priv *priv)
- 	iowrite32(reg_val, &priv->regs->opt);
- }
- 
--static void pch_can_set_int_custom(struct pch_can_priv *priv)
--{
--	/* Clearing the IE, SIE and EIE bits of Can control register. */
--	pch_can_bit_clear(&priv->regs->cont, PCH_CTRL_IE_SIE_EIE);
--
--	/* Appropriately setting them. */
--	pch_can_bit_set(&priv->regs->cont,
--			((priv->int_enables & PCH_MSK_CTRL_IE_SIE_EIE) << 1));
--}
--
--/* This function retrieves interrupt enabled for the CAN device. */
--static void pch_can_get_int_enables(struct pch_can_priv *priv, u32 *enables)
--{
--	/* Obtaining the status of IE, SIE and EIE interrupt bits. */
--	*enables = ((ioread32(&priv->regs->cont) & PCH_CTRL_IE_SIE_EIE) >> 1);
--}
--
- static void pch_can_set_int_enables(struct pch_can_priv *priv,
- 				    enum pch_can_mode interrupt_no)
- {
-@@ -355,61 +338,11 @@ static void pch_can_set_tx_all(struct pch_can_priv *priv, u32 set)
- 		pch_can_set_rxtx(priv, i, set, PCH_TX_IFREG);
- }
- 
--static u32 pch_can_get_rxtx_ir(struct pch_can_priv *priv, u32 buff_num,
--			       enum pch_ifreg dir)
--{
--	u32 ie, enable;
--
--	if (dir)
--		ie = PCH_IF_MCONT_RXIE;
--	else
--		ie = PCH_IF_MCONT_TXIE;
--
--	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
--	pch_can_check_if_busy(&priv->regs->ifregs[dir].creq, buff_num);
--
--	if (((ioread32(&priv->regs->ifregs[dir].id2)) & PCH_ID_MSGVAL) &&
--			((ioread32(&priv->regs->ifregs[dir].mcont)) & ie)) {
--		enable = 1;
--	} else {
--		enable = 0;
--	}
--	return enable;
--}
--
- static int pch_can_int_pending(struct pch_can_priv *priv)
- {
- 	return ioread32(&priv->regs->intr) & 0xffff;
- }
- 
--static void pch_can_set_rx_buffer_link(struct pch_can_priv *priv,
--				       u32 buffer_num, u32 set)
--{
--	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
--	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
--	iowrite32(PCH_CMASK_RDWR | PCH_CMASK_CTRL,
--		  &priv->regs->ifregs[0].cmask);
--	if (set == PCH_ENABLE)
--		pch_can_bit_clear(&priv->regs->ifregs[0].mcont,
--				  PCH_IF_MCONT_EOB);
--	else
--		pch_can_bit_set(&priv->regs->ifregs[0].mcont, PCH_IF_MCONT_EOB);
--
--	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
--}
--
--static void pch_can_get_rx_buffer_link(struct pch_can_priv *priv,
--				       u32 buffer_num, u32 *link)
--{
--	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
--	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
--
--	if (ioread32(&priv->regs->ifregs[0].mcont) & PCH_IF_MCONT_EOB)
--		*link = PCH_DISABLE;
--	else
--		*link = PCH_ENABLE;
--}
--
- static void pch_can_clear_buffers(struct pch_can_priv *priv)
- {
- 	int i;
-@@ -583,12 +516,6 @@ static void pch_can_int_clr(struct pch_can_priv *priv, u32 mask)
- 	}
- }
- 
--static int pch_can_get_buffer_status(struct pch_can_priv *priv)
--{
--	return (ioread32(&priv->regs->treq1) & 0xffff) |
--	       ((ioread32(&priv->regs->treq2) & 0xffff) << 16);
--}
--
- static void pch_can_reset(struct pch_can_priv *priv)
- {
- 	/* write to sw reset register */
-@@ -1109,6 +1036,79 @@ static void __devexit pch_can_remove(struct pci_dev *pdev)
- }
- 
- #ifdef CONFIG_PM
-+static void pch_can_set_int_custom(struct pch_can_priv *priv)
-+{
-+	/* Clearing the IE, SIE and EIE bits of Can control register. */
-+	pch_can_bit_clear(&priv->regs->cont, PCH_CTRL_IE_SIE_EIE);
-+
-+	/* Appropriately setting them. */
-+	pch_can_bit_set(&priv->regs->cont,
-+			((priv->int_enables & PCH_MSK_CTRL_IE_SIE_EIE) << 1));
-+}
-+
-+/* This function retrieves interrupt enabled for the CAN device. */
-+static void pch_can_get_int_enables(struct pch_can_priv *priv, u32 *enables)
-+{
-+	/* Obtaining the status of IE, SIE and EIE interrupt bits. */
-+	*enables = ((ioread32(&priv->regs->cont) & PCH_CTRL_IE_SIE_EIE) >> 1);
-+}
-+
-+static u32 pch_can_get_rxtx_ir(struct pch_can_priv *priv, u32 buff_num,
-+			       enum pch_ifreg dir)
-+{
-+	u32 ie, enable;
-+
-+	if (dir)
-+		ie = PCH_IF_MCONT_RXIE;
-+	else
-+		ie = PCH_IF_MCONT_TXIE;
-+
-+	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
-+	pch_can_check_if_busy(&priv->regs->ifregs[dir].creq, buff_num);
-+
-+	if (((ioread32(&priv->regs->ifregs[dir].id2)) & PCH_ID_MSGVAL) &&
-+			((ioread32(&priv->regs->ifregs[dir].mcont)) & ie)) {
-+		enable = 1;
-+	} else {
-+		enable = 0;
-+	}
-+	return enable;
-+}
-+
-+static void pch_can_set_rx_buffer_link(struct pch_can_priv *priv,
-+				       u32 buffer_num, u32 set)
-+{
-+	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
-+	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
-+	iowrite32(PCH_CMASK_RDWR | PCH_CMASK_CTRL,
-+		  &priv->regs->ifregs[0].cmask);
-+	if (set == PCH_ENABLE)
-+		pch_can_bit_clear(&priv->regs->ifregs[0].mcont,
-+				  PCH_IF_MCONT_EOB);
-+	else
-+		pch_can_bit_set(&priv->regs->ifregs[0].mcont, PCH_IF_MCONT_EOB);
-+
-+	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
-+}
-+
-+static void pch_can_get_rx_buffer_link(struct pch_can_priv *priv,
-+				       u32 buffer_num, u32 *link)
-+{
-+	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
-+	pch_can_check_if_busy(&priv->regs->ifregs[0].creq, buffer_num);
-+
-+	if (ioread32(&priv->regs->ifregs[0].mcont) & PCH_IF_MCONT_EOB)
-+		*link = PCH_DISABLE;
-+	else
-+		*link = PCH_ENABLE;
-+}
-+
-+static int pch_can_get_buffer_status(struct pch_can_priv *priv)
-+{
-+	return (ioread32(&priv->regs->treq1) & 0xffff) |
-+	       ((ioread32(&priv->regs->treq2) & 0xffff) << 16);
-+}
-+
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	int i;			/* Counter variable. */
--- 
-1.6.0.6
+Then check your settings, e.g. username, ssmtp, TSL, port, passwd.
+
+cheers, Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig57FD80CCECFBF99F855F8DD6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkz+FFgACgkQjTAFq1RaXHOKswCeKJC4BhLXsnep1oTwpUN2NgyC
+PQQAnR18iLalJnFBZC6Thsi2Mfvi6Tf7
+=sNaJ
+-----END PGP SIGNATURE-----
+
+--------------enig57FD80CCECFBF99F855F8DD6--
