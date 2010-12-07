@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0LGCBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:01:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24696 "EHLO mga02.intel.com"
+	id S1754608Ab0LGCCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:02:20 -0500
+Received: from cantor.suse.de ([195.135.220.2]:59996 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179Ab0LGCBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:01:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,308,1288594800"; 
-   d="scan'208";a="581196233"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2] xen: HVM X2APIC support
-Date: Tue, 7 Dec 2010 10:04:22 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-References: <1291621797-1483-1-git-send-email-sheng@linux.intel.com> <20101206204054.GA28678@dumpdata.com>
-In-Reply-To: <20101206204054.GA28678@dumpdata.com>
+	id S1754179Ab0LGCCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:02:19 -0500
+Date: Mon, 6 Dec 2010 18:02:23 -0800
+From: Greg KH <gregkh@suse.de>
+To: Ky Srinivasan <ksrinivasan@novell.com>
+Cc: devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        hjanssen@microsoft.com, linux-kernel@vger.kernel.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>
+Subject: Re: [PATCH 2/8] staging: hv: Convert camel case struct fields in
+ storvsc_api.h to lowercase
+Message-ID: <20101207020223.GA25981@suse.de>
+References: <1291667211-1865-1-git-send-email-hjanssen@microsoft.com>
+ <1291667211-1865-2-git-send-email-hjanssen@microsoft.com>
+ <4CFD24820200003000091628@novprvoes0310.provo.novell.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012071004.22291.sheng@linux.intel.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CFD24820200003000091628@novprvoes0310.provo.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 December 2010 04:40:54 Konrad Rzeszutek Wilk wrote:
-> > +static inline uint32_t xen_cpuid_base(void)
-> > +{
-> > +	uint32_t base, eax, ebx, ecx, edx;
-> > +	char signature[13];
-> > +
-> > +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-> > +		cpuid(base, &eax, &ebx, &ecx, &edx);
-> > +		*(uint32_t *)(signature + 0) = ebx;
-> > +		*(uint32_t *)(signature + 4) = ecx;
-> > +		*(uint32_t *)(signature + 8) = edx;
-> > +		signature[12] = 0;
-> > +
-> > +		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
-> > +			return base;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +#ifdef CONFIG_XEN
-> > +extern bool xen_hvm_need_lapic(void);
-> > +
-> > +static inline bool xen_para_available(void)
-> > +{
-> > +	return xen_hvm_need_lapic();
-> > +}
-> > +#else
-> > +static inline bool xen_para_available(void)
-> > +{
-> > +	return (xen_cpuid_base() != 0);
+On Mon, Dec 06, 2010 at 05:59:30PM -0700, Ky Srinivasan wrote:
+> Greg,
 > 
-> Would it make sense to collapse the kvm_para_available and
-> the xen_cpuid_base together (and maybe even the HyperV detection code)
-> together in one and just return "x2_apic_para_capable" ?
+> My new KVP patches are ready to go. Should I wait for Hank's patches
+> to be checked in before I send the KVP patches?
 
-Well, no hyper-v now. But put them together is a good idea.
+Hank's patches went in a few hours ago :)
 
---
-regards
-Yang, Sheng
+thanks,
+
+greg k-h
