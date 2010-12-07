@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0LGPHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:07:40 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:44108 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753073Ab0LGPHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:07:38 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: .hKCbBEVM1l0wsrunwoAwJaBqacVN7V8monejTxRmgoGdBO
- 0nwyxBeloTUjCDJ6NXTup43zvTxhfCwhlCUkSpvDnjZI3y_9..KvjOnl8_wi
- BmPFWrFv_RhH2.KXAHo1_bGdHFYV3CSM_elXpDcVD.Hkvsvx9ecthEXZlXK5
- s4cWU0uw3gnujIpw2jbYBDma6QbFWw.rc8z.LKFDjr7zTJGeLnESC7w1x..8
- Dj5lzYnuv31TTMeIBE6v3F2R5ecrYEzX5b49yPNQ-
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 7 Dec 2010 09:07:35 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: akpm@linux-foundation.org, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [Use cpuops V1 04/11] x86: Use this_cpu_ops for current_cpu_data
- accesses
-In-Reply-To: <4CFE4BE0.9040203@kernel.org>
-Message-ID: <alpine.DEB.2.00.1012070906290.26552@router.home>
-References: <20101206171618.302060721@linux.com> <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org> <4CFE4294.30001@kernel.org> <alpine.DEB.2.00.1012070846050.25976@router.home> <4CFE4BE0.9040203@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754516Ab0LGPIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:08:17 -0500
+Received: from hera.kernel.org ([140.211.167.34]:33490 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753422Ab0LGPIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:08:15 -0500
+Message-ID: <4CFE4D94.2060100@kernel.org>
+Date: Tue, 07 Dec 2010 16:07:00 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, William Hubbs <w.d.hubbs@gmail.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [Use cpuops V1 08/11] Fakekey: Simplify speakup_fake_key_pressed
+ through this_cpu_ops
+References: <20101206171618.302060721@linux.com> <20101206171640.890602570@linux.com>
+In-Reply-To: <20101206171640.890602570@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 15:07:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, Tejun Heo wrote:
+On 12/06/2010 06:16 PM, Christoph Lameter wrote:
+> The whole function can be expressed as a simple this_cpu_read() operation.
+> The function overhead is now likely multiple times that of the single
+> instruction that is executed in it.
+> 
+> Cc: William Hubbs <w.d.hubbs@gmail.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> >> Ooh, was too fast.  I think mixing the use of percpu accesses to
-> >> cpu_info and the wrapper macro current_cpu_data is quite confusing.
-> >> There aren't too many current_cpu_data users in x86 anyway.  Can you
-> >> please make the conversion complete?  I'm moving the above misplaced
-> >> chunk into 03 and not applying 04 for now.
-> >
-> > We cannot make that conversion complete since we cannot obtain the address
-> > if we use a this_cpu operation. Then its better to drop this patch.
->
-> No, I was talking about dropping current_cpu_data macro.  We can use
-> __this_cpu_ptr() for addresses.  I just find it very confusing to mix
-> current_cpu_data and using direct percpu accessors on cpu_info.
+applied.
 
-Hmmm... Ok 21 occurrences. So two patches: Conversion and then
-this_cpu_ops. Or one doing both?
-
+-- 
+tejun
