@@ -1,274 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab0LGFa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 00:30:56 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61392 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab0LGFaz convert rfc822-to-8bit (ORCPT
+	id S1752394Ab0LGFeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 00:34:23 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64893 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751334Ab0LGFeV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 00:30:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Va4iXZUD3J7PwjMDuVAoTHtpXC3W5+jtQraP6QzjmNImjyc/Mm/NhNX+/JzVkZsjQq
-         Eavh4osxLnoh+vH0bmaEKnkKzJXwzxKWjYk+hl5rO4vsCULhhIKsWl/ux5AFqfWgQzwv
-         N+xME6DljF+DV2skVkwsPvwb3K0jRIOdoZEc0=
+	Tue, 7 Dec 2010 00:34:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,309,1288594800"; 
+   d="scan'208";a="865283377"
+Date: Tue, 7 Dec 2010 13:32:04 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
+ IRQ info
+Message-ID: <20101207133204.4d913c5a@feng-i7>
+In-Reply-To: <4CFD226C.60308@kernel.org>
+References: <1291349518-3502-1-git-send-email-feng.tang@intel.com>
+	<tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org>
+	<4CFD226C.60308@kernel.org>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1012062005040.8572@tigran.mtv.corp.google.com>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
-	<807118ceb3beeccdd69dda8228229e37b49d9803.1291568905.git.minchan.kim@gmail.com>
-	<alpine.LSU.2.00.1012062005040.8572@tigran.mtv.corp.google.com>
-Date: Tue, 7 Dec 2010 14:30:54 +0900
-Message-ID: <AANLkTi=5CQ=c-NmwLoP3SJ6EMYwqf=Rvs5wzk2RdpO3g@mail.gmail.com>
-Subject: Re: [PATCH v4 6/7] Remove zap_details NULL dependency
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+On Tue, 7 Dec 2010 01:50:36 +0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-On Tue, Dec 7, 2010 at 1:26 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Mon, 6 Dec 2010, Minchan Kim wrote:
->
->> Some functions used zap_details depends on assumption that
->> zap_details parameter should be NULLed if some fields are 0.
->>
->> This patch removes that dependency for next patch easy review/merge.
->> It should not chanage behavior.
->>
->> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> Cc: Rik van Riel <riel@redhat.com>
->> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Nick Piggin <npiggin@kernel.dk>
->> Cc: Mel Gorman <mel@csn.ul.ie>
->> Cc: Wu Fengguang <fengguang.wu@intel.com>
->> Cc: Hugh Dickins <hughd@google.com>
->
-> Sorry, while I do like that you're now using the details block,
-> you seem to be adding overhead in various places without actually
-> simplifying anything - you insist that everything passes down an
-> initialized details block, and then in the end force the pointer
-> to NULL again in all the common cases.
->
-> Which seems odd.  I could understand if you were going to scrap
-> the NULL details optimization altogether; but I think that (for
-> the original optimization reasons) you're right to force it to NULL
-> in the end, so then why initialize the block at all those call sites?
->
->> ---
->>  include/linux/mm.h |    8 ++++++++
->>  mm/madvise.c       |   15 +++++++++------
->>  mm/memory.c        |   14 ++++++++------
->>  mm/mmap.c          |    6 ++++--
->>  4 files changed, 29 insertions(+), 14 deletions(-)
->>
->> diff --git a/include/linux/mm.h b/include/linux/mm.h
->> index e097df6..6522ae4 100644
->> --- a/include/linux/mm.h
->> +++ b/include/linux/mm.h
->> @@ -773,6 +773,14 @@ struct zap_details {
->>       unsigned long truncate_count;           /* Compare vm_truncate_count */
->>  };
->>
->> +#define __ZAP_DETAILS_INITIALIZER(name) \
->> +             { .nonlinear_vma = NULL \
->> +             , .check_mapping = NULL \
->> +             , .i_mmap_lock = NULL }
->> +
->> +#define DEFINE_ZAP_DETAILS(name)             \
->> +     struct zap_details name = __ZAP_DETAILS_INITIALIZER(name)
->
-> Okay.
->
->> +
->>  struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
->>               pte_t pte);
->>
->> diff --git a/mm/madvise.c b/mm/madvise.c
->> index 319528b..bfa17aa 100644
->> --- a/mm/madvise.c
->> +++ b/mm/madvise.c
->> @@ -162,18 +162,21 @@ static long madvise_dontneed(struct vm_area_struct * vma,
->>                            struct vm_area_struct ** prev,
->>                            unsigned long start, unsigned long end)
->>  {
->> +     DEFINE_ZAP_DETAILS(details);
->> +
->>       *prev = vma;
->>       if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
->>               return -EINVAL;
->>
->>       if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
->> -             struct zap_details details = {
->> -                     .nonlinear_vma = vma,
->> -                     .last_index = ULONG_MAX,
->> -             };
->> +             details.nonlinear_vma = vma;
->> +             details.last_index = ULONG_MAX;
->> +
->>               zap_page_range(vma, start, end - start, &details);
->> -     } else
->> -             zap_page_range(vma, start, end - start, NULL);
->> +     } else {
->> +
->> +             zap_page_range(vma, start, end - start, &details);
->> +     }
->
-> You end up with two identical zap_page_range() lines:
-> better have one after the if {} without an else.
->
+> On 12/06/2010 07:01 AM, tip-bot for Feng Tang wrote:
+> > Commit-ID:  a6427a341985e0379060c86b50fcdb59883e4102
+> > Gitweb:
+> > http://git.kernel.org/tip/a6427a341985e0379060c86b50fcdb59883e4102
+> > Author:     Feng Tang <feng.tang@intel.com> AuthorDate: Fri, 3 Dec
+> > 2010 12:11:58 +0800 Committer:  Thomas Gleixner <tglx@linutronix.de>
+> > CommitDate: Mon, 6 Dec 2010 15:58:26 +0100
+> > 
+> > x86: Unify current 3 similar ways of saving IRQ info
+> > 
+> > There are 3 places defining the similar function of saving IRQ
+> > vector info into mp_irqs[] array: mmparse/acpi/mrst. This patch
+> > will reduce the redundant code, and make it only one API:
+> > 	void mp_save_irq(struct mpc_intsrc *m);
+> > 
+> > Signed-off-by: Feng Tang <feng.tang@intel.com>
+> > Cc: Alan Cox <alan@linux.intel.com>
+> > Cc: Len Brown <len.brown@intel.com>
+> > LKML-Reference:
+> > <1291349518-3502-1-git-send-email-feng.tang@intel.com>
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de> ---
+> >  arch/x86/include/asm/mpspec.h |    6 ++++++
+> >  arch/x86/kernel/acpi/boot.c   |   32
+> > +++----------------------------- arch/x86/kernel/mpparse.c     |
+> > 14 +++++++------- arch/x86/platform/mrst/mrst.c |   30
+> > ++---------------------------- 4 files changed, 18 insertions(+),
+> > 64 deletions(-)
+> > 
+> 
+> it breaks compiling when CONFIG_X86_MPPARSE is not defined.
+> 
+> obj-$(CONFIG_X86_MPPARSE)       += mpparse.o
+> 
+> 
+> config X86_MPPARSE              
+>         bool "Enable MPS table" if ACPI
+>         default y
+>         depends on X86_LOCAL_APIC
+>         ---help---              
+>           For old smp systems that do not have proper acpi support.
+> Newer systems (esp with 64bit cpus) with acpi support, MADT and DSDT
+> will override it
+> 
+> 
+> 
+> Yinghai
 
-Okay. Will fix.
+Thanks for the good catch! I only tried allyes/allno/allmod/def configs.
 
->>       return 0;
->>  }
->>
->> diff --git a/mm/memory.c b/mm/memory.c
->> index ebfeedf..c0879bb 100644
->> --- a/mm/memory.c
->> +++ b/mm/memory.c
->> @@ -900,6 +900,9 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->>
->>       init_rss_vec(rss);
->>
->> +     if (!details->check_mapping && !details->nonlinear_vma)
->> +             details = NULL;
->> +
->
-> Aside from its necessity in the next patch, I thoroughly approve of
-> your moving this optimization here: it is confusing, and better that
-> it be done near where the fields are used, than off at the higher level.
+How about move the code into io_apic.c as mp_save_irq() only will get
+called when CONFIG_X86_IO_APIC=y, pls review the following patch which
+is against x86/platform branch of tip tree
 
-Thanks.
+Thanks,
+Feng
 
->
->>       pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
->>       arch_enter_lazy_mmu_mode();
->>       do {
->> @@ -1038,9 +1041,6 @@ static unsigned long unmap_page_range(struct mmu_gather *tlb,
->>       pgd_t *pgd;
->>       unsigned long next;
->>
->> -     if (details && !details->check_mapping && !details->nonlinear_vma)
->> -             details = NULL;
->> -
->
-> Yes, I put it there because that was the highest point at which
-> it could then be done, so it was optimal from a do-it-fewest-times
-> point of view; but not at all helpful in understanding what's going
-> on, much better as you have it.
->
->>       BUG_ON(addr >= end);
->>       mem_cgroup_uncharge_start();
->>       tlb_start_vma(tlb, vma);
->> @@ -1102,7 +1102,7 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
->>       unsigned long tlb_start = 0;    /* For tlb_finish_mmu */
->>       int tlb_start_valid = 0;
->>       unsigned long start = start_addr;
->> -     spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
->> +     spinlock_t *i_mmap_lock = details->i_mmap_lock;
->
-> This appears to be the sole improvement from insisting that everywhere
-> sets up an initialized details block.  I don't think this is worth it.
->
->>       int fullmm = (*tlbp)->fullmm;
->>       struct mm_struct *mm = vma->vm_mm;
->>
->> @@ -1217,10 +1217,11 @@ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
->>  int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
->>               unsigned long size)
->>  {
->> +     DEFINE_ZAP_DETAILS(details);
->
-> Overhead.
->
->>       if (address < vma->vm_start || address + size > vma->vm_end ||
->>                       !(vma->vm_flags & VM_PFNMAP))
->>               return -1;
->> -     zap_page_range(vma, address, size, NULL);
->> +     zap_page_range(vma, address, size, &details);
->>       return 0;
->>  }
->>  EXPORT_SYMBOL_GPL(zap_vma_ptes);
->> @@ -2577,7 +2578,8 @@ restart:
->>  void unmap_mapping_range(struct address_space *mapping,
->>               loff_t const holebegin, loff_t const holelen, int even_cows)
->>  {
->> -     struct zap_details details;
->> +     DEFINE_ZAP_DETAILS(details);
->> +
->>       pgoff_t hba = holebegin >> PAGE_SHIFT;
->>       pgoff_t hlen = (holelen + PAGE_SIZE - 1) >> PAGE_SHIFT;
->>
->> diff --git a/mm/mmap.c b/mm/mmap.c
->> index b179abb..31d2594 100644
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -1900,11 +1900,12 @@ static void unmap_region(struct mm_struct *mm,
->>       struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
->>       struct mmu_gather *tlb;
->>       unsigned long nr_accounted = 0;
->> +     DEFINE_ZAP_DETAILS(details);
->
-> Overhead.
->
->>
->>       lru_add_drain();
->>       tlb = tlb_gather_mmu(mm, 0);
->>       update_hiwater_rss(mm);
->> -     unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
->> +     unmap_vmas(&tlb, vma, start, end, &nr_accounted, &details);
->>       vm_unacct_memory(nr_accounted);
->>       free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
->>                                next? next->vm_start: 0);
->> @@ -2254,6 +2255,7 @@ void exit_mmap(struct mm_struct *mm)
->>       struct vm_area_struct *vma;
->>       unsigned long nr_accounted = 0;
->>       unsigned long end;
->> +     DEFINE_ZAP_DETAILS(details);
->
-> Overhead.
->
->>
->>       /* mm's last user has gone, and its about to be pulled down */
->>       mmu_notifier_release(mm);
->> @@ -2278,7 +2280,7 @@ void exit_mmap(struct mm_struct *mm)
->>       tlb = tlb_gather_mmu(mm, 1);
->>       /* update_hiwater_rss(mm) here? but nobody should be looking */
->>       /* Use -1 here to ensure all VMAs in the mm are unmapped */
->> -     end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
->> +     end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, &details);
->>       vm_unacct_memory(nr_accounted);
->>
->>       free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
->> --
->
-> Am I being too fussy?
+>From c84518b4243e30de1470c9e3dfa38b2ee4fd34ee Mon Sep 17 00:00:00 2001
+From: Feng Tang <feng.tang@intel.com>
+Date: Fri, 19 Nov 2010 11:33:35 +0800
+Subject: [PATCH] x86: unify current 3 similar ways of saving IRQ info
 
-Never. It's a good comment.
-I don't want add overhead unnecessary.
+There are 3 places defining the similar function of saving IRQ
+vector info into mp_irqs[] array: mmparse/acpi/mrst. This patch
+will reduce the redundant code, and make it only one API in
+io_apic.c:
+	void mp_save_irq(struct mpc_intsrc *m);
+as that func will only get called when CONFIG_X86_IO_APIC=y
 
-will fix and resend.
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Len Brown <len.brown@intel.com>
+---
+ arch/x86/include/asm/io_apic.h |    2 +
+ arch/x86/kernel/acpi/boot.c    |   32 ++--------------------
+ arch/x86/kernel/apic/io_apic.c |   54 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/mpparse.c      |   56 ++-------------------------------------
+ arch/x86/platform/mrst/mrst.c  |   30 +--------------------
+ 5 files changed, 64 insertions(+), 110 deletions(-)
 
-Thanks for the review, Hugh.
-
->
-> Hugh
->
-
-
-
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index a6b28d0..df49dd6 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -184,6 +184,8 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void __init pre_init_apic_IRQ0(void);
+ 
++extern void mp_save_irq(struct mpc_intsrc *m);
++
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 71232b9..006f896 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -949,32 +949,6 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ extern int es7000_plat;
+ #endif
+ 
+-static void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static int mp_irq_cmp(struct mpc_intsrc *mp_irq,
+-				struct mpc_intsrc *m)
+-{
+-	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static void save_mp_irq(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+-
+ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ {
+ 	int ioapic;
+@@ -1005,7 +979,7 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ 	mp_irq.dstapic = mp_ioapics[ioapic].apicid; /* APIC ID */
+ 	mp_irq.dstirq = pin;	/* INTIN# */
+ 
+-	save_mp_irq(&mp_irq);
++	mp_save_irq(&mp_irq);
+ 
+ 	isa_irq_to_gsi[bus_irq] = gsi;
+ }
+@@ -1080,7 +1054,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+ 		mp_irq.srcbusirq = i; /* Identity mapped */
+ 		mp_irq.dstirq = pin;
+ 
+-		save_mp_irq(&mp_irq);
++		mp_save_irq(&mp_irq);
+ 	}
+ }
+ 
+@@ -1117,7 +1091,7 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
+ 	mp_irq.dstapic = mp_ioapics[ioapic].apicid;
+ 	mp_irq.dstirq = mp_find_ioapic_pin(ioapic, gsi);
+ 
+-	save_mp_irq(&mp_irq);
++	mp_save_irq(&mp_irq);
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7cc0a72..4aa4dbc 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -126,6 +126,59 @@ static int __init parse_noapic(char *str)
+ }
+ early_param("noapic", parse_noapic);
+ 
++static void assign_to_mp_irq(struct mpc_intsrc *m,
++				    struct mpc_intsrc *mp_irq)
++{
++	mp_irq->dstapic = m->dstapic;
++	mp_irq->type = m->type;
++	mp_irq->irqtype = m->irqtype;
++	mp_irq->irqflag = m->irqflag;
++	mp_irq->srcbus = m->srcbus;
++	mp_irq->srcbusirq = m->srcbusirq;
++	mp_irq->dstirq = m->dstirq;
++}
++
++static int mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
++					struct mpc_intsrc *m)
++{
++	if (mp_irq->dstapic != m->dstapic)
++		return 1;
++	if (mp_irq->type != m->type)
++		return 2;
++	if (mp_irq->irqtype != m->irqtype)
++		return 3;
++	if (mp_irq->irqflag != m->irqflag)
++		return 4;
++	if (mp_irq->srcbus != m->srcbus)
++		return 5;
++	if (mp_irq->srcbusirq != m->srcbusirq)
++		return 6;
++	if (mp_irq->dstirq != m->dstirq)
++		return 7;
++
++	return 0;
++}
++
++/* Will be called in mpparse/acpi/sfi codes for saving IRQ info */
++void mp_save_irq(struct mpc_intsrc *m)
++{
++	int i;
++
++	apic_printk(APIC_VERBOSE, "Int: type %d, pol %d, trig %d, bus %02x,"
++		" IRQ %02x, APIC ID %x, APIC INT %02x\n",
++		m->irqtype, m->irqflag & 3, (m->irqflag >> 2) & 3, m->srcbus,
++		m->srcbusirq, m->dstapic, m->dstirq);
++
++	for (i = 0; i < mp_irq_entries; i++) {
++		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
++			return;
++	}
++
++	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
++	if (++mp_irq_entries == MAX_IRQ_SOURCES)
++		panic("Max # of irq sources exceeded!!\n");
++}
++
+ struct irq_pin_list {
+ 	int apic, pin;
+ 	struct irq_pin_list *next;
+@@ -136,6 +189,7 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+ 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
+ }
+ 
++
+ /* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+ #ifdef CONFIG_SPARSE_IRQ
+ static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 9af64d9..1fe4e79 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -144,18 +144,6 @@ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+ 		mp_irq->srcbusirq, mp_irq->dstapic, mp_irq->dstirq);
+ }
+ 
+-static void __init assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	mp_irq->dstapic = m->dstapic;
+-	mp_irq->type = m->type;
+-	mp_irq->irqtype = m->irqtype;
+-	mp_irq->irqflag = m->irqflag;
+-	mp_irq->srcbus = m->srcbus;
+-	mp_irq->srcbusirq = m->srcbusirq;
+-	mp_irq->dstirq = m->dstirq;
+-}
+-
+ static void __init assign_to_mpc_intsrc(struct mpc_intsrc *mp_irq,
+ 					struct mpc_intsrc *m)
+ {
+@@ -167,47 +155,9 @@ static void __init assign_to_mpc_intsrc(struct mpc_intsrc *mp_irq,
+ 	m->srcbusirq = mp_irq->srcbusirq;
+ 	m->dstirq = mp_irq->dstirq;
+ }
+-
+-static int __init mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
+-					struct mpc_intsrc *m)
+-{
+-	if (mp_irq->dstapic != m->dstapic)
+-		return 1;
+-	if (mp_irq->type != m->type)
+-		return 2;
+-	if (mp_irq->irqtype != m->irqtype)
+-		return 3;
+-	if (mp_irq->irqflag != m->irqflag)
+-		return 4;
+-	if (mp_irq->srcbus != m->srcbus)
+-		return 5;
+-	if (mp_irq->srcbusirq != m->srcbusirq)
+-		return 6;
+-	if (mp_irq->dstirq != m->dstirq)
+-		return 7;
+-
+-	return 0;
+-}
+-
+-static void __init MP_intsrc_info(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	print_MP_intsrc_info(m);
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+ #else /* CONFIG_X86_IO_APIC */
+ static inline void __init MP_bus_info(struct mpc_bus *m) {}
+ static inline void __init MP_ioapic_info(struct mpc_ioapic *m) {}
+-static inline void __init MP_intsrc_info(struct mpc_intsrc *m) {}
+ #endif /* CONFIG_X86_IO_APIC */
+ 
+ 
+@@ -337,7 +287,7 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
+ 			break;
+ 		case MP_INTSRC:
+-			MP_intsrc_info((struct mpc_intsrc *)mpt);
++			mp_save_irq((struct mpc_intsrc *)mpt);
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
+ 			break;
+ 		case MP_LINTSRC:
+@@ -429,13 +379,13 @@ static void __init construct_default_ioirq_mptable(int mpc_default_type)
+ 
+ 		intsrc.srcbusirq = i;
+ 		intsrc.dstirq = i ? i : 2;	/* IRQ0 to INTIN2 */
+-		MP_intsrc_info(&intsrc);
++		mp_save_irq(&intsrc);
+ 	}
+ 
+ 	intsrc.irqtype = mp_ExtINT;
+ 	intsrc.srcbusirq = 0;
+ 	intsrc.dstirq = 0;	/* 8259A to INTIN0 */
+-	MP_intsrc_info(&intsrc);
++	mp_save_irq(&intsrc);
+ }
+ 
+ 
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index fee0b49..ea6529e 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -71,32 +71,6 @@ struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+ EXPORT_SYMBOL_GPL(sfi_mrtc_array);
+ int sfi_mrtc_num;
+ 
+-static inline void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static inline int mp_irq_cmp(struct mpc_intsrc *mp_irq,
+-				struct mpc_intsrc *m)
+-{
+-	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static void save_mp_irq(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+-
+ /* parse all the mtimer info to a static mtimer array */
+ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ {
+@@ -130,7 +104,7 @@ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+-			save_mp_irq(&mp_irq);
++			mp_save_irq(&mp_irq);
+ 	}
+ 
+ 	return 0;
+@@ -200,7 +174,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+-		save_mp_irq(&mp_irq);
++		mp_save_irq(&mp_irq);
+ 	}
+ 	return 0;
+ }
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
