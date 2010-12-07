@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0LGSpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:45:38 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:34792 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab0LGSpg convert rfc822-to-8bit (ORCPT
+	id S1754050Ab0LGSus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:50:48 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45854 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab0LGSuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:45:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101207182243.GB21112@redhat.com>
-References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Tue, 7 Dec 2010 12:45:14 -0600
-Message-ID: <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Dec 2010 13:50:46 -0500
+Date: Tue, 7 Dec 2010 10:50:09 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next v2] media: fix em28xx build, needs hardirq.h
+Message-Id: <20101207105009.7d634c7b.randy.dunlap@oracle.com>
+In-Reply-To: <20101207184453.GA30998@core2.telecom.by>
+References: <20101206140055.34289498.sfr@canb.auug.org.au>
+	<AANLkTi=XkxnHZGTEsrrRmPGQePitzb=akyS99_Qd6ROy@mail.gmail.com>
+	<20101207103815.26054c38.randy.dunlap@oracle.com>
+	<20101207184453.GA30998@core2.telecom.by>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 12:22 PM, Mike Snitzer <snitzer@redhat.com> wrote:
-> On Tue, Dec 07 2010 at  1:10pm -0500,
-> Jon Nelson <jnelson@jamponi.net> wrote:
->
->> I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
->> KOTD kernel) I easily encounter the issue.
->>
->> Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
->> install, installed all updates, installed postgresql and the 'KOTD'
->> (Kernel of the Day)
->> kernel, and ran the following tests (as postgres user because I'm
->> lazy).
->>
->> 1. create a database (from bash):
->>
->> createdb test
->>
->> 2. place the following contents in a file (I used 't.sql'):
->>
->> begin;
->> create temporary table foo as select x as a, ARRAY[x] as b FROM
->> generate_series(1, 10000000 ) AS x;
->> create index foo_a_idx on foo (a);
->> create index foo_b_idx on foo USING GIN (b);
->> rollback;
->>
->> 3. execute that sql:
->>
->> psql -f t.sql --echo-all test
->>
->>
->> With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
->> without issue.
->>
->> With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
->> pretty frequently.
->
-> How does it fail?  postgres errors?  kernel errors?
 
-postgresql errors. Typically, header corruption but from the limited
-visibility I've had into this via strace, what I see is zeroed pages
-where there shouldn't be.
+> It's defined in hardirq.h.
 
-I just ran a test and got:
+Yes, I was asleep at the wheel.  :(
 
-ERROR:  invalid page header in block 37483 of relation base/16384/16417
+---
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-but that is not the only error one might get.
+Fix em28xx build by adding hardirq.h header file:
 
->> Then I tested with the 'vanilla' kernel available here:
->>
->> http://download.opensuse.org/repositories/Kernel:/vanilla/standard/
->>
->> The 'vanilla' kernel exhibited the same problems.
->> The version I tested:  2.6.37-rc4-219-g771f8bc-vanilla.
->>
->> Incidentally, quick tests of jfs, xfs, and ext3 do _not_ show the same
->> problems, although I will note that I usually saw failure at least 1
->> in 3, but sometimes had to re-run the sql test 4 or 5 times before I
->> saw failure.
->>
->> I will continue to do some testing, but I will hold off on testing the
->> commits above until I receive further testing suggestions.
->
-> OK, so to be clear: your testing is on dm-crypt + ext4?
+drivers/media/video/em28xx/em28xx-vbi.c:49: error: implicit declaration of function 'in_interrupt'
 
-Yes. I took a virtual hard disk which shows up as /dev/sdb, used
-cryptsetup to format it as a LUKS volume, mounted the LUKS volume,
-formatted as ext4 (or whatever), mounted that, rsync'd over a blank
-postgresql 'data' directory, started postgresql, became the postgres
-user, and proceeded to create the db and run the sql.
+Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/media/video/em28xx/em28xx-vbi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> And you're testing upstream based kernels (meaning the dm-crypt
-> scalability patch that has been in question is _not_ in the mix)?
-
-I am testing both the KOTD kernels and the "vanilla" kernels - neither
-of which has the dm-crypt patches (as far as I know).
-
--- 
-Jon
+--- linux-next-20101207.orig/drivers/media/video/em28xx/em28xx-vbi.c
++++ linux-next-20101207/drivers/media/video/em28xx/em28xx-vbi.c
+@@ -23,6 +23,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/hardirq.h>
+ #include <linux/init.h>
+ 
+ #include "em28xx.h"
