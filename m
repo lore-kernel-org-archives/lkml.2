@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab0LGKJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 05:09:12 -0500
+	id S1755078Ab0LGKJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 05:09:08 -0500
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:38978 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab0LGKJL (ORCPT
+	with ESMTP id S1751680Ab0LGKJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 05:09:11 -0500
+	Tue, 7 Dec 2010 05:09:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Q4WFSj5oyjOWD4H4+8r8KVSkh3Lpnv0dVr9/i2ZDMA9tWeeQEqHbfwY91stOT5eBor
-         wB2/OeDNKoUSS6qyj/XDOZ5rBs7QvFYUgo1jSFVEMHNL2MRDCuy3jbuFMN7PZeCjbQ1J
-         9cTkI5GPm8QZHct03hXpyoxTbuzWBuFMtMXFQ=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZBbTCeUWIrHUpbcbFsqw3Mid5ziM1trHI/pNknsPMU675OAfl+WEzi1Rncy8B76kkY
+         MPgmZcr1gtALy3QS5/Mk8zPqv2PHXHGXv4XVB7C6dFI0nRcuPg0L5YhfGWeHrXUetkAS
+         l+Tvc9iZQ859bGuJ4j0fBTUZmx7QMaOlOkNLM=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Andreas Gruenbacher <agruen@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mbcache: update comments
-Date: Tue,  7 Dec 2010 19:08:56 +0900
-Message-Id: <1291716536-10285-3-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 1/3] mbcache: use list_for_each_entry*
+Date: Tue,  7 Dec 2010 19:08:54 +0900
+Message-Id: <1291716536-10285-1-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1291716536-10285-1-git-send-email-namhyung@gmail.com>
-References: <1291716536-10285-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing arguments in some function comments and update
-description of mb_cache_entry_free() because it refers obsolete
-mb_cache_entry_takeout().
+Convert list_for_each*() + list_entry() to list_for_each_entry*().
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- fs/mbcache.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+ fs/mbcache.c |   36 ++++++++++++++----------------------
+ 1 files changed, 14 insertions(+), 22 deletions(-)
 
 diff --git a/fs/mbcache.c b/fs/mbcache.c
-index c0cfc42..ab73fff 100644
+index 9344474..0477c71 100644
 --- a/fs/mbcache.c
 +++ b/fs/mbcache.c
-@@ -298,6 +298,8 @@ mb_cache_shrink(struct block_device *bdev)
-  * Shrinks the cache to its minimum possible size (hopefully 0 entries),
-  * and then destroys it. If this was the last mbcache, un-registers the
-  * mbcache from kernel memory management.
-+ *
-+ * @cache: cache to be destroyed
-  */
- void
+@@ -278,21 +278,18 @@ void
+ mb_cache_shrink(struct block_device *bdev)
+ {
+ 	LIST_HEAD(free_list);
+-	struct list_head *l, *ltmp;
++	struct mb_cache_entry *ce, *tmp;
+ 
+ 	spin_lock(&mb_cache_spinlock);
+-	list_for_each_safe(l, ltmp, &mb_cache_lru_list) {
+-		struct mb_cache_entry *ce =
+-			list_entry(l, struct mb_cache_entry, e_lru_list);
++	list_for_each_entry_safe(ce, tmp, &mb_cache_lru_list, e_lru_list) {
+ 		if (ce->e_bdev == bdev) {
+ 			list_move_tail(&ce->e_lru_list, &free_list);
+ 			__mb_cache_entry_unhash(ce);
+ 		}
+ 	}
+ 	spin_unlock(&mb_cache_spinlock);
+-	list_for_each_safe(l, ltmp, &free_list) {
+-		__mb_cache_entry_forget(list_entry(l, struct mb_cache_entry,
+-						   e_lru_list), GFP_KERNEL);
++	list_for_each_entry_safe(ce, tmp, &free_list, e_lru_list) {
++		__mb_cache_entry_forget(ce, GFP_KERNEL);
+ 	}
+ }
+ 
+@@ -308,12 +305,10 @@ void
  mb_cache_destroy(struct mb_cache *cache)
-@@ -339,6 +341,9 @@ mb_cache_destroy(struct mb_cache *cache)
-  * and thus cannot be looked up yet. It should be filled with data, and
-  * then inserted into the cache using mb_cache_entry_insert(). Returns NULL
-  * if no more memory was available.
-+ *
-+ * @cache: cache the cache entry to be allocated from
-+ * @gfp_flags: memory allocation flags
-  */
- struct mb_cache_entry *
- mb_cache_entry_alloc(struct mb_cache *cache, gfp_t gfp_flags)
-@@ -380,6 +385,7 @@ mb_cache_entry_alloc(struct mb_cache *cache, gfp_t gfp_flags)
-  * already (this may happen after a failed lookup, but when another process
-  * has inserted the same cache entry in the meantime).
-  *
-+ * @ce: cache entry to be inserted
-  * @bdev: device the cache entry belongs to
-  * @block: block number
-  * @key: lookup key
-@@ -422,6 +428,8 @@ out:
-  * Release a handle to a cache entry. When the last handle to a cache entry
-  * is released it is either freed (if it is invalid) or otherwise inserted
-  * in to the lru list.
-+ *
-+ * @ce: cache entry to be released
-  */
- void
- mb_cache_entry_release(struct mb_cache_entry *ce)
-@@ -434,8 +442,9 @@ mb_cache_entry_release(struct mb_cache_entry *ce)
- /*
-  * mb_cache_entry_free()
-  *
-- * This is equivalent to the sequence mb_cache_entry_takeout() --
-- * mb_cache_entry_release().
-+ * Release a handle to a cache entry and free it.
-+ *
-+ * @ce: cache entry to be freed
-  */
- void
- mb_cache_entry_free(struct mb_cache_entry *ce)
-@@ -454,6 +463,10 @@ mb_cache_entry_free(struct mb_cache_entry *ce)
-  * in the cache per device and block.) Returns NULL if no such cache entry
-  * exists. The returned cache entry is locked for exclusive access ("single
-  * writer").
-+ *
-+ * @cache: cache to search
-+ * @bdev: device the cache entry should belong to
-+ * @block: block number
-  */
- struct mb_cache_entry *
- mb_cache_entry_get(struct mb_cache *cache, struct block_device *bdev,
+ {
+ 	LIST_HEAD(free_list);
+-	struct list_head *l, *ltmp;
++	struct mb_cache_entry *ce, *tmp;
+ 
+ 	spin_lock(&mb_cache_spinlock);
+-	list_for_each_safe(l, ltmp, &mb_cache_lru_list) {
+-		struct mb_cache_entry *ce =
+-			list_entry(l, struct mb_cache_entry, e_lru_list);
++	list_for_each_entry_safe(ce, tmp, &mb_cache_lru_list, e_lru_list) {
+ 		if (ce->e_cache == cache) {
+ 			list_move_tail(&ce->e_lru_list, &free_list);
+ 			__mb_cache_entry_unhash(ce);
+@@ -322,9 +317,8 @@ mb_cache_destroy(struct mb_cache *cache)
+ 	list_del(&cache->c_cache_list);
+ 	spin_unlock(&mb_cache_spinlock);
+ 
+-	list_for_each_safe(l, ltmp, &free_list) {
+-		__mb_cache_entry_forget(list_entry(l, struct mb_cache_entry,
+-						   e_lru_list), GFP_KERNEL);
++	list_for_each_entry_safe(ce, tmp, &free_list, e_lru_list) {
++		__mb_cache_entry_forget(ce, GFP_KERNEL);
+ 	}
+ 
+ 	if (atomic_read(&cache->c_entry_count) > 0) {
+@@ -398,16 +392,16 @@ mb_cache_entry_insert(struct mb_cache_entry *ce, struct block_device *bdev,
+ {
+ 	struct mb_cache *cache = ce->e_cache;
+ 	unsigned int bucket;
+-	struct list_head *l;
++	struct list_head *block_list;
++	struct mb_cache_entry *entry;
+ 	int error = -EBUSY;
+ 
+ 	bucket = hash_long((unsigned long)bdev + (block & 0xffffffff), 
+ 			   cache->c_bucket_bits);
++	block_list = &cache->c_block_hash[bucket];
+ 	spin_lock(&mb_cache_spinlock);
+-	list_for_each_prev(l, &cache->c_block_hash[bucket]) {
+-		struct mb_cache_entry *ce =
+-			list_entry(l, struct mb_cache_entry, e_block_list);
+-		if (ce->e_bdev == bdev && ce->e_block == block)
++	list_for_each_entry_reverse(entry, block_list, e_block_list) {
++		if (entry->e_bdev == bdev && entry->e_block == block)
+ 			goto out;
+ 	}
+ 	__mb_cache_entry_unhash(ce);
+@@ -468,14 +462,12 @@ mb_cache_entry_get(struct mb_cache *cache, struct block_device *bdev,
+ 		   sector_t block)
+ {
+ 	unsigned int bucket;
+-	struct list_head *l;
+ 	struct mb_cache_entry *ce;
+ 
+ 	bucket = hash_long((unsigned long)bdev + (block & 0xffffffff),
+ 			   cache->c_bucket_bits);
+ 	spin_lock(&mb_cache_spinlock);
+-	list_for_each(l, &cache->c_block_hash[bucket]) {
+-		ce = list_entry(l, struct mb_cache_entry, e_block_list);
++	list_for_each_entry(ce, &cache->c_block_hash[bucket], e_block_list) {
+ 		if (ce->e_bdev == bdev && ce->e_block == block) {
+ 			DEFINE_WAIT(wait);
+ 
 -- 
 1.7.0.4
 
