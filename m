@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0LGAsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 19:48:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53578 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab0LGAsh (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 6 Dec 2010 19:48:37 -0500
-Date: Mon, 6 Dec 2010 19:48:44 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, konrad@kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [RFC PATCH] Utilize the PCI API in the AGP framework.
-Message-ID: <20101207004844.GA31478@dumpdata.com>
-References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
- <1291680126.8232.5.camel@clockmaker-el6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291680126.8232.5.camel@clockmaker-el6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754094Ab0LGBAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 20:00:51 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:36882 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753611Ab0LGBAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 20:00:50 -0500
+Date: Tue, 7 Dec 2010 12:00:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>,
+        Breno Leitao <leitao@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-Id: <20101207120039.6ea1491e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__7_Dec_2010_12_00_39_+1100_wKWHfWrMxxKJQ3v_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 10:02:06AM +1000, Dave Airlie wrote:
-> On Mon, 2010-12-06 at 18:24 -0500, Konrad Rzeszutek Wilk wrote:
-> > Attached is a set of RFC patches that make it possible for AGP graphic drivers to
-> > work under Xen. The major problem that Linux kernel has when running under Xen
-> > is that the usage of "virt_to_phys(x) >> PAGE_SIZE" to get the DMA address is not
-> > applicable. That is due to the fact that the PFN value is not the real Machine
-> > Frame Number (MFN), hence virt_to_phys(x) >> PAGE_SIZE ends up pointing to a
-> > random physical address. But if you use the PCI API, then the DMA (bus) address
-> > returned is a valid MFN.
-> 
-> Can I ask you to go back a step and address what the use case for all of
-> this is, the patch description doesn't address why anyone cares about
-> AGP in 2010, esp with Xen. Virtualising hw  drivers for the sake of it
-> is all well and good, but since most of these drivers are for really
-> legacy systems I can't imagine we are going to see a lot of regression
-> testing before they hit distros like Debian two years from now, though
-> maybe Gentoo might pick up some, (is anyone even running IA64?).
+--Signature=_Tue__7_Dec_2010_12_00_39_+1100_wKWHfWrMxxKJQ3v_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hey Dave,
-Thank you for you quick reply and brief look at the code. When I wrote
-this code a similar thought went through my head, and around that
-time three bugs from Debian (#601341, #602418 and #604096) asked what
-is the the status of making AGP work with Xen. I've asked the folks
-on the bugs to provide input on your question. In regards to regressions
-I've a lot of these machines so I can definitly test them for
-regressions (my thought was to run the OpenArena, TuxRace, and watch
-some flash - is that a good enough test or should I expand it?)
-But obviously I don't have all of them so yeah something might break.
+Hi all,
 
-> 
-> I can maybe imagine the Intel GTT being cared about but we've already
-> addressed the issues in it from what I can see.
+After merging the net tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Definitly for the new hardware.
-> 
-> Also the X server use case is still possibly valid for a lot of the
-> systems here, its userspace ABI so it can't just end up broken. The move
+drivers/net/ehea/ehea_main.c: In function 'ehea_refill_rq1':
+drivers/net/ehea/ehea_main.c:405: error: implicit declaration of function '=
+ehea_info'
+drivers/net/ehea/ehea_main.c: In function 'ehea_init_fill_rq1':
+drivers/net/ehea/ehea_main.c:429: error: implicit declaration of function '=
+ehea_error'
+drivers/net/ehea/ehea_main.c: In function 'ehea_neq_tasklet':
+drivers/net/ehea/ehea_main.c:1306: warning: format '%lx' expects type 'long=
+ unsigned int', but argument 2 has type 'u64'
 
-Right. That would mean testing the MGA, SiS, VIA, and whatever else in the 
-drivers/gpu/drm/ directory with Xserver. Would the latest Xorg (1.8) do?
+Caused by commit 539995d18649023199986424d140f1d620372ce5 ("ehea: Use the
+standard logging functions") interacting with commit
+5c7e57f7cddb83d81d83fefa5822dfe80891130e ("ehea: Add some info messages
+and fix an issue") which went into Linus' tree before 2.6.37-rc4.
 
-> to TTM/DRM being the main user didn't suddenly remove the use of the X
-> server case on older systems which don't have a TTM/DRM layer.
+Presumably a merge of net-current into the net tree will need a fixup patch.
 
-Yup. I've some patches for that too, but figured it would make sense
-to get input first on this set. Let me post them shortly as they can
-be used independently of this patchset.
-> 
-> Other than that the idea seems sane, I just hate having to upgrade large
-> parts of the subsystem without some reasonable justification that
+I have used the net tree from next-20101206 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Naturally.
-> someone out there is going to use it. If it allows some major cleanup
-> else where that would also be a possibly good justification.
-> 
-> Dave.
-> 
-> 
+--Signature=_Tue__7_Dec_2010_12_00_39_+1100_wKWHfWrMxxKJQ3v_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM/Yc3AAoJEDMEi1NhKgbskQAH/A1Oco8rh1BwBvmKpGU0tfCX
+DfIozyA7lkhMOggpZptCnpCgjgPHwC0OjV1vkfF6tSnnUUqPPq4xrsVE17Az0p+C
+K8PfqtfnYGJg0gJeqoxiQFfFOXKJBgrqk0No6f0lh+oFpGtDamBVFiGFoos83Dil
+NinJ8C9i5EbkDdlLYwrzS6v/+q0ev88BwpcX0AcIlVhvvzTzT8do8VS7JpYcSFdr
+BE72PJ9F28FBwIrpFprXQNrOohDFM/f1PEmWVYtSo2f74gUeNVcgl/Nm3FxK+yVP
+gDZDWkZnmo7EOfAo7eCnSKZIoQWFzMBXCW22T5x2DouYRyNcxwKWgs7vJAaMG8Y=
+=SrfO
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Dec_2010_12_00_39_+1100_wKWHfWrMxxKJQ3v_--
