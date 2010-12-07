@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab0LGCWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:22:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:39156 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab0LGCWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:22:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,308,1288594800"; 
-   d="scan'208";a="865237954"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -v4 0/3] ACPI, APEI, Report GHES error information via printk
-Date: Tue,  7 Dec 2010 10:22:28 +0800
-Message-Id: <1291688551-14395-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752566Ab0LGCYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:24:13 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64894 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab0LGCYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:24:12 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=aH0YrG8yK9sA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=meVymXHHAAAA:8 a=w9w-REy3VHsbP2wsAPAA:9 a=rQHBK-qtTidJUTk75ZOSAKBNyzcA:4 a=PUjeQqilurYA:10 a=TZKiN4vec_IA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=mVSS6hngvTFlF1_x:21 a=h-yt-G3dzGjxQ2YR:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 05/10] mm: Remove likely() from
+ grab_cache_page_write_begin()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <20101207021329.476854013@goodmis.org>
+References: <20101207015834.196176991@goodmis.org>
+	 <20101207021329.476854013@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 06 Dec 2010 21:24:10 -0500
+Message-ID: <1291688650.16223.124.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent consensus is that hardware error should be reported via printk.
-This patch adds printk support to APEI GHES.
+[ Resending to Nick's real email address ]
 
-v4:
+From: Steven Rostedt <srostedt@redhat.com>
 
-- Remove pr_pfx, use printk directly
+Running the annotated branch profiler on a box doing average work
+(firefox, evolution, xchat, distcc farm), the likely() used in
+grab_cache_page_write_begin() was incorrect most of the time:
 
-v3:
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+ 1924262 71332401  97 grab_cache_page_write_begin    filemap.c           2206
 
-- Add document for output format per Andrew's comments
-- Move pr_pfx into printk.h, hope it is useful for others too
-- Fixes some issues according to comments
+Adding a trace_printk() and running the function tracer limited to
+just this function I can see:
 
-v2:
+        gconfd-2-2696  [000]  4467.268935: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=7
+        gconfd-2-2696  [000]  4467.268946: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268947: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=8
+        gconfd-2-2696  [000]  4467.268959: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268960: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=9
+        gconfd-2-2696  [000]  4467.268972: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268973: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=10
+        gconfd-2-2696  [000]  4467.268991: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268992: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=11
+        gconfd-2-2696  [000]  4467.269005: grab_cache_page_write_begin <-ext3_write_begin
 
-- Some minor adjustment of PCIe error section definition and printk format
+Which shows that a lot of calls from ext3_write_begin will result in
+the page returned by "find_lock_page" will be NULL.
 
-[PATCH -v4 1/3] Add CPER PCIe error section structure and constants definition
-[PATCH -v4 2/3] ACPI, APEI, Add APEI generic error status printing support
-[PATCH -v4 3/3] ACPI, APEI, Report GHES error information via printk
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ mm/filemap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/filemap.c b/mm/filemap.c
+index ea89840..d557fe7 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2218,7 +2218,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 		gfp_notmask = __GFP_FS;
+ repeat:
+ 	page = find_lock_page(mapping, index);
+-	if (likely(page))
++	if (page)
+ 		return page;
+ 
+ 	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
+
+
