@@ -1,184 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab0LGPY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:24:29 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:44375 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab0LGPY0 convert rfc822-to-8bit (ORCPT
+	id S1754669Ab0LGP0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:26:36 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46487 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab0LGP0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:24:26 -0500
+	Tue, 7 Dec 2010 10:26:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rTfWt20qtIQMrO6iE04J//HE1fX+NrXM0mPjbc+lZmNSbz6dlwJBer+7IJaWKKr0NC
-         k8+DLtmesbP+DoaPFr0H/lhbGmN4VW1d1Gbhg7oNvVBxN70ubhmiqs2kav2bqoRwRbGf
-         NJ5QBXHuldZN3EoQ/bymDurd1KDG23cTgCY1k=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XAsEAIdoFNFpaLlW8k4fBzOVPblNHAlR2q+V4RgEAsyHszsmOoHvWsSZMV9c6OkqMD
+         Mgm7x7TuCaIMORSxgjHDjFmy3ZYFUQp2Jwt4eGcsP1RHidHUoaJObIYUJ/905AdACZ7j
+         nWMjqLrW/W7NYP7NAzQjegHZC4kMAB6iJVMZE=
+Date: Wed, 8 Dec 2010 00:26:25 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+Message-ID: <20101207152625.GB608@barrios-desktop>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+ <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+ <20101207144923.GB2356@cmpxchg.org>
+ <20101207150710.GA26613@barrios-desktop>
+ <20101207151939.GF2356@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20101207112555.GE16103@dastard>
-References: <cover.1290852958.git.npiggin@kernel.dk>
-	<20101207112555.GE16103@dastard>
-Date: Wed, 8 Dec 2010 02:24:23 +1100
-Message-ID: <AANLkTinAt9PEWMCP55o64E7wsfZ=depU+YXbG8DdGYdO@mail.gmail.com>
-Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
-From: Nick Piggin <npiggin@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101207151939.GF2356@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 10:25 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Sat, Nov 27, 2010 at 09:15:58PM +1100, Nick Piggin wrote:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
->>
->> Here is an new set of vfs patches for review, not that there was much interest
->> last time they were posted. It is structured like:
->>
->> * preparation patches
->> * introduce new locks to take over dcache_lock, then remove it
->> * cleaning up and reworking things for new locks
->> * rcu-walk path walking
->> * start on some fine grained locking steps
->
-> Just got this set of traces doing an 8-way parallel remove of 50
-> million inodes at about 40M inodes unlinked:
+On Tue, Dec 07, 2010 at 04:19:39PM +0100, Johannes Weiner wrote:
+> On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
+> > On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
+> > > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
+> > > > Changelog since v3:
+> > > >  - Change function comments - suggested by Johannes
+> > > >  - Change function name - suggested by Johannes
+> > > >  - add only dirty/writeback pages to deactive pagevec
+> > > 
+> > > Why the extra check?
+> > > 
+> > > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> > > >  			if (lock_failed)
+> > > >  				continue;
+> > > >  
+> > > > -			ret += invalidate_inode_page(page);
+> > > > -
+> > > > +			ret = invalidate_inode_page(page);
+> > > > +			/*
+> > > > +			 * If the page is dirty or under writeback, we can not
+> > > > +			 * invalidate it now.  But we assume that attempted
+> > > > +			 * invalidation is a hint that the page is no longer
+> > > > +			 * of interest and try to speed up its reclaim.
+> > > > +			 */
+> > > > +			if (!ret && (PageDirty(page) || PageWriteback(page)))
+> > > > +				deactivate_page(page);
+> > > 
+> > > The writeback completion handler does not take the page lock, so you
+> > > can still miss pages that finish writeback before this test, no?
+> > 
+> > Yes. but I think it's rare and even though it happens, it's not critical.
+> > > 
+> > > Can you explain why you felt the need to add these checks?
+> > 
+> > invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
+> > Look invalidate_complete_page. As easiest example, if the page has buffer and
+> > try_to_release_page can't release the buffer, it could return 0.
+> 
+> Ok, but somebody still tried to truncate the page, so why shouldn't we
+> try to reclaim it?  The reason for deactivating at this location is
+> that truncation is a strong hint for reclaim, not that it failed due
+> to dirty/writeback pages.
+> 
+> What's the problem with deactivating pages where try_to_release_page()
+> failed?
 
-Thanks for testing...
+If try_to_release_page fails and the such pages stay long time in pagevec,
+pagevec drain often happens. I think such pages are rare so skip such pages doesn't
+hurt goal of this patch.
 
+> 
+> I don't think we should add more logic than necessary.  If there is a
+> good reason for it, it needs to get a code comment at least.
 
-> [ 5954.061633] BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1081
-> [ 5954.062466] in_atomic(): 0, irqs_disabled(): 1, pid: 2927, name: rm
-> [ 5954.063122] 3 locks held by rm/2927:
-> [ 5954.063476]  #0:  (&sb->s_type->i_mutex_key#12/1){+.+.+.}, at: [<ffffffff8116f5e1>] do_rmdir+0x81/0x130
-> [ 5954.064014]  #1:  (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff8116d3a8>] vfs_rmdir+0x58/0xe0
-> [ 5954.064014]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff811779c0>] shrink_dentry_list+0x0/0x430
-> [ 5954.064014] irq event stamp: 1484376719
-> [ 5954.064014] hardirqs last  enabled at (1484376719): [<ffffffff810ebf07>] __call_rcu+0xd7/0x1a0
-> [ 5954.064014] hardirqs last disabled at (1484376718): [<ffffffff810ebe7a>] __call_rcu+0x4a/0x1a0
-> [ 5954.064014] softirqs last  enabled at (1484376586): [<ffffffff8108b911>] __do_softirq+0x161/0x270
-> [ 5954.064014] softirqs last disabled at (1484376581): [<ffffffff8103af1c>] call_softirq+0x1c/0x50
-> [ 5954.064014] Pid: 2927, comm: rm Not tainted 2.6.37-rc4-dgc+ #794
-> [ 5954.064014] Call Trace:
-> [ 5954.064014]  [<ffffffff810b95b0>] ? print_irqtrace_events+0xd0/0xe0
-> [ 5954.064014]  [<ffffffff81076455>] __might_sleep+0xf5/0x130
-> [ 5954.064014]  [<ffffffff81b1e603>] do_page_fault+0x103/0x4f0
-> [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 5954.064014]  [<ffffffff81b19b28>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> [ 5954.064014]  [<ffffffff810b8e20>] ? usage_match+0x0/0x20
-> [ 5954.064014]  [<ffffffff81b1af25>] page_fault+0x25/0x30
-> [ 5954.064014]  [<ffffffff810b8e20>] ? usage_match+0x0/0x20
-> [ 5954.064014]  [<ffffffff810ba1c8>] ? __bfs+0xc8/0x260
-> [ 5954.064014]  [<ffffffff810ba123>] ? __bfs+0x23/0x260
-> [ 5954.064014]  [<ffffffff810ba4d2>] find_usage_backwards+0x42/0x80
-> [ 5954.064014]  [<ffffffff810bcec4>] check_usage_backwards+0x64/0xf0
-> [ 5954.064014]  [<ffffffff8104796f>] ? save_stack_trace+0x2f/0x50
-> [ 5954.064014]  [<ffffffff810bce60>] ? check_usage_backwards+0x0/0xf0
-> [ 5954.064014]  [<ffffffff810bd9a9>] mark_lock+0x1a9/0x440
-> [ 5954.064014]  [<ffffffff810be989>] __lock_acquire+0x5a9/0x14b0
-> [ 5954.064014]  [<ffffffff810be716>] ? __lock_acquire+0x336/0x14b0
-> [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 5954.064014]  [<ffffffff810bf944>] lock_acquire+0xb4/0x140
-> [ 5954.064014]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
-> [ 5954.064014]  [<ffffffff81b19d86>] _raw_spin_lock+0x36/0x70
-> [ 5954.064014]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
-> [ 5954.064014]  [<ffffffff81177a1c>] shrink_dentry_list+0x5c/0x430
-> [ 5954.064014]  [<ffffffff811779c0>] ? shrink_dentry_list+0x0/0x430
-> [ 5954.064014]  [<ffffffff816b9c7e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [ 5954.064014]  [<ffffffff81177f2d>] __shrink_dcache_sb+0x13d/0x1c0
-> [ 5954.064014]  [<ffffffff811784bf>] shrink_dcache_parent+0x32f/0x390
-> [ 5954.064014]  [<ffffffff8116d31d>] dentry_unhash+0x3d/0x70
-> [ 5954.064014]  [<ffffffff8116d3b0>] vfs_rmdir+0x60/0xe0
-> [ 5954.064014]  [<ffffffff8116f673>] do_rmdir+0x113/0x130
-> [ 5954.064014]  [<ffffffff8103a03a>] ? sysret_check+0x2e/0x69
-> [ 5954.064014]  [<ffffffff81b19ae9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [ 5954.064014]  [<ffffffff8116f6c5>] sys_unlinkat+0x35/0x40
-> [ 5954.064014]  [<ffffffff8103a002>] system_call_fastpath+0x16/0x1b
+Above my comment is enough to justify it? If you agree, I can add the comment.
 
-Seems that lockdep exploded.
+Thanks for careful review, Hannes.
 
-> [ 5954.092916] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> [ 5954.093806] IP: [<ffffffff810ba1c8>] __bfs+0xc8/0x260
-> [ 5954.094331] PGD 1084e5067 PUD 102368067 PMD 0
-> [ 5954.094830] Oops: 0000 [#1] SMP
-> [ 5954.095194] last sysfs file: /sys/devices/system/cpu/online
-> [ 5954.095760] CPU 6
-> [ 5954.095954] Modules linked in:
-> [ 5954.096319]
-> [ 5954.096483] Pid: 2927, comm: rm Not tainted 2.6.37-rc4-dgc+ #794 /Bochs
-> [ 5954.096665] RIP: 0010:[<ffffffff810ba1c8>]  [<ffffffff810ba1c8>] __bfs+0xc8/0x260
-> [ 5954.096665] RSP: 0018:ffff8801175539a8  EFLAGS: 00010046
-> [ 5954.096665] RAX: ffffffff8267d980 RBX: ffffffff8267d980 RCX: ffff880117553a48
-> [ 5954.096665] RDX: ffff8801175539d0 RSI: 0000000000000000 RDI: ffff880117553a48
-> [ 5954.096665] RBP: ffff880117553a08 R08: 0000000000000000 R09: 0000000000000000
-> [ 5954.096665] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-> [ 5954.096665] R13: ffffffff810b8e20 R14: ffff880117553a90 R15: 0000000000000000
-> [ 5954.096665] FS:  00007f4594cf3700(0000) GS:ffff8800dfa00000(0000) knlGS:0000000000000000
-> [ 5954.096665] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 5954.096665] CR2: 00007f2f21e89c60 CR3: 0000000110b0f000 CR4: 00000000000006e0
-> [ 5954.096665] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 5954.096665] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [ 5954.096665] Process rm (pid: 2927, threadinfo ffff880117552000, task ffff88010ff10b00)
-> [ 5954.096665] Stack:
-> [ 5954.096665]  ffffffff8267d868 00007fffa02d1428 ffff8800ffffffff ffff880100000000
-> [ 5954.096665]  000000000000b720 ffff880117553a48 ffffffff8267d868 ffff880117553a48
-> [ 5954.096665]  0000000000000000 ffff88010ff10b00 0000000000000000 ffffffff81dacba0
-> [ 5954.096665] Call Trace:
-> [ 5954.096665]  [<ffffffff810ba4d2>] find_usage_backwards+0x42/0x80
-> [ 5954.096665]  [<ffffffff810bcec4>] check_usage_backwards+0x64/0xf0
-> [ 5954.096665]  [<ffffffff8104796f>] ? save_stack_trace+0x2f/0x50
-> [ 5954.096665]  [<ffffffff810bce60>] ? check_usage_backwards+0x0/0xf0
-> [ 5954.096665]  [<ffffffff810bd9a9>] mark_lock+0x1a9/0x440
-> [ 5954.096665]  [<ffffffff810be989>] __lock_acquire+0x5a9/0x14b0
-> [ 5954.096665]  [<ffffffff810be716>] ? __lock_acquire+0x336/0x14b0
-> [ 5954.096665]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 5954.096665]  [<ffffffff810bf944>] lock_acquire+0xb4/0x140
-> [ 5954.096665]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
-> [ 5954.096665]  [<ffffffff81b19d86>] _raw_spin_lock+0x36/0x70
-> [ 5954.096665]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
-> [ 5954.096665]  [<ffffffff81177a1c>] shrink_dentry_list+0x5c/0x430
-> [ 5954.096665]  [<ffffffff811779c0>] ? shrink_dentry_list+0x0/0x430
-> [ 5954.096665]  [<ffffffff816b9c7e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [ 5954.096665]  [<ffffffff81177f2d>] __shrink_dcache_sb+0x13d/0x1c0
-> [ 5954.096665]  [<ffffffff811784bf>] shrink_dcache_parent+0x32f/0x390
-> [ 5954.096665]  [<ffffffff8116d31d>] dentry_unhash+0x3d/0x70
-> [ 5954.096665]  [<ffffffff8116d3b0>] vfs_rmdir+0x60/0xe0
-> [ 5954.096665]  [<ffffffff8116f673>] do_rmdir+0x113/0x130
-> [ 5954.096665]  [<ffffffff8103a03a>] ? sysret_check+0x2e/0x69
-> [ 5954.096665]  [<ffffffff81b19ae9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [ 5954.096665]  [<ffffffff8116f6c5>] sys_unlinkat+0x35/0x40
-> [ 5954.096665]  [<ffffffff8103a002>] system_call_fastpath+0x16/0x1b
-> [ 5954.096665] Code: 0a 89 05 dc 0f a8 01 48 8b 41 10 48 85 c0 0f 84 1f 01 00 00 48 8d 98 70 01 00 00 48 05 80 01 00 00 45 85 c0 48 0f 44 d8 4c 8b 3b <49> 8b 07 49 39
-> [ 5954.096665] RIP  [<ffffffff810ba1c8>] __bfs+0xc8/0x260
-> [ 5954.096665]  RSP <ffff8801175539a8>
-> [ 5954.096665] CR2: 0000000000000000
-> [ 5954.127991] ---[ end trace 85a6727c2d4e3d90 ]---
-
-So I vfs-scale-working branch may not be entirely in the clear, seeing
-as it touches
-the code lower in the call chain. However I don't know what can cause
-lockdep to go off
-the rails like this.
-
-There is a sequence I used to hack around lockdep nesting
-restrictions, following this
-pattern:
-
- repeat:
-    spin_lock(&parent->d_lock);
-    spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-    /* do stuff */
-    spin_unlock(&parent->d_lock);
-    spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
-    parent = dentry;
-    spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
-    goto repeat;
-
-It's not directly in this call chain, but I wonder if it could have
-caused any problem?
+-- 
+Kind regards,
+Minchan Kim
