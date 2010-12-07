@@ -1,47 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab0LGCCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:02:47 -0500
-Received: from cerberus.infoblox.com ([128.242.99.209]:56176 "EHLO
-	cerberus.infoblox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab0LGCCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:02:46 -0500
-X-Greylist: delayed 2026 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Dec 2010 21:02:46 EST
-Message-ID: <4CFD8DD9.1000101@infoblox.com>
-Date: Mon, 6 Dec 2010 17:28:57 -0800
-From: Kin Cho <kcho@infoblox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-Subject: [x86_64] "bad pmd" when using huge pages
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754641Ab0LGCII (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:08:08 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45959 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab0LGCIG (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 6 Dec 2010 21:08:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com, airlied@redhat.com,
+        linux-kernel@vger.kernel.org, konrad@kernel.org
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/7] ttm: Expand (*populate) to support an array of DMA addresses.
+Date: Mon,  6 Dec 2010 21:07:22 -0500
+Message-Id: <1291687646-31994-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291687646-31994-1-git-send-email-konrad.wilk@oracle.com>
+References: <1291687646-31994-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We pass in the array of ttm pages to be populated in the GART/MM
+of the card (or AGP). Patch titled: "ttm: Utilize the dma_addr_t array
+for pages that are to in DMA32 pool." uses the DMA API to make those
+pages have a proper DMA addresses (in the situation where
+page_to_phys or virt_to_phys do not give use the DMA (bus) address).
 
-With a stock 2.6.32-8 kernel (with minor patches) configured for
-x86_64 and using huge pages, I'm seeing dmesg output like this:
+Since we are using the DMA API on those pages, we should pass in the
+DMA address to this function so it can save it in its proper fields
+(later patches use it).
 
-mm/memory.c:144: bad pmd ffff880117bb6128(00000002cca000e7).
+This fixes the issues on AGP hardware with Xen where when
+we call (*populate), the code ends up calling agp_allocate_memory
+with AGP_USER_MEMORY, which allocates a GART but no pages.
+We then hook up the pages we want the GART to know about, but we
+do not fill the DMA address. This allows us to do so.
 
-At this point one huge page is apparently "leaked" --
-h->free_huge_pages in gather_surplus_pages is 1 less, until rebooted.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 ++-
+ drivers/gpu/drm/radeon/radeon_ttm.c     |    3 ++-
+ drivers/gpu/drm/ttm/ttm_agp_backend.c   |    3 ++-
+ drivers/gpu/drm/ttm/ttm_tt.c            |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c  |    3 ++-
+ include/drm/ttm/ttm_bo_driver.h         |    4 +++-
+ 6 files changed, 12 insertions(+), 6 deletions(-)
 
-When this happens, the system is moderately loaded (~70% idle).
-
-Also, if processes (bdb) holding shared (huge) pages are not
-restarted, or when configured for x86, the problem doesn't appear.
-
-Looking at the pmd flags, the problem appears to be related to the
-_PAGE_PSE bit incorrectly getting set.
-
-Any suggestions/comments is appreciated.
-
-Thanks,
-
--kin
+diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+index 288baca..edc140a 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
++++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+@@ -20,7 +20,8 @@ struct nouveau_sgdma_be {
+ 
+ static int
+ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
+-		       struct page **pages, struct page *dummy_read_page)
++		       struct page **pages, struct page *dummy_read_page,
++		       dma_addr_t *dma_addrs)
+ {
+ 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
+ 	struct drm_device *dev = nvbe->dev;
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 01c2c73..6f156e9 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -655,7 +655,8 @@ struct radeon_ttm_backend {
+ static int radeon_ttm_backend_populate(struct ttm_backend *backend,
+ 				       unsigned long num_pages,
+ 				       struct page **pages,
+-				       struct page *dummy_read_page)
++				       struct page *dummy_read_page,
++				       dma_addr_t *dma_addrs)
+ {
+ 	struct radeon_ttm_backend *gtt;
+ 
+diff --git a/drivers/gpu/drm/ttm/ttm_agp_backend.c b/drivers/gpu/drm/ttm/ttm_agp_backend.c
+index f999e36..1c4a72f 100644
+--- a/drivers/gpu/drm/ttm/ttm_agp_backend.c
++++ b/drivers/gpu/drm/ttm/ttm_agp_backend.c
+@@ -47,7 +47,8 @@ struct ttm_agp_backend {
+ 
+ static int ttm_agp_populate(struct ttm_backend *backend,
+ 			    unsigned long num_pages, struct page **pages,
+-			    struct page *dummy_read_page)
++			    struct page *dummy_read_page,
++			    dma_addr_t *dma_addrs)
+ {
+ 	struct ttm_agp_backend *agp_be =
+ 	    container_of(backend, struct ttm_agp_backend, backend);
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index 0d39001..86d5b17 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -169,7 +169,7 @@ int ttm_tt_populate(struct ttm_tt *ttm)
+ 	}
+ 
+ 	be->func->populate(be, ttm->num_pages, ttm->pages,
+-			   ttm->dummy_read_page);
++			   ttm->dummy_read_page, ttm->dma_address);
+ 	ttm->state = tt_unbound;
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
+index 80bc37b..87e43e0 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
+@@ -102,7 +102,8 @@ struct vmw_ttm_backend {
+ 
+ static int vmw_ttm_populate(struct ttm_backend *backend,
+ 			    unsigned long num_pages, struct page **pages,
+-			    struct page *dummy_read_page)
++			    struct page *dummy_read_page,
++			    dma_addr_t *dma_addrs)
+ {
+ 	struct vmw_ttm_backend *vmw_be =
+ 	    container_of(backend, struct vmw_ttm_backend, backend);
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index 6dc4fcc..ebcd3dd 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -50,13 +50,15 @@ struct ttm_backend_func {
+ 	 * @pages: Array of pointers to ttm pages.
+ 	 * @dummy_read_page: Page to be used instead of NULL pages in the
+ 	 * array @pages.
++	 * @dma_addrs: Array of DMA (bus) address of the ttm pages.
+ 	 *
+ 	 * Populate the backend with ttm pages. Depending on the backend,
+ 	 * it may or may not copy the @pages array.
+ 	 */
+ 	int (*populate) (struct ttm_backend *backend,
+ 			 unsigned long num_pages, struct page **pages,
+-			 struct page *dummy_read_page);
++			 struct page *dummy_read_page,
++			 dma_addr_t *dma_addrs);
+ 	/**
+ 	 * struct ttm_backend_func member clear
+ 	 *
+-- 
+1.7.1
 
