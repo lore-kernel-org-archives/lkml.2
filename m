@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0LGGbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 01:31:50 -0500
-Received: from freeflow.nu ([178.79.134.28]:42371 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab0LGGbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 01:31:49 -0500
-Message-ID: <4CFDD4D8.10403@kernel.org>
-Date: Tue, 07 Dec 2010 08:31:52 +0200
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: gregkh@suse.de, linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH 1/6] Staging: w35und: Merge wbhal_f.h to wbhal_s.h
-References: <1291454177-5102-1-git-send-email-penberg@kernel.org> <20101207001253.GA20030@kroah.com>
-In-Reply-To: <20101207001253.GA20030@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752332Ab0LGGnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 01:43:04 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:42219 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab0LGGnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 01:43:02 -0500
+Content-Type: text/plain; charset=UTF-8
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] perf: Allow strong and weak functions in LIB_OBJS
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-reply-to: <1290991642-sup-5890@au1.ibm.com>
+References: <1290658375-10342-1-git-send-email-imunsie@au1.ibm.com> <1290658375-10342-2-git-send-email-imunsie@au1.ibm.com> <20101126211836.GA5864@ghostprotocols.net> <1290991642-sup-5890@au1.ibm.com>
+Date: Tue, 07 Dec 2010 17:42:58 +1100
+Message-Id: <1291704103-sup-9818@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/7/10 2:12 AM, Greg KH wrote:
-> On Sat, Dec 04, 2010 at 11:16:12AM +0200, Pekka Enberg wrote:
->> This patch merges HAL struct and function definitions into one header file.
-> This patch doesn't apply at all, what was it made against?
+Excerpts from Ian Munsie's message of Mon Nov 29 11:53:07 +1100 2010:
+> I'm not seeing any of those warnings or errors on either of the systems
+> I have been testing on (x86_64 + PPC64), but it looks like the linker is
+> trying to pull in too much from the system libraries.
+> 
+> Can you test the below patch to see if the messages go away - it only
+> applies the whole-archive flag to libperf.a, whereas before I was also
+> applying it to pthread, libelf, etc.
 
-They're actually patches that predate the ones you merged recently from 
-me. I just pulled your tree to mine and did "git format-patch" without 
-thinking about it too much.
+Hey Arnaldo,
 
-> Care to refresh this whole series so it can be applied?
+Just wondering if you got around to testing this patch?
 
-Sure, I can do that.
-
-             Pekka
+Thanks,
+-Ian
