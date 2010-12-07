@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab0LGSLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:11:13 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:40264 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab0LGSLL (ORCPT
+	id S1753112Ab0LGSLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:11:50 -0500
+Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:4505 "EHLO
+	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab0LGSLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:11:11 -0500
+	Tue, 7 Dec 2010 13:11:49 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC/PATCH v6 03/12] media: Entities, pads and links
+Date: Tue, 7 Dec 2010 19:11:39 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
+        lennart@poettering.net
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <201012071813.35501.hverkuil@xs4all.nl> <20101207175505.GI9689@rakim.wolfsonmicro.main>
+In-Reply-To: <20101207175505.GI9689@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
-In-Reply-To: <20101207142145.GA27861@think>
-References: <AANLkTik_p0yxQBQ3ehHWYPLfiqxGbSNUT5XUk9dC5-x6@mail.gmail.com>
- <20101201165229.GC13415@redhat.com> <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
- <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Tue, 7 Dec 2010 12:10:49 -0600
-Message-ID: <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org, Jon Nelson <jnelson@jamponi.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012071911.39270.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
-KOTD kernel) I easily encounter the issue.
+On Tuesday, December 07, 2010 18:55:05 Mark Brown wrote:
+> On Tue, Dec 07, 2010 at 06:13:35PM +0100, Hans Verkuil wrote:
+> 
+> > Personally I think this is perfectly clear. The original confusion came from
+> > the word 'active', which I understand means 'streaming' in alsa. By adding
+> > a 'streaming' flag in addition to the active flag I think it will be clear
+> > that 'active' and 'streaming' are two different things.
+> 
+> It's not that, it's the fact that active sounds to me like the link
+> ought to be powered up which isn't the case - it's too verby.  Like I
+> say, I think I'd prefer a more passive name like "connected".
 
-Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
-install, installed all updates, installed postgresql and the 'KOTD'
-(Kernel of the Day)
-kernel, and ran the following tests (as postgres user because I'm
-lazy).
+Ah, now I understand what you mean. Would 'activated' be better than 'active'?
 
-1. create a database (from bash):
+Or perhaps just say: the link 'is on' or the link 'is switched on'?
 
-createdb test
+So: ...LINK_SWITCHED_ON (sorry, forgot what the prefix is).
 
-2. place the following contents in a file (I used 't.sql'):
+Actually, I think 'switched on' is a pretty good description of what is going on
+in the hardware.
 
-begin;
-create temporary table foo as select x as a, ARRAY[x] as b FROM
-generate_series(1, 10000000 ) AS x;
-create index foo_a_idx on foo (a);
-create index foo_b_idx on foo USING GIN (b);
-rollback;
+Regards,
 
-3. execute that sql:
-
-psql -f t.sql --echo-all test
-
-
-With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
-without issue.
-
-With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
-pretty frequently.
-
-Then I tested with the 'vanilla' kernel available here:
-
-http://download.opensuse.org/repositories/Kernel:/vanilla/standard/
-
-The 'vanilla' kernel exhibited the same problems.
-The version I tested:  2.6.37-rc4-219-g771f8bc-vanilla.
-
-Incidentally, quick tests of jfs, xfs, and ext3 do _not_ show the same
-problems, although I will note that I usually saw failure at least 1
-in 3, but sometimes had to re-run the sql test 4 or 5 times before I
-saw failure.
-
-I will continue to do some testing, but I will hold off on testing the
-commits above until I receive further testing suggestions.
+	Hans
+ 
+> I guess if nobody else finds it confusing I can live with it.
+> 
 
 -- 
-Jon
+Hans Verkuil - video4linux developer - sponsored by Cisco
