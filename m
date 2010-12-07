@@ -1,197 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab0LFX5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 18:57:13 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59380 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab0LFX5M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 18:57:12 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 7 Dec 2010 08:51:10 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] mm: kswapd: Stop high-order balancing when any
- suitable zone is balanced
-Message-Id: <20101207085110.64d92ca1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101206113209.GB21406@csn.ul.ie>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-	<1291376734-30202-2-git-send-email-mel@csn.ul.ie>
-	<20101206113541.dda0a794.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101206113209.GB21406@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1753865Ab0LGACy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 19:02:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22660 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753015Ab0LGACx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 19:02:53 -0500
+Subject: Re: [RFC PATCH] Utilize the PCI API in the AGP framework.
+From: Dave Airlie <airlied@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, konrad@kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+In-Reply-To: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
+References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Dec 2010 10:02:06 +1000
+Message-ID: <1291680126.8232.5.camel@clockmaker-el6>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010 11:32:09 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Mon, 2010-12-06 at 18:24 -0500, Konrad Rzeszutek Wilk wrote:
+> Attached is a set of RFC patches that make it possible for AGP graphic drivers to
+> work under Xen. The major problem that Linux kernel has when running under Xen
+> is that the usage of "virt_to_phys(x) >> PAGE_SIZE" to get the DMA address is not
+> applicable. That is due to the fact that the PFN value is not the real Machine
+> Frame Number (MFN), hence virt_to_phys(x) >> PAGE_SIZE ends up pointing to a
+> random physical address. But if you use the PCI API, then the DMA (bus) address
+> returned is a valid MFN.
 
-> On Mon, Dec 06, 2010 at 11:35:41AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Fri,  3 Dec 2010 11:45:30 +0000
-> > Mel Gorman <mel@csn.ul.ie> wrote:
-> > 
-> > > When the allocator enters its slow path, kswapd is woken up to balance the
-> > > node. It continues working until all zones within the node are balanced. For
-> > > order-0 allocations, this makes perfect sense but for higher orders it can
-> > > have unintended side-effects. If the zone sizes are imbalanced, kswapd may
-> > > reclaim heavily within a smaller zone discarding an excessive number of
-> > > pages. The user-visible behaviour is that kswapd is awake and reclaiming
-> > > even though plenty of pages are free from a suitable zone.
-> > > 
-> > > This patch alters the "balance" logic for high-order reclaim allowing kswapd
-> > > to stop if any suitable zone becomes balanced to reduce the number of pages
-> > > it reclaims from other zones. kswapd still tries to ensure that order-0
-> > > watermarks for all zones are met before sleeping.
-> > > 
-> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > a nitpick.
-> > 
-> > > ---
-> > >  include/linux/mmzone.h |    3 +-
-> > >  mm/page_alloc.c        |    8 ++++--
-> > >  mm/vmscan.c            |   55 +++++++++++++++++++++++++++++++++++++++++-------
-> > >  3 files changed, 54 insertions(+), 12 deletions(-)
-> > > 
-> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > > index 39c24eb..7177f51 100644
-> > > --- a/include/linux/mmzone.h
-> > > +++ b/include/linux/mmzone.h
-> > > @@ -645,6 +645,7 @@ typedef struct pglist_data {
-> > >  	wait_queue_head_t kswapd_wait;
-> > >  	struct task_struct *kswapd;
-> > >  	int kswapd_max_order;
-> > > +	enum zone_type classzone_idx;
-> > >  } pg_data_t;
-> > >  
-> > >  #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
-> > > @@ -660,7 +661,7 @@ typedef struct pglist_data {
-> > >  
-> > >  extern struct mutex zonelists_mutex;
-> > >  void build_all_zonelists(void *data);
-> > > -void wakeup_kswapd(struct zone *zone, int order);
-> > > +void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
-> > >  int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-> > >  		int classzone_idx, int alloc_flags);
-> > >  enum memmap_context {
-> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > index e409270..82e3499 100644
-> > > --- a/mm/page_alloc.c
-> > > +++ b/mm/page_alloc.c
-> > > @@ -1915,13 +1915,14 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
-> > >  
-> > >  static inline
-> > >  void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
-> > > -						enum zone_type high_zoneidx)
-> > > +						enum zone_type high_zoneidx,
-> > > +						enum zone_type classzone_idx)
-> > >  {
-> > >  	struct zoneref *z;
-> > >  	struct zone *zone;
-> > >  
-> > >  	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
-> > > -		wakeup_kswapd(zone, order);
-> > > +		wakeup_kswapd(zone, order, classzone_idx);
-> > >  }
-> > >  
-> > >  static inline int
-> > > @@ -1998,7 +1999,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> > >  		goto nopage;
-> > >  
-> > >  restart:
-> > > -	wake_all_kswapd(order, zonelist, high_zoneidx);
-> > > +	wake_all_kswapd(order, zonelist, high_zoneidx,
-> > > +						zone_idx(preferred_zone));
-> > >  
-> > >  	/*
-> > >  	 * OK, we're below the kswapd watermark and have kicked background
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index d31d7ce..d070d19 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -2165,11 +2165,14 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> > >   * interoperates with the page allocator fallback scheme to ensure that aging
-> > >   * of pages is balanced across the zones.
-> > >   */
-> > > -static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
-> > > +static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> > > +							int classzone_idx)
-> > >  {
-> > >  	int all_zones_ok;
-> > > +	int any_zone_ok;
-> > >  	int priority;
-> > >  	int i;
-> > > +	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> > >  	unsigned long total_scanned;
-> > >  	struct reclaim_state *reclaim_state = current->reclaim_state;
-> > >  	struct scan_control sc = {
-> > > @@ -2192,7 +2195,6 @@ loop_again:
-> > >  	count_vm_event(PAGEOUTRUN);
-> > >  
-> > >  	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-> > > -		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> > >  		unsigned long lru_pages = 0;
-> > >  		int has_under_min_watermark_zone = 0;
-> > >  
-> > > @@ -2201,6 +2203,7 @@ loop_again:
-> > >  			disable_swap_token();
-> > >  
-> > >  		all_zones_ok = 1;
-> > > +		any_zone_ok = 0;
-> > >  
-> > >  		/*
-> > >  		 * Scan in the highmem->dma direction for the highest
-> > > @@ -2310,10 +2313,12 @@ loop_again:
-> > >  				 * spectulatively avoid congestion waits
-> > >  				 */
-> > >  				zone_clear_flag(zone, ZONE_CONGESTED);
-> > > +				if (i <= classzone_idx)
-> > > +					any_zone_ok = 1;
-> > >  			}
-> > >  
-> > >  		}
-> > > -		if (all_zones_ok)
-> > > +		if (all_zones_ok || (order && any_zone_ok))
-> > >  			break;		/* kswapd: all done */
-> > >  		/*
-> > >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> > > @@ -2336,7 +2341,7 @@ loop_again:
-> > >  			break;
-> > >  	}
-> > >  out:
-> > > -	if (!all_zones_ok) {
-> > > +	if (!(all_zones_ok || (order && any_zone_ok))) {
-> > 
-> > Could you add a comment ?
-> > 
-> > And this means...
-> > 
-> > 	all_zones_ok .... all_zone_balanced
-> > 	any_zones_ok .... fallback_allocation_ok
-> > ?
-> > 
-> 
-> +
-> +       /*
-> +        * order-0: All zones must meet high watermark for a balanced node
-> +        * high-order: Any zone below pgdats classzone_idx must meet the high
-> +        *      watermark for a balanced node
-> +        */
-> 
-> ?
-> 
-!
+Can I ask you to go back a step and address what the use case for all of
+this is, the patch description doesn't address why anyone cares about
+AGP in 2010, esp with Xen. Virtualising hw  drivers for the sake of it
+is all well and good, but since most of these drivers are for really
+legacy systems I can't imagine we are going to see a lot of regression
+testing before they hit distros like Debian two years from now, though
+maybe Gentoo might pick up some, (is anyone even running IA64?).
 
-seems good. thanks.
--kame
+I can maybe imagine the Intel GTT being cared about but we've already
+addressed the issues in it from what I can see.
+
+Also the X server use case is still possibly valid for a lot of the
+systems here, its userspace ABI so it can't just end up broken. The move
+to TTM/DRM being the main user didn't suddenly remove the use of the X
+server case on older systems which don't have a TTM/DRM layer.
+
+Other than that the idea seems sane, I just hate having to upgrade large
+parts of the subsystem without some reasonable justification that
+someone out there is going to use it. If it allows some major cleanup
+else where that would also be a possibly good justification.
+
+Dave.
+
+
 
