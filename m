@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142Ab0LGFGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 00:06:23 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42500 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab0LGFGV (ORCPT
+	id S1751248Ab0LGFPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 00:15:21 -0500
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:37830
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750698Ab0LGFPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 00:06:21 -0500
-Content-Type: text/plain; charset=UTF-8
-Cc: Avantika Mathur <mathur@linux.vnet.ibm.com>,
-        Jason Baron <jbaron@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-doc <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] ftrace syscalls: Allow arch specific syscall symbol matching
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: Mike Frysinger <vapier@gentoo.org>
-In-reply-to: <AANLkTik7O=xVP2WuD+AV-oQqg9heT4fVbEa65W+BRq11@mail.gmail.com>
-References: <1291696151-4336-1-git-send-email-imunsie@au1.ibm.com> <1291696151-4336-5-git-send-email-imunsie@au1.ibm.com> <AANLkTik7O=xVP2WuD+AV-oQqg9heT4fVbEa65W+BRq11@mail.gmail.com>
-Date: Tue, 07 Dec 2010 16:06:18 +1100
-Message-Id: <1291698267-sup-2037@au1.ibm.com>
-User-Agent: Sup/0.11
-Content-Transfer-Encoding: 8bit
+	Tue, 7 Dec 2010 00:15:18 -0500
+Date: Mon, 6 Dec 2010 22:15:21 -0700
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Tobias Karnat <tobias.karnat@googlemail.com>
+Cc: linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        richard.coe@med.ge.com, jslaby@novell.com
+Subject: Re: acpi_button: random oops on boot
+Message-ID: <20101207051521.GA16804@helgaas.com>
+References: <1291477752.5096.27.camel@Tobias-Karnat>
+ <201012060928.11307.bjorn.helgaas@hp.com>
+ <1291676503.24968.25.camel@Tobias-Karnat>
+ <201012061626.45962.bjorn.helgaas@hp.com>
+ <1291679699.6246.11.camel@Tobias-Karnat>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291679699.6246.11.camel@Tobias-Karnat>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Mike Frysinger's message of Tue Dec 07 15:56:49 +1100 2010:
-> useless set of parenthesis, and this overhead sucks.  weak +
-> additional function call just for a strcmp for most people ?  why not
-> make it into a define in the header:
-> #ifndef arch_syscall_match_sym_name
-> #define arch_syscall_match_sym_name(sym, name) !strcmp(sym + 3, name + 3)
-> #endif
-> -mike
+On Tue, Dec 07, 2010 at 12:54:59AM +0100, Tobias Karnat wrote:
+> Am Montag, den 06.12.2010, 16:26 -0700 schrieb Bjorn Helgaas:
+> > On Monday, December 06, 2010 04:01:43 pm Tobias Karnat wrote:
+> > > No, it only crashes on boot (without the printk patch).
+> > > If it happens the machine is completely dead, SysRq does not work.
+> > > 
+> > > However it is definitely the acpi_button module, because removing it
+> > > also fixes this.
+> > 
+> > If it crashes on boot (not when loading an acpi_button module),
+> > you must be building acpi_button into the static kernel.
+> 
+> It does crash on boot either if built-in to the kernel or as a module,
+> However it does not crash if the module is loaded/unloaded after the
+> machine has booted.
+> 
+> > The acpi_button driver has a fairly complicated add() method.
+> > In the absence of a better idea, I might just comment out blocks
+> > of it and try to isolate the problem.  For example, take out
+> > all the input stuff, take out the wakeup GPE stuff, take out
+> > the type/name setup, etc.
+> 
+> Couldn't this be a compiler issue?
+> Adding some printk's to fix it seems to be insane.
 
-No problem, will change it.
+Agreed, adding printk's is absolutely not any kind of fix.
+I think it's more likely to be some sort of memory corruption or
+race than a compiler problem.  I assume there is some old kernel
+that works fine, even when compiled with the same compiler.
 
-Cheers,
--Ian
+In addition to the isolation ideas I suggested above, you might
+boot with "maxcpus=1" and turn on all the Kconfig memory debug
+switches.
+
+Bjorn
