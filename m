@@ -1,79 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab0LGVT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 16:19:57 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:33160 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab0LGVT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 16:19:56 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH] vfs: pass struct file to do_truncate on O_TRUNC opens (try #2)
-Date: Tue,  7 Dec 2010 16:19:50 -0500
-Message-Id: <1291756790-6030-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1755403Ab0LGVZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 16:25:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37503 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754899Ab0LGVZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 16:25:37 -0500
+Date: Tue, 7 Dec 2010 22:24:02 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 30 of 66] transparent hugepage core
+Message-ID: <20101207212402.GC19131@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <a7507af3a1dcae5c52a4.1288798085@v2.random>
+ <20101118151221.GT8135@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118151221.GT8135@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I originally sent this patch back in March of this year, but it
-apparently fell through the cracks...
+On Thu, Nov 18, 2010 at 03:12:21PM +0000, Mel Gorman wrote:
+> All that seems fine to me. Nits in part that are simply not worth
+> calling out. In principal, I Agree With This :)
 
-When a file is opened with O_TRUNC, the truncate processing is handled
-by handle_truncate(). This function however doesn't receive any info
-about the newly instantiated filp, and therefore can't pass that info
-along so that the setattr can use it.
+I didn't understand what is not worth calling out, but I like the end
+of your sentence ;).
 
-This makes NFSv4 misbehave. The client does an open and gets a valid
-stateid, and then doesn't use that stateid on the subsequent truncate.
-It uses the zero-stateid instead. Most servers ignore this fact and
-just do the truncate anyway, but some don't like it (notably, RHEL4).
+> > +#define wait_split_huge_page(__anon_vma, __pmd)				\
+> > +	do {								\
+> > +		pmd_t *____pmd = (__pmd);				\
+> > +		spin_unlock_wait(&(__anon_vma)->root->lock);		\
+> > +		/*							\
+> > +		 * spin_unlock_wait() is just a loop in C and so the	\
+> > +		 * CPU can reorder anything around it.			\
+> > +		 */							\
+> > +		smp_mb();						\
+> 
+> Just a note as I see nothing wrong with this but that's a good spot. The
+> unlock isn't a memory barrier. Out of curiousity, does it really need to be
+> a full barrier or would a write barrier have been enough?
+> 
+> > +		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+> > +		       pmd_trans_huge(*____pmd));			\
 
-It seems more correct that since we have a fully instantiated file at
-the time that handle_truncate is called, that we pass that along so
-that the truncate operation can properly use it.
+spin_unlock reads, the BUG_ON reads, so even if we ignore what happens
+before and after wait_split_huge_page(), at most it could be a read
+memory barrier. It can't be a write memory barrier as the
+spin_unlock_wait would pass it too.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+I think it better be a full memory barrier to be sure the writes after
+wait_split_huge_page return don't happen before spin_unlock_wait. It's
+hard to see how that could happen though.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 5362af9..ad844eb 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1448,8 +1448,9 @@ int may_open(struct path *path, int acc_mode, int flag)
- 	return break_lease(inode, flag);
+> > +	} while (0)
+> > +#define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
+> > +#define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
+> > +#if HPAGE_PMD_ORDER > MAX_ORDER
+> > +#error "hugepages can't be allocated by the buddy allocator"
+> > +#endif
+> > +
+> > +extern unsigned long vma_address(struct page *page, struct vm_area_struct *vma);
+> > +static inline int PageTransHuge(struct page *page)
+> > +{
+> > +	VM_BUG_ON(PageTail(page));
+> > +	return PageHead(page);
+> > +}
+> 
+> gfp.h seems an odd place for these. Should the flags go in page-flags.h
+> and maybe put vma_address() in internal.h?
+> 
+> Not a biggie.
+
+Cleaned up thanks.
+
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -97,13 +97,6 @@ extern void __split_huge_page_pmd(struct
+ #if HPAGE_PMD_ORDER > MAX_ORDER
+ #error "hugepages can't be allocated by the buddy allocator"
+ #endif
+-
+-extern unsigned long vma_address(struct page *page, struct vm_area_struct *vma);
+-static inline int PageTransHuge(struct page *page)
+-{
+-	VM_BUG_ON(PageTail(page));
+-	return PageHead(page);
+-}
+ #else /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #define HPAGE_PMD_SHIFT ({ BUG(); 0; })
+ #define HPAGE_PMD_MASK ({ BUG(); 0; })
+@@ -120,7 +113,6 @@ static inline int split_huge_page(struct
+ 	do { } while (0)
+ #define wait_split_huge_page(__anon_vma, __pmd)	\
+ 	do { } while (0)
+-#define PageTransHuge(page) 0
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
+ #endif /* _LINUX_HUGE_MM_H */
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -409,6 +409,19 @@ static inline void ClearPageCompound(str
+ 
+ #endif /* !PAGEFLAGS_EXTENDED */
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++static inline int PageTransHuge(struct page *page)
++{
++	VM_BUG_ON(PageTail(page));
++	return PageHead(page);
++}
++#else
++static inline int PageTransHuge(struct page *page)
++{
++	return 0;
++}
++#endif
++
+ #ifdef CONFIG_MMU
+ #define __PG_MLOCKED		(1 << PG_mlocked)
+ #else
+diff --git a/mm/internal.h b/mm/internal.h
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -134,6 +134,10 @@ static inline void mlock_migrate_page(st
+ 	}
  }
  
--static int handle_truncate(struct path *path)
-+static int handle_truncate(struct file *filp)
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++extern unsigned long vma_address(struct page *page,
++				 struct vm_area_struct *vma);
++#endif
+ #else /* !CONFIG_MMU */
+ static inline int is_mlocked_vma(struct vm_area_struct *v, struct page *p)
  {
-+	struct path *path = &filp->f_path;
- 	struct inode *inode = path->dentry->d_inode;
- 	int error = get_write_access(inode);
- 	if (error)
-@@ -1463,7 +1464,7 @@ static int handle_truncate(struct path *path)
- 	if (!error) {
- 		error = do_truncate(path->dentry, 0,
- 				    ATTR_MTIME|ATTR_CTIME|ATTR_OPEN,
--				    NULL);
-+				    filp);
- 	}
- 	put_write_access(inode);
- 	return error;
-@@ -1560,7 +1561,7 @@ static struct file *finish_open(struct nameidata *nd,
- 	}
- 	if (!IS_ERR(filp)) {
- 		if (will_truncate) {
--			error = handle_truncate(&nd->path);
-+			error = handle_truncate(filp);
- 			if (error) {
- 				fput(filp);
- 				filp = ERR_PTR(error);
--- 
-1.7.3.2
 
+> > diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
+> > --- a/include/linux/mm_inline.h
+> > +++ b/include/linux/mm_inline.h
+> > @@ -20,11 +20,18 @@ static inline int page_is_file_cache(str
+> >  }
+> >  
+> >  static inline void
+> > +__add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list l,
+> > +		       struct list_head *head)
+> > +{
+> > +	list_add(&page->lru, head);
+> > +	__inc_zone_state(zone, NR_LRU_BASE + l);
+> > +	mem_cgroup_add_lru_list(page, l);
+> > +}
+> > +
+> > +static inline void
+> >  add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list l)
+> >  {
+> > -	list_add(&page->lru, &zone->lru[l].list);
+> > -	__inc_zone_state(zone, NR_LRU_BASE + l);
+> > -	mem_cgroup_add_lru_list(page, l);
+> > +	__add_page_to_lru_list(zone, page, l, &zone->lru[l].list);
+> >  }
+> >  
+> 
+> Do these really need to be in a public header or can they move to
+> mm/swap.c?
+
+The above quoted change is a noop as far as the old code is concerned,
+and moving it to swap.c would alter the old code. I think list_add and
+__mod_zone_page_state is pretty small and fast so probably it's worth
+keeping it as inline.
+
+> > +static void prepare_pmd_huge_pte(pgtable_t pgtable,
+> > +				 struct mm_struct *mm)
+> > +{
+> > +	VM_BUG_ON(spin_can_lock(&mm->page_table_lock));
+> > +
+> 
+> assert_spin_locked() ?
+
+Changed.
+
+> > +int handle_pte_fault(struct mm_struct *mm,
+> > +		     struct vm_area_struct *vma, unsigned long address,
+> > +		     pte_t *pte, pmd_t *pmd, unsigned int flags)
+> >  {
+> >  	pte_t entry;
+> >  	spinlock_t *ptl;
+> > @@ -3222,9 +3257,40 @@ int handle_mm_fault(struct mm_struct *mm
+> >  	pmd = pmd_alloc(mm, pud, address);
+> >  	if (!pmd)
+> >  		return VM_FAULT_OOM;
+> > -	pte = pte_alloc_map(mm, vma, pmd, address);
+> > -	if (!pte)
+> > +	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+> > +		if (!vma->vm_ops)
+> > +			return do_huge_pmd_anonymous_page(mm, vma, address,
+> > +							  pmd, flags);
+> > +	} else {
+> > +		pmd_t orig_pmd = *pmd;
+> > +		barrier();
+> 
+> What is this barrier for?
+
+This is to be guaranteed gcc doesn't re-read the *pmd after the
+barrier and it instead always read it from orig_pmd variable on the
+local kernel stack. gcc doesn't know *pmd can still change from under
+us until after we take some lock and the code relies on orig_pmd not
+to change after barrier().
+
+> Other than a few minor questions, these seems very similar to what you
+> had before. There is a lot going on in this patch but I did not find
+> anything wrong.
+> 
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+Great thanks!
+Andrea
