@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab0LGVQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 16:16:35 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59534 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755165Ab0LGVQe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 16:16:34 -0500
-Date: Tue, 7 Dec 2010 13:16:00 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] telephony/ixj: fix compiler warning on ixj_pci_tbl
-Message-Id: <20101207131600.b769e3df.akpm@linux-foundation.org>
-In-Reply-To: <1291736993-15278-1-git-send-email-namhyung@gmail.com>
-References: <1291736993-15278-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755328Ab0LGVQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 16:16:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755165Ab0LGVQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 16:16:36 -0500
+Date: Tue, 7 Dec 2010 16:16:14 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+Subject: Re: perf hw  in kexeced kernel broken in tip
+Message-ID: <20101207211614.GL21786@redhat.com>
+References: <1291219906.32004.1671.camel@laptop>
+ <20101201162335.GB2511@redhat.com>
+ <1291232292.32004.1969.camel@laptop>
+ <20101201194644.GD2511@redhat.com>
+ <1291232989.32004.1987.camel@laptop>
+ <20101201195835.GE2511@redhat.com>
+ <1291234036.32004.2008.camel@laptop>
+ <m162vdp3l4.fsf@fess.ebiederm.org>
+ <20101202052321.GH18100@redhat.com>
+ <1291275270.4023.20.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291275270.4023.20.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  8 Dec 2010 00:49:53 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
-
-> Annotate ixj_pci_tbl as '__used' to fix following warning:
+On Thu, Dec 02, 2010 at 08:34:30AM +0100, Peter Zijlstra wrote:
+> >  void __init lockup_detector_init(void)
+> >  {
+> >  	void *cpu = (void *)(long)smp_processor_id();
+> > @@ -563,6 +576,7 @@ void __init lockup_detector_init(void)
+> >  
+> >  	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+> >  	register_cpu_notifier(&cpu_nfb);
+> > +	register_reboot_notifier(&reboot_nfb);
+> >  
+> >  	return;
+> >  }
 > 
->   CC      drivers/telephony/ixj.o
-> drivers/telephony/ixj.c:287: warning: ___ixj_pci_tbl___ defined but not used
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  drivers/telephony/ixj.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/telephony/ixj.c b/drivers/telephony/ixj.c
-> index 0d236f4..de92133 100644
-> --- a/drivers/telephony/ixj.c
-> +++ b/drivers/telephony/ixj.c
-> @@ -284,7 +284,7 @@ static int samplerate = 100;
->  
->  module_param(ixjdebug, int, 0);
->  
-> -static struct pci_device_id ixj_pci_tbl[] __devinitdata = {
-> +static struct pci_device_id ixj_pci_tbl[] __devinitdata __used = {
->  	{ PCI_VENDOR_ID_QUICKNET, PCI_DEVICE_ID_QUICKNET_XJ,
->  	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
->  	{ }
+> We'd really want a perf_event.c callback there to do as the hot-unplug
+> code does and detach all running counters from the cpu.
 
-This way, I believe:
+Ok, here is a simpler patch for now.
 
---- a/drivers/telephony/ixj.c~a
-+++ a/drivers/telephony/ixj.c
-@@ -284,12 +284,11 @@ static int samplerate = 100;
- 
- module_param(ixjdebug, int, 0);
- 
--static struct pci_device_id ixj_pci_tbl[] __devinitdata = {
-+static DEFINE_PCI_DEVICE_TABLE(ixj_pci_tbl) = {
- 	{ PCI_VENDOR_ID_QUICKNET, PCI_DEVICE_ID_QUICKNET_XJ,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
- 	{ }
- };
--
- MODULE_DEVICE_TABLE(pci, ixj_pci_tbl);
- 
- /************************************************************************
+--------------------------------8<--------
+From: Don Zickus <dzickus@redhat.com>
+Date: Tue, 7 Dec 2010 16:06:59 -0500
+Subject: [PATCH] perf:  Use event select bits for hardware check
 
-It fixes the warning, but I'm not sure how it did that.
+The counter registers can continue to increment if left enabled
+across a kexec or a kdump.  The makes the perf hardware check
+accidentally return false when the hardware really does exist.
+
+Change the check to use the first bits of event selection.  Those
+bits should be safe as they are used to program the type of events
+to use.  And more importantly, they won't increment across kexec/kdump.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 7b91396..7d869c0 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -377,10 +377,10 @@ static bool check_hw_exists(void)
+ 	u64 val, val_new = 0;
+ 	int ret = 0;
+ 
+-	val = 0xabcdUL;
+-	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
+-	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
+-	if (ret || val != val_new)
++	val = 0xabUL;
++	ret |= checking_wrmsrl(x86_pmu.eventsel, val);
++	ret |= rdmsrl_safe(x86_pmu.eventsel, &val_new);
++	if (ret || val != (val_new & 0xFF))
+ 		return false;
+ 
+ 	return true;
+-- 
+1.7.3.2
+
