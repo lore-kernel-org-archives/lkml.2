@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab0LGDTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 22:19:17 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59502 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab0LGDTP (ORCPT
+	id S1753953Ab0LGDZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 22:25:47 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58821 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab0LGDZq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 22:19:15 -0500
+	Mon, 6 Dec 2010 22:25:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=jjmjSU9A7msiUWqRsgYEe7kRVGmJxb4Fn74flNjc5vesq2rk/D3oOl7e6aMTt9dAnq
-         liRHw2lGgxyIqAfQkYN95UVcnRH7WDU2c5suq4v5x/Li7sjuNZN0273u4Khv9bjkEkVW
-         hvroL1tct/whcv8qM5WiJs0u8tALRH2+cF7pU=
-Message-ID: <4CFDA7AF.2060201@gmail.com>
-Date: Mon, 06 Dec 2010 19:19:11 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fkDGLXZcLh0PDRn3XLuL3EY6FSrdI29jzuOZhsH4W53Eeo6fZC+yDDQmUSfzZJOGid
+         wvOgEuTMsQbAuCGVzFnW20FOjvmDFqCeIqNIMaAuW4WXtp5T675n01QAzmfWCt0svWN1
+         paEF4807LmrSu3LpRLf9D3UYwy3A8EZknmq5k=
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        sodaville@linutronix.de, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        mmarek@suse.cz
-Subject: Re: [PATCH 1/4] of: Add support for linking device tree blobs into
- vmlinux
-References: <cover.1291656753.git.dirk.brandewie@gmail.com> <76a37fa459aeadce5d11db8a7cc044687a2e0e8c.1291656753.git.dirk.brandewie@gmail.com> <20101206190251.GB20882@merkur.ravnborg.org>
-In-Reply-To: <20101206190251.GB20882@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101207021328.207196531@goodmis.org>
+References: <20101207015834.196176991@goodmis.org>
+	<20101207021328.207196531@goodmis.org>
+Date: Tue, 7 Dec 2010 11:25:43 +0800
+Message-ID: <AANLkTimO+aBQD530btPmH3o7j931KEmFP=GKia-039wO@mail.gmail.com>
+Subject: Re: [RFC][PATCH 01/10] sched: Change rt_task(prev) in pre_schedule_rt
+ to likely
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gregory Haskins <ghaskins@novell.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 11:02 AM, Sam Ravnborg wrote:
-> On Mon, Dec 06, 2010 at 09:35:59AM -0800, dirk.brandewie@gmail.com wrote:
->> From: Dirk Brandewie<dirk.brandewie@gmail.com>
->> -
->> +# DTC
->> +#  ---------------------------------------------------------------------------
->> +
->> +# Generate an assembly file to wrap the output of the device tree compiler
->> +$(obj)/%.dtb.S: $(obj)/%.dtb
->> +	@echo '#include<asm-generic/vmlinux.lds.h>'>  $@
->> +	@echo '.section .dtb.init.rodata,"a"'>>  $@
->> +	@echo '.balign STRUCT_ALIGNMENT'>>  $@
->> +	@echo '.global __dtb_$(*F)_begin'>>  $@
->> +	@echo '__dtb_$(*F)_begin:'>>  $@
->> +	@echo '.incbin "$<" '>>  $@
->> +	@echo '__dtb_$(*F)_end:'>>  $@
->> +	@echo '.global __dtb_$(*F)_end'>>  $@
->> +	@echo '.balign STRUCT_ALIGNMENT'>>  $@
->> +
+On Tue, Dec 7, 2010 at 9:58 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 >
-> If we really want this rule in Makefile.lib then at least make it less verbose,
-> and more secure.
-
-I started with the change in Makefile.lib because it made sense to me, is there 
-a more appropriate place for these rules/commands?
-
-> Something like this:
-> quiet_dt_S_dtb_cmd = DTB    $@
->        dt_S_dtb_cmd =                                      \
-> (                                                         \
-> 	@echo '#include<asm-generic/vmlinux.lds.h>';     \
-> 	@echo '.section .dtb.init.rodata,"a"';            \
-> 	@echo '.balign STRUCT_ALIGNMENT';                 \
-> 	echo '.global __dtb_$(*F)_begin';                 \
-> 	echo '__dtb_$(*F)_begin:';                        \
-> 	echo '.incbin "$<" ';                             \
-> 	echo '__dtb_$(*F)_end:';                          \
-> 	echo '.global __dtb_$(*F)_end';                   \
-> 	echo '.balign STRUCT_ALIGNMENT';                  \
-> )>  $@
+> As found with the branch annotation profiler, the unlikely(rt_task(prev))
+> in pre_schedule_rt() is always wrong. In fact it should be likely due to
+> the fact that we got to this function because we used prev's scheduling
+> class (which had to be rt).
 >
-> $(obj)/%.dtb.S: $(obj)/%.dtb
-> 	$(call cmd,dt_S_dtb)
->
+> Change the unlikely(rt_task(prev)) to likely(rt_task(prev))
 
-I will make the changes in next version.
+I have sent a more radical patch before but it get ignored.
+http://marc.info/?l=linux-kernel&m=126572702600950&w=2
 
 >
->> +DTC = $(objtree)/scripts/dtc/dtc
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Gregory Haskins <ghaskins@novell.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/sched_rt.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> If this is the only spot where we use DTC then drop the variable.
->
->> +
->> +quiet_cmd_dtc = DTC $@
->> +      cmd_dtc = $(DTC) -O dtb -o $@ -b 0 $(DTC_FLAGS) $<
->
->
->> +ooo
->
-> What is the purpose of these "ooo"? A debugging left-over?
->
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index bea7d79..7a5c4db 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -1474,7 +1474,7 @@ skip:
+>  static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
+>  {
+>        /* Try to pull RT tasks here if we lower this rq's prio */
+> -       if (unlikely(rt_task(prev)) && rq->rt.highest_prio.curr > prev->prio)
+> +       if (likely(rt_task(prev)) && rq->rt.highest_prio.curr > prev->prio)
 
-Yep sorry
+IMHO, we can delete the checking for rt_task(prev).
+Or am I missing something?
 
->
-> 	Sam
-
+Thanks,
+Yong
