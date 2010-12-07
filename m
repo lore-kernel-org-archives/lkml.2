@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab0LGAFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 19:05:40 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23706 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750774Ab0LGAFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 19:05:39 -0500
-Message-ID: <F707E6EFF9AF4169B5E0C55B5AB2757B@hacdom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Greg KH" <greg@kroah.com>
-Cc: "Alan Cox" <alan@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "Ben Dooks" <ben-linux@fluff.org>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        "Feng Tang" <feng.tang@intel.com>,
-        "Tobias Klauser" <tklauser@distanz.ch>, <yong.y.wang@intel.com>,
-        <qi.wang@intel.com>, <kok.howg.ewe@intel.com>,
-        <andrew.chih.howe.khor@intel.com>
-References: <4CE3281A.4050709@dsn.okisemi.com> <20101201012441.GA2907@kroah.com>
-Subject: Re: Serial: EG20T: add PCH_UART driver
-Date: Tue, 7 Dec 2010 09:05:34 +0900
+	id S1754098Ab0LGAK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 19:10:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28182 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753595Ab0LGAK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 19:10:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="UTF-8";
-	reply-type=original
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+From: Roland McGrath <roland@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+X-Fcc: ~/Mail/linus
+Cc: oleg@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 16/16] ptrace: remove the extra wake_up_process() from ptrace_detach()
+In-Reply-To: Tejun Heo's message of  Monday, 6 December 2010 17:57:04 +0100 <1291654624-6230-17-git-send-email-tj@kernel.org>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
+	<1291654624-6230-17-git-send-email-tj@kernel.org>
+X-Antipastobozoticataclysm: Bariumenemanilow
+Message-Id: <20101207001043.13BCE400CE@magilla.sf.frob.com>
+Date: Mon,  6 Dec 2010 16:10:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 01, 2010 10:24 AM, Greg KH wrote:
-> I've applied this, but I now get the following warnings when building
-> the code:
+The plain wake_up_process was certainly wrong from the beginning.
 
-Sorry, for late.
-I can't see these warnings.
-I think we build with 32bit Linux PC.
-But we don't have 64-bit PC.
+We were conservative about changing it because of the difficulty of
+chasing all the corners where userland debuggers' behavior might be
+made to regress when it had been reliable in practice before (even
+if not always in theory, such as possible races that didn't bite in
+reality).  The userland code has gone to many contortions to cope
+with how the kernel behaved in the past, whether or not that
+behavior ever made any good sense.
 
-I tried build with "-m64" option on our PC, I can see the following error.
-: sorry, unimplemented: 64-bit mode not compiled in
+For that sort of reason, none of this stuff should change at all in
+a -stable kernel, nor late in a release cycle.
 
-Can I see the warnings using our PC ?
-If you have any information, let me know how to do.
+For new kernels, I think changing the behavior in the direction of
+something that can actually be described is OK as long as userland
+debugger maintainers like Jan agree to the new behavior and that the
+behavior really and truly does follow an articulated set of rules
+that the kernel and userland sides agree to.
 
----
+
 Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+Roland
