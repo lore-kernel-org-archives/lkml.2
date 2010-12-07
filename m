@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab0LGQlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 11:41:36 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:36638 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab0LGQlf convert rfc822-to-8bit (ORCPT
+	id S1751646Ab0LGQsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 11:48:30 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38088 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab0LGQs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 11:41:35 -0500
-Subject: Re: [patchlet] Re: Scheduler bug related to rq->skip_clock_update?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Yong Zhang <yong.zhang0@gmail.com>,
-        "Bjoern B. Brandenburg" <bbb.lst@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrea Bastoni <bastoni@sprg.uniroma2.it>,
-        "James H. Anderson" <anderson@cs.unc.edu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1291624329.9457.38.camel@marge.simson.net>
-References: <alpine.LNX.2.00.1011202315290.8927@jupiter-cs.cs.unc.edu>
-	 <1290359641.4816.69.camel@maggy.simson.net>
-	 <alpine.LNX.2.00.1011212327250.8927@jupiter-cs.cs.unc.edu>
-	 <1290442781.16393.22.camel@maggy.simson.net>
-	 <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
-	 <20101205052819.GA2878@zhy> <1291613607.9457.5.camel@marge.simson.net>
-	 <AANLkTimH0YN0fd4zOk3A=_Q7waqM=6V4pw4N+0g0-k=7@mail.gmail.com>
-	 <1291624329.9457.38.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 Dec 2010 17:41:21 +0100
-Message-ID: <1291740081.2032.751.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 7 Dec 2010 11:48:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pZZzFUKGpB9w7lRPqs4dgqZUUpNenTpqQRWJybb4iN/xDHN0DPv8hK+LuowKnRE5jR
+         MG4tsT6BhRLtmDNiwaADQ8F4GWG8FxJ+W7amsdCzjR5GF46uxYG5XyF7J4hGZV9Yx+hI
+         VoHp5YMAeOVpaiHIPYQwvyYoTQRCy9PuepKgA=
+Date: Tue, 7 Dec 2010 08:48:12 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>
+Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
+Message-ID: <20101207164811.GA25344@core.coreip.homeip.net>
+References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
+ <20101207162222.GA32237@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101207162222.GA32237@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-06 at 09:32 +0100, Mike Galbraith wrote:
-
->  kernel/fork.c  |    1 +
->  kernel/sched.c |    6 +++---
->  2 files changed, 4 insertions(+), 3 deletions(-)
+On Tue, Dec 07, 2010 at 08:22:22AM -0800, Greg KH wrote:
+> On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
+> >  /**
+> > + * struct input_devinfo - device information via EVIOCGDEVINFO ioctl
+> > + * @types: bitmask of types (DEVTYPE_*) matching this device
+> > + * @capabilities: bitmask of capabilities (DEVCAPS_*) of this device
+> > + *
+> > + * This struct provides information about the device needed for
+> > + * automatic setup in userspace, such as if the device is direct
+> > + * (touchscreen) or indirect (touchpad), and if there are other
+> > + * special considerations, such as the touchpad also being a button.
+> > + */
+> > +struct input_devinfo {
+> > +	__u32 types;
+> > +	__u32 capabilities;
+> > +};
 > 
-> Index: linux-2.6.37.git/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.37.git.orig/kernel/sched.c
-> +++ linux-2.6.37.git/kernel/sched.c
-> @@ -660,6 +660,7 @@ inline void update_rq_clock(struct rq *r
->  
->  		sched_irq_time_avg_update(rq, irq_time);
->  	}
-> +	rq->skip_clock_update = 0;
->  }
->  
->  /*
+> Why use an ioctl for this at all?  It's just 2 simple values that don't
+> need to be atomically read at the same time.  What's wrong with 2 more
+> sysfs files?
+> 
 
-Shouldn't we do that at the end of schedule()? Since the purpose of
-->skip_clock_update is to avoid multiple calls to:
-  - avoid overhead
-  - ensure scheduling is accounted at a single point
+Because if you already dealing with a file descriptor ioctl is much more
+convenient. Sysfs can be nice (and that is why we'll add it as well) but
+it is not a recipe for the world peace.
 
-[ for that latter purpose it might also make sense to put that point
-somewhere around context_switch() but due to the fact that we need a
-clock update early that's a bit impractical. ]
-
-Hmm?
-
-> @@ -2138,7 +2139,7 @@ static void check_preempt_curr(struct rq
->  	 * A queue event has occurred, and we're going to schedule.  In
->  	 * this case, we can save a useless back to back clock update.
->  	 */
-> -	if (test_tsk_need_resched(rq->curr))
-> +	if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
->  		rq->skip_clock_update = 1;
->  }
-
-OK, I initially tried to replace the test with a return value of
-->check_preempt_curr() and such, but that turns into a lot of code and
-won't necessarily be any better.
-
-> @@ -3854,7 +3855,6 @@ static void put_prev_task(struct rq *rq,
->  {
->  	if (prev->se.on_rq)
->  		update_rq_clock(rq);
-> -	rq->skip_clock_update = 0;
->  	prev->sched_class->put_prev_task(rq, prev);
->  }
-
-See the first note.
-
-> @@ -3912,7 +3912,6 @@ need_resched_nonpreemptible:
->  		hrtick_clear(rq);
->  
->  	raw_spin_lock_irq(&rq->lock);
-> -	clear_tsk_need_resched(prev);
->  
->  	switch_count = &prev->nivcsw;
->  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-> @@ -3942,6 +3941,7 @@ need_resched_nonpreemptible:
->  	if (unlikely(!rq->nr_running))
->  		idle_balance(cpu, rq);
->  
-> +	clear_tsk_need_resched(prev);
->  	put_prev_task(rq, prev);
->  	next = pick_next_task(rq);
-
-Good find, this needs to be done after the idle balancing because that
-can release the rq->lock and allow for TIF_NEED_RESCHED to be set again.
-
-Maybe complement this with a WARN_ON_ONCE(test_tsk_need_resched(next))
-somewhere after pick_next_task() so as to ensure that !current has !
-TIF_NEED_RESCHED.
-
-> Index: linux-2.6.37.git/kernel/fork.c
-> ===================================================================
-> --- linux-2.6.37.git.orig/kernel/fork.c
-> +++ linux-2.6.37.git/kernel/fork.c
-> @@ -275,6 +275,7 @@ static struct task_struct *dup_task_stru
->  
->  	setup_thread_stack(tsk, orig);
->  	clear_user_return_notifier(tsk);
-> +	clear_tsk_need_resched(tsk);
->  	stackend = end_of_stack(tsk);
->  	*stackend = STACK_END_MAGIC;	/* for overflow detection */
->  
-
-OK.. have we looked if there's more TIF flags that could do with a
-reset?
+-- 
+Dmitry
