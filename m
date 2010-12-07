@@ -1,61 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0LGP5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:57:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38921 "EHLO mx2.suse.de"
+	id S1754911Ab0LGP5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:57:32 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33733 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab0LGP5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:57:15 -0500
-Subject: Re: [PATCH 1/3] [SCSI] dpt_i2o: fix compiler warning on dptids
-From: James Bottomley <James.Bottomley@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-In-Reply-To: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-References: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Dec 2010 09:57:01 -0600
-Message-ID: <1291737421.17668.5.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 8bit
+	id S1754025Ab0LGP5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:57:11 -0500
+Date: Tue, 7 Dec 2010 16:56:46 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+Message-ID: <20101207155645.GG2356@cmpxchg.org>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+ <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
+ <20101207144923.GB2356@cmpxchg.org>
+ <20101207150710.GA26613@barrios-desktop>
+ <20101207151939.GF2356@cmpxchg.org>
+ <20101207152625.GB608@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101207152625.GB608@barrios-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 00:31 +0900, Namhyung Kim wrote:
-> Annotate dptids as '__used' to fix following warning:
+On Wed, Dec 08, 2010 at 12:26:25AM +0900, Minchan Kim wrote:
+> On Tue, Dec 07, 2010 at 04:19:39PM +0100, Johannes Weiner wrote:
+> > On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
+> > > On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
+> > > > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
+> > > > > Changelog since v3:
+> > > > >  - Change function comments - suggested by Johannes
+> > > > >  - Change function name - suggested by Johannes
+> > > > >  - add only dirty/writeback pages to deactive pagevec
+> > > > 
+> > > > Why the extra check?
+> > > > 
+> > > > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+> > > > >  			if (lock_failed)
+> > > > >  				continue;
+> > > > >  
+> > > > > -			ret += invalidate_inode_page(page);
+> > > > > -
+> > > > > +			ret = invalidate_inode_page(page);
+> > > > > +			/*
+> > > > > +			 * If the page is dirty or under writeback, we can not
+> > > > > +			 * invalidate it now.  But we assume that attempted
+> > > > > +			 * invalidation is a hint that the page is no longer
+> > > > > +			 * of interest and try to speed up its reclaim.
+> > > > > +			 */
+> > > > > +			if (!ret && (PageDirty(page) || PageWriteback(page)))
+> > > > > +				deactivate_page(page);
+> > > > 
+> > > > The writeback completion handler does not take the page lock, so you
+> > > > can still miss pages that finish writeback before this test, no?
+> > > 
+> > > Yes. but I think it's rare and even though it happens, it's not critical.
+> > > > 
+> > > > Can you explain why you felt the need to add these checks?
+> > > 
+> > > invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
+> > > Look invalidate_complete_page. As easiest example, if the page has buffer and
+> > > try_to_release_page can't release the buffer, it could return 0.
+> > 
+> > Ok, but somebody still tried to truncate the page, so why shouldn't we
+> > try to reclaim it?  The reason for deactivating at this location is
+> > that truncation is a strong hint for reclaim, not that it failed due
+> > to dirty/writeback pages.
+> > 
+> > What's the problem with deactivating pages where try_to_release_page()
+> > failed?
 > 
->   CC      drivers/scsi/dpt_i2o.o
-> drivers/scsi/dpt_i2o.c:183: warning: ‘dptids’ defined but not used
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-> ---
->  drivers/scsi/dpt_i2o.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
-> index cffcb10..b276077 100644
-> --- a/drivers/scsi/dpt_i2o.c
-> +++ b/drivers/scsi/dpt_i2o.c
-> @@ -180,7 +180,7 @@ static u8 adpt_read_blink_led(adpt_hba* host)
->   *============================================================================
->   */
->  
-> -static struct pci_device_id dptids[] = {
-> +static struct pci_device_id dptids[] __used = {
->  	{ PCI_DPT_VENDOR_ID, PCI_DPT_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID,},
->  	{ PCI_DPT_VENDOR_ID, PCI_DPT_RAPTOR_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID,},
->  	{ 0, }
+> If try_to_release_page fails and the such pages stay long time in pagevec,
+> pagevec drain often happens.
 
-Um so this is definitely used in the MODULE_DEVICE_TABLE just below.
+You mean because the pagevec becomes full more often?  These are not
+many pages you get extra without the checks, the race window is very
+small after all.
 
-I deduce you have some type of config which causes that to be a nop
-(say !CONFIG_MODULE)?  In which case, surely the correct fix is in
-module.h?
+> I think such pages are rare so skip such pages doesn't hurt goal of
+> this patch.
 
-James
+Well, you add extra checks, extra detail to this mechanism.  Instead
+of just saying 'tried to truncate, failed, deactivate the page', you
+add more ifs and buts.
 
+There should be a real justification for it.  'It can not hurt' is not
+a good justification for extra code and making a simple model more
+complex.
 
+'It will hurt without treating these pages differently' is a good
+justification.  Remember that we have to understand and maintain all
+this.  The less checks and operations we need to implement a certain
+idea, the better.
 
+Sorry for being so adamant about this, but I think these random checks
+are a really sore point of mm code already.
+
+[ For example, we tried discussing lumpy reclaim mode recently and
+  none of us could reliably remember how it actually behaved.  There
+  are so many special conditions in there that we already end up with
+  some of them being dead code and the checks even contradicting each
+  other. ]
