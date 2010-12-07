@@ -1,122 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0LGSwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:52:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46355 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab0LGSwF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:52:05 -0500
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Colin Walters <walters@verbum.org>, Ray Lee <ray-lk@madrabbit.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinOQ5sWigfW844dSBc2PvVwFj5c7yu+scNXxMcv@mail.gmail.com>
-References: <1289783580.495.58.camel@maggy.simson.net>
-	 <1289811438.2109.474.camel@laptop>
-	 <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116130413.GA29368@redhat.com>
-	 <1289917109.5169.131.camel@maggy.simson.net>
-	 <20101116150319.GA3475@redhat.com>
-	 <1289922108.5169.185.camel@maggy.simson.net>
-	 <20101116172804.GA9930@elte.hu> <1290281700.28711.9.camel@maggy.simson.net>
-	 <AANLkTinz12n9OKkCV8XRF8n1vKytO_aj26i-ytcAhFgN@mail.gmail.com>
-	 <AANLkTinWQkiadp7NCVt401bFiATJeqTK1g81RcP2awCv@mail.gmail.com>
-	 <AANLkTinmgsBQ624habviTTj7khCdZH_p2m5mX24_SV9j@mail.gmail.com>
-	 <AANLkTikFXv042qg4uzXF--9_co6-b_UgJF7Jeo2bVA=f@mail.gmail.com>
-	 <AANLkTikrc+_r1KE477c-NeD-9PWDOXx1ExHGm08Lm6wM@mail.gmail.com>
-	 <AANLkTiniEUdADMHUE1a9Fs1bGsWn6F6yeJX_NO4L94JK@mail.gmail.com>
-	 <AANLkTi=7FRCK9R2PVCTdtSqKo9FZemD5cXQTFoOKLEFB@mail.gmail.com>
-	 <AANLkTinOQ5sWigfW844dSBc2PvVwFj5c7yu+scNXxMcv@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 07 Dec 2010 19:51:29 +0100
-Message-ID: <1291747889.2032.985.camel@laptop>
+	id S1754076Ab0LGSzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:55:16 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:53176 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753833Ab0LGSzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 13:55:15 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18G3swqL5IG/lOrEeYzK3C8MtY2h+dS5qzNZ/EF45
+	Z+rCGAul5t7nC3
+Subject: Re: [patchlet] Re: Scheduler bug related to rq->skip_clock_update?
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
+        "Bjoern B. Brandenburg" <bbb.lst@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrea Bastoni <bastoni@sprg.uniroma2.it>,
+        "James H. Anderson" <anderson@cs.unc.edu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291740081.2032.751.camel@laptop>
+References: <alpine.LNX.2.00.1011202315290.8927@jupiter-cs.cs.unc.edu>
+	 <1290359641.4816.69.camel@maggy.simson.net>
+	 <alpine.LNX.2.00.1011212327250.8927@jupiter-cs.cs.unc.edu>
+	 <1290442781.16393.22.camel@maggy.simson.net>
+	 <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
+	 <20101205052819.GA2878@zhy> <1291613607.9457.5.camel@marge.simson.net>
+	 <AANLkTimH0YN0fd4zOk3A=_Q7waqM=6V4pw4N+0g0-k=7@mail.gmail.com>
+	 <1291624329.9457.38.camel@marge.simson.net>
+	 <1291740081.2032.751.camel@laptop>
+Content-Type: text/plain
+Date: Tue, 07 Dec 2010 19:55:09 +0100
+Message-Id: <1291748109.7475.20.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-05 at 12:47 -0800, Linus Torvalds wrote:
-> Nice levels are _not_ about group scheduling. They're about
-> priorities. And since the cgroup code doesn't even support priority
-> levels for the groups, it's a really *horrible* match. 
+On Tue, 2010-12-07 at 17:41 +0100, Peter Zijlstra wrote:
+> On Mon, 2010-12-06 at 09:32 +0100, Mike Galbraith wrote:
+> 
+> >  kernel/fork.c  |    1 +
+> >  kernel/sched.c |    6 +++---
+> >  2 files changed, 4 insertions(+), 3 deletions(-)
+> > 
+> > Index: linux-2.6.37.git/kernel/sched.c
+> > ===================================================================
+> > --- linux-2.6.37.git.orig/kernel/sched.c
+> > +++ linux-2.6.37.git/kernel/sched.c
+> > @@ -660,6 +660,7 @@ inline void update_rq_clock(struct rq *r
+> >  
+> >  		sched_irq_time_avg_update(rq, irq_time);
+> >  	}
+> > +	rq->skip_clock_update = 0;
+> >  }
+> >  
+> >  /*
+> 
+> Shouldn't we do that at the end of schedule()? Since the purpose of
+> ->skip_clock_update is to avoid multiple calls to:
+>   - avoid overhead
+>   - ensure scheduling is accounted at a single point
+> 
+> [ for that latter purpose it might also make sense to put that point
+> somewhere around context_switch() but due to the fact that we need a
+> clock update early that's a bit impractical. ]
+> 
+> Hmm?
 
-It does in fact, nice maps to a weight, we then schedule so that each
-entity (be it task or group) gets a proportional amount of time relative
-to the other entities (of the same parent).
+Yeah, could do that instead.  There's no gain in any call that may
+happen in the interval between.  Think I'll measure though, this bug was
+a surprise :)
 
-The scheduler basically solves the following differential equation:
-  dt_i = w_i * dt / \Sum_j w_j
+> > @@ -2138,7 +2139,7 @@ static void check_preempt_curr(struct rq
+> >  	 * A queue event has occurred, and we're going to schedule.  In
+> >  	 * this case, we can save a useless back to back clock update.
+> >  	 */
+> > -	if (test_tsk_need_resched(rq->curr))
+> > +	if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
+> >  		rq->skip_clock_update = 1;
+> >  }
+> 
+> OK, I initially tried to replace the test with a return value of
+> ->check_preempt_curr() and such, but that turns into a lot of code and
+> won't necessarily be any better.
 
+(Yeah, I considered doing the same)
 
-For tasks we map nice to weight like:
+> > @@ -3854,7 +3855,6 @@ static void put_prev_task(struct rq *rq,
+> >  {
+> >  	if (prev->se.on_rq)
+> >  		update_rq_clock(rq);
+> > -	rq->skip_clock_update = 0;
+> >  	prev->sched_class->put_prev_task(rq, prev);
+> >  }
+> 
+> See the first note.
+> 
+> > @@ -3912,7 +3912,6 @@ need_resched_nonpreemptible:
+> >  		hrtick_clear(rq);
+> >  
+> >  	raw_spin_lock_irq(&rq->lock);
+> > -	clear_tsk_need_resched(prev);
+> >  
+> >  	switch_count = &prev->nivcsw;
+> >  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+> > @@ -3942,6 +3941,7 @@ need_resched_nonpreemptible:
+> >  	if (unlikely(!rq->nr_running))
+> >  		idle_balance(cpu, rq);
+> >  
+> > +	clear_tsk_need_resched(prev);
+> >  	put_prev_task(rq, prev);
+> >  	next = pick_next_task(rq);
+> 
+> Good find, this needs to be done after the idle balancing because that
+> can release the rq->lock and allow for TIF_NEED_RESCHED to be set again.
+> 
+> Maybe complement this with a WARN_ON_ONCE(test_tsk_need_resched(next))
+> somewhere after pick_next_task() so as to ensure that !current has !
+> TIF_NEED_RESCHED.
+> 
+> > Index: linux-2.6.37.git/kernel/fork.c
+> > ===================================================================
+> > --- linux-2.6.37.git.orig/kernel/fork.c
+> > +++ linux-2.6.37.git/kernel/fork.c
+> > @@ -275,6 +275,7 @@ static struct task_struct *dup_task_stru
+> >  
+> >  	setup_thread_stack(tsk, orig);
+> >  	clear_user_return_notifier(tsk);
+> > +	clear_tsk_need_resched(tsk);
+> >  	stackend = end_of_stack(tsk);
+> >  	*stackend = STACK_END_MAGIC;	/* for overflow detection */
+> >  
+> 
+> OK.. have we looked if there's more TIF flags that could do with a
+> reset?
 
-static const int prio_to_weight[40] = {
- /* -20 */     88761,     71755,     56483,     46273,     36291,
- /* -15 */     29154,     23254,     18705,     14949,     11916,
- /* -10 */      9548,      7620,      6100,      4904,      3906,
- /*  -5 */      3121,      2501,      1991,      1586,      1277,
- /*   0 */      1024,       820,       655,       526,       423,
- /*   5 */       335,       272,       215,       172,       137,
- /*  10 */       110,        87,        70,        56,        45,
- /*  15 */        36,        29,        23,        18,        15,
-};
+mmm, no.
 
-For groups we expose the weight directly in cgroupfs://cpu.shares with a
-default equivalent to nice-0 (1024).
-
-So 'nice make -j9' will run make and all its children with weight=110,
-if this task hierarchy has ~9 runnable tasks it will get about as much
-time as a single nice-0 competing task.
-
-[ 9*110 = 990, 1*1024 = 1024, which gives: 49% vs 51% ]
-
-
-Now group scheduling is in fact closely related to nice, the only thing
-group scheduling does is:
-
-  w_i = \unit * \Prod_j { w_i,j / \Sum_k w_k,j }, where:
-
-     j \elem i and its parents
-     k \elem entities of group j (where a task is a trivial group)
-
-Where we compute a task's effective weight (w_i) by multiplying it with
-the effective weight of their ancestors.
-
-Suppose a grouped make -j9 against 1 competing task (all nice-0 or
-equivalent), and make's 9 active children [a..i] in the group G:
-
-
-        R
-      /   \
-     t     G
-          / \
-         a...i
-
-So w_t = 1024, w_G = 1024 and w_[a..i] = 1024.
-
-Now, per the above the effective weight (weight as in the root group) of
-each grouped task is:
-
-  w_[a..i] = 1024 * 1024/2048 * 1024/9216 ~= 56
-  w_t      = 1024 * 1024/2048             = 512
-
-[ \Sum w_[a..i] = 512, vs 512 gives: 50% vs 50% ]
-
-So effectively: nice make -j9, and stuffing the make -j9 in a group are
-roughly equivalent.
-
-The only difference between groups and nice is the interface, with nice
-you set the weight directly, with groups you set it implicitly,
-depending on the runnable task state.
+	-Mike
 
