@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab0LGMt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 07:49:26 -0500
-Received: from www.tglx.de ([62.245.132.106]:46620 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab0LGMtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 07:49:24 -0500
-Message-Id: <20101207124551.110956235@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Tue, 07 Dec 2010 12:49:01 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ian Munsie <imunsie@au1.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [patch 8/9] perf: session: Split out user event processing
-References: <20101207124527.868085529@linutronix.de>
-Content-Disposition: inline;
-	filename=perf-split-out-user-event-processing.patch
+	id S1754127Ab0LGMuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 07:50:16 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57943 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874Ab0LGMuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 07:50:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <201012071340.26244.arnd@arndb.de>
+References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
+ <20101207091653.GA22416@core.coreip.homeip.net> <AANLkTimnSsfCG0WtDpa-qEu3N1uMOeo+CzzZ8wsaZN1v@mail.gmail.com>
+ <201012071340.26244.arnd@arndb.de>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 7 Dec 2010 13:49:56 +0100
+Message-ID: <AANLkTikEpBS5zmmJaYoqmjFSwsdZd66N+yBs=RpRuk-J@mail.gmail.com>
+Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify further.
+On Tue, Dec 7, 2010 at 13:40, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 07 December 2010, Kay Sievers wrote:
+>> On Tue, Dec 7, 2010 at 10:16, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+>> > Hi Henrik,
+>> >
+>> > On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
+>> >> Today, userspace sets up an input device based on the data it emits.
+>> >> This is not always enough; a tablet and a touchscreen may emit exactly
+>> >> the same data, for instance, but the former should be set up with a
+>> >> pointer whereas the latter does not need to. Recently, a new type of
+>> >> touchpad has emerged where the buttons are under the pad, which changes
+>> >> handling logic without changing the emitted data. This patch introduces
+>> >> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
+>> >> about the device resulting in proper setup.
+>> >
+>> > If we agree that the new ioctl is suitable we'llalso need to wireit up
+>> > through sysfs. Also, can we keep all definitions to INPUT_ namespace?
+>>
+>> Please don't add new ioctls which are not extensible. The ioctl should
+>> carry the length or the version of the structure it asks for, so it
+>> can be extended in the future. Sysfs should be good enough for such
+>> interface though.
+>
+> Please never add any ioctls that have a version or length field!
+>
+> Ideally ioctls should have only scalar arguments, not structures,
+> so I'd recommend splitting it into two, so you can read type and
+> capability parameters separately.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- tools/perf/util/session.c |   42 ++++++++++++++++++++++++------------------
- 1 file changed, 24 insertions(+), 18 deletions(-)
+Please don't add new ioctls with a single value only. :) That's what
+sysfs is for, today.
 
-Index: linux-2.6-tip/tools/perf/util/session.c
-===================================================================
---- linux-2.6-tip.orig/tools/perf/util/session.c
-+++ linux-2.6-tip/tools/perf/util/session.c
-@@ -748,24 +748,10 @@ static int preprocess_sample_record(stru
- 	return 0;
- }
- 
--static int perf_session__process_event(struct perf_session *session,
--				       event_t *event,
--				       struct perf_event_ops *ops,
--				       u64 file_offset)
-+static int process_user_event(struct perf_session *session, event_t *event,
-+			      struct perf_event_ops *ops, u64 file_offset)
- {
--	struct sample_data sample;
--	int ret;
--
--	if (session->header.needs_swap && event__swap_ops[event->header.type])
--		event__swap_ops[event->header.type](event);
--
--	if (event->header.type >= PERF_RECORD_HEADER_MAX)
--		return -EINVAL;
--
--	hists__inc_nr_events(&session->hists, event->header.type);
--
--	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
--		dump_event(session, event, file_offset, NULL);
-+	dump_event(session, event, file_offset, NULL);
- 
- 	/* These events are processed right away */
- 	switch (event->header.type) {
-@@ -782,8 +768,28 @@ static int perf_session__process_event(s
- 	case PERF_RECORD_FINISHED_ROUND:
- 		return ops->finished_round(event, session, ops);
- 	default:
--		break;
-+		return -EINVAL;
- 	}
-+}
-+
-+static int perf_session__process_event(struct perf_session *session,
-+				       event_t *event,
-+				       struct perf_event_ops *ops,
-+				       u64 file_offset)
-+{
-+	struct sample_data sample;
-+	int ret;
-+
-+	if (session->header.needs_swap && event__swap_ops[event->header.type])
-+		event__swap_ops[event->header.type](event);
-+
-+	if (event->header.type >= PERF_RECORD_HEADER_MAX)
-+		return -EINVAL;
-+
-+	hists__inc_nr_events(&session->hists, event->header.type);
-+
-+	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
-+		return process_user_event(session, event, ops, file_offset);
- 
- 	/*
- 	 * For all kernel events we get the sample data
+The problem is that sysfs or ioctls with a single value can not handle
+atomic queries of multiple values, and (rightfully) needing that in
+some cases is a reason to add an ioctl() instead of sysfs.
 
-
+Kay
