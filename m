@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab0LGWXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 17:23:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60020 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab0LGWXL (ORCPT
+	id S1754288Ab0LGWaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 17:30:24 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:59924 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754050Ab0LGWaW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 17:23:11 -0500
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] omap1: pm_bus: Fix compilation warning.
-Organization: Deep Root Systems, LLC
-References: <1291641828-19909-1-git-send-email-marek.belisko@open-nandra.com>
-Date: Tue, 07 Dec 2010 14:23:02 -0800
-In-Reply-To: <1291641828-19909-1-git-send-email-marek.belisko@open-nandra.com>
-	(Marek Belisko's message of "Mon, 6 Dec 2010 14:23:48 +0100")
-Message-ID: <87lj41jk8p.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 7 Dec 2010 17:30:22 -0500
+X-IronPort-AV: E=Sophos;i="4.59,312,1288594800"; 
+   d="scan'208";a="492137767"
+Subject: Re: [PATCH v2] NFS: suppressing showing of default mount port
+ value in /proc fixed
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101206085553.2172.24863.stgit@localhost6.localdomain6>
+References: <20101206085553.2172.24863.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Tue, 07 Dec 2010 17:30:11 -0500
+Message-ID: <1291761011.3049.46.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 07 Dec 2010 22:30:12.0660 (UTC) FILETIME=[502FE740:01CB965E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek Belisko <marek.belisko@open-nandra.com> writes:
-
-> Fix following compilation warning:
-> arch/arm/mach-omap1/pm_bus.c: In function 'omap1_pm_runtime_resume':
-> arch/arm/mach-omap1/pm_bus.c:51: warning: unused variable 'ret'
->
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-
-Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
-
+On Mon, 2010-12-06 at 12:00 +0300, Stanislav Kinsbursky wrote:
+> Update: added check for zero value as it was before (note: can't simply check
+> mountd_port for positive value because it's typeof unsigned short)
+> 
+> Default value for mount server port is set to NFS_UNSPEC_PORT (-1) and will not
+> be changed during parsing mount options for mound data version 6. This default
+> value will be showed for mountport in /proc/mounts always since current default
+> check is for zero value. This small mistake leads to big problem, because
+> during umount.nfs execution from old user-space utils (at least nfs-utils
+> 1.0.9) this value will be used as the server port to connect to. This request
+> will be rejected (since port is 65535) and thus nfs mount point can't be
+> unmounted.
+> 
+> Note from Chuck Lever (chuck.lever@oracle.com): this is only possible if
+> /etc/mtab is a link to /proc/mounts.  Not all systems have this configuration.
+> 
 > ---
->  arch/arm/mach-omap1/pm_bus.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mach-omap1/pm_bus.c b/arch/arm/mach-omap1/pm_bus.c
-> index 8b66392..f97c6e9 100644
-> --- a/arch/arm/mach-omap1/pm_bus.c
-> +++ b/arch/arm/mach-omap1/pm_bus.c
-> @@ -48,7 +48,6 @@ static int omap1_pm_runtime_suspend(struct device *dev)
+>  fs/nfs/super.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+> index 6d6e21d..449024f 100644
+> --- a/fs/nfs/super.c
+> +++ b/fs/nfs/super.c
+> @@ -681,7 +681,9 @@ static void nfs_show_mountd_options(struct seq_file *m, struct nfs_server *nfss,
 >  
->  static int omap1_pm_runtime_resume(struct device *dev)
->  {
-> -	int ret = 0;
->  	struct clk *iclk, *fclk;
+>  	if (nfss->mountd_version || showdefaults)
+>  		seq_printf(m, ",mountvers=%u", nfss->mountd_version);
+> -	if (nfss->mountd_port || showdefaults)
+> +	if ((nfss->mountd_port &&
+> +		nfss->mountd_port != (unsigned short)NFS_UNSPEC_PORT) || 
+> +		showdefaults)
+>  		seq_printf(m, ",mountport=%u", nfss->mountd_port);
 >  
->  	dev_dbg(dev, "%s\n", __func__);
+>  	nfs_show_mountd_netid(m, nfss, showdefaults);
+> 
+
+This patch needs a 'Signed-off-by:' before I can apply it.
+
+Cheers
+  Trond
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
