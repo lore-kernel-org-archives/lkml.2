@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab0LGKyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 05:54:55 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:47195 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab0LGKyx (ORCPT
+	id S1755312Ab0LGK42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 05:56:28 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36084 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab0LGK40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 05:54:53 -0500
+	Tue, 7 Dec 2010 05:56:26 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=muRfEqQkIWBhko/CxCJjf+DteNZk5WehD2O/Or0EuypN+sigAmHV5fxpzMu3QW39IP
-         n5ZsSP4FR4NIP5HtZXZ9siyBklBRoHp9J8FXetuV0bxjKoJuZ30jxPcsc043UVD9z+25
-         NsG/tsc7yFp3ulhXkmSFxsiH0zY1GuIj+0PN8=
-Date: Tue, 7 Dec 2010 08:54:46 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ian Munsie <imunsie@au1.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/3] perf record/report: Process events in order
-Message-ID: <20101207105446.GA6911@ghostprotocols.net>
-References: <alpine.LFD.2.00.1012051220450.2653@localhost6.localdomain6>
- <1291603026-11785-4-git-send-email-imunsie@au1.ibm.com>
- <alpine.LFD.2.00.1012061014180.2653@localhost6.localdomain6>
- <1291637998-sup-4601@au1.ibm.com>
- <alpine.LFD.2.00.1012061359140.2653@localhost6.localdomain6>
- <1291640985-sup-4443@au1.ibm.com>
- <alpine.LFD.2.00.1012061447080.2653@localhost6.localdomain6>
- <1291679635-sup-9860@au1.ibm.com>
- <alpine.LFD.2.00.1012070942070.2653@localhost6.localdomain6>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oFdcom8eKKEK/IYnn8LxYJPUGx1OkB4z7RM2SnvMrVpWTxil/fYksYn9rfRNl1q9wL
+         +FxSBCNWXKMWMU9OEyWTDlD/Fg6noqnFhi55ykI7w4R8RUY9FZYf1dgJN6Gt7umkZVrQ
+         JF/g8DiPP5FsxlEkcTIFNOKfBV6UYP6qyuMSY=
+Date: Tue, 7 Dec 2010 02:56:20 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>
+Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
+Message-ID: <20101207105620.GB23729@core.coreip.homeip.net>
+References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
+ <20101207091653.GA22416@core.coreip.homeip.net>
+ <AANLkTimnSsfCG0WtDpa-qEu3N1uMOeo+CzzZ8wsaZN1v@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012070942070.2653@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <AANLkTimnSsfCG0WtDpa-qEu3N1uMOeo+CzzZ8wsaZN1v@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 07, 2010 at 11:47:35AM +0100, Thomas Gleixner escreveu:
-> On Tue, 7 Dec 2010, Ian Munsie wrote:
-> > Makes sense. I did something similar in the report layer that I was
-> > about to send when I saw this email, but this way we have a generic
-> > solution for other parts of perf that might want this.
-> > The problem here is that we only get the PERF_RECORD_HEADER_ATTR if perf
-> > record has been piped somewhere, so running perf record <load>; perf
-> > report on an unpatched kernel results in the COMM, MMAP, etc events
-> > being processed last (timestamp -1ULL) and no userspace samples are
-> > attributed at all:
+On Tue, Dec 07, 2010 at 11:48:28AM +0100, Kay Sievers wrote:
+> On Tue, Dec 7, 2010 at 10:16, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > Hi Henrik,
+> >
+> > On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
+> >> Today, userspace sets up an input device based on the data it emits.
+> >> This is not always enough; a tablet and a touchscreen may emit exactly
+> >> the same data, for instance, but the former should be set up with a
+> >> pointer whereas the latter does not need to. Recently, a new type of
+> >> touchpad has emerged where the buttons are under the pad, which changes
+> >> handling logic without changing the emitted data. This patch introduces
+> >> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
+> >> about the device resulting in proper setup.
+> >
+> > If we agree that the new ioctl is suitable we'llalso need to wireit up
+> > through sysfs. Also, can we keep all definitions to INPUT_ namespace?
 > 
-> Ok. We need to treat timestamp ~0ULL the same as timestamp 0ULL then.
+> Please don't add new ioctls which are not extensible. The ioctl should
+> carry the length or the version of the structure it asks for, so it
+> can be extended in the future.
 
-Right.
-  
-> > > +    event__parse_sample(event, session, &sample);
-> > > +    if (dump_trace)
-> > > +        perf_session__print_tstamp(session, event, &sample);
-> > 
-> > Moving this here after the dump_printf("%#Lx [%#x]: PERF_RECORD_%s"...
-> > changes the output of perf report -D in a bad way. Changing the spacing
-> > in dump_printf can make up for it, or juggle the code around some more.
-> 
-> Crap. I wanted to restrict the sample parsing to the real events w/o
-> having this magic comparison in place as we filter out the synth stuff
-> in the switch case already. 
-> 
-> > How do you want to proceed? At this point either version of the patches
-> > are pretty functionally equivelant. Mine does the perf report -D
-> 
-> Hmm. Arnaldo merged my version already.
-> 
-> > reordering as well, but that isn't really necessary to solve the bug.
-> > Either way we only have a few minor fixups left.
-> 
-> Having time ordered output of -D needs more than fixing the time stamp
-> issue. The dump_printf/dump_trace stuff is scattered all over the
-> place. So that needs more code churn, as you want to output the non
-> synth events when the ordered queue is drained.
+Size of ioctl data is encoded in ioctl, it can be extended easily. For
+examples take a look at how EVIOCGKEYCODE and EVIOCGSKEYCODE are handled
+in recent kernels.
 
-We can fix that, but then it was supposed to be a dump, something as it
-comes from the perf.data file.
+> Sysfs should be good enough for such
+> interface though.
+> 
 
-Perhaps we need something new, that does ordered dumps, I think we can
-just move all the dump_fprintf stuff to one place, and have calls for
-those where it is now (unordered) and another one from the ordered
-place, but looking at different debug variables?
-
-- Arnaldo
+-- 
+Dmitry
