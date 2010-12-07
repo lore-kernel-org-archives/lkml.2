@@ -1,98 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab0LGCYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:24:52 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52362 "EHLO smtps.tip.net.au"
+	id S1752999Ab0LGC1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:27:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:8337 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023Ab0LGCYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:24:50 -0500
-Date: Tue, 7 Dec 2010 13:24:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the drivers-x86 tree
-Message-Id: <20101207132443.6516fd07.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS"
+	id S1750888Ab0LGC1a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:27:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,308,1288594800"; 
+   d="scan'208";a="581200764"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Kyungmin Park <kmpark@infradead.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Mai, Leonard" <leonard.mai@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Date: Tue, 7 Dec 2010 10:26:00 +0800
+Subject: RE: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+Thread-Topic: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+Thread-Index: AcuVruUhbmmrrBLjRbOoq3wbVcnT1QABC9sg
+Message-ID: <5D8008F58939784290FAB48F54975198320B3E4B5A@shsmsx502.ccr.corp.intel.com>
+References: <20101201124842.GA5421@intel.com>
+	<5D8008F58939784290FAB48F54975198320B3E4A2D@shsmsx502.ccr.corp.intel.com>
+ <AANLkTinrPd9p4ocmE+Krj7t4yV8SMPsDeDFuTByy2=Q4@mail.gmail.com>
+In-Reply-To: <AANLkTinrPd9p4ocmE+Krj7t4yV8SMPsDeDFuTByy2=Q4@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: kyungmin78@gmail.com [mailto:kyungmin78@gmail.com] On Behalf Of
+> Kyungmin Park
+> Sent: Tuesday, December 07, 2010 9:34 AM
+> To: Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; cjb@laptop.org;
+> arjan@linux.intel.com; alan@linux.intel.com; akpm@linux-foundation.org; Mai,
+> Leonard; Arnd Bergmann; Wolfram Sang
+> Subject: Re: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+> 
+> On Tue, Dec 7, 2010 at 1:03 AM, Dong, Chuanxiao
+> <chuanxiao.dong@intel.com> wrote:
+> > Hello all,
+> > How about these patches? It implemented HW reset feature. When card
+> occurred a timeout error during reading/writing/erasing, these patches will allow
+> driver to reset eMMC card by trigger a HW reset signal.
+> > Does anyone have any comments about the implementation of these patches?
+> Wolfram and Arnd already pointed out the unsuitable patch headers. Thanks! :)
+> 
+> Hi,
+> I'm not yet find a reason to use this feature. Now it uses the samsung
+> and sandisk v4.41 but still no problem.
+> I wonder what's the purpose and effect if it uses or not?
 
-Hi Matthew,
+This feature will only be used when card occurs a timeout error during reading/writing/erasing.
+When host send a command to card, for some reason, if card didn't have any response to host, then host controller will generate a timeout interrupt to indicate this command is timeout.
+At this time, card maybe cannot response any command unless be reset. If driver did nothing at such scenario, RFC may be crashed. So I think when timeout error occurs, reset card is needed.
+Host sends CMD0 also can reset the card, but card may be dead and cannot response any command. So this patch will pull up a GPIO line to trigger a reset signal and let eMMC card reset itself, not send a command to do that.
+That is my understanding of this feature.
 
-After merging the drivers-x86 tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/platform/x86/toshiba_acpi.c: In function 'wwan_rfkill_set_block':
-drivers/platform/x86/toshiba_acpi.c:454: error: 'HCI_WIRELESS_WWAN_ENABLE' =
-undeclared (first use in this function)
-drivers/platform/x86/toshiba_acpi.c:454: error: (Each undeclared identifier=
- is reported only once
-drivers/platform/x86/toshiba_acpi.c:454: error: for each function it appear=
-s in.)
-
-Caused by commit 64ea4efdd949c99d9206a44a43984d2e861350f1 ("wwan rfkill stu=
-bs").
-
-I have used the version of the drivers-x86 tree from next-20101206 for toda=
-y.
-
-I also got the following new messages from the build:
-
-drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
-drivers/platform/x86/Kconfig:422:	symbol EEEPC_WMI depends on ACPI_WMI
-drivers/platform/x86/Kconfig:438:	symbol ACPI_WMI is selected by ACER_WMI
-drivers/platform/x86/Kconfig:18:	symbol ACER_WMI depends on LEDS_CLASS
-drivers/leds/Kconfig:10:	symbol LEDS_CLASS is selected by EEEPC_WMI
-
-warning: (ADB_PMU_LED && MACINTOSH_DRIVERS && ADB_PMU || ATH5K && NETDEVICE=
-S && WLAN && ATH_COMMON && (PCI || ATHEROS_AR231X) && MAC80211 || ATH9K && =
-NETDEVICES && WLAN && ATH_COMMON && PCI && MAC80211 || ATH9K_HTC && NETDEVI=
-CES && WLAN && ATH_COMMON && USB && MAC80211 || CARL9170_LEDS && NETDEVICES=
- && WLAN && ATH_COMMON && CARL9170 || INPUT_WISTRON_BTNS && !S390 && INPUT =
-&& INPUT_MISC && X86 && !X86_64 || SENSORS_APPLESMC && HWMON && INPUT && X8=
-6 || SENSORS_LIS3LV02D && HWMON && ACPI && INPUT || IR_WINBOND_CIR && MEDIA=
-_SUPPORT && X86 && PNP && RC_CORE || BACKLIGHT_ADP8860 && HAS_IOMEM && BACK=
-LIGHT_LCD_SUPPORT && BACKLIGHT_CLASS_DEVICE && I2C || MSM_STAGING && STAGIN=
-G && !STAGING_EXCLUDE_BUILD && FB && ARCH_MSM && !FB_MSM || ASUS_LAPTOP && =
-X86 && X86_PLATFORM_DEVICES && ACPI && !ACPI_ASUS && INPUT && (RFKILL || RF=
-KILL=3Dn) || THINKPAD_ACPI && X86 && X86_PLATFORM_DEVICES && ACPI && INPUT =
-&& (RFKILL || RFKILL=3Dn) || EEEPC_LAPTOP && X86 && X86_PLATFORM_DEVICES &&=
- ACPI && INPUT && EXPERIMENTAL && (RFKILL || RFKILL=3Dn) && HOTPLUG_PCI || =
-EEEPC_WMI && X86 && X86_PLATFORM_DEVICES && ACPI_WMI && INPUT && EXPERIMENT=
-AL && BACKLIGHT_CLASS_DEVICE && (RFKILL || RFKILL=3Dn)) selects LEDS_CLASS =
-which has unmet direct dependencies (NEW_LEDS)
-
-drivers/platform/x86/toshiba_acpi.c:460: warning: label 'out' defined but n=
-ot used
-drivers/platform/x86/toshiba_acpi.c:448: warning: unused variable 'radio_st=
-ate'
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM/ZrrAAoJEDMEi1NhKgbsuCMIAJKqKx8WIRqQmdinVdcjWhNc
-ppxagKVCiwr/fR4EthEvoSzTfthNhK4bhuqESEKbsxXeKl0gCC40F8PrB0IebQH6
-vvFaZ/oiWthwuR72+sgo28R2tKW4FJ0yzCAGRuy+QokuG0akXKRmVWtbRi0wpmOJ
-CW11iewYerghjnNiOyP2BzQp64aLXE6jUhHPKaBdCBBR3JCTOy/kkWmC/dB9gOBO
-r9HslRdRSxBxm3NZntaNihcueVZVRhtrTVAwv9pEpzbqA5Z676DbFaY99Uuq5BKT
-FQ7sl5dlYM7W86rbKYk1jYfD8GQmTyqE9+Vcxnue+0OHafxOcaMqwLjN9xKKBs4=
-=JI+R
------END PGP SIGNATURE-----
-
---Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS--
+Thanks
+Chuanxiao
