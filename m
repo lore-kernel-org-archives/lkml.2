@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab0LGWk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 17:40:57 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39099 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab0LGWk4 (ORCPT
+	id S1754485Ab0LGWo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 17:44:27 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:44103 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab0LGWoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 17:40:56 -0500
+	Tue, 7 Dec 2010 17:44:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=uy7NpTyuwK27gZlTrhzNWDG86kTRIaM2uOj3SSqRQsiensET+V4ykC4UCSO9wjYh62
-         ydUQcJsqz5V1xrPtTlANHWEjONsYtu2MTIdN8NLky0XmUAJh2RxchvLg2lUOjTJOPKjn
-         IMmif91edZV0EDTnwb4ajSuM0+dAJVYDuAHGY=
-Date: Wed, 8 Dec 2010 01:40:40 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/udlfb: Fix sparse warning 'Using plain integer
- as NULL pointer'
-Message-ID: <20101207224039.GP10623@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Peter Huewe <peterhuewe@gmx.de>,
-	Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1291760201-18531-1-git-send-email-peterhuewe@gmx.de>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=P7xvI9IBB2Pl0GsH5xAM3E525JpmiPuTyqEZHmEUr74etEltF9/NT7xWuqhy2uuf8d
+         krfhb2hZf0O5C5di+6sA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291760201-18531-1-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1291427008.16223.7.camel@gandalf.stny.rr.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+ <1291421609-14665-4-git-send-email-dhsharp@google.com> <1291427008.16223.7.camel@gandalf.stny.rr.com>
+From: David Sharp <dhsharp@google.com>
+Date: Tue, 7 Dec 2010 14:44:01 -0800
+Message-ID: <AANLkTimEcb9k=0_gSH7SdjHg=hywKfNjq=4p7HnUFJFZ@mail.gmail.com>
+Subject: Re: [PATCH 03/15] ring_buffer: Align buffer_page struct allocations
+ only to fit the flags.
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 11:16:41PM +0100, Peter Huewe wrote:
->  	while ((pixel_end > pixel) &&
->  	       (cmd_buffer_end - MIN_RLX_CMD_BYTES > cmd)) {
-> -		uint8_t *raw_pixels_count_byte = 0;
-> -		uint8_t *cmd_pixels_count_byte = 0;
-> -		const uint16_t *raw_pixel_start = 0;
-> -		const uint16_t *cmd_pixel_start, *cmd_pixel_end = 0;
-> +		uint8_t *raw_pixels_count_byte = NULL;
-> +		uint8_t *cmd_pixels_count_byte = NULL;
-> +		const uint16_t *raw_pixel_start = NULL;
-> +		const uint16_t *cmd_pixel_start, *cmd_pixel_end = NULL;
->  
+On Fri, Dec 3, 2010 at 5:43 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2010-12-03 at 16:13 -0800, David Sharp wrote:
+>> buffer_page structs need to be aligned to 4 byte boundaries because the page
+>> flags are stored in the two least-significant bits of the pointers in the page
+>> list. Aligning to cache lines is sufficient, but doesn't seem to be necessary.
+>> Reducing the alignement to only 4 bytes may improve cache efficiency.
+>
+> The reason for the cache line boundaries because the bpages are per cpu,
+> and if they are allocated next to some variable that gets change
+> globally or even another bpage that is used for another cpu buffer, then
+> I would expect we would get some cache line bouncing.
 
-It would be better to delete these.  The assignments are pointless and
-may well end up generating warnings in future versions of gcc.  (Maybe
-it already does with beta versions of gcc?)
+I see. That makes sense. I'm not attached to this patch, we can drop it.
 
-> -		struct fb_videomode fb_vmode = {0};
-> +		struct fb_videomode fb_vmode = {NULL};
+> Perhaps we should make bpage have its own slab allocation
+> (kmem_cache_alloc). And perhaps even try to keep all bpages that share
+> the same cache line on the same cpu buffer.
 
-Just do this:
-		struct fb_videomode fb_vmode = {};
-
->  	struct usb_device *usbdev;
-> -	struct dlfb_data *dev = 0;
-> -	struct fb_info *info = 0;
-> +	struct dlfb_data *dev = NULL;
-> +	struct fb_info *info = NULL;
->  	int retval = -ENOMEM;
->  	int i;
-
-You could leave dev uninitialized here again.
-
-regards,
-dan carpenter
+Maybe. Although, I was thinking of some patches to keep pages in a
+free-pool, so that when a cpu buffer needs a new page, it takes from
+the pool, and when a reader is done with a page, it returns to the
+free-pool. (This helps with the situation where more events occur on
+one CPU than others: pages are not locked to a CPU that isn't
+producing events.) In that case, it would be impossible to predict
+what cpu a bpage belongs to. But since this is theoretical, maybe it's
+not relevant.
