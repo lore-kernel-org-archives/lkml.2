@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab0LGJej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:34:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab0LGJei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:34:38 -0500
-Message-ID: <4CFDFFA9.5050804@redhat.com>
-Date: Tue, 07 Dec 2010 11:34:33 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: SVM: Add xsetbv intercept
-References: <1291394523-7689-1-git-send-email-joerg.roedel@amd.com> <4CFD0B06.9010308@redhat.com> <20101206174852.GG4936@amd.com>
-In-Reply-To: <20101206174852.GG4936@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755162Ab0LGJfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:35:15 -0500
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:40776 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab0LGJfM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 04:35:12 -0500
+Subject: Re: [cpuops inc_return V1 6/9] Taskstats: Use this_cpu_ops
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20101206174016.530242493@linux.com>
+References: <20101206173958.685460926@linux.com>
+	 <20101206174016.530242493@linux.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Tue, 07 Dec 2010 10:35:08 +0100
+Message-ID: <1291714508.1910.8.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 07:48 PM, Roedel, Joerg wrote:
-> On Mon, Dec 06, 2010 at 11:10:46AM -0500, Avi Kivity wrote:
-> >  On 12/03/2010 06:42 PM, Joerg Roedel wrote:
-> >  >  This patch implements the xsetbv intercept to the AMD part
-> >  >  of KVM. This makes AVX usable in a save way for the guest on
-> >  >  AVX capable AMD hardware.
-> >  >  The patch is tested by using AVX in the guest and host in
-> >  >  parallel and checking for data corruption. I also used the
-> >  >  KVM xsave unit-tests and they all pass.
-> >  >
-> >
-> >  That is really strange.  You didn't need to do anything to get cpuid.avx
-> >  recognized.  So running an older kvm on newer hardware will happily
-> >  expose avx even though it's not supported.
-> >
-> >  We screwed up - we should have made cpuid.avx dependent on vendor support.
->
-> Hmm, right. The set_supported_cpuid arch-callback should basically
-> disable xsave on AMD for all KVM versions which do not handle the xsetbv
-> intercept.
->
+Hello Christoph,
 
-Please post a patch to do that, and update this patch to undo the 
-change.  We'll backport the first patch to -stable so that people 
-running older kernels don't get a nasty surprise when they upgrade their 
-hardware (and use -cpu host).
+On Mon, 2010-12-06 at 11:40 -0600, Christoph Lameter wrote:
+> plain text document attachment (cpuops_inc_return_taskstats)
+> Use this_cpu_inc_return in one place and avoid ugly __raw_get_cpu in another.
+> 
+> V3->V4:
+> 	- Fix off by one.
+> 
+> Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
+>  kernel/taskstats.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/kernel/taskstats.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/taskstats.c	2010-11-30 10:06:35.000000000 -0600
+> +++ linux-2.6/kernel/taskstats.c	2010-11-30 10:10:14.000000000 -0600
+> @@ -89,8 +89,7 @@ static int prepare_reply(struct genl_inf
+>  		return -ENOMEM;
+> 
+>  	if (!info) {
+> -		int seq = get_cpu_var(taskstats_seqnum)++;
+> -		put_cpu_var(taskstats_seqnum);
+> +		int seq = this_cpu_inc_return(taskstats_seqnum) - 1;
 
-One more thing to watch out for.  We also need to see if there aren't 
-more mistakes like that out there.
+This looks good now.
 
--- 
-error compiling committee.c: too many arguments to function
+>  		reply = genlmsg_put(skb, 0, seq, &family, 0, cmd);
+>  	} else
+> @@ -581,7 +580,7 @@ void taskstats_exit(struct task_struct *
+>  		fill_tgid_exit(tsk);
+>  	}
+> 
+> -	listeners = &__raw_get_cpu_var(listener_array);
+> +	listeners = __this_cpu_ptr(listener_array);
+
+I think this is wrong and should be:
+
+-	listeners = &__raw_get_cpu_var(listener_array);
++	listeners = __this_cpu_ptr(>>>> & <<< listener_array);
+
+Michael
+
 
