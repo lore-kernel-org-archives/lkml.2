@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab0LGJuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:50:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22887 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754616Ab0LGJuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:50:17 -0500
-Message-ID: <4CFE0354.6070607@redhat.com>
-Date: Tue, 07 Dec 2010 11:50:12 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755174Ab0LGJul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:50:41 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26441 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754616Ab0LGJuk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 04:50:40 -0500
+Message-ID: <175BA60FBA444BE6B858D42E7B602A40@hacdom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, <andrew.chih.howe.khor@intel.com>,
+        <joel.clark@intel.com>, <kok.howg.ewe@intel.com>,
+        <margie.foster@intel.com>
+Subject: Re: [PATCH net-next-2.6 8/17 v2] can: EG20T PCH: Change Copyright and module description
+Date: Tue, 7 Dec 2010 18:50:37 +0900
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/12] KVM: SVM: Add support for VMCB state caching
-References: <1291373159-4822-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1291373159-4822-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-2022-jp";
+	reply-type=response
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2010 12:45 PM, Joerg Roedel wrote:
-> Hi Avi, Hi Marcelo,
->
-> here is a patch-set which adds support for VMCB state caching to KVM.
-> This is a new CPU feature where software can mark certain parts of the
-> VMCB as unchanged since the last vmexit and the hardware can then avoid
-> reloading these parts from memory.
->
-> The feature is implemented downwards-compatible in hardware, so a 0-bit
-> means the state has changed and needs to be reloaded. This makes it
-> possible to implement the bits without checking for the feature, as done
-> in this patch-set (another reason is that the check is as expensive as
-> clearing the bit). Processors which do not implement VMCB state
-> caching just ignore these bits.
->
-> These patches were tested with multiple guests (Windows, Linux, also in
-> parallel) and also with nested-svm.
->
-> The patches apply on-top of the intercept mask wrapping patch-set I sent
-> earlier this week. Your feedback is appreciated.
->
+> In case single destination address is OK, but in case multiple address is 
+> set,
+> I can see the following error.
+> Relay access denied
 
-Applied, thanks.
+The above was not true.
+It seems in case destination mail domain is external, (except 
+"@okisemi.com"),
+this error is occurred.
+In fact, in case multiple address with internal domain,
+it is success to send patch.
 
--- 
-error compiling committee.c: too many arguments to function
+Our smtp server may have restriction of something.
+
+It seems I must use mailer "thunderbird" again.
+
+Thanks,
+
+/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_
+Tomoya Morinaga
+OKI SEMICONDUCTOR CO., LTD. 
 
