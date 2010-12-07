@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab0LGTPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 14:15:14 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51660 "EHLO
+	id S1754370Ab0LGTPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 14:15:36 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51687 "EHLO
 	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab0LGTPK (ORCPT
+	with ESMTP id S1754259Ab0LGTPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 14:15:10 -0500
-Date: Tue, 7 Dec 2010 14:05:28 -0500
+	Tue, 7 Dec 2010 14:15:34 -0500
+Date: Tue, 7 Dec 2010 14:06:31 -0500
 From: "John W. Linville" <linville@tuxdriver.com>
-To: Joe Perches <joe@perches.com>
-Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        ath9k-devel@venema.h4ckr.net, Peter Stuge <peter@stuge.se>,
-        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 0/4] ath: logging message conversion
-Message-ID: <20101207190528.GD2700@tuxdriver.com>
-References: <20101202190239.GE7399@tux>
- <cover.1291333543.git.joe@perches.com>
+To: Bruno Randolf <br1@einfach.org>
+Cc: randy.dunlap@oracle.com, br1@thinktube.com, peterz@infradead.org,
+        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com, j@w1.fi,
+        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org, kevin.granade@gmail.com,
+        johannes@sipsolutions.net
+Subject: Re: [PATCH 3/3] nl80211/mac80211: Report signal average
+Message-ID: <20101207190631.GE2700@tuxdriver.com>
+References: <20101202101231.22988.33396.stgit@localhost6.localdomain6>
+ <20101202101242.22988.56087.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1291333543.git.joe@perches.com>
+In-Reply-To: <20101202101242.22988.56087.stgit@localhost6.localdomain6>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 07:12:34PM -0800, Joe Perches wrote:
-> ath_print is misleading as it's only used with CONFIG_ATH_DEBUG.
+On Thu, Dec 02, 2010 at 07:12:43PM +0900, Bruno Randolf wrote:
+> Extend nl80211 to report an exponential weighted moving average (EWMA) of the
+> signal value. Since the signal value usually fluctuates between different
+> packets, an average can be more useful than the value of the last packet.
 > 
-> Add and use the more normal <subsystem>_printk and <subsystem>_<level>
-> printk equivalents. (ath_printk and ath_<level>)
+> This uses the recently added generic EWMA library function.
 > 
-> Fix various defects in the current uses of ath_print formats
-> and arguments: Unnecessary casts, missing newlines, multiple
-> prints, and 1 loop which can exceed array bounds.
+> --
+> v2:	fix ABI breakage and change factor to be a power of 2.
 > 
-> Bundled and integrated the individual patches into a single patch series.
-> 
-> Joe Perches (4):
->   ath: Add and use ath_printk and ath_<level>
->   ath: Convert ath_print(.., ATH_DBG_FATAL to ath_err
->   ath: Convert ath_print to ath_dbg
->   ath: Fix ath_dbg access beyond array bound
+> Signed-off-by: Bruno Randolf <br1@einfach.org>
 
-Is the Atheros crew happy with this series?  They didn't seem to like
-the original patches very much...
+Jouni and Johannes, are you satisfied with this version?
 
 John
 -- 
