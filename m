@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab0LGQXY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 11:23:24 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38782 "EHLO hera.kernel.org"
+	id S1755024Ab0LGQXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 11:23:42 -0500
+Received: from kroah.org ([198.145.64.141]:59698 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab0LGQXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 11:23:23 -0500
-Message-ID: <4CFE5F5C.5060804@kernel.org>
-Date: Tue, 07 Dec 2010 17:22:52 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1754992Ab0LGQXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 11:23:39 -0500
+Date: Tue, 7 Dec 2010 08:22:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>
+Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
+Message-ID: <20101207162222.GA32237@kroah.com>
+References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
-        penberg@kernel.org
-Subject: Re: [PATCHSET] x86: unify x86_32 and 64 NUMA init paths, take#2
-References: <1290871325-3055-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1290871325-3055-1-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 16:22:54 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2010 04:21 PM, Tejun Heo wrote:
-> Hello,
-> 
-> This is the second take of unify-x86_32-and-64-NUMA-init-paths
-> patchset.  Changes from the last take[L] are,
-> 
-> * As suggested by Ingo, 0004 from the previous series is further split
->   into 0004-0011.
-> 
-> * Comment noting the ugliness of x86_32 logical apicid mapping
->   difference added.
+On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
+>  /**
+> + * struct input_devinfo - device information via EVIOCGDEVINFO ioctl
+> + * @types: bitmask of types (DEVTYPE_*) matching this device
+> + * @capabilities: bitmask of capabilities (DEVCAPS_*) of this device
+> + *
+> + * This struct provides information about the device needed for
+> + * automatic setup in userspace, such as if the device is direct
+> + * (touchscreen) or indirect (touchpad), and if there are other
+> + * special considerations, such as the touchpad also being a button.
+> + */
+> +struct input_devinfo {
+> +	__u32 types;
+> +	__u32 capabilities;
+> +};
 
-Ingo, ping?
+Why use an ioctl for this at all?  It's just 2 simple values that don't
+need to be atomically read at the same time.  What's wrong with 2 more
+sysfs files?
 
-Thanks.
+thanks,
 
--- 
-tejun
+greg k-h
