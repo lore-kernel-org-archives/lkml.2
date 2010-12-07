@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab0LGLDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 06:03:15 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18138 "EHLO
+	id S1755400Ab0LGLCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 06:02:41 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18109 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755321Ab0LGLDN (ORCPT
+	by vger.kernel.org with ESMTP id S1755343Ab0LGLCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 06:03:13 -0500
-Message-ID: <4CFE1517.8020906@dsn.okisemi.com>
-Date: Tue, 07 Dec 2010 20:05:59 +0900
+	Tue, 7 Dec 2010 06:02:39 -0500
+Message-ID: <4CFE14F5.4020804@dsn.okisemi.com>
+Date: Tue, 07 Dec 2010 20:05:25 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
