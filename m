@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0LGTBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 14:01:09 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22971 "EHLO
+	id S1754171Ab0LGTBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 14:01:52 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21044 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab0LGTBH (ORCPT
+	with ESMTP id S1752665Ab0LGTBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 14:01:07 -0500
-Message-ID: <4CFE8045.2030101@kernel.org>
-Date: Tue, 07 Dec 2010 10:43:17 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Feng Tang <feng.tang@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
- IRQ info
-References: <1291349518-3502-1-git-send-email-feng.tang@intel.com> <tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org> <4CFD226C.60308@kernel.org> <20101207133204.4d913c5a@feng-i7> <alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Dec 2010 14:01:50 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@ORACLE.COM>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Mike Snitzer <snitzer@redhat.com>, Matt <jackdachef@gmail.com>,
+        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier support is effective)
+In-reply-to: <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
+References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com> <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com> <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com> <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com> <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com> <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com> <20101207182243.GB21112@redhat.com> <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
+Date: Tue, 07 Dec 2010 13:52:33 -0500
+Message-Id: <1291747731-sup-3099@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 07:56 AM, Thomas Gleixner wrote:
-> On Tue, 7 Dec 2010, Feng Tang wrote:
->> On Tue, 7 Dec 2010 01:50:36 +0800
->> Yinghai Lu <yinghai@kernel.org> wrote:
->>  
->> +static void assign_to_mp_irq(struct mpc_intsrc *m,
->> +				    struct mpc_intsrc *mp_irq)
->> +{
->> +	mp_irq->dstapic = m->dstapic;
->> +	mp_irq->type = m->type;
->> +	mp_irq->irqtype = m->irqtype;
->> +	mp_irq->irqflag = m->irqflag;
->> +	mp_irq->srcbus = m->srcbus;
->> +	mp_irq->srcbusirq = m->srcbusirq;
->> +	mp_irq->dstirq = m->dstirq;
+Excerpts from Jon Nelson's message of 2010-12-07 13:45:14 -0500:
+> On Tue, Dec 7, 2010 at 12:22 PM, Mike Snitzer <snitzer@redhat.com> wrote:
+> > On Tue, Dec 07 2010 at  1:10pm -0500,
+> > Jon Nelson <jnelson@jamponi.net> wrote:
+> >
+> >> I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
+> >> KOTD kernel) I easily encounter the issue.
+> >>
+> >> Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
+> >> install, installed all updates, installed postgresql and the 'KOTD'
+> >> (Kernel of the Day)
+> >> kernel, and ran the following tests (as postgres user because I'm
+> >> lazy).
+> >>
+> >> 1. create a database (from bash):
+> >>
+> >> createdb test
+> >>
+> >> 2. place the following contents in a file (I used 't.sql'):
+> >>
+> >> begin;
+> >> create temporary table foo as select x as a, ARRAY[x] as b FROM
+> >> generate_series(1, 10000000 ) AS x;
+> >> create index foo_a_idx on foo (a);
+> >> create index foo_b_idx on foo USING GIN (b);
+> >> rollback;
+> >>
+> >> 3. execute that sql:
+> >>
+> >> psql -f t.sql --echo-all test
+> >>
+> >>
+> >> With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
+> >> without issue.
+> >>
+> >> With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
+> >> pretty frequently.
+> >
+> > How does it fail?  postgres errors?  kernel errors?
 > 
->   Can we please use the mrst version with memcpy ?
-> 
->> +}
->> +
->> +static int mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
->> +					struct mpc_intsrc *m)
->> +{
->> +	if (mp_irq->dstapic != m->dstapic)
->> +		return 1;
->> +	if (mp_irq->type != m->type)
->> +		return 2;
->> +	if (mp_irq->irqtype != m->irqtype)
->> +		return 3;
->> +	if (mp_irq->irqflag != m->irqflag)
->> +		return 4;
->> +	if (mp_irq->srcbus != m->srcbus)
->> +		return 5;
->> +	if (mp_irq->srcbusirq != m->srcbusirq)
->> +		return 6;
->> +	if (mp_irq->dstirq != m->dstirq)
->> +		return 7;
->> +
->> +	return 0;
-> 
->   Same here. No caller is interested in the detailed return value.
-> 
+> postgresql errors. Typically, header corruption but from the limited
+> visibility I've had into this via strace, what I see is zeroed pages
+> where there shouldn't be.
 
-ok, after look at code and git log,  i knew the reasons for those strange duplicated functions.
+This sounds a lot like a bug higher up than dm-crypt.  Zeros tend to
+come from some piece of code explicitly filling a page with zeros, and
+that often happens in the corner cases for O_DIRECT and a few other
+places in the filesystem.
 
-Alexy changed
+Have you tried triggering this with a regular block device?
 
- /* MP IRQ source entries */
--struct mpc_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
-+struct mp_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
-
-to make it decouple that with mpstable definition. so mptable will have mpc_intsrc, and acpi etc will use mp_config_intsrc
-
-and he planed to add more member to mp_config_intsrc .... never happened.
-
-then I added those functions with different parameters.
-
-one year later JSR changed all back to mpc_instr...
-
-so now have some duplicated functions....
-
-even in mpparse.c we now have
-
-static void print_MP_intsrc_info(struct mpc_intsrc *m)
-{
-        apic_printk(APIC_VERBOSE, "Int: type %d, pol %d, trig %d, bus %02x,"
-                " IRQ %02x, APIC ID %x, APIC INT %02x\n",
-                m->irqtype, m->irqflag & 3, (m->irqflag >> 2) & 3, m->srcbus,
-                m->srcbusirq, m->dstapic, m->dstirq);
-}
-
-static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
-{
-        apic_printk(APIC_VERBOSE, "Int: type %d, pol %d, trig %d, bus %02x,"
-                " IRQ %02x, APIC ID %x, APIC INT %02x\n",
-                mp_irq->irqtype, mp_irq->irqflag & 3,
-                (mp_irq->irqflag >> 2) & 3, mp_irq->srcbus,
-                mp_irq->srcbusirq, mp_irq->dstapic, mp_irq->dstirq);
-}
-
-...
-
-So yes, we should use simple versions in arch/x86/kernel/acpi/boot.c. ( assume functions mrst.c are copied from there)
-
-and should kill print_mp_irq_info or print_MP_intsrc_info...
-
-Thanks
-
-	Yinghai
+-chris
