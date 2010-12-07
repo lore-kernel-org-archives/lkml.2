@@ -1,252 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab0LGBcr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 20:32:47 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43299 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab0LGBcq convert rfc822-to-8bit (ORCPT
+	id S1754157Ab0LGBe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 20:34:28 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:59329 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab0LGBe0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 20:32:46 -0500
+	Mon, 6 Dec 2010 20:34:26 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=b4ZPJSf2S21QeSIPNVfhtoApv8jwSapDLQ4y/JrysWC4NfcBMZUw+4XYSFrf36hyJ/
-         3s7t2V5AtTdjte9fR/USo+VM9p7Qv1lVtI3GVghj05JZTLfFSClPo89JkSZmcLyn6N7W
-         OZe9jOdL/96a7LIBHsue821HGafn0D9RhN538=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=DECiYP3GLU0AANp7eIeohE098oFDNZYQw0w6qkGHw21Pe0n4G26Qs1JwvemgQ/h9HZ
+         nSHD9WqMr7kppnq6kuuMKitK9ddlEfe/KD1pDLHKpj8YxMZFd5SbQga580x8hbGb2VHO
+         iaqXqzRAG1eMLEqbxSrHyR9ATHqn35Fl+oKK8=
 MIME-Version: 1.0
-In-Reply-To: <20101206105558.GA21406@csn.ul.ie>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-	<1291376734-30202-2-git-send-email-mel@csn.ul.ie>
-	<AANLkTi=ZXBXS2m0WCTNWT1t6EFi=Vji5t-yQG=fTJQgs@mail.gmail.com>
-	<20101206105558.GA21406@csn.ul.ie>
-Date: Tue, 7 Dec 2010 10:32:45 +0900
-Message-ID: <AANLkTimvmbvZ-9RcLsefTqbq1ktm6=-XD1N6z4JHBh=v@mail.gmail.com>
-Subject: Re: [PATCH 1/5] mm: kswapd: Stop high-order balancing when any
- suitable zone is balanced
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <5D8008F58939784290FAB48F54975198320B3E4A2D@shsmsx502.ccr.corp.intel.com>
+References: <20101201124842.GA5421@intel.com>
+	<5D8008F58939784290FAB48F54975198320B3E4A2D@shsmsx502.ccr.corp.intel.com>
+Date: Tue, 7 Dec 2010 10:34:25 +0900
+X-Google-Sender-Auth: -mXEeN3YgvJXRb5BgOiMvmn2m4k
+Message-ID: <AANLkTinrPd9p4ocmE+Krj7t4yV8SMPsDeDFuTByy2=Q4@mail.gmail.com>
+Subject: Re: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
+From: Kyungmin Park <kmpark@infradead.org>
+To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Mai, Leonard" <leonard.mai@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Wolfram Sang <w.sang@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 6, 2010 at 7:55 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Mon, Dec 06, 2010 at 08:35:18AM +0900, Minchan Kim wrote:
->> Hi Mel,
+On Tue, Dec 7, 2010 at 1:03 AM, Dong, Chuanxiao
+<chuanxiao.dong@intel.com> wrote:
+> Hello all,
+> How about these patches? It implemented HW reset feature. When card occurred a timeout error during reading/writing/erasing, these patches will allow driver to reset eMMC card by trigger a HW reset signal.
+> Does anyone have any comments about the implementation of these patches? Wolfram and Arnd already pointed out the unsuitable patch headers. Thanks! :)
+
+Hi,
+I'm not yet find a reason to use this feature. Now it uses the samsung
+and sandisk v4.41 but still no problem.
+I wonder what's the purpose and effect if it uses or not?
+
+Thank you,
+Kyungmin Park
+
+>
+>
+>> -----Original Message-----
+>> From: linux-mmc-owner@vger.kernel.org
+>> [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chuanxiao Dong
+>> Sent: Wednesday, December 01, 2010 8:49 PM
+>> To: linux-mmc@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org; cjb@laptop.org; arjan@linux.intel.com;
+>> alan@linux.intel.com; akpm@linux-foundation.org
+>> Subject: [PATCH v4 0/4]implement eMMC4.4 standard HW reset feature
 >>
->> On Fri, Dec 3, 2010 at 8:45 PM, Mel Gorman <mel@csn.ul.ie> wrote:
->> > When the allocator enters its slow path, kswapd is woken up to balance the
->> > node. It continues working until all zones within the node are balanced. For
->> > order-0 allocations, this makes perfect sense but for higher orders it can
->> > have unintended side-effects. If the zone sizes are imbalanced, kswapd may
->> > reclaim heavily within a smaller zone discarding an excessive number of
->> > pages. The user-visible behaviour is that kswapd is awake and reclaiming
->> > even though plenty of pages are free from a suitable zone.
->> >
->> > This patch alters the "balance" logic for high-order reclaim allowing kswapd
->> > to stop if any suitable zone becomes balanced to reduce the number of pages
->> > it reclaims from other zones. kswapd still tries to ensure that order-0
->> > watermarks for all zones are met before sleeping.
->> >
->> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+>> Hi,
+>>       These are the version 4 patches to implement eMMC4.4 HW reset
+>>       feature. Host controller can use this feature by trigger RST_n signal.
+>>       To enable this, byte 162 of EXT_CSD register should be set.
+>>       HW reset is implemented in mmc core layer and sdhci host layer, and it
+>>       will be used after each reading/writing/erasing timeout error occures.
 >>
->> <snip>
+>>       change-log:
+>>       This version change the way to detect timeout error conditions. Added a
+>>       new routine mmc_handle_timeout_error to do this instead to do this in
+>>       mmc_wait_for_req. Each timeout read/write/erase command can use this
+>>       routine to do HW reset.
 >>
->> > -       if (!all_zones_ok) {
->> > +       if (!(all_zones_ok || (order && any_zone_ok))) {
->> >                cond_resched();
->> >
->> >                try_to_freeze();
->> > @@ -2361,6 +2366,31 @@ out:
->> >                goto loop_again;
->> >        }
->> >
->> > +       /*
->> > +        * If kswapd was reclaiming at a higher order, it has the option of
->> > +        * sleeping without all zones being balanced. Before it does, it must
->> > +        * ensure that the watermarks for order-0 on *all* zones are met and
->> > +        * that the congestion flags are cleared
->> > +        */
->> > +       if (order) {
->> > +               for (i = 0; i <= end_zone; i++) {
->> > +                       struct zone *zone = pgdat->node_zones + i;
->> > +
->> > +                       if (!populated_zone(zone))
->> > +                               continue;
->> > +
->> > +                       if (zone->all_unreclaimable && priority != DEF_PRIORITY)
->> > +                               continue;
->> > +
->> > +                       zone_clear_flag(zone, ZONE_CONGESTED);
+>>       patch1: enable HW reset capability if card support.
 >>
->> Why clear ZONE_CONGESTED?
->> If you have a cause, please, write down the comment.
+>>       patch2: add two new callback to implement HW reset in mmc core layer. In
+>>       this patch, routine mmc_handle_timeout_error was added.
 >>
->
-> It's because kswapd is the only mechanism that clears the congestion
-> flag. If it's not cleared and kswapd goes to sleep, the flag could be
-> left set causing hard-to-diagnose stalls. I'll add a comment.
-
-Seems good.
-
->
->> <snip>
+>>       patch3: implement hardware_reset callback for sdhci host. A new callback
+>>       reset_emmc was defined which will be each sdhci host controller to
+>>       implement separately.
 >>
->> First impression on this patch is that it changes scanning behavior as
->> well as reclaiming on high order reclaim.
->
-> It does affect scanning behaviour for high-order reclaim. Specifically,
-> it may stop scanning once a zone is balanced within the node. Previously
-> it would continue scanning until all zones were balanced. Is this what
-> you are thinking of or something else?
-
-Yes. I mean page aging of high zones.
-
->
->> I can't say old behavior is right but we can't say this behavior is
->> right, too although this patch solves the problem. At least, we might
->> need some data that shows this patch doesn't have a regression.
->
-> How do you suggest it be tested and this data be gathered? I tested a number of
-> workloads that keep kswapd awake but found no differences of major significant
-> even though it was using high-order allocations. The  problem with identifying
-> small regressions for high-order allocations is that the state of the system
-> when lumpy reclaim starts is very important as it determines how much work
-> has to be done. I did not find major regressions in performance.
->
-> For the tests I did run;
->
-> fsmark showed nothing useful. iozone showed nothing useful either as it didn't
-> even wake kswapd. sysbench showed minor performance gains and losses but it
-> is not useful as it typically does not wake kswapd unless the database is
-> badly configured.
->
-> I ran postmark because it was the closest benchmark to a mail simulator I
-> had access to. This sucks because it's no longer representative of a mail
-> server and is more like a crappy filesystem benchmark. To get it closer to a
-> real server, there was also a program running in the background that mapped
-> a large anonymous segment and scanned it in blocks.
->
-> POSTMARK
->            postmark-traceonly-v3r1-postmarkpostmark-kanyzone-v2r6-postmark
->                traceonly-v3r1     kanyzone-v2r6
-> Transactions per second:                2.00 ( 0.00%)     2.00 ( 0.00%)
-> Data megabytes read per second:         8.14 ( 0.00%)     8.59 ( 5.24%)
-> Data megabytes written per second:     18.94 ( 0.00%)    19.98 ( 5.21%)
-> Files created alone per second:         4.00 ( 0.00%)     4.00 ( 0.00%)
-> Files create/transact per second:       1.00 ( 0.00%)     1.00 ( 0.00%)
-> Files deleted alone per second:        34.00 ( 0.00%)    30.00 (-13.33%)
-
-Do you know the reason only file deletion has a big regression?
-
-> Files delete/transact per second:       1.00 ( 0.00%)     1.00 ( 0.00%)
->
-> MMTests Statistics: duration
-> User/Sys Time Running Test (seconds)         152.4    152.92
-> Total Elapsed Time (seconds)               5110.96   4847.22
->
-> FTrace Reclaim Statistics: vmscan
->            postmark-traceonly-v3r1-postmarkpostmark-kanyzone-v2r6-postmark
->                traceonly-v3r1     kanyzone-v2r6
-> Direct reclaims                                  0          0
-> Direct reclaim pages scanned                     0          0
-> Direct reclaim pages reclaimed                   0          0
-> Direct reclaim write file async I/O              0          0
-> Direct reclaim write anon async I/O              0          0
-> Direct reclaim write file sync I/O               0          0
-> Direct reclaim write anon sync I/O               0          0
-> Wake kswapd requests                             0          0
-> Kswapd wakeups                                2177       2174
-> Kswapd pages scanned                      34690766   34691473
-
-Perhaps, in your workload, any_zone is highest zone.
-If any_zone became low zone, kswapd pages scanned would have a big
-difference because old behavior try to balance all zones.
-Could we evaluate this situation? but I have no idea how we set up the
-situation. :(
-
-> Kswapd pages reclaimed                    34511965   34513478
-> Kswapd reclaim write file async I/O             32          0
-> Kswapd reclaim write anon async I/O           2357       2561
-> Kswapd reclaim write file sync I/O               0          0
-> Kswapd reclaim write anon sync I/O               0          0
-> Time stalled direct reclaim (seconds)         0.00       0.00
-> Time kswapd awake (seconds)                 632.10     683.34
->
-> Total pages scanned                       34690766  34691473
-> Total pages reclaimed                     34511965  34513478
-> %age total pages scanned/reclaimed          99.48%    99.49%
-> %age total pages scanned/written             0.01%     0.01%
-> %age  file pages scanned/written             0.00%     0.00%
-> Percentage Time Spent Direct Reclaim         0.00%     0.00%
-> Percentage Time kswapd Awake                12.37%    14.10%
-
-Is "kswapd Awake" correct?
-AFAIR, In your implementation, you seems to account kswapd time even
-though kswapd are schedule out.
-I mean, for example,
-
-kswapd
--> time stamp start
--> balance_pgdat
--> cond_resched(kswapd schedule out)
--> app 1 start
--> app 2 start
--> kswapd schedule in
--> time stamp end.
-
-If it's right, kswapd awake doesn't have a big meaning.
-
->
-> proc vmstat: Faults
->            postmark-traceonly-v3r1-postmarkpostmark-kanyzone-v2r6-postmark
->                traceonly-v3r1     kanyzone-v2r6
-> Major Faults                                  1979      1741
-> Minor Faults                              13660834  13587939
-> Page ins                                     89060     74704
-> Page outs                                    69800     58884
-> Swap ins                                      1193      1499
-> Swap outs                                     2403      2562
->
-> Still, IO performance was improved (higher rates of read/write) and the test
-> completed significantly faster with this patch series applied.  kswapd was
-> awake for longer and reclaimed marginally more pages with more swap-ins and
-
-Longer wake may be due to wrong gathering of time as I said.
-
-> swap-outs which is unfortunate but it's somewhat balanced by fewer faults
-> and fewer page-ins. Basically, in terms of reclaim the figures are so close
-> that it is within the performance variations lumpy reclaim has depending on
-> the exact state of the system when reclaim starts.
-
-What I wanted to see is that when if zones above any_zone isn't aging
-how it affect system performance.
-This patch is changing balancing mechanism of kswapd so I think the
-experiment is valuable.
-I don't want to make contributors to be tired by bad reviewer.
-What do you think about that?
-
->
->> It's
->> not easy but I believe you can do very well as like having done until
->> now. I didn't see whole series so I might miss something.
+>>       patch4: did a HW reset after each read/write/erase command.
 >>
->
+>> Thanks
+>> Chuanxiao
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > --
-> Mel Gorman
-> Part-time Phd Student                          Linux Technology Center
-> University of Limerick                         IBM Dublin Software Lab
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-
-
-
--- 
-Kind regards,
-Minchan Kim
