@@ -1,379 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab0LGCau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:30:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12242 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545Ab0LGCaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:30:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,308,1288594800"; 
-   d="scan'208";a="633784736"
-X-Mailbox-Line: From shaohui.zheng@intel.com Tue Dec  7 09:01:40 2010
-Message-Id: <20101207010140.092555703@intel.com>
-References: <20101207010033.280301752@intel.com>
-User-Agent: quilt/0.46-1
-Date: Tue, 07 Dec 2010 09:00:38 +0800
-From: shaohui.zheng@intel.com
-To: akpm@linux-foundation.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Ingo Molnar <mingo@elte.hu>, Len Brown <len.brown@intel.com>,
-        Yinghai Lu <Yinghai.Lu@Sun.COM>,
-        Shaohui Zheng <shaohui.zheng@intel.com>,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: [5/7,v8] NUMA Hotplug Emulator: Support cpu probe/release in x86_64
-Content-Disposition: inline; filename=005-hotplug-emulator-x86-support-cpu-probe-release-in-x86.patch
+	id S1754921Ab0LGCax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:30:53 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53180 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754545Ab0LGCaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:30:52 -0500
+Message-ID: <4CFD9D6D.80404@cn.fujitsu.com>
+Date: Tue, 07 Dec 2010 10:35:25 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v5 3/3] KVM: MMU: retry #PF for softmmu
+References: <4CFD9D12.30709@cn.fujitsu.com>
+In-Reply-To: <4CFD9D12.30709@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-07 10:30:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-07 10:30:56,
+	Serialize complete at 2010-12-07 10:30:56
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohui Zheng <shaohui.zheng@intel.com>
+Retry #PF for softmmu only when the current vcpu has the same cr3 as the time
+when #PF occurs
 
-CPU physical hot-add/hot-remove are supported on some hardwares, and it 
-was already supported in current linux kernel. NUMA Hotplug Emulator provides
-a mechanism to emulate the process with software method. It can be used for
-testing or debuging purpose.
+Changelog:
+  Just compare cr3 value since It's harmless to instantiate an spte for an
+  unused translation from Marcelo's comment
 
-CPU physical hotplug is different with logical CPU online/offline. Logical
-online/offline is controled by interface /sys/device/cpu/cpuX/online. CPU
-hotplug emulator uses probe/release interface. It becomes possible to do cpu
-hotplug automation and stress
-
-Add cpu interface probe/release under sysfs for x86_64. User can use this
-interface to emulate the cpu hot-add and hot-remove process.
-
-Directive:
-*) Reserve CPU thru grub parameter like:
-	maxcpus=4
-
-the rest CPUs will not be initiliazed. 
-
-*) Probe CPU
-we can use the probe interface to hot-add new CPUs:
-	echo nid > /sys/devices/system/cpu/probe
-
-*) Release a CPU
-	echo cpu > /sys/devices/system/cpu/release
-
-A reserved CPU will be hot-added to the specified node.
-1) nid == 0, the CPU will be added to the real node which the CPU
-should be in
-2) nid != 0, add the CPU to node nid even through it is a fake node.
-
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Len Brown <len.brown@intel.com>
-CC: Yinghai Lu <Yinghai.Lu@Sun.COM>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
-Index: linux-hpe4/arch/x86/kernel/acpi/boot.c
-===================================================================
---- linux-hpe4.orig/arch/x86/kernel/acpi/boot.c	2010-11-26 09:24:40.287725018 +0800
-+++ linux-hpe4/arch/x86/kernel/acpi/boot.c	2010-11-26 09:24:53.277724996 +0800
-@@ -647,8 +647,44 @@
- }
- EXPORT_SYMBOL(acpi_map_lsapic);
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |    2 ++
+ arch/x86/kvm/paging_tmpl.h      |   14 +++++++++-----
+ arch/x86/kvm/x86.c              |    6 +++++-
+ 4 files changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 6dae67e..be49043 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -593,6 +593,7 @@ struct kvm_x86_ops {
+ struct kvm_arch_async_pf {
+ 	u32 token;
+ 	gfn_t gfn;
++	unsigned long cr3;
+ 	bool direct_map;
+ };
  
-+#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-+static void acpi_map_cpu2node_emu(int cpu, int physid, int nid)
-+{
-+#ifdef CONFIG_ACPI_NUMA
-+#ifdef CONFIG_X86_64
-+	apicid_to_node[physid] = nid;
-+	numa_set_node(cpu, nid);
-+#else /* CONFIG_X86_32 */
-+	apicid_2_node[physid] = nid;
-+	cpu_to_node_map[cpu] = nid;
-+#endif
-+#endif
-+}
-+
-+static u16 cpu_to_apicid_saved[CONFIG_NR_CPUS];
-+int __ref acpi_map_lsapic_emu(int pcpu, int nid)
-+{
-+	/* backup cpu apicid to array cpu_to_apicid_saved */
-+	if (cpu_to_apicid_saved[pcpu] == 0 &&
-+		per_cpu(x86_cpu_to_apicid, pcpu) != BAD_APICID)
-+		cpu_to_apicid_saved[pcpu] = per_cpu(x86_cpu_to_apicid, pcpu);
-+
-+	per_cpu(x86_cpu_to_apicid, pcpu) = cpu_to_apicid_saved[pcpu];
-+	acpi_map_cpu2node_emu(pcpu, per_cpu(x86_cpu_to_apicid, pcpu), nid);
-+
-+	return pcpu;
-+}
-+EXPORT_SYMBOL(acpi_map_lsapic_emu);
-+#endif
-+
- int acpi_unmap_lsapic(int cpu)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 04f9033..1a953ac 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2607,9 +2607,11 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
  {
-+#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-+	/* backup cpu apicid to array cpu_to_apicid_saved */
-+	if (cpu_to_apicid_saved[cpu] == 0 &&
-+		per_cpu(x86_cpu_to_apicid, cpu) != BAD_APICID)
-+		cpu_to_apicid_saved[cpu] = per_cpu(x86_cpu_to_apicid, cpu);
-+#endif
- 	per_cpu(x86_cpu_to_apicid, cpu) = -1;
- 	set_cpu_present(cpu, false);
- 	num_processors--;
-Index: linux-hpe4/arch/x86/kernel/smpboot.c
-===================================================================
---- linux-hpe4.orig/arch/x86/kernel/smpboot.c	2010-11-26 09:24:40.297724969 +0800
-+++ linux-hpe4/arch/x86/kernel/smpboot.c	2010-11-26 12:48:58.977725001 +0800
-@@ -107,8 +107,6 @@
-         mutex_unlock(&x86_cpu_hotplug_driver_mutex);
+ 	struct kvm_arch_async_pf arch;
++
+ 	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
+ 	arch.gfn = gfn;
+ 	arch.direct_map = vcpu->arch.mmu.direct_map;
++	arch.cr3 = vcpu->arch.mmu.get_cr3(vcpu);
+ 
+ 	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
  }
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 52b3e91..146b681 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -438,7 +438,8 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			 struct guest_walker *gw,
+ 			 int user_fault, int write_fault, int hlevel,
+-			 int *ptwrite, pfn_t pfn, bool map_writable)
++			 int *ptwrite, pfn_t pfn, bool map_writable,
++			 bool prefault)
+ {
+ 	unsigned access = gw->pt_access;
+ 	struct kvm_mmu_page *sp = NULL;
+@@ -512,7 +513,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
  
--ssize_t arch_cpu_probe(const char *buf, size_t count) { return -1; }
--ssize_t arch_cpu_release(const char *buf, size_t count) { return -1; }
- #else
- static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- #define get_idle_for_cpu(x)      (idle_thread_array[(x)])
-Index: linux-hpe4/arch/x86/kernel/topology.c
-===================================================================
---- linux-hpe4.orig/arch/x86/kernel/topology.c	2010-11-26 09:24:52.477725000 +0800
-+++ linux-hpe4/arch/x86/kernel/topology.c	2010-11-26 12:48:58.987725001 +0800
-@@ -30,6 +30,9 @@
- #include <linux/init.h>
- #include <linux/smp.h>
- #include <asm/cpu.h>
-+#include <linux/cpu.h>
-+#include <linux/topology.h>
-+#include <linux/acpi.h>
+ 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access & access,
+ 		     user_fault, write_fault, dirty, ptwrite, it.level,
+-		     gw->gfn, pfn, false, map_writable);
++		     gw->gfn, pfn, prefault, map_writable);
+ 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
  
- static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
- 
-@@ -66,6 +69,74 @@
- 	unregister_cpu(&per_cpu(cpu_devices, num).cpu);
- }
- EXPORT_SYMBOL(arch_unregister_cpu);
-+
-+ssize_t arch_cpu_probe(const char *buf, size_t count)
-+{
-+	int nid = 0;
-+	int num = 0, selected = 0;
-+
-+	/* check parameters */
-+	if (!buf || count < 2)
-+		return -EPERM;
-+
-+	nid = simple_strtoul(buf, NULL, 0);
-+	printk(KERN_DEBUG "Add a cpu to node : %d\n", nid);
-+
-+	if (nid < 0 || nid > nr_node_ids - 1) {
-+		printk(KERN_ERR "Invalid NUMA node id: %d (0 <= nid < %d).\n",
-+			nid, nr_node_ids);
-+		return -EPERM;
-+	}
-+
-+	if (!node_online(nid)) {
-+		printk(KERN_ERR "NUMA node %d is not online, give up.\n", nid);
-+		return -EPERM;
-+	}
-+
-+	/* find first uninitialized cpu */
-+	for_each_present_cpu(num) {
-+		if (per_cpu(cpu_sys_devices, num) == NULL) {
-+			selected = num;
-+			break;
+ 	return it.sptep;
+@@ -568,8 +569,11 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	 */
+ 	if (!r) {
+ 		pgprintk("%s: guest page fault\n", __func__);
+-		inject_page_fault(vcpu, &walker.fault);
+-		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
++		if (!prefault) {
++			inject_page_fault(vcpu, &walker.fault);
++			/* reset fork detector */
++			vcpu->arch.last_pt_write_count = 0;
 +		}
-+	}
-+
-+	if (selected >= num_possible_cpus()) {
-+		printk(KERN_ERR "No free cpu, give up cpu probing.\n");
-+		return -EPERM;
-+	}
-+
-+	/* register cpu */
-+	arch_register_cpu_node(selected, nid);
-+	acpi_map_lsapic_emu(selected, nid);
-+
-+	return count;
-+}
-+EXPORT_SYMBOL(arch_cpu_probe);
-+
-+ssize_t arch_cpu_release(const char *buf, size_t count)
-+{
-+	int cpu = 0;
-+
-+	cpu =  simple_strtoul(buf, NULL, 0);
-+	/* cpu 0 is not hotplugable */
-+	if (cpu == 0) {
-+		printk(KERN_ERR "can not release cpu 0.\n");
-+		return -EPERM;
-+	}
-+
-+	if (cpu_online(cpu)) {
-+		printk(KERN_DEBUG "offline cpu %d.\n", cpu);
-+		cpu_down(cpu);
-+	}
-+
-+	arch_unregister_cpu(cpu);
-+	acpi_unmap_lsapic(cpu);
-+
-+	return count;
-+}
-+EXPORT_SYMBOL(arch_cpu_release);
-+
- #else /* CONFIG_HOTPLUG_CPU */
- 
- static int __init arch_register_cpu(int num)
-@@ -83,8 +154,14 @@
- 		register_one_node(i);
- #endif
- 
--	for_each_present_cpu(i)
--		arch_register_cpu(i);
-+	/*
-+	 * when cpu hotplug emulation enabled, register the online cpu only,
-+	 * the rests are reserved for cpu probe.
-+	 */
-+	for_each_present_cpu(i) {
-+		if ((cpu_hpe_on && cpu_online(i)) || !cpu_hpe_on)
-+			arch_register_cpu(i);
-+	}
- 
- 	return 0;
- }
-Index: linux-hpe4/arch/x86/mm/numa_64.c
-===================================================================
---- linux-hpe4.orig/arch/x86/mm/numa_64.c	2010-11-26 09:24:40.317724965 +0800
-+++ linux-hpe4/arch/x86/mm/numa_64.c	2010-11-26 09:24:53.297725001 +0800
-@@ -12,6 +12,7 @@
- #include <linux/module.h>
- #include <linux/nodemask.h>
- #include <linux/sched.h>
-+#include <linux/cpu.h>
- 
- #include <asm/e820.h>
- #include <asm/proto.h>
-@@ -785,6 +786,19 @@
- }
- #endif
- 
-+#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-+static __init int cpu_hpe_setup(char *opt)
-+{
-+	if (!opt)
-+		return -EINVAL;
-+
-+	if (!strncmp(opt, "on", 2) || !strncmp(opt, "1", 1))
-+		cpu_hpe_on = 1;
-+
-+	return 0;
-+}
-+early_param("cpu_hpe", cpu_hpe_setup);
-+#endif  /* CONFIG_ARCH_CPU_PROBE_RELEASE */
- 
- void __cpuinit numa_set_node(int cpu, int node)
- {
-Index: linux-hpe4/drivers/acpi/processor_driver.c
-===================================================================
---- linux-hpe4.orig/drivers/acpi/processor_driver.c	2010-11-26 09:24:40.327725004 +0800
-+++ linux-hpe4/drivers/acpi/processor_driver.c	2010-11-26 09:24:53.297725001 +0800
-@@ -530,6 +530,14 @@
- 		goto err_free_cpumask;
- 
- 	sysdev = get_cpu_sysdev(pr->id);
-+	/*
-+	 * Reserve cpu for hotplug emulation, the reserved cpu can be hot-added
-+	 * throu the cpu probe interface. Return directly.
-+	 */
-+	if (sysdev == NULL) {
-+		goto out;
-+	}
-+
- 	if (sysfs_create_link(&device->dev.kobj, &sysdev->kobj, "sysdev")) {
- 		result = -EFAULT;
- 		goto err_remove_fs;
-@@ -570,6 +578,7 @@
- 		goto err_remove_sysfs;
+ 		return 0;
  	}
  
-+out:
- 	return 0;
- 
- err_remove_sysfs:
-Index: linux-hpe4/drivers/base/cpu.c
-===================================================================
---- linux-hpe4.orig/drivers/base/cpu.c	2010-11-26 09:24:52.477725000 +0800
-+++ linux-hpe4/drivers/base/cpu.c	2010-11-26 09:24:53.297725001 +0800
-@@ -22,9 +22,15 @@
- };
- EXPORT_SYMBOL(cpu_sysdev_class);
- 
--static DEFINE_PER_CPU(struct sys_device *, cpu_sys_devices);
-+DEFINE_PER_CPU(struct sys_device *, cpu_sys_devices);
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+/*
-+ * cpu_hpe_on is a switch to enable/disable cpu hotplug emulation. it is
-+ * disabled in default, we can enable it throu grub parameter cpu_hpe=on
-+ */
-+int cpu_hpe_on;
-+
- static ssize_t show_online(struct sys_device *dev, struct sysdev_attribute *attr,
- 			   char *buf)
+@@ -599,7 +603,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PAGE_FAULT);
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+-			     level, &write_pt, pfn, map_writable);
++			     level, &write_pt, pfn, map_writable, prefault);
+ 	(void)sptep;
+ 	pgprintk("%s: shadow pte %p %llx ptwrite %d\n", __func__,
+ 		 sptep, *sptep, write_pt);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index ed373ba..018bb70 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6183,7 +6183,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
  {
-Index: linux-hpe4/include/linux/acpi.h
-===================================================================
---- linux-hpe4.orig/include/linux/acpi.h	2010-11-26 09:24:40.347725041 +0800
-+++ linux-hpe4/include/linux/acpi.h	2010-11-26 09:24:53.297725001 +0800
-@@ -102,6 +102,7 @@
- #ifdef CONFIG_ACPI_HOTPLUG_CPU
- /* Arch dependent functions for cpu hotplug support */
- int acpi_map_lsapic(acpi_handle handle, int *pcpu);
-+int acpi_map_lsapic_emu(int pcpu, int nid);
- int acpi_unmap_lsapic(int cpu);
- #endif /* CONFIG_ACPI_HOTPLUG_CPU */
+ 	int r;
  
-Index: linux-hpe4/include/linux/cpu.h
-===================================================================
---- linux-hpe4.orig/include/linux/cpu.h	2010-11-26 09:24:52.477725000 +0800
-+++ linux-hpe4/include/linux/cpu.h	2010-11-26 09:24:53.297725001 +0800
-@@ -30,6 +30,8 @@
- 	struct sys_device sysdev;
- };
+-	if (!vcpu->arch.mmu.direct_map || !work->arch.direct_map ||
++	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
+ 	      is_error_page(work->page))
+ 		return;
  
-+DECLARE_PER_CPU(struct sys_device *, cpu_sys_devices);
+@@ -6191,6 +6191,10 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+ 	if (unlikely(r))
+ 		return;
+ 
++	if (!vcpu->arch.mmu.direct_map &&
++	      work->arch.cr3 != vcpu->arch.mmu.get_cr3(vcpu))
++		return;
 +
- extern int register_cpu_node(struct cpu *cpu, int num, int nid);
+ 	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
+ }
  
- static inline int register_cpu(struct cpu *cpu, int num)
-@@ -149,6 +151,7 @@
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
- #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
- int cpu_down(unsigned int cpu);
-+extern int cpu_hpe_on;
- 
- #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
- extern void cpu_hotplug_driver_lock(void);
-@@ -171,6 +174,7 @@
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
- #define unregister_hotcpu_notifier(nb)	({ (void)(nb); })
-+static int cpu_hpe_on;
- #endif		/* CONFIG_HOTPLUG_CPU */
- 
- #ifdef CONFIG_PM_SLEEP_SMP
-Index: linux-hpe4/Documentation/x86/x86_64/boot-options.txt
-===================================================================
---- linux-hpe4.orig/Documentation/x86/x86_64/boot-options.txt	2010-11-26 12:49:44.847725099 +0800
-+++ linux-hpe4/Documentation/x86/x86_64/boot-options.txt	2010-11-26 12:55:50.527724999 +0800
-@@ -316,3 +316,9 @@
- 		Do not use GB pages for kernel direct mappings.
- 	gbpages
- 		Use GB pages for kernel direct mappings.
-+	cpu_hpe=on/off
-+		Enable/disable CPU hotplug emulation with software method. When cpu_hpe=on,
-+		sysfs provides probe/release interface to hot add/remove CPUs dynamically.
-+		We can use maxcpus=<N> to reserve CPUs.
-+		This option is disabled by default.
-+			
-
 -- 
-Thanks & Regards,
-Shaohui
-
+1.7.0.4
 
