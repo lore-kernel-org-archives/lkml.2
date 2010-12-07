@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab0LGTNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 14:13:49 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:34046 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab0LGTNs convert rfc822-to-8bit (ORCPT
+	id S1754267Ab0LGTPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 14:15:14 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51660 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499Ab0LGTPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 14:13:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=ets30riN+2l0RnsLp79+hMKp/qbWeUnDn9CA3P2PWV4gtVsmVYYhcpZiXNtvL4QHzh
-         f8RNU0+Pyf8RKKHWIN5rDoAU6PVOs3f2AoEO0bl+qu7swD3rPd1lfkLMDPKvmGNuuj/f
-         X3SYowqx5DCt3QPnHDS8DLmLCk2/pQyFW2Rvw=
+	Tue, 7 Dec 2010 14:15:10 -0500
+Date: Tue, 7 Dec 2010 14:05:28 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        ath9k-devel@venema.h4ckr.net, Peter Stuge <peter@stuge.se>,
+        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 0/4] ath: logging message conversion
+Message-ID: <20101207190528.GD2700@tuxdriver.com>
+References: <20101202190239.GE7399@tux>
+ <cover.1291333543.git.joe@perches.com>
 MIME-Version: 1.0
-Date: Tue, 7 Dec 2010 20:07:09 +0100
-X-Google-Sender-Auth: uibBnQy0al1yd6q4L0JqeJCEP74
-Message-ID: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
-Subject: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        brueckner@linux.vnet.ibm.com, lacombar@gmail.com, mchehab@redhat.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1291333543.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 4, 2010 at 14:57, Michal Marek <mmarek@suse.cz> wrote:
-> please pull these kbuild/kconfig fixes for the next -rc. The largest
-> part are fixes for the annoying kconfig warnings, contributed by Arnaud
-> Lacombe and Mauro Carvalho Chehab. The solution adds a new 'visible if'
-> keyword to the Kconfig language, so it's not exactly something that one
-> would expect in the rc phase, but the kconfig change is not huge (the
-> large diff is due to generated files) and it is deployed only in those
-> five Kconfig files that had the warnings and were hard to fix by other
-> means.  The second part is a forgotten patch by Hendrik Brueckner to
-> usr/initramfs, that fixes build for Blackfin and h8300.
+On Thu, Dec 02, 2010 at 07:12:34PM -0800, Joe Perches wrote:
+> ath_print is misleading as it's only used with CONFIG_ATH_DEBUG.
+> 
+> Add and use the more normal <subsystem>_printk and <subsystem>_<level>
+> printk equivalents. (ath_printk and ath_<level>)
+> 
+> Fix various defects in the current uses of ath_print formats
+> and arguments: Unnecessary casts, missing newlines, multiple
+> prints, and 1 loop which can exceed array bounds.
+> 
+> Bundled and integrated the individual patches into a single patch series.
+> 
+> Joe Perches (4):
+>   ath: Add and use ath_printk and ath_<level>
+>   ath: Convert ath_print(.., ATH_DBG_FATAL to ath_err
+>   ath: Convert ath_print to ath_dbg
+>   ath: Fix ath_dbg access beyond array bound
 
-> Arnaud Lacombe (5):
->      kconfig: add an option to determine a menu's visibility
+Is the Atheros crew happy with this series?  They didn't seem to like
+the original patches very much...
 
-Hmm, this changeset also went in through the v4l tree?
-
-BTW, I got confused:
-  - make allmodconfig causes e.g.:
-        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
-        CONFIG_VIDEO_TVAUDIO=m
-    => good
-  - make oldconfig for my config with almost everything selected,
-except for stuff I know that breaks:
-        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
-        # CONFIG_VIDEO_TVAUDIO is not set
-    and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
-    => bad!
-
-Is this intentional?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
