@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab0LGRZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 12:25:05 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60491 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab0LGRZD (ORCPT
+	id S1752886Ab0LGR3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 12:29:45 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:33899 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab0LGR3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 12:25:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=laK6fTsA5nFm/SByx4aQ0f3cBX8mOuZPsdB8w5KRz0gJhzAjz1ZslF1A3fX1s8iEXR
-         +1x0up9wwJRKXIdr3bYV23CWQEKOWaxfK1J8mq8fXpq/KoWvOKyZagjyf+QycJLI7rJl
-         KmqDXJztLngnGoglCC1BXvrzKJlGg9sEj8vko=
-Subject: Re: [PATCH 1/3] [SCSI] dpt_i2o: fix compiler warning on dptids
-From: Namhyung Kim <namhyung@gmail.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291739449.17668.9.camel@mulgrave.site>
-References: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-	 <1291737421.17668.5.camel@mulgrave.site> <1291738348.1638.9.camel@leonhard>
-	 <1291739449.17668.9.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 02:24:53 +0900
-Message-ID: <1291742693.1638.22.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 7 Dec 2010 12:29:44 -0500
+Date: Tue, 7 Dec 2010 18:29:37 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@localhost6.localdomain6
+To: Greg KH <gregkh@suse.de>
+cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] bind/unbind uevent
+In-Reply-To: <20101207162755.GA32328@suse.de>
+Message-ID: <alpine.LFD.2.02.1012071814160.1998@localhost6.localdomain6>
+References: <alpine.LFD.2.02.1012071713500.1897@localhost6.localdomain6> <20101207162755.GA32328@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-12-07 (화), 10:30 -0600, James Bottomley:
-> On Wed, 2010-12-08 at 01:12 +0900, Namhyung Kim wrote:
-> > MODULE_DEVICE_TABLE expands to nop when !MODULE (not !CONFIG_MODULE) so
-> > allyesconfig build always emits the warnings. Possible patch for this
-> > would be wraping it up in #ifdefs but when I sent a same patch to Greg
-> > KH he didn't want to add more #ifdefs in .c files.
+
+On Tue, 7 Dec 2010, Greg KH wrote:
+> On Tue, Dec 07, 2010 at 05:18:27PM +0100, Sebastian Ott wrote:
+> > Hi,
+> > 
+> > There is currently no generic trigger for userspace to know when a driver
+> > is bound to a device.
 > 
-> I didn't mean changing any c files.  I meant fixing the module include
-> to make the table used even in the !MODULE case.  That way we only alter
-> one file instead of a significant proportion of the drivers.
-> 
-
-It would not be a _significant_ proportion because normal drivers may
-refer the table in their driver struct. :)
-
-Anyway the patch below looks good to me. I'll happily drop my patches if
-you apply this in your tree.
-
-Thanks.
+> Not true at all, you get one when a device is attached to a bus.  What's
+> wrong with that notification?
+we get a KOBJ_ADD if a device is attached to a bus, but this does not
+imply that a device driver is bound to this device
 
 > 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 7575bbb..d49aa9c 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -90,7 +90,10 @@ extern const struct gtype##_id __mod_##gtype##_table		\
->  extern struct module __this_module;
->  #define THIS_MODULE (&__this_module)
->  #else  /* !MODULE */
-> -#define MODULE_GENERIC_TABLE(gtype,name)
-> +/* Flag name as used to avoid warnings about the unused device id table */
-> +#define MODULE_GENERIC_TABLE(gtype,name)			\
-> +static const struct gtype##_id __mod_##gtype##_table		\
-> +  __attribute__ ((unused, alias(__stringify(name))))
->  #define THIS_MODULE ((struct module *)0)
->  #endif
->  
+> > Such a trigger may be required in cases where setup
+> > steps must be performed in userspace after the device is bound, e.g.
+> > because the driver adds sysfs attributes in its probe function.
+> 
+> A driver should not add sysfs attributes in its probe function as that
+> is racy as you have noticed.  Add the attributes in the bus functions
+> for that driver and it should be fine.
+sry..I was not clear on this one. I was talking driver specific
+attributes per device. So I'm searching for a trigger when these
+attributes are created, or in other words when the device is useable,
+which I think translates to when a driver is bound to this device.
 
-
--- 
-Regards,
-Namhyung Kim
-
-
+> 
+> > I can imagine 3 possible ways to solve this problem:
+> > * add a bus specific change event (triggered by BUS_NOTIFY_BOUND_DRIVER)
+> >   - this may result in duplicated code for each bus
+> > * dissable autoprobing and "manually" probe the device from userspace
+> >   triggered by the add event - this duplicates logic already implemented
+> >   in the kernel
+> > * add a generic bind/unbind uevent
+> > 
+> > Which one is preferred from a driver core perspective?
+> 
+> None, use the existing notifications like everyone else :)
+> 
+> thanks,
+> 
+> greg k-h
+> 
