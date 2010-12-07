@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab0LGI7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 03:59:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36997 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab0LGI7r (ORCPT
+	id S1754842Ab0LGJBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:01:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23868 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab0LGJBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 03:59:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=qfBT9XsjpHy18P7iDN9dS8ffZdE5jnQ3pDFHBDW72TTTHNLNkhexoEO8NFclDmsqqX
-         m1yPGkWtLB2+Jda2olt5fkaez451dTiai0v/GtMkaJbcfnxSh9bKTLuoKr8UO3NB7884
-         l3OR5UYazyc0qjYVbYeB0wSyMxeb57RfbOaxc=
-Subject: [PATCH] ASoC: Fix snd_soc_instantiate_card error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain
-Date: Tue, 07 Dec 2010 17:06:02 +0800
-Message-Id: <1291712762.4776.11.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Tue, 7 Dec 2010 04:01:03 -0500
+Message-ID: <4CFDF785.7010401@kernel.org>
+Date: Tue, 07 Dec 2010 00:59:49 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org, bigeasy@linutronix.de
+Subject: [PATCH -v2] x86, ioapic: Don't write io_apic ID if it is not changed
+References: <20101126165020.GA26361@www.tglx.de> <tip-a38c5380ef9f088be9f49b6e4c5d80af8b1b5cd4@git.kernel.org>
+In-Reply-To: <tip-a38c5380ef9f088be9f49b6e4c5d80af8b1b5cd4@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0443551476ee6fabe45a0fbc7460dca8e0f6a965 Mon Sep 17 00:00:00 2001
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 7 Dec 2010 16:12:29 +0800
-Subject: [PATCH] ASoC: Fix snd_soc_instantiate_card error path
 
-Properly free the resources in the case of snd_card_register failure
-and soc_register_ac97_dai_link failure.
+For 32bit mptable path, setup_ids_from_mpc() always write io apic id
+register, even there is no change needed.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+So try to do that when they are different bewteen reading out and mptable
+
+-v2: update to recent setup_ioapic_ids_from_mpc() split..
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
+ arch/x86/kernel/apic/io_apic.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-This patch is against linux-next tree.
-
-In the case of soc_register_ac97_dai_link failure,
-I think we need below fix for Linus's tree:
-Add 
-while (--i >= 0)
-	soc_unregister_ac97_dai_link(&card->rtd[i]);
-just before goto probe_dai_err;
-Should I also send a patch against Linus's tree?
-
-Regards,
-Axel
-
- sound/soc/soc-core.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index 392d336..b4c8c38 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -1839,18 +1839,20 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
- 	ret = snd_card_register(card->snd_card);
- 	if (ret < 0) {
- 		printk(KERN_ERR "asoc: failed to register soundcard for %s\n", card->name);
--		goto probe_dai_err;
-+		goto probe_aux_dev_err;
- 	}
+Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
++++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+@@ -2006,9 +2006,12 @@ void __init setup_ioapic_ids_from_mpc_no
+ 						= mp_ioapics[apic_id].apicid;
  
- #ifdef CONFIG_SND_SOC_AC97_BUS
- 	/* register any AC97 codecs */
- 	for (i = 0; i < card->num_rtd; i++) {
--			ret = soc_register_ac97_dai_link(&card->rtd[i]);
--			if (ret < 0) {
--				printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
--				goto probe_dai_err;
--			}
-+		ret = soc_register_ac97_dai_link(&card->rtd[i]);
-+		if (ret < 0) {
-+			printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
-+			while (--i >= 0)
-+				soc_unregister_ac97_dai_link(&card->rtd[i]);
-+			goto probe_aux_dev_err;
- 		}
-+	}
- #endif
- 
- 	card->instantiated = 1;
--- 
-1.7.2
-
-
-
+ 		/*
+-		 * Read the right value from the MPC table and
+-		 * write it into the ID register.
++		 * Update the ID register according to the right value from
++		 *  the MPC table if they are different.
+ 		 */
++		if (mp_ioapics[apic_id].apicid == reg_00.bits.ID)
++			continue;
++
+ 		apic_printk(APIC_VERBOSE, KERN_INFO
+ 			"...changing IO-APIC physical APIC ID to %d ...",
+ 			mp_ioapics[apic_id].apicid);
