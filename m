@@ -1,41 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab0LGPEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:04:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:51985 "EHLO hera.kernel.org"
+	id S1753544Ab0LGPFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:05:44 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:57895 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab0LGPEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:04:46 -0500
-Message-ID: <4CFE4CC9.7040909@kernel.org>
-Date: Tue, 07 Dec 2010 16:03:37 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1752454Ab0LGPFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:05:43 -0500
+Date: Tue, 7 Dec 2010 16:05:25 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH v4 4/7] Reclaim invalidated page ASAP
+Message-ID: <20101207150525.GD2356@cmpxchg.org>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+ <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Jason Baron <jbaron@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [Use cpuops V1 07/11] kprobes: Use this_cpu_ops
-References: <20101206171618.302060721@linux.com> <20101206171640.321083096@linux.com>
-In-Reply-To: <20101206171640.321083096@linux.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 15:03:39 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 06:16 PM, Christoph Lameter wrote:
-> Use this_cpu ops in various places to optimize per cpu data access.
-> 
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+On Mon, Dec 06, 2010 at 02:29:12AM +0900, Minchan Kim wrote:
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -275,26 +275,59 @@ void add_page_to_unevictable_list(struct page *page)
+>   * head of the list, rather than the tail, to give the flusher
+>   * threads some time to write it out, as this is much more
+>   * effective than the single-page writeout from reclaim.
+> + *
+> + * If the page isn't page_mapped and dirty/writeback, the page
+> + * could reclaim asap using PG_reclaim.
+> + *
+> + * 1. active, mapped page -> none
+> + * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
+> + * 3. inactive, mapped page -> none
+> + * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
 
-applied
+         inactive, clean -> inactive, tail
 
--- 
-tejun
+> + * 5. Others -> none
+> + *
+> + * In 4, why it moves inactive's head, the VM expects the page would
+> + * be write it out by flusher threads as this is much more effective
+> + * than the single-page writeout from reclaim.
+>   */
+>  static void lru_deactivate(struct page *page, struct zone *zone)
+>  {
+>  	int lru, file;
+> +	bool active;
+>  
+> -	if (!PageLRU(page) || !PageActive(page))
+> +	if (!PageLRU(page))
+>  		return;
+>  
+>  	/* Some processes are using the page */
+>  	if (page_mapped(page))
+>  		return;
+>  
+> +	active = PageActive(page);
+> +
+>  	file = page_is_file_cache(page);
+>  	lru = page_lru_base_type(page);
+> -	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
+> +	del_page_from_lru_list(zone, page, lru + active);
+>  	ClearPageActive(page);
+>  	ClearPageReferenced(page);
+>  	add_page_to_lru_list(zone, page, lru);
+> -	__count_vm_event(PGDEACTIVATE);
+>
+> +	if (PageWriteback(page) || PageDirty(page)) {
+> +		/*
+> +		 * PG_reclaim could be raced with end_page_writeback
+> +		 * It can make readahead confusing.  But race window
+> +		 * is _really_ small and  it's non-critical problem.
+> +		 */
+> +		SetPageReclaim(page);
+> +	} else {
+> +		/*
+> +		 * The page's writeback ends up during pagevec
+> +		 * We moves tha page into tail of inactive.
+> +		 */
+> +		list_move_tail(&page->lru, &zone->lru[lru].list);
+> +		mem_cgroup_rotate_reclaimable_page(page);
+
+I think you also need to increase PGROTATED here.
+
+Other than that,
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
