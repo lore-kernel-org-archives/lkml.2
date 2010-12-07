@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab0LGT5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 14:57:36 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:33883 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754553Ab0LGT5e (ORCPT
+	id S1754696Ab0LGUCn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 15:02:43 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22252 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab0LGUCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 14:57:34 -0500
-Message-ID: <4CFE919A.1040704@euromail.se>
-Date: Tue, 07 Dec 2010 20:57:14 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>,
-        Chris Bagwell <chris@cnpbagwell.com>
-Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
-References: <1291706726-8835-1-git-send-email-rydberg@euromail.se> <20101207091653.GA22416@core.coreip.homeip.net>
-In-Reply-To: <20101207091653.GA22416@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQ3f4-0004wt-CL.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQ3f4-0004wt-CL 77ca082e3db55723fc9dbfa9828e8122
+	Tue, 7 Dec 2010 15:02:41 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Mike Snitzer <snitzer@redhat.com>, Matt <jackdachef@gmail.com>,
+        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier support is effective)
+In-reply-to: <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com>
+References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com> <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com> <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com> <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com> <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com> <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com> <20101207182243.GB21112@redhat.com> <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com> <1291747731-sup-3099@think> <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com>
+Date: Tue, 07 Dec 2010 15:02:01 -0500
+Message-Id: <1291751698-sup-9297@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 10:16 AM, Dmitry Torokhov wrote:
-
-> Hi Henrik,
+Excerpts from Jon Nelson's message of 2010-12-07 14:34:40 -0500:
+> On Tue, Dec 7, 2010 at 12:52 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> >> postgresql errors. Typically, header corruption but from the limited
+> >> visibility I've had into this via strace, what I see is zeroed pages
+> >> where there shouldn't be.
+> >
+> > This sounds a lot like a bug higher up than dm-crypt.  Zeros tend to
+> > come from some piece of code explicitly filling a page with zeros, and
+> > that often happens in the corner cases for O_DIRECT and a few other
+> > places in the filesystem.
+> >
+> > Have you tried triggering this with a regular block device?
 > 
-> On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
->> Today, userspace sets up an input device based on the data it emits.
->> This is not always enough; a tablet and a touchscreen may emit exactly
->> the same data, for instance, but the former should be set up with a
->> pointer whereas the latter does not need to. Recently, a new type of
->> touchpad has emerged where the buttons are under the pad, which changes
->> handling logic without changing the emitted data. This patch introduces
->> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
->> about the device resulting in proper setup.
+> I just tried the whole set of tests, but with /dev/sdb directly (as
+> ext4) without any crypt-y bits.
+> It takes more iterations but out of 6 tests I had one failure: same
+> type of thing, 'invalid page header in block ....'.
 > 
-> If we agree that the new ioctl is suitable we'llalso need to wireit up
-> through sysfs. Also, can we keep all definitions to INPUT_ namespace?
-> 
-> Thanks.
-> 
+> I can't guarantee that it is a full-page of zeroes, just what I saw
+> from the (limited) stracing I did.
 
+Fantastic. Now for our usual suspects:
 
-Thanks all for the comments, this is what I extract from them:
+1) Is postgres using O_DIRECT?  If yes, please turn it off
+2) Is postgres allocating sparse files?  If yes, please have it fully
+allocate the file instead.
+3) Is postgres using preallocation (fallocate)?  If yes, please have it
+fully allocate the file instead
 
-* Split struct into separate calls, although this still seems debated.
-
-* Use INPUT_ namespace
-
-* Add sysfs version
-
-* Keep bitmask for types. Is the list of types complete?
-
-* Still only one data point for capabilities. Anything else?
-
-Sounds about right?
-
-Thanks,
-Henrik
+-chris
