@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab0LGOHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 09:07:53 -0500
-Received: from www.tglx.de ([62.245.132.106]:37709 "EHLO www.tglx.de"
+	id S1752811Ab0LGONT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 09:13:19 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:34678 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0LGOHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 09:07:52 -0500
-Date: Tue, 7 Dec 2010 15:07:36 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] "perf top" results in "NOHZ: local_softirq_pending 100"
-In-Reply-To: <1291729867.2032.534.camel@laptop>
-Message-ID: <alpine.LFD.2.00.1012071507180.2653@localhost6.localdomain6>
-References: <20101207124448.GA10927@osiris.boeblingen.de.ibm.com>  <20101207132951.GB10927@osiris.boeblingen.de.ibm.com> <1291729867.2032.534.camel@laptop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751232Ab0LGONS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 09:13:18 -0500
+Message-ID: <4CFE40D1.5000309@parallels.com>
+Date: Tue, 07 Dec 2010 17:12:33 +0300
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Containers <containers@lists.osdl.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: [PATCH] user_ns: Improve the user_ns on-the-slab packaging
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, Peter Zijlstra wrote:
-> On Tue, 2010-12-07 at 14:29 +0100, Heiko Carstens wrote:
-> > > As far as I could see this function gets called from process context with
-> > > a spinlock held and hence we don't have any guarantee that this pending
-> > > softirq get executed before the idle task gets scheduled and tries to
-> > > disable the tick.
-> > > 
-> > > The easiest fix would be to set wakeup to one (see patch below), but I guess
-> > > there is a reason why its zero. Anybody?
-> 
-> We can start that hrtimer from within the scheduler function while
-> holding the rq->lock, doing a wakeup from there is not sane.
-> 
-> The best solution would be to fix the hrtimer_start*() interface,
-> something Thomas and I have wanted to do for ages but because we've
-> procrastinated is now a much larger job than it was :/
-> 
-> The whole HRTIMER_SOFTIRQ thing should die.. but for that to happen its
-> only use-case today must first go.
-> 
-> The problem is trying to start a timer with already elapsed time.
-> Preferably hrtimer_start*() would simply return -ETIME and let the
-> caller sort it, sadly the current behaviour is to 'fix' it for the
-> caller by enqueueing the timer onto the softirq list and raising the
-> softirq.
-> 
-> I guess we could make hrtimer_start*(.wakeup=false) return the -ENOTIME
-> thing and audit those few use-cases.
+Currently on 64-bit arch the user_namespace is 2096 and when
+being kmalloc-ed it resides on a 4k slab wasting 2003 bytes.
 
-That would be sensible anyway.
+If we allocate a separate cache for it and reduce the hash size
+from 128 to 64 chains the packaging becomes *much* better - the
+struct is 1072 bytes and the hole between is 98 bytes.
+
+Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
+
+---
+
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 8178156..faf4679 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -6,7 +6,7 @@
+ #include <linux/sched.h>
+ #include <linux/err.h>
  
+-#define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 8)
++#define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 7)
+ #define UIDHASH_SZ	(1 << UIDHASH_BITS)
+ 
+ struct user_namespace {
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 2591583..8aafa80 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -12,6 +12,8 @@
+ #include <linux/highuid.h>
+ #include <linux/cred.h>
+ 
++static struct kmem_cache *user_ns_cachep __read_mostly;
++
+ /*
+  * Create a new user namespace, deriving the creator from the user in the
+  * passed credentials, and replacing that user with the new root user for the
+@@ -26,7 +28,7 @@ int create_user_ns(struct cred *new)
+ 	struct user_struct *root_user;
+ 	int n;
+ 
+-	ns = kmalloc(sizeof(struct user_namespace), GFP_KERNEL);
++	ns = kmem_cache_alloc(user_ns_cachep, GFP_KERNEL);
+ 	if (!ns)
+ 		return -ENOMEM;
+ 
+@@ -38,7 +40,7 @@ int create_user_ns(struct cred *new)
+ 	/* Alloc new root user.  */
+ 	root_user = alloc_uid(ns, 0);
+ 	if (!root_user) {
+-		kfree(ns);
++		kmem_cache_free(user_ns_cachep, ns);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -71,7 +73,7 @@ static void free_user_ns_work(struct work_struct *work)
+ 	struct user_namespace *ns =
+ 		container_of(work, struct user_namespace, destroyer);
+ 	free_uid(ns->creator);
+-	kfree(ns);
++	kmem_cache_free(user_ns_cachep, ns);
+ }
+ 
+ void free_user_ns(struct kref *kref)
+@@ -126,3 +128,11 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
+ 	/* No useful relationship so no mapping */
+ 	return overflowgid;
+ }
++
++static __init int user_namespaces_init(void)
++{
++	user_ns_cachep = KMEM_CACHE(user_namespace, SLAB_PANIC);
++	return 0;
++}
++
++__initcall(user_namespaces_init);
