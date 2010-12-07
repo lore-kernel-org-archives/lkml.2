@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab0LGArs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 19:47:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57316 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab0LGArr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 19:47:47 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=WT7wE6qrmEcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=-fgAWmIJF59LB52nSrIA:9 a=iNOkuNohefgNfC3k57R-EoCPIKUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/8] Add yaffs2 file system: guts code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Charles Manning <manningc2@actrix.gen.nz>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <201012070003.42224.arnd@arndb.de>
-References: <1291154254-22533-1-git-send-email-cdhmanning@gmail.com>
-	 <201012061355.44032.arnd@arndb.de>
-	 <201012071113.51408.manningc2@actrix.gen.nz>
-	 <201012070003.42224.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 06 Dec 2010 19:47:43 -0500
-Message-ID: <1291682864.16223.37.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754045Ab0LGAsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 19:48:38 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53578 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab0LGAsh (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 6 Dec 2010 19:48:37 -0500
+Date: Mon, 6 Dec 2010 19:48:44 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, konrad@kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [RFC PATCH] Utilize the PCI API in the AGP framework.
+Message-ID: <20101207004844.GA31478@dumpdata.com>
+References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
+ <1291680126.8232.5.camel@clockmaker-el6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291680126.8232.5.camel@clockmaker-el6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-07 at 00:03 +0100, Arnd Bergmann wrote:
-
-> > > > yaffs_trace(YAFFS_TRACE_BUFFERS,
-> > > > 	"Out of temp buffers at line %d, other held by lines:",line_no);
-> > > > for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++)
-> > > > 	yaffs_trace(YAFFS_TRACE_BUFFERS," %d ", dev->temp_buffer[i].line);
-> > > > yaffs_trace(YAFFS_TRACE_BUFFERS, "\n");
-> > > >
-> > > > Would that be OK?
-> > > >
-> > > > I am loath to have to pull out useful code then plug it back in again.
-> > >
-> > > I don't think the yaffs_trace() function would be much better than the T()
-> > > macro, I was talking more about the fact that you have your own nonstandard
-> > > tracing infrastructure than the ugliness of the interface.
-> > >
-> > > The point of pulling it out now would be force you to rethink the
-> > > tracing. If you think that you'd arrive at the same conclusion, just
-> > > save the diff between the code with and without tracing so you can
-> > > submit that patch again later.
-> > >
-> > > Having some sort of tracing is clearly useful, but it's also not essential
-> > > for the basic yaffs2 operation. We want to keep a consistent way of
-> > > presenting trace points across the kernel, so as long as you do it
-> > > differently, your code is going to be viewed with some suspicion.
-> > >
-> > > Please have a look at how ext4, gfs2 and xfs do tracing.
-> > 
-> > Looking in Linus' tree, all of those contain custom tracing of the form I 
-> > propose.
+On Tue, Dec 07, 2010 at 10:02:06AM +1000, Dave Airlie wrote:
+> On Mon, 2010-12-06 at 18:24 -0500, Konrad Rzeszutek Wilk wrote:
+> > Attached is a set of RFC patches that make it possible for AGP graphic drivers to
+> > work under Xen. The major problem that Linux kernel has when running under Xen
+> > is that the usage of "virt_to_phys(x) >> PAGE_SIZE" to get the DMA address is not
+> > applicable. That is due to the fact that the PFN value is not the real Machine
+> > Frame Number (MFN), hence virt_to_phys(x) >> PAGE_SIZE ends up pointing to a
+> > random physical address. But if you use the PCI API, then the DMA (bus) address
+> > returned is a valid MFN.
 > 
-> Hmm, yes I guess that's right...
+> Can I ask you to go back a step and address what the use case for all of
+> this is, the patch description doesn't address why anyone cares about
+> AGP in 2010, esp with Xen. Virtualising hw  drivers for the sake of it
+> is all well and good, but since most of these drivers are for really
+> legacy systems I can't imagine we are going to see a lot of regression
+> testing before they hit distros like Debian two years from now, though
+> maybe Gentoo might pick up some, (is anyone even running IA64?).
+
+Hey Dave,
+Thank you for you quick reply and brief look at the code. When I wrote
+this code a similar thought went through my head, and around that
+time three bugs from Debian (#601341, #602418 and #604096) asked what
+is the the status of making AGP work with Xen. I've asked the folks
+on the bugs to provide input on your question. In regards to regressions
+I've a lot of these machines so I can definitly test them for
+regressions (my thought was to run the OpenArena, TuxRace, and watch
+some flash - is that a good enough test or should I expand it?)
+But obviously I don't have all of them so yeah something might break.
+
 > 
-> I was specifically talking about the include/trace/* based trace events
-> as something to look at, not the random printk based tracing stuff.
-> Maybe Steven or Frederic can give some more insight on that.
+> I can maybe imagine the Intel GTT being cared about but we've already
+> addressed the issues in it from what I can see.
+
+Definitly for the new hardware.
 > 
+> Also the X server use case is still possibly valid for a lot of the
+> systems here, its userspace ABI so it can't just end up broken. The move
 
-What are all those T() functions? Some look like they should be replaced
-with printk(KERN_* "") functions, some others for tracing (I guess the
-ones with YAFFS_TRACE_TRACING).
+Right. That would mean testing the MGA, SiS, VIA, and whatever else in the 
+drivers/gpu/drm/ directory with Xserver. Would the latest Xorg (1.8) do?
 
-ext4, gfs and xfs all have converted to the TRACE_EVENT() methods. When
-you have this, you get tracing for free. The work with both ftrace and
-perf. You can look at the samples/trace_events/ code for examples.
+> to TTM/DRM being the main user didn't suddenly remove the use of the X
+> server case on older systems which don't have a TTM/DRM layer.
 
-Note, if you use TRACE_EVENT() and you want to debug even more, you can
-simply add trace_printk() and that will also appear in your tracing
-output.
+Yup. I've some patches for that too, but figured it would make sense
+to get input first on this set. Let me post them shortly as they can
+be used independently of this patchset.
+> 
+> Other than that the idea seems sane, I just hate having to upgrade large
+> parts of the subsystem without some reasonable justification that
 
--- Steve
-
-
+Naturally.
+> someone out there is going to use it. If it allows some major cleanup
+> else where that would also be a possibly good justification.
+> 
+> Dave.
+> 
+> 
