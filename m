@@ -1,146 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab0LGCax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:30:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53180 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545Ab0LGCaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:30:52 -0500
-Message-ID: <4CFD9D6D.80404@cn.fujitsu.com>
-Date: Tue, 07 Dec 2010 10:35:25 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v5 3/3] KVM: MMU: retry #PF for softmmu
-References: <4CFD9D12.30709@cn.fujitsu.com>
-In-Reply-To: <4CFD9D12.30709@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-07 10:30:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-07 10:30:56,
-	Serialize complete at 2010-12-07 10:30:56
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754969Ab0LGCba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:31:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12242 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754838Ab0LGCat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:30:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,308,1288594800"; 
+   d="scan'208";a="865239320"
+X-Mailbox-Line: From shaohui.zheng@intel.com Tue Dec  7 09:01:40 2010
+Message-Id: <20101207010140.298657680@intel.com>
+References: <20101207010033.280301752@intel.com>
+User-Agent: quilt/0.46-1
+Date: Tue, 07 Dec 2010 09:00:40 +0800
+From: shaohui.zheng@intel.com
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Haicheng Li <haicheng.li@intel.com>,
+        Shaohui Zheng <shaohui.zheng@intel.com>
+Subject: [7/7,v8] NUMA Hotplug Emulator: Implement per-node add_memory debugfs interface
+Content-Disposition: inline; filename=007-hotplug-emulator-add-memory-debugfs-interface.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Retry #PF for softmmu only when the current vcpu has the same cr3 as the time
-when #PF occurs
+From:  Shaohui Zheng <shaohui.zheng@intel.com>
 
-Changelog:
-  Just compare cr3 value since It's harmless to instantiate an spte for an
-  unused translation from Marcelo's comment
+Add add_memory interface to support to memory hotplug emulation for each online
+node under debugfs. The reserved memory can be added into desired node with
+this interface.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+The layout on debugfs:
+	mem_hotplug/node0/add_memory
+	mem_hotplug/node1/add_memory
+	mem_hotplug/node2/add_memory
+	...
+
+Add a memory section(128M) to node 3(boots with mem=1024m)
+
+	echo 0x40000000 > mem_hotplug/node3/add_memory
+
+And more we make it friendly, it is possible to add memory to do
+
+	echo 1024m > mem_hotplug/node3/add_memory
+
+CC: David Rientjes <rientjes@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    2 ++
- arch/x86/kvm/paging_tmpl.h      |   14 +++++++++-----
- arch/x86/kvm/x86.c              |    6 +++++-
- 4 files changed, 17 insertions(+), 6 deletions(-)
+Index: linux-hpe4/mm/memory_hotplug.c
+===================================================================
+--- linux-hpe4.orig/mm/memory_hotplug.c	2010-12-02 12:35:31.557622002 +0800
++++ linux-hpe4/mm/memory_hotplug.c	2010-12-06 07:30:36.067622001 +0800
+@@ -930,6 +930,80 @@
+ 
+ static struct dentry *memhp_debug_root;
+ 
++#ifdef CONFIG_ARCH_MEMORY_PROBE
++
++static ssize_t add_memory_store(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	u64 phys_addr = 0;
++	int nid = file->private_data - NULL;
++	int ret;
++
++	phys_addr = simple_strtoull(buf, NULL, 0);
++	printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
++	phys_addr = memparse(buf, NULL);
++	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
++
++	if (ret)
++		count = ret;
++
++	return count;
++}
++
++static int add_memory_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static const struct file_operations add_memory_file_ops = {
++	.open		= add_memory_open,
++	.write		= add_memory_store,
++	.llseek		= generic_file_llseek,
++};
++
++/*
++ * Create add_memory debugfs entry under specified node
++ */
++static int debugfs_create_add_memory_entry(int nid)
++{
++	char buf[32];
++	static struct dentry *node_debug_root;
++
++	snprintf(buf, sizeof(buf), "node%d", nid);
++	node_debug_root = debugfs_create_dir(buf, memhp_debug_root);
++
++	/* the nid information was represented by the offset of pointer(NULL+nid) */
++	if (!debugfs_create_file("add_memory", S_IWUSR, node_debug_root,
++			NULL + nid, &add_memory_file_ops))
++		return -ENOMEM;
++
++	return 0;
++}
++
++static int __init memory_debug_init(void)
++{
++	int nid;
++
++	if (!memhp_debug_root)
++		memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
++	if (!memhp_debug_root)
++		return -ENOMEM;
++
++	for_each_online_node(nid)
++		 debugfs_create_add_memory_entry(nid);
++
++	return 0;
++}
++
++module_init(memory_debug_init);
++#else
++static debugfs_create_add_memory_entry(int nid)
++{
++	return 0;
++}
++#endif /* CONFIG_ARCH_MEMORY_PROBE */
++
+ static ssize_t add_node_store(struct file *file, const char __user *buf,
+ 				size_t count, loff_t *ppos)
+ {
+@@ -960,6 +1034,8 @@
+ 		return -ENOMEM;
+ 
+ 	ret = add_memory(nid, start, size);
++
++	debugfs_create_add_memory_entry(nid);
+ 	return ret ? ret : count;
+ }
+ 
+Index: linux-hpe4/Documentation/memory-hotplug.txt
+===================================================================
+--- linux-hpe4.orig/Documentation/memory-hotplug.txt	2010-12-02 12:35:31.557622002 +0800
++++ linux-hpe4/Documentation/memory-hotplug.txt	2010-12-06 07:39:36.007622000 +0800
+@@ -19,6 +19,7 @@
+   4.1 Hardware(Firmware) Support
+   4.2 Notify memory hot-add event by hand
+   4.3 Node hotplug emulation
++  4.4 Memory hotplug emulation
+ 5. Logical Memory hot-add phase
+   5.1. State of memory
+   5.2. How to online memory
+@@ -239,6 +240,29 @@
+ Once the new node has been added, it is possible to online the memory by
+ toggling the "state" of its memory section(s) as described in section 5.1.
+ 
++4.4 Memory hotplug emulation
++------------
++With debugfs, it is possible to test memory hotplug with software method, we
++can add memory section to desired node with add_memory interface. It is a much
++more powerful interface than "probe" described in section 4.2.
++
++There is an add_memory interface for each online node at the debugfs mount
++point.
++	mem_hotplug/node0/add_memory
++	mem_hotplug/node1/add_memory
++	mem_hotplug/node2/add_memory
++	...
++
++Add a memory section(128M) to node 3(boots with mem=1024m)
++
++	echo 0x40000000 > mem_hotplug/node3/add_memory
++
++And more we make it friendly, it is possible to add memory to do
++
++	echo 1024m > mem_hotplug/node3/add_memory
++
++Once the new memory section has been added, it is possible to online the memory
++by toggling the "state" described in section 5.1.
+ 
+ ------------------------------
+ 5. Logical Memory hot-add phase
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 6dae67e..be49043 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -593,6 +593,7 @@ struct kvm_x86_ops {
- struct kvm_arch_async_pf {
- 	u32 token;
- 	gfn_t gfn;
-+	unsigned long cr3;
- 	bool direct_map;
- };
- 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 04f9033..1a953ac 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2607,9 +2607,11 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
- static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
- {
- 	struct kvm_arch_async_pf arch;
-+
- 	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
- 	arch.gfn = gfn;
- 	arch.direct_map = vcpu->arch.mmu.direct_map;
-+	arch.cr3 = vcpu->arch.mmu.get_cr3(vcpu);
- 
- 	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
- }
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 52b3e91..146b681 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -438,7 +438,8 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
- static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			 struct guest_walker *gw,
- 			 int user_fault, int write_fault, int hlevel,
--			 int *ptwrite, pfn_t pfn, bool map_writable)
-+			 int *ptwrite, pfn_t pfn, bool map_writable,
-+			 bool prefault)
- {
- 	unsigned access = gw->pt_access;
- 	struct kvm_mmu_page *sp = NULL;
-@@ -512,7 +513,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 
- 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access & access,
- 		     user_fault, write_fault, dirty, ptwrite, it.level,
--		     gw->gfn, pfn, false, map_writable);
-+		     gw->gfn, pfn, prefault, map_writable);
- 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
- 
- 	return it.sptep;
-@@ -568,8 +569,11 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	 */
- 	if (!r) {
- 		pgprintk("%s: guest page fault\n", __func__);
--		inject_page_fault(vcpu, &walker.fault);
--		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
-+		if (!prefault) {
-+			inject_page_fault(vcpu, &walker.fault);
-+			/* reset fork detector */
-+			vcpu->arch.last_pt_write_count = 0;
-+		}
- 		return 0;
- 	}
- 
-@@ -599,7 +603,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PAGE_FAULT);
- 	kvm_mmu_free_some_pages(vcpu);
- 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
--			     level, &write_pt, pfn, map_writable);
-+			     level, &write_pt, pfn, map_writable, prefault);
- 	(void)sptep;
- 	pgprintk("%s: shadow pte %p %llx ptwrite %d\n", __func__,
- 		 sptep, *sptep, write_pt);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index ed373ba..018bb70 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6183,7 +6183,7 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
- {
- 	int r;
- 
--	if (!vcpu->arch.mmu.direct_map || !work->arch.direct_map ||
-+	if ((vcpu->arch.mmu.direct_map != work->arch.direct_map) ||
- 	      is_error_page(work->page))
- 		return;
- 
-@@ -6191,6 +6191,10 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
- 	if (unlikely(r))
- 		return;
- 
-+	if (!vcpu->arch.mmu.direct_map &&
-+	      work->arch.cr3 != vcpu->arch.mmu.get_cr3(vcpu))
-+		return;
-+
- 	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
- }
- 
 -- 
-1.7.0.4
+Thanks & Regards,
+Shaohui
+
 
