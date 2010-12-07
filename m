@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab0LGOB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 09:01:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50605 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab0LGOB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 09:01:28 -0500
-Message-ID: <4CFE3DF8.8080405@kernel.org>
-Date: Tue, 07 Dec 2010 15:00:24 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [Use cpuops V1 02/11] vmstat: Optimize zone counter modifications
- through the use of this cpu operations
-References: <20101206171618.302060721@linux.com> <20101206171637.445023081@linux.com>
-In-Reply-To: <20101206171637.445023081@linux.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752086Ab0LGOE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 09:04:26 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:47582 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab0LGOEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 09:04:24 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 7 Dec 2010 15:04:11 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: linux-kernel@vger.kernel.org,
+        linux1394-devel <linux1394-devel@lists.sourceforge.net>,
+        Robin Cook <rcook@wyrms.net>, Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: Re: Issue with firewire from 2.6.35.9 to 2.6.36.1
+Message-ID: <20101207150411.11bb5889@stein>
+In-Reply-To: <4CFDFBB0.8050804@ladisch.de>
+References: <1291592226.7134.1.camel@pheuri.wyrms.net>
+	<1291594279.9196.2.camel@maxim-laptop>
+	<20101206082918.6d1ccc41@stein>
+	<1291673087.4022.2.camel@pheuri.wyrms.net>
+	<20101207092735.48b82c40@stein>
+	<4CFDFBB0.8050804@ladisch.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 14:00:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 06:16 PM, Christoph Lameter wrote:
-> this cpu operations can be used to slightly optimize the function. The
-> changes will avoid some address calculations and replace them with the
-> use of the percpu segment register.
-> 
-> If one would have this_cpu_inc_return and this_cpu_dec_return then it
-> would be possible to optimize inc_zone_page_state and dec_zone_page_state even
-> more.
-> 
-> V1->V2:
-> 	- Fix __dec_zone_state overflow handling
-> 	- Use s8 variables for temporary storage.
-> 
-> V2->V3:
-> 	- Put __percpu annotations in correct places.
-> 
-> Reviewed-by: Pekka Enberg <penberg@kernel.org>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+On Dec 07 Clemens Ladisch wrote:
+> Stefan Richter wrote:
+> > I wonder which of our options is preferable:
+> >   - Change fw-ohci from MSI blacklisting to whitelisting.  Agere FW643
+> >     rev 07 is the only chip that can be whitelisted.
+> >   - Simply drop MSI support altogether.
 
-> @@ -221,16 +223,19 @@ EXPORT_SYMBOL(mod_zone_page_state);
-...
-> +		__this_cpu_write(*p, - overstep);
+Blacklisting is also still an option if we extend the table by a
+revision field:
+   match = ... && (ohci_quirks[i].revision == ANY_REVISION ||
+                   dev->revision <= ohci_quirks[i].revision) && ...;
+If we ever need an dev->revision >= ohci_quirks[i].revision match, the
+"break after first match" rule can be put to use or more tricks be
+added.
 
-Applied to percpu#for-next with the space after '-' removed from the
-above line.
+> That depends on whether the maintainer can afford the effort of
+> maintaining the whitelist.
 
-Thanks.
+I heard the maintainer is an FW643-E owner.  Maybe he accepts the
+maintenance burden for personal gain (less MMIO reads than with shared
+IRQs).  He might get fed up when new 1394 controllers with working MSI
+support start to appear on the market in a monthly rhythm or so.
 
+Blacklist maintenance OTOH would be worse for all concerned, since
+evidently not every MSI related bug is so easy to identify like with
+JMB38x and VT6315.  Even such simple cases will become more problematic
+as more time goes by since the 2.6.36 release.  Though with the current
+rate of OHCI 1394 product releases, blacklisting seems not to be a big
+deal either.
 -- 
-tejun
+Stefan Richter
+-=====-==-=- ==-- --===
+http://arcgraph.de/sr/
