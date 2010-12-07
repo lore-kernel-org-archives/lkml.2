@@ -1,102 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab0LGP0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:26:36 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46487 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab0LGP0f (ORCPT
+	id S1754725Ab0LGP0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:26:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32890 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754058Ab0LGP0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:26:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XAsEAIdoFNFpaLlW8k4fBzOVPblNHAlR2q+V4RgEAsyHszsmOoHvWsSZMV9c6OkqMD
-         Mgm7x7TuCaIMORSxgjHDjFmy3ZYFUQp2Jwt4eGcsP1RHidHUoaJObIYUJ/905AdACZ7j
-         nWMjqLrW/W7NYP7NAzQjegHZC4kMAB6iJVMZE=
-Date: Wed, 8 Dec 2010 00:26:25 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
-Message-ID: <20101207152625.GB608@barrios-desktop>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
- <d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
- <20101207144923.GB2356@cmpxchg.org>
- <20101207150710.GA26613@barrios-desktop>
- <20101207151939.GF2356@cmpxchg.org>
+	Tue, 7 Dec 2010 10:26:52 -0500
+Date: Tue, 7 Dec 2010 15:26:50 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: Fix resource leak if soc_register_ac97_dai_link
+ failed
+Message-ID: <20101207152650.GE9689@rakim.wolfsonmicro.main>
+References: <1291726590.2760.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101207151939.GF2356@cmpxchg.org>
+In-Reply-To: <1291726590.2760.3.camel@phoenix>
+X-Cookie: E Pluribus Unix
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 04:19:39PM +0100, Johannes Weiner wrote:
-> On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
-> > On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
-> > > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
-> > > > Changelog since v3:
-> > > >  - Change function comments - suggested by Johannes
-> > > >  - Change function name - suggested by Johannes
-> > > >  - add only dirty/writeback pages to deactive pagevec
-> > > 
-> > > Why the extra check?
-> > > 
-> > > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
-> > > >  			if (lock_failed)
-> > > >  				continue;
-> > > >  
-> > > > -			ret += invalidate_inode_page(page);
-> > > > -
-> > > > +			ret = invalidate_inode_page(page);
-> > > > +			/*
-> > > > +			 * If the page is dirty or under writeback, we can not
-> > > > +			 * invalidate it now.  But we assume that attempted
-> > > > +			 * invalidation is a hint that the page is no longer
-> > > > +			 * of interest and try to speed up its reclaim.
-> > > > +			 */
-> > > > +			if (!ret && (PageDirty(page) || PageWriteback(page)))
-> > > > +				deactivate_page(page);
-> > > 
-> > > The writeback completion handler does not take the page lock, so you
-> > > can still miss pages that finish writeback before this test, no?
-> > 
-> > Yes. but I think it's rare and even though it happens, it's not critical.
-> > > 
-> > > Can you explain why you felt the need to add these checks?
-> > 
-> > invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
-> > Look invalidate_complete_page. As easiest example, if the page has buffer and
-> > try_to_release_page can't release the buffer, it could return 0.
+On Tue, Dec 07, 2010 at 08:56:30PM +0800, Axel Lin wrote:
+> Properly free the resources in the case of soc_register_ac97_dai_link failure.
 > 
-> Ok, but somebody still tried to truncate the page, so why shouldn't we
-> try to reclaim it?  The reason for deactivating at this location is
-> that truncation is a strong hint for reclaim, not that it failed due
-> to dirty/writeback pages.
-> 
-> What's the problem with deactivating pages where try_to_release_page()
-> failed?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-If try_to_release_page fails and the such pages stay long time in pagevec,
-pagevec drain often happens. I think such pages are rare so skip such pages doesn't
-hurt goal of this patch.
-
-> 
-> I don't think we should add more logic than necessary.  If there is a
-> good reason for it, it needs to get a code comment at least.
-
-Above my comment is enough to justify it? If you agree, I can add the comment.
-
-Thanks for careful review, Hannes.
-
--- 
-Kind regards,
-Minchan Kim
+Applied, thanks.
