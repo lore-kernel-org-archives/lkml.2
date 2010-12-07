@@ -1,273 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0LGKUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 05:20:41 -0500
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:36781 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab0LGKUj (ORCPT
+	id S1754756Ab0LGKVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 05:21:43 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:60489 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750887Ab0LGKVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 05:20:39 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CFE0C03.3010405@cam.ac.uk>
-Date: Tue, 07 Dec 2010 10:27:15 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101123 Lightning/1.0b3pre Thunderbird/3.1.6
+	Tue, 7 Dec 2010 05:21:42 -0500
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Subject: [PATCH] MFD: ab8500-core chip version cut 2.0 support
+Date: Tue, 7 Dec 2010 11:20:47 +0100
+Message-ID: <1291717247-10280-1-git-send-email-mattias.wallin@stericsson.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drivers <Drivers@analog.com>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Subject: Re: [RFC 1/3] IIO: Direct digital synthesis abi documentation
-References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com> <1291292489-32362-2-git-send-email-michael.hennerich@analog.com> <4CF8CED9.9060306@cam.ac.uk> <544AC56F16B56944AEC3BD4E3D591771312F0E1BB3@LIMKCMBX1.ad.analog.com>
-In-Reply-To: <544AC56F16B56944AEC3BD4E3D591771312F0E1BB3@LIMKCMBX1.ad.analog.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/10 05:18, Hennerich, Michael wrote:
->> Jonathan Cameron wrote on 2010-12-03:
->> On 12/02/10 12:21, michael.hennerich@analog.com wrote:
->>> From: Michael Hennerich <michael.hennerich@analog.com>
->>>
->>> Proposed ABI documentation
->>>
->> Hi Michael,
->>
->> Couple of comments inline.
->>
->> I've raised a few questions that I don't have a clear answer two.
->>
->> The other comments are nitpicks about exact ordering of the elements
->> of the attribute names.
->>
->>> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
->>> ---
->>>  .../staging/iio/Documentation/sysfs-bus-iio-dds    |  103
->> ++++++++++++++++++++
->>>  1 files changed, 103 insertions(+), 0 deletions(-)
->>>  create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-
->> dds
->>>
->>> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
->> b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
->>> new file mode 100644
->>> index 0000000..2c99889
->>> --- /dev/null
->>> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
->>> @@ -0,0 +1,103 @@
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_freqY
->> Here we deviate a little from what we did with input channels.
->> In that case there was the existing interface (from hwmon) to match
->> so we already had an _input designation to tell us that the number
->> was in the relevant base units (here it would be Hz).  Hence we added
->> a _raw label to say it wasn't and tell userspace to apply scale and
->> offset.
->> This is stretching a point somewhat, but looking at the hwmon docs,
->> they
->> have pwmX_freq as a value in Hz. That's obviously going to make
->> consistency
->> rather tricky to achieve!
->>
->> Do you think we should leave all _freq without modifier as being in Hz
->> and
->> have ddsX_freqY_raw. Or should we rely on userspace verifying if there
->> are
->> appropriate scale / offset parameters to be applied and hence working
->> out
->> for itself whether the value in ddsX_freqY is in Hz or not?
->>
->> I'm think I marginally favour leaving it as you have it here but others
->> may
->> have different opinions.
-> 
-> Offset is not likely to be used here - but
-> these devices actually provide sub Hertz resolution. It's very likely to occur,
-> that we want to have scale being 1000 and the user writes frequency in mHz.
-> I might even consider using mHz for the sample driver as well.
-I guess it's a question of whether doing the fixed point arithmetic in kernel
-is cheap enough to use Hz but allow for a decimal point?  That would remove the
-need for the _scale parameter which would simplify the user interface slightly.
+This patch adds support for chip version 2.0 or cut 2.0.
+One new interrupt latch register - latch 12 - is introduced.
 
-Lets go with what you originally suggested. It works and with clear documentation
-the difference between it and some of our other 'frequency' elements shouldn't
-confuse anyone.
-> 
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Stores frequency into tuning word register Y.
->>> +           There can be more than one ddsX_freqY file, which allows
->> for
->>> +           pin controlled FSK Frequency Shift Keying
->>> +           (ddsX_pincontrol_freq_en is active) or the user can control
->>> +           the desired active tuning word by writing Y to the
->>> +           ddsX_freqsymbol file.
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_freq_scaleY
->> Would the association be clearer if we went with ddsX_freqY_scale?  I
->> think
->> that is more consistent with what we have elsewhere in IIO (though this
->> particular
->> double index case hasn't happened before)
-> 
-> Well - I thought use ddsX_freqY_scale whenever scale is different upon Y.
-> And leave without index if it is common between ddsX_freqY.
-> The Y after scale is just a typo.
-Cool, without the Y it is just fine.  We can document the Y case if/when it
-turns up in a driver.
-> 
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Scale to be applied to ddsX_freqY in order to obtain the
->>> +           desired value in Hz. If shared across all frequency
->> registers
->>> +           Y is not present.
->> Please add that it is also possible X is not present if shared across
->> all channels.  In weird cases X might not be present whilst Y is...
-> 
-> ok
-> 
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_freqsymbol
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Specifies the active output frequency tuning word. The
->> value
->>> +           corresponds to the Y in ddsX_freqY. To exit this mode the
->> user
->>> +           can write ddsX_pincontrol_freq_en or ddsX_out_disable file.
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_phaseY
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Stores phase into phase register Y.
->>> +           There can be more than one ddsX_phaseY file, which allows
->> for
->>> +           pin controlled PSK Phase Shift Keying
->>> +           (ddsX_pincontrol_phase_en is active) or the user can
->>> +           control the desired phase Y which is added to the phase
->>> +           accumulator output by writing Y to the en_phase file.
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_phase_scaleY
->> Same reordering suggestion as per the frequency one above.
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Scale to be applied to ddsX_phaseY in order to obtain the
->>> +           desired value in rad. If shared across all phase registers
->>> +           Y is not present.
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_phasesymbol
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Specifies the active phase Y which is added to the phase
->>> +           accumulator output. The value corresponds to the Y in
->>> +           ddsX_phaseY. To exit this mode the user can write
->>> +           ddsX_pincontrol_phase_en or disable file.
->>> +
->>
->> It might make sense to group the next three by having multiple What
->> lines
->> and then an explanation covering all three.
-> 
-> Makes sense, thanks.
-> 
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Both, the active frequency and phase is controlled by the
->>> +           respective phase and frequency control inputs.
->>> +
->>> +What:
->>       /sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           The active frequency is controlled by the respective
->>> +           frequency control/select inputs.
->>> +
->>> +What:
->>       /sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           The active phase is controlled by the respective
->>> +           phase control/select inputs.
->>> +
->> Could group the next two sections of documentation into one and
->> describe
->> both versions together.  See how it's done in the latest main IIO docs.
->> I think it tends to make it apparent when there are multiple very
->> similar
->> attributes that may affect the same signals.
-> 
-> ok
-> 
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_out_disable
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Disables any signal generation on all outputs.
->> With the X in there you need to say for dds X.
->> On everything else so far we have tended to go with enable attributes
->> rather than
->> this way around.  Why do it as disable here?
-> 
-> We can change the logic. The sample driver enables the output once the
-> ddsX_outY_wavetype file is written.
-Is that a good idea? What if a device is dependant on having a very particular
-frequency fed to it and the user not knowing that wavetype turns things on might
-set that before the frequency? The semantics don't make it clear that one must set the
-wavetype last.  I would think separating the configuration from enable/disable
-might be more intuitive. 
-> 
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_outY_disable
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Disables any signal generation on output Y.
->>> +
->>> +What:              /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Specifies the output waveform.
->>> +           (sine, triangle, ramp, square, ...)
->>> +           For a list of available output waveform options read
->>> +           available_output_modes.
->>> +
->>> +What:
->>       /sys/bus/iio/devices/device[n]/ddsX_outY_available_wavetypes
->> Convention so far in IIO (because it's easy to handle in code) would
->> make this
->> ddsX_outY_wavetype_available.
-> 
-> ok
-> 
->>> +KernelVersion:     2.6.37
->>> +Contact:   linux-iio@vger.kernel.org
->>> +Description:
->>> +           Lists all available output waveform options.
->>> --
->>> 1.6.0.2
-> 
-> Thanks for your review.
-You are welcome,
+Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/mfd/ab8500-core.c  |   36 ++++++++++++++++++++---------
+ include/linux/mfd/ab8500.h |   53 ++++++++++++++++++++++++-------------------
+ 2 files changed, 55 insertions(+), 34 deletions(-)
 
-Jonathan
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 7f01a3a..39c762a 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -52,6 +52,7 @@
+ #define AB8500_IT_LATCH8_REG		0x27
+ #define AB8500_IT_LATCH9_REG		0x28
+ #define AB8500_IT_LATCH10_REG		0x29
++#define AB8500_IT_LATCH12_REG		0x2B
+ #define AB8500_IT_LATCH19_REG		0x32
+ #define AB8500_IT_LATCH20_REG		0x33
+ #define AB8500_IT_LATCH21_REG		0x34
+@@ -98,7 +99,7 @@
+  * offset 0.
+  */
+ static const int ab8500_irq_regoffset[AB8500_NUM_IRQ_REGS] = {
+-	0, 1, 2, 3, 4, 6, 7, 8, 9, 18, 19, 20, 21,
++	0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 18, 19, 20, 21,
+ };
  
+ static int ab8500_get_chip_id(struct device *dev)
+@@ -252,6 +253,10 @@ static void ab8500_irq_sync_unlock(unsigned int irq)
+ 		if (new == old)
+ 			continue;
+ 
++		/* Interrupt register 12 does'nt exist prior to version 0x20 */
++		if (ab8500_irq_regoffset[i] == 11 && ab8500->chip_id < 0x20)
++			continue;
++
+ 		ab8500->oldmask[i] = new;
+ 
+ 		reg = AB8500_IT_MASK1_REG + ab8500_irq_regoffset[i];
+@@ -301,6 +306,10 @@ static irqreturn_t ab8500_irq(int irq, void *dev)
+ 		int status;
+ 		u8 value;
+ 
++		/* Interrupt register 12 does'nt exist prior to version 0x20 */
++		if (regoffset == 11 && ab8500->chip_id < 0x20)
++			continue;
++
+ 		status = get_register_interruptible(ab8500, AB8500_INTERRUPT,
+ 			AB8500_IT_LATCH1_REG + regoffset, &value);
+ 		if (status < 0 || value == 0)
+@@ -554,6 +563,12 @@ static struct resource ab8500_usb_resources[] = {
+ 		.end = AB8500_INT_VBUS_DET_R,
+ 		.flags = IORESOURCE_IRQ,
+ 	},
++	{
++		.name = "USB_LINK_STATUS",
++		.start = AB8500_INT_USB_LINK_STATUS,
++		.end = AB8500_INT_USB_LINK_STATUS,
++		.flags = IORESOURCE_IRQ,
++	},
+ };
+ 
+ static struct resource ab8500_temp_resources[] = {
+@@ -670,8 +685,9 @@ int __devinit ab8500_init(struct ab8500 *ab8500)
+ 	 * 0x0 - Early Drop
+ 	 * 0x10 - Cut 1.0
+ 	 * 0x11 - Cut 1.1
++	 * 0x20 - Cut 2.0
+ 	 */
+-	if (value == 0x0 || value == 0x10 || value == 0x11) {
++	if (value == 0x0 || value == 0x10 || value == 0x11 || value == 0x20) {
+ 		ab8500->revision = value;
+ 		dev_info(ab8500->dev, "detected chip, revision: %#x\n", value);
+ 	} else {
+@@ -684,18 +700,16 @@ int __devinit ab8500_init(struct ab8500 *ab8500)
+ 		plat->init(ab8500);
+ 
+ 	/* Clear and mask all interrupts */
+-	for (i = 0; i < 10; i++) {
+-		get_register_interruptible(ab8500, AB8500_INTERRUPT,
+-			AB8500_IT_LATCH1_REG + i, &value);
+-		set_register_interruptible(ab8500, AB8500_INTERRUPT,
+-			AB8500_IT_MASK1_REG + i, 0xff);
+-	}
++	for (i = 0; i < AB8500_NUM_IRQ_REGS; i++) {
++		/* Interrupt register 12 does'nt exist prior to version 0x20 */
++		if (ab8500_irq_regoffset[i] == 11 && ab8500->chip_id < 0x20)
++			continue;
+ 
+-	for (i = 18; i < 24; i++) {
+ 		get_register_interruptible(ab8500, AB8500_INTERRUPT,
+-			AB8500_IT_LATCH1_REG + i, &value);
++			AB8500_IT_LATCH1_REG + ab8500_irq_regoffset[i],
++			&value);
+ 		set_register_interruptible(ab8500, AB8500_INTERRUPT,
+-			AB8500_IT_MASK1_REG + i, 0xff);
++			AB8500_IT_MASK1_REG + ab8500_irq_regoffset[i], 0xff);
+ 	}
+ 
+ 	ret = abx500_register_ops(ab8500->dev, &ab8500_ops);
+diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
+index 1848781..157f000 100644
+--- a/include/linux/mfd/ab8500.h
++++ b/include/linux/mfd/ab8500.h
+@@ -74,30 +74,37 @@
+ #define AB8500_INT_ACC_DETECT_21DB_F	37
+ #define AB8500_INT_ACC_DETECT_21DB_R	38
+ #define AB8500_INT_GP_SW_ADC_CONV_END	39
+-#define AB8500_INT_BTEMP_LOW		72
+-#define AB8500_INT_BTEMP_LOW_MEDIUM	73
+-#define AB8500_INT_BTEMP_MEDIUM_HIGH	74
+-#define AB8500_INT_BTEMP_HIGH		75
+-#define AB8500_INT_USB_CHARGER_NOT_OK	81
+-#define AB8500_INT_ID_WAKEUP_R		82
+-#define AB8500_INT_ID_DET_R1R		84
+-#define AB8500_INT_ID_DET_R2R		85
+-#define AB8500_INT_ID_DET_R3R		86
+-#define AB8500_INT_ID_DET_R4R		87
+-#define AB8500_INT_ID_WAKEUP_F		88
+-#define AB8500_INT_ID_DET_R1F		90
+-#define AB8500_INT_ID_DET_R2F		91
+-#define AB8500_INT_ID_DET_R3F		92
+-#define AB8500_INT_ID_DET_R4F		93
+-#define AB8500_INT_USB_CHG_DET_DONE	94
+-#define AB8500_INT_USB_CH_TH_PROT_F	96
+-#define AB8500_INT_USB_CH_TH_PROT_R	97
+-#define AB8500_INT_MAIN_CH_TH_PROT_F	98
+-#define AB8500_INT_MAIN_CH_TH_PROT_R	99
+-#define AB8500_INT_USB_CHARGER_NOT_OKF	103
++#define AB8500_INT_ADP_SOURCE_ERROR	72
++#define AB8500_INT_ADP_SINK_ERROR	73
++#define AB8500_INT_ADP_PROBE_PLUG	74
++#define AB8500_INT_ADP_PROBE_UNPLUG	75
++#define AB8500_INT_ADP_SENSE_OFF	76
++#define AB8500_INT_USB_PHY_POWER_ERR	78
++#define AB8500_INT_USB_LINK_STATUS	79
++#define AB8500_INT_BTEMP_LOW		80
++#define AB8500_INT_BTEMP_LOW_MEDIUM	81
++#define AB8500_INT_BTEMP_MEDIUM_HIGH	82
++#define AB8500_INT_BTEMP_HIGH		83
++#define AB8500_INT_USB_CHARGER_NOT_OK	89
++#define AB8500_INT_ID_WAKEUP_R		90
++#define AB8500_INT_ID_DET_R1R		92
++#define AB8500_INT_ID_DET_R2R		93
++#define AB8500_INT_ID_DET_R3R		94
++#define AB8500_INT_ID_DET_R4R		95
++#define AB8500_INT_ID_WAKEUP_F		96
++#define AB8500_INT_ID_DET_R1F		98
++#define AB8500_INT_ID_DET_R2F		99
++#define AB8500_INT_ID_DET_R3F		100
++#define AB8500_INT_ID_DET_R4F		101
++#define AB8500_INT_USB_CHG_DET_DONE	102
++#define AB8500_INT_USB_CH_TH_PROT_F	104
++#define AB8500_INT_USB_CH_TH_PROT_R    105
++#define AB8500_INT_MAIN_CH_TH_PROT_F   106
++#define AB8500_INT_MAIN_CH_TH_PROT_R	107
++#define AB8500_INT_USB_CHARGER_NOT_OKF	111
+ 
+-#define AB8500_NR_IRQS			104
+-#define AB8500_NUM_IRQ_REGS		13
++#define AB8500_NR_IRQS			112
++#define AB8500_NUM_IRQ_REGS		14
+ 
+ #define AB8500_NUM_REGULATORS   15
+ 
+-- 
+1.7.2.2
 
