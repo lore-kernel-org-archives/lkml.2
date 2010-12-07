@@ -1,100 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab0LGJSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:18:33 -0500
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:52626 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754409Ab0LGJSa (ORCPT
+	id S1754893Ab0LGJWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:22:20 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8110 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab0LGJWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:18:30 -0500
-Date: Tue, 7 Dec 2010 10:18:27 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for 2.6.37-rc5
-Message-ID: <20101207101827.2c8d03ba@mschwide.boeblingen.de.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 7 Dec 2010 04:22:17 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65778729"
+Message-ID: <4CFDFCC3.5000700@codeaurora.org>
+Date: Tue, 07 Dec 2010 14:52:11 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org
+Subject: Re: [RFC v1 PATCH 2/6] input: pm8058_keypad: Qualcomm PMIC8058 keypad
+ controller driver
+References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-3-git-send-email-tsoni@codeaurora.org> <20101206181427.GA18567@core.coreip.homeip.net>
+In-Reply-To: <20101206181427.GA18567@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Dmitry
 
-please pull from 'for-linus' branch of
+On 12/6/2010 11:44 PM, Dmitry Torokhov wrote:
+> Hi Trilok,
+> 
+> On Wed, Nov 10, 2010 at 06:17:57PM +0530, Trilok Soni wrote:
+>> Add Qualcomm PMIC8058 based keypad controller driver
+>> supporting upto 18x8 matrix configuration.
+>>
+> 
+> Looks very good, just a couple of small things:
 
-	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
+Thanks for reviewing same revision of the patch again :)
 
-to receive the following updates:
+> 
+>> +
+>> +#include <linux/input/pmic8058-keypad.h>
+> 
+> Move to MFD directory with the rest of pmic8058 definitions?
 
-Heiko Carstens (1):
-      [S390] nohz/s390: fix arch_needs_cpu() return value on offline cpus
+As discussed earlier we can either have one big header file having all of the
+sub-device(s) or have separate file for each sub-device driver, I need to check
+which one would be better but I will atleast move pmic8058-keypad.h header
+to "mfd" directory, as these patch series is in RFC state, we can have final
+changes like along with when core-driver gets submitted for review.
 
-Sebastian Ott (1):
-      [S390] css: fix rsid evaluation for 2nd crw
+> 
+>> + */
+>> +struct pmic8058_kp {
+>> +	const struct pmic8058_keypad_data *pdata;
+>> +	struct input_dev *input;
+>> +	int key_sense_irq;
+>> +	int key_stuck_irq;
+>> +
+>> +	unsigned short *keycodes;
+> 
+> I'd pull the keycodes into this structure (at the end) so it can be
+> allocated in one shot. Hmm it even appears to be constant-sized. So just
+> declare it right here and be done with it.
 
- arch/s390/kernel/vtime.c |   19 +++++++++++++++++++
- drivers/s390/cio/css.c   |    2 +-
- 2 files changed, 20 insertions(+), 1 deletions(-)
+Done. You had already commented on it during the 1st review :)
 
-diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-index 56c8687..7eff9b7 100644
---- a/arch/s390/kernel/vtime.c
-+++ b/arch/s390/kernel/vtime.c
-@@ -19,6 +19,7 @@
- #include <linux/kernel_stat.h>
- #include <linux/rcupdate.h>
- #include <linux/posix-timers.h>
-+#include <linux/cpu.h>
- 
- #include <asm/s390_ext.h>
- #include <asm/timer.h>
-@@ -566,6 +567,23 @@ void init_cpu_vtimer(void)
- 	__ctl_set_bit(0,10);
- }
- 
-+static int __cpuinit s390_nohz_notify(struct notifier_block *self,
-+				      unsigned long action, void *hcpu)
-+{
-+	struct s390_idle_data *idle;
-+	long cpu = (long) hcpu;
-+
-+	idle = &per_cpu(s390_idle, cpu);
-+	switch (action) {
-+	case CPU_DYING:
-+	case CPU_DYING_FROZEN:
-+		idle->nohz_delay = 0;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
- void __init vtime_init(void)
- {
- 	/* request the cpu timer external interrupt */
-@@ -574,5 +592,6 @@ void __init vtime_init(void)
- 
- 	/* Enable cpu timer interrupts on the boot cpu. */
- 	init_cpu_vtimer();
-+	cpu_notifier(s390_nohz_notify, 0);
- }
- 
-diff --git a/drivers/s390/cio/css.c b/drivers/s390/cio/css.c
-index a5050e2..825951b 100644
---- a/drivers/s390/cio/css.c
-+++ b/drivers/s390/cio/css.c
-@@ -635,7 +635,7 @@ static void css_process_crw(struct crw *crw0, struct crw *crw1, int overflow)
- 	init_subchannel_id(&mchk_schid);
- 	mchk_schid.sch_no = crw0->rsid;
- 	if (crw1)
--		mchk_schid.ssid = (crw1->rsid >> 8) & 3;
-+		mchk_schid.ssid = (crw1->rsid >> 4) & 3;
- 
- 	/*
- 	 * Since we are always presented with IPI in the CRW, we have to
+> 
+>> +
+>> +static int pmic8058_detect_ghost_keys(struct pmic8058_kp *kp, u16 *new_state)
+> 
+> bool
+
+Done.
+
+> 
+>> +{
+>> +	int row, found_first = -1;
+>> +	u16 check, row_state;
+>> +
+>> +	check = 0;
+>> +	for (row = 0; row < kp->pdata->num_rows; row++) {
+>> +		row_state = (~new_state[row]) &
+>> +				 ((1 << kp->pdata->num_cols) - 1);
+>> +
+>> +		if (hweight16(row_state) > 1) {
+>> +			if (found_first == -1)
+>> +				found_first = row;
+>> +			if (check & row_state) {
+>> +				dev_dbg(kp->dev, "detected ghost key on row[%d]"
+>> +					 " and row[%d]\n", found_first, row);
+>> +				return 1;
+> 
+> true
+> 
+>> +			}
+>> +		}
+>> +		check |= row_state;
+>> +	}
+>> +	return 0;
+> 
+> false
+
+Done.
+
+> 
+>> +
+>> +static int pmic8058_kpd_init(struct pmic8058_kp *kp)
+>> +{
+>> +	int bits, rc, cycles;
+>> +	u8 scan_val = 0, ctrl_val = 0;
+>> +	static u8 row_bits[] = {
+> 
+> const?
+> 
+>> +		0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7,
+>> +	};
+
+Sure.
+
+>> +
+>> +static int pmic8058_kp_open(struct input_dev *dev)
+>> +{
+>> +	struct pmic8058_kp *kp = input_get_drvdata(dev);
+>> +
+>> +	return pmic8058_kp_enable(kp);
+>> +}
+>> +
+>> +static void pmic8058_kp_close(struct input_dev *dev)
+>> +{
+>> +	struct pmic8058_kp *kp = input_get_drvdata(dev);
+>> +
+>> +	pmic8058_kp_disable(kp);
+>> +}
+>> +
+> 
+> You need to protect suspend/resume from racing with open_close. Take
+> dev->mutex and act depending on whether there are users of the device.
+
+Sure.
+
+> 
+>> +	if (pdata->rows_gpio_start < 0 || pdata->cols_gpio_start < 0) {
+>> +		dev_err(&pdev->dev, "invalid gpio_start platform data\n");
+>> +		return -EINVAL;
+> 
+> These are declared as unsigned. Hmm, doesn't sparse catch it?
+
+I will fix it.
+
+---Trilok Soni
+
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
