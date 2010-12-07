@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab0LGVQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 16:16:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab0LGVQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 16:16:36 -0500
-Date: Tue, 7 Dec 2010 16:16:14 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-Subject: Re: perf hw  in kexeced kernel broken in tip
-Message-ID: <20101207211614.GL21786@redhat.com>
-References: <1291219906.32004.1671.camel@laptop>
- <20101201162335.GB2511@redhat.com>
- <1291232292.32004.1969.camel@laptop>
- <20101201194644.GD2511@redhat.com>
- <1291232989.32004.1987.camel@laptop>
- <20101201195835.GE2511@redhat.com>
- <1291234036.32004.2008.camel@laptop>
- <m162vdp3l4.fsf@fess.ebiederm.org>
- <20101202052321.GH18100@redhat.com>
- <1291275270.4023.20.camel@twins>
+	id S1755355Ab0LGVRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 16:17:13 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:13845 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165Ab0LGVRL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 16:17:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=SecWFonn8SHWI4CE8lIK+9ni+8Q4ow7WY4gDJE99U74VQ0o6RwfWdCwachR0l3lpKm
+         10MoB0T/9cvEZFAl6jgg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291275270.4023.20.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4CFDFCEF.3080708@redhat.com>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+ <1291421609-14665-8-git-send-email-dhsharp@google.com> <4CF9F7AB.8050802@redhat.com>
+ <AANLkTi=H9eSAOKmN8KdKDKiFZdD7DjQC=wa+fqrDpe2q@mail.gmail.com> <4CFDFCEF.3080708@redhat.com>
+From: David Sharp <dhsharp@google.com>
+Date: Tue, 7 Dec 2010 13:16:48 -0800
+Message-ID: <AANLkTinK7Zqh=GfFLeyJLxA4u2ozyVj-Ja435iBJPV13@mail.gmail.com>
+Subject: Re: [PATCH 07/15] ftrace: fix event alignment: kvm:kvm_hv_hypercall
+To: Avi Kivity <avi@redhat.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mrubin@google.com,
+        kvm-devel <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 02, 2010 at 08:34:30AM +0100, Peter Zijlstra wrote:
-> >  void __init lockup_detector_init(void)
-> >  {
-> >  	void *cpu = (void *)(long)smp_processor_id();
-> > @@ -563,6 +576,7 @@ void __init lockup_detector_init(void)
-> >  
-> >  	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
-> >  	register_cpu_notifier(&cpu_nfb);
-> > +	register_reboot_notifier(&reboot_nfb);
-> >  
-> >  	return;
-> >  }
-> 
-> We'd really want a perf_event.c callback there to do as the hot-unplug
-> code does and detach all running counters from the cpu.
+On Tue, Dec 7, 2010 at 1:22 AM, Avi Kivity <avi@redhat.com> wrote:
+> On 12/06/2010 10:38 PM, David Sharp wrote:
+>> On Sat, Dec 4, 2010 at 12:11 AM, Avi Kivity<avi@redhat.com>  wrote:
+>> >  On 12/04/2010 02:13 AM, David Sharp wrote:
+>> >>
+>> >>  Signed-off-by: David Sharp<dhsharp@google.com>
+>> >>  ---
+>> >>    arch/x86/kvm/trace.h |    8 ++++----
+>> >>    1 files changed, 4 insertions(+), 4 deletions(-)
+>> >>
+>> >>  diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+>> >>  index a6544b8..ab41fb0 100644
+>> >>  --- a/arch/x86/kvm/trace.h
+>> >>  +++ b/arch/x86/kvm/trace.h
+>> >>  @@ -62,21 +62,21 @@ TRACE_EVENT(kvm_hv_hypercall,
+>> >>          TP_ARGS(code, fast, rep_cnt, rep_idx, ingpa, outgpa),
+>> >>
+>> >>          TP_STRUCT__entry(
+>> >>  -               __field(        __u16,          code            )
+>> >>  -               __field(        bool,           fast            )
+>> >>                  __field(        __u16,          rep_cnt         )
+>> >>                  __field(        __u16,          rep_idx         )
+>> >>                  __field(        __u64,          ingpa           )
+>> >>                  __field(        __u64,          outgpa          )
+>> >>  +               __field(        __u16,          code            )
+>> >>  +               __field(        bool,           fast            )
+>> >>          ),
+>> >>
+>> >
+>> >  Looks like a pessimisation.
+>> >
+>> >  Before: 24 bytes
+>> >  After: 32 bytes
+>> >
+>> >  (on a 64-bit machine, assuming no packing)
+>>
+>> This patch is predicated on packing the event structures. And since
+>> the ring buffer is 32-bit addressable, I don't attempt to improve
+>> alignment beyond 32-bit boundaries.
+>
+> I don't understand this.  Can you elaborate?  What does "32-bit addressable"
+> mean?
 
-Ok, here is a simpler patch for now.
+The ring buffer gives you space that is a multiple of 4 bytes in
+length, and 32-bit aligned. Therefore it is useless to attempt to
+align the structure beyond 32-bit boundaries, eg, a 64-bit boundary,
+because it is unpredictable if the memory the structure will be
+written to is at a 64-bit boundary (addr % 8 could be 0 or 4).
 
---------------------------------8<--------
-From: Don Zickus <dzickus@redhat.com>
-Date: Tue, 7 Dec 2010 16:06:59 -0500
-Subject: [PATCH] perf:  Use event select bits for hardware check
+> And "predicated on packing the event structures"?  Is the structure
+> __attribute__((packed)), or is it not?
 
-The counter registers can continue to increment if left enabled
-across a kexec or a kdump.  The makes the perf hardware check
-accidentally return false when the hardware really does exist.
+It is not packed in Linus' tree, but one of the patches before this
+patch in this patch series adds __attribute__((packed)). This patch
+assumes that the event packing patch has been applied. This patch
+should not be applied if the packing patch is not (hence,
+"predicated").
 
-Change the check to use the first bits of event selection.  Those
-bits should be safe as they are used to program the type of events
-to use.  And more importantly, they won't increment across kexec/kdump.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/cpu/perf_event.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 7b91396..7d869c0 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -377,10 +377,10 @@ static bool check_hw_exists(void)
- 	u64 val, val_new = 0;
- 	int ret = 0;
- 
--	val = 0xabcdUL;
--	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
--	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
--	if (ret || val != val_new)
-+	val = 0xabUL;
-+	ret |= checking_wrmsrl(x86_pmu.eventsel, val);
-+	ret |= rdmsrl_safe(x86_pmu.eventsel, &val_new);
-+	if (ret || val != (val_new & 0xFF))
- 		return false;
- 
- 	return true;
--- 
-1.7.3.2
-
+>
+> --
+> error compiling committee.c: too many arguments to function
+>
+>
