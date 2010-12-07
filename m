@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab0LGPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:04:25 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49804 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab0LGPEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:04:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=Wn5dUNsUFzIsSAu8BVwFUOPzMqmrgtiOTVAKTeFa2TMooqnHgH3QxRi9q0ogR7nYkx
-         5P4QiG2pahARsErBkY7jvthbiTwbTMGqbwLLy7/STDxCJWzGRK8N2XL5MlEhBq8zn3XC
-         7tVC94TFUSz+/WO1FSPGiC0uzu5SALMvzZpvE=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
-        Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fujitsu-laptop: fix compiler warning on pnp_ids
-Date: Wed,  8 Dec 2010 00:04:14 +0900
-Message-Id: <1291734254-12250-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753156Ab0LGPEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:04:47 -0500
+Received: from hera.kernel.org ([140.211.167.34]:51985 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab0LGPEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 10:04:46 -0500
+Message-ID: <4CFE4CC9.7040909@kernel.org>
+Date: Tue, 07 Dec 2010 16:03:37 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Jason Baron <jbaron@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [Use cpuops V1 07/11] kprobes: Use this_cpu_ops
+References: <20101206171618.302060721@linux.com> <20101206171640.321083096@linux.com>
+In-Reply-To: <20101206171640.321083096@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Dec 2010 15:03:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Annotate pnp_ids as '__used' to fix following warning:
+On 12/06/2010 06:16 PM, Christoph Lameter wrote:
+> Use this_cpu ops in various places to optimize per cpu data access.
+> 
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-  CC      drivers/platform/x86/fujitsu-laptop.o
-drivers/platform/x86/fujitsu-laptop.c:1243: warning: ‘pnp_ids’ defined but not used
+applied
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- drivers/platform/x86/fujitsu-laptop.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-index f44cd26..ad88b2e 100644
---- a/drivers/platform/x86/fujitsu-laptop.c
-+++ b/drivers/platform/x86/fujitsu-laptop.c
-@@ -1240,7 +1240,7 @@ MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1D3:*:cvrS6410:*");
- MODULE_ALIAS("dmi:*:svnFUJITSUSIEMENS:*:pvr:rvnFUJITSU:rnFJNB1E6:*:cvrS6420:*");
- MODULE_ALIAS("dmi:*:svnFUJITSU:*:pvr:rvnFUJITSU:rnFJNB19C:*:cvrS7020:*");
- 
--static struct pnp_device_id pnp_ids[] = {
-+static struct pnp_device_id pnp_ids[] __used = {
- 	{.id = "FUJ02bf"},
- 	{.id = "FUJ02B1"},
- 	{.id = "FUJ02E3"},
 -- 
-1.7.0.4
-
+tejun
