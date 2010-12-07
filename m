@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab0LGPcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 10:32:11 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51392 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab0LGPb5 (ORCPT
+	id S1754616Ab0LGPfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 10:35:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33247 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab0LGPfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 10:31:57 -0500
+	Tue, 7 Dec 2010 10:35:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=Awzlpu694slec0JI+hRNoXFkpt6F6pPZxvoestx1Ytxz7fG0b56YYdpR/N3XmzuL8X
-         pTEnYETRUqGE7qz7ZR68hWFC0cNeRMV12YMimAJdl8DYsRHjutwCo0h/ZG/LguHRhbEY
-         2wH/38ocnTZAMTc2yhnfHeEbk9lvATUF9AJ1Q=
-From: Namhyung Kim <namhyung@gmail.com>
-To: "James E.J. Bottomley" <James.Bottomley@suse.de>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] [SCSI] initio: fix compiler warning on i91u_pci_devices
-Date: Wed,  8 Dec 2010 00:31:36 +0900
-Message-Id: <1291735896-14541-3-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-References: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        d=googlemail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=t5FLk3zlrM2pmK1JLXdm4C2ndvD8nmJp6PCVIUXpp1dfYCWtGOJKfBBUfMrGhEUsdD
+         ikSmWIXyk7ofgrXvNO2C9Vvj92ShDj3ChQTAZb0g/uy4nSYKaWs6RE99MLGY+a6EHVFk
+         qfvbS3zkZpFrGTzh+95xcW1+bsznhXTVMm3V0=
+Subject: Re: acpi_button: random oops on boot
+From: Tobias Karnat <tobias.karnat@googlemail.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        richard.coe@med.ge.com, jslaby@novell.com
+In-Reply-To: <1291734122.29072.14.camel@Tobias-Karnat>
+References: <1291477752.5096.27.camel@Tobias-Karnat>
+	 <201012060928.11307.bjorn.helgaas@hp.com>
+	 <1291676503.24968.25.camel@Tobias-Karnat>
+	 <201012061626.45962.bjorn.helgaas@hp.com>
+	 <1291679699.6246.11.camel@Tobias-Karnat>
+	 <20101207051521.GA16804@helgaas.com>
+	 <1291734122.29072.14.camel@Tobias-Karnat>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Dec 2010 16:35:30 +0100
+Message-ID: <1291736130.29072.19.camel@Tobias-Karnat>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Annotate i91u_pci_devices as '__used' to fix following warning:
+Am Dienstag, den 07.12.2010, 16:02 +0100 schrieb Tobias Karnat:
+> I have nothing connected to 1-6:
+> 
+> Bus 005 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Bus 004 Device 003: ID 046d:c20a Logitech, Inc. WingMan RumblePad
+> Bus 004 Device 002: ID 03eb:3301 Atmel Corp. at43301 4-Port Hub
+> Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Bus 002 Device 003: ID 046d:c062 Logitech, Inc. 
+> Bus 002 Device 002: ID 413c:2105 Dell Computer Corp. Model L100 Keyboard
+> Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Bus 001 Device 005: ID 0dda:2026 Integrated Circuit Solution, Inc. USB2.0 Card Reader
+> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
 
-  CC      drivers/scsi/initio.o
-drivers/scsi/initio.c:131: warning: ‘i91u_pci_devices’ defined but not used
+Oh well, it might be the Card Reader.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- drivers/scsi/initio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I also get this:
 
-diff --git a/drivers/scsi/initio.c b/drivers/scsi/initio.c
-index 9627d06..01c54cf 100644
---- a/drivers/scsi/initio.c
-+++ b/drivers/scsi/initio.c
-@@ -128,7 +128,7 @@ static int setup_debug = 0;
- static void i91uSCBPost(u8 * pHcb, u8 * pScb);
- 
- /* PCI Devices supported by this driver */
--static struct pci_device_id i91u_pci_devices[] = {
-+static struct pci_device_id i91u_pci_devices[] __used = {
- 	{ PCI_VENDOR_ID_INIT,  I950_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
- 	{ PCI_VENDOR_ID_INIT,  I940_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
- 	{ PCI_VENDOR_ID_INIT,  I935_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--- 
-1.7.0.4
+[  506.822024] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[  661.830024] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[  902.854026] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[ 1309.894029] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[ 1344.814018] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[ 1891.814028] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[ 2736.838021] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[ 2969.830024] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+[ 3002.806023] usb 1-6: reset high speed USB device using ehci_hcd and address 5
+
+I will try booting without it, maybe it fixes the boot issue.
+
+But strange that the printk patch could fix this.
+And the card reader did work with earlier kernels ~2.6.2x.
+
+-Tobias
 
