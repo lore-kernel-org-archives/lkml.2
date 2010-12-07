@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab0LGTKi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 14:10:38 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:45707 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab0LGTKh (ORCPT
+	id S1753598Ab0LGTNt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 14:13:49 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:34046 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab0LGTNs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 14:10:37 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65638535"
-Message-ID: <4CFE86AC.9010801@codeaurora.org>
-Date: Tue, 07 Dec 2010 11:10:36 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 7 Dec 2010 14:13:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=ets30riN+2l0RnsLp79+hMKp/qbWeUnDn9CA3P2PWV4gtVsmVYYhcpZiXNtvL4QHzh
+         f8RNU0+Pyf8RKKHWIN5rDoAU6PVOs3f2AoEO0bl+qu7swD3rPd1lfkLMDPKvmGNuuj/f
+         X3SYowqx5DCt3QPnHDS8DLmLCk2/pQyFW2Rvw=
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nico@fluxnic.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] drivers: char: hvc: add arm JTAG DCC console support
-References: <1291145141-18301-1-git-send-email-dwalker@codeaurora.org>	 <4CF5DD63.40803@codeaurora.org> <1291229696.14404.39.camel@c-dwalke-linux.qualcomm.com> <4CF6AE04.6030201@codeaurora.org>
-In-Reply-To: <4CF6AE04.6030201@codeaurora.org>
+Date: Tue, 7 Dec 2010 20:07:09 +0100
+X-Google-Sender-Auth: uibBnQy0al1yd6q4L0JqeJCEP74
+Message-ID: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
+Subject: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        brueckner@linux.vnet.ibm.com, lacombar@gmail.com, mchehab@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2010 12:20 PM, Stephen Boyd wrote:
-> Definitely for TX since it seems like a redundant loop, but I agree RX
-> code has changed. Instead of
->
-> If RX buffer full
-> Poll for RX buffer full
-> Read character from RX buffer
->
-> we would have
->
-> If RX buffer full
-> Read character from RX buffer
->
-> which doesn't seem all that different assuming the RX buffer doesn't go
-> from full to empty between the If and Poll steps. Hopefully Tony knows more.
->
+On Sat, Dec 4, 2010 at 14:57, Michal Marek <mmarek@suse.cz> wrote:
+> please pull these kbuild/kconfig fixes for the next -rc. The largest
+> part are fixes for the annoying kconfig warnings, contributed by Arnaud
+> Lacombe and Mauro Carvalho Chehab. The solution adds a new 'visible if'
+> keyword to the Kconfig language, so it's not exactly something that one
+> would expect in the rc phase, but the kconfig change is not huge (the
+> large diff is due to generated files) and it is deployed only in those
+> five Kconfig files that had the warnings and were hard to fix by other
+> means.  The second part is a forgotten patch by Hendrik Brueckner to
+> usr/initramfs, that fixes build for Blackfin and h8300.
 
-Tony, any thoughts?
+> Arnaud Lacombe (5):
+>      kconfig: add an option to determine a menu's visibility
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Hmm, this changeset also went in through the v4l tree?
 
+BTW, I got confused:
+  - make allmodconfig causes e.g.:
+        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+        CONFIG_VIDEO_TVAUDIO=m
+    => good
+  - make oldconfig for my config with almost everything selected,
+except for stuff I know that breaks:
+        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+        # CONFIG_VIDEO_TVAUDIO is not set
+    and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
+    => bad!
+
+Is this intentional?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
