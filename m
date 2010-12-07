@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab0LGKbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 05:31:12 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:36942 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab0LGKbK (ORCPT
+	id S1755251Ab0LGKeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 05:34:05 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52316 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754413Ab0LGKeD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 05:31:10 -0500
-X-IronPort-AV: E=Sophos;i="4.59,310,1288569600"; 
-   d="scan'208";a="3219714"
-Date: Tue, 7 Dec 2010 10:30:59 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 0/2] Xen PV on HVM multiple PV consoles
-In-Reply-To: <1291640614.32324.85.camel@work.selfip.ru>
-Message-ID: <alpine.DEB.2.00.1012071026430.2390@kaball-desktop>
-References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop>  <1291236234.22027.0.camel@mobile>  <alpine.DEB.2.00.1012021720170.14723@kaball-desktop>  <1291404900.5298.15.camel@mobile>  <alpine.DEB.2.00.1012061035070.9029@kaball-desktop>
- <1291640614.32324.85.camel@work.selfip.ru>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 7 Dec 2010 05:34:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=LzZNKgOm4t+xqq7C3fPvIh5Xwt1dsA/Jo7Koj7gbVeqOzOK3AfPAOuFmEX5bJXBYGl
+         aaF0LeLeRq9K6W8voDvg++mMUwUh+z5Z8+OkxIVw0CiJ+g1bfEWE3aNupk29ET0aSLWI
+         0lKKjN0+dl2ydxVkbYB3stDiGb+JXsNR4WWB4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <175BA60FBA444BE6B858D42E7B602A40@hacdom.okisemi.com>
+References: <175BA60FBA444BE6B858D42E7B602A40@hacdom.okisemi.com>
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+Date: Tue, 7 Dec 2010 11:34:00 +0100
+Message-ID: <AANLkTin-gpuz1jwtL+tpvUaK6XZBfRXYv2ciz_W_sMU9@mail.gmail.com>
+Subject: Re: [PATCH net-next-2.6 8/17 v2] can: EG20T PCH: Change Copyright and
+ module description
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, margie.foster@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Dec 2010, Vasiliy G Tolstov wrote:
-> On Mon, 2010-12-06 at 10:36 +0000, Stefano Stabellini wrote:
-> 
-> > 
-> > Could you please add CONFIG_DEBUG_INFO=y to your kernel config, so that
-> > we can see the name of the functions in the stack trace?
-> > 
-> 
-> After add debug kernel not crushed. I'm test more expensive it now. Can
-> You provide ps auxwww | grep qemu-dm after creating domain with two
-> serial consoles? (sles does not have libxl, i want to write now wrapper
-> to qemu-dm, after that try to compile rpm from spec to support libxl).
-> 
+2010/12/7 Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>:
+>> In case single destination address is OK, but in case multiple address is
+>> set,
+>> I can see the following error.
+>> Relay access denied
+>
+> The above was not true.
+> It seems in case destination mail domain is external, (except
+> "@okisemi.com"),
+> this error is occurred.
+> In fact, in case multiple address with internal domain,
+> it is success to send patch.
+>
+> Our smtp server may have restriction of something.
+>
+> It seems I must use mailer "thunderbird" again.
 
-There is no need for any special command line arguments to qemu-dm, it
-is going to create as many PV serials as configured on xenstored by
-libxl, give a look at tools/libxl/libxl.c:libxl_device_console_add.
-The output of the serial is the one specified on the node "output" on
-xenstore.
+For me, Evolution worked fine (no line wrapping, etc.).
+
+>
+> Thanks,
+>
+> /_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_
+> Tomoya Morinaga
+> OKI SEMICONDUCTOR CO., LTD.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
