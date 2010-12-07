@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab0LGCYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Dec 2010 21:24:13 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64894 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab0LGCYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Dec 2010 21:24:12 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=aH0YrG8yK9sA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=meVymXHHAAAA:8 a=w9w-REy3VHsbP2wsAPAA:9 a=rQHBK-qtTidJUTk75ZOSAKBNyzcA:4 a=PUjeQqilurYA:10 a=TZKiN4vec_IA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=mVSS6hngvTFlF1_x:21 a=h-yt-G3dzGjxQ2YR:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 05/10] mm: Remove likely() from
- grab_cache_page_write_begin()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>
-In-Reply-To: <20101207021329.476854013@goodmis.org>
-References: <20101207015834.196176991@goodmis.org>
-	 <20101207021329.476854013@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 06 Dec 2010 21:24:10 -0500
-Message-ID: <1291688650.16223.124.camel@gandalf.stny.rr.com>
+	id S1752983Ab0LGCYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Dec 2010 21:24:52 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52362 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023Ab0LGCYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Dec 2010 21:24:50 -0500
+Date: Tue, 7 Dec 2010 13:24:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the drivers-x86 tree
+Message-Id: <20101207132443.6516fd07.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending to Nick's real email address ]
+--Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+Hi Matthew,
 
-Running the annotated branch profiler on a box doing average work
-(firefox, evolution, xchat, distcc farm), the likely() used in
-grab_cache_page_write_begin() was incorrect most of the time:
+After merging the drivers-x86 tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
- correct incorrect  %        Function                  File              Line
- ------- ---------  -        --------                  ----              ----
- 1924262 71332401  97 grab_cache_page_write_begin    filemap.c           2206
+drivers/platform/x86/toshiba_acpi.c: In function 'wwan_rfkill_set_block':
+drivers/platform/x86/toshiba_acpi.c:454: error: 'HCI_WIRELESS_WWAN_ENABLE' =
+undeclared (first use in this function)
+drivers/platform/x86/toshiba_acpi.c:454: error: (Each undeclared identifier=
+ is reported only once
+drivers/platform/x86/toshiba_acpi.c:454: error: for each function it appear=
+s in.)
 
-Adding a trace_printk() and running the function tracer limited to
-just this function I can see:
+Caused by commit 64ea4efdd949c99d9206a44a43984d2e861350f1 ("wwan rfkill stu=
+bs").
 
-        gconfd-2-2696  [000]  4467.268935: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=7
-        gconfd-2-2696  [000]  4467.268946: grab_cache_page_write_begin <-ext3_write_begin
-        gconfd-2-2696  [000]  4467.268947: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=8
-        gconfd-2-2696  [000]  4467.268959: grab_cache_page_write_begin <-ext3_write_begin
-        gconfd-2-2696  [000]  4467.268960: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=9
-        gconfd-2-2696  [000]  4467.268972: grab_cache_page_write_begin <-ext3_write_begin
-        gconfd-2-2696  [000]  4467.268973: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=10
-        gconfd-2-2696  [000]  4467.268991: grab_cache_page_write_begin <-ext3_write_begin
-        gconfd-2-2696  [000]  4467.268992: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=11
-        gconfd-2-2696  [000]  4467.269005: grab_cache_page_write_begin <-ext3_write_begin
+I have used the version of the drivers-x86 tree from next-20101206 for toda=
+y.
 
-Which shows that a lot of calls from ext3_write_begin will result in
-the page returned by "find_lock_page" will be NULL.
+I also got the following new messages from the build:
 
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- mm/filemap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
+drivers/platform/x86/Kconfig:422:	symbol EEEPC_WMI depends on ACPI_WMI
+drivers/platform/x86/Kconfig:438:	symbol ACPI_WMI is selected by ACER_WMI
+drivers/platform/x86/Kconfig:18:	symbol ACER_WMI depends on LEDS_CLASS
+drivers/leds/Kconfig:10:	symbol LEDS_CLASS is selected by EEEPC_WMI
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index ea89840..d557fe7 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2218,7 +2218,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
- 		gfp_notmask = __GFP_FS;
- repeat:
- 	page = find_lock_page(mapping, index);
--	if (likely(page))
-+	if (page)
- 		return page;
- 
- 	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
+warning: (ADB_PMU_LED && MACINTOSH_DRIVERS && ADB_PMU || ATH5K && NETDEVICE=
+S && WLAN && ATH_COMMON && (PCI || ATHEROS_AR231X) && MAC80211 || ATH9K && =
+NETDEVICES && WLAN && ATH_COMMON && PCI && MAC80211 || ATH9K_HTC && NETDEVI=
+CES && WLAN && ATH_COMMON && USB && MAC80211 || CARL9170_LEDS && NETDEVICES=
+ && WLAN && ATH_COMMON && CARL9170 || INPUT_WISTRON_BTNS && !S390 && INPUT =
+&& INPUT_MISC && X86 && !X86_64 || SENSORS_APPLESMC && HWMON && INPUT && X8=
+6 || SENSORS_LIS3LV02D && HWMON && ACPI && INPUT || IR_WINBOND_CIR && MEDIA=
+_SUPPORT && X86 && PNP && RC_CORE || BACKLIGHT_ADP8860 && HAS_IOMEM && BACK=
+LIGHT_LCD_SUPPORT && BACKLIGHT_CLASS_DEVICE && I2C || MSM_STAGING && STAGIN=
+G && !STAGING_EXCLUDE_BUILD && FB && ARCH_MSM && !FB_MSM || ASUS_LAPTOP && =
+X86 && X86_PLATFORM_DEVICES && ACPI && !ACPI_ASUS && INPUT && (RFKILL || RF=
+KILL=3Dn) || THINKPAD_ACPI && X86 && X86_PLATFORM_DEVICES && ACPI && INPUT =
+&& (RFKILL || RFKILL=3Dn) || EEEPC_LAPTOP && X86 && X86_PLATFORM_DEVICES &&=
+ ACPI && INPUT && EXPERIMENTAL && (RFKILL || RFKILL=3Dn) && HOTPLUG_PCI || =
+EEEPC_WMI && X86 && X86_PLATFORM_DEVICES && ACPI_WMI && INPUT && EXPERIMENT=
+AL && BACKLIGHT_CLASS_DEVICE && (RFKILL || RFKILL=3Dn)) selects LEDS_CLASS =
+which has unmet direct dependencies (NEW_LEDS)
 
+drivers/platform/x86/toshiba_acpi.c:460: warning: label 'out' defined but n=
+ot used
+drivers/platform/x86/toshiba_acpi.c:448: warning: unused variable 'radio_st=
+ate'
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM/ZrrAAoJEDMEi1NhKgbsuCMIAJKqKx8WIRqQmdinVdcjWhNc
+ppxagKVCiwr/fR4EthEvoSzTfthNhK4bhuqESEKbsxXeKl0gCC40F8PrB0IebQH6
+vvFaZ/oiWthwuR72+sgo28R2tKW4FJ0yzCAGRuy+QokuG0akXKRmVWtbRi0wpmOJ
+CW11iewYerghjnNiOyP2BzQp64aLXE6jUhHPKaBdCBBR3JCTOy/kkWmC/dB9gOBO
+r9HslRdRSxBxm3NZntaNihcueVZVRhtrTVAwv9pEpzbqA5Z676DbFaY99Uuq5BKT
+FQ7sl5dlYM7W86rbKYk1jYfD8GQmTyqE9+Vcxnue+0OHafxOcaMqwLjN9xKKBs4=
+=JI+R
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Dec_2010_13_24_43_+1100_+jMi9/O_7UP45sXS--
