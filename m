@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab0LGRmV (ORCPT <rfc822;w@1wt.eu>);
+	id S1752592Ab0LGRmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 12:42:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47371 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab0LGRmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Dec 2010 12:42:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab0LGRmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 12:42:20 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] MN10300: Fix interrupt mask alteration function call name
- in gdbstub
-To: torvalds@osdl.org, akpm@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 07 Dec 2010 17:41:40 +0000
-Message-ID: <20101207174140.9635.63471.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.15-97-g9680-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Date: Tue, 7 Dec 2010 09:41:21 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: bugs/regressions: report in LKML or in bugzilla?
+Message-Id: <20101207094121.364745f9.randy.dunlap@oracle.com>
+In-Reply-To: <201012071639.58884.Martin@lichtvoll.de>
+References: <201012071639.58884.Martin@lichtvoll.de>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix name of interrupt mask alteration function (local_change_intr_mask_level())
-called in gdbstub to have an arch_ prefix to match the definition in
-asm/irqflags.h.
+On Tue, 7 Dec 2010 16:39:46 +0100 Martin Steigerwald wrote:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+> Hi!
+> 
+> I reported some regressions to bugzilla that did not receive any 
+> attentation so far:
+> 
+> [Bug 23792] New: openvpn: failure to unregister tap1 device, possibly 
+> related to some netconsole issue
+> https://bugzilla.kernel.org/show_bug.cgi?id=23792
+> 
+> [Bug 23642] New: easycap driver fails to compile in 2.6.37-rc3
+> https://bugzilla.kernel.org/show_bug.cgi?id=23642
+> 
+
+That one has received attention.  I commented on it and I have posted
+a patch that fixes that particular build problem.
+
+> 
+> A participant of a linux performance training I hold found a bug with 
+> window scaling which did not receive any reply as well:
+> 
+> Bug 20312 -  System freeze with multiples of 32 in 
+> /proc/sys/net/ipv4/tcp_adv_win_scale
+> https://bugzilla.kernel.org/show_bug.cgi?id=20312
+> 
+> 
+> Is it better to report on LKML? I have the impression that bug reports 
+> onto the mailinglist are more easily recognized.
+
+They are generally more visible and get more attention if they are posted
+on an appropriate mailing list.  #20312, e.g., should be posted on the
+netdev mailing list (netdev@vger.kernel.org)
+Probably same for #27392.
+
+
+> I also find it difficult to find the right component when reporting a problem 
+> in bugzilla. Thus reports might not go to the right persons.
+> 
+> Please advice.
+
+Bugs that are posted to LKML usually are added to the kernel bugzilla
+by one of the bugzilla maintainers.  They would also select the component,
+so you could just try that route to see if it works better.
+
 ---
-
- arch/mn10300/kernel/gdb-io-serial.c |    3 ++-
- arch/mn10300/kernel/gdb-io-ttysm.c  |    3 ++-
- arch/mn10300/kernel/gdb-stub.c      |    3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
-
-
-diff --git a/arch/mn10300/kernel/gdb-io-serial.c b/arch/mn10300/kernel/gdb-io-serial.c
-index 0d5d63c..f28dc99 100644
---- a/arch/mn10300/kernel/gdb-io-serial.c
-+++ b/arch/mn10300/kernel/gdb-io-serial.c
-@@ -73,7 +73,8 @@ void gdbstub_io_init(void)
- 	GDBPORT_SERIAL_IER = UART_IER_RDI | UART_IER_RLSI;
- 
- 	/* permit level 0 IRQs to take place */
--	local_change_intr_mask_level(NUM2EPSW_IM(CONFIG_GDBSTUB_IRQ_LEVEL + 1));
-+	arch_local_change_intr_mask_level(
-+		NUM2EPSW_IM(CONFIG_GDBSTUB_IRQ_LEVEL + 1));
- }
- 
- /*
-diff --git a/arch/mn10300/kernel/gdb-io-ttysm.c b/arch/mn10300/kernel/gdb-io-ttysm.c
-index 97dfda2..abdeea1 100644
---- a/arch/mn10300/kernel/gdb-io-ttysm.c
-+++ b/arch/mn10300/kernel/gdb-io-ttysm.c
-@@ -87,7 +87,8 @@ void __init gdbstub_io_init(void)
- 	tmp = *gdbstub_port->_control;
- 
- 	/* permit level 0 IRQs only */
--	local_change_intr_mask_level(NUM2EPSW_IM(CONFIG_GDBSTUB_IRQ_LEVEL + 1));
-+	arch_local_change_intr_mask_level(
-+		NUM2EPSW_IM(CONFIG_GDBSTUB_IRQ_LEVEL + 1));
- }
- 
- /*
-diff --git a/arch/mn10300/kernel/gdb-stub.c b/arch/mn10300/kernel/gdb-stub.c
-index e49dd5b..1070e4d 100644
---- a/arch/mn10300/kernel/gdb-stub.c
-+++ b/arch/mn10300/kernel/gdb-stub.c
-@@ -1229,7 +1229,8 @@ static int gdbstub(struct pt_regs *regs, enum exception_code excep)
- 
- 	asm volatile("mov mdr,%0" : "=d"(mdr));
- 	local_save_flags(epsw);
--	local_change_intr_mask_level(NUM2EPSW_IM(CONFIG_GDBSTUB_IRQ_LEVEL + 1));
-+	arch_local_change_intr_mask_level(
-+		NUM2EPSW_IM(CONFIG_GDBSTUB_IRQ_LEVEL + 1));
- 
- 	gdbstub_store_fpu();
- 
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
