@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab0LGSUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 13:20:48 -0500
-Received: from smtp.falooley.org ([66.180.170.91]:60744 "EHLO
-	smtp.falooley.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab0LGSUr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 13:20:47 -0500
-Date: Tue, 7 Dec 2010 10:20:12 -0800
-From: Jason Lunz <lunz@acm.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>,
-        atom ota <atomota@sleepyhammer.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
-Message-ID: <20101207182012.GA10546@falooley.org>
-References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
- <20071024011712.GA3762@falooley.org>
- <1193208689.26096.48.camel@pmac.infradead.org>
- <20071227181524.GA19051@falooley.org>
- <20071228174853.GA4252@uranus.ravnborg.org>
- <20101207072919.GA8511@falooley.org>
- <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	id S1753500Ab0LGSXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 13:23:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752525Ab0LGSXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 13:23:01 -0500
+Date: Tue, 7 Dec 2010 13:22:43 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
+        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101207182243.GB21112@redhat.com>
+References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com>
+ <4CF692D1.1010906@redhat.com>
+ <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com>
+ <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com>
+ <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think>
+ <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 10:39:41AM +0100, richard -rw- weinberger wrote:
-> On Tue, Dec 7, 2010 at 8:29 AM, Jason Lunz <lunz@acm.org> wrote:
-> >
-> > Allow parts of drivers/mtd to compile on uml by pushing the HAS_IOMEM
-> > dependencies down closer to the parts of mtd that actually need it.
-> > This allows enough of mtd to build to let jffs2 be used on uml.
-> >
-> > Signed-off-by: Jason Lunz <lunz@acm.org>
-> > ---
-> >  arch/um/Kconfig.rest        |    4 +---
-> >  drivers/mtd/Kconfig         |    1 -
-> >  drivers/mtd/Makefile        |    3 ++-
-> >  drivers/mtd/chips/Kconfig   |    4 ++++
-> >  drivers/mtd/devices/Kconfig |    8 ++++++++
-> >  drivers/mtd/maps/Kconfig    |    4 ++++
-> >  drivers/mtd/mtdchar.c       |    4 ++++
-> >  drivers/mtd/nand/Kconfig    |    3 +++
-> >  drivers/mtd/onenand/Kconfig |    3 +++
-> >  include/linux/mtd/map.h     |    2 ++
-> >  10 files changed, 31 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/arch/um/Kconfig.rest b/arch/um/Kconfig.rest
-> > index 0ccad0f..e34f399 100644
-> > --- a/arch/um/Kconfig.rest
-> > +++ b/arch/um/Kconfig.rest
-> > @@ -28,9 +28,7 @@ source "drivers/scsi/Kconfig"
-> >
-> >  source "drivers/md/Kconfig"
-> >
-> > -if BROKEN
-> > -       source "drivers/mtd/Kconfig"
-> > -endif
-> > +source "drivers/mtd/Kconfig"
+On Tue, Dec 07 2010 at  1:10pm -0500,
+Jon Nelson <jnelson@jamponi.net> wrote:
+
+> I finally found some time to test this out. With 2.6.37-rc4 (openSUSE
+> KOTD kernel) I easily encounter the issue.
 > 
-> drivers/mtd was already marked as broken when we moved over to git (2.6.12-rc2).
+> Using a virtual machine, I created a stock, minimal openSUSE 11.3 x86_64
+> install, installed all updates, installed postgresql and the 'KOTD'
+> (Kernel of the Day)
+> kernel, and ran the following tests (as postgres user because I'm
+> lazy).
 > 
-> Do you exactly know why it was marked and fixes this patch all issues?
+> 1. create a database (from bash):
+> 
+> createdb test
+> 
+> 2. place the following contents in a file (I used 't.sql'):
+> 
+> begin;
+> create temporary table foo as select x as a, ARRAY[x] as b FROM
+> generate_series(1, 10000000 ) AS x;
+> create index foo_a_idx on foo (a);
+> create index foo_b_idx on foo USING GIN (b);
+> rollback;
+> 
+> 3. execute that sql:
+> 
+> psql -f t.sql --echo-all test
+> 
+> 
+> With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
+> without issue.
+> 
+> With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
+> pretty frequently.
 
-I don't know exactly why it was originally marked BROKEN. I imagine it
-was because most of the low-level mtd drivers need readb/writeb and
-friends, which don't exist on uml. But now that mtd has virtual ram- and
-blockdev-backed drivers, that's no longer sufficient reason to omit the
-whole subsystem.
+How does it fail?  postgres errors?  kernel errors?
+ 
+> Then I tested with the 'vanilla' kernel available here:
+> 
+> http://download.opensuse.org/repositories/Kernel:/vanilla/standard/
+> 
+> The 'vanilla' kernel exhibited the same problems.
+> The version I tested:  2.6.37-rc4-219-g771f8bc-vanilla.
+>
+> Incidentally, quick tests of jfs, xfs, and ext3 do _not_ show the same
+> problems, although I will note that I usually saw failure at least 1
+> in 3, but sometimes had to re-run the sql test 4 or 5 times before I
+> saw failure.
+> 
+> I will continue to do some testing, but I will hold off on testing the
+> commits above until I receive further testing suggestions.
 
-I can't claim that this fixes all possible issues of course, but I've
-privately been using this patch to run block2mtd under uml for years. My
-original motivation was to allow the use of jffs2 in a uml-based test
-environment and for that it's worked very well.
+OK, so to be clear: your testing is on dm-crypt + ext4?
 
-Jason
+And you're testing upstream based kernels (meaning the dm-crypt
+scalability patch that has been in question is _not_ in the mix)?
+
+That is a very different report than the other 2 reports of corruption
+(those corruption instances were only seen once the dm-crypt scalability
+patch was introduced).
+
+Mike
