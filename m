@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab0LGJdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 04:33:07 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11214 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab0LGJdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 04:33:05 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6189"; a="65581794"
-Message-ID: <4CFDFF4A.3010305@codeaurora.org>
-Date: Tue, 07 Dec 2010 15:02:58 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1755143Ab0LGJej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 04:34:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60020 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755118Ab0LGJei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 04:34:38 -0500
+Message-ID: <4CFDFFA9.5050804@redhat.com>
+Date: Tue, 07 Dec 2010 11:34:33 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC v1 PATCH 2/6] input: pm8058_keypad: Qualcomm PMIC8058 keypad
- controller driver
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-3-git-send-email-tsoni@codeaurora.org> <20101206181427.GA18567@core.coreip.homeip.net> <4CFDFCC3.5000700@codeaurora.org> <20101207093029.GB22416@core.coreip.homeip.net>
-In-Reply-To: <20101207093029.GB22416@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: SVM: Add xsetbv intercept
+References: <1291394523-7689-1-git-send-email-joerg.roedel@amd.com> <4CFD0B06.9010308@redhat.com> <20101206174852.GG4936@amd.com>
+In-Reply-To: <20101206174852.GG4936@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On 12/06/2010 07:48 PM, Roedel, Joerg wrote:
+> On Mon, Dec 06, 2010 at 11:10:46AM -0500, Avi Kivity wrote:
+> >  On 12/03/2010 06:42 PM, Joerg Roedel wrote:
+> >  >  This patch implements the xsetbv intercept to the AMD part
+> >  >  of KVM. This makes AVX usable in a save way for the guest on
+> >  >  AVX capable AMD hardware.
+> >  >  The patch is tested by using AVX in the guest and host in
+> >  >  parallel and checking for data corruption. I also used the
+> >  >  KVM xsave unit-tests and they all pass.
+> >  >
+> >
+> >  That is really strange.  You didn't need to do anything to get cpuid.avx
+> >  recognized.  So running an older kvm on newer hardware will happily
+> >  expose avx even though it's not supported.
+> >
+> >  We screwed up - we should have made cpuid.avx dependent on vendor support.
+>
+> Hmm, right. The set_supported_cpuid arch-callback should basically
+> disable xsave on AMD for all KVM versions which do not handle the xsetbv
+> intercept.
+>
 
-On 12/7/2010 3:00 PM, Dmitry Torokhov wrote:
-> 
-> Oops ;) Did I need to review something else from you then? I have a
-> nagging feeling that I have a patch outstanding...
-> 
+Please post a patch to do that, and update this patch to undo the 
+change.  We'll backport the first patch to -stable so that people 
+running older kernels don't get a nasty surprise when they upgrade their 
+hardware (and use -cpu host).
 
-You need to review PMIC8058 OTHC patch.
-
-https://patchwork.kernel.org/patch/314092/
-
----Trilok Soni
+One more thing to watch out for.  We also need to see if there aren't 
+more mistakes like that out there.
 
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+error compiling committee.c: too many arguments to function
+
