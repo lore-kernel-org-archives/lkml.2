@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab0LHAfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:35:00 -0500
-Received: from kroah.org ([198.145.64.141]:54887 "EHLO coco.kroah.org"
+	id S1755075Ab0LHAem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:34:42 -0500
+Received: from kroah.org ([198.145.64.141]:54832 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755532Ab0LHAev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:51 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:43 2010
-Message-Id: <20101208000643.175054254@clark.site>
+	id S1754622Ab0LHAek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:40 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:42 2010
+Message-Id: <20101208000642.355471879@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:35 -0800
+Date: Tue, 07 Dec 2010 16:04:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [36/44] net: Truncate recvfrom and sendto length to INT_MAX.
+        James Jones <jajones@nvidia.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [28/44] ARM: 6482/2: Fix find_next_zero_bit and related assembly
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: James Jones <jajones@nvidia.com>
 
-commit 253eacc070b114c2ec1f81b067d2fed7305467b0 upstream.
+commit 0e91ec0c06d2cd15071a6021c94840a50e6671aa upstream.
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The find_next_bit, find_first_bit, find_next_zero_bit
+and find_first_zero_bit functions were not properly
+clamping to the maxbit argument at the bit level. They
+were instead only checking maxbit at the byte level.
+To fix this, add a compare and a conditional move
+instruction to the end of the common bit-within-the-
+byte code used by all the functions and be sure not to
+clobber the maxbit argument before it is used.
+
+Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: James Jones <jajones@nvidia.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/socket.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/lib/findbit.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1691,6 +1691,8 @@ SYSCALL_DEFINE6(sendto, int, fd, void __
- 	struct iovec iov;
- 	int fput_needed;
+--- a/arch/arm/lib/findbit.S
++++ b/arch/arm/lib/findbit.S
+@@ -148,8 +148,8 @@ ENTRY(_find_next_bit_be)
+  */
+ .L_found:
+ #if __LINUX_ARM_ARCH__ >= 5
+-		rsb	r1, r3, #0
+-		and	r3, r3, r1
++		rsb	r0, r3, #0
++		and	r3, r3, r0
+ 		clz	r3, r3
+ 		rsb	r3, r3, #31
+ 		add	r0, r2, r3
+@@ -164,5 +164,7 @@ ENTRY(_find_next_bit_be)
+ 		addeq	r2, r2, #1
+ 		mov	r0, r2
+ #endif
++		cmp	r1, r0			@ Clamp to maxbit
++		movlo	r0, r1
+ 		mov	pc, lr
  
-+	if (len > INT_MAX)
-+		len = INT_MAX;
- 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
- 	if (!sock)
- 		goto out;
-@@ -1748,6 +1750,8 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void
- 	int err, err2;
- 	int fput_needed;
- 
-+	if (size > INT_MAX)
-+		size = INT_MAX;
- 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
- 	if (!sock)
- 		goto out;
 
 
