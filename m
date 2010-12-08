@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab0LHBpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:45:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51822 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757262Ab0LHBpf (ORCPT
+	id S932222Ab0LHBpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:45:44 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:53549 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758128Ab0LHBpj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:45:35 -0500
-Message-ID: <4CFEE2D3.6050107@kernel.org>
-Date: Tue, 07 Dec 2010 17:43:47 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	Tue, 7 Dec 2010 20:45:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=D+zIyBcQ5FLXJtWGE15y4hq1KQSlRP2x/qFGGqZTRzvTnBqZP7HvGNf8a+/LME/0nt
+         ms/aiPRVdTBEASf8C6FWy7TqyfqqL7r3fgY56XO5ruWvFnN/vbwXc/cihgpL2KHfIbsA
+         KH1py80UmWgT+k6Eh5iVvIYS9TuRcvSOLNK34=
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Feng Tang <feng.tang@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
- IRQ info
-References: <1291349518-3502-1-git-send-email-feng.tang@intel.com> <tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org> <4CFD226C.60308@kernel.org> <20101207133204.4d913c5a@feng-i7> <alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6> <4CFE8045.2030101@kernel.org> <alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.00.1012070911380.13430@utopia.booyaka.com>
+References: <alpine.DEB.2.00.1012061734590.13430@utopia.booyaka.com>
+ <AANLkTimXPFROMQ_fF4Od-jw3aDY0WZQgc=x14=VcFM3d@mail.gmail.com>
+ <alpine.DEB.2.00.1012061839170.13430@utopia.booyaka.com> <20101207094841.GA4772@sortiz-mobl>
+ <alpine.DEB.2.00.1012070911380.13430@utopia.booyaka.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 8 Dec 2010 09:45:11 +0800
+X-Google-Sender-Auth: dD4u3KizBNiGs6VxU2Hz2364RDU
+Message-ID: <AANLkTim03xqbrkhyN1oR+ksoEuC-utD58h_5A3psRiUX@mail.gmail.com>
+Subject: Re: [PATCH] MFD: TWL/TPS: fix twl_probe section mismatch warning in mfd/twl-core.c
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 02:32 PM, Thomas Gleixner wrote:
-> On Tue, 7 Dec 2010, Yinghai Lu wrote:
->> On 12/07/2010 07:56 AM, Thomas Gleixner wrote:
->>>
->>>   Same here. No caller is interested in the detailed return value.
->>>
->>
-> 
->> ok, after look at code and git log, i knew the reasons for those
->> strange duplicated functions.
->>
->> Alexy changed
->>
->>  /* MP IRQ source entries */
->> -struct mpc_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
->> +struct mp_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
->>
->> to make it decouple that with mpstable definition. so mptable will
->> have mpc_intsrc, and acpi etc will use mp_config_intsrc
->>
->> and he planed to add more member to mp_config_intsrc .... never happened.
->>
->> then I added those functions with different parameters.
->>
->> one year later JSR changed all back to mpc_instr...
->>
->> so now have some duplicated functions....
-> 
->> So yes, we should use simple versions in
->> arch/x86/kernel/acpi/boot.c. ( assume functions mrst.c are copied
->> from there)
->>
->> and should kill print_mp_irq_info or print_MP_intsrc_info...
-> 
-> Nice archaelogical detective work ! :)
-> 
-> So now I have Fengs patch plus Yinghais series which seem to go nicely
-> together, but I have the feeling that there is some stuff unresolved.
-> 
-> Yinghai, Feng: could you please work out the missing bits an pieces
-> (if any) and provide me a delta patch on top of the existing patches?
-> 
+On Wed, Dec 8, 2010 at 12:12 AM, Paul Walmsley <paul@pwsan.com> wrote:
+> Hello Samuel,
+>
+> On Tue, 7 Dec 2010, Samuel Ortiz wrote:
+>
+>> On Mon, Dec 06, 2010 at 06:40:38PM -0700, Paul Walmsley wrote:
+>> >
+>> > That's fine with me.  Samuel et al, Bryan's already done a patch
+>> > for this stuff:
+>> >
+>> > https://patchwork.kernel.org/patch/367011/
+>> >
+>> > so we should use that instead, if you're happy with it.  Samuel, maybe we
+>> > could get an ack from you on it?
+>> The twl driver is not OMAP specific, so this should be a separate patch thatI
+>> will merge to my mfd tree.
+>> If you really insist in pushing this through Tony's tree, then please add my
+>> Acked-by for the mfd part.
+>
+> I don't insist at all :-)
+>
+> Bryan, maybe split your patch into a mach-omap2 patch and a TWL
+> driver-specific patch, and send the latter for Samuel?
+>
+>
 
-Maybe Feng could send you updated version with simpler function?
+No problem. I'll do soon.
 
-Yinghai
+Thanks,
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.138-1617-6545 Mobile
+Ubuntu Kernel Team
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
