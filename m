@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab0LHBAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:00:00 -0500
-Received: from kroah.org ([198.145.64.141]:48643 "EHLO coco.kroah.org"
+	id S1756929Ab0LHA7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:38 -0500
+Received: from kroah.org ([198.145.64.141]:48538 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932115Ab0LHA7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:55 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:27 2010
-Message-Id: <20101208005727.531737995@clark.site>
+	id S1756914Ab0LHA7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:35 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:25 2010
+Message-Id: <20101208005725.436970867@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:19 -0800
+Date: Tue, 07 Dec 2010 16:56:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [062/289] isdn/gigaset: correct bas_gigaset rx buffer handling
+        Ben Greear <greearb@candelatech.com>,
+        Kyungwan Nam <kyungwan.nam@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [041/289] ath9k: lock reset and PCU start/stopping
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +28,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit f3d531b99fb30945b4a64d6e2e86e1e62605aca5 upstream.
+commit 5e848f789d60000d39d9a5f26ab02dbdd963f6cd upstream.
 
-In transparent data reception, avoid a NULL pointer dereference
-in case an skbuff cannot be allocated, remove an inappropriate
-call to the HDLC flush routine, and correct the accounting of
-received bytes for continued buffers.
+Apart from locking the start and stop PCU we need
+to ensure we also content starting and stopping the PCU
+between hardware resets.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This is part of a series that will help resolve the bug:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=14624
+
+For more details about this issue refer to:
+
+http://marc.info/?l=linux-wireless&m=128629803703756&w=2
+
+Cc: Ben Greear <greearb@candelatech.com>
+Cc: Kyungwan Nam <kyungwan.nam@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/gigaset/isocdata.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |   27 +++++++++++++++++++++++++++
+ drivers/net/wireless/ath/ath9k/recv.c |    2 --
+ 2 files changed, 27 insertions(+), 2 deletions(-)
 
---- a/drivers/isdn/gigaset/isocdata.c
-+++ b/drivers/isdn/gigaset/isocdata.c
-@@ -842,13 +842,14 @@ static inline void trans_receive(unsigne
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -213,6 +213,9 @@ int ath_set_channel(struct ath_softc *sc
+ 	 */
+ 	ath9k_hw_set_interrupts(ah, 0);
+ 	ath_drain_all_txq(sc, false);
++
++	spin_lock_bh(&sc->rx.pcu_lock);
++
+ 	stopped = ath_stoprecv(sc);
  
- 	if (unlikely(bcs->ignore)) {
- 		bcs->ignore--;
--		hdlc_flush(bcs);
+ 	/* XXX: do not flush receive queue here. We don't want
+@@ -239,6 +242,7 @@ int ath_set_channel(struct ath_softc *sc
+ 			  "reset status %d\n",
+ 			  channel->center_freq, r);
+ 		spin_unlock_bh(&sc->sc_resetlock);
++		spin_unlock_bh(&sc->rx.pcu_lock);
+ 		goto ps_restore;
+ 	}
+ 	spin_unlock_bh(&sc->sc_resetlock);
+@@ -247,9 +251,12 @@ int ath_set_channel(struct ath_softc *sc
+ 		ath_print(common, ATH_DBG_FATAL,
+ 			  "Unable to restart recv logic\n");
+ 		r = -EIO;
++		spin_unlock_bh(&sc->rx.pcu_lock);
+ 		goto ps_restore;
+ 	}
+ 
++	spin_unlock_bh(&sc->rx.pcu_lock);
++
+ 	ath_cache_conf_rate(sc, &hw->conf);
+ 	ath_update_txpow(sc);
+ 	ath9k_hw_set_interrupts(ah, ah->imask);
+@@ -840,6 +847,7 @@ void ath_radio_enable(struct ath_softc *
+ 	if (!ah->curchan)
+ 		ah->curchan = ath_get_curchannel(sc, sc->hw);
+ 
++	spin_lock_bh(&sc->rx.pcu_lock);
+ 	spin_lock_bh(&sc->sc_resetlock);
+ 	r = ath9k_hw_reset(ah, ah->curchan, ah->caldata, false);
+ 	if (r) {
+@@ -854,8 +862,10 @@ void ath_radio_enable(struct ath_softc *
+ 	if (ath_startrecv(sc) != 0) {
+ 		ath_print(common, ATH_DBG_FATAL,
+ 			  "Unable to restart recv logic\n");
++		spin_unlock_bh(&sc->rx.pcu_lock);
  		return;
  	}
- 	skb = bcs->rx_skb;
--	if (skb == NULL)
-+	if (skb == NULL) {
- 		skb = gigaset_new_rx_skb(bcs);
--	bcs->hw.bas->goodbytes += skb->len;
-+		if (skb == NULL)
-+			return;
-+	}
- 	dobytes = bcs->rx_bufsize - skb->len;
- 	while (count > 0) {
- 		dst = skb_put(skb, count < dobytes ? count : dobytes);
-@@ -860,6 +861,7 @@ static inline void trans_receive(unsigne
- 		if (dobytes == 0) {
- 			dump_bytes(DEBUG_STREAM_DUMP,
- 				   "rcv data", skb->data, skb->len);
-+			bcs->hw.bas->goodbytes += skb->len;
- 			gigaset_skb_rcvd(bcs, skb);
- 			skb = gigaset_new_rx_skb(bcs);
- 			if (skb == NULL)
++	spin_unlock_bh(&sc->rx.pcu_lock);
+ 
+ 	if (sc->sc_flags & SC_OP_BEACONS)
+ 		ath_beacon_config(sc, NULL);	/* restart beacons */
+@@ -894,6 +904,9 @@ void ath_radio_disable(struct ath_softc
+ 	ath9k_hw_set_interrupts(ah, 0);
+ 
+ 	ath_drain_all_txq(sc, false);	/* clear pending tx frames */
++
++	spin_lock_bh(&sc->rx.pcu_lock);
++
+ 	ath_stoprecv(sc);		/* turn off frame recv */
+ 	ath_flushrecv(sc);		/* flush recv queue */
+ 
+@@ -911,6 +924,9 @@ void ath_radio_disable(struct ath_softc
+ 	spin_unlock_bh(&sc->sc_resetlock);
+ 
+ 	ath9k_hw_phy_disable(ah);
++
++	spin_unlock_bh(&sc->rx.pcu_lock);
++
+ 	ath9k_hw_configpcipowersave(ah, 1, 1);
+ 	ath9k_ps_restore(sc);
+ 	ath9k_setpower(sc, ATH9K_PM_FULL_SLEEP);
+@@ -930,6 +946,9 @@ int ath_reset(struct ath_softc *sc, bool
+ 
+ 	ath9k_hw_set_interrupts(ah, 0);
+ 	ath_drain_all_txq(sc, retry_tx);
++
++	spin_lock_bh(&sc->rx.pcu_lock);
++
+ 	ath_stoprecv(sc);
+ 	ath_flushrecv(sc);
+ 
+@@ -944,6 +963,8 @@ int ath_reset(struct ath_softc *sc, bool
+ 		ath_print(common, ATH_DBG_FATAL,
+ 			  "Unable to start recv logic\n");
+ 
++	spin_unlock_bh(&sc->rx.pcu_lock);
++
+ 	/*
+ 	 * We may be doing a reset in response to a request
+ 	 * that changes the channel so update any state that
+@@ -1108,6 +1129,7 @@ static int ath9k_start(struct ieee80211_
+ 	 * be followed by initialization of the appropriate bits
+ 	 * and then setup of the interrupt mask.
+ 	 */
++	spin_lock_bh(&sc->rx.pcu_lock);
+ 	spin_lock_bh(&sc->sc_resetlock);
+ 	r = ath9k_hw_reset(ah, init_channel, ah->caldata, false);
+ 	if (r) {
+@@ -1116,6 +1138,7 @@ static int ath9k_start(struct ieee80211_
+ 			  "(freq %u MHz)\n", r,
+ 			  curchan->center_freq);
+ 		spin_unlock_bh(&sc->sc_resetlock);
++		spin_unlock_bh(&sc->rx.pcu_lock);
+ 		goto mutex_unlock;
+ 	}
+ 	spin_unlock_bh(&sc->sc_resetlock);
+@@ -1137,8 +1160,10 @@ static int ath9k_start(struct ieee80211_
+ 		ath_print(common, ATH_DBG_FATAL,
+ 			  "Unable to start recv logic\n");
+ 		r = -EIO;
++		spin_unlock_bh(&sc->rx.pcu_lock);
+ 		goto mutex_unlock;
+ 	}
++	spin_unlock_bh(&sc->rx.pcu_lock);
+ 
+ 	/* Setup our intr mask. */
+ 	ah->imask = ATH9K_INT_TX | ATH9K_INT_RXEOL |
+@@ -1340,12 +1365,14 @@ static void ath9k_stop(struct ieee80211_
+ 	 * before setting the invalid flag. */
+ 	ath9k_hw_set_interrupts(ah, 0);
+ 
++	spin_lock_bh(&sc->rx.pcu_lock);
+ 	if (!(sc->sc_flags & SC_OP_INVALID)) {
+ 		ath_drain_all_txq(sc, false);
+ 		ath_stoprecv(sc);
+ 		ath9k_hw_phy_disable(ah);
+ 	} else
+ 		sc->rx.rxlink = NULL;
++	spin_unlock_bh(&sc->rx.pcu_lock);
+ 
+ 	/* disable HAL and put h/w to sleep */
+ 	ath9k_hw_disable(ah);
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -523,13 +523,11 @@ bool ath_stoprecv(struct ath_softc *sc)
+ 
+ void ath_flushrecv(struct ath_softc *sc)
+ {
+-	spin_lock_bh(&sc->rx.pcu_lock);
+ 	sc->sc_flags |= SC_OP_RXFLUSH;
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+ 		ath_rx_tasklet(sc, 1, true);
+ 	ath_rx_tasklet(sc, 1, false);
+ 	sc->sc_flags &= ~SC_OP_RXFLUSH;
+-	spin_unlock_bh(&sc->rx.pcu_lock);
+ }
+ 
+ static bool ath_beacon_dtim_pending_cab(struct sk_buff *skb)
 
 
