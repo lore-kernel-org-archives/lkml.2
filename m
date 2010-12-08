@@ -1,76 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab0LHUq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:46:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14407 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755747Ab0LHUqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:46:55 -0500
-Date: Wed, 8 Dec 2010 21:39:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
-	taskstats
-Message-ID: <20101208203938.GB1804@redhat.com>
-References: <20101129164237.522034198@linux.vnet.ibm.com> <20101129164435.903722027@linux.vnet.ibm.com> <20101201185128.GA7656@redhat.com> <1291718708.1910.63.camel@holzheu-laptop>
+	id S932067Ab0LHU4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:56:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46038 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756065Ab0LHU4V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:56:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=KVScZJ3ZpMo0odmRDWe45bYjquTnkl4TOUhqOeac3woRKDYJtaaK/Q1I6Cjnh9iJXg
+         KsBkmPbr0UsVNjioaVVkvvDeh3wkmidZdqCgagUxBQEloiyyiaq4YlqAG6uziLFaja7+
+         u8hCVXdSbKw9TFPTvqBMGu2DaUKomg627IU2Y=
+Date: Wed, 8 Dec 2010 18:56:14 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Add symfs option for off-box analysis using
+ specified tree
+Message-ID: <20101208205614.GD10353@ghostprotocols.net>
+References: <1291776174-16535-1-git-send-email-daahern@cisco.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291718708.1910.63.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1291776174-16535-1-git-send-email-daahern@cisco.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07, Michael Holzheu wrote:
->
-> On Wed, 2010-12-01 at 19:51 +0100, Oleg Nesterov wrote:
-> > On 11/29, Michael Holzheu wrote:
-> > >
-> > > * I left the struct signal locking in the patch, because I think
-> > >   that in order to get consistent data this is necessary.
-> >
-> > OK, I guess you mean that we want to read utime/stime "atomically",
-> > and thus we need ->siglock to prevent the race with __exit_signal().
->
-> Yes.
->
-> But I changed my mind. If I understand the code right, currently no
-> locking is done for reading the tasks statistics in both the taskstats
-> and also in the procfs interface. So e.g. it is not guaranteed to get a
-> consistent set of data when reading /proc/<pid>/stat, because of the
-> race with account_user/system/whatever_time() and other accounting
-> functions.
+Em Tue, Dec 07, 2010 at 07:42:54PM -0700, David Ahern escreveu:
+> The symfs argument allows analysis of perf.data file using a locally
+> accessible filesystem tree with debug symbols - e.g., tree created
+> during image builds, sshfs mount, loop mounted KVM disk images,
+> USB keys, initrds, etc. Anything with an OS tree can be analyzed from
+> anywhere without the need to populate a local data store with
+> build-ids.
+> 
+> Signed-off-by: David Ahern <daahern@cisco.com>
+> ---
+>  tools/perf/builtin-annotate.c  |   16 +++++--
+>  tools/perf/builtin-diff.c      |    2 +
+>  tools/perf/builtin-report.c    |    2 +
+>  tools/perf/builtin-timechart.c |    2 +
+>  tools/perf/util/hist.c         |   14 +++++-
+>  tools/perf/util/symbol.c       |   82 +++++++++++++++++++++++++---------------
+>  tools/perf/util/symbol.h       |    1 +
+>  7 files changed, 80 insertions(+), 39 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+> index 569a276..0c47bee 100644
+> --- a/tools/perf/builtin-annotate.c
+> +++ b/tools/perf/builtin-annotate.c
+> @@ -280,7 +280,8 @@ static int hist_entry__tty_annotate(struct hist_entry *he)
+>  	struct map *map = he->ms.map;
+>  	struct dso *dso = map->dso;
+>  	struct symbol *sym = he->ms.sym;
+> -	const char *filename = dso->long_name, *d_filename;
+> +	const char *filename = dso->long_name;
+> +	char d_filename[PATH_MAX];
+>  	u64 len;
+>  	LIST_HEAD(head);
+>  	struct objdump_line *pos, *n;
+> @@ -288,10 +289,13 @@ static int hist_entry__tty_annotate(struct hist_entry *he)
+>  	if (hist_entry__annotate(he, &head, 0) < 0)
+>  		return -1;
+>  
+> -	if (full_paths)
+> -		d_filename = filename;
+> -	else
+> -		d_filename = basename(filename);
+> +	if (full_paths) {
+> +		snprintf(d_filename, sizeof(d_filename), "%s%s",
+> +			 symbol_conf.symfs, filename);
+> +	} else {
+> +		snprintf(d_filename, sizeof(d_filename), "%s/%s",
+> +			 symbol_conf.symfs, basename(filename));
+> +	}
 
-Not sure, I think account_user/system/whatever_time() is a bit different.
-And, say, do_task_stat() takes ->siglock for thread_group_times(). Btw,
-I tried to remove this lock_task_sighand(), and I still hope we can
-do this ;) But the patch wasn't acked (iiuc) exactly because it can
-make top unhappy..
+Are you sure about the one above? I guess you don't need to concat here,
+its just informative message, if you're using --symfs, you know
+everything is from there, and in the !full_paths case the resulting
+filename will be bogus, right?
+  
+>  	len = sym->end - sym->start;
+>  
+> @@ -437,6 +441,8 @@ static const struct option options[] = {
+>  		    "print matching source lines (may be slow)"),
+>  	OPT_BOOLEAN('P', "full-paths", &full_paths,
+>  		    "Don't shorten the displayed pathnames"),
+> +	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+> +		    "Look for files with symbols relative to this directory"),
+>  	OPT_END()
+>  };
+>  
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index 5e1a043..71126a6 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -192,6 +192,8 @@ static const struct option options[] = {
+>  	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+>  		   "separator for columns, no spaces will be added between "
+>  		   "columns '.' is reserved."),
+> +	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+> +		    "Look for files with symbols relative to this directory"),
+>  	OPT_END()
+>  };
+>  
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index 904519f..57b0f49 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -479,6 +479,8 @@ static const struct option options[] = {
+>  		   "columns '.' is reserved."),
+>  	OPT_BOOLEAN('U', "hide-unresolved", &hide_unresolved,
+>  		    "Only display entries resolved to a symbol"),
+> +	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+> +		    "Look for files with symbols relative to this directory"),
+>  	OPT_END()
+>  };
+>  
+> diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+> index d2fc461..965aa4e 100644
+> --- a/tools/perf/builtin-timechart.c
+> +++ b/tools/perf/builtin-timechart.c
+> @@ -1021,6 +1021,8 @@ static const struct option options[] = {
+>  	OPT_CALLBACK('p', "process", NULL, "process",
+>  		      "process selector. Pass a pid or process name.",
+>  		       parse_process),
+> +	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+> +		    "Look for files with symbols relative to this directory"),
+>  	OPT_END()
+>  };
+>  
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 2022e87..b24ae53 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -1092,6 +1092,12 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
+>  	FILE *file;
+>  	int err = 0;
+>  	u64 len;
+> +	char symfs_filename[PATH_MAX];
+> +
+> +	if (filename) {
+> +		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+> +		 symbol_conf.symfs, filename);
 
-> Because you said that since 2.6.35 accessing the signal_struct is save,
-> I think now also for cdata it is not necessary to lock anything. As a
-> result of this and the discussion regarding the group leader and cdata I
-> would propose the following patch:
+Above you have tab/space damage
 
-To me, this certainly makes sense. I do not really understand why
-it is so important to prevent the case when, say, bacct_add_tsk()
-sees the updated .utime and !updated .stime.
+> +	}
+>  
+>  	if (filename == NULL) {
+>  		if (dso->has_build_id) {
+> @@ -1100,9 +1106,9 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
+>  			return -ENOMEM;
+>  		}
+>  		goto fallback;
+> -	} else if (readlink(filename, command, sizeof(command)) < 0 ||
+> +	} else if (readlink(symfs_filename, command, sizeof(command)) < 0 ||
+>  		   strstr(command, "[kernel.kallsyms]") ||
+> -		   access(filename, R_OK)) {
+> +		   access(symfs_filename, R_OK)) {
+>  		free(filename);
+>  fallback:
+>  		/*
+> @@ -1111,6 +1117,8 @@ fallback:
+>  		 * DSO is the same as when 'perf record' ran.
+>  		 */
+>  		filename = dso->long_name;
+> +		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+> +		 symbol_conf.symfs, filename);
 
-If we can race with the exiting tasks, then these numbers are not
-"final" anyway.
+Ditto above
 
-But again, this all is up to you.
+>  		free_filename = false;
+>  	}
+>  
+> @@ -1137,7 +1145,7 @@ fallback:
+>  		 "objdump --start-address=0x%016Lx --stop-address=0x%016Lx -dS -C %s|grep -v %s|expand",
+>  		 map__rip_2objdump(map, sym->start),
+>  		 map__rip_2objdump(map, sym->end),
+> -		 filename, filename);
+> +		 symfs_filename, filename);
+>  
+>  	pr_debug("Executing: %s\n", command);
+>  
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index a348906..7a0d284 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -41,6 +41,7 @@ struct symbol_conf symbol_conf = {
+>  	.exclude_other	  = true,
+>  	.use_modules	  = true,
+>  	.try_vmlinux_path = true,
+> +	.symfs           = "",
+>  };
+>  
+>  int dso__name_len(const struct dso *self)
+> @@ -833,8 +834,11 @@ static int dso__synthesize_plt_symbols(struct  dso *self, struct map *map,
+>  	char sympltname[1024];
+>  	Elf *elf;
+>  	int nr = 0, symidx, fd, err = 0;
+> +	char name[PATH_MAX];
+>  
+> -	fd = open(self->long_name, O_RDONLY);
+> +	snprintf(name, sizeof(name), "%s%s",
+> +		 symbol_conf.symfs, self->long_name);
+> +	fd = open(name, O_RDONLY);
+>  	if (fd < 0)
+>  		goto out;
+>  
+> @@ -1446,16 +1450,19 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  	     self->origin++) {
+>  		switch (self->origin) {
+>  		case DSO__ORIG_BUILD_ID_CACHE:
+> -			if (dso__build_id_filename(self, name, size) == NULL)
+> +			/* skip the locally configured cache if a symfs is given */
+> +			if ((strlen(symbol_conf.symfs) != 0) ||
 
-Oleg.
+I suggest you use:
 
+			if (symbol_conf.symfs[1] ||
+
+cheaper :)
+
+> +			    (dso__build_id_filename(self, name, size) == NULL)) {
+>  				continue;
+> +			}
+>  			break;
+>  		case DSO__ORIG_FEDORA:
+> -			snprintf(name, size, "/usr/lib/debug%s.debug",
+> -				 self->long_name);
+> +			snprintf(name, size, "%s/usr/lib/debug%s.debug",
+> +				 symbol_conf.symfs, self->long_name);
+>  			break;
+>  		case DSO__ORIG_UBUNTU:
+> -			snprintf(name, size, "/usr/lib/debug%s",
+> -				 self->long_name);
+> +			snprintf(name, size, "%s/usr/lib/debug%s",
+> +				 symbol_conf.symfs, self->long_name);
+>  			break;
+>  		case DSO__ORIG_BUILDID: {
+>  			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+> @@ -1467,12 +1474,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  					  sizeof(self->build_id),
+>  					  build_id_hex);
+>  			snprintf(name, size,
+> -				 "/usr/lib/debug/.build-id/%.2s/%s.debug",
+> -				 build_id_hex, build_id_hex + 2);
+> +				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
+> +				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
+>  			}
+>  			break;
+>  		case DSO__ORIG_DSO:
+> -			snprintf(name, size, "%s", self->long_name);
+> +			snprintf(name, size, "%s%s",
+> +			     symbol_conf.symfs, self->long_name);
+>  			break;
+>  		case DSO__ORIG_GUEST_KMODULE:
+>  			if (map->groups && map->groups->machine)
+> @@ -1778,17 +1786,20 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
+>  			     const char *vmlinux, symbol_filter_t filter)
+>  {
+>  	int err = -1, fd;
+> +	char symfs_vmlinux[PATH_MAX];
+> -	fd = open(vmlinux, O_RDONLY);
+> +	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
+> +		 symbol_conf.symfs, vmlinux);
+
+Its userspace, so stack is plenty, but I guess if using asprintf
+wouldn't be better...
+
+I.e. if we were programming some kernel module, creating a 4K stack
+variable would be considered bad practice, so I think it is here as
+well.
+  
+> +	fd = open(symfs_vmlinux, O_RDONLY);
+>  	if (fd < 0)
+>  		return -1;
+>  
+>  	dso__set_loaded(self, map->type);
+> -	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
+> +	err = dso__load_sym(self, map, symfs_vmlinux, fd, filter, 0, 0);
+>  	close(fd);
+>  
+>  	if (err > 0)
+> -		pr_debug("Using %s for symbols\n", vmlinux);
+> +		pr_debug("Using %s for symbols\n", symfs_vmlinux);
+>  
+>  	return err;
+>  }
+> @@ -1861,6 +1872,10 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+>  			goto out_fixup;
+>  	}
+>  
+> +	/* do not try local files if a symfs was given */
+> +	if (strlen(symbol_conf.symfs) != 0)
+> +		return -1;
+> +
+>  	/*
+>  	 * Say the kernel DSO was created when processing the build-id header table,
+>  	 * we have a build-id, so check if it is the same as the running kernel,
+> @@ -2210,9 +2225,6 @@ static int vmlinux_path__init(void)
+>  	struct utsname uts;
+>  	char bf[PATH_MAX];
+>  
+> -	if (uname(&uts) < 0)
+> -		return -1;
+> -
+>  	vmlinux_path = malloc(sizeof(char *) * 5);
+>  	if (vmlinux_path == NULL)
+>  		return -1;
+> @@ -2225,22 +2237,30 @@ static int vmlinux_path__init(void)
+>  	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+>  		goto out_fail;
+>  	++vmlinux_path__nr_entries;
+> -	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
+> -	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> -	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+> -		goto out_fail;
+> -	++vmlinux_path__nr_entries;
+> -	snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux", uts.release);
+> -	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> -	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+> -		goto out_fail;
+> -	++vmlinux_path__nr_entries;
+> -	snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
+> -		 uts.release);
+> -	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> -	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+> -		goto out_fail;
+> -	++vmlinux_path__nr_entries;
+> +
+> +	/* if no symfs has been given try running kernel version too */
+> +	if (strlen(symbol_conf.symfs) == 0) {
+
+Do it as:
+
+	if (!symbol_conf.symfs[1])
+		return 0;
+
+And then the patch can be made smaller.
+
+> +		if (uname(&uts) < 0)
+> +			return -1;
+> +
+> +		snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
+> +		vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> +		if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+> +			goto out_fail;
+> +		++vmlinux_path__nr_entries;
+> +		snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux",
+> +			 uts.release);
+> +		vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> +		if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+> +			goto out_fail;
+> +		++vmlinux_path__nr_entries;
+> +		snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
+> +			 uts.release);
+> +		vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> +		if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+> +			goto out_fail;
+> +		++vmlinux_path__nr_entries;
+> +	}
+>  
+>  	return 0;
+>  
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index 038f220..bbe90d1 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -85,6 +85,7 @@ struct symbol_conf {
+>         struct strlist	*dso_list,
+>  			*comm_list,
+>  			*sym_list;
+> +	const char	*symfs;
+>  };
+>  
+>  extern struct symbol_conf symbol_conf;
+> -- 
+> 1.7.2.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
