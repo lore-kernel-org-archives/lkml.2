@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab0LHVgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 16:36:20 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:23975 "EHLO
+	id S932071Ab0LHVgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 16:36:32 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:24009 "EHLO
 	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab0LHVgP (ORCPT
+	with ESMTP id S1756006Ab0LHVg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 16:36:15 -0500
-Subject: [PATCH 2/5] x86: avoid BIOS area when allocating address space
+	Wed, 8 Dec 2010 16:36:29 -0500
+Subject: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-Date: Wed, 08 Dec 2010 14:36:11 -0700
-Message-ID: <20101208213611.13026.40888.stgit@bob.kio>
+Date: Wed, 08 Dec 2010 14:36:27 -0700
+Message-ID: <20101208213627.13026.18854.stgit@bob.kio>
 In-Reply-To: <20101208213606.13026.47657.stgit@bob.kio>
 References: <20101208213606.13026.47657.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -28,69 +28,63 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This implements arch_remove_reservations() so allocate_resource() can
-avoid any arch-specific reserved areas.  This currently just avoids the
-BIOS area (the first 1MB), but could be used for E820 reserved areas if
-that turns out to be necessary.
+The HP nx6325 BIOS doesn't report any devices in the [0xf8000000-0xfbffffff]
+region via ACPI devices or the E820 memory map, but when we assign it to the
+00:14.4 bridge as a prefetchable memory window, the machine hangs.
 
-We previously avoided this area in pcibios_align_resource().  This patch
-moves the test from that PCI-specific path to a generic path, so *all*
-resource allocations will avoid this area.
+I determined experimentally that there are only three 1MB regions in
+that area that cause trouble, so this fixup builds a fake PNP device
+that consumes those regions.
 
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23332
+Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- arch/x86/kernel/Makefile   |    1 +
- arch/x86/kernel/resource.c |   14 ++++++++++++++
- arch/x86/pci/i386.c        |    3 ---
- 3 files changed, 15 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/kernel/resource.c
+ drivers/pnp/quirks.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9e13763..1e99475 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -45,6 +45,7 @@ obj-y			+= pci-dma.o quirks.o i8237.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
- obj-y			+= tsc.o io_delay.o rtc.o
- obj-y			+= pci-iommu_table.o
-+obj-y			+= resource.o
+diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+index f18bb69..e7de402 100644
+--- a/drivers/pnp/quirks.c
++++ b/drivers/pnp/quirks.c
+@@ -343,7 +343,37 @@ static struct pnp_protocol pnp_fixup_protocol = {
+ 	.name = "Plug and Play fixup",
+ };
  
- obj-$(CONFIG_X86_TRAMPOLINE)	+= trampoline.o
- obj-y				+= process.o
-diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
-new file mode 100644
-index 0000000..5dd6473
---- /dev/null
-+++ b/arch/x86/kernel/resource.c
-@@ -0,0 +1,14 @@
-+#include <linux/ioport.h>
-+#include <asm/e820.h>
-+
-+void arch_remove_reservations(struct resource *avail)
++static int __init hp_nx6325_fixup(const struct dmi_system_id *d)
 +{
++	struct pnp_dev *dev;
++
 +	/*
-+	 * Trim out the area reserved for BIOS (low 1MB).  We could also remove
-+	 * E820 "reserved" areas here.
++	 * The BIOS apparently forgot to describe some regions in the
++	 * address map.  See https://bugzilla.kernel.org/show_bug.cgi?id=23332
 +	 */
-+	if (avail->flags & IORESOURCE_MEM) {
-+		if (avail->start < BIOS_END)
-+			avail->start = BIOS_END;
-+	}
++
++	dev = pnp_alloc_dev(&pnp_fixup_protocol, 0, "LNXHAZRD");
++	if (!dev)
++		return 0;
++
++	dev->active = 1;
++	pnp_add_mem_resource(dev, 0xf8300000, 0xf83fffff, 0);
++	pnp_add_mem_resource(dev, 0xf8500000, 0xf85fffff, 0);
++	pnp_add_mem_resource(dev, 0xf9100000, 0xf91fffff, 0);
++	pnp_add_device(dev);
++	dev_info(&dev->dev, "added to work around BIOS defect\n");
++	return 0;
 +}
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index c4bb261..b261011 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -77,9 +77,6 @@ pcibios_align_resource(void *data, const struct resource *res,
- 		 */
- 		if (!skip_isa_ioresource_align(dev))
- 			start &= ~0x300;
--	} else if (res->flags & IORESOURCE_MEM) {
--		if (start < BIOS_END)
--			start = res->end;	/* fail; no space */
- 	}
- 	return start;
- }
++
+ static const struct dmi_system_id pnp_fixup_table[] __initconst = {
++	{
++		.callback = hp_nx6325_fixup,
++		.ident = "HP nx6325 laptop",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq nx6325"),
++		},
++	},
+ 	{}
+ };
+ 
 
