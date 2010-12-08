@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab0LHBQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:16:28 -0500
-Received: from kroah.org ([198.145.64.141]:33702 "EHLO coco.kroah.org"
+	id S932691Ab0LHBDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:03:23 -0500
+Received: from kroah.org ([198.145.64.141]:33667 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932701Ab0LHBD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:26 -0500
+	id S932655Ab0LHBDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:19 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:44 2010
-Message-Id: <20101208005744.643525075@clark.site>
+Message-Id: <20101208005743.943018873@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:09 -0800
+Date: Tue, 07 Dec 2010 17:00:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Will Newton <will.newton@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Jeff Dike <jdike@addtoit.com>
-Subject: [232/289] uml: disable winch irq before freeing handler data
+        Ken Sumrall <ksumrall@android.com>, Anfei <anfei.zhou@gmail.com>,
+        "Anand V. Avati" <avati@gluster.com>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: [225/289] fuse: fix attributes after open(O_TRUNC)
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Newton <will.newton@gmail.com>
+From: Ken Sumrall <ksumrall@android.com>
 
-commit 69e83dad5207f8f03c9699e57e1febb114383cb8 upstream.
+commit a0822c55779d9319939eac69f00bb729ea9d23da upstream.
 
-Disable the winch irq early to make sure we don't take an interrupt part
-way through the freeing of the handler data, resulting in a crash on
-shutdown:
+The attribute cache for a file was not being cleared when a file is opened
+with O_TRUNC.
 
-  winch_interrupt : read failed, errno = 9
-  fd 13 is losing SIGWINCH support
-  ------------[ cut here ]------------
-  WARNING: at lib/list_debug.c:48 list_del+0xc6/0x100()
-  list_del corruption, next is LIST_POISON1 (00100100)
-  082578c8:  [<081fd77f>] dump_stack+0x22/0x24
-  082578e0:  [<0807a18a>] warn_slowpath_common+0x5a/0x80
-  08257908:  [<0807a23e>] warn_slowpath_fmt+0x2e/0x30
-  08257920:  [<08172196>] list_del+0xc6/0x100
-  08257940:  [<08060244>] free_winch+0x14/0x80
-  08257958:  [<080606fb>] winch_interrupt+0xdb/0xe0
-  08257978:  [<080a65b5>] handle_IRQ_event+0x35/0xe0
-  08257998:  [<080a8717>] handle_edge_irq+0xb7/0x170
-  082579bc:  [<08059bc4>] do_IRQ+0x34/0x50
-  082579d4:  [<08059e1b>] sigio_handler+0x5b/0x80
-  082579ec:  [<0806a374>] sig_handler_common+0x44/0xb0
-  08257a68:  [<0806a538>] sig_handler+0x38/0x50
-  08257a78:  [<0806a77c>] handle_signal+0x5c/0xa0
-  08257a9c:  [<0806be28>] hard_handler+0x18/0x20
-  08257aac:  [<00c14400>] 0xc14400
+If the filesystem's open operation truncates the file ("atomic_o_trunc"
+feature flag is set) then the kernel should invalidate the cached st_mtime
+and st_ctime attributes.
 
-Signed-off-by: Will Newton <will.newton@gmail.com>
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Jeff Dike <jdike@addtoit.com>
+Also i_size should be explicitly be set to zero as it is used sometimes
+without refreshing the cache.
+
+Signed-off-by: Ken Sumrall <ksumrall@android.com>
+Cc: Anfei <anfei.zhou@gmail.com>
+Cc: "Anand V. Avati" <avati@gluster.com>
+Signed-off-by: Miklos Szeredi <miklos@szeredi.hu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/um/drivers/line.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/fuse/file.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/um/drivers/line.c
-+++ b/arch/um/drivers/line.c
-@@ -727,6 +727,9 @@ struct winch {
- 
- static void free_winch(struct winch *winch, int free_irq_ok)
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -134,6 +134,7 @@ EXPORT_SYMBOL_GPL(fuse_do_open);
+ void fuse_finish_open(struct inode *inode, struct file *file)
  {
-+	if (free_irq_ok)
-+		free_irq(WINCH_IRQ, winch);
-+
- 	list_del(&winch->list);
+ 	struct fuse_file *ff = file->private_data;
++	struct fuse_conn *fc = get_fuse_conn(inode);
  
- 	if (winch->pid != -1)
-@@ -735,8 +738,6 @@ static void free_winch(struct winch *win
- 		os_close_file(winch->fd);
- 	if (winch->stack != 0)
- 		free_stack(winch->stack, 0);
--	if (free_irq_ok)
--		free_irq(WINCH_IRQ, winch);
- 	kfree(winch);
+ 	if (ff->open_flags & FOPEN_DIRECT_IO)
+ 		file->f_op = &fuse_direct_io_file_operations;
+@@ -141,6 +142,15 @@ void fuse_finish_open(struct inode *inod
+ 		invalidate_inode_pages2(inode->i_mapping);
+ 	if (ff->open_flags & FOPEN_NONSEEKABLE)
+ 		nonseekable_open(inode, file);
++	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC)) {
++		struct fuse_inode *fi = get_fuse_inode(inode);
++
++		spin_lock(&fc->lock);
++		fi->attr_version = ++fc->attr_version;
++		i_size_write(inode, 0);
++		spin_unlock(&fc->lock);
++		fuse_invalidate_attr(inode);
++	}
  }
  
+ int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
 
 
