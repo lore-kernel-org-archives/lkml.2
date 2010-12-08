@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab0LHOnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 09:43:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755046Ab0LHOnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 09:43:01 -0500
-Date: Wed, 8 Dec 2010 09:42:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-Subject: Re: perf hw  in kexeced kernel broken in tip
-Message-ID: <20101208144245.GB31703@redhat.com>
-References: <1291232989.32004.1987.camel@laptop>
- <20101201195835.GE2511@redhat.com>
- <1291234036.32004.2008.camel@laptop>
- <m162vdp3l4.fsf@fess.ebiederm.org>
- <20101202052321.GH18100@redhat.com>
- <1291275270.4023.20.camel@twins>
- <20101202161502.GL18100@redhat.com>
- <1291764620.2032.1293.camel@laptop>
- <20101208140103.GM21786@redhat.com>
- <1291818005.28378.38.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291818005.28378.38.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755310Ab0LHOoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 09:44:37 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:47902 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab0LHOog convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 09:44:36 -0500
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, Venkatesh Pallipadi <venki@google.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+In-Reply-To: <20101208142814.GE9777@n2100.arm.linux.org.uk>
+References: <19697.8378.717761.236202@pilspetsen.it.uu.se>
+	 <19707.34405.791777.298955@pilspetsen.it.uu.se>
+	 <20101205131702.GE9138@n2100.arm.linux.org.uk>
+	 <20101205141921.GF9138@n2100.arm.linux.org.uk>
+	 <19707.47304.977978.297596@pilspetsen.it.uu.se>
+	 <20101205162151.GH9138@n2100.arm.linux.org.uk>
+	 <1291812015.28378.24.camel@laptop>
+	 <20101208125548.GA9777@n2100.arm.linux.org.uk>
+	 <1291817076.28378.28.camel@laptop>
+	 <20101208142814.GE9777@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Dec 2010 15:44:19 +0100
+Message-ID: <1291819459.28378.64.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 03:20:05PM +0100, Peter Zijlstra wrote:
-> On Wed, 2010-12-08 at 09:01 -0500, Don Zickus wrote:
-> > On Wed, Dec 08, 2010 at 12:30:20AM +0100, Peter Zijlstra wrote:
-> > > On Thu, 2010-12-02 at 11:15 -0500, Don Zickus wrote:
-> > > 
-> > > > Vivek suggested to me this morning that I should just blantantly disable the
-> > > > perf counter during init when running my test. 
-> > > 
-> > > Nah, we should actively scan for that during the bring-up and kill
-> > > hw-perf when we find an enable bit set, some BIOSes actively use the
-> > > PMU, this is something that should be discouraged.
-> > 
-> > Ok, the reboot notifier addresses the kexec problem but doesn't fix it
-> > though (I have to test to confirm that, comments below).  
-> 
-> 
-> > The bios check
-> > should catch those situations (ironically I stumbled upon a machine with
-> > this problem, so I will test your patch with it, though it only uses perf
-> > counter 0). 
-> 
-> Right, they usually only steal one or two counters, but the fact that
-> they're using them at all is insane and should be punished.
-> 
-> >  The kdump problem will still exist, not sure if we care and
-> > perhaps we should document in the changelog that we know kdump is still
-> > broken (unless we do care).
-> 
-> You mean even if we cure the kexec reboot notifier patch thing kdump is
-> still borken?
-> 
+On Wed, 2010-12-08 at 14:28 +0000, Russell King - ARM Linux wrote:
+> So, what I'm saying is that if wrapping in 4 seconds is a problem,
+> then maybe we shouldn't be providing sched_clock() at all.
 
-Yes. reboot notifier notifications are not sent in kdump path. In this
-path we know kernel has crashed and we just try to do bare minimal things
-to boot into second kernel. If some hardware is left in inconsistent
-state we try to recover from that situation by resetting the device
-when second kernel is booting.
+4 seconds should be perfectly fine, we call it at least every scheduler
+tick (HZ) and NO_HZ will either have to limit the max sleep period or
+provide its own sleep duration (using a more expensive clock) so we can
+recover (much like GTOD already requires).
 
-Either driver itself can detect that device is in inconsistent state and
-reset it otherwise we also pass a command line parameter "reset_devices" to
-second kernel to explicitly tell kernel that devices might be in bad state,
-reset these during initialization. If we want to use these perf counters in
-kdump kernel, we shall have to do something similar.
+> Also, if wrapping below 64-bits is also a problem, again, maybe we
+> shouldn't be providing it there either.  Eg:
 
-Thanks
-Vivek
+That's mostly due to hysterical raisins and we should just fix that, the
+simplest way is to use something like kernel/sched_clock.c to use
+sched_clock() deltas to make a running u64 value.
+
+Like said, John Stultz was already looking at doing something like that
+because there's a number of architectures suffering this same problem
+and they're all already using part of the clocksource infrastructure to
+implement the sched_clock() interface simply because they only have a
+single hardware resource.
+
+One of the problems is I think the cycles2ns multiplication of the raw
+clock, that makes dealing with wrap-around lots harder, so I guess we
+should deal with the wrap on the raw clock values and then apply
+cycles2ns on the delta or somesuch. But I expect the clocksource
+infrastructure already has something like that, John?
