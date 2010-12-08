@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab0LHCHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:07:40 -0500
-Received: from kroah.org ([198.145.64.141]:58409 "EHLO coco.kroah.org"
+	id S1756740Ab0LHCIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:08:00 -0500
+Received: from kroah.org ([198.145.64.141]:58393 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756179Ab0LHAr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:28 -0500
+	id S1756164Ab0LHAr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:26 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:30 2010
-Message-Id: <20101208004430.800575691@clark.site>
+Message-Id: <20101208004430.494830825@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:11 -0800
+Date: Tue, 07 Dec 2010 16:44:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sebastien Bourdeauducq <sebastien@milkymist.org>
-Subject: [065/127] USB: ftdi_sio: add device IDs for Milkymist One JTAG/serial
+        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [062/127] PCI: fix offset check for sysfs mmapped files
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastien Bourdeauducq <sebastien@milkymist.org>
+From: Darrick J. Wong <djwong@us.ibm.com>
 
-commit 7fea0f714ffb3f303d4b66933af2df2f5584c9bf upstream.
+commit 8c05cd08a7504b855c265263e84af61aabafa329 upstream.
 
-Add the USB IDs for the Milkymist One FTDI-based JTAG/serial adapter
-(http://projects.qi-hardware.com/index.php/p/mmone-jtag-serial-cable/)
-to the ftdi_sio driver and disable the first serial channel (used as
-JTAG from userspace).
+I just loaded 2.6.37-rc2 on my machines, and I noticed that X no longer starts.
+Running an strace of the X server shows that it's doing this:
 
-Signed-off-by: Sebastien Bourdeauducq <sebastien@milkymist.org>
+open("/sys/bus/pci/devices/0000:07:00.0/resource0", O_RDWR) = 10
+mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 10, 0) = -1 EINVAL (Invalid argument)
+
+This code seems to be asking for a shared read/write mapping of 16MB worth of
+BAR0 starting at file offset 0, and letting the kernel assign a starting
+address.  Unfortunately, this -EINVAL causes X not to start.  Looking into
+dmesg, there's a complaint like so:
+
+process "Xorg" tried to map 0x01000000 bytes at page 0x00000000 on 0000:07:00.0 BAR 0 (start 0x        96000000, size 0x         1000000)
+
+...with the following code in pci_mmap_fits:
+
+	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
+		pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+        if (start >= pci_start && start < pci_start + size &&
+                        start + nr <= pci_start + size)
+
+It looks like the logic here is set up such that when the mmap call comes via
+sysfs, the check in pci_mmap_fits wants vma->vm_pgoff to be between the
+resource's start and end address, and the end of the vma to be no farther than
+the end.  However, the sysfs PCI resource files always start at offset zero,
+which means that this test always fails for programs that mmap the sysfs files.
+Given the comment in the original commit
+3b519e4ea618b6943a82931630872907f9ac2c2b, I _think_ the old procfs files
+require that the file offset be equal to the resource's base address when
+mmapping.
+
+I think what we want here is for pci_start to be 0 when mmap_api ==
+PCI_MMAP_PROCFS.  The following patch makes that change, after which the Matrox
+and Mach64 X drivers work again.
+
+Acked-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 9 insertions(+)
+ drivers/pci/pci-sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -800,6 +800,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
-+	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1107,3 +1107,10 @@
- #define FTDI_SCIENCESCOPE_LOGBOOKML_PID		0xFF18
- #define FTDI_SCIENCESCOPE_LS_LOGBOOK_PID	0xFF1C
- #define FTDI_SCIENCESCOPE_HS_LOGBOOK_PID	0xFF1D
-+
-+/*
-+ * Milkymist One JTAG/Serial
-+ */
-+#define QIHARDWARE_VID			0x20B7
-+#define MILKYMISTONE_JTAGSERIAL_PID	0x0713
-+
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -672,7 +672,7 @@ int pci_mmap_fits(struct pci_dev *pdev,
+ 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 	start = vma->vm_pgoff;
+ 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+-	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
++	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
+ 			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+ 	if (start >= pci_start && start < pci_start + size &&
+ 			start + nr <= pci_start + size)
 
 
