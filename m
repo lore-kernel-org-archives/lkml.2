@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab0LHRRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:17:33 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51439 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab0LHRRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 12:17:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=opUyS08VzRsh5aMmkWPI2B3cD+8wymtFNH9vZHnkkOU5qMClnawScqzANOADIC7uu1
-         RsbXv3CH2kp1eF+yRCscITP76YkxtoeBcOsNARKLHPjY0mblX64cxcGoE7rQ2QwF6qKH
-         K9IGdqjWD5k0KLMLyT1uTzA7nixFnqB/14cLs=
-Subject: Re: [PATCH] x86: Replace uses of current_cpu_data with this_cpu ops
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <alpine.DEB.2.00.1012080929590.23407@router.home>
-References: <20101206171618.302060721@linux.com>
-	 <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org>
-	 <4CFE4294.30001@kernel.org>
-	 <alpine.DEB.2.00.1012070846050.25976@router.home>
-	 <4CFE4BE0.9040203@kernel.org>
-	 <alpine.DEB.2.00.1012070906290.26552@router.home>
-	 <4CFE4E05.7070902@kernel.org>
-	 <alpine.DEB.2.00.1012071020040.26552@router.home>
-	 <4CFF8520.4020704@kernel.org> <1291815501.2883.34.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1012080929590.23407@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 18:17:26 +0100
-Message-ID: <1291828646.2883.65.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1755333Ab0LHRSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:18:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52984 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751644Ab0LHRSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 12:18:08 -0500
+Date: Wed, 8 Dec 2010 09:13:31 -0800
+From: Greg KH <gregkh@suse.de>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [121/127] [S390] nmi: fix clock comparator revalidation
+Message-ID: <20101208171331.GA12918@suse.de>
+References: <20101208004456.GA23578@kroah.com>
+ <20101208004436.427324416@clark.site>
+ <20101208080428.GA2523@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208080428.GA2523@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 08 décembre 2010 à 09:33 -0600, Christoph Lameter a écrit :
-> On Wed, 8 Dec 2010, Eric Dumazet wrote:
+On Wed, Dec 08, 2010 at 09:04:28AM +0100, Heiko Carstens wrote:
+> On Tue, Dec 07, 2010 at 04:45:07PM -0800, Greg KH wrote:
+> > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > 
+> > commit e8129c642155616d9e2160a75f103e127c8c3708 upstream.
+> > 
+> > On each machine check all registers are revalidated. The save area for
+> > the clock comparator however only contains the upper most seven bytes
+> > of the former contents, if valid.
+> > Therefore the machine check handler uses a store clock instruction to
+> > get the current time and writes that to the clock comparator register
+> > which in turn will generate an immediate timer interrupt.
+> > However within the lowcore the expected time of the next timer
+> > interrupt is stored. If the interrupt happens before that time the
+> > handler won't be called. In turn the clock comparator won't be
+> > reprogrammed and therefore the interrupt condition stays pending which
+> > causes an interrupt loop until the expected time is reached.
+> > 
+> > On NOHZ machines this can result in unresponsive machines since the
+> > time of the next expected interrupted can be a couple of days in the
+> > future.
+> > 
+> > To fix this just revalidate the clock comparator register with the
+> > expected value.
+> > In addition the special handling for udelay must be changed as well.
+> > 
+> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> > > In the long run, it might be a good idea to remove cpu_data() macro
-> > > too and use per_cpu macro directly.
-> > >
-> >
-> > or introduce this_cpu_has() to remove the adress computation
-> >
-> > -	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
-> >
-> > +	if (this_cpu_has(X86_FEATURE_ARAT)) {
-> >
+> [...]
 > 
-> The fundamental problem is that bitops require memory addresses which does
-> not work with per cpu ops.
+> > ---
+> >  arch/s390/kernel/nmi.c |   10 ++++------
+> >  arch/s390/lib/delay.c  |   14 +++++++++-----
+> >  2 files changed, 13 insertions(+), 11 deletions(-)
+> > 
+> > --- a/arch/s390/kernel/nmi.c
+> > +++ b/arch/s390/kernel/nmi.c
+> > @@ -95,7 +95,6 @@ EXPORT_SYMBOL_GPL(s390_handle_mcck);
+> >  static int notrace s390_revalidate_registers(struct mci *mci)
+> >  {
+> >  	int kill_task;
+> > -	u64 tmpclock;
+> >  	u64 zero;
+> >  	void *fpt_save_area, *fpt_creg_save_area;
+> > 
+> > @@ -214,11 +213,10 @@ static int notrace s390_revalidate_regis
+> >  			: "0", "cc");
+> >  #endif
+> >  	/* Revalidate clock comparator register */
+> > -	asm volatile(
+> > -		"	stck	0(%1)\n"
+> > -		"	sckc	0(%1)"
+> > -		: "=m" (tmpclock) : "a" (&(tmpclock)) : "cc", "memory");
+> > -
+> > +	if (S390_lowcore.clock_comparator == -1)
+> > +		set_clock_comparator(S390_lowcore.mcck_clock);
+> ^^^
+> This line won't compile on 2.6.32. That's why I sent a slightly different
+> patch to -stable (and also the reason why I removed Martin's Sign-off) ;)
+
+Ah, please be more clear that you are sending a modifed version for me
+to apply instead of taking the upstream patch directly, which is the
+default for me to do so in order to make sure nothing is incorrect.
+
 > 
+> Here is the version I sent to stable@kernel.org again:
+> 
+> Subject: [S390] nmi: fix clock comparator revalidation
 
-Sure, set() or clear() needs the address, but the read doesnt ?
+I'll go replace the version I had with this one.
 
-This can be implemented as
+thanks,
 
-  (__this_cpu_read(cpu_info.word[X]) & MASK)
-
-Anyway, even if mapped to cpu_has(__this_cpu_ptr(&cpu_info), XXX), 
-it would be cleaner to use this_cpu_has() helper.
-
-
-
+greg k-h
