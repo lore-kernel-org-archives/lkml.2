@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab0LHVht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 16:37:49 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:21170 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab0LHVhq (ORCPT
+	id S1755392Ab0LHVrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 16:47:21 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:25962 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752512Ab0LHVrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 16:37:46 -0500
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH 0/5] resources: add arch hook for preventing allocation in reserved areas
-Date: Wed, 8 Dec 2010 14:37:34 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-References: <20101208213606.13026.47657.stgit@bob.kio>
-In-Reply-To: <20101208213606.13026.47657.stgit@bob.kio>
+	Wed, 8 Dec 2010 16:47:20 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: YjM2d2oVM1kUl7d.cPUp93vZTvkcPSvY.Sd.zs192dy2hS_
+ IWKAx.ANSB9qfn7strfyQ6evt_7gno1E.pecqSZgdbC_YtH2pvU9ezmeifdX
+ Gn3FolcN7dPGRo8XyHAQ_6Q4dev5xtERO_bQSXrKLS_K0soissvZk3B9Jg1O
+ 8wpTrqrB4tsBTynzkUhFbE5jUNqdJTq6aRjVhmswh6VsAymXkzuGiIs0XSUK
+ eSjwpIUeCerInVux0_GSunYfPyHpi56O2NgI.DA--
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 8 Dec 2010 15:47:16 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] printk: Use this_cpu_{read|write} api on
+ printk_pending
+In-Reply-To: <tip-40dc11ffb35e8c4e8fa71092048e0f8de9db758c@git.kernel.org>
+Message-ID: <alpine.DEB.2.00.1012081546170.28112@router.home>
+References: <1290788536.2855.237.camel@edumazet-laptop> <tip-40dc11ffb35e8c4e8fa71092048e0f8de9db758c@git.kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012081437.34539.bjorn.helgaas@hp.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crap, here's the cover letter I meant to include.
 
-[RFC] PCI, PNP, resources: effectively reserve ACPI device resources
+On Wed, 8 Dec 2010, tip-bot for Eric Dumazet wrote:
 
-2.6.37-rc includes some patches of mine to change the way we allocate address
-space for devices, and these caused some regressions.
+> printk: Use this_cpu_{read|write} api on printk_pending
 
-Most device resource allocation is done by the BIOS, but Linux does allocate
-space if the BIOS doesn't do it (e.g., for CardBus or other hotplug devices)
-or if the BIOS did it wrong (e.g., it put a PCI device outside the host bridge
-windows).
+One of the patches in Tejun's percpu tree includes the same modifications.
 
-My original 2.6.37-rc patches make Linux allocate space from the top down
-instead of from the bottom up.  We did this because that's what Windows does,
-and doing it the same way helps us avoid some BIOS defects, such as
-https://bugzilla.kernel.org/show_bug.cgi?id=16228 .
 
-The regressions caused by these changes include:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=23332
-
-    Here, we allocated a 64MB bridge window for a subtractive-decode bridge
-    leading to a CardBus controller, and the window conflicts with devices not
-    reported by the BIOS.  Windows doesn't see this problem because it relies
-    on the fact that the bridge is in subtractive-decode mode and doesn't
-    program the window at all.
-
-https://bugzilla.kernel.org/show_bug.cgi?id=23542
-https://bugzilla.kernel.org/show_bug.cgi?id=23802
-
-    In both cases, Linux allocated space that conflicts with an ACPI device
-    because it ignores resource usage reported by ACPI.  Windows avoids this
-    problem because it pays attention to the ACPI _CRS methods that report
-    device resource usage.
-
-I think the best way to address these problems would be to put ACPI device
-resources in the resource maps, just like we do for PCI devices.  We tried this
-a couple years ago (http://lkml.org/lkml/2007/11/1/214) and tripped over some
-subtle issues.  We should try again, but not at this stage of the -rc.
-
-Instead, these patches take the approach of adding a filter in the
-allocate_resource() path so each arch can prevent allocation of any address
-ranges it cares about.  For x86, that means looking through all the PNP
-devices and protecting the address space they use.
-
-In addition, for 23332, I added a quirk that builds a fake PNP device to
-protect the unreported devices.  I'm a little nervous about this because I've
-been told that the WHQL tests look for unreported devices, and the HP nx6325
-should have passwd.  But it's the best I can think of for now.
-
-Bjorn
