@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab0LHBqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:46:33 -0500
-Received: from kroah.org ([198.145.64.141]:48728 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932136Ab0LHBAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:11 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:29 2010
-Message-Id: <20101208005729.229892376@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:36 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [079/289] NFSv4: Fix open recovery
-In-Reply-To: <20101208005821.GA2922@kroah.com>
+	id S932374Ab0LHBrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:47:00 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:42780 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932327Ab0LHBq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:46:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=eOu9LOm9j4eaxfj3BB0iC6kdb9v9IYknpAa1Qaj7I8oQ0oL9+abgm7SmLA9ketWQ28
+         knYvMnoaQpQW3x+8BvJusijoP19g5AmOdrXKrbGk2uY0XbYr2HLP1eltfYtTdbBSwzc7
+         hNt9P5GIZ6n+xiDhd0I5RZ2cyhHtb57Jn9p94=
+Message-ID: <4CFEE38E.3020500@gmail.com>
+Date: Tue, 07 Dec 2010 19:46:54 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Sanka Piyaratna <cesanka@yahoo.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Posted Write onto a PCI end point device using Linux
+References: <712019.56679.qm@web31702.mail.mud.yahoo.com>
+In-Reply-To: <712019.56679.qm@web31702.mail.mud.yahoo.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On 12/07/2010 05:29 AM, Sanka Piyaratna wrote:
+> Hi,
+>
+>
+> I am wondering whether it is possible to issue a posted write using the host
+> computer's root complex towards an PCI express end point. I have done this using
+>
+> DMA in the past. However, if posted writes are possible that would save a lot of
+>
+> time and effort and would be quicker too.
 
-------------------
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit b0ed9dbc24f1fd912b2dd08b995153cafc1d5b1c upstream.
-
-NFSv4 open recovery is currently broken: since we do not clear the
-state->flags states before attempting recovery, we end up with the
-'can_open_cached()' function triggering. This again leads to no OPEN call
-being put on the wire.
-
-Reported-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfs/nfs4proc.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1117,6 +1117,7 @@ static int nfs4_open_recover(struct nfs4
- 	clear_bit(NFS_DELEGATED_STATE, &state->flags);
- 	smp_rmb();
- 	if (state->n_rdwr != 0) {
-+		clear_bit(NFS_O_RDWR_STATE, &state->flags);
- 		ret = nfs4_open_recover_helper(opendata, FMODE_READ|FMODE_WRITE, &newstate);
- 		if (ret != 0)
- 			return ret;
-@@ -1124,6 +1125,7 @@ static int nfs4_open_recover(struct nfs4
- 			return -ESTALE;
- 	}
- 	if (state->n_wronly != 0) {
-+		clear_bit(NFS_O_WRONLY_STATE, &state->flags);
- 		ret = nfs4_open_recover_helper(opendata, FMODE_WRITE, &newstate);
- 		if (ret != 0)
- 			return ret;
-@@ -1131,6 +1133,7 @@ static int nfs4_open_recover(struct nfs4
- 			return -ESTALE;
- 	}
- 	if (state->n_rdonly != 0) {
-+		clear_bit(NFS_O_RDONLY_STATE, &state->flags);
- 		ret = nfs4_open_recover_helper(opendata, FMODE_READ, &newstate);
- 		if (ret != 0)
- 			return ret;
-
-
+Writes from the CPU to PCI memory are always posted. However, the posted 
+write buffer size is usually quite limited and so this probably will 
+still cause CPU overhead when writing any significant amount of data 
+this way.
