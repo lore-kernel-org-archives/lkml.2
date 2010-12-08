@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab0LHByt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:54:49 -0500
-Received: from kroah.org ([198.145.64.141]:48541 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756915Ab0LHA7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:36 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:25 2010
-Message-Id: <20101208005725.539596499@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:59 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [042/289] cfg80211: fix BSS double-unlinking
-In-Reply-To: <20101208005821.GA2922@kroah.com>
+	id S932418Ab0LHBy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:54:57 -0500
+Received: from mail-iw0-f172.google.com ([209.85.214.172]:54434 "EHLO
+	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757111Ab0LHByw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:54:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rmILIPwMYtltHaXhr4idW98WuI9OsIhBRkn1AB/+J8qf12FODQJryLKzJt78avbc30
+         zl9u2pmJrfVyado/zDqkp5SzfGYarl6S6CETexp3TD9AslZf8F2wzedZilmKhDu3pnLB
+         TbrDtPWIm1e4zP6RQvk1F3XOztrF2Fk+t5DJw=
+Message-ID: <4CFEE569.4030204@gmail.com>
+Date: Tue, 07 Dec 2010 19:54:49 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jian Peng <jipeng@broadcom.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+CCing linux-ide and Tejun.
 
-------------------
+On 12/07/2010 01:43 AM, Jian Peng wrote:
+> Recently, while bringing up a new AHCI host controller, I found out that current AHCI driver (in 2.6.37-rc3) may violate AHCI spec in function libahci.c: ahci_start_engine().
+>
+>  From end of section 10.1.2 in AHCI 1.3 spec, it claims
+>
+> Software shall not set PxCMD.ST to '1' until it is determined that a functional device is present on the port
+> as determined by PxTFD.STS.BSY = '0', PxTFD.STS.DRQ = '0', and PxSSTS.DET = 3h.
+>
+> It seems working well on most controller without this extra checking, but does cause problem in our new core. Since toggling PxCMD.SUD already initiated reset process at early time, and by the time of ahci_start_engine() got called, BSY bit may not be cleared yet, and forcing PxCMD.ST bit to 1 will cause problem for HW in this case.
+>
+> Since I do not know all history about AHCI driver, I really hope that AHCI driver and libata maintainer can comment on this.
 
-From: Johannes Berg <johannes.berg@intel.com>
-
-commit 3207390a8b58bfc1335750f91cf6783c48ca19ca upstream.
-
-When multiple interfaces are actively trying
-to associate with the same BSS, they may both
-find that the BSS isn't there and then try to
-unlink it. This can cause errors since the
-unlinking code can't currently deal with items
-that have already been unlinked.
-
-Normally this doesn't happen as most people
-don't try to use multiple station interfaces
-that associate at the same time too.
-
-Fix this by using the list entry as a flag to
-see if the item is still on a list.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Hun-Kyi Wynn <hkwynn@candelatech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/wireless/scan.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -650,14 +650,14 @@ void cfg80211_unlink_bss(struct wiphy *w
- 	bss = container_of(pub, struct cfg80211_internal_bss, pub);
- 
- 	spin_lock_bh(&dev->bss_lock);
-+	if (!list_empty(&bss->list)) {
-+		list_del_init(&bss->list);
-+		dev->bss_generation++;
-+		rb_erase(&bss->rbn, &dev->bss_tree);
- 
--	list_del(&bss->list);
--	dev->bss_generation++;
--	rb_erase(&bss->rbn, &dev->bss_tree);
--
-+		kref_put(&bss->ref, bss_release);
-+	}
- 	spin_unlock_bh(&dev->bss_lock);
--
--	kref_put(&bss->ref, bss_release);
- }
- EXPORT_SYMBOL(cfg80211_unlink_bss);
- 
-
-
+Seems like a valid point to me, according to the spec. I'm guessing it 
+just hasn't come up previously with other controllers?
