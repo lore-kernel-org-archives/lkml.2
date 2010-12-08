@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab0LHAmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:42:37 -0500
-Received: from kroah.org ([198.145.64.141]:54716 "EHLO coco.kroah.org"
+	id S1755709Ab0LHAmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:42:38 -0500
+Received: from kroah.org ([198.145.64.141]:54695 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab0LHAeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:21 -0500
+	id S1754784Ab0LHAeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:17 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.317555522@clark.site>
+Message-Id: <20101208000639.918927939@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:07 -0800
+Date: Tue, 07 Dec 2010 16:04:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [08/44] mm: fix is_mem_section_removable() page_order BUG_ON check
+        Masanori Itoh <itoumsn@nttdata.co.jp>, Tejun Heo <tj@kernel.org>
+Subject: [04/44] percpu: fix list_head init bug in __percpu_counter_init()
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Masanori ITOH <itoumsn@nttdata.co.jp>
 
-commit 572438f9b52236bd8938b1647cc15e027d27ef55 upstream.
+commit 8474b591faf3bb0a1e08a60d21d6baac498f15e4 upstream.
 
-page_order() is called by memory hotplug's user interface to check the
-section is removable or not.  (is_mem_section_removable())
+WARNING: at lib/list_debug.c:26 __list_add+0x3f/0x81()
+Hardware name: Express5800/B120a [N8400-085]
+list_add corruption. next->prev should be prev (ffffffff81a7ea00), but was dead000000200200. (next=ffff88080b872d58).
+Modules linked in: aoe ipt_MASQUERADE iptable_nat nf_nat autofs4 sunrpc bridge 8021q garp stp llc ipv6 cpufreq_ondemand acpi_cpufreq freq_table dm_round_robin dm_multipath kvm_intel kvm uinput lpfc scsi_transport_fc igb ioatdma scsi_tgt i2c_i801 i2c_core dca iTCO_wdt iTCO_vendor_support pcspkr shpchp megaraid_sas [last unloaded: aoe]
+Pid: 54, comm: events/3 Tainted: G        W  2.6.34-vanilla1 #1
+Call Trace:
+[<ffffffff8104bd77>] warn_slowpath_common+0x7c/0x94
+[<ffffffff8104bde6>] warn_slowpath_fmt+0x41/0x43
+[<ffffffff8120fd2e>] __list_add+0x3f/0x81
+[<ffffffff81212a12>] __percpu_counter_init+0x59/0x6b
+[<ffffffff810d8499>] bdi_init+0x118/0x17e
+[<ffffffff811f2c50>] blk_alloc_queue_node+0x79/0x143
+[<ffffffff811f2d2b>] blk_alloc_queue+0x11/0x13
+[<ffffffffa02a931d>] aoeblk_gdalloc+0x8e/0x1c9 [aoe]
+[<ffffffffa02aa655>] aoecmd_sleepwork+0x25/0xa8 [aoe]
+[<ffffffff8106186c>] worker_thread+0x1a9/0x237
+[<ffffffffa02aa630>] ? aoecmd_sleepwork+0x0/0xa8 [aoe]
+[<ffffffff81065827>] ? autoremove_wake_function+0x0/0x39
+[<ffffffff810616c3>] ? worker_thread+0x0/0x237
+[<ffffffff810653ad>] kthread+0x7f/0x87
+[<ffffffff8100aa24>] kernel_thread_helper+0x4/0x10
+[<ffffffff8106532e>] ? kthread+0x0/0x87
+[<ffffffff8100aa20>] ? kernel_thread_helper+0x0/0x10
 
-It calls page_order() withoug holding zone->lock.
-So, even if the caller does
+It's because there is no initialization code for a list_head contained in
+the struct backing_dev_info under CONFIG_HOTPLUG_CPU, and the bug comes up
+when block device drivers calling blk_alloc_queue() are used.  In case of
+me, I got them by using aoe.
 
-	if (PageBuddy(page))
-		ret = page_order(page) ...
-The caller may hit BUG_ON().
-
-For fixing this, there are 2 choices.
-  1. add zone->lock.
-  2. remove BUG_ON().
-
-is_mem_section_removable() is used for some "advice" and doesn't need to
-be 100% accurate.  This is_removable() can be called via user program..
-We don't want to take this important lock for long by user's request.  So,
-this patch removes BUG_ON().
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Masanori Itoh <itoumsn@nttdata.co.jp>
+Cc: Tejun Heo <tj@kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/internal.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/percpu_counter.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -49,7 +49,7 @@ extern void __free_pages_bootmem(struct
-  */
- static inline unsigned long page_order(struct page *page)
- {
--	VM_BUG_ON(!PageBuddy(page));
-+	/* PageBuddy() must be checked by the caller */
- 	return page_private(page);
- }
- 
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -81,6 +81,7 @@ int percpu_counter_init(struct percpu_co
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+ #ifdef CONFIG_HOTPLUG_CPU
++	INIT_LIST_HEAD(&fbc->list);
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_add(&fbc->list, &percpu_counters);
+ 	mutex_unlock(&percpu_counters_lock);
 
 
