@@ -1,203 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab0LHRb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:31:58 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58735 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab0LHRb4 (ORCPT
+	id S1755380Ab0LHRde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:33:34 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:36302 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754304Ab0LHRdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 12:31:56 -0500
-Message-ID: <4CFFC0F0.6050006@oracle.com>
-Date: Wed, 08 Dec 2010 09:31:28 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 8 Dec 2010 12:33:33 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: BXq23_MVM1lLZq2IqnqEMV3Oa_8w9zKqkyq52uF7JTiUqMH
+ VTIvcfNtcsBu1GfGLUGkK0kwUF05LfEHflw.am9D1aUeNhvk7XwWgarmZooY
+ ThXjvlVJOxSEWi915SdlCHqENCqHSXja5Td1b5LIwEWgBM.4NWUlqWhXnvOq
+ 1AJ8mnNrV.37B3tdjdiJHsMTUrGaamohgPtX3zXLgayHjDh22bbizGhDkcSs
+ qw99pV0UIDfQ-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 8 Dec 2010 11:33:29 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, akpm@linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] x86: Replace uses of current_cpu_data with this_cpu
+ ops
+In-Reply-To: <4CFFBE67.8070809@kernel.org>
+Message-ID: <alpine.DEB.2.00.1012081132280.23407@router.home>
+References: <20101206171618.302060721@linux.com>  <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org>  <4CFE4294.30001@kernel.org>  <alpine.DEB.2.00.1012070846050.25976@router.home>  <4CFE4BE0.9040203@kernel.org>  <alpine.DEB.2.00.1012070906290.26552@router.home>
+  <4CFE4E05.7070902@kernel.org>  <alpine.DEB.2.00.1012071020040.26552@router.home>  <4CFF8520.4020704@kernel.org> <1291815501.2883.34.camel@edumazet-laptop>  <alpine.DEB.2.00.1012080929590.23407@router.home> <1291828646.2883.65.camel@edumazet-laptop>
+ <4CFFBE67.8070809@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: sedat.dilek@gmail.com, Matthew Garrett <mjg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for December 8 (drivers/platform/x86/Kconfig:422:error:
- recursive dependency detected!)
-References: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com> <AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
-In-Reply-To: <AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/10 01:12, Corentin Chary wrote:
-> On Wed, Dec 8, 2010 at 9:17 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->> Hi,
->>
->> just wanted to build a new linux-next and see this:
->>
->> [ setup.log ]
->> ...
->> dileks.1" make -C 'debian/build/source_i386_none'
->> O='/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686'
->> oldnoconfig
->> make[2]: Entering directory
->> `/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
->>  HOSTCC  scripts/basic/fixdep
->>  HOSTCC  scripts/basic/docproc
->>  GEN     /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686/Makefile
->>  HOSTCC  scripts/kconfig/conf.o
->>  HOSTCC  scripts/kconfig/kxgettext.o
->>  SHIPPED scripts/kconfig/zconf.tab.c
->>  SHIPPED scripts/kconfig/lex.zconf.c
->>  SHIPPED scripts/kconfig/zconf.hash.c
->>  HOSTCC  scripts/kconfig/zconf.tab.o
->>  HOSTLD  scripts/kconfig/conf
->> scripts/kconfig/conf --oldnoconfig Kconfig
->> drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
->> drivers/platform/x86/Kconfig:422:       symbol EEEPC_WMI depends on ACPI_WMI
->> drivers/platform/x86/Kconfig:438:       symbol ACPI_WMI is selected by ACER_WMI
->> drivers/platform/x86/Kconfig:18:        symbol ACER_WMI depends on LEDS_CLASS
->> drivers/leds/Kconfig:10:        symbol LEDS_CLASS is selected by EEEPC_WMI
->> warning: (ADB_PMU_LED && MACINTOSH_DRIVERS && ADB_PMU || ATH5K &&
->> NETDEVICES && WLAN && ATH_COMMON && (PCI || ATHEROS_AR231X) &&
->> MAC80211 || ATH9K && NETDEVICES && WLAN && ATH_COMMON && PCI &&
->> MAC80211 || ATH9K_HTC && NETDEVICES && WLAN && ATH_COMMON && USB &&
->> MAC80211 || CARL9170_LEDS && NETDEVICES && WLAN && ATH_COMMON &&
->> CARL9170 || INPUT_WISTRON_BTNS && !S390 && INPUT && INPUT_MISC && X86
->> && !X86_64 || SENSORS_APPLESMC && HWMON && INPUT && X86 ||
->> SENSORS_LIS3LV02D && HWMON && ACPI && INPUT || IR_WINBOND_CIR &&
->> MEDIA_SUPPORT && X86 && PNP && RC_CORE || BACKLIGHT_ADP8860 &&
->> HAS_IOMEM && BACKLIGHT_LCD_SUPPORT && BACKLIGHT_CLASS_DEVICE && I2C ||
->> MSM_STAGING && STAGING && !STAGING_EXCLUDE_BUILD && FB && ARCH_MSM &&
->> !FB_MSM || ASUS_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI &&
->> !ACPI_ASUS && INPUT && (RFKILL || RFKILL=n) || THINKPAD_ACPI && X86 &&
->> X86_PLATFORM_DEVICES && ACPI && INPUT && (RFKILL || RFKILL=n) ||
->> EEEPC_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && INPUT &&
->> EXPERIMENTAL && (RFKILL || RFKILL=n) && HOTPLUG_PCI || EEEPC_WMI &&
->> X86 && X86_PLATFORM_DEVICES && ACPI_WMI && INPUT && EXPERIMENTAL &&
->> BACKLIGHT_CLASS_DEVICE && (RFKILL || RFKILL=n)) selects LEDS_CLASS
->> which has unmet direct dependencies (NEW_LEDS)
->> #
->> # configuration written to .config
->> #
->> make[2]: Leaving directory
->> `/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
->> env -u ABINAME -u ARCH -u FEATURESET -u FLAVOUR -u VERSION -u
->> LOCALVERSION DISTRIBUTION_OFFICIAL_BUILD=1
->> DISTRIBUTION_UPLOADER=sedat.dilek@gmail.com
->> DISTRIBUTION_VERSION="2.6.37~rc5-1~next20101208.dileks.1" make -C
->> 'debian/build/source_i386_none'
->> O='/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686'
->>  prepare
->> make[2]: Entering directory
->> `/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
->>  GEN     /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686/Makefile
->> scripts/kconfig/conf --silentoldconfig Kconfig
->> drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
->> drivers/platform/x86/Kconfig:422:       symbol EEEPC_WMI depends on ACPI_WMI
->> drivers/platform/x86/Kconfig:438:       symbol ACPI_WMI is selected by ACER_WMI
->> drivers/platform/x86/Kconfig:18:        symbol ACER_WMI depends on LEDS_CLASS
->> drivers/leds/Kconfig:10:        symbol LEDS_CLASS is selected by EEEPC_WMI
->> warning: (ADB_PMU_LED && MACINTOSH_DRIVERS && ADB_PMU || ATH5K &&
->> NETDEVICES && WLAN && ATH_COMMON && (PCI || ATHEROS_AR231X) &&
->> MAC80211 || ATH9K && NETDEVICES && WLAN && ATH_COMMON && PCI &&
->> MAC80211 || ATH9K_HTC && NETDEVICES && WLAN && ATH_COMMON && USB &&
->> MAC80211 || CARL9170_LEDS && NETDEVICES && WLAN && ATH_COMMON &&
->> CARL9170 || INPUT_WISTRON_BTNS && !S390 && INPUT && INPUT_MISC && X86
->> && !X86_64 || SENSORS_APPLESMC && HWMON && INPUT && X86 ||
->> SENSORS_LIS3LV02D && HWMON && ACPI && INPUT || IR_WINBOND_CIR &&
->> MEDIA_SUPPORT && X86 && PNP && RC_CORE || BACKLIGHT_ADP8860 &&
->> HAS_IOMEM && BACKLIGHT_LCD_SUPPORT && BACKLIGHT_CLASS_DEVICE && I2C ||
->> MSM_STAGING && STAGING && !STAGING_EXCLUDE_BUILD && FB && ARCH_MSM &&
->> !FB_MSM || ASUS_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI &&
->> !ACPI_ASUS && INPUT && (RFKILL || RFKILL=n) || THINKPAD_ACPI && X86 &&
->> X86_PLATFORM_DEVICES && ACPI && INPUT && (RFKILL || RFKILL=n) ||
->> EEEPC_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && INPUT &&
->> EXPERIMENTAL && (RFKILL || RFKILL=n) && HOTPLUG_PCI || EEEPC_WMI &&
->> X86 && X86_PLATFORM_DEVICES && ACPI_WMI && INPUT && EXPERIMENTAL &&
->> BACKLIGHT_CLASS_DEVICE && (RFKILL || RFKILL=n)) selects LEDS_CLASS
->> which has unmet direct dependencies (NEW_LEDS)
->>  Using /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none
->> as source for kernel
->>  GEN     /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686/Makefile
->>  CHK     include/linux/version.h
->>  UPD     include/linux/version.h
->>  CHK     include/generated/utsrelease.h
->>  UPD     include/generated/utsrelease.h
->>  CC      kernel/bounds.s
->>  GEN     include/generated/bounds.h
->>  CC      arch/x86/kernel/asm-offsets.s
->>  GEN     include/generated/asm-offsets.h
->>  CALL    /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none/scripts/checksyscalls.sh
->> make[2]: Leaving directory
->> `/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
->> make[1]: Leaving directory `/home/sd/src/linux-2.6/linux-2.6.37-rc5'
->>
->> Regards,
->> - Sedat -
->> --
->> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> Hum ...
-> ACER_WMI:
->   select ACPI_WMI
->   depends on LEDS_CLASS
->   depends on NEW_LEDS
-> 
-> EEEPC_WMI:
->   depends on ACPI_WMI
->   select LEDS_CLASS
->   select NEW_LEDS
-> 
-> I don't really see how it's a recursive dependency, but maybe it's
-> time to clean this KConfig.
-
-It's circular.
-
-> What is our current policy about that ?
-
-Documentation/kbuild/kconfig-language.txt says:
-
-  Note:
-	select should be used with care. select will force
-	a symbol to a value without visiting the dependencies.
-	By abusing select you are able to select a symbol FOO even
-	if FOO depends on BAR that is not set.
-	In general use select only for non-visible symbols
-	(no prompts anywhere) and for symbols with no dependencies.
-	That will limit the usefulness but on the other hand avoid
-	the illegal configurations all over.
+Beginnings of a patch to avoid bitops. If you think this is the right way
+then I will complete it for all uses of cpu_has.
 
 
-I think that it would help if all of drivers/platform/x86/Kconfig treated
-ACPI_WMI the same way.  Currently 2 drivers select it and 4 drivers depend
-on it.
+---
+ arch/x86/include/asm/cpufeature.h |   15 +++++++++++++++
+ arch/x86/kernel/apic/apic.c       |    2 +-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
-Ah, that's what Sedat's patch does.  Good.
+Index: linux-2.6/arch/x86/include/asm/cpufeature.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/cpufeature.h	2010-12-08 09:39:31.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/cpufeature.h	2010-12-08 09:40:02.000000000 -0600
+@@ -221,6 +221,21 @@ extern const char * const x86_power_flag
+ 	  ? 1 :								\
+ 	 test_cpu_cap(c, bit))
 
-> I think we should *depends* on important subsystem (ACPI, INPUT, ...)
-> and select obscure things so
-> that the driver does not get lost if you don't enable the leds.
-> 
-> depends:
-> - ACPI
-> - INPUT
-> - EXPERIMENTAL
-> - RFKILL
-> - ACPI_WMI ?
-> - HWMON ?
-> - THERMAL ?
-> 
-> select:
-> - BACKLIGHT_CLASS_*
-> - LEDS_CLASS
-> - NEW_LEDS
-> - INPUT_*
-> 
++#define this_cpu_has(bit)							\
++	(__builtin_constant_p(bit) &&					\
++	 ( (((bit)>>5)==0 && (1UL<<((bit)&31) & REQUIRED_MASK0)) ||	\
++	   (((bit)>>5)==1 && (1UL<<((bit)&31) & REQUIRED_MASK1)) ||	\
++	   (((bit)>>5)==2 && (1UL<<((bit)&31) & REQUIRED_MASK2)) ||	\
++	   (((bit)>>5)==3 && (1UL<<((bit)&31) & REQUIRED_MASK3)) ||	\
++	   (((bit)>>5)==4 && (1UL<<((bit)&31) & REQUIRED_MASK4)) ||	\
++	   (((bit)>>5)==5 && (1UL<<((bit)&31) & REQUIRED_MASK5)) ||	\
++	   (((bit)>>5)==6 && (1UL<<((bit)&31) & REQUIRED_MASK6)) ||	\
++	   (((bit)>>5)==7 && (1UL<<((bit)&31) & REQUIRED_MASK7)) ||	\
++	   (((bit)>>5)==8 && (1UL<<((bit)&31) & REQUIRED_MASK8)) ||	\
++	   (((bit)>>5)==9 && (1UL<<((bit)&31) & REQUIRED_MASK9)) )	\
++	  ? 1 :								\
++	 (this_cpu_read(cpu_info.x86_capabilty) & (1 << bit)))
++
+ #define boot_cpu_has(bit)	cpu_has(&boot_cpu_data, bit)
 
+ #define set_cpu_cap(c, bit)	set_bit(bit, (unsigned long *)((c)->x86_capability))
+Index: linux-2.6/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/apic.c	2010-12-08 09:40:37.000000000 -0600
++++ linux-2.6/arch/x86/kernel/apic/apic.c	2010-12-08 09:40:49.000000000 -0600
+@@ -516,7 +516,7 @@ static void __cpuinit setup_APIC_timer(v
+ {
+ 	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
++	if (this_cpu_has(X86_FEATURE_ARAT)) {
+ 		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_C3STOP;
+ 		/* Make LAPIC timer preferrable over percpu HPET */
+ 		lapic_clockevent.rating = 150;
