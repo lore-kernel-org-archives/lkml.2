@@ -1,141 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0LHHlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:41:39 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48836 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab0LHHlh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:41:37 -0500
-MIME-Version: 1.0
-X-Originating-IP: [192.163.20.232]
-In-Reply-To: <201012070007.19239.arnd@arndb.de>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<201012061754.44592.arnd@arndb.de>
-	<AANLkTin_VOjz=bGCnANgp8G2SFFFOkT3TKRh50p5L1Gj@mail.gmail.com>
-	<201012070007.19239.arnd@arndb.de>
-Date: Wed, 8 Dec 2010 13:11:35 +0530
-Message-ID: <AANLkTimCKK9NAiXD4wsCkJt8bsy_exYEBWdb1+M6+NOE@mail.gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vitaly Wool <vitalywool@gmail.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753859Ab0LHHpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:45:49 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:52514 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab0LHHps convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Wed, 8 Dec 2010 02:45:48 -0500
+Message-Id: <4CFF45BB0200007800026A63@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 08 Dec 2010 07:45:47 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] use total_highpages when calculating lowmem-only
+	 allocation sizes (core)
+References: <4CFD20370200007800026269@vpn.id2.novell.com>
+ <20101207151054.32542836.akpm@linux-foundation.org>
+In-Reply-To: <20101207151054.32542836.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 4:37 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 06 December 2010 22:24:34 Vitaly Wool wrote:
->> On Mon, Dec 6, 2010 at 5:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>
->> >> But I was trying to make a different point here. On a basic level,
->> >> there's this cg2000 chip from STE that does BT, FM and GPS. There's
->> >> the chip from TI that does BT, FM and GPS, and there's the Broadcom
->> >> chip that does BT+FM. They all use HCI to access the other functions
->> >> of the combo chip and they do it in a really simiar way, with the
->> >> differences mostly in power management techniques. So I think it's
->> >> quite sensible to have some kind of framework that is suitable for
->> >> such devices.
->> >
->> > Yes, I agree 100% in principle. I could not find the code that
->> > Broadcom/TI FM and GPS stuff so far, can you point us to that?
->>
->> Sure, the TI "shared transport" code is mostly at drivers/misc/ti-st.
->>
->> Some Broadcom BCM43xx chips work in a similar way AFAIK but I'm not
->> sure about the mainline support for those.
->
-> Ah, it had not occured to me to look in drivers/misc. Looking at the
-> code over there, it becomes much clearer what your point is. Evidently
-> the ti-st driver implements a line discipline similar to, but conflicting
-> with hci_ldisc, and it has its own copy of the hci_ll code.
->
-> I guess this is exactly what we're trying to avoid having with the
-> cg2900 code ;-).
->
->> > The cg2900 solution for this was to use MFD (plus another layer
->> > in the posted version, but that will go away I assume). Using
->> > MFD is not the only possibility here, but I could not see anything
->> > wrong with it either. Do you think we can move them all over to
->> > use MFD infrastructure?
->>
->> I guess so but it's probably more of a detail than what I'm up to now :)
->
-> Agreed.
->
->> >> But generally speaking, isn't a line discipline/driver attached to a
->> >> tty? We can use dumb tty for e. g. SPI and still be able to use
->> >> hci_ll, right?
->> >
->> > I suggested that as well, but the point was made that this would
->> > add an unnecessary indirection for the SPI case, which is not
->> > really much like a serial port. It's certainly possible to do it
->> > like you say, but if we add a way to register the high-level
->> > protocols with an HCI-like multi-function device, we could
->> > also do it in a way that does not rely on tty-ldisc but keeps it
->> > as one of the options.
->>
->> I actually don't think it's such a big indirection, I prefer to think
->> of it more as of the abstraction layer. If not use this, are we going
->> to have direct SPI device drivers? I'm afraid we might end up with a
->> huge duplication of code in that case.
->
-> The question is how it should be modeled in a better way than today.
->
-> I believe we already agree it should be something like
->
->   bt   ti-radio    st-e-radio    ti-gps   st-e-gps  broadcom-radio ...
->   |         |          |            |          |          |         |
->   +---------+----------+---------+--+----------+----------+---------+
->                                  |
->                          common-hci-module
->                                  |
->                      +-----------+-----------+
->                      |        |       |      |
->                    serial    spi     i2c    ...
+>>> On 08.12.10 at 00:10, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon, 06 Dec 2010 16:41:11 +0000
+> "Jan Beulich" <JBeulich@novell.com> wrote:
+> 
+>> For those (large) table allocations that come only from lowmem, the
+>> total amount of memory shouldn't really matter.
+>> 
+>> For vfs_caches_init(), in the same spirit also replace the use of
+>> nr_free_pages() by nr_free_buffer_pages().
+>> 
+>> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+>> 
+>> ---
+>>  fs/dcache.c                       |    4 ++--
+>>  init/main.c                       |    5 +++--
+>>  2 files changed, 5 insertions(+), 4 deletions(-)
+>> 
+>> --- linux-2.6.37-rc4/fs/dcache.c
+>> +++ 2.6.37-rc4-use-totalhigh_pages/fs/dcache.c
+>> @@ -2474,10 +2474,10 @@ void __init vfs_caches_init(unsigned lon
+>>  {
+>>  	unsigned long reserve;
+>>  
+>> -	/* Base hash sizes on available memory, with a reserve equal to
+>> +	/* Base hash sizes on available lowmem memory, with a reserve equal to
+>>             150% of current kernel size */
+>>  
+>> -	reserve = min((mempages - nr_free_pages()) * 3/2, mempages - 1);
+>> +	reserve = min((mempages - nr_free_buffer_pages()) * 3/2, mempages - 1);
+>>  	mempages -= reserve;
+>>  
+>>  	names_cachep = kmem_cache_create("names_cache", PATH_MAX, 0,
+>> --- linux-2.6.37-rc4/init/main.c
+>> +++ 2.6.37-rc4-use-totalhigh_pages/init/main.c
+>> @@ -22,6 +22,7 @@
+>>  #include <linux/init.h>
+>>  #include <linux/initrd.h>
+>>  #include <linux/bootmem.h>
+>> +#include <linux/highmem.h>
+>>  #include <linux/acpi.h>
+>>  #include <linux/tty.h>
+>>  #include <linux/percpu.h>
+>> @@ -673,13 +674,13 @@ asmlinkage void __init start_kernel(void
+>>  #endif
+>>  	thread_info_cache_init();
+>>  	cred_init();
+>> -	fork_init(totalram_pages);
+>> +	fork_init(totalram_pages - totalhigh_pages);
+>>  	proc_caches_init();
+>>  	buffer_init();
+>>  	key_init();
+>>  	security_init();
+>>  	dbg_late_init();
+>> -	vfs_caches_init(totalram_pages);
+>> +	vfs_caches_init(totalram_pages - totalhigh_pages);
+>>  	signals_init();
+>>  	/* rootfs populating might need page-writeback */
+>>  	page_writeback_init();
+> 
+> Dunno.  The code is really quite confused, unobvious and not obviously
+> correct.
+> 
+> Mainly because it has callers who read some global state and then pass
+> that into callees who take that arg and then combine it with other
+> global state.  The code would be much more confidence-inspiring if it
+> were cleaned up, so that all callees just read the global state when
+> they need it.
 
-Yes, this sort of architecture would certainly help...
-However, I suppose the most common question as one of you stated above
-was how can the channel -ID and other factors such as offset-header
-packet format be generalized?
+Usually, when submitting bug fixes that include other cleanup, I'm
+asked to separate the two. Now you're asking the opposite...
+Irrespective of this I agree that passing global state at the single
+call site of a function is questionable, and may deserve cleaning up.
 
-As in over here, will the common-hci-module work fine, If say ti-radio
-says he is expecting packets starting from id-8 which is of length 10?
-and also work for st-e-radio which would say expecting data from id-6
-with 15 max bytes?
-Answering this I suppose would solve a lot of our problems....
+> And is there any significant difference between (totalram_pages -
+> totalhigh_pages) and nr_free_buffer_pages()?  They're both kind-of
+> evaluating the same thing?
 
-Marcel did previously suggest a bus-driver sort of a structure, where
-the transport are sort of adapter drivers, the data interpretation
-logic like splitting HCI-events, FM CH-8 packets all fall into the
-algos drivers and the actual Bluetooth driver or GPS or FM-V4L2
-drivers falling into the client/protocol drivers....
+totalram_pages - totalhigh_pages, as their names say, evaluates
+to the total number of lowmem pages, whereas
+nr_free_buffer_pages() gives us the number of available lowmem
+pages (you actually pointed me at this function when I submitted
+a first version of these changes).
 
+> And after this patch, vfs_caches_init() is evaluating
+> 
+> 	totalram_pages - totalhigh_pages - nr_free_buffer_pages()
 
+The lowmem equivalent of (totalram_pages - nr_free_pages()).
 
-> Any objections to this?
->
-> If you agree, I think we should discuss the alternatives for the common
-> module. I think you are saying we should make the common module a single
-> ldisc doing the multiplexing and have all transports register as ttys into
-> it, right?
->
-> What we discussed before was to split it into multiple modules, one for
-> the tty ldisc and one for the common code, and then have the spi/i2c/...
-> drivers feed into the common multiplexer without going through tty.
->
-> I don't currently see a significant advantage or disadvantage with either
-> approach.
->
->        Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> which will be pretty close to zero, won't it?  Maybe negative?  Does
+> the code actually work??
+
+Yes, it has been working for me for many months.
+
+Jan
+
