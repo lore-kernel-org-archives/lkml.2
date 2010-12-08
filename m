@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab0LHAlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:41:18 -0500
-Received: from kroah.org ([198.145.64.141]:54756 "EHLO coco.kroah.org"
+	id S1754935Ab0LHAeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:34:25 -0500
+Received: from kroah.org ([198.145.64.141]:54711 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754951Ab0LHAe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:26 -0500
+	id S1754816Ab0LHAeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:20 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.809620988@clark.site>
+Message-Id: <20101208000640.219231079@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:12 -0800
+Date: Tue, 07 Dec 2010 16:04:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [13/44] eCryptfs: Clear LOOKUP_OPEN flag when creating lower file
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [07/44] mm: fix return value of scan_lru_pages in memory unplug
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit 2e21b3f124eceb6ab5a07c8a061adce14ac94e14 upstream.
+commit f8f72ad5396987e05a42cf7eff826fb2a15ff148 upstream.
 
-eCryptfs was passing the LOOKUP_OPEN flag through to the lower file
-system, even though ecryptfs_create() doesn't support the flag. A valid
-filp for the lower filesystem could be returned in the nameidata if the
-lower file system's create() function supported LOOKUP_OPEN, possibly
-resulting in unencrypted writes to the lower file.
+scan_lru_pages returns pfn. So, it's type should be "unsigned long"
+not "int".
 
-However, this is only a potential problem in filesystems (FUSE, NFS,
-CIFS, CEPH, 9p) that eCryptfs isn't known to support today.
+Note: I guess this has been work until now because memory hotplug tester's
+      machine has not very big memory....
+      physical address < 32bit << PAGE_SHIFT.
 
-https://bugs.launchpad.net/ecryptfs/+bug/641703
-
-Reported-by: Kevin Buhr
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Reported-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ mm/memory_hotplug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -70,15 +70,19 @@ ecryptfs_create_underlying_file(struct i
- 	struct vfsmount *lower_mnt = ecryptfs_dentry_to_lower_mnt(dentry);
- 	struct dentry *dentry_save;
- 	struct vfsmount *vfsmount_save;
-+	unsigned int flags_save;
- 	int rc;
- 
- 	dentry_save = nd->path.dentry;
- 	vfsmount_save = nd->path.mnt;
-+	flags_save = nd->flags;
- 	nd->path.dentry = lower_dentry;
- 	nd->path.mnt = lower_mnt;
-+	nd->flags &= ~LOOKUP_OPEN;
- 	rc = vfs_create(lower_dir_inode, lower_dentry, mode, nd);
- 	nd->path.dentry = dentry_save;
- 	nd->path.mnt = vfsmount_save;
-+	nd->flags = flags_save;
- 	return rc;
- }
- 
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -612,7 +612,7 @@ static int test_pages_in_a_zone(unsigned
+  * Scanning pfn is much easier than scanning lru list.
+  * Scan pfn from start to end and Find LRU page.
+  */
+-int scan_lru_pages(unsigned long start, unsigned long end)
++unsigned long scan_lru_pages(unsigned long start, unsigned long end)
+ {
+ 	unsigned long pfn;
+ 	struct page *page;
 
 
