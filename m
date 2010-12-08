@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab0LHCEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:04:05 -0500
-Received: from kroah.org ([198.145.64.141]:48294 "EHLO coco.kroah.org"
+	id S1756926Ab0LHCEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:04:39 -0500
+Received: from kroah.org ([198.145.64.141]:48283 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756700Ab0LHA7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:01 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:22 2010
-Message-Id: <20101208005721.921517258@clark.site>
+	id S1755941Ab0LHA67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:58:59 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:21 2010
+Message-Id: <20101208005721.740047875@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:22 -0800
+Date: Tue, 07 Dec 2010 16:56:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: [005/289] block: check for proper length of iov entries in blk_rq_map_user_iov()
+Subject: [003/289] block: limit vec count in bio_kmalloc() and bio_alloc_map_data()
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jens Axboe <jaxboe@fusionio.com>
 
-commit 9284bcf4e335e5f18a8bc7b26461c33ab60d0689 upstream.
-
-Ensure that we pass down properly validated iov segments before
-calling into the mapping or copy functions.
+commit f3f63c1c28bc861a931fac283b5bc3585efb8967 upstream.
 
 Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-map.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/bio.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -205,6 +205,8 @@ int blk_rq_map_user_iov(struct request_q
- 			unaligned = 1;
- 			break;
- 		}
-+		if (!iov[i].iov_len)
-+			return -EINVAL;
- 	}
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -370,6 +370,9 @@ struct bio *bio_kmalloc(gfp_t gfp_mask,
+ {
+ 	struct bio *bio;
  
- 	if (unaligned || (q->dma_pad_mask & len) || map_data)
++	if (nr_iovecs > UIO_MAXIOV)
++		return NULL;
++
+ 	bio = kmalloc(sizeof(struct bio) + nr_iovecs * sizeof(struct bio_vec),
+ 		      gfp_mask);
+ 	if (unlikely(!bio))
+@@ -697,8 +700,12 @@ static void bio_free_map_data(struct bio
+ static struct bio_map_data *bio_alloc_map_data(int nr_segs, int iov_count,
+ 					       gfp_t gfp_mask)
+ {
+-	struct bio_map_data *bmd = kmalloc(sizeof(*bmd), gfp_mask);
++	struct bio_map_data *bmd;
++
++	if (iov_count > UIO_MAXIOV)
++		return NULL;
+ 
++	bmd = kmalloc(sizeof(*bmd), gfp_mask);
+ 	if (!bmd)
+ 		return NULL;
+ 
 
 
