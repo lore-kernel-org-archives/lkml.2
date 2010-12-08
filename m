@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab0LHBg4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:36:56 -0500
-Received: from kroah.org ([198.145.64.141]:48954 "EHLO coco.kroah.org"
+	id S1757265Ab0LHBBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:01:09 -0500
+Received: from kroah.org ([198.145.64.141]:48903 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757149Ab0LHBBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:12 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:33 2010
-Message-Id: <20101208005733.885725383@clark.site>
+	id S1757218Ab0LHBA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:58 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:32 2010
+Message-Id: <20101208005732.872178468@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:22 -0800
+Date: Tue, 07 Dec 2010 16:58:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [125/289] net: NETIF_F_HW_CSUM does not imply FCoE CRC offload
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [115/289] agp/intel: Also add B43.1 to list of supported devices
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 66c68bcc489fadd4f5e8839e966e3a366e50d1d5 upstream.
+commit 3dde04b0152634d42994b34b86bbf3c70fbc6b19 upstream.
 
-NETIF_F_HW_CSUM indicates the ability to update an TCP/IP-style 16-bit
-checksum with the checksum of an arbitrary part of the packet data,
-whereas the FCoE CRC is something entirely different.
+This was a missing piece from 41a5142 that dropped recognition of the
+AGP module for the second B43 variant.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/core/dev.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/agp/intel-agp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1648,10 +1648,10 @@ EXPORT_SYMBOL(netif_device_attach);
- 
- static bool can_checksum_protocol(unsigned long features, __be16 protocol)
- {
--	return ((features & NETIF_F_GEN_CSUM) ||
--		((features & NETIF_F_IP_CSUM) &&
-+	return ((features & NETIF_F_NO_CSUM) ||
-+		((features & NETIF_F_V4_CSUM) &&
- 		 protocol == htons(ETH_P_IP)) ||
--		((features & NETIF_F_IPV6_CSUM) &&
-+		((features & NETIF_F_V6_CSUM) &&
- 		 protocol == htons(ETH_P_IPV6)) ||
- 		((features & NETIF_F_FCOE_CRC) &&
- 		 protocol == htons(ETH_P_FCOE)));
+--- a/drivers/char/agp/intel-agp.c
++++ b/drivers/char/agp/intel-agp.c
+@@ -1049,6 +1049,7 @@ static struct pci_device_id agp_intel_pc
+ 	ID(PCI_DEVICE_ID_INTEL_G45_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_G41_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_B43_HB),
++	ID(PCI_DEVICE_ID_INTEL_B43_1_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB),
+ 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB),
 
 
