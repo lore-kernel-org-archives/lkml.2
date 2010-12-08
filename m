@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab0LHP5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:57:51 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:36405 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756014Ab0LHP5u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:57:50 -0500
-Date: Wed, 8 Dec 2010 10:57:46 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Greg KH <greg@kroah.com>, Luben Tuikov <ltuikov@yahoo.com>,
-        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-In-Reply-To: <1291823012.24312.52.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.44L0.1012081054160.1885-100000@iolanthe.rowland.org>
+	id S1756090Ab0LHP65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:58:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48748 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756046Ab0LHP64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:58:56 -0500
+Date: Wed, 8 Dec 2010 07:50:43 -0800
+From: Greg KH <gregkh@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
+Subject: Re: [043/127] TTY: ldisc, fix open flag handling
+Message-ID: <20101208155043.GA10121@suse.de>
+References: <20101208004428.612566004@clark.site>
+ <4CFF24AE.1030104@suse.cz>
+ <20101208150209.GA5144@suse.de>
+ <4CFF9FA6.70708@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CFF9FA6.70708@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Dec 2010, James Bottomley wrote:
-
-> On Wed, 2010-12-08 at 10:16 -0500, Alan Stern wrote:
-> > On Tue, 7 Dec 2010, James Bottomley wrote:
+On Wed, Dec 08, 2010 at 04:09:26PM +0100, Jiri Slaby wrote:
+> On 12/08/2010 04:02 PM, Greg KH wrote:
+> > On Wed, Dec 08, 2010 at 07:24:46AM +0100, Jiri Slaby wrote:
+> >> On 12/08/2010 01:43 AM, Greg KH wrote:
+> >>> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+> >>>
+> >>> ------------------
+> >>>
+> >>> From: Jiri Slaby <jslaby@suse.cz>
+> >>>
+> >>> commit 7f90cfc505d613f4faf096e0d84ffe99208057d9 upstream.
+> >>>
+> >>> When a concrete ldisc open fails in tty_ldisc_open, we forget to clear
+> >>> TTY_LDISC_OPEN. This causes a false warning on the next ldisc open:
+> >>> WARNING: at drivers/char/tty_ldisc.c:445 tty_ldisc_open+0x26/0x38()
+> >>> Hardware name: System Product Name
+> >>> Modules linked in: ...
+> >>> Pid: 5251, comm: a.out Tainted: G        W  2.6.32-5-686 #1
+> >>> Call Trace:
+> >>>  [<c1030321>] ? warn_slowpath_common+0x5e/0x8a
+> >>>  [<c1030357>] ? warn_slowpath_null+0xa/0xc
+> >>>  [<c119311c>] ? tty_ldisc_open+0x26/0x38
+> >>>  [<c11936c5>] ? tty_set_ldisc+0x218/0x304
+> >>> ...
+> >>>
+> >>> So clear the bit when failing...
+> >>>
+> >>> Introduced in c65c9bc3efa (tty: rewrite the ldisc locking) back in
+> >>> 2.6.31-rc1.
+> >>>
+> >>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> >>> Cc: Alan Cox <alan@linux.intel.com>
+> >>> Reported-by: Sergey Lapin <slapin@ossfans.org>
+> >>> Tested-by: Sergey Lapin <slapin@ossfans.org>
+> >>> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> >>>
+> >>> ---
+> >>>  drivers/char/tty_ldisc.c |    9 +++++++--
+> >>>  1 file changed, 7 insertions(+), 2 deletions(-)
+> >>>
+> >>> --- a/drivers/char/tty_ldisc.c
+> >>> +++ b/drivers/char/tty_ldisc.c
+> >>> @@ -444,9 +444,14 @@ static void tty_set_termios_ldisc(struct
+> >>>  
+> >>>  static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
+> >>>  {
+> >>> +	int ret;
+> >>> +
+> >>>  	WARN_ON(test_and_set_bit(TTY_LDISC_OPEN, &tty->flags));
+> >>> -	if (ld->ops->open)
+> >>> -		return ld->ops->open(tty);
+> >>> +	if (ld->ops->open) {
+> >>> +		ret = ld->ops->open(tty);
+> >>> +		if (ret)
+> >>> +			clear_bit(TTY_LDISC_OPEN, &tty->flags);
+> >>> +	}
+> >>>  	return 0;
+> >>
+> >> Whoops, this should write return ret; (with int ret = 0;)
+> >>
+> >> Do you want me to send the patch against rebased on .32?
 > > 
-> > > Well, not other than I've already said:  I think it looks OK, so I
-> > > marked it for my merge window queue.  I'd still rather like USB people
-> > > to confirm that the original reason why this was done (to prevent device
-> > > crashes on the mode sense) is no longer an issue
-> > 
-> > The original reason for adding the skip_ms_page_8 flag still applies.  
-> > To assume it is no longer an issue would not be safe -- there's no 
-> > reason to believe that the buggy devices it was meant for have all been 
-> > retired.
-> > 
-> > >  ... but it's only USB
-> > > stuff, so suppose I'm OK with finding out in the field.
-> > 
-> > With USB there's often no other choice.
+> > No, send it based on Linus's tree as it's wrong there, right?  Then it
+> > will move through to the stable kernels.
 > 
-> So the translation is that there's a possibility it will crash USB
-> devices but the only way to find out is to release it and see.
+> Nope, in 2.6.36 and newer it looks differently, only the .32 backport is
+> broken.
 
-In the strictest sense, there's always a possibility that any change
-will crash _some_ device somewhere.  In this case I believe the
-probability is very low.  Luben's patch does not change the commands
-sent to a USB device; it only changes the kernel's interpretation of
-the data sent back.  Unless things are terribly badly broken, this 
-won't hurt.
+Ick, ok, sorry about that.  Yes, can you just send me a tiny patch that
+I can merge with the .32 patch to resolve this?
 
-> My problem is that it only takes one bug report from one failing device
-> (which I'm sure some kind soul will dig out of the attic or wherever
-> they threw it) for this to be a regression and then I get to revert the
-> patch ... unless we have a working backup plan?
-> 
-> I think it's easy to put in and easy to revert ... we'll pick up a bit
-> of flack if the failing device doesn't appear for some time, but I'm OK
-> with risking that.
+thanks,
 
-IMO the risk is extremely small.
-
-Alan Stern
-
+greg k-h
