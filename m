@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab0LHOHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 09:07:50 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:43796 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752655Ab0LHOHs (ORCPT
+	id S1755188Ab0LHONi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 09:13:38 -0500
+Received: from oversea.ee-post.com ([205.209.161.131]:49467 "ehlo
+	oversea.ee-post.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab0LHONh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 09:07:48 -0500
-Date: Wed, 8 Dec 2010 15:03:13 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Igor Plyatov <plyatov@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@maxim.org.za, linux@arm.linux.org.uk, costa.antonior@gmail.com
-Subject: Re: [PATCH v2] mach-at91: Support for gms board added
-Message-ID: <20101208140313.GD3429@game.jcrosoft.org>
-References: <1291732927-9429-1-git-send-email-plyatov@gmail.com>
- <4CFE90CA.9050004@bluewatersys.com>
- <4CFF47A0.8010208@atmel.com>
+	Wed, 8 Dec 2010 09:13:37 -0500
+X-Greylist: delayed 1101 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Dec 2010 09:13:37 EST
+X-Penetrate-Bounce: Yes
+X-Lasthop: 116.246.17.251
+Message-ID: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
+From: "baoyb" <baoyb@avit.org.cn>
+To: <linux-kernel@vger.kernel.org>
+Cc: gregkh@suse.de, <alan@linux.intel.com>
+Subject: Kernel Oops at tty_buffer_request_room when using pppd program (2.6.37-rc4)
+Date: Wed, 8 Dec 2010 21:55:09 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CFF47A0.8010208@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 10460173085276351340
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain;
+	format=flowed;
+	charset="gb2312";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:53 Wed 08 Dec     , Nicolas Ferre wrote:
-> Hi Igor,
-> 
-> Le 07/12/2010 20:53, Ryan Mallon :
-> > On 12/08/2010 03:42 AM, Igor Plyatov wrote:
-> >> * The gms is a board from GeoSIG Ltd company.
-> >>   It is based on the Stamp9G20 module from Taskit company.
-> >> * This is a second version of the patch with adjustments according
-> >>   to comments from Ryan Mallon.
-> >> * This patch made for Linux 2.6.37-rc5.
-> 
-> First thank you for submitting this board support.
-> 
-> >> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
-> >> ---
-> 
-> [..]
-> 
-> > Couple more comments below.
-> > Looking at this a bit more closely, the Stamp9G20 is a system on module
-> > (SoM) board. The MACH_STAMP9G20 option supports the Stamp9G20 on
-> > taskits's evaluation board and the MACH_PCONTROL_G20 option supports it
-> > on the PControl carrier board. There is a reasonable amount of code
-> > replication in each of the board files for the UARTs, NAND, MMC, etc.
-> > 
-> > Would it be better to have MACH_STAMPG20/board-stamp-9g20.c contain the
-> > core support for the Stamp9G20 module and then each of the carrier board
-> > files contain only the setup/devices found on the carrier board?
-> 
-> I have exactly the same feeling as Ryan. We should make sure 
-> to factorize as much code as possible for maintenance reasons.
-> 
-> If you need to distinguish between board features, you can 
-> pass information in system_rev as implemented in this 
-> board merging commit:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=a6e016f19d393fbe4e040bee8155b03b840fa689
-I agree with nico not need to have a new board for just few difference
+Hi All:
 
-and as we start with the rm9200 we will reduce the number of defconfig first per soc and then for the all sam9
+We are using a USB 3G card(HUAWEI e180) and wvdial+pppd(version 2.4.5) 
+program. Sometimes kernel will crash when pppd disconnect the link. Our cpu 
+platform is AMCC ppc405EX and kernel version is 2.6.37-rc4.
+The following is log info when oops happened.
 
-Best Regards,
-J.
+Unable to handle kernel paging request for data at address 0x000000d8
+Faulting instruction address: 0xc0175a5c
+Oops: Kernel access of bad area, sig: 11 [#1]
+PowerPC 40x Platform
+last sysfs file: /sys/kernel/uevent_seqnum
+Modules linked in:
+NIP: c0175a5c LR: c0175d9c CTR: c0211b6c
+REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc4)
+MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
+DEAR: 000000d8, ESR: 00000000
+TASK = c71ec000[1500] 'wvdial' THREAD: c284e000
+GPR00: 00021030 c77f7e00 c71ec000 00000000 0000000e 00000000 0000000e 
+c0410580
+GPR08: c683db00 00000000 00000001 c03c51f8 88482028 10073ef4 ffffffb9 
+ffffff94
+GPR16: 00000000 fde037e0 00200200 00100100 00000001 ffffff8d c712ca0c 
+00000000
+GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 
+0000000e
+NIP [c0175a5c] tty_buffer_request_room+0x2c/0x194
+LR [c0175d9c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+Call Trace:
+[c77f7e00] [00000003] 0x3 (unreliable)
+[c77f7e30] [c0175d9c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+[c77f7e60] [c0211cd0] usb_wwan_indat_callback+0x164/0x170
+[c77f7e80] [c01e541c] usb_hcd_giveback_urb+0x5c/0xdc
+[c77f7e90] [c01f65f0] ehci_urb_done+0xe4/0xf8
+[c77f7eb0] [c01f66b8] qh_completions+0xb4/0x4d0
+[c77f7f10] [c01f7788] ehci_work+0xdc/0x990
+[c77f7f60] [c01fb014] ehci_irq+0x1c0/0x224
+[c77f7f90] [c01e5984] usb_hcd_irq+0x68/0xa8
+[c77f7fa0] [c0052848] handle_IRQ_event+0x54/0x12c
+[c77f7fc0] [c00553ac] handle_level_irq+0xa0/0x13c
+[c77f7fd0] [c0017ca4] uic_irq_cascade+0x100/0x128
+[c77f7ff0] [c000cdb4] call_handle_irq+0x18/0x28
+[c284ff10] [c0005230] do_IRQ+0xa4/0x140
+[c284ff40] [c000da98] ret_from_except+0x0/0x18
+Instruction dump:
+4e800020 9421ffd0 7c0802a6 7d800026 bf410018 90010034 91810014 7c7e1b78
+7c9f2378 7f8000a6 5780045e 7c000124 <83a300d8> 2e1d0000 4192014c 813d0010
+Kernel panic - not syncing: Fatal exception in interrupt
+Call Trace:
+[c77f7c80] [c000700c] show_stack+0x44/0x16c (unreliable)
+[c77f7cc0] [c00211f4] panic+0xa4/0x1dc
+[c77f7d10] [c000abd8] die+0x190/0x19c
+[c77f7d30] [c001091c] bad_page_fault+0xc0/0x108
+[c77f7d40] [c000d904] handle_page_fault+0x7c/0x80
+[c77f7e00] [00000003] 0x3
+[c77f7e30] [c0175d9c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+[c77f7e60] [c0211cd0] usb_wwan_indat_callback+0x164/0x170
+[c77f7e80] [c01e541c] usb_hcd_giveback_urb+0x5c/0xdc
+[c77f7e90] [c01f65f0] ehci_urb_done+0xe4/0xf8
+[c77f7eb0] [c01f66b8] qh_completions+0xb4/0x4d0
+[c77f7f10] [c01f7788] ehci_work+0xdc/0x990
+[c77f7f60] [c01fb014] ehci_irq+0x1c0/0x224
+[c77f7f90] [c01e5984] usb_hcd_irq+0x68/0xa8
+[c77f7fa0] [c0052848] handle_IRQ_event+0x54/0x12c
+[c77f7fc0] [c00553ac] handle_level_irq+0xa0/0x13c
+[c77f7fd0] [c0017ca4] uic_irq_cascade+0x100/0x128
+[c77f7ff0] [c000cdb4] call_handle_irq+0x18/0x28
+[c284ff10] [c0005230] do_IRQ+0xa4/0x140
+[c284ff40] [c000da98] ret_from_except+0x0/0x18
+Rebooting in 1 seconds..
+
+
+Any suggestions will be very appreciated.
+
+Regards,
+
+YunBing
+
+ Shanghai Accurate Video Info-Tech Co.,Ltd.
+
+Room 302-306, No.1 Building, No.33 Le Shan Road, Shanghai, 200030
+
+TEL: 86-21-51556408-17(Ext.)
+
+FAX: 86-21-51556407
+
+Company Homepage: www.avit.org.cn 
+
