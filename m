@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab0LHTXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 14:23:41 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:37751 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756330Ab0LHTXk (ORCPT
+	id S1756419Ab0LHT0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 14:26:22 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:59806 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755553Ab0LHT0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 14:23:40 -0500
-Message-ID: <4CFFDB35.2020506@euromail.se>
-Date: Wed, 08 Dec 2010 20:23:33 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Add an envelope tool type
-References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <4CFFCD10.5030202@euromail.se> <4CFFD0BF.2020601@canonical.com> <4CFFD3FE.1090103@euromail.se> <4CFFD801.8060704@canonical.com>
-In-Reply-To: <4CFFD801.8060704@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Dec 2010 14:26:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HFGPCx5qGRVlHkUdV0YrnxS3RUvDGRkUcUOVHww7Jq7Ynrn/c1sQ1MKzHD+c2PWvV3
+         QaXlBt0G00YybC0aHp75Owb4enyw/iIudVHjBmG8kGyY9FgSDogcsxUtUw0av589Ju8H
+         WdvRzcGqQPRBlDlm7IB4zhB7N1YRRzTCGMCL8=
+Subject: Re: [PATCH v2] mach-at91: Support for gms board added
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@maxim.org.za, nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
+        costa.antonior@gmail.com, plagnioj@jcrosoft.com
+In-Reply-To: <4CFE90CA.9050004@bluewatersys.com>
+References: <1291732927-9429-1-git-send-email-plyatov@gmail.com>
+	 <4CFE90CA.9050004@bluewatersys.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Dec 2010 22:26:13 +0300
+Message-ID: <1291836373.15873.55.camel@homepc>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQPbz-0001yZ-6u.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PQPbz-0001yZ-6u 54d4e6c1c5f9ef3e96239d14702e9bb8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> I suggest merely renaming this to MT_TOOL_RECT to avoid confusion.
+Dear Ryan,
 
+Couple more answers below.
+
+> > +++ b/arch/arm/configs/stamp9g20gms_defconfig
+> > @@ -0,0 +1,147 @@
+> > +CONFIG_EXPERIMENTAL=y
+> > +CONFIG_SYSVIPC=y
+> > +CONFIG_LOG_BUF_SHIFT=14
+> > +CONFIG_BLK_DEV_INITRD=y
+> > +CONFIG_SLAB=y
+> > +CONFIG_MODULES=y
+> > +CONFIG_MODULE_UNLOAD=y
+> > +CONFIG_ARCH_AT91=y
+> > +CONFIG_ARCH_AT91SAM9G20=y
+> > +CONFIG_MACH_STAMP9G20GMS=y
 > 
-> This is really the main point I wanted to make, even though it was
-> hidden among other things :). Do you have thoughts here?
+> This is better and now looks (at a glance) almost identical to
+> stamp9g20_defconfig. Can you just add CONFIG_MACH_STAMP9G20GMS to
+> stamp9g20_defconfig and support both boards?
 
+It is not possible to use the same defconfig for gms and other carrier
+boards, because 69 different CONFIG_xxx options required for our machine
+(compared with Portux G20) and our options excessive for other devices
+based on the Stamp9G20.
 
-I think envelope works fine - it is easier to associate with a single point that
-the notion of a rectangle.
-
->>> 2. We could provide for multiple simultaneous rects by using the value
->>> of the MT_TOOL_RECT property. The first rect would have value 0, the
->>> second would have value 1, etc. I don't know if this will ever be used
->>> since most devices will have real MT soon enough, but it wouldn't hurt
->>> to define this.
->>
->> I do think this is an unnecessary complication.
+> > diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> > index c015b68..6bc9372 100644
+> > --- a/arch/arm/mach-at91/Kconfig
+> > +++ b/arch/arm/mach-at91/Kconfig
+> > @@ -375,6 +375,12 @@ config MACH_STAMP9G20
+> >  	  evaluation board.
+> >  	  <http://www.taskit.de/en/>
+> >  
+> > +config MACH_STAMP9G20GMS
+> > +	bool "GeoSIG Stamp9G20 GMS"
+> > +	help
+> > +	  Select this if you are using taskit's Stamp9G20 with GeoSIG's GMS.
+> > +	  <http://www.geosig.com>
+> > +
 > 
-> It's not really any complication. I think we should define what the
-> valid values are for MT_TOOL_{RECT,ENVELOPE} even if only one envelope
-> is supported. Thus, I don't see why we shouldn't allow for multiple
-> values for multiple rects.
-
+> Looking at this a bit more closely, the Stamp9G20 is a system on module
+> (SoM) board. The MACH_STAMP9G20 option supports the Stamp9G20 on
+> taskits's evaluation board and the MACH_PCONTROL_G20 option supports it
+> on the PControl carrier board. There is a reasonable amount of code
+> replication in each of the board files for the UARTs, NAND, MMC, etc.
 > 
-> Hardware manufacturers always seem to surprise us with what they come up
-> with too :).
+> Would it be better to have MACH_STAMPG20/board-stamp-9g20.c contain the
+> core support for the Stamp9G20 module and then each of the carrier board
+> files contain only the setup/devices found on the carrier board?
+> 
+> I don't know what the correct approach for SoMs. We are also interested
+> in this as we develop SoMs with carrier boards. Cc'ed Russell King for
+> his opinion.
+
+You are right about the Stamp9G20 SoM.
+The Stamp9G20 SoM can not be used without a carrier board from physical
+point of view. It need a power supply and console interface at least.
+
+I will send a new PATCH v3, where code for the Stamp9G20 SoM separated
+into the board-stamp9g20.c, and following files will correspond to
+carrier boards for Stamp9G20:
+* carrier-board-gms.c - "GMS", Seismograph from GeoSIG.
+* carrier-board-panelcardevb.c - "Panel Card EVB", Taskit's eval. board.
+* carrier-board-portuxg20.c - "Portux G20", derivative from Stamp9G20.
+* carrier-board-pcontrol_g20.c - "Pcontrol G20", PORTNER-Elektronik.
+
+All stuff specific to carrier board will be encapsulated into functions:
+* carrier_board_map_io()
+* carrier_board_init()
+
+I does not see any reasons to invent new machine for each new carrier
+board. Better to have a configuration option for carrier boards.
+
+There is only one choice for Stamp9G20 carrier board from:
+* CONFIG_CARRIERBOARD_GMS
+* CONFIG_CARRIERBOARD_PANELCARDEVB
+* CONFIG_CARRIERBOARD_PCONTROL_G20
+* CONFIG_CARRIERBOARD_PORTUXG20
+
+> > +static int pcf8574x_0x20_teardown(struct i2c_client *client, int gpio,
+> > +					unsigned ngpio, void *context)
+> > +{
+> > +	gpio_free(gpio + 4);
+> 
+> gpio_free(gpio + PCF_GPIO_ETH_DETECT)?
+
+Corrected now. 
+
+> > +#if	defined(CONFIG_PATA_AT91) || defined(CONFIG_PATA_AT91_MODULE)
+> > +static struct at91_cf_data __initdata stamp9g20gms_cf1_data = {
+> > +	.irq_pin	= AT91_PIN_PA27,
+> > +	.det_pin	= AT91_PIN_PB30,
+> > +	.rst_pin	= AT91_PIN_PB31,
+> > +	.chipselect	= 5,
+> > +	.flags		= AT91_CF_TRUE_IDE,
+> > +};
+> > +#endif /* CONFIG_PATA_AT91 */
+> 
+> I still think you can do away with some of these ifdef guards.
+> Registering the device is not a problem, and you are only saving a
+> handful of bytes by having this ifdef. I think the code is more
+> readable/maintainable without all the ifdefs.
+
+Corrected now.
+
+> > +/* Power Off by RTC */
+> > +static void stamp9g20gms_power_off(void)
+> > +{
+> > +	pr_notice("Power supply will be switched off automatically now or ");
+> > +	pr_notice("after 60 seconds without ArmDAS.\n");
+> 
+> No. It should all be one call to pr_notice on one single line so that
+> the full message can easily be grepped. Lines over 80 columns are
+> allowed for printk functions and checkpatch will not warn about this.
+
+Corrected now.
+
+Best regards!
+--
+Igor Plyatov
 
 
-Yes, which is exciting per se. However, hardware seems to be moving towards more
-individual (and tracked) contacts, and more granularity per contact. The idea of
-supporting complex, non-connected boundaries (implication of your proposal),
-which by construction contains less information that the individual contacts,
-seems to be going against that trend. Since there are no current need for it,
-and the indications point in a different direction, I suggest we put that in the
-bag of possible "I told you so", and leave it open for now. ;-)
 
-Cheers,
-Henrik
