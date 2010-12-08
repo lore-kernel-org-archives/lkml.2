@@ -1,422 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab0LHE32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:29:28 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53039 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab0LHE2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:28:32 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65899434"
-X-IronPort-AV: E=Sophos;i="4.59,313,1288594800"; 
-   d="scan'208";a="34584816"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v2 2/6] msm: Secure Channel Manager (SCM) support
-Date: Tue,  7 Dec 2010 20:28:17 -0800
-Message-Id: <1291782501-3909-3-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
-References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
+	id S1753207Ab0LHEaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:30:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39493 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344Ab0LHEaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 23:30:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,314,1288594800"; 
+   d="scan'208";a="581621023"
+Date: Wed, 8 Dec 2010 12:30:04 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] writeback: enabling-gate for light dirtied bdi
+Message-ID: <20101208043004.GB15322@localhost>
+References: <20101205064430.GA15027@localhost>
+ <20101207165111.d79735c1.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101207165111.d79735c1.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+I noticed that my NFSROOT test system goes slow responding when there
+is heavy dd to a local disk. Traces show that the NFSROOT's bdi limit
+is near 0 and many tasks in the system are repeatedly stuck in
+balance_dirty_pages().
 
-SCM is the protocol used to communicate between the secure and
-non-secure code executing on the applications processor. The
-non-secure side uses a physically contiguous buffer to pass
-information to the secure side; where the buffer conforms to a
-format that is agreed upon by both sides. The use of a buffer
-allows multiple pending requests to be in flight on the secure
-side. It also benefits use cases where the command or response
-buffer contains large chunks of data.
+There are two generic problems:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+- light dirtiers at one device (more often than not the rootfs) get
+  heavily impacted by heavy dirtiers on another independent device
+
+- the light dirtied device does heavy throttling because bdi limit=0,
+  and the heavy throttling may in turn withhold its bdi limit in 0 as
+  it cannot dirty fast enough to grow up the bdi's proportional weight.
+
+Fix it by introducing some "low pass" gate, which is a small (<=32MB)
+value reserved by others and can be safely "stole" from the current
+global dirty margin.  It does not need to be big to help the bdi gain
+its initial weight.
+
+Acked-by: Rik van Riel <riel@redhat.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- arch/arm/mach-msm/Kconfig  |    4 +
- arch/arm/mach-msm/Makefile |    1 +
- arch/arm/mach-msm/scm.c    |  280 ++++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/scm.h    |   41 +++++++
- 4 files changed, 326 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/scm.c
- create mode 100644 arch/arm/mach-msm/scm.h
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 31e5fd6..ab5338f 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -44,6 +44,7 @@ config ARCH_MSM8X60
- 	select CPU_V7
- 	select MSM_V2_TLMM
- 	select MSM_GPIOMUX
-+	select MSM_SCM if SMP
+Andrew, this v2 uses a simple 32MB global limit, and also won't
+unnecessarily violate the min_ratio user parameter.
+
+ include/linux/writeback.h |    3 ++-
+ mm/backing-dev.c          |    2 +-
+ mm/page-writeback.c       |   29 ++++++++++++++++++++++++++---
+ 3 files changed, 29 insertions(+), 5 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-12-08 12:06:00.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-08 12:26:16.000000000 +0800
+@@ -443,13 +443,26 @@ void global_dirty_limits(unsigned long *
+  *
+  * The bdi's share of dirty limit will be adapting to its throughput and
+  * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
+- */
+-unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
++ *
++ * There is a chicken and egg problem: when bdi A (eg. /pub) is heavy dirtied
++ * and bdi B (eg. /) is light dirtied hence has 0 dirty limit, tasks writing to
++ * B always get heavily throttled and bdi B's dirty limit might never be able
++ * to grow up from 0. So we do tricks to reserve some global margin and honour
++ * it to the bdi's that run low.
++ */
++unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
++			      unsigned long dirty,
++			      unsigned long dirty_pages)
+ {
+ 	u64 bdi_dirty;
+ 	long numerator, denominator;
  
- endchoice
- 
-@@ -164,4 +165,7 @@ config MSM_GPIOMUX
- 
- config MSM_V2_TLMM
- 	bool
-+
-+config MSM_SCM
-+	bool
- endif
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index b5a7b07..eed503b 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -18,6 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
- obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
-+obj-$(CONFIG_MSM_SCM) += scm.o
- 
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
-new file mode 100644
-index 0000000..85ed2cc
---- /dev/null
-+++ b/arch/arm/mach-msm/scm.c
-@@ -0,0 +1,280 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/dma-mapping.h>
-+
-+#include <asm/cacheflush.h>
-+
-+#include "scm.h"
-+
-+#define SCM_ENOMEM		-5
-+#define SCM_EOPNOTSUPP		-4
-+#define SCM_EINVAL_ADDR		-3
-+#define SCM_EINVAL_ARG		-2
-+#define SCM_ERROR		-1
-+#define SCM_INTERRUPTED		1
-+
-+static DEFINE_MUTEX(scm_lock);
-+
-+/**
-+ * struct scm_command - one SCM command buffer
-+ * @len: total available memory for command and response
-+ * @buf_offset: start of command buffer
-+ * @resp_hdr_offset: start of response buffer
-+ * @id: command to be executed
-+ *
-+ * An SCM command is layed out in memory as follows:
-+ *
-+ *	------------------- <--- struct scm_command
-+ *	| command header  |
-+ *	------------------- <--- scm_get_command_buffer()
-+ *	| command buffer  |
-+ *	------------------- <--- struct scm_response and
-+ *	| response header |      scm_command_to_response()
-+ *	------------------- <--- scm_get_response_buffer()
-+ *	| response buffer |
-+ *	-------------------
-+ *
-+ * There can be arbitrary padding between the headers and buffers so
-+ * you should always use the appropriate scm_get_*_buffer() routines
-+ * to access the buffers in a safe manner.
-+ */
-+struct scm_command {
-+	u32	len;
-+	u32	buf_offset;
-+	u32	resp_hdr_offset;
-+	u32	id;
-+};
-+
-+/**
-+ * struct scm_response - one SCM response buffer
-+ * @len: total available memory for response
-+ * @buf_offset: start of response data relative to start of scm_response
-+ * @is_complete: indicates if the command has finished processing
-+ */
-+struct scm_response {
-+	u32	len;
-+	u32	buf_offset;
-+	u32	is_complete;
-+};
-+
-+/**
-+ * alloc_scm_command() - Allocate an SCM command
-+ * @cmd_size: size of the command buffer
-+ * @resp_size: size of the response buffer
-+ * @handle: dma handle
-+ *
-+ * Allocate an SCM command, including enough room for the command
-+ * and response headers as well as the command and response buffers.
-+ *
-+ * Returns a valid &scm_command on success or %NULL if the allocation fails.
-+ */
-+static struct scm_command *alloc_scm_command(size_t cmd_size, size_t resp_size,
-+		dma_addr_t *handle)
-+{
-+	struct scm_command *cmd;
-+	size_t len = sizeof(*cmd) + sizeof(struct scm_response) + cmd_size +
-+		resp_size;
-+
-+	cmd = dma_alloc_coherent(NULL, len, handle, GFP_KERNEL);
-+	if (cmd) {
-+		cmd->len = len;
-+		cmd->buf_offset = sizeof(*cmd);
-+		cmd->resp_hdr_offset = cmd->buf_offset + cmd_size;
-+	}
-+	return cmd;
-+}
-+
-+/**
-+ * free_scm_command() - Free an SCM command
-+ * @cmd: command to free
-+ * @handle: dma handle
-+ *
-+ * Free an SCM command.
-+ */
-+static inline void free_scm_command(struct scm_command *cmd, dma_addr_t handle)
-+{
-+	dma_free_coherent(NULL, cmd->len, cmd, handle);
-+}
-+
-+/**
-+ * scm_command_to_response() - Get a pointer to a scm_response
-+ * @cmd: command
-+ *
-+ * Returns a pointer to a response for a command.
-+ */
-+static inline struct scm_response *scm_command_to_response(
-+		const struct scm_command *cmd)
-+{
-+	return (void *)cmd + cmd->resp_hdr_offset;
-+}
-+
-+/**
-+ * scm_get_command_buffer() - Get a pointer to a command buffer
-+ * @cmd: command
-+ *
-+ * Returns a pointer to the command buffer of a command.
-+ */
-+static inline void *scm_get_command_buffer(const struct scm_command *cmd)
-+{
-+	return (void *)cmd + cmd->buf_offset;
-+}
-+
-+/**
-+ * scm_get_response_buffer() - Get a pointer to a response buffer
-+ * @rsp: response
-+ *
-+ * Returns a pointer to a response buffer of a response.
-+ */
-+static inline void *scm_get_response_buffer(const struct scm_response *rsp)
-+{
-+	return (void *)rsp + rsp->buf_offset;
-+}
-+
-+static int scm_remap_error(int err)
-+{
-+	switch (err) {
-+	case SCM_ERROR:
-+		return -EIO;
-+	case SCM_EINVAL_ADDR:
-+	case SCM_EINVAL_ARG:
-+		return -EINVAL;
-+	case SCM_EOPNOTSUPP:
-+		return -EOPNOTSUPP;
-+	case SCM_ENOMEM:
-+		return -ENOMEM;
-+	}
-+	return -EINVAL;
-+}
-+
-+static u32 smc(dma_addr_t cmd_addr)
-+{
-+	int context_id;
-+	register u32 r0 asm("r0") = 1;
-+	register u32 r1 asm("r1") = (u32)&context_id;
-+	register u32 r2 asm("r2") = (u32)cmd_addr;
-+	asm(
-+		__asmeq("%0", "r0")
-+		__asmeq("%1", "r0")
-+		__asmeq("%2", "r1")
-+		__asmeq("%3", "r2")
-+		"smc	#0	@ switch to secure world\n"
-+		: "=r" (r0)
-+		: "r" (r0), "r" (r1), "r" (r2)
-+		: "r3");
-+	return r0;
-+}
-+
-+static int __scm_call(const dma_addr_t cmd)
-+{
-+	int ret;
+ 	/*
++	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
++	 */
++	dirty -= min(dirty / 128, 32768ULL >> (PAGE_SHIFT-10));
 +
 +	/*
-+	 * Flush the entire cache here so callers don't have to remember
-+	 * to flush the cache when passing physical addresses to the secure
-+	 * side in the buffer.
+ 	 * Calculate this BDI's share of the dirty ratio.
+ 	 */
+ 	bdi_writeout_fraction(bdi, &numerator, &denominator);
+@@ -459,6 +472,15 @@ unsigned long bdi_dirty_limit(struct bac
+ 	do_div(bdi_dirty, denominator);
+ 
+ 	bdi_dirty += (dirty * bdi->min_ratio) / 100;
++
++	/*
++	 * If we can dirty N more pages globally, honour N/2 to the bdi that
++	 * runs low, so as to help it ramp up.
 +	 */
-+	flush_cache_all();
-+	do {
-+		ret = smc(cmd);
-+		if (ret < 0) {
-+			ret = scm_remap_error(ret);
-+			break;
-+		}
-+	} while (ret == SCM_INTERRUPTED);
++	if (unlikely(bdi_dirty < (dirty - dirty_pages) / 2 &&
++		     dirty > dirty_pages))
++		bdi_dirty = (dirty - dirty_pages) / 2;
 +
-+	return ret;
-+}
-+
-+/**
-+ * scm_call() - Send an SCM command
-+ * @svc_id: service identifier
-+ * @cmd_id: command identifier
-+ * @cmd_buf: command buffer
-+ * @cmd_len: length of the command buffer
-+ * @resp_buf: response buffer
-+ * @resp_len: length of the response buffer
-+ *
-+ * Sends a command to the SCM and waits for the command to finish processing.
-+ */
-+int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
-+		void *resp_buf, size_t resp_len)
-+{
-+	int ret;
-+	struct scm_command *cmd;
-+	struct scm_response *rsp;
-+	dma_addr_t handle;
-+
-+	cmd = alloc_scm_command(cmd_len, resp_len, &handle);
-+	if (!cmd)
-+		return -ENOMEM;
-+
-+	cmd->id = (svc_id << 10) | cmd_id;
-+	if (cmd_buf)
-+		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
-+	wmb();
-+
-+	mutex_lock(&scm_lock);
-+	ret = __scm_call(handle);
-+	mutex_unlock(&scm_lock);
-+	if (ret)
-+		goto out;
-+
-+	rsp = scm_command_to_response(cmd);
-+	do {
-+		rmb();
-+	} while (!rsp->is_complete);
-+
-+	if (resp_buf)
-+		memcpy(resp_buf, scm_get_response_buffer(rsp), resp_len);
-+out:
-+	free_scm_command(cmd, handle);
-+	return ret;
-+}
-+EXPORT_SYMBOL(scm_call);
-+
-+u32 scm_get_version(void)
-+{
-+	int context_id;
-+	static u32 version = -1;
-+	register u32 r0 asm("r0") = 0x1 << 8;
-+	register u32 r1 asm("r1") = (u32)&context_id;
-+
-+	if (version != -1)
-+		return version;
-+
-+	mutex_lock(&scm_lock);
-+	asm(
-+		__asmeq("%0", "r1")
-+		__asmeq("%1", "r0")
-+		__asmeq("%2", "r1")
-+		"smc	#0	@ switch to secure world\n"
-+		: "=r" (r1)
-+		: "r" (r0), "r" (r1)
-+		: "r2", "r3");
-+	version = r1;
-+	mutex_unlock(&scm_lock);
-+
-+	return version;
-+}
-+EXPORT_SYMBOL(scm_get_version);
-diff --git a/arch/arm/mach-msm/scm.h b/arch/arm/mach-msm/scm.h
-new file mode 100644
-index 0000000..261786b
---- /dev/null
-+++ b/arch/arm/mach-msm/scm.h
-@@ -0,0 +1,41 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are
-+ * met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above
-+ *       copyright notice, this list of conditions and the following
-+ *       disclaimer in the documentation and/or other materials provided
-+ *       with the distribution.
-+ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
-+ *       contributors may be used to endorse or promote products derived
-+ *       from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
-+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
-+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+#ifndef __MACH_SCM_H
-+#define __MACH_SCM_H
-+
-+#define SCM_SVC_BOOT			0x1
-+#define SCM_SVC_PIL			0x2
-+
-+extern int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
-+		void *resp_buf, size_t resp_len);
-+
-+#define SCM_VERSION(major, minor) (((major) << 16) | ((minor) & 0xFF))
-+
-+extern u32 scm_get_version(void);
-+
-+#endif
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+ 	if (bdi_dirty > (dirty * bdi->max_ratio) / 100)
+ 		bdi_dirty = dirty * bdi->max_ratio / 100;
+ 
+@@ -508,7 +530,8 @@ static void balance_dirty_pages(struct a
+ 				(background_thresh + dirty_thresh) / 2)
+ 			break;
+ 
+-		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
++		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh,
++					     nr_reclaimable + nr_writeback);
+ 		bdi_thresh = task_dirty_limit(current, bdi_thresh);
+ 
+ 		/*
+--- linux-next.orig/mm/backing-dev.c	2010-12-08 12:06:00.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-12-08 12:06:01.000000000 +0800
+@@ -83,7 +83,7 @@ static int bdi_debug_stats_show(struct s
+ 	spin_unlock(&inode_lock);
+ 
+ 	global_dirty_limits(&background_thresh, &dirty_thresh);
+-	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
++	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh, dirty_thresh);
+ 
+ #define K(x) ((x) << (PAGE_SHIFT - 10))
+ 	seq_printf(m,
+--- linux-next.orig/include/linux/writeback.h	2010-12-08 12:06:01.000000000 +0800
++++ linux-next/include/linux/writeback.h	2010-12-08 12:06:01.000000000 +0800
+@@ -126,7 +126,8 @@ int dirty_writeback_centisecs_handler(st
+ 
+ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
+ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+-			       unsigned long dirty);
++			       unsigned long dirty,
++			       unsigned long dirty_pages);
+ 
+ void page_writeback_init(void);
+ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
