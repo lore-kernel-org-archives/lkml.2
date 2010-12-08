@@ -1,158 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab0LHPbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:31:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:9359 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753666Ab0LHPbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:31:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,316,1288594800"; 
-   d="scan'208";a="865923463"
-Date: Wed, 8 Dec 2010 23:31:45 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] writeback: enabling-gate for light dirtied bdi
-Message-ID: <20101208153145.GA19218@localhost>
-References: <20101205064430.GA15027@localhost>
- <20101207165111.d79735c1.akpm@linux-foundation.org>
- <20101208043004.GB15322@localhost>
+	id S1755961Ab0LHPdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:33:45 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40580 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755313Ab0LHPdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:33:44 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 9KvPqsIVM1kGI_2At0a2UlZOfjzI4Mc6eqE.LPAHIM5xeMG
+ OdmbDDjus96f8eubpPCPd7dP7ZLsorVxYpsQOzRLgRZ_6yQ26g749dpfAaAC
+ c8FHjU8nDaoqAZapOy2VvqDpPml0RYQj98rdeTA3B8BAxNEO8GrNgqQdEcMi
+ GSDYnewC3ueBOVw05cIOJJUzOGUu_O7w0xOUieYYWfBOF0osmgMaU2HFf5C4
+ 7FLP4sX1Csg4SCSMaLHfw59lmRl_gyghEH2BBgdE-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 8 Dec 2010 09:33:40 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] x86: Replace uses of current_cpu_data with this_cpu
+ ops
+In-Reply-To: <1291815501.2883.34.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1012080929590.23407@router.home>
+References: <20101206171618.302060721@linux.com>  <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org>  <4CFE4294.30001@kernel.org>  <alpine.DEB.2.00.1012070846050.25976@router.home>  <4CFE4BE0.9040203@kernel.org>  <alpine.DEB.2.00.1012070906290.26552@router.home>
+  <4CFE4E05.7070902@kernel.org>  <alpine.DEB.2.00.1012071020040.26552@router.home>  <4CFF8520.4020704@kernel.org> <1291815501.2883.34.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101208043004.GB15322@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
-> +	 */
-> +	dirty -= min(dirty / 128, 32768ULL >> (PAGE_SHIFT-10));
+On Wed, 8 Dec 2010, Eric Dumazet wrote:
 
-/home/wfg/cc/linux-next/mm/page-writeback.c: In function ‘bdi_dirty_limit’:
-/home/wfg/cc/linux-next/mm/page-writeback.c:464:133: warning: comparison of distinct pointer types lacks a cast
+> > In the long run, it might be a good idea to remove cpu_data() macro
+> > too and use per_cpu macro directly.
+> >
+>
+> or introduce this_cpu_has() to remove the adress computation
+>
+> -	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
+>
+> +	if (this_cpu_has(X86_FEATURE_ARAT)) {
+>
 
-Sorry, here is the fixed version.
+The fundamental problem is that bitops require memory addresses which does
+not work with per cpu ops.
 
----
-Subject: writeback: enabling gate limit for light dirtied bdi
-Date: Wed Dec 01 20:22:15 CST 2010
-
-I noticed that my NFSROOT test system goes slow responding when there
-is heavy dd to a local disk. Traces show that the NFSROOT's bdi limit
-is near 0 and many tasks in the system are repeatedly stuck in
-balance_dirty_pages().
-
-There are two generic problems:
-
-- light dirtiers at one device (more often than not the rootfs) get
-  heavily impacted by heavy dirtiers on another independent device
-
-- the light dirtied device does heavy throttling because bdi limit=0,
-  and the heavy throttling may in turn withhold its bdi limit in 0 as
-  it cannot dirty fast enough to grow up the bdi's proportional weight.
-
-Fix it by introducing some "low pass" gate, which is a small (<=32MB)
-value reserved by others and can be safely "stole" from the current
-global dirty margin.  It does not need to be big to help the bdi gain
-its initial weight.
-
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/writeback.h |    3 ++-
- mm/backing-dev.c          |    2 +-
- mm/page-writeback.c       |   29 ++++++++++++++++++++++++++---
- 3 files changed, 29 insertions(+), 5 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2010-12-08 23:28:19.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-08 23:30:45.000000000 +0800
-@@ -443,13 +443,26 @@ void global_dirty_limits(unsigned long *
-  *
-  * The bdi's share of dirty limit will be adapting to its throughput and
-  * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
-- */
--unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
-+ *
-+ * There is a chicken and egg problem: when bdi A (eg. /pub) is heavy dirtied
-+ * and bdi B (eg. /) is light dirtied hence has 0 dirty limit, tasks writing to
-+ * B always get heavily throttled and bdi B's dirty limit might never be able
-+ * to grow up from 0. So we do tricks to reserve some global margin and honour
-+ * it to the bdi's that run low.
-+ */
-+unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
-+			      unsigned long dirty,
-+			      unsigned long dirty_pages)
- {
- 	u64 bdi_dirty;
- 	long numerator, denominator;
- 
- 	/*
-+	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
-+	 */
-+	dirty -= min(dirty / 128, 32768UL >> (PAGE_SHIFT-10));
-+
-+	/*
- 	 * Calculate this BDI's share of the dirty ratio.
- 	 */
- 	bdi_writeout_fraction(bdi, &numerator, &denominator);
-@@ -459,6 +472,15 @@ unsigned long bdi_dirty_limit(struct bac
- 	do_div(bdi_dirty, denominator);
- 
- 	bdi_dirty += (dirty * bdi->min_ratio) / 100;
-+
-+	/*
-+	 * If we can dirty N more pages globally, honour N/2 to the bdi that
-+	 * runs low, so as to help it ramp up.
-+	 */
-+	if (unlikely(bdi_dirty < (dirty - dirty_pages) / 2 &&
-+		     dirty > dirty_pages))
-+		bdi_dirty = (dirty - dirty_pages) / 2;
-+
- 	if (bdi_dirty > (dirty * bdi->max_ratio) / 100)
- 		bdi_dirty = dirty * bdi->max_ratio / 100;
- 
-@@ -508,7 +530,8 @@ static void balance_dirty_pages(struct a
- 				(background_thresh + dirty_thresh) / 2)
- 			break;
- 
--		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-+		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh,
-+					     nr_reclaimable + nr_writeback);
- 		bdi_thresh = task_dirty_limit(current, bdi_thresh);
- 
- 		/*
---- linux-next.orig/mm/backing-dev.c	2010-12-08 23:28:19.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-12-08 23:28:43.000000000 +0800
-@@ -83,7 +83,7 @@ static int bdi_debug_stats_show(struct s
- 	spin_unlock(&inode_lock);
- 
- 	global_dirty_limits(&background_thresh, &dirty_thresh);
--	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-+	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh, dirty_thresh);
- 
- #define K(x) ((x) << (PAGE_SHIFT - 10))
- 	seq_printf(m,
---- linux-next.orig/include/linux/writeback.h	2010-12-08 23:28:19.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2010-12-08 23:28:43.000000000 +0800
-@@ -126,7 +126,8 @@ int dirty_writeback_centisecs_handler(st
- 
- void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
- unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
--			       unsigned long dirty);
-+			       unsigned long dirty,
-+			       unsigned long dirty_pages);
- 
- void page_writeback_init(void);
- void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
