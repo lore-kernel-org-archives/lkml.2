@@ -1,101 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab0LHQrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:47:06 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48677
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752184Ab0LHQrE (ORCPT
+	id S1754969Ab0LHQrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:47:13 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:18455
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754420Ab0LHQrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:47:04 -0500
-Date: Wed, 08 Dec 2010 08:47:31 -0800 (PST)
-Message-Id: <20101208.084731.189716071.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: lkml20101129@newton.leun.net, greearb@candelatech.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jesse@nicira.com,
-        stable@kernel.org
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1291200914.2856.546.camel@edumazet-laptop>
-References: <1291108809.2904.3.camel@edumazet-laptop>
-	<20101201111716.424fb771@xenia.leun.net>
-	<1291200914.2856.546.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Dec 2010 11:47:09 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <amit.kucheria@canonical.com>, <eric@eukrea.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv2] ARM: imx: Add support for low power suspend on MX51.
+Date: Wed, 8 Dec 2010 10:54:28 -0600
+Message-ID: <1291827268-13580-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 01 Dec 2010 11:55:14 +0100
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/Makefile           |    1 +
+ arch/arm/mach-mx5/pm.c               |   70 ++++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/mxc.h |    1 +
+ 3 files changed, 72 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm.c
+
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 026cd85..906bc71 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -5,6 +5,7 @@
+ # Object file lists.
+ obj-y   := cpu.o mm.o clock-mx51-mx53.o devices.o
+ 
++obj-$(CONFIG_PM) += pm.o
+ obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+diff --git a/arch/arm/mach-mx5/pm.c b/arch/arm/mach-mx5/pm.c
+new file mode 100644
+index 0000000..12ba2de
+--- /dev/null
++++ b/arch/arm/mach-mx5/pm.c
+@@ -0,0 +1,70 @@
++/*
++ *  Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <linux/suspend.h>
++#include <asm/mach/map.h>
++#include <mach/system.h>
++#include "crm_regs.h"
++
++static int mx5_suspend_enter(suspend_state_t state)
++{
++	u32 plat_lpc = 0, arm_srpgcr = 0, ccm_clpcr = 0;
++
++	/* always allow platform to issue a deep sleep mode request */
++	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
++
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		ccm_clpcr |= (0x2 << MXC_CCM_CLPCR_LPM_OFFSET);
++		ccm_clpcr |= (0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET);
++		ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
++		ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
++		break;
++	case PM_SUSPEND_STANDBY:
++		ccm_clpcr |= (0x1 << MXC_CCM_CLPCR_LPM_OFFSET);
++		ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
++		ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
++		    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
++	arm_srpgcr |= MXC_SRPGCR_PCR;
++
++	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
++	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
++	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
++
++	if (tzic_enable_wake(0) != 0)
++		return -EAGAIN;
++
++	cpu_do_idle();
++	return 0;
++}
++
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
++};
++
++static int __init mx5_pm_init(void)
++{
++	if (cpu_is_mx51())
++		suspend_set_ops(&mx5_suspend_ops);
++	return 0;
++}
++device_initcall(mx5_pm_init);
+diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
+index 4abbdd1..dc685d4 100644
+--- a/arch/arm/plat-mxc/include/mach/mxc.h
++++ b/arch/arm/plat-mxc/include/mach/mxc.h
+@@ -52,6 +52,7 @@
+ 
+ #ifndef __ASSEMBLY__
+ extern unsigned int __mxc_cpu_type;
++int tzic_enable_wake(int is_idle);
+ #endif
+ 
+ #ifdef CONFIG_ARCH_MX1
+-- 
+1.6.0.4
 
 
-Greg/-stable, please integrate this patch from Eric into 2.6.36 if you
-haven't already done so.
-
-Thanks!
-
-> [PATCH v2 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used.
-> 
-> Normally hardware accelerated vlan packets are quickly dropped if
-> there is no corresponding vlan device configured.  The one exception
-> is promiscuous mode, where we allow all of these packets through so
-> they can be picked up by tcpdump.  However, this behavior causes a
-> crash if we actually try to receive these packets.  This fixes that
-> crash by ignoring packets with vids not corresponding to a configured
-> device in the vlan hwaccel routines and then dropping them before they
-> get to consumers in the network stack.
-> 
-> Reported-by: Ben Greear <greearb@candelatech.com>
-> Signed-off-by: Jesse Gross <jesse@nicira.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Tested-by: Michael Leun <lkml20101129@newton.leun.net>
-> ---
-> v2: survives to tcpdump :)
-> 
->  net/core/dev.c        |   10 ++++++++++
->  net/8021q/vlan_core.c |    3 +++
->  2 files changed, 13 insertions(+)
-> 
-> --- linux-2.6.36/net/core/dev.c.orig
-> +++ linux-2.6.36/net/core/dev.c
-> @@ -2891,6 +2891,15 @@
->  ncls:
->  #endif
->  
-> +	/* If we got this far with a hardware accelerated VLAN tag, it means
-> +	 * that we were put in promiscuous mode but nobody is interested in
-> +	 * this vid. Drop the packet now to prevent it from getting propagated
-> +	 * to other parts of the stack that won't know how to deal with packets
-> +	 * tagged in this manner.
-> +	 */
-> +	if (unlikely(vlan_tx_tag_present(skb)))
-> +		goto bypass;
-> +
->  	/* Handle special case of bridge or macvlan */
->  	rx_handler = rcu_dereference(skb->dev->rx_handler);
->  	if (rx_handler) {
-> @@ -2927,6 +2936,7 @@
->  		}
->  	}
->  
-> +bypass:
->  	if (pt_prev) {
->  		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
->  	} else {
-> --- linux-2.6.36/net/8021q/vlan_core.c.orig
-> +++ linux-2.6.36/net/8021q/vlan_core.c
-> @@ -43,6 +43,9 @@
->  	struct net_device *dev = skb->dev;
->  	struct vlan_rx_stats     *rx_stats;
->  
-> +	if (unlikely(!is_vlan_dev(dev)))
-> +		return 0;
-> +
->  	skb->dev = vlan_dev_info(dev)->real_dev;
->  	netif_nit_deliver(skb);
->  
-> 
-> 
