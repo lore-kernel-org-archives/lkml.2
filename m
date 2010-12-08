@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab0LHBGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:06:44 -0500
-Received: from kroah.org ([198.145.64.141]:33919 "EHLO coco.kroah.org"
+	id S932969Ab0LHBEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:04:22 -0500
+Received: from kroah.org ([198.145.64.141]:33940 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932917Ab0LHBEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:04:11 -0500
+	id S932935Ab0LHBEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:04:15 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:49 2010
-Message-Id: <20101208005749.342168693@clark.site>
+Message-Id: <20101208005749.737342948@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:56 -0800
+Date: Tue, 07 Dec 2010 17:01:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [279/289] cfg80211: fix extension channel checks to initiate communication
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Francois Romieu <romieu@fr.zoreil.com>
+Subject: [283/289] r8169: (re)init phy on resume
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,98 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 9236d838c920e90708570d9bbd7bb82d30a38130 upstream.
+commit fccec10b33503a2b1197c8e7a3abd30443bedb08 upstream.
 
-When operating in a mode that initiates communication and using
-HT40 we should fail if we cannot use both primary and secondary
-channels to initiate communication. Our current ht40 allowmap
-only covers STA mode of operation, for beaconing modes we need
-a check on the fly as the mode of operation is dynamic and
-there other flags other than disable which we should read
-to check if we can initiate communication.
+Fix switching device to low-speed mode after resume reported in:
+https://bugzilla.redhat.com/show_bug.cgi?id=502974
 
-Do not allow for initiating communication if our secondary HT40
-channel has is either disabled, has a passive scan flag, a
-no-ibss flag or is a radar channel. Userspace now has similar
-checks but this is also needed in-kernel.
-
-Reported-by: Jouni Malinen <jouni.malinen@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-and-tested-by: Laurentiu Badea <bugzilla-redhat@wotevah.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/chan.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+ drivers/net/r8169.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/wireless/chan.c
-+++ b/net/wireless/chan.c
-@@ -44,6 +44,36 @@ rdev_freq_to_chan(struct cfg80211_regist
- 	return chan;
- }
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -4889,6 +4889,9 @@ static int rtl8169_resume(struct device
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
++	struct rtl8169_private *tp = netdev_priv(dev);
++
++	rtl8169_init_phy(dev, tp);
  
-+static bool can_beacon_sec_chan(struct wiphy *wiphy,
-+				struct ieee80211_channel *chan,
-+				enum nl80211_channel_type channel_type)
-+{
-+	struct ieee80211_channel *sec_chan;
-+	int diff;
-+
-+	switch (channel_type) {
-+	case NL80211_CHAN_HT40PLUS:
-+		diff = 20;
-+	case NL80211_CHAN_HT40MINUS:
-+		diff = -20;
-+	default:
-+		return false;
-+	}
-+
-+	sec_chan = ieee80211_get_channel(wiphy, chan->center_freq + diff);
-+	if (!sec_chan)
-+		return false;
-+
-+	/* we'll need a DFS capability later */
-+	if (sec_chan->flags & (IEEE80211_CHAN_DISABLED |
-+			       IEEE80211_CHAN_PASSIVE_SCAN |
-+			       IEEE80211_CHAN_NO_IBSS |
-+			       IEEE80211_CHAN_RADAR))
-+		return false;
-+
-+	return true;
-+}
-+
- int cfg80211_set_freq(struct cfg80211_registered_device *rdev,
- 		      struct wireless_dev *wdev, int freq,
- 		      enum nl80211_channel_type channel_type)
-@@ -68,6 +98,27 @@ int cfg80211_set_freq(struct cfg80211_re
- 	if (!chan)
- 		return -EINVAL;
+ 	if (netif_running(dev))
+ 		__rtl8169_resume(dev);
+@@ -4929,6 +4932,8 @@ static int rtl8169_runtime_resume(struct
+ 	tp->saved_wolopts = 0;
+ 	spin_unlock_irq(&tp->lock);
  
-+	/* Both channels should be able to initiate communication */
-+	if (wdev && (wdev->iftype == NL80211_IFTYPE_ADHOC ||
-+		     wdev->iftype == NL80211_IFTYPE_AP ||
-+		     wdev->iftype == NL80211_IFTYPE_AP_VLAN ||
-+		     wdev->iftype == NL80211_IFTYPE_MESH_POINT)) {
-+		switch (channel_type) {
-+		case NL80211_CHAN_HT40PLUS:
-+		case NL80211_CHAN_HT40MINUS:
-+			if (!can_beacon_sec_chan(&rdev->wiphy, chan,
-+						 channel_type)) {
-+				printk(KERN_DEBUG
-+				       "cfg80211: Secondary channel not "
-+				       "allowed to initiate communication\n");
-+				return -EINVAL;
-+			}
-+			break;
-+		default:
-+			break;
-+		}
-+	}
++	rtl8169_init_phy(dev, tp);
 +
- 	result = rdev->ops->set_channel(&rdev->wiphy,
- 					wdev ? wdev->netdev : NULL,
- 					chan, channel_type);
+ 	__rtl8169_resume(dev);
+ 
+ 	return 0;
 
 
