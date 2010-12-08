@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab0LHXcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:32:53 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:53412 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754659Ab0LHXcv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:32:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101208230802.GA8176@kroah.com>
-References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
-	<20101208222642.GA31802@kroah.com>
-	<AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
-	<20101208230802.GA8176@kroah.com>
-Date: Wed, 8 Dec 2010 17:32:50 -0600
-Message-ID: <AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
-Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions for loader
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Nishanth Menon <nm@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Armando Uribe De Leon <x0095078@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752525Ab0LHXfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:35:16 -0500
+Received: from casper.infradead.org ([85.118.1.10]:57927 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0LHXfO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 18:35:14 -0500
+Subject: Re: linux-next: Tree for December 8
+ (drivers/platform/x86/Kconfig:422:error: recursive dependency detected!)
+From: David Woodhouse <dwmw2@infradead.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Corentin Chary <corentin.chary@gmail.com>, sedat.dilek@gmail.com,
+        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 08 Dec 2010 23:35:08 +0000
+In-Reply-To: <20101208233101.GA15294@core.coreip.homeip.net>
+References: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com>
+	 <AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
+	 <1291801990.5992.105.camel@i7.infradead.org>
+	 <20101208174603.GA7107@core.coreip.homeip.net>
+	 <20101208135105.a8482d46.randy.dunlap@oracle.com>
+	 <1291849721.5992.145.camel@i7.infradead.org>
+	 <20101208233101.GA15294@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 2.91.3 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1291851309.5992.150.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 5:08 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Dec 08, 2010 at 05:02:20PM -0600, Ramirez Luna, Omar wrote:
->> Hi,
->>
->> On Wed, Dec 8, 2010 at 4:26 PM, Greg KH <greg@kroah.com> wrote:
->> > On Tue, Dec 07, 2010 at 12:09:06AM -0600, Omar Ramirez Luna wrote:
->> >> Instead use request_firmware and friends to get a valid firmware
->> >> image.
->> >>
->> >> Right now the image is supplied dynamically through udev and the
->> >> following rule:
->> >>
->> >> KERNEL=="omap-dsp", SUBSYSTEM=="firmware", ACTION=="add",     \
->> >>       RUN+="/bin/sh -c 'echo 1 > /sys/$DEVPATH/loading;       \
->> >>               cat $FIRMWARE > /sys/$DEVPATH/data;             \
->> >>               echo 0 > /sys/$DEVPATH/loading'"
->> >
->> > Why do you need a custom firmware rule?
->>
->> It was meant as an example, when I compiled my minimal file system it
->> didn't supply the firmware.sh script nor created /lib/firmware... I
->> thought that not everybody would have the firmware.sh, so I just
->> provided a sample rule.
->
-> So, can I remove this from the changelog comment, as it's not really
-> needed at all?
+On Wed, 2010-12-08 at 15:31 -0800, Dmitry Torokhov wrote:
+> Even better tool would allow selecting the needed optios right there,
+> without the need of moving away from teh current option.
 
-Yes it can be removed.
+That's exactly what the Nemesis version of xconfig did, almost 15 years
+ago.
 
-BTW, I don't expect this pushed through staging yet, I need to include
-it to my branch first and then I'll send a pull request with the pile
-of patches. Sorry for the misunderstanding and thanks for the review.
+>  And yet better tool would not even ask user and enable them on its
+> own. Hey, but we have it! It's called "select".
 
->> insmod bridgedriver.ko base_img=baseimage.dof
->
-> Ick, why use a module parameter name at all?  Why is this "special" and
-> different from all other firmware users?  They don't have to manually
-> specify a file name, the driver does that.
+The tools could do that with 'depends on' too. Why make a distinction?
 
-The thing is that there are N number of firmwares, e.g.:
+> Seriously, select is dangerous. I wonder if a rule like "One can only
+> select a symbol whose dependencies are all satisfied by the current
+> symbol and/or its parents and the symbols they select or depend on"
+> would not make select safe enough. 
 
-There is the official and usable firmware to play with multimedia
-"baseimage.dof"
+"One can only select a symbol which isn't otherwise presented to the
+user as a choice".
 
-But there are also minimal firmwares to just ping or swap buffers with
-the dsp, when you just want to play around with basic features.
+So things like CONFIG_REED_SOLOMON are fine to be selected, because the
+user would never see it anyway.
 
-> Please fix up the patch to not require a module parameter, distros hate
-> them, and users hate them even more.
+Otherwise, just use depends. And if that's a problem for you, fix the
+damn tools.
+ 
+-- 
+dwmw2
 
-The driver is the one requiring the parameter (it was already this
-way), this patch doesn't introduce any parameter. I'll check what can
-be done and if nobody rejects I'll use the baseimage.dof  as firmware
-by default.
-
-Regards,
-
-Omar
