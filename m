@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab0LHPPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:15:31 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:51239 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab0LHPP3 convert rfc822-to-8bit (ORCPT
+	id S1755660Ab0LHPQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:16:48 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:51766 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755571Ab0LHPQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:15:29 -0500
-Subject: Re: perf hw  in kexeced kernel broken in tip
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-In-Reply-To: <20101208150243.GC31703@redhat.com>
-References: <1291234036.32004.2008.camel@laptop>
-	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
-	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
-	 <1291764620.2032.1293.camel@laptop> <20101208140103.GM21786@redhat.com>
-	 <1291818005.28378.38.camel@laptop> <20101208144245.GB31703@redhat.com>
-	 <1291819684.28378.70.camel@laptop>  <20101208150243.GC31703@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Dec 2010 16:15:07 +0100
-Message-ID: <1291821307.28378.93.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 8 Dec 2010 10:16:47 -0500
+Date: Wed, 8 Dec 2010 10:16:46 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Greg KH <greg@kroah.com>, Luben Tuikov <ltuikov@yahoo.com>,
+        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+In-Reply-To: <1291784742.24312.40.camel@mulgrave.site>
+Message-ID: <Pine.LNX.4.44L0.1012081010470.1885-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 10:02 -0500, Vivek Goyal wrote:
+On Tue, 7 Dec 2010, James Bottomley wrote:
 
-> >but its kdump so its mostly broken by design anyway ;-)
-> 
-> Kdump has its share of problems especially with the fact that
-> kernel/drivers find devices in bad state and are not hardened enough
-> to deal with that. But on bare metal what's the better way of capturing
-> kernel crash dump? Trying to do anything post crash in the kernel is
-> also not very reliable either.
+> Well, not other than I've already said:  I think it looks OK, so I
+> marked it for my merge window queue.  I'd still rather like USB people
+> to confirm that the original reason why this was done (to prevent device
+> crashes on the mode sense) is no longer an issue
 
-/me <3 RS-232
+The original reason for adding the skip_ms_page_8 flag still applies.  
+To assume it is no longer an issue would not be safe -- there's no 
+reason to believe that the buggy devices it was meant for have all been 
+retired.
 
-I haven't found anything better than that... 
+>  ... but it's only USB
+> stuff, so suppose I'm OK with finding out in the field.
 
-And poking at the RS-232 requires less of the kernel to be functional
-than booting into a new kernel (whose image might have been corrupted by
-the dying kernel, etc..)
+With USB there's often no other choice.
+
+Alan Stern
+
