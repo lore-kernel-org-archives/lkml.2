@@ -1,136 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab0LHUMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:12:07 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:28781 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752108Ab0LHUMF (ORCPT
+	id S1753573Ab0LHUPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:15:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64234 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab0LHUPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:12:05 -0500
-Message-ID: <4CFFE6EC.5020008@bluewatersys.com>
-Date: Thu, 09 Dec 2010 09:13:32 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Igor Plyatov <plyatov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@maxim.org.za, nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
-        costa.antonior@gmail.com, plagnioj@jcrosoft.com,
-        christian.glindkamp@taskit.de, pgsellmann@portner-elektronik.at
-Subject: Re: [PATCH v3] mach-at91: Support for gms board added
-References: <1291837552-8389-1-git-send-email-plyatov@gmail.com>
-In-Reply-To: <1291837552-8389-1-git-send-email-plyatov@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Dec 2010 15:15:21 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=DyXz9hFaH-oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=W5DtAvtns-7MNOLbaAsA:9 a=mdiZ3XTleDTRuafrDdsjfqMFqi8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate
+ from ntp_error
+From: Steven Rostedt <rostedt@goodmis.org>
+To: john stultz <johnstul@us.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1291838382.2909.17.camel@work-vm>
+References: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
+	 <1291838382.2909.17.camel@work-vm>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 08 Dec 2010 15:15:17 -0500
+Message-ID: <1291839317.5015.1139.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 08:45 AM, Igor Plyatov wrote:
-> Code for the Stamp9G20 SoM separated into the board-stamp9g20.c, and following
-> files correspond to carrier boards for Stamp9G20:
-> * carrier-board-gms.c - "GMS", Seismograph from GeoSIG.
-> * carrier-board-panelcardevb.c - "Panel Card EVB", Taskit's eval. board.
-> * carrier-board-portuxg20.c - "Portux G20", derivative from Stamp9G20.
-> * carrier-board-pcontrol_g20.c - "Pcontrol G20", PORTNER-Elektronik.
-> .
-> All stuff specific to carrier board encapsulated into functions:
-> * carrier_board_map_io()
-> * carrier_board_init()
-> which used in the board-stamp9g20.c
-> .
-> There is only one choice for Stamp9G20 carrier board from:
-> * CONFIG_CARRIERBOARD_GMS
-> * CONFIG_CARRIERBOARD_PANELCARDEVB
-> * CONFIG_CARRIERBOARD_PCONTROL_G20
-> * CONFIG_CARRIERBOARD_PORTUXG20
+On Wed, 2010-12-08 at 11:59 -0800, john stultz wrote:
 
-It is useful to be able to build multiple boards into a single kernel.
+> Hey Steven!
+> 
+> Thanks for the great analysis and tooling to help find these unexpected
+> behaviors! 
+> 
+> Sadly, I believe your proposed change can still cause minor nsec
+> inconsistencies from gettimeofday/vgettimeofday. In fact, the previous
+> implementation where the nsec inconsistency error was observed preserved
+> the sub-nanosecond remainder in xtime_nsec.
 
-> --- /dev/null
-> +++ b/arch/arm/mach-at91/carrier-board-gms.c
-> @@ -0,0 +1,556 @@
-> +/*
-> + *  Copyright (C) 2010 Christian Glindkamp <christian.glindkamp@taskit.de>
-> + *			taskit GmbH
-> + *                2010 Igor Plyatov <plyatov@gmail.com>
-> + *			GeoSIG Ltd
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#include <linux/platform_device.h>
-> +#include <linux/gpio.h>
-> +#include <linux/gpio_keys.h>
-> +#include <linux/input.h>
-> +#include <linux/i2c/pcf857x.h>
-> +
-> +#include <mach/board.h>
-> +#include <mach/gms.h>
-> +
-> +void __init carrier_board_map_io(void)
-> +{
+What inconsistencies exactly? Not to say they aren't any, but I really
+want to know exactly what is happening. Even the change log that Roman
+showed in that commit does not explain well what the issue was.
 
-This approach won't work. If you have more than one carrier board
-compiled into your kernel then you will get multiple definition errors.
-The name carrier_board_map_io is also way too generic.
+Here's the log:
 
-The better approach would be to do this the other way so that the
-carrier board calls the SoM map_io function.
+    timekeeping: fix rounding problem during clock update
+    
+    Due to a rounding problem during a clock update it's possible for readers
+    to observe the clock jumping back by 1nsec.  The following simplified
+    example demonstrates the problem:
+    
+    cycle       xtime
+    0   0
+    1000        999999.6
+    2000        1999999.2
+    3000        2999998.8
+    ...
+    
+    1500 =      1499999.4
+    =   0.0 + 1499999.4
+    =   999999.6 + 499999.8
+    
+    When reading the clock only the full nanosecond part is used, while
+    timekeeping internally keeps nanosecond fractions.  If the clock is now
+    updated at cycle 1500 here, a nanosecond is missing due to the truncation.
+    
+    The simple fix is to round up the xtime value during the update, this also
+    changes the distance to the reference time, but the adjustment will
+    automatically take care that it stays under control.
 
-> +	/*
-> +	 * USART0 on ttyS1 (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI).
-> +	 * Used for Internal Analog Modem.
-> +	 */
-> +	at91_register_uart(AT91SAM9260_ID_US0, 1,
-> +			     ATMEL_UART_CTS | ATMEL_UART_RTS
-> +			   | ATMEL_UART_DTR | ATMEL_UART_DSR
-> +			   | ATMEL_UART_DCD | ATMEL_UART_RI);
-> +	/*
-> +	 * USART1 on ttyS2 (Rx, Tx, CTS, RTS).
-> +	 * Used for GPS or WiFi or Data stream.
-> +	 */
-> +	at91_register_uart(AT91SAM9260_ID_US1, 2,
-> +			   ATMEL_UART_CTS | ATMEL_UART_RTS);
-> +	/*
-> +	 * USART2 on ttyS3 (Rx, Tx, CTS, RTS).
-> +	 * Used for External Modem.
-> +	 */
-> +	at91_register_uart(AT91SAM9260_ID_US2, 3,
-> +			   ATMEL_UART_CTS | ATMEL_UART_RTS);
-> +	/*
-> +	 * USART3 on ttyS4 (Rx, Tx, RTS).
-> +	 * Used for RS-485.
-> +	 */
-> +	at91_register_uart(AT91SAM9260_ID_US3, 4, ATMEL_UART_RTS);
-> +
-> +	/*
-> +	 * USART4 on ttyS5 (Rx, Tx).
-> +	 * Used for TRX433 Radio Module.
-> +	 */
-> +	at91_register_uart(AT91SAM9260_ID_US4, 5, 0);
-> +}
+I have no idea what he's trying to say with that "simplified example".
+Where did that "1500" come from? There's a bit too much black magic
+going on to make this comfortable.
 
-~Ryan
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+> 
+> I suspect we may need to still round up and store the error, but tweak
+> the adjustment code to handle the larger error per-iteration then it was
+> originally designed for (note: the current code is still functioning
+> properly, its just not often hitting the expected trivial case).
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+I'm afraid that may also do damage. This code needs real documentation
+explaining in detail what the frick it's doing. Having someone that
+shows up once ever 10 years that understands it is not something I feel
+confident about.
+
+> 
+> The only alternative would be to integrate the sub-ns remainder into the
+> gettime caclculation (including reworking all the vsyscall
+> implementations to utilize it as well).
+> 
+
+First lets talk about all the issues, and perhaps even start documenting
+what it currently does. The comments in the code are not enough for a
+reviewer to understand the logic. I've spent today reading some RFC's to
+understand more about NTP but, it still does not explain the magic
+constants that are used in the code.
+
+Thanks,
+
+-- Steve
+
+
