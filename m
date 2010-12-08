@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab0LHXuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:50:46 -0500
-Received: from kroah.org ([198.145.64.141]:45194 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033Ab0LHXup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:50:45 -0500
-Date: Wed, 8 Dec 2010 15:49:40 -0800
-From: Greg KH <greg@kroah.com>
-To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Nishanth Menon <nm@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Armando Uribe De Leon <x0095078@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
-Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions
- for loader
-Message-ID: <20101208234940.GA11587@kroah.com>
-References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
- <20101208222642.GA31802@kroah.com>
- <AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
- <20101208230802.GA8176@kroah.com>
- <AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
+	id S1756618Ab0LHXvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:51:42 -0500
+Received: from web31801.mail.mud.yahoo.com ([68.142.207.64]:30668 "HELO
+	web31801.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755198Ab0LHXvk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 18:51:40 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=ZCx+Mcd6VVJk7rY/nNJ+pTBCgBzUbAVAizwh3MSNfnoAHGcmVDT/M2Pn3Bll0pJhQHBW2n7IrnURFqfYlop4zDcBaW6Tr8UeYdY9wLgfifTEW6V0YOkklXJ8sGZFQq1P9iIMTeWCSXdz9Eu1avD4H017KM4drxaXYm5NU9b9ULo=;
+Message-ID: <21690.835.qm@web31801.mail.mud.yahoo.com>
+X-YMail-OSG: y6CB2VkVM1kjtmp5PYLZZec97dd8F8x0JrXIccl1RoZ3Lmq
+ MHe.SkIsWVEt9NJqrz.JpVhyDgjMzQhtt7KcAMQj3G_yOBNAWlBC_Wxvci2K
+ eE3QIzM7u1ft_OSM0hWbe6tuS2IKyHlHJTADg1sWsyFh2GyCe9BRKChhOGi0
+ iIQoJkbBYNXtsVf5hk_Z8_DQV5Ezn4O6YIlnm_pJyVq1.bUz5T1acPH1UUU5
+ a09_vfJ5dnedjGbQtXm85bO7Ak3xr.vGY_FD_nI.q.f9PqpD3NWaf4AJAB80
+ XTu4oGPtAJQHQKxOV62oFJnK2XpCCFiGi2eWWt6HvFOxI9uai7UcZbyVeryu
+ QupPYt2fXSgZKpcmLsadjdwljuOdVJTXxaEOwAq3OPxoG
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
+Date: Wed, 8 Dec 2010 15:51:38 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: [PATCH 1/4] [USB] UASP: Set iface data before scanning host
+To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 05:32:50PM -0600, Ramirez Luna, Omar wrote:
-> On Wed, Dec 8, 2010 at 5:08 PM, Greg KH <greg@kroah.com> wrote:
-> > On Wed, Dec 08, 2010 at 05:02:20PM -0600, Ramirez Luna, Omar wrote:
-> >> Hi,
-> >>
-> >> On Wed, Dec 8, 2010 at 4:26 PM, Greg KH <greg@kroah.com> wrote:
-> >> > On Tue, Dec 07, 2010 at 12:09:06AM -0600, Omar Ramirez Luna wrote:
-> >> >> Instead use request_firmware and friends to get a valid firmware
-> >> >> image.
-> >> >>
-> >> >> Right now the image is supplied dynamically through udev and the
-> >> >> following rule:
-> >> >>
-> >> >> KERNEL=="omap-dsp", SUBSYSTEM=="firmware", ACTION=="add",     \
-> >> >>       RUN+="/bin/sh -c 'echo 1 > /sys/$DEVPATH/loading;       \
-> >> >>               cat $FIRMWARE > /sys/$DEVPATH/data;             \
-> >> >>               echo 0 > /sys/$DEVPATH/loading'"
-> >> >
-> >> > Why do you need a custom firmware rule?
-> >>
-> >> It was meant as an example, when I compiled my minimal file system it
-> >> didn't supply the firmware.sh script nor created /lib/firmware... I
-> >> thought that not everybody would have the firmware.sh, so I just
-> >> provided a sample rule.
-> >
-> > So, can I remove this from the changelog comment, as it's not really
-> > needed at all?
-> 
-> Yes it can be removed.
-> 
-> BTW, I don't expect this pushed through staging yet, I need to include
-> it to my branch first and then I'll send a pull request with the pile
-> of patches. Sorry for the misunderstanding and thanks for the review.
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+---
+ drivers/usb/storage/uasp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Well, don't send me patches you don't want me to apply without a big "DO
-NOT APPLY" in them, otherwise I might try to :)
+diff --git a/drivers/usb/storage/uasp.c b/drivers/usb/storage/uasp.c
+index 1d2b2e3..3b10efd 100644
+--- a/drivers/usb/storage/uasp.c
++++ b/drivers/usb/storage/uasp.c
+@@ -1059,8 +1059,8 @@ static int uasp_probe(struct usb_interface *iface,
+ 		goto Free;
+ 
+ 	shost->hostdata[0] = (unsigned long)tpinfo;
+-	scsi_scan_host(shost);
+ 	usb_set_intfdata(iface, shost);
++	scsi_scan_host(shost);
+ 
+ 	return res;
+  Free:
+-- 
+1.7.0.1
 
-> >> insmod bridgedriver.ko base_img=baseimage.dof
-> >
-> > Ick, why use a module parameter name at all?  Why is this "special" and
-> > different from all other firmware users?  They don't have to manually
-> > specify a file name, the driver does that.
-> 
-> The thing is that there are N number of firmwares, e.g.:
-> 
-> There is the official and usable firmware to play with multimedia
-> "baseimage.dof"
-> 
-> But there are also minimal firmwares to just ping or swap buffers with
-> the dsp, when you just want to play around with basic features.
 
-Then mess with the firmware symlink in userspace, don't have the driver
-have to worry about it.
-
-> > Please fix up the patch to not require a module parameter, distros hate
-> > them, and users hate them even more.
-> 
-> The driver is the one requiring the parameter (it was already this
-> way), this patch doesn't introduce any parameter. I'll check what can
-> be done and if nobody rejects I'll use the baseimage.dof  as firmware
-> by default.
-
-That would be good.  Again, you can put whatever firmware image you want
-in that location if you wish to use different ones.  That is for
-userspace to do, not have the kernel worry about.
-
-thanks,
-
-greg k-h
