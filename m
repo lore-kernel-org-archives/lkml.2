@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab0LHCOE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:14:04 -0500
-Received: from kroah.org ([198.145.64.141]:46037 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755791Ab0LHArD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756013Ab0LHArD (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 7 Dec 2010 19:47:03 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:28 2010
-Message-Id: <20101208004428.116630616@clark.site>
+Received: from kroah.org ([198.145.64.141]:45988 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755943Ab0LHAqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:55 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:27 2010
+Message-Id: <20101208004427.356573938@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:44 -0800
+Date: Tue, 07 Dec 2010 16:43:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Justin Maggard <jmaggard10@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [038/127] md: fix return value of rdev_size_change()
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [030/127] ipc: initialize structure memory to zero for compat functions
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Justin Maggard <jmaggard10@gmail.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit c26a44ed1e552aaa1d4ceb71842002d235fe98d7 upstream.
+commit 03145beb455cf5c20a761e8451e30b8a74ba58d9 upstream.
 
-When trying to grow an array by enlarging component devices,
-rdev_size_store() expects the return value of rdev_size_change() to be
-in sectors, but the actual value is returned in KBs.
+This takes care of leaking uninitialized kernel stack memory to
+userspace from non-zeroed fields in structs in compat ipc functions.
 
-This functionality was broken by commit
-     dd8ac336c13fd8afdb082ebacb1cddd5cf727889
-so this patch is suitable for any kernel since 2.6.30.
-
-Signed-off-by: Justin Maggard <jmaggard10@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ ipc/compat.c    |    6 ++++++
+ ipc/compat_mq.c |    5 +++++
+ 2 files changed, 11 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1122,7 +1122,7 @@ super_90_rdev_size_change(mdk_rdev_t *rd
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
- 	md_super_wait(rdev->mddev);
--	return num_sectors / 2; /* kB for sysfs */
-+	return num_sectors;
- }
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -242,6 +242,8 @@ long compat_sys_semctl(int first, int se
+ 	struct semid64_ds __user *up64;
+ 	int version = compat_ipc_parse_version(&third);
  
++	memset(&s64, 0, sizeof(s64));
++
+ 	if (!uptr)
+ 		return -EINVAL;
+ 	if (get_user(pad, (u32 __user *) uptr))
+@@ -422,6 +424,8 @@ long compat_sys_msgctl(int first, int se
+ 	int version = compat_ipc_parse_version(&second);
+ 	void __user *p;
  
-@@ -1485,7 +1485,7 @@ super_1_rdev_size_change(mdk_rdev_t *rde
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
- 	md_super_wait(rdev->mddev);
--	return num_sectors / 2; /* kB for sysfs */
-+	return num_sectors;
- }
++	memset(&m64, 0, sizeof(m64));
++
+ 	switch (second & (~IPC_64)) {
+ 	case IPC_INFO:
+ 	case IPC_RMID:
+@@ -595,6 +599,8 @@ long compat_sys_shmctl(int first, int se
+ 	int err, err2;
+ 	int version = compat_ipc_parse_version(&second);
  
- static struct super_type super_types[] = {
++	memset(&s64, 0, sizeof(s64));
++
+ 	switch (second & (~IPC_64)) {
+ 	case IPC_RMID:
+ 	case SHM_LOCK:
+--- a/ipc/compat_mq.c
++++ b/ipc/compat_mq.c
+@@ -53,6 +53,9 @@ asmlinkage long compat_sys_mq_open(const
+ 	void __user *p = NULL;
+ 	if (u_attr && oflag & O_CREAT) {
+ 		struct mq_attr attr;
++
++		memset(&attr, 0, sizeof(attr));
++
+ 		p = compat_alloc_user_space(sizeof(attr));
+ 		if (get_compat_mq_attr(&attr, u_attr) ||
+ 		    copy_to_user(p, &attr, sizeof(attr)))
+@@ -127,6 +130,8 @@ asmlinkage long compat_sys_mq_getsetattr
+ 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
+ 	long ret;
+ 
++	memset(&mqstat, 0, sizeof(mqstat));
++
+ 	if (u_mqstat) {
+ 		if (get_compat_mq_attr(&mqstat, u_mqstat) ||
+ 		    copy_to_user(p, &mqstat, sizeof(mqstat)))
 
 
