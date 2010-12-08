@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab0LHCRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:17:53 -0500
-Received: from kroah.org ([198.145.64.141]:45915 "EHLO coco.kroah.org"
+	id S1755818Ab0LHAqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:46:43 -0500
+Received: from kroah.org ([198.145.64.141]:45892 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab0LHAqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:44 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
-Message-Id: <20101208004426.198353390@clark.site>
+	id S1755793Ab0LHAqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:40 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:25 2010
+Message-Id: <20101208004425.758905429@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:24 -0800
+Date: Tue, 07 Dec 2010 16:43:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tim Abbott <tabbott@ksplice.com>, Jeff Dike <jdike@addtoit.com>
-Subject: [018/127] um: remove PAGE_SIZE alignment in linker script causing kernel segfault.
+        Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Bob Picco <bpicco@redhat.com>
+Subject: [014/127] hpet: fix unwanted interrupt due to stale irq status bit
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 6915e04f8847bea16d0890f559694ad8eedd026c upstream.
+commit 96e9694df446d1154ec2f4fdba8908588b9cba38 upstream.
 
-The linker script cleanup that I did in commit 5d150a97f93 ("um: Clean up
-linker script using standard macros.") (2.6.32) accidentally introduced an
-ALIGN(PAGE_SIZE) when converting to use INIT_TEXT_SECTION; Richard
-Weinberger reported that this causes the kernel to segfault with
-CONFIG_STATIC_LINK=y.
+Jaswinder Singh Rajput wrote:
+> By executing Documentation/timers/hpet_example.c
+>
+> for polling, I requested for 3 iterations but it seems iteration work
+> for only 2 as first expired time is always very small.
+>
+> # ./hpet_example poll /dev/hpet 10 3
+> -hpet: executing poll
+> hpet_poll: info.hi_flags 0x0
+> hpet_poll: expired time = 0x13
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
+> hpet_poll: expired time = 0x1868c
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
+> hpet_poll: expired time = 0x18645
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
 
-I'm not certain why this extra alignment is a problem, but it seems likely
-it is because previously
+Clearing the HPET interrupt enable bit disables interrupt generation
+but does not disable the timer, so the interrupt status bit will still
+be set when the timer elapses.  If another interrupt arrives before
+the timer has been correctly programmed (due to some other device on
+the same interrupt line, or CONFIG_DEBUG_SHIRQ), this results in an
+extra unwanted interrupt event because the status bit is likely to be
+set from comparator matches that happened before the device was opened.
 
-__init_begin = _stext = _text = _sinittext
+Therefore, we have to ensure that the interrupt status bit is and
+stays cleared until we actually program the timer.
 
-and with the extra ALIGN(PAGE_SIZE), _sinittext becomes different from the
-rest.  So there is likely a bug here where something is assuming that
-_sinittext is the same as one of those other symbols.  But reverting the
-accidental change fixes the regression, so it seems worth committing that
-now.
-
-Signed-off-by: Tim Abbott <tabbott@ksplice.com>
-Reported-by: Richard Weinberger <richard@nod.at>
-Cc: Jeff Dike <jdike@addtoit.com>
-Tested by: Antoine Martin <antoine@nagafix.co.uk>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>
+Cc: Bob Picco <bpicco@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/um/kernel/uml.lds.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/hpet.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/arch/um/kernel/uml.lds.S
-+++ b/arch/um/kernel/uml.lds.S
-@@ -22,7 +22,7 @@ SECTIONS
-   _text = .;
-   _stext = .;
-   __init_begin = .;
--  INIT_TEXT_SECTION(PAGE_SIZE)
-+  INIT_TEXT_SECTION(0)
-   . = ALIGN(PAGE_SIZE);
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -476,6 +476,21 @@ static int hpet_ioctl_ieon(struct hpet_d
+ 	if (irq) {
+ 		unsigned long irq_flags;
  
-   .text      :
++		if (devp->hd_flags & HPET_SHARED_IRQ) {
++			/*
++			 * To prevent the interrupt handler from seeing an
++			 * unwanted interrupt status bit, program the timer
++			 * so that it will not fire in the near future ...
++			 */
++			writel(readl(&timer->hpet_config) & ~Tn_TYPE_CNF_MASK,
++			       &timer->hpet_config);
++			write_counter(read_counter(&hpet->hpet_mc),
++				      &timer->hpet_compare);
++			/* ... and clear any left-over status. */
++			isr = 1 << (devp - devp->hd_hpets->hp_dev);
++			writel(isr, &hpet->hpet_isr);
++		}
++
+ 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
+ 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
+ 						? IRQF_SHARED : IRQF_DISABLED;
 
 
