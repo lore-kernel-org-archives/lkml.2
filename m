@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0LHNyB (ORCPT <rfc822;w@1wt.eu>);
+	id S1755099Ab0LHNyB (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 8 Dec 2010 08:54:01 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:25767 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab0LHNyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 08:54:00 -0500
-Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
-In-Reply-To: <20101208041725.GB2291@suse.de>
-References: <20101208000640.115606851@clark.site>
-	 <1291777422.26147.70.camel@zaphod>  <20101208041725.GB2291@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: HP/LKTT
-Date: Wed, 08 Dec 2010 08:54:27 -0500
-Message-ID: <1291816467.3941.19.camel@zaphod>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Received: from mx1.redhat.com ([209.132.183.28]:34410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755055Ab0LHNx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 08:53:59 -0500
+Date: Wed, 8 Dec 2010 14:47:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
+Message-ID: <20101208134712.GB16923@redhat.com>
+References: <20101103062609.GB31163@dastard> <1288768402.2467.665.camel@edumazet-laptop> <20101103103448.GA9169@dastard> <20101103112936.GB9169@dastard> <20101104002140.GA13830@dastard> <20101104054718.GC5210@cr0.nay.redhat.com> <20101208100245.01cf23c5@schatten.dmk.lab> <20101208134116.GA16923@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208134116.GA16923@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-07 at 20:17 -0800, Greg KH wrote:
-> On Tue, Dec 07, 2010 at 10:03:42PM -0500, Lee Schermerhorn wrote:
-> > On Tue, 2010-12-07 at 16:04 -0800, Greg KH wrote:
-> > > 2.6.27-stable review patch.  If anyone has any objections, please let us know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Eric Dumazet <eric.dumazet@gmail.com>
-> > > 
-> > > commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
-> > > 
-> > > When a node contains only HighMem memory, slab_node(MPOL_BIND)
-> > > dereferences a NULL pointer.
-> > > 
-> > > [ This code seems to go back all the way to commit 19770b32609b: "mm:
-> > >   filter based on a nodemask as well as a gfp_mask".  Which was back in
-> > >   April 2008, and it got merged into 2.6.26.  - Linus ]
-> > > 
-> > > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> > > Cc: Mel Gorman <mel@csn.ul.ie>
-> > > Cc: Christoph Lameter <cl@linux.com>
-> > > Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > > 
-> > > ---
-> > >  mm/mempolicy.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > --- a/mm/mempolicy.c
-> > > +++ b/mm/mempolicy.c
-> > > @@ -1404,7 +1404,7 @@ unsigned slab_node(struct mempolicy *pol
-> > >  		(void)first_zones_zonelist(zonelist, highest_zoneidx,
-> > >  							&policy->v.nodes,
-> > >  							&zone);
-> > > -		return zone->node;
-> > > +		return zone ? zone->node : numa_node_id();
-> > 
-> > I think this should be numa_mem_id().  Given the documented purpose of
-> > slab_node(), we want a node from which page allocation is likely to
-> > succeed.  numa_node_id() can return a memoryless node for, e.g.,  some
-> > configurations of some HP ia64 platforms.  numa_mem_id() was introduced
-> > to return that same node from which "local" mempolicy would allocate
-> > pages.
-> 
-> So should the upstream patch be changed?
-> 
+On 12/08, Oleg Nesterov wrote:
+>
+> On 12/08, Florian Mickler wrote:
+> >
+> > [ ccing Ingo and Oleg ] as suggested
+>
+> Well. Of course I can't explain this bug. But, looking at this email
+> I do not see amything strange in exit/schedule/etc.
+>
+> > > >> > > > This is resulting in the command 'ip link set tap0 up' hanging as a zombie:
+> > > >> > > >
+> > > >> > > > root      3005     1  0 16:53 pts/3    00:00:00 /bin/sh /vm-images/qemu-ifup tap0
+> > > >> > > > root      3011  3005  0 16:53 pts/3    00:00:00 /usr/bin/sudo /sbin/ip link set tap0 up
+> > > >> > > > root      3012  3011  0 16:53 pts/3    00:00:00 [ip] <defunct>
+>
+> That is. ip is a zombie.
 
-Yeah, probably should.  I didn't see it go by.
+And. I do not know if this matters or not, but "the command 'ip link
+set tap0 up' hanging as a zombie" does not look right.
 
-Lee
+This was spawned by
+
+> >> > > > if [ -n "$1" ];then
+> >> > > >         /usr/bin/sudo /sbin/ip link set $1 up
+> >> > > >         sleep 0.5s
+> >> > > >         /usr/bin/sudo /usr/sbin/brctl addif $switch $1
+> >> > > >      exit 0
+> >> > > > fi
+
+The command does not hang. But it forks the child with pid == 3012,
+this child exits.
+
+Oleg.
 
