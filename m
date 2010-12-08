@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab0LHCJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:09:30 -0500
-Received: from kroah.org ([198.145.64.141]:58379 "EHLO coco.kroah.org"
+	id S1756780Ab0LHCJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:09:45 -0500
+Received: from kroah.org ([198.145.64.141]:58360 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140Ab0LHArX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:23 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:30 2010
-Message-Id: <20101208004430.203160113@clark.site>
+	id S1756126Ab0LHArU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:20 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:29 2010
+Message-Id: <20101208004429.911496603@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:05 -0800
+Date: Tue, 07 Dec 2010 16:44:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Jeff Garzik <jgarzik@redhat.com>, Kerin Millar <kerframil@gmail.com>
-Subject: [059/127] libata-scsi passthru: fix bug which truncated LBA48 return values
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        <arunabal@in.ibm.com>, <sbest@us.ibm.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [056/127] mm/vfs: revalidate page->mapping in do_generic_file_read()
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-commit bc496ed00ab1411d3efaf295b72e0c9eb343e1a3 upstream.
+commit 8d056cb965b8fb7c53c564abf28b1962d1061cd3 upstream.
 
-Fix assignment which overwrote SAT ATA PASS-THROUGH command EXTEND
-bit setting (ATA_TFLAG_LBA48)
+70 hours into some stress tests of a 2.6.32-based enterprise kernel, we
+ran into a NULL dereference in here:
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: Kerin Millar <kerframil@gmail.com>
+	int block_is_partially_uptodate(struct page *page, read_descriptor_t *desc,
+	                                        unsigned long from)
+	{
+---->		struct inode *inode = page->mapping->host;
+
+It looks like page->mapping was the culprit.  (xmon trace is below).
+After closer examination, I realized that do_generic_file_read() does a
+find_get_page(), and eventually locks the page before calling
+block_is_partially_uptodate().  However, it doesn't revalidate the
+page->mapping after the page is locked.  So, there's a small window
+between the find_get_page() and ->is_partially_uptodate() where the page
+could get truncated and page->mapping cleared.
+
+We _have_ a reference, so it can't get reclaimed, but it certainly
+can be truncated.
+
+I think the correct thing is to check page->mapping after the
+trylock_page(), and jump out if it got truncated.  This patch has been
+running in the test environment for a month or so now, and we have not
+seen this bug pop up again.
+
+xmon info:
+
+  1f:mon> e
+  cpu 0x1f: Vector: 300 (Data Access) at [c0000002ae36f770]
+      pc: c0000000001e7a6c: .block_is_partially_uptodate+0xc/0x100
+      lr: c000000000142944: .generic_file_aio_read+0x1e4/0x770
+      sp: c0000002ae36f9f0
+     msr: 8000000000009032
+     dar: 0
+   dsisr: 40000000
+    current = 0xc000000378f99e30
+    paca    = 0xc000000000f66300
+      pid   = 21946, comm = bash
+  1f:mon> r
+  R00 = 0025c0500000006d   R16 = 0000000000000000
+  R01 = c0000002ae36f9f0   R17 = c000000362cd3af0
+  R02 = c000000000e8cd80   R18 = ffffffffffffffff
+  R03 = c0000000031d0f88   R19 = 0000000000000001
+  R04 = c0000002ae36fa68   R20 = c0000003bb97b8a0
+  R05 = 0000000000000000   R21 = c0000002ae36fa68
+  R06 = 0000000000000000   R22 = 0000000000000000
+  R07 = 0000000000000001   R23 = c0000002ae36fbb0
+  R08 = 0000000000000002   R24 = 0000000000000000
+  R09 = 0000000000000000   R25 = c000000362cd3a80
+  R10 = 0000000000000000   R26 = 0000000000000002
+  R11 = c0000000001e7b60   R27 = 0000000000000000
+  R12 = 0000000042000484   R28 = 0000000000000001
+  R13 = c000000000f66300   R29 = c0000003bb97b9b8
+  R14 = 0000000000000001   R30 = c000000000e28a08
+  R15 = 000000000000ffff   R31 = c0000000031d0f88
+  pc  = c0000000001e7a6c .block_is_partially_uptodate+0xc/0x100
+  lr  = c000000000142944 .generic_file_aio_read+0x1e4/0x770
+  msr = 8000000000009032   cr  = 22000488
+  ctr = c0000000001e7a60   xer = 0000000020000000   trap =  300
+  dar = 0000000000000000   dsisr = 40000000
+  1f:mon> t
+  [link register   ] c000000000142944 .generic_file_aio_read+0x1e4/0x770
+  [c0000002ae36f9f0] c000000000142a14 .generic_file_aio_read+0x2b4/0x770 (unreliable)
+  [c0000002ae36fb40] c0000000001b03e4 .do_sync_read+0xd4/0x160
+  [c0000002ae36fce0] c0000000001b153c .vfs_read+0xec/0x1f0
+  [c0000002ae36fd80] c0000000001b1768 .SyS_read+0x58/0xb0
+  [c0000002ae36fe30] c00000000000852c syscall_exit+0x0/0x40
+  --- Exception: c00 (System Call) at 00000080a840bc54
+  SP (fffca15df30) is in userspace
+  1f:mon> di c0000000001e7a6c
+  c0000000001e7a6c  e9290000      ld      r9,0(r9)
+  c0000000001e7a70  418200c0      beq     c0000000001e7b30        # .block_is_partially_uptodate+0xd0/0x100
+  c0000000001e7a74  e9440008      ld      r10,8(r4)
+  c0000000001e7a78  78a80020      clrldi  r8,r5,32
+  c0000000001e7a7c  3c000001      lis     r0,1
+  c0000000001e7a80  812900a8      lwz     r9,168(r9)
+  c0000000001e7a84  39600001      li      r11,1
+  c0000000001e7a88  7c080050      subf    r0,r8,r0
+  c0000000001e7a8c  7f805040      cmplw   cr7,r0,r10
+  c0000000001e7a90  7d6b4830      slw     r11,r11,r9
+  c0000000001e7a94  796b0020      clrldi  r11,r11,32
+  c0000000001e7a98  419d00a8      bgt     cr7,c0000000001e7b40    # .block_is_partially_uptodate+0xe0/0x100
+  c0000000001e7a9c  7fa55840      cmpld   cr7,r5,r11
+  c0000000001e7aa0  7d004214      add     r8,r0,r8
+  c0000000001e7aa4  79080020      clrldi  r8,r8,32
+  c0000000001e7aa8  419c0078      blt     cr7,c0000000001e7b20    # .block_is_partially_uptodate+0xc0/0x100
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: <arunabal@in.ibm.com>
+Cc: <sbest@us.ibm.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-scsi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/filemap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -2825,7 +2825,7 @@ static unsigned int ata_scsi_pass_thru(s
- 	 * write indication (used for PIO/DMA setup), result TF is
- 	 * copied back and we don't whine too much about its failure.
- 	 */
--	tf->flags = ATA_TFLAG_ISADDR | ATA_TFLAG_DEVICE;
-+	tf->flags |= ATA_TFLAG_ISADDR | ATA_TFLAG_DEVICE;
- 	if (scmd->sc_data_direction == DMA_TO_DEVICE)
- 		tf->flags |= ATA_TFLAG_WRITE;
- 
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1030,6 +1030,9 @@ find_page:
+ 				goto page_not_up_to_date;
+ 			if (!trylock_page(page))
+ 				goto page_not_up_to_date;
++			/* Did it get truncated before we got the lock? */
++			if (!page->mapping)
++				goto page_not_up_to_date_locked;
+ 			if (!mapping->a_ops->is_partially_uptodate(page,
+ 								desc, offset))
+ 				goto page_not_up_to_date_locked;
 
 
