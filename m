@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab0LHSOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:14:45 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:2366 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755550Ab0LHSOo convert rfc822-to-8bit (ORCPT
+	id S1755977Ab0LHSQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:16:33 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:58885 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755858Ab0LHSQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:14:44 -0500
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-From: "Jian Peng" <jipeng@broadcom.com>
-To: "Tejun Heo" <tj@kernel.org>, "Robert Hancock" <hancockrwd@gmail.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        ide <linux-ide@vger.kernel.org>
-Date: Wed, 8 Dec 2010 10:14:33 -0800
-Subject: RE: questions regarding possible violation of AHCI spec in AHCI
- driver
-Thread-Topic: questions regarding possible violation of AHCI spec in
- AHCI driver
-Thread-Index: AcuWv7hXUFEReRUxRm+wOM2L6oM4dwAQUkqg
-Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFEE569.4030204@gmail.com> <4CFF58D2.4040006@kernel.org>
-In-Reply-To: <4CFF58D2.4040006@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 8 Dec 2010 13:16:31 -0500
+Message-ID: <4CFFCB62.90601@euromail.se>
+Date: Wed, 08 Dec 2010 19:16:02 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-X-WSS-ID: 60E114A35RK10729169-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ping Cheng <pingc@wacom.com>
+Subject: Re: [PATCH] input: mt: Add hovering distance axis
+References: <1291710468-2022-1-git-send-email-rydberg@euromail.se> <4CFFC45C.2040107@canonical.com> <20101208180521.GA31522@core.coreip.homeip.net>
+In-Reply-To: <20101208180521.GA31522@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PQOYm-0003yM-BK.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQOYm-0003yM-BK 889a5d68d33e31c7cdb6be173dce9dcb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Tejun,
+On 12/08/2010 07:05 PM, Dmitry Torokhov wrote:
 
-The problem happened as follow:
+> On Wed, Dec 08, 2010 at 09:46:04AM -0800, Chase Douglas wrote:
+>> On 12/07/2010 12:27 AM, Henrik Rydberg wrote:
+>>> Touch devices capable of hovering, i.e., fingers detected a distance
+>>> from the surface, are not supported by the current input MT
+>>> protocol. This patch adds ABS_MT_DISTANCE, which may be used to
+>>> indicate the distance between the contact and the surface.
+>>
+>> Have you given thought to calling it ABS_MT_Z instead? I have no real
+>> problem with ABS_MT_DISTANCE per se, but ABS_MT_Z is more clearly
+>> defined in my head. If I was new to MT development I may wonder if
+>> ABS_MT_DISTANCE had anything to do with distance between points or some
+>> other object.
+> 
+> X/Y/Z imply that we fully engaged the device and it is 3 dimensional.
+> Distance says that we are approaching the device but have not directly
+> engaged it yet.
 
-After power up, inside ahci_init_one(), it will call ahci_power_up() to toggle PxCMD.SUD bit first, then HBA will send COMRESET to device, and device will send first D2H FIS back. Here it will call ahci_start_engine() to turn on PxCMD.ST to process command. In this case, it may run into race condition that transaction triggered by toggling PxCMD.SUD is not completed yet, and that is the reason why extra check is required by spec to guarantee that HBA already received FIS and in sane state. 
 
-In most HBA, either staggered spin-up feature was not supported, or time required for transaction is less than that between two function calls, it may work. IMHO, this is a clear violation of spec, and not robust against all HBA design.
-
-The major concern is that ahci_start_engine() is used widely in EH and it does not return result to reflect whether ST bit was set or not, this may cause trouble in some cases. I am working on verifying those cases with different HBAs now.
+Yep, and we will surely start seeing more 3D devices soon, so reserving _Z for
+those is a given.
 
 Thanks,
-Jian
-
-
------Original Message-----
-From: Tejun Heo [mailto:tj@kernel.org] 
-Sent: Wednesday, December 08, 2010 2:07 AM
-To: Robert Hancock
-Cc: Jian Peng; linux-kernel@vger.kernel.org; jgarzik@pobox.com; ide
-Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
-
-Hello,
-
-On 12/08/2010 02:54 AM, Robert Hancock wrote:
-> On 12/07/2010 01:43 AM, Jian Peng wrote:
->> Recently, while bringing up a new AHCI host controller, I found out
->> that current AHCI driver (in 2.6.37-rc3) may violate AHCI spec in
->> function libahci.c: ahci_start_engine().
->>
->> From end of section 10.1.2 in AHCI 1.3 spec, it claims
->>
->> Software shall not set PxCMD.ST to '1' until it is determined that
->> a functional device is present on the port as determined by
->> PxTFD.STS.BSY = '0', PxTFD.STS.DRQ = '0', and PxSSTS.DET = 3h.
->>
->> It seems working well on most controller without this extra
->> checking, but does cause problem in our new core. Since toggling
->> PxCMD.SUD already initiated reset process at early time, and by the
->> time of ahci_start_engine() got called, BSY bit may not be cleared
->> yet, and forcing PxCMD.ST bit to 1 will cause problem for HW in
->> this case.
-
-Hmmm... interesting.  Yeah, we have never had any problem in that area
-and would like to avoid changing unless necessary but then again if
-it's broken, well, we should.  What kind of problem is the controller
-showing?
-
-Thanks.
-
--- 
-tejun
-
-
+Henrik
