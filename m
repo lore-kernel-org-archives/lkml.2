@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab0LHXIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:08:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37019 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353Ab0LHXIq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:08:46 -0500
-Subject: Re: linux-next: Tree for December 8
- (drivers/platform/x86/Kconfig:422:error: recursive dependency detected!)
-From: David Woodhouse <dwmw2@infradead.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>, sedat.dilek@gmail.com,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 08 Dec 2010 23:08:39 +0000
-In-Reply-To: <20101208135105.a8482d46.randy.dunlap@oracle.com>
-References: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com>
-	 <AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
-	 <1291801990.5992.105.camel@i7.infradead.org>
-	 <20101208174603.GA7107@core.coreip.homeip.net>
-	 <20101208135105.a8482d46.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.3 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1291849721.5992.145.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932126Ab0LHXI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:08:56 -0500
+Received: from kroah.org ([198.145.64.141]:47244 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932107Ab0LHXIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 18:08:54 -0500
+Date: Wed, 8 Dec 2010 15:08:02 -0800
+From: Greg KH <greg@kroah.com>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Nishanth Menon <nm@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
+Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions
+ for loader
+Message-ID: <20101208230802.GA8176@kroah.com>
+References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
+ <20101208222642.GA31802@kroah.com>
+ <AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 13:51 -0800, Randy Dunlap wrote:
+On Wed, Dec 08, 2010 at 05:02:20PM -0600, Ramirez Luna, Omar wrote:
+> Hi,
 > 
-> I dislike select, but reality is that modules do need to select/enable
-> library code and minor features sometimes.
+> On Wed, Dec 8, 2010 at 4:26 PM, Greg KH <greg@kroah.com> wrote:
+> > On Tue, Dec 07, 2010 at 12:09:06AM -0600, Omar Ramirez Luna wrote:
+> >> Instead use request_firmware and friends to get a valid firmware
+> >> image.
+> >>
+> >> Right now the image is supplied dynamically through udev and the
+> >> following rule:
+> >>
+> >> KERNEL=="omap-dsp", SUBSYSTEM=="firmware", ACTION=="add",     \
+> >>       RUN+="/bin/sh -c 'echo 1 > /sys/$DEVPATH/loading;       \
+> >>               cat $FIRMWARE > /sys/$DEVPATH/data;             \
+> >>               echo 0 > /sys/$DEVPATH/loading'"
+> >
+> > Why do you need a custom firmware rule?
 > 
-> OTOH, where drivers/platform/x86/Kconfig:ACPI_CMPC does "select INPUT"
-> to enable an entire subsystem is wrong and bad IMO. 
+> It was meant as an example, when I compiled my minimal file system it
+> didn't supply the firmware.sh script nor created /lib/firmware... I
+> thought that not everybody would have the firmware.sh, so I just
+> provided a sample rule.
 
-This is just a deficiency in the tools. The correct answer is to fix the
-damn tools, not invent this silly 'select' facility which means much the
-same thing as 'depends on' but is implemented differently.
+So, can I remove this from the changelog comment, as it's not really
+needed at all?
 
-As long ago as the mid-1990s, the Nemesis research OS was using a tcl
-xconfig tool based on the Linux one, but which would show you the
-dependencies for an option that was disabled, so you could enable them
-where you needed to. Rather than just hiding the option completely.
+> >  Why doesn't the default  firmware loading rule that comes with udev work properly for you?
+> > What are you needing different here that works properly for all other drivers?
+> 
+> firmware.sh under /lib/udev/ and dsp binaries installed under
+> /lib/firmware/, my rule is the brute version of firmware.sh so nothing
+> different in the script.
+> 
+> Probably the only change would be to supply the firmware name only, as
+> of now the insmod parameter requires the entire path, e.g.:
+> 
+> insmod bridgedriver.ko base_img=/lib/dsp/baseimage.dof
+> 
+> if using firmware.sh and placing firmware files under /lib/firmware/, then
+> 
+> insmod bridgedriver.ko base_img=baseimage.dof
 
--- 
-dwmw2
+Ick, why use a module parameter name at all?  Why is this "special" and
+different from all other firmware users?  They don't have to manually
+specify a file name, the driver does that.
 
+Please fix up the patch to not require a module parameter, distros hate
+them, and users hate them even more.
+
+thanks,
+
+greg k-h
