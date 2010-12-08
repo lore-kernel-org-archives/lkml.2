@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0LHAin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:38:43 -0500
-Received: from kroah.org ([198.145.64.141]:54820 "EHLO coco.kroah.org"
+	id S1755300Ab0LHAef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:34:35 -0500
+Received: from kroah.org ([198.145.64.141]:54790 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab0LHAej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:39 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:42 2010
-Message-Id: <20101208000642.151033921@clark.site>
+	id S1754622Ab0LHAed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:33 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:41 2010
+Message-Id: <20101208000641.528978682@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:25 -0800
+Date: Tue, 07 Dec 2010 16:04:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nelson Elhage <nelhage@ksplice.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [26/44] do_exit(): make sure that we run with get_fs() == USER_DS
+        Kevin Lloyd <klloyd@sierrawireless.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [20/44] USB: storage: sierra_ms: fix sysfs file attribute
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nelson Elhage <nelhage@ksplice.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-commit 33dd94ae1ccbfb7bf0fb6c692bc3d1c4269e6177 upstream.
+commit d9624e75f6ad94d8a0718c1fafa89186d271a78c upstream.
 
-If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
-otherwise reset before do_exit().  do_exit may later (via mm_release in
-fork.c) do a put_user to a user-controlled address, potentially allowing
-a user to leverage an oops into a controlled write into kernel memory.
+A non-writable sysfs file shouldn't have writable attributes.
 
-This is only triggerable in the presence of another bug, but this
-potentially turns a lot of DoS bugs into privilege escalations, so it's
-worth fixing.  I have proof-of-concept code which uses this bug along
-with CVE-2010-3849 to write a zero to an arbitrary kernel address, so
-I've tested that this is not theoretical.
-
-A more logical place to put this fix might be when we know an oops has
-occurred, before we call do_exit(), but that would involve changing
-every architecture, in multiple places.
-
-Let's just stick it in do_exit instead.
-
-[akpm@linux-foundation.org: update code comment]
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kevin Lloyd <klloyd@sierrawireless.com>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/exit.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/usb/storage/sierra_ms.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1004,6 +1004,15 @@ NORET_TYPE void do_exit(long code)
- 	if (unlikely(!tsk->pid))
- 		panic("Attempted to kill the idle task!");
+--- a/drivers/usb/storage/sierra_ms.c
++++ b/drivers/usb/storage/sierra_ms.c
+@@ -120,7 +120,7 @@ static ssize_t show_truinst(struct devic
+ 	}
+ 	return result;
+ }
+-static DEVICE_ATTR(truinst, S_IWUGO | S_IRUGO, show_truinst, NULL);
++static DEVICE_ATTR(truinst, S_IRUGO, show_truinst, NULL);
  
-+	/*
-+	 * If do_exit is called because this processes oopsed, it's possible
-+	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
-+	 * continuing. Amongst other possible reasons, this is to prevent
-+	 * mm_release()->clear_child_tid() from writing to a user-controlled
-+	 * kernel address.
-+	 */
-+	set_fs(USER_DS);
-+
- 	tracehook_report_exit(&code);
- 
- 	/*
+ int sierra_ms_init(struct us_data *us)
+ {
 
 
