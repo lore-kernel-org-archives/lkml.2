@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab0LHJeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 04:34:22 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:57398 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab0LHJeS (ORCPT
+	id S1754543Ab0LHJib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 04:38:31 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:18663 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751942Ab0LHJi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 04:34:18 -0500
-X-IronPort-AV: E=Sophos;i="4.59,315,1288584000"; 
-   d="scan'208";a="125875428"
-Subject: Re: [PATCH 1/3] x86-32: Separate 1:1 pagetables from swapper_pg_dir
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Greg KH <greg@kroah.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <20101208041528.GA2211@kroah.com>
-References: <20101111141358.GA4641@kroah.com>
-	 <1289488576-18117-2-git-send-email-joerg.roedel@amd.com>
-	 <20101207210512.GA14849@kroah.com> <4CFEF637.4020203@goop.org>
-	 <20101208041528.GA2211@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Wed, 8 Dec 2010 09:34:15 +0000
-Message-ID: <1291800855.13966.4404.camel@zakaz.uk.xensource.com>
+	Wed, 8 Dec 2010 04:38:29 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPbd/kx5LdBk/2dsb2JhbACjTXLAUoVJBJAL
+Date: Wed, 8 Dec 2010 20:38:24 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@suse.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/46] Revert "fs: use RCU read side protection in
+ d_validate"
+Message-ID: <20101208093824.GA3151@amd>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <2d1d8ffc4acea8b6c4e5b58bb1653b3f0e7071e2.1290852958.git.npiggin@kernel.dk>
+ <20101208011656.GD29333@dastard>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208011656.GD29333@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 04:15 +0000, Greg KH wrote:
-> On Tue, Dec 07, 2010 at 07:06:31PM -0800, Jeremy Fitzhardinge wrote:
-> > On 12/07/2010 01:05 PM, Greg KH wrote:
-> > > On Thu, Nov 11, 2010 at 04:16:14PM +0100, Joerg Roedel wrote:
-> > >> commit fd89a137924e0710078c3ae855e7cec1c43cb845 upstream
-> > > applied, thanks.
+On Wed, Dec 08, 2010 at 12:16:56PM +1100, Dave Chinner wrote:
+> On Sat, Nov 27, 2010 at 08:56:03PM +1100, Nick Piggin wrote:
+> > This reverts commit 3825bdb7ed920845961f32f364454bee5f469abb.
 > > 
-> > This will need as well 5b5c1af104ab5adec1be9dcb4c787492d83d8d83 to
-> > prevent Xen regressions.
+> > Patch is broken, you can't dget() without holding any locks!
 > 
-> So should I add that to a specific release? The next .36 stable or something else?
+> I believe you can - for the same reasons we can take a reference to
+> an inode without holding the inode_lock. That is, as long as the
+> caller already holds an active reference to the dentry,
+> dget() can be used to take another reference without needing the
+> dcache_lock.
+> 
+> Such usage appears to be described in the comment above dget() and
+> there's a BUG_ON() in dget() to catch callers that don't already
+> have an active reference. An example of a valid unlocked dget():
+> d_alloc() does an unlocked dget() to take a reference to the parent
+> dentry whichn we already are guaranteed to have a reference to.
 
-5b5c1af104ab5 fixed an issue exposed by b40827fa7268. I'm not sure if
-fd89a13792 also exposes a similar issue, but I think it does not:
+Of course you can dget if you already have a reference :)
 
-It looks to me like fd89a13792 only reads from swapper_pg_dir and writes
-to trampoline_pg_dir which is unpinned (and unused) under Xen and hence
-there is no problem and 5b5c1af104ab5 is not needed.
+ 
+> As to d_validate() - it depends on the caller behaviour as to
+> whether the unlocked dget() is valid or not.  From a cursory check
+> of the NCP and SMB readdir caches, both appear to hold an active
+> reference to the dentry it is passing to d_validate().
 
-b40827fa7268 is in 2.6.37-rc and doesn't seem to be targeted for a
-stable backport AFAICT.
+I don't see where? Can you point to where the refcount is taken?
+AFAIKS it drops the reference 3 lines after it puts the pointer
+into cache.
 
-Ian.
+
+> If that is
+> the case then there is nothing wrong with the way d_validate uses
+> dget(). Can someone with more SMB/NCP expertise than me validate the
+> use of cached dentries?
+
+Then why would it have to use d_validate if it has a reference?
+That is supposed to be for an "untrusted" pointer (which is why
+it had all the crazy checks that it's in kmem and in the right
+slab etc).
 
