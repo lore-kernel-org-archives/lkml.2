@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab0LHCAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:00:25 -0500
-Received: from kroah.org ([198.145.64.141]:48418 "EHLO coco.kroah.org"
+	id S1756905Ab0LHCAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:00:53 -0500
+Received: from kroah.org ([198.145.64.141]:48409 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756823Ab0LHA7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:18 -0500
+	id S1756815Ab0LHA7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:17 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:23 2010
-Message-Id: <20101208005723.683030664@clark.site>
+Message-Id: <20101208005723.585521192@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:40 -0800
+Date: Tue, 07 Dec 2010 16:56:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
+        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [023/289] ath9k: fix spurious MIC failure reports
+Subject: [022/289] ath9k: fix regression on beacon loss after bgscan
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,112 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 56363ddeeed3afc5277ca227209773bc1042cc7b upstream.
+commit 52b8ac92496e03d6b5619204d7f3bae6ce6eae45 upstream.
 
-According to the hardware documentation, the MIC failure bit is only
-valid if the frame was decrypted using a valid TKIP key and is not a
-fragment.
-In some setups I've seen hardware-reported MIC failures on an AP that
-was configured for CCMP only, so it's clear that additional checks are
-necessary.
+When we return to the home channel we were never reseting our beacon
+timers, this was casued by the fact that the scanning flag was still
+on even after we returned to our home channel. There are also other
+reasons why we would get a reset and if we are not off channel
+we always need to resynch our beacon timers, because a reset will
+clear them.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+This bug is a regression introduced on 2.6.36. The order of the
+changes are as follows:
+
+5ee08656 - Sat Jul 31 - ath9k: prevent calibration during off-channel activity
+a0daa0e7 - Tue Jul 27 - Revert "mac80211: fix sw scan bracketing"
+543708be - Fri Jun 18 - mac80211: fix sw scan bracketing
+
+mcgrof@tux ~/linux-2.6-allstable (git::master)$ git describe \
+        --contains 5ee0865615f65f84e6ee9174771a6716c29e08e1
+v2.6.36-rc1~43^2~34^2~22
+
+mcgrof@tux ~/linux-2.6-allstable (git::master)$ git describe \
+        --contains a0daa0e7592ada797d6835f11529097aabc27ad2
+v2.6.36-rc1~571^2~64^2~13
+
+mcgrof@tux ~/linux-2.6-allstable (git::master)$ git describe \
+        --contains 543708be320d7df692d24b349ca01a947b340764
+v2.6.36-rc1~571^2~107^2~187
+
+So 5ee08656 would have worked if a0daa0e7 was not committed but
+it was so this means 5ee08656 was broken since it assumed that
+when we were in the channel change routine the scan flag would
+be lifted. As it turns out the scan flag will be set when we
+are already on the home channel.
+
+For more details refer to:
+
+http://code.google.com/p/chromium-os/issues/detail?id=5715
+
+These issues will need to be considered for our solution on
+reshifting the scan complete callback location on mac80211 on
+current development kernel work.
+
+This patch has stable fixes which apply down to [2.6.36+]
+
+Cc: Paul Stewart <pstew@google.com>
+Cc: Amod Bodas <amod.bodas@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath.h          |    1 +
- drivers/net/wireless/ath/ath9k/common.c |   11 +++++++++++
- drivers/net/wireless/ath/ath9k/mac.c    |    3 ++-
- drivers/net/wireless/ath/ath9k/recv.c   |   19 +++++++++++--------
- 4 files changed, 25 insertions(+), 9 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath.h
-+++ b/drivers/net/wireless/ath/ath.h
-@@ -119,6 +119,7 @@ struct ath_common {
- 
- 	u32 keymax;
- 	DECLARE_BITMAP(keymap, ATH_KEYMAX);
-+	DECLARE_BITMAP(tkip_keymap, ATH_KEYMAX);
- 	u8 splitmic;
- 
- 	struct ath_regulatory regulatory;
---- a/drivers/net/wireless/ath/ath9k/common.c
-+++ b/drivers/net/wireless/ath/ath9k/common.c
-@@ -366,9 +366,13 @@ int ath9k_cmn_key_config(struct ath_comm
- 	set_bit(idx, common->keymap);
- 	if (key->alg == ALG_TKIP) {
- 		set_bit(idx + 64, common->keymap);
-+		set_bit(idx, common->tkip_keymap);
-+		set_bit(idx + 64, common->tkip_keymap);
- 		if (common->splitmic) {
- 			set_bit(idx + 32, common->keymap);
- 			set_bit(idx + 64 + 32, common->keymap);
-+			set_bit(idx + 32, common->tkip_keymap);
-+			set_bit(idx + 64 + 32, common->tkip_keymap);
- 		}
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -257,9 +257,11 @@ int ath_set_channel(struct ath_softc *sc
+ 	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL | SC_OP_SCANNING))) {
+ 		ath_start_ani(common);
+ 		ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work, 0);
+-		ath_beacon_config(sc, NULL);
  	}
  
-@@ -393,10 +397,17 @@ void ath9k_cmn_key_delete(struct ath_com
- 		return;
++	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL)))
++		ath_beacon_config(sc, NULL);
++
+  ps_restore:
+ 	ath9k_ps_restore(sc);
+ 	return r;
+@@ -953,7 +955,7 @@ int ath_reset(struct ath_softc *sc, bool
  
- 	clear_bit(key->hw_key_idx + 64, common->keymap);
-+
-+	clear_bit(key->hw_key_idx, common->tkip_keymap);
-+	clear_bit(key->hw_key_idx + 64, common->tkip_keymap);
-+
- 	if (common->splitmic) {
- 		ath9k_hw_keyreset(ah, key->hw_key_idx + 32);
- 		clear_bit(key->hw_key_idx + 32, common->keymap);
- 		clear_bit(key->hw_key_idx + 64 + 32, common->keymap);
-+
-+		clear_bit(key->hw_key_idx + 32, common->tkip_keymap);
-+		clear_bit(key->hw_key_idx + 64 + 32, common->tkip_keymap);
- 	}
- }
- EXPORT_SYMBOL(ath9k_cmn_key_delete);
---- a/drivers/net/wireless/ath/ath9k/mac.c
-+++ b/drivers/net/wireless/ath/ath9k/mac.c
-@@ -711,7 +711,8 @@ int ath9k_hw_rxprocdesc(struct ath_hw *a
- 			rs->rs_phyerr = phyerr;
- 		} else if (ads.ds_rxstatus8 & AR_DecryptCRCErr)
- 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
--		else if (ads.ds_rxstatus8 & AR_MichaelErr)
-+		else if ((ads.ds_rxstatus8 & AR_MichaelErr) &&
-+		         rs->rs_keyix != ATH9K_RXKEYIX_INVALID)
- 			rs->rs_status |= ATH9K_RXERR_MIC;
- 		else if (ads.ds_rxstatus8 & AR_KeyMiss)
- 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -870,15 +870,18 @@ static bool ath9k_rx_accept(struct ath_c
- 		if (rx_stats->rs_status & ATH9K_RXERR_DECRYPT) {
- 			*decrypt_error = true;
- 		} else if (rx_stats->rs_status & ATH9K_RXERR_MIC) {
--			if (ieee80211_is_ctl(fc))
--				/*
--				 * Sometimes, we get invalid
--				 * MIC failures on valid control frames.
--				 * Remove these mic errors.
--				 */
--				rx_stats->rs_status &= ~ATH9K_RXERR_MIC;
--			else
-+			/*
-+			 * The MIC error bit is only valid if the frame
-+			 * is not a control frame or fragment, and it was
-+			 * decrypted using a valid TKIP key.
-+			 */
-+			if (!ieee80211_is_ctl(fc) &&
-+			    !ieee80211_has_morefrags(fc) &&
-+			    !(le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_FRAG) &&
-+			    test_bit(rx_stats->rs_keyix, common->tkip_keymap))
- 				rxs->flag |= RX_FLAG_MMIC_ERROR;
-+			else
-+				rx_stats->rs_status &= ~ATH9K_RXERR_MIC;
- 		}
- 		/*
- 		 * Reject error frames with the exception of
+ 	ath_update_txpow(sc);
+ 
+-	if (sc->sc_flags & SC_OP_BEACONS)
++	if ((sc->sc_flags & SC_OP_BEACONS) || !(sc->sc_flags & (SC_OP_OFFCHANNEL)))
+ 		ath_beacon_config(sc, NULL);	/* restart beacons */
+ 
+ 	ath9k_hw_set_interrupts(ah, ah->imask);
 
 
