@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab0LHB77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:59:59 -0500
-Received: from kroah.org ([198.145.64.141]:48434 "EHLO coco.kroah.org"
+	id S1756826Ab0LHA7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:18 -0500
+Received: from kroah.org ([198.145.64.141]:48398 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756739Ab0LHA7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:20 -0500
+	id S1756789Ab0LHA7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:15 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:23 2010
-Message-Id: <20101208005723.901036605@clark.site>
+Message-Id: <20101208005723.394192539@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:42 -0800
+Date: Tue, 07 Dec 2010 16:56:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [025/289] ath9k_hw: Fix divide by zero cases in paprd.
+Subject: [020/289] ath9k_hw: handle rx key miss
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,62 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Senthil Balasubramanian <senthilkumar@atheros.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 2d3fca180710c6832de22c44155ce6a3a4953c6b upstream.
+commit 3ae74c33c4f799f6bf6d67240a94a0814a8f1944 upstream.
 
-We are not handling all divide by zero cases in paprd.
-Add additional checks for divide by zero cases in papard.
+If AR_KeyMiss is set in the rx descriptor and AR_RxFrameOK is unset,
+the hardware could not locate a valid key during a decryption attempt.
 
-This patch has fixes intended for kernel 2.6.36.
+In this case, the frame must not be reported as decrypted, otherwise
+mac80211 sees only random garbage.
 
-Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_paprd.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_mac.c |    3 ++-
+ drivers/net/wireless/ath/ath9k/mac.c        |    2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_paprd.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_paprd.c
-@@ -347,6 +347,10 @@ static bool create_pa_curve(u32 *data_L,
- 	    (((Y[6] - Y[3]) * 1 << scale_factor) +
- 	     (x_est[6] - x_est[3])) / (x_est[6] - x_est[3]);
- 
-+	/* prevent division by zero */
-+	if (G_fxp == 0)
-+		return false;
-+
- 	Y_intercept =
- 	    (G_fxp * (x_est[0] - x_est[3]) +
- 	     (1 << scale_factor)) / (1 << scale_factor) + Y[3];
-@@ -356,14 +360,12 @@ static bool create_pa_curve(u32 *data_L,
- 
- 	for (i = 0; i <= 3; i++) {
- 		y_est[i] = i * 32;
--
--		/* prevent division by zero */
--		if (G_fxp == 0)
--			return false;
--
- 		x_est[i] = ((y_est[i] * 1 << scale_factor) + G_fxp) / G_fxp;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_mac.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
+@@ -616,7 +616,8 @@ int ath9k_hw_process_rxdesc_edma(struct
+ 			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
+ 		} else if (rxsp->status11 & AR_MichaelErr) {
+ 			rxs->rs_status |= ATH9K_RXERR_MIC;
+-		}
++		} else if (rxsp->status11 & AR_KeyMiss)
++			rxs->rs_status |= ATH9K_RXERR_DECRYPT;
  	}
  
-+	if (y_est[max_index] == 0)
-+		return false;
-+
- 	x_est_fxp1_nonlin =
- 	    x_est[max_index] - ((1 << scale_factor) * y_est[max_index] +
- 				G_fxp) / G_fxp;
-@@ -457,6 +459,8 @@ static bool create_pa_curve(u32 *data_L,
+ 	return 0;
+--- a/drivers/net/wireless/ath/ath9k/mac.c
++++ b/drivers/net/wireless/ath/ath9k/mac.c
+@@ -713,6 +713,8 @@ int ath9k_hw_rxprocdesc(struct ath_hw *a
+ 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
+ 		else if (ads.ds_rxstatus8 & AR_MichaelErr)
+ 			rs->rs_status |= ATH9K_RXERR_MIC;
++		else if (ads.ds_rxstatus8 & AR_KeyMiss)
++			rs->rs_status |= ATH9K_RXERR_DECRYPT;
+ 	}
  
- 	Q_scale_B = find_proper_scale(find_expn(abs(scale_B)), 10);
- 	scale_B = scale_B / (1 << Q_scale_B);
-+	if (scale_B == 0)
-+		return false;
- 	Q_beta = find_proper_scale(find_expn(abs(beta_raw)), 10);
- 	Q_alpha = find_proper_scale(find_expn(abs(alpha_raw)), 10);
- 	beta_raw = beta_raw / (1 << Q_beta);
+ 	return 0;
 
 
