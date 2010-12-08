@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab0LHESl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:18:41 -0500
-Received: from kroah.org ([198.145.64.141]:51397 "EHLO coco.kroah.org"
+	id S1751742Ab0LHETt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:19:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57059 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab0LHESk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:18:40 -0500
-Date: Tue, 7 Dec 2010 20:15:28 -0800
-From: Greg KH <greg@kroah.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Borislav Petkov <bp@amd64.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH 1/3] x86-32: Separate 1:1 pagetables from swapper_pg_dir
-Message-ID: <20101208041528.GA2211@kroah.com>
-References: <20101111141358.GA4641@kroah.com>
- <1289488576-18117-2-git-send-email-joerg.roedel@amd.com>
- <20101207210512.GA14849@kroah.com>
- <4CFEF637.4020203@goop.org>
+	id S1751513Ab0LHETs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 23:19:48 -0500
+Date: Tue, 7 Dec 2010 20:17:25 -0800
+From: Greg KH <gregkh@suse.de>
+To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
+Message-ID: <20101208041725.GB2291@suse.de>
+References: <20101208000640.115606851@clark.site>
+ <1291777422.26147.70.camel@zaphod>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CFEF637.4020203@goop.org>
+In-Reply-To: <1291777422.26147.70.camel@zaphod>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 07:06:31PM -0800, Jeremy Fitzhardinge wrote:
-> On 12/07/2010 01:05 PM, Greg KH wrote:
-> > On Thu, Nov 11, 2010 at 04:16:14PM +0100, Joerg Roedel wrote:
-> >> commit fd89a137924e0710078c3ae855e7cec1c43cb845 upstream
-> > applied, thanks.
+On Tue, Dec 07, 2010 at 10:03:42PM -0500, Lee Schermerhorn wrote:
+> On Tue, 2010-12-07 at 16:04 -0800, Greg KH wrote:
+> > 2.6.27-stable review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > From: Eric Dumazet <eric.dumazet@gmail.com>
+> > 
+> > commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
+> > 
+> > When a node contains only HighMem memory, slab_node(MPOL_BIND)
+> > dereferences a NULL pointer.
+> > 
+> > [ This code seems to go back all the way to commit 19770b32609b: "mm:
+> >   filter based on a nodemask as well as a gfp_mask".  Which was back in
+> >   April 2008, and it got merged into 2.6.26.  - Linus ]
+> > 
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > Cc: Mel Gorman <mel@csn.ul.ie>
+> > Cc: Christoph Lameter <cl@linux.com>
+> > Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > 
+> > ---
+> >  mm/mempolicy.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > --- a/mm/mempolicy.c
+> > +++ b/mm/mempolicy.c
+> > @@ -1404,7 +1404,7 @@ unsigned slab_node(struct mempolicy *pol
+> >  		(void)first_zones_zonelist(zonelist, highest_zoneidx,
+> >  							&policy->v.nodes,
+> >  							&zone);
+> > -		return zone->node;
+> > +		return zone ? zone->node : numa_node_id();
 > 
-> This will need as well 5b5c1af104ab5adec1be9dcb4c787492d83d8d83 to
-> prevent Xen regressions.
+> I think this should be numa_mem_id().  Given the documented purpose of
+> slab_node(), we want a node from which page allocation is likely to
+> succeed.  numa_node_id() can return a memoryless node for, e.g.,  some
+> configurations of some HP ia64 platforms.  numa_mem_id() was introduced
+> to return that same node from which "local" mempolicy would allocate
+> pages.
 
-So should I add that to a specific release?  The next .36 stable or
-something else?
+So should the upstream patch be changed?
 
-confused,
+thanks,
 
 greg k-h
