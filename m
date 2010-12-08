@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab0LHB3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:29:54 -0500
-Received: from kroah.org ([198.145.64.141]:49154 "EHLO coco.kroah.org"
+	id S1757889Ab0LHBaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:30:10 -0500
+Received: from kroah.org ([198.145.64.141]:49130 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932218Ab0LHBCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:11 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:38 2010
-Message-Id: <20101208005738.061815246@clark.site>
+	id S932376Ab0LHBCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:04 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:37 2010
+Message-Id: <20101208005737.527573808@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:03 -0800
+Date: Tue, 07 Dec 2010 16:58:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Daniel T Chen <crimsun@ubuntu.com>,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [166/289] ALSA: Fix SNDCTL_DSP_RESET ioctl for OSS emulation
+Subject: [161/289] ALSA: hda: Add speaker pin to automute Acer Aspire 8943G
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 60686aa0086a14f8b15c83a09f3df1eebe3aab3c upstream.
+commit 2df03514de41f3bbb5623f2e7f2bf594e49cb2ec upstream.
 
-In OSS emulation, SNDCTL_DSP_RESET ioctl needs the reset of the internal
-buffer state in addition to drop of the running streams.  Otherwise the
-succeeding access becomes inconsistent.
+BugLink: https://bugs.launchpad.net/bugs/656625
 
-Tested-by: Amit Nagal <helloin.amit@gmail.com>
+Add clause for handling Acer Aspire 8943G's subwoofer as additional
+speaker pin for automuting.
+
+Reported-by: RussianNeuroMancer
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/core/oss/pcm_oss.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/sound/core/oss/pcm_oss.c
-+++ b/sound/core/oss/pcm_oss.c
-@@ -1510,16 +1510,19 @@ static ssize_t snd_pcm_oss_read1(struct
- static int snd_pcm_oss_reset(struct snd_pcm_oss_file *pcm_oss_file)
- {
- 	struct snd_pcm_substream *substream;
-+	struct snd_pcm_runtime *runtime;
-+	int i;
- 
--	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
--	if (substream != NULL) {
-+	for (i = 0; i < 2; i++) {
-+		substream = pcm_oss_file->streams[i];
-+		if (!substream)
-+			continue;
-+		runtime = substream->runtime;
- 		snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DROP, NULL);
--		substream->runtime->oss.prepare = 1;
--	}
--	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
--	if (substream != NULL) {
--		snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DROP, NULL);
--		substream->runtime->oss.prepare = 1;
-+		runtime->oss.prepare = 1;
-+		runtime->oss.buffer_used = 0;
-+		runtime->oss.prev_hw_ptr_period = 0;
-+		runtime->oss.period_ptr = 0;
- 	}
- 	return 0;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -18935,10 +18935,17 @@ static void alc662_auto_init(struct hda_
  }
+ 
+ enum {
++	ALC662_FIXUP_ASPIRE,
+ 	ALC662_FIXUP_IDEAPAD,
+ };
+ 
+ static const struct alc_fixup alc662_fixups[] = {
++	[ALC662_FIXUP_ASPIRE] = {
++		.pins = (const struct alc_pincfg[]) {
++			{ 0x15, 0x99130112 }, /* subwoofer */
++			{ }
++		}
++	},
+ 	[ALC662_FIXUP_IDEAPAD] = {
+ 		.pins = (const struct alc_pincfg[]) {
+ 			{ 0x17, 0x99130112 }, /* subwoofer */
+@@ -18948,6 +18955,7 @@ static const struct alc_fixup alc662_fix
+ };
+ 
+ static struct snd_pci_quirk alc662_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
+ 	{}
 
 
