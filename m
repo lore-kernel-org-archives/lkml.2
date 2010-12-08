@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab0LHBh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:37:29 -0500
-Received: from kroah.org ([198.145.64.141]:48946 "EHLO coco.kroah.org"
+	id S1757252Ab0LHBBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:01:07 -0500
+Received: from kroah.org ([198.145.64.141]:48909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757218Ab0LHBBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:09 -0500
+	id S1757128Ab0LHBBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:00 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:33 2010
-Message-Id: <20101208005733.688174685@clark.site>
+Message-Id: <20101208005732.960192764@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:20 -0800
+Date: Tue, 07 Dec 2010 16:58:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [123/289] ipc: initialize structure memory to zero for compat functions
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [116/289] b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 03145beb455cf5c20a761e8451e30b8a74ba58d9 upstream.
+commit 9f2a0fac625bcef9c579bcf0b0c904ab1a56e7c4 upstream.
 
-This takes care of leaking uninitialized kernel stack memory to
-userspace from non-zeroed fields in structs in compat ipc functions.
+On module removal, the sdio version of b43 generates the following warning:
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[  851.560519] ------------[ cut here ]------------
+[  851.560531] WARNING: at drivers/mmc/core/core.c:237 mmc_wait_for_cmd+0x88/0x90()
+[  851.560534] Hardware name: 20552PG
+[  851.560536] Modules linked in: b43(-) ssb mmc_block binfmt_misc rfcomm sco bnep ppdev l2cap ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp kvm_intel kvm arc4 iwlagn snd_hda_codec_conexant snd_hda_intel snd_hda_codec iwlcore snd_hwdep snd_pcm thinkpad_acpi mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq r852 joydev snd_timer sm_common pcmcia nand snd_seq_device cfg80211 sdhci_pci btusb psmouse tpm_tis yenta_socket nand_ids lp snd pcmcia_rsrc nand_ecc bluetooth sdhci tpm pcmcia_core parport mtd snd_page_alloc serio_raw tpm_bios soundcore nvram led_class sha256_generic aes_i586 aes_generic dm_crypt i915 drm_kms_helper drm ahci intel_agp i2c_algo_bit intel_gtt e1000e libahci video agpgart output
+[  851.560620] Pid: 2504, comm: rmmod Not tainted 2.6.36-titan0+ #1
+[  851.560622] Call Trace:
+[  851.560631]  [<c014a102>] warn_slowpath_common+0x72/0xa0
+[  851.560636]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
+[  851.560641]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
+[  851.560645]  [<c014a152>] warn_slowpath_null+0x22/0x30
+[  851.560649]  [<c04d94c8>] mmc_wait_for_cmd+0x88/0x90
+[  851.560655]  [<c0401585>] ? device_release+0x25/0x80
+[  851.560660]  [<c04df210>] mmc_io_rw_direct_host+0xa0/0x150
+[  851.560665]  [<c04df370>] mmc_io_rw_direct+0x30/0x40
+[  851.560669]  [<c04e06e7>] sdio_disable_func+0x37/0xa0
+[  851.560683]  [<f8dfcb80>] b43_sdio_remove+0x30/0x50 [b43]
+[  851.560687]  [<c04df8cc>] sdio_bus_remove+0x1c/0x60
+[  851.560692]  [<c016d39f>] ? blocking_notifier_call_chain+0x1f/0x30
+[  851.560697]  [<c0404991>] __device_release_driver+0x51/0xb0
+[  851.560701]  [<c0404a7f>] driver_detach+0x8f/0xa0
+[  851.560705]  [<c0403c83>] bus_remove_driver+0x63/0xa0
+[  851.560709]  [<c0405039>] driver_unregister+0x49/0x80
+[  851.560713]  [<c0405039>] ? driver_unregister+0x49/0x80
+[  851.560718]  [<c04dfad7>] sdio_unregister_driver+0x17/0x20
+[  851.560727]  [<f8dfcb42>] b43_sdio_exit+0x12/0x20 [b43]
+[  851.560734]  [<f8dfe76f>] b43_exit+0x17/0x3c [b43]
+[  851.560740]  [<c017fb8d>] sys_delete_module+0x13d/0x200
+[  851.560747]  [<c01fd7d2>] ? do_munmap+0x212/0x300
+[  851.560752]  [<c010311f>] sysenter_do_call+0x12/0x28
+[  851.560757] ---[ end trace 31e14488072d2f7d ]---
+[  851.560759] ------------[ cut here ]------------
+
+The warning is caused by b43 not claiming the device before calling
+sdio_disable_func().
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Arnd Hannemann <arnd@arndnet.de>
+Tested-by: Arnd Hannemann <arnd@arndnet.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/compat.c    |    6 ++++++
- ipc/compat_mq.c |    5 +++++
- 2 files changed, 11 insertions(+)
+ drivers/net/wireless/b43/sdio.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -241,6 +241,8 @@ long compat_sys_semctl(int first, int se
- 	struct semid64_ds __user *up64;
- 	int version = compat_ipc_parse_version(&third);
+--- a/drivers/net/wireless/b43/sdio.c
++++ b/drivers/net/wireless/b43/sdio.c
+@@ -175,7 +175,9 @@ static void b43_sdio_remove(struct sdio_
+ 	struct b43_sdio *sdio = sdio_get_drvdata(func);
  
-+	memset(&s64, 0, sizeof(s64));
-+
- 	if (!uptr)
- 		return -EINVAL;
- 	if (get_user(pad, (u32 __user *) uptr))
-@@ -421,6 +423,8 @@ long compat_sys_msgctl(int first, int se
- 	int version = compat_ipc_parse_version(&second);
- 	void __user *p;
- 
-+	memset(&m64, 0, sizeof(m64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_INFO:
- 	case IPC_RMID:
-@@ -594,6 +598,8 @@ long compat_sys_shmctl(int first, int se
- 	int err, err2;
- 	int version = compat_ipc_parse_version(&second);
- 
-+	memset(&s64, 0, sizeof(s64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_RMID:
- 	case SHM_LOCK:
---- a/ipc/compat_mq.c
-+++ b/ipc/compat_mq.c
-@@ -53,6 +53,9 @@ asmlinkage long compat_sys_mq_open(const
- 	void __user *p = NULL;
- 	if (u_attr && oflag & O_CREAT) {
- 		struct mq_attr attr;
-+
-+		memset(&attr, 0, sizeof(attr));
-+
- 		p = compat_alloc_user_space(sizeof(attr));
- 		if (get_compat_mq_attr(&attr, u_attr) ||
- 		    copy_to_user(p, &attr, sizeof(attr)))
-@@ -127,6 +130,8 @@ asmlinkage long compat_sys_mq_getsetattr
- 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
- 	long ret;
- 
-+	memset(&mqstat, 0, sizeof(mqstat));
-+
- 	if (u_mqstat) {
- 		if (get_compat_mq_attr(&mqstat, u_mqstat) ||
- 		    copy_to_user(p, &mqstat, sizeof(mqstat)))
+ 	ssb_bus_unregister(&sdio->ssb);
++	sdio_claim_host(func);
+ 	sdio_disable_func(func);
++	sdio_release_host(func);
+ 	kfree(sdio);
+ 	sdio_set_drvdata(func, NULL);
+ }
 
 
