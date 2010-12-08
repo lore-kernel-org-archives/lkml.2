@@ -1,154 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab0LHUkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:40:33 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34190 "EHLO hera.kernel.org"
+	id S1756631Ab0LHUkz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:40:55 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34207 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab0LHUkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:40:31 -0500
-Date: Wed, 8 Dec 2010 20:39:59 GMT
+	id S1756582Ab0LHUkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:40:53 -0500
+Date: Wed, 8 Dec 2010 20:40:19 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+Cc: linux-kernel@vger.kernel.org, orion@cora.nwra.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, kyle@mcmartin.ca,
+        damien.wyart@free.fr, chase.douglas@canonical.com, tglx@linutronix.de,
+        mingo@elte.hu, tmhikaru@gmail.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, orion@cora.nwra.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, kyle@mcmartin.ca,
+        damien.wyart@free.fr, chase.douglas@canonical.com, tglx@linutronix.de,
+        tmhikaru@gmail.com, mingo@elte.hu
+In-Reply-To: <1291129145.32004.874.camel@laptop>
+References: <1291129145.32004.874.camel@laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix duplicate events with multiple-pmu vs software events
-Message-ID: <tip-5167695753c63444a9e6cbbef136200a16c7a225@git.kernel.org>
-Git-Commit-ID: 5167695753c63444a9e6cbbef136200a16c7a225
+Subject: [tip:sched/urgent] sched: Cure more NO_HZ load average woes
+Message-ID: <tip-0f004f5a696a9434b7214d0d3cbd0525ee77d428@git.kernel.org>
+Git-Commit-ID: 0f004f5a696a9434b7214d0d3cbd0525ee77d428
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:40:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:40:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5167695753c63444a9e6cbbef136200a16c7a225
-Gitweb:     http://git.kernel.org/tip/5167695753c63444a9e6cbbef136200a16c7a225
+Commit-ID:  0f004f5a696a9434b7214d0d3cbd0525ee77d428
+Gitweb:     http://git.kernel.org/tip/0f004f5a696a9434b7214d0d3cbd0525ee77d428
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 7 Dec 2010 14:18:20 +0100
+AuthorDate: Tue, 30 Nov 2010 19:48:45 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 8 Dec 2010 20:14:08 +0100
+CommitDate: Wed, 8 Dec 2010 20:15:04 +0100
 
-perf: Fix duplicate events with multiple-pmu vs software events
+sched: Cure more NO_HZ load average woes
 
-Because the multi-pmu bits can share contexts between struct pmu
-instances we could get duplicate events by iterating the pmu list.
+There's a long-running regression that proved difficult to fix and
+which is hitting certain people and is rather annoying in its effects.
 
+Damien reported that after 74f5187ac8 (sched: Cure load average vs
+NO_HZ woes) his load average is unnaturally high, he also noted that
+even with that patch reverted the load avgerage numbers are not
+correct.
+
+The problem is that the previous patch only solved half the NO_HZ
+problem, it addressed the part of going into NO_HZ mode, not of
+comming out of NO_HZ mode. This patch implements that missing half.
+
+When comming out of NO_HZ mode there are two important things to take
+care of:
+
+ - Folding the pending idle delta into the global active count.
+ - Correctly aging the averages for the idle-duration.
+
+So with this patch the NO_HZ interaction should be complete and
+behaviour between CONFIG_NO_HZ=[yn] should be equivalent.
+
+Furthermore, this patch slightly changes the load average computation
+by adding a rounding term to the fixed point multiplication.
+
+Reported-by: Damien Wyart <damien.wyart@free.fr>
+Reported-by: Tim McGrath <tmhikaru@gmail.com>
+Tested-by: Damien Wyart <damien.wyart@free.fr>
+Tested-by: Orion Poplawski <orion@cora.nwra.com>
+Tested-by: Kyle McMartin <kyle@mcmartin.ca>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <new-submission>
+Cc: stable@kernel.org
+Cc: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1291129145.32004.874.camel@laptop>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    1 +
- kernel/perf_event.c        |   35 +++++++++++++++++++++++++++++------
- 2 files changed, 30 insertions(+), 6 deletions(-)
+ include/linux/sched.h |    2 +-
+ kernel/sched.c        |  150 +++++++++++++++++++++++++++++++++++++++++++++----
+ kernel/timer.c        |    2 +-
+ 3 files changed, 141 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index de2c417..4f1279e 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -887,6 +887,7 @@ struct perf_cpu_context {
- 	int				exclusive;
- 	struct list_head		rotation_list;
- 	int				jiffies_interval;
-+	struct pmu			*active_pmu;
- };
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2c79e92..2238745 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -143,7 +143,7 @@ extern unsigned long nr_iowait_cpu(int cpu);
+ extern unsigned long this_cpu_load(void);
  
- struct perf_output_handle {
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index eac7e33..7b87017 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3824,6 +3824,8 @@ static void perf_event_task_event(struct perf_task_event *task_event)
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->active_pmu != pmu)
-+			goto next;
- 		perf_event_task_ctx(&cpuctx->ctx, task_event);
  
- 		ctx = task_event->task_ctx;
-@@ -3959,6 +3961,8 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->active_pmu != pmu)
-+			goto next;
- 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
+-extern void calc_global_load(void);
++extern void calc_global_load(unsigned long ticks);
  
- 		ctxn = pmu->task_ctx_nr;
-@@ -4144,6 +4148,8 @@ got_name:
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->active_pmu != pmu)
-+			goto next;
- 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
- 					vma->vm_flags & VM_EXEC);
+ extern unsigned long get_parent_ip(unsigned long addr);
  
-@@ -5145,20 +5151,36 @@ static void *find_pmu_context(int ctxn)
- 	return NULL;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc91a4d..6b7c26a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3119,6 +3119,15 @@ static long calc_load_fold_active(struct rq *this_rq)
+ 	return delta;
  }
  
--static void free_pmu_context(void * __percpu cpu_context)
-+static void update_pmu_context(struct pmu *pmu, struct pmu *old_pmu)
- {
--	struct pmu *pmu;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		struct perf_cpu_context *cpuctx;
-+
-+		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
-+
-+		if (cpuctx->active_pmu == old_pmu)
-+			cpuctx->active_pmu = pmu;
-+	}
++static unsigned long
++calc_load(unsigned long load, unsigned long exp, unsigned long active)
++{
++	load *= exp;
++	load += active * (FIXED_1 - exp);
++	load += 1UL << (FSHIFT - 1);
++	return load >> FSHIFT;
 +}
 +
-+static void free_pmu_context(struct pmu *pmu)
+ #ifdef CONFIG_NO_HZ
+ /*
+  * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
+@@ -3148,6 +3157,128 @@ static long calc_load_fold_idle(void)
+ 
+ 	return delta;
+ }
++
++/**
++ * fixed_power_int - compute: x^n, in O(log n) time
++ *
++ * @x:         base of the power
++ * @frac_bits: fractional bits of @x
++ * @n:         power to raise @x to.
++ *
++ * By exploiting the relation between the definition of the natural power
++ * function: x^n := x*x*...*x (x multiplied by itself for n times), and
++ * the binary encoding of numbers used by computers: n := \Sum n_i * 2^i,
++ * (where: n_i \elem {0, 1}, the binary vector representing n),
++ * we find: x^n := x^(\Sum n_i * 2^i) := \Prod x^(n_i * 2^i), which is
++ * of course trivially computable in O(log_2 n), the length of our binary
++ * vector.
++ */
++static unsigned long
++fixed_power_int(unsigned long x, unsigned int frac_bits, unsigned int n)
 +{
-+	struct pmu *i;
- 
- 	mutex_lock(&pmus_lock);
- 	/*
- 	 * Like a real lame refcount.
- 	 */
--	list_for_each_entry(pmu, &pmus, entry) {
--		if (pmu->pmu_cpu_context == cpu_context)
-+	list_for_each_entry(i, &pmus, entry) {
-+		if (i->pmu_cpu_context == pmu->pmu_cpu_context) {
-+			update_pmu_context(i, pmu);
- 			goto out;
++	unsigned long result = 1UL << frac_bits;
++
++	if (n) for (;;) {
++		if (n & 1) {
++			result *= x;
++			result += 1UL << (frac_bits - 1);
++			result >>= frac_bits;
 +		}
- 	}
- 
--	free_percpu(cpu_context);
-+	free_percpu(pmu->pmu_cpu_context);
- out:
- 	mutex_unlock(&pmus_lock);
++		n >>= 1;
++		if (!n)
++			break;
++		x *= x;
++		x += 1UL << (frac_bits - 1);
++		x >>= frac_bits;
++	}
++
++	return result;
++}
++
++/*
++ * a1 = a0 * e + a * (1 - e)
++ *
++ * a2 = a1 * e + a * (1 - e)
++ *    = (a0 * e + a * (1 - e)) * e + a * (1 - e)
++ *    = a0 * e^2 + a * (1 - e) * (1 + e)
++ *
++ * a3 = a2 * e + a * (1 - e)
++ *    = (a0 * e^2 + a * (1 - e) * (1 + e)) * e + a * (1 - e)
++ *    = a0 * e^3 + a * (1 - e) * (1 + e + e^2)
++ *
++ *  ...
++ *
++ * an = a0 * e^n + a * (1 - e) * (1 + e + ... + e^n-1) [1]
++ *    = a0 * e^n + a * (1 - e) * (1 - e^n)/(1 - e)
++ *    = a0 * e^n + a * (1 - e^n)
++ *
++ * [1] application of the geometric series:
++ *
++ *              n         1 - x^(n+1)
++ *     S_n := \Sum x^i = -------------
++ *             i=0          1 - x
++ */
++static unsigned long
++calc_load_n(unsigned long load, unsigned long exp,
++	    unsigned long active, unsigned int n)
++{
++
++	return calc_load(load, fixed_power_int(exp, FSHIFT, n), active);
++}
++
++/*
++ * NO_HZ can leave us missing all per-cpu ticks calling
++ * calc_load_account_active(), but since an idle CPU folds its delta into
++ * calc_load_tasks_idle per calc_load_account_idle(), all we need to do is fold
++ * in the pending idle delta if our idle period crossed a load cycle boundary.
++ *
++ * Once we've updated the global active value, we need to apply the exponential
++ * weights adjusted to the number of cycles missed.
++ */
++static void calc_global_nohz(unsigned long ticks)
++{
++	long delta, active, n;
++
++	if (time_before(jiffies, calc_load_update))
++		return;
++
++	/*
++	 * If we crossed a calc_load_update boundary, make sure to fold
++	 * any pending idle changes, the respective CPUs might have
++	 * missed the tick driven calc_load_account_active() update
++	 * due to NO_HZ.
++	 */
++	delta = calc_load_fold_idle();
++	if (delta)
++		atomic_long_add(delta, &calc_load_tasks);
++
++	/*
++	 * If we were idle for multiple load cycles, apply them.
++	 */
++	if (ticks >= LOAD_FREQ) {
++		n = ticks / LOAD_FREQ;
++
++		active = atomic_long_read(&calc_load_tasks);
++		active = active > 0 ? active * FIXED_1 : 0;
++
++		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
++
++		calc_load_update += n * LOAD_FREQ;
++	}
++
++	/*
++	 * Its possible the remainder of the above division also crosses
++	 * a LOAD_FREQ period, the regular check in calc_global_load()
++	 * which comes after this will take care of that.
++	 *
++	 * Consider us being 11 ticks before a cycle completion, and us
++	 * sleeping for 4*LOAD_FREQ + 22 ticks, then the above code will
++	 * age us 4 cycles, and the test in calc_global_load() will
++	 * pick up the final one.
++	 */
++}
+ #else
+ static void calc_load_account_idle(struct rq *this_rq)
+ {
+@@ -3157,6 +3288,10 @@ static inline long calc_load_fold_idle(void)
+ {
+ 	return 0;
  }
-@@ -5190,6 +5212,7 @@ int perf_pmu_register(struct pmu *pmu)
- 		cpuctx->ctx.pmu = pmu;
- 		cpuctx->jiffies_interval = 1;
- 		INIT_LIST_HEAD(&cpuctx->rotation_list);
-+		cpuctx->active_pmu = pmu;
- 	}
++
++static void calc_global_nohz(unsigned long ticks)
++{
++}
+ #endif
  
- got_cpu_context:
-@@ -5241,7 +5264,7 @@ void perf_pmu_unregister(struct pmu *pmu)
- 	synchronize_rcu();
- 
- 	free_percpu(pmu->pmu_disable_count);
--	free_pmu_context(pmu->pmu_cpu_context);
-+	free_pmu_context(pmu);
+ /**
+@@ -3174,24 +3309,17 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
+ 	loads[2] = (avenrun[2] + offset) << shift;
  }
  
- struct pmu *perf_init_event(struct perf_event *event)
+-static unsigned long
+-calc_load(unsigned long load, unsigned long exp, unsigned long active)
+-{
+-	load *= exp;
+-	load += active * (FIXED_1 - exp);
+-	return load >> FSHIFT;
+-}
+-
+ /*
+  * calc_load - update the avenrun load estimates 10 ticks after the
+  * CPUs have updated calc_load_tasks.
+  */
+-void calc_global_load(void)
++void calc_global_load(unsigned long ticks)
+ {
+-	unsigned long upd = calc_load_update + 10;
+ 	long active;
+ 
+-	if (time_before(jiffies, upd))
++	calc_global_nohz(ticks);
++
++	if (time_before(jiffies, calc_load_update + 10))
+ 		return;
+ 
+ 	active = atomic_long_read(&calc_load_tasks);
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 68a9ae7..7bd715f 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1319,7 +1319,7 @@ void do_timer(unsigned long ticks)
+ {
+ 	jiffies_64 += ticks;
+ 	update_wall_time();
+-	calc_global_load();
++	calc_global_load(ticks);
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_ALARM
