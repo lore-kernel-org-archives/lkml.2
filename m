@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab0LHIEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:04:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25085 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752538Ab0LHIEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:04:35 -0500
-Message-ID: <4CFF3BE7.40007@redhat.com>
-Date: Wed, 08 Dec 2010 09:03:51 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101110 Thunderbird/3.1.6
+	id S1754098Ab0LHIFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 03:05:09 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38942 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab0LHIFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 03:05:07 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH v4 4/7] Reclaim invalidated page ASAP
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
+References: <cover.1291568905.git.minchan.kim@gmail.com> <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com>
+Message-Id: <20101208170504.1750.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Jon Nelson <jnelson@jamponi.net>
-CC: Chris Mason <chris.mason@oracle.com>, Mike Snitzer <snitzer@redhat.com>,
-        Matt <jackdachef@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption?
-References: <AANLkTinG209iRAXgpNC0vNpn1C02wkYmVfveXRBqsKV-@mail.gmail.com> <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com> <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com> <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com> <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com> <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com> <20101207182243.GB21112@redhat.com> <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com> <1291747731-sup-3099@think> <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com> <1291751698-sup-9297@think> <AANLkTin79GzUbfuZNKyTtqcyoUSO9AJimO77_ZOvqggH@mail.gmail.com> <1291754340-sup-1631@think> <AANLkTim8uCmFK=LjkMmq_1O0KE3AiN_7g41AO0woxMv7@mail.gmail.com> <1291755258-sup-8760@think> <AANLkTi=OC9Z68U-j8s6vfU-_-6tkg5W7aUz9HEupidX9@mail.gmail.com>
-In-Reply-To: <AANLkTi=OC9Z68U-j8s6vfU-_-6tkg5W7aUz9HEupidX9@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  8 Dec 2010 17:04:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> invalidate_mapping_pages is very big hint to reclaimer.
+> It means user doesn't want to use the page any more.
+> So in order to prevent working set page eviction, this patch
+> move the page into tail of inactive list by PG_reclaim.
+> 
+> Please, remember that pages in inactive list are working set
+> as well as active list. If we don't move pages into inactive list's
+> tail, pages near by tail of inactive list can be evicted although
+> we have a big clue about useless pages. It's totally bad.
+> 
+> Now PG_readahead/PG_reclaim is shared.
+> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+> preventing fast reclaiming readahead marker page.
+> 
+> In this series, PG_reclaim is used by invalidated page, too.
+> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+> to reclaim asap. Then, when the dirty page will be writeback,
+> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+> It disturbs this serie's goal.
+> 
+> I think it's okay to clear PG_readahead when the page is dirty, not
+> writeback time. So this patch moves ClearPageReadahead.
+> 
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
 
-On 12/08/2010 04:29 AM, Jon Nelson wrote:
-> Maybe not so fantastic. I kept testing and had no more failures. At
-> all. After 40+ iterations I gave up.
-> I went back to trying ext4 on a LUKS volume. The 'hit' ratio went to
-> something like 1 in 3, or better.
+Until anyone should data, I will not ack this. This patch increase
+VM state, but benefit is doubious.
 
-Encryption usually propagates bit corruption (not sure if it is
-in this case). But in principle if there is one bit corrupted,
-after decryption the whole sector is corrupted.
-(That's why bit media errors have usually more serious impact
-with FDE.)
 
-Isn't there random noise instead of zeroes when reading
-sparse files?
-We should probably write some test focusing on sparse files
-handling here...
 
-Milan
+
