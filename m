@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab0LHBBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:01:09 -0500
-Received: from kroah.org ([198.145.64.141]:48903 "EHLO coco.kroah.org"
+	id S932288Ab0LHBh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:37:29 -0500
+Received: from kroah.org ([198.145.64.141]:48946 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757218Ab0LHBA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:58 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:32 2010
-Message-Id: <20101208005732.872178468@clark.site>
+	id S1757218Ab0LHBBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:09 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:33 2010
+Message-Id: <20101208005733.688174685@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:12 -0800
+Date: Tue, 07 Dec 2010 16:58:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [115/289] agp/intel: Also add B43.1 to list of supported devices
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [123/289] ipc: initialize structure memory to zero for compat functions
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 3dde04b0152634d42994b34b86bbf3c70fbc6b19 upstream.
+commit 03145beb455cf5c20a761e8451e30b8a74ba58d9 upstream.
 
-This was a missing piece from 41a5142 that dropped recognition of the
-AGP module for the second B43 variant.
+This takes care of leaking uninitialized kernel stack memory to
+userspace from non-zeroed fields in structs in compat ipc functions.
 
-Reported-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/intel-agp.c |    1 +
- 1 file changed, 1 insertion(+)
+ ipc/compat.c    |    6 ++++++
+ ipc/compat_mq.c |    5 +++++
+ 2 files changed, 11 insertions(+)
 
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -1049,6 +1049,7 @@ static struct pci_device_id agp_intel_pc
- 	ID(PCI_DEVICE_ID_INTEL_G45_HB),
- 	ID(PCI_DEVICE_ID_INTEL_G41_HB),
- 	ID(PCI_DEVICE_ID_INTEL_B43_HB),
-+	ID(PCI_DEVICE_ID_INTEL_B43_1_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB),
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -241,6 +241,8 @@ long compat_sys_semctl(int first, int se
+ 	struct semid64_ds __user *up64;
+ 	int version = compat_ipc_parse_version(&third);
+ 
++	memset(&s64, 0, sizeof(s64));
++
+ 	if (!uptr)
+ 		return -EINVAL;
+ 	if (get_user(pad, (u32 __user *) uptr))
+@@ -421,6 +423,8 @@ long compat_sys_msgctl(int first, int se
+ 	int version = compat_ipc_parse_version(&second);
+ 	void __user *p;
+ 
++	memset(&m64, 0, sizeof(m64));
++
+ 	switch (second & (~IPC_64)) {
+ 	case IPC_INFO:
+ 	case IPC_RMID:
+@@ -594,6 +598,8 @@ long compat_sys_shmctl(int first, int se
+ 	int err, err2;
+ 	int version = compat_ipc_parse_version(&second);
+ 
++	memset(&s64, 0, sizeof(s64));
++
+ 	switch (second & (~IPC_64)) {
+ 	case IPC_RMID:
+ 	case SHM_LOCK:
+--- a/ipc/compat_mq.c
++++ b/ipc/compat_mq.c
+@@ -53,6 +53,9 @@ asmlinkage long compat_sys_mq_open(const
+ 	void __user *p = NULL;
+ 	if (u_attr && oflag & O_CREAT) {
+ 		struct mq_attr attr;
++
++		memset(&attr, 0, sizeof(attr));
++
+ 		p = compat_alloc_user_space(sizeof(attr));
+ 		if (get_compat_mq_attr(&attr, u_attr) ||
+ 		    copy_to_user(p, &attr, sizeof(attr)))
+@@ -127,6 +130,8 @@ asmlinkage long compat_sys_mq_getsetattr
+ 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
+ 	long ret;
+ 
++	memset(&mqstat, 0, sizeof(mqstat));
++
+ 	if (u_mqstat) {
+ 		if (get_compat_mq_attr(&mqstat, u_mqstat) ||
+ 		    copy_to_user(p, &mqstat, sizeof(mqstat)))
 
 
