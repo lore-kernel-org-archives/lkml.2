@@ -1,64 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab0LHSlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:41:50 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:36888 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753896Ab0LHSlt (ORCPT
+	id S1756178Ab0LHSoP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:44:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32057 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab0LHSoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:41:49 -0500
-Message-ID: <4CFFD11D.4070107@euromail.se>
-Date: Wed, 08 Dec 2010 19:40:29 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 8 Dec 2010 13:44:14 -0500
+Message-ID: <4CFFD1C2.1080108@kernel.org>
+Date: Wed, 08 Dec 2010 10:43:14 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Ping Cheng <pinglinux@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>
-Subject: Re: [PATCH] input: mt: Add hovering distance axis
-References: <1291710468-2022-1-git-send-email-rydberg@euromail.se>	<4CFFC45C.2040107@canonical.com>	<20101208180521.GA31522@core.coreip.homeip.net> <AANLkTinKVcc3KA3S_7-vwQWtDuUFZ2LSmjgrCrZXcRw5@mail.gmail.com>
-In-Reply-To: <AANLkTinKVcc3KA3S_7-vwQWtDuUFZ2LSmjgrCrZXcRw5@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Don Zickus <dzickus@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+Subject: Re: perf hw  in kexeced kernel broken in tip
+References: <1291232292.32004.1969.camel@laptop>	 <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop>	 <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop>	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>	 <1291764620.2032.1293.camel@laptop>  <20101208140103.GM21786@redhat.com>	 <1291818005.28378.38.camel@laptop> <1291820356.28378.83.camel@laptop>
+In-Reply-To: <1291820356.28378.83.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQOwJ-0000iR-4e.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PQOwJ-0000iR-4e 5ac0c26e81de533039eb7ba62437dca9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 07:20 PM, Ping Cheng wrote:
-
-> On Wed, Dec 8, 2010 at 10:05 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> On Wed, Dec 08, 2010 at 09:46:04AM -0800, Chase Douglas wrote:
->>> On 12/07/2010 12:27 AM, Henrik Rydberg wrote:
->>>> Touch devices capable of hovering, i.e., fingers detected a distance
->>>> from the surface, are not supported by the current input MT
->>>> protocol. This patch adds ABS_MT_DISTANCE, which may be used to
->>>> indicate the distance between the contact and the surface.
->>>
->>> Have you given thought to calling it ABS_MT_Z instead? I have no real
->>> problem with ABS_MT_DISTANCE per se, but ABS_MT_Z is more clearly
->>> defined in my head. If I was new to MT development I may wonder if
->>> ABS_MT_DISTANCE had anything to do with distance between points or some
->>> other object.
->>
->> X/Y/Z imply that we fully engaged the device and it is 3 dimensional.
->> Distance says that we are approaching the device but have not directly
->> engaged it yet.
->>
->> I think ABS_DISTANCE was added at Pings request and ABS_MT_DISTANCE is
->> modeled after ST one. Ping, could you refresh my memory why we needed
->> ABS_DISTANCE?
+On 12/08/2010 06:59 AM, Peter Zijlstra wrote:
+> On Wed, 2010-12-08 at 15:20 +0100, Peter Zijlstra wrote:
 > 
-> ABS_DISTANCE is used in wacom driver as the distance between the tool
-> tip and the tablet.
+>>> I wonder if you should reverse these checks.  If the bios has the perf
+>>> counter enabled, there might be a high chance that it fails the first
+>>> check and never gets to the actually bios checks.
+>>
+>> Ah, good point. 
+> 
+> Something like so..
+> 
+> ---
+> Subject: perf, x86: Detect broken BIOSes
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Wed Dec 08 15:56:23 CET 2010
+> 
+> Some BIOSes use PMU resources, this is a bug.
+> 
+> Try to detect this, warn about it, and further refuse to touch the
+> PMU ourselves.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+> Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
+> +++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
+> @@ -375,15 +375,51 @@ static void release_pmc_hardware(void) {
+>  static bool check_hw_exists(void)
+>  {
+>  	u64 val, val_new = 0;
+> -	int ret = 0;
+> +	int i, reg, ret = 0;
+>  
+> +	/*
+> +	 * Check to see if the BIOS enabled any of the counters, if so
+> +	 * complain and bail.
+> +	 */
+> +	for (i = 0; i < x86_pmu.num_counters; i++) {
+> +		reg = x86_pmu.eventsel + i;
+> +		ret = rdmsrl_safe(reg, &val);
+> +		if (ret)
+> +			goto msr_fail;
+> +		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
+> +			goto bios_fail;
+> +	}
+> +
+> +	for (i = 0; i < x86_pmu.num_counters_fixed; i++) {
+> +		reg = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
+> +		ret = rdmsrl_safe(reg, &val);
+> +		if (ret)
+> +			goto msr_fail;
+> +		if (val & (0x03 << i*4))
+> +			goto bios_fail;
+> +	}
+> +
+> +	/*
+> +	 * Now write a value and read it back to see if it matches,
+> +	 * this is needed to detect certain hardware emulators (qemu/kvm)
+> +	 * that don't trap on the MSR access and always return 0s.
+> +	 */
+>  	val = 0xabcdUL;
+> -	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
+> +	ret = checking_wrmsrl(x86_pmu.perfctr, val);
+>  	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
+>  	if (ret || val != val_new)
+> -		return false;
+> +		goto msr_fail;
+>  
+>  	return true;
+> +
+> +bios_fail:
+> +	printk(KERN_CONT "Broken BIOS detected, software events only.\n");
+> +	printk(KERN_ERR FW_BUG "invalid MSR: %x=%Lx\n", reg, val);
+> +	return false;
+> +
+> +msr_fail:
+> +	printk(KERN_CONT "Broken PMU hardware detected, software events only.\n");
+> +	return false;
+>  }
 
+can you add sth force_... in command line to take over ownership of perf from BIOS or previous kernel ?
 
-Thanks for the confirmation. While at it, what are the units for the distance,
-for instance for the Cintiq?
+then still can use perf etc after we kexec from RHEL or SLES kernel to later kernel ( from 2.6.37)
 
-Henrik
+Thanks
+
+Yinghai
+
+>  
+>  static void reserve_ds_buffers(void);
+> @@ -1378,10 +1414,8 @@ int __init init_hw_perf_events(void)
+>  	pmu_check_apic();
+>  
+>  	/* sanity check that the hardware exists or is emulated */
+> -	if (!check_hw_exists()) {
+> -		pr_cont("Broken PMU hardware detected, software events only.\n");
+> +	if (!check_hw_exists())
+>  		return 0;
+> -	}
+>  
+>  	pr_cont("%s PMU driver.\n", x86_pmu.name);
+>  
+> 
+
