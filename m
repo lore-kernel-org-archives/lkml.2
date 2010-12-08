@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab0LHBsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:48:11 -0500
-Received: from kroah.org ([198.145.64.141]:48708 "EHLO coco.kroah.org"
+	id S932491Ab0LHBsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:48:32 -0500
+Received: from kroah.org ([198.145.64.141]:48696 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932165Ab0LHBAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:07 -0500
+	id S1756268Ab0LHBAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:05 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:28 2010
-Message-Id: <20101208005728.732172371@clark.site>
+Message-Id: <20101208005728.528702400@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:31 -0800
+Date: Tue, 07 Dec 2010 16:57:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [074/289] SUNRPC: After calling xprt_release(), we must restart from call_reserve
+        Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        =?ISO-8859-15?q?Diego=20Elio=20Petten=F2?= <flameeyes@gmail.com>
+Subject: [072/289] ALSA: HDA: Enable internal mic on Dell E6410 and Dell E6510
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,78 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 118df3d17f11733b294ea2cd988d56ee376ef9fd upstream.
+[Not upstream as .37 fixes this differently in a much more complete way
+that is not able to be backported easily.]
 
-Rob Leslie reports seeing the following Oops after his Kerberos session
-expired.
+(Ported on top of 2.6.36)
 
-BUG: unable to handle kernel NULL pointer dereference at 00000058
-IP: [<e186ed94>] rpcauth_refreshcred+0x11/0x12c [sunrpc]
-*pde = 00000000
-Oops: 0000 [#1]
-last sysfs file: /sys/devices/platform/pc87360.26144/temp3_input
-Modules linked in: autofs4 authenc esp4 xfrm4_mode_transport ipt_LOG ipt_REJECT xt_limit xt_state ipt_REDIRECT xt_owner xt_HL xt_hl xt_tcpudp xt_mark cls_u32 cls_tcindex sch_sfq sch_htb sch_dsmark geodewdt deflate ctr twofish_generic twofish_i586 twofish_common camellia serpent blowfish cast5 cbc xcbc rmd160 sha512_generic sha1_generic hmac crypto_null af_key rpcsec_gss_krb5 nfsd exportfs nfs lockd fscache nfs_acl auth_rpcgss sunrpc ip_gre sit tunnel4 dummy ext3 jbd nf_nat_irc nf_conntrack_irc nf_nat_ftp nf_conntrack_ftp iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables pc8736x_gpio nsc_gpio pc87360 hwmon_vid loop aes_i586 aes_generic sha256_generic dm_crypt cs5535_gpio serio_raw cs5535_mfgpt hifn_795x des_generic geode_rng rng_core led_class ext4 mbcache jbd2 crc16 dm_mirror dm_region_hash dm_log dm_snapshot dm_mod sd_mod crc_t10dif ide_pci_generic cs5536 amd74xx ide_core pata_cs5536 ata_generic libata usb_stora
- ge via_rhine mii scsi_mod btrfs zlib_deflate crc32c libcrc32c [last unloaded: scsi_wait_scan]
+BugLink: http://launchpad.net/bugs/628961
+BugLink: http://launchpad.net/bugs/605047
 
-Pid: 12875, comm: sudo Not tainted 2.6.36-net5501 #1 /
-EIP: 0060:[<e186ed94>] EFLAGS: 00010292 CPU: 0
-EIP is at rpcauth_refreshcred+0x11/0x12c [sunrpc]
-EAX: 00000000 EBX: defb13a0 ECX: 00000006 EDX: e18683b8
-ESI: defb13a0 EDI: 00000000 EBP: 00000000 ESP: de571d58
- DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-Process sudo (pid: 12875, ti=de570000 task=decd1430 task.ti=de570000)
-Stack:
- e186e008 00000000 defb13a0 0000000d deda6000 e1868f22 e196f12b defb13a0
-<0> defb13d8 00000000 00000000 e186e0aa 00000000 defb13a0 de571dac 00000000
-<0> e186956c de571e34 debea5c0 de571dc8 e186967a 00000000 debea5c0 de571e34
-Call Trace:
- [<e186e008>] ? rpc_wake_up_next+0x114/0x11b [sunrpc]
- [<e1868f22>] ? call_decode+0x24a/0x5af [sunrpc]
- [<e196f12b>] ? nfs4_xdr_dec_access+0x0/0xa2 [nfs]
- [<e186e0aa>] ? __rpc_execute+0x62/0x17b [sunrpc]
- [<e186956c>] ? rpc_run_task+0x91/0x97 [sunrpc]
- [<e186967a>] ? rpc_call_sync+0x40/0x5b [sunrpc]
- [<e1969ca2>] ? nfs4_proc_access+0x10a/0x176 [nfs]
- [<e19572fa>] ? nfs_do_access+0x2b1/0x2c0 [nfs]
- [<e186ed61>] ? rpcauth_lookupcred+0x62/0x84 [sunrpc]
- [<e19573b6>] ? nfs_permission+0xad/0x13b [nfs]
- [<c0177824>] ? exec_permission+0x15/0x4b
- [<c0177fbd>] ? link_path_walk+0x4f/0x456
- [<c017867d>] ? path_walk+0x4c/0xa8
- [<c0179678>] ? do_path_lookup+0x1f/0x68
- [<c017a3fb>] ? user_path_at+0x37/0x5f
- [<c016359c>] ? handle_mm_fault+0x229/0x55b
- [<c0170a2d>] ? sys_faccessat+0x93/0x146
- [<c0170aef>] ? sys_access+0xf/0x13
- [<c02cf615>] ? syscall_call+0x7/0xb
-Code: 0f 94 c2 84 d2 74 09 8b 44 24 0c e8 6a e9 8b de 83 c4 14 89 d8 5b 5e 5f 5d c3 55 57 56 53 83 ec 1c fc 89 c6 8b 40 10 89 44 24 04 <8b> 58 58 85 db 0f 85 d4 00 00 00 0f b7 46 70 8b 56 20 89 c5 83
-EIP: [<e186ed94>] rpcauth_refreshcred+0x11/0x12c [sunrpc] SS:ESP 0068:de571d58
-CR2: 0000000000000058
-
-This appears to be caused by the function rpc_verify_header() first
-calling xprt_release(), then doing a call_refresh. If we release the
-transport slot, we should _always_ jump back to call_reserve before
-calling anything else.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Diego Elio Pettenò <flameeyes@gmail.com>
+Acked-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/clnt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1675,7 +1675,7 @@ rpc_verify_header(struct rpc_task *task)
- 			rpcauth_invalcred(task);
- 			/* Ensure we obtain a new XID! */
- 			xprt_release(task);
--			task->tk_action = call_refresh;
-+			task->tk_action = call_reserve;
- 			goto out_retry;
- 		case RPC_AUTH_BADCRED:
- 		case RPC_AUTH_BADVERF:
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -93,6 +93,7 @@ enum {
+ 	STAC_92HD83XXX_REF,
+ 	STAC_92HD83XXX_PWR_REF,
+ 	STAC_DELL_S14,
++	STAC_DELL_E6410,
+ 	STAC_92HD83XXX_HP,
+ 	STAC_HP_DV7_4000,
+ 	STAC_92HD83XXX_MODELS
+@@ -1633,6 +1634,13 @@ static unsigned int dell_s14_pin_configs
+ 	0x40f000f0, 0x40f000f0,
+ };
+ 
++/* Deliberately turn off 0x0f (Dock Mic) to make it choose Int Mic instead */
++static unsigned int dell_e6410_pin_configs[10] = {
++	0x04a11020, 0x0421101f, 0x400000f0, 0x90170110,
++	0x23011050, 0x40f000f0, 0x400000f0, 0x90a60130,
++	0x40f000f0, 0x40f000f0,
++};
++
+ static unsigned int hp_dv7_4000_pin_configs[10] = {
+ 	0x03a12050, 0x0321201f, 0x40f000f0, 0x90170110,
+ 	0x40f000f0, 0x40f000f0, 0x90170110, 0xd5a30140,
+@@ -1643,6 +1651,7 @@ static unsigned int *stac92hd83xxx_brd_t
+ 	[STAC_92HD83XXX_REF] = ref92hd83xxx_pin_configs,
+ 	[STAC_92HD83XXX_PWR_REF] = ref92hd83xxx_pin_configs,
+ 	[STAC_DELL_S14] = dell_s14_pin_configs,
++	[STAC_DELL_E6410] = dell_e6410_pin_configs,
+ 	[STAC_HP_DV7_4000] = hp_dv7_4000_pin_configs,
+ };
+ 
+@@ -1651,6 +1660,7 @@ static const char *stac92hd83xxx_models[
+ 	[STAC_92HD83XXX_REF] = "ref",
+ 	[STAC_92HD83XXX_PWR_REF] = "mic-ref",
+ 	[STAC_DELL_S14] = "dell-s14",
++	[STAC_DELL_E6410] = "dell-e6410",
+ 	[STAC_92HD83XXX_HP] = "hp",
+ 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
+ };
+@@ -1663,6 +1673,10 @@ static struct snd_pci_quirk stac92hd83xx
+ 		      "DFI LanParty", STAC_92HD83XXX_REF),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02ba,
+ 		      "unknown Dell", STAC_DELL_S14),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x040a,
++		      "Dell E6410", STAC_DELL_E6410),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x040b,
++		      "Dell E6510", STAC_DELL_E6410),
+ 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x3600,
+ 		      "HP", STAC_92HD83XXX_HP),
+ 	{} /* terminator */
 
 
