@@ -1,92 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab0LHHvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:51:51 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58131 "EHLO mx2.mail.elte.hu"
+	id S1753978Ab0LHHwr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:52:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26474 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753552Ab0LHHvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:51:50 -0500
-Date: Wed, 8 Dec 2010 08:51:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fix
-Message-ID: <20101208075137.GA16764@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753930Ab0LHHwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 02:52:45 -0500
+Date: Wed, 8 Dec 2010 02:52:19 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Pirko <jpirko@redhat.com>, Neil Horman <nhorman@redhat.com>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Message-Id: <20101208075218.5792.64791.sendpatchset@localhost.localdomain>
+In-Reply-To: <20101208075208.5792.45247.sendpatchset@localhost.localdomain>
+References: <20101208075208.5792.45247.sendpatchset@localhost.localdomain>
+Subject: [v3 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+From: Amerigo Wang <amwang@redhat.com>
+Date: Thu, 2 Dec 2010 21:34:44 +0800
+Subject: [v3 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
 
-Please pull the latest x86-fixes-for-linus git tree from:
+This patch removes the flag IFF_IN_NETPOLL, we don't need it any more since
+we have netpoll_tx_running() now.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Neil Horman <nhorman@redhat.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
 
- Thanks,
+---
 
-	Ingo
+ drivers/net/bonding/bond_main.c |    6 ++----
+ drivers/net/bonding/bonding.h   |    2 +-
+ include/linux/if.h              |    9 ++++-----
+ net/core/netpoll.c              |    2 --
+ 4 files changed, 7 insertions(+), 12 deletions(-)
 
------------------->
-Jeremy Fitzhardinge (1):
-      x86/pvclock: Zero last_value on resume
-
-
- arch/x86/include/asm/pvclock.h |    1 +
- arch/x86/kernel/pvclock.c      |    5 +++++
- arch/x86/xen/time.c            |    2 ++
- 3 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index 7f7e577..31d84ac 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -11,6 +11,7 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src);
- void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
- 			    struct timespec *ts);
-+void pvclock_resume(void);
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 7fafe06..21ac08b 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -448,11 +448,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
+ 	}
  
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 008b91e..42eb330 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -83,6 +83,11 @@ unsigned long pvclock_tsc_khz(struct pvclock_vcpu_time_info *src)
+ 	skb->priority = 1;
+-	if (unlikely(netpoll_tx_running(slave_dev))) {
+-		slave_dev->priv_flags |= IFF_IN_NETPOLL;
++	if (unlikely(netpoll_tx_running(slave_dev)))
+ 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
+-		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
+-	} else
++	else
+ 		dev_queue_xmit(skb);
  
- static atomic64_t last_value = ATOMIC64_INIT(0);
+ 	return 0;
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index c4f6a94..493e645 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -138,7 +138,7 @@ static inline void unblock_netpoll_tx(void)
  
-+void pvclock_resume(void)
-+{
-+	atomic64_set(&last_value, 0);
-+}
-+
- cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
+ static inline int is_netpoll_tx_blocked(struct net_device *dev)
  {
- 	struct pvclock_shadow_time shadow;
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index b2bb5aa..5da5e53 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -426,6 +426,8 @@ void xen_timer_resume(void)
- {
- 	int cpu;
+-	if (unlikely(dev->priv_flags & IFF_IN_NETPOLL))
++	if (unlikely(netpoll_tx_running(dev)))
+ 		return cpumask_test_cpu(smp_processor_id(), netpoll_block_tx);
+ 	return 0;
+ }
+diff --git a/include/linux/if.h b/include/linux/if.h
+index 1239599..3bc63e6 100644
+--- a/include/linux/if.h
++++ b/include/linux/if.h
+@@ -71,11 +71,10 @@
+ 					 * release skb->dst
+ 					 */
+ #define IFF_DONT_BRIDGE 0x800		/* disallow bridging this ether dev */
+-#define IFF_IN_NETPOLL	0x1000		/* whether we are processing netpoll */
+-#define IFF_DISABLE_NETPOLL	0x2000	/* disable netpoll at run-time */
+-#define IFF_MACVLAN_PORT	0x4000	/* device used as macvlan port */
+-#define IFF_BRIDGE_PORT	0x8000		/* device used as bridge port */
+-#define IFF_OVS_DATAPATH	0x10000	/* device used as Open vSwitch
++#define IFF_DISABLE_NETPOLL	0x1000	/* disable netpoll at run-time */
++#define IFF_MACVLAN_PORT	0x2000	/* device used as macvlan port */
++#define IFF_BRIDGE_PORT	0x4000		/* device used as bridge port */
++#define IFF_OVS_DATAPATH	0x8000	/* device used as Open vSwitch
+ 					 * datapath port */
  
-+	pvclock_resume();
-+
- 	if (xen_clockevent != &xen_vcpuop_clockevent)
- 		return;
- 
+ #define IF_GET_IFACE	0x0001		/* for querying only */
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index ee38acb..8a5c1c9 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -314,9 +314,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 		     tries > 0; --tries) {
+ 			if (__netif_tx_trylock(txq)) {
+ 				if (!netif_tx_queue_stopped(txq)) {
+-					dev->priv_flags |= IFF_IN_NETPOLL;
+ 					status = ops->ndo_start_xmit(skb, dev);
+-					dev->priv_flags &= ~IFF_IN_NETPOLL;
+ 					if (status == NETDEV_TX_OK)
+ 						txq_trans_update(txq);
+ 				}
+-- 
+1.7.1
+
