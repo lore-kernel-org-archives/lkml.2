@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab0LHBvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:51:33 -0500
-Received: from kroah.org ([198.145.64.141]:48625 "EHLO coco.kroah.org"
+	id S932377Ab0LHBvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:51:49 -0500
+Received: from kroah.org ([198.145.64.141]:48618 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932078Ab0LHA7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932068Ab0LHA7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Dec 2010 19:59:50 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:27 2010
-Message-Id: <20101208005727.044887639@clark.site>
+Message-Id: <20101208005726.926831115@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:14 -0800
+Date: Tue, 07 Dec 2010 16:57:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Christian Lamparter <chunkeey@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [057/289] mac80211: reset probe send counter upon connection timer reset
+Subject: [056/289] mac80211: clear txflags for ps-filtered frames
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 0c699c3a75d4e8d0d2c317f83048d8fd3ffe692a upstream.
+commit eb7d3066cf864342e8ae6a5c1126a1602c4d06c0 upstream.
 
-Upon beacon loss we send probe requests after 30 seconds of idle
-time and we wait for each probe response 1/2 second. We send a
-total of 3 probe requests before giving up on the AP. In the case
-that we reset the connection idle monitor we should reset the probe
-requests count to 0. Right now this won't help in any way but
-the next patch will.
+This patch fixes stale mac80211_tx_control_flags for
+filtered / retried frames.
 
-This patch has fixes for stable kernel [2.6.35+].
+Because ieee80211_handle_filtered_frame feeds skbs back
+into the tx path, they have to be stripped of some tx
+flags so they won't confuse the stack, driver or device.
 
-Cc: Paul Stewart <pstew@google.com>
-Cc: Amod Bodas <amod.bodas@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/mlme.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/net/mac80211.h |   16 ++++++++++++++++
+ net/mac80211/status.c  |    1 +
+ 2 files changed, 17 insertions(+)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -120,11 +120,15 @@ void ieee80211_sta_reset_beacon_monitor(
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -315,6 +315,9 @@ struct ieee80211_bss_conf {
+  * @IEEE80211_TX_CTL_LDPC: tells the driver to use LDPC for this frame
+  * @IEEE80211_TX_CTL_STBC: Enables Space-Time Block Coding (STBC) for this
+  *	frame and selects the maximum number of streams that it can use.
++ *
++ * Note: If you have to add new flags to the enumeration, then don't
++ *	 forget to update %IEEE80211_TX_TEMPORARY_FLAGS when necessary.
+  */
+ enum mac80211_tx_control_flags {
+ 	IEEE80211_TX_CTL_REQ_TX_STATUS		= BIT(0),
+@@ -344,6 +347,19 @@ enum mac80211_tx_control_flags {
  
- void ieee80211_sta_reset_conn_monitor(struct ieee80211_sub_if_data *sdata)
- {
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+ #define IEEE80211_TX_CTL_STBC_SHIFT		23
+ 
++/*
++ * This definition is used as a mask to clear all temporary flags, which are
++ * set by the tx handlers for each transmission attempt by the mac80211 stack.
++ */
++#define IEEE80211_TX_TEMPORARY_FLAGS (IEEE80211_TX_CTL_NO_ACK |		      \
++	IEEE80211_TX_CTL_CLEAR_PS_FILT | IEEE80211_TX_CTL_FIRST_FRAGMENT |    \
++	IEEE80211_TX_CTL_SEND_AFTER_DTIM | IEEE80211_TX_CTL_AMPDU |	      \
++	IEEE80211_TX_STAT_TX_FILTERED |	IEEE80211_TX_STAT_ACK |		      \
++	IEEE80211_TX_STAT_AMPDU | IEEE80211_TX_STAT_AMPDU_NO_BACK |	      \
++	IEEE80211_TX_CTL_RATE_CTRL_PROBE | IEEE80211_TX_CTL_PSPOLL_RESPONSE | \
++	IEEE80211_TX_CTL_MORE_FRAMES | IEEE80211_TX_CTL_LDPC |		      \
++	IEEE80211_TX_CTL_STBC)
 +
- 	if (sdata->local->hw.flags & IEEE80211_HW_CONNECTION_MONITOR)
- 		return;
+ /**
+  * enum mac80211_rate_control_flags - per-rate flags set by the
+  *	Rate Control algorithm.
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -58,6 +58,7 @@ static void ieee80211_handle_filtered_fr
+ 	info->control.vif = &sta->sdata->vif;
+ 	info->flags |= IEEE80211_TX_INTFL_NEED_TXPROCESSING |
+ 		       IEEE80211_TX_INTFL_RETRANSMISSION;
++	info->flags &= ~IEEE80211_TX_TEMPORARY_FLAGS;
  
- 	mod_timer(&sdata->u.mgd.conn_mon_timer,
- 		  round_jiffies_up(jiffies + IEEE80211_CONNECTION_IDLE_TIME));
-+
-+	ifmgd->probe_send_count = 0;
- }
+ 	sta->tx_filtered_count++;
  
- static int ecw2cw(int ecw)
 
 
