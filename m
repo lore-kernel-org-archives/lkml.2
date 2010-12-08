@@ -1,169 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab0LHH0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:26:11 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:53757 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab0LHH0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:26:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=oV1FykeIxeIQFy1tGxm7GapeKM5XfumUa/dhLHp1/UcRfgWc33p1XFKP1rYXvl0hS6
-         172Ebl1jXhEp5Nx580CQ==
-Date: Tue, 7 Dec 2010 23:26:04 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 7/7] Prevent activation of page in madvise_dontneed
-In-Reply-To: <AANLkTindkfPJxxjR-nVy+Tmu6Q=fs2c=KOmdOQyfXaCP@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1012072258420.5260@sister.anvils>
-References: <cover.1291568905.git.minchan.kim@gmail.com> <ca25c4e33beceeb3a96e8437671e5e0a188602fa.1291568905.git.minchan.kim@gmail.com> <alpine.LSU.2.00.1012062027100.8572@tigran.mtv.corp.google.com>
- <AANLkTindkfPJxxjR-nVy+Tmu6Q=fs2c=KOmdOQyfXaCP@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1753810Ab0LHHeK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:34:10 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:35543 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752842Ab0LHHeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 02:34:08 -0500
+X-ASG-Debug-ID: 1291793646-6da313a20001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CFF34E7.2030401@fusionio.com>
+Date: Wed, 8 Dec 2010 15:33:59 +0800
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "jmarchan@redhat.com" <jmarchan@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
+References: <4CFCB08F.4010509@jp.fujitsu.com> <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com> <4CFDDFC3.2070107@jp.fujitsu.com>
+X-ASG-Orig-Subj: Re: [PATCH 1/2] Don't merge different partition's IOs
+In-Reply-To: <4CFDDFC3.2070107@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1291793646
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.2964 1.0000 -0.3635
+X-Barracuda-Spam-Score: 0.05
+X-Barracuda-Spam-Status: No, SCORE=0.05 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=SUBJECT_FUZZY_TION
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.48807
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.41 SUBJECT_FUZZY_TION     Attempt to obfuscate words in Subject:
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, Minchan Kim wrote:
+On 2010-12-07 15:18, Satoru Takeuchi wrote:
+> Hi Linus, Yasuaki,  and Jens
 > 
-> How about this? Although it doesn't remove null dependency, it meet my
-> goal without big overhead.
-> It's just quick patch.
-
-Roughly, yes; by "just quick patch" I take you to mean that I should
-not waste time on all the minor carelessnesses scattered through it.
-
-> If you agree, I will resend this version as formal patch.
-> (If you suffered from seeing below word-wrapped source, see the
-> attachment. I asked to google two time to support text-plain mode in
-> gmail web but I can't receive any response until now. ;(. Lots of
-> kernel developer in google. Please support this mode for us who can't
-> use SMTP although it's a very small VOC)
-
-Tiresome.  Seems not to be high on gmail's priorities.
-It's sad to see even Linus attaching patches these days.
-
+> (2010/12/07 1:08), Linus Torvalds wrote:
+>> 2010/12/6 Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>:
+>>>
+>>> The problem is caused by merging different partition's I/Os. So the patch
+>>> check whether a merging bio or request is a same partition as a request or not
+>>> by using a partition's start sector and size.
+>>
+>> I really think this is wrong.
+>>
+>> We should just carry the partition information around in the req and
+>> the bio, and just compare the pointers, rather than compare the range.
+>> No need to even dereference the pointers, you should be able to just
+>> do
+>>
+>>     /* don't merge if not on the same partition */
+>>     if (bio->part != req->part)
+>>        return 0;
+>>
+>> or something.
+>>
+>> This is doubly true since the accounting already does that horrible
+>> partition lookup: rather than look it up, we should just _set_ it in
+>> __generic_make_request(), where I think we already know it since we do
+>> that whole blk_partition_remap().
+>>
+>> So just something like the appended (TOTALLY UNTESTED) perhaps?
+>>
+>> Note that this should get it right even for overlapping partitions etc.
+>>
+>>                       Linus
 > 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e097df6..14ae918 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -771,6 +771,7 @@ struct zap_details {
->         pgoff_t last_index;                     /* Highest page->index
-> to unmap */
->         spinlock_t *i_mmap_lock;                /* For unmap_mapping_range: */
->         unsigned long truncate_count;           /* Compare vm_truncate_count */
-> +       int ignore_reference;
->  };
+> The problem can occur even if your patches are applied. Think about a case
+> like the following.
 > 
->  struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 319528b..fdb0253 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -162,18 +162,22 @@ static long madvise_dontneed(struct vm_area_struct * vma,
->                              struct vm_area_struct ** prev,
->                              unsigned long start, unsigned long end)
->  {
-> +       struct zap_details details ;
-> +
->         *prev = vma;
->         if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
->                 return -EINVAL;
+>   1) There are 2 partition, sda1 and sda2, on sda.
+>   2) Open sda and issue an IO to sda2's first sector. Then sda2's in_flight
+>      is incremented though you open not sda2 but sda. It is because of
+>      partition lookup method. It is based on which partition rq->__sector
+>      sector belongs to.
+>   3) Issue an IO to sda1's last sector and it merged to the IO issued in
+>      step (2) because their part are both sda. In addition, rq->__sector
+>      is modified to the sda1's region.
+>   4) After completing the IO, sda1's in_flight is decremented and diskstat
+>      is corrupted here.
 > 
->         if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
-> -               struct zap_details details = {
-> -                       .nonlinear_vma = vma,
-> -                       .last_index = ULONG_MAX,
-> -               };
-> -               zap_page_range(vma, start, end - start, &details);
-> -       } else
-> -               zap_page_range(vma, start, end - start, NULL);
-> +               details.nonlinear_vma = vma;
-> +               details.last_index = ULONG_MAX;
-> +       } else {
-> +               details.nonlinear_vma = NULL;
-> +               details.last_index = NULL;
-> +       }
-> +
-> +       details.ignore_references = true;
-> +       zap_page_range(vma, start, end - start, &details);
->         return 0;
->  }
+> I think fixing this case is difficult and would cause more complexity.
 > 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ebfeedf..d46ac42 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -897,9 +897,15 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->         pte_t *pte;
->         spinlock_t *ptl;
->         int rss[NR_MM_COUNTERS];
-> -
-> +       bool ignore_reference = false;
->         init_rss_vec(rss);
-> 
-> +       if (details && ((!details->check_mapping && !details->nonlinear_vma)
-> +                                        || !details->ignore_reference))
-> +               details = NULL;
-> +
+> I hit on another approach. Although it doesn'tprevent any merge as Linus
+> preferred, it can fix the problem anyway. In this idea, in_flight is
+> incremented and decremented for the partition which the request belonged
+> to in its creation. It has the following merits.
 
-	bool mark_accessed = true;
+I really would prefer if we fixed up the patchset we ended up reverting.
+At least that had a purpose with growing struct request, since we saved
+on doing the partition lookups.
 
-	if (VM_SequentialReadHint(vma) ||
-	    (details && details->ignore_reference))
-		mark_accessed = false;
-	if (details && !details->check_mapping && !details->nonlinear_vma)
-		details = NULL;
-     
+-- 
+Jens Axboe
 
->         pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
->         arch_enter_lazy_mmu_mode();
->         do {
-> @@ -949,7 +955,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->                                 if (pte_dirty(ptent))
->                                         set_page_dirty(page);
->                                 if (pte_young(ptent) &&
-> -                                   likely(!VM_SequentialReadHint(vma)))
-> +                                   likely(!VM_SequentialReadHint(vma)) &&
-> +                                   likely(!ignore_reference))
->                                         mark_page_accessed(page);
-
-				if (pte_young(ptent) && mark_accessed)
-					mark_page_accessed(page);
-
-
->                                 rss[MM_FILEPAGES]--;
->                         }
-> @@ -1038,8 +1045,6 @@ static unsigned long unmap_page_range(struct
-> mmu_gather *tlb,
->         pgd_t *pgd;
->         unsigned long next;
-> 
-> -       if (details && !details->check_mapping && !details->nonlinear_vma)
-> -               details = NULL;
-> 
->         BUG_ON(addr >= end);
->         mem_cgroup_uncharge_start();
-> @@ -1102,7 +1107,8 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
->         unsigned long tlb_start = 0;    /* For tlb_finish_mmu */
->         int tlb_start_valid = 0;
->         unsigned long start = start_addr;
-> -       spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
-> +       spinlock_t *i_mmap_lock = details ?
-> +               (detais->check_mapping ? details->i_mmap_lock: NULL) : NULL;
-
-Why that change?
-
-Hugh
