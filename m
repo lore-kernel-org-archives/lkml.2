@@ -1,32 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab0LHXf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:35:56 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36059 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab0LHXfy (ORCPT
+	id S1754117Ab0LHXmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:42:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54418 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753668Ab0LHXmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:35:54 -0500
-Date: Wed, 8 Dec 2010 15:34:28 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>, sedat.dilek@gmail.com,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for December 8
- (drivers/platform/x86/Kconfig:422:error: recursive dependency detected!)
-Message-Id: <20101208153428.93c95c54.randy.dunlap@oracle.com>
-In-Reply-To: <1291849721.5992.145.camel@i7.infradead.org>
-References: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com>
-	<AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
-	<1291801990.5992.105.camel@i7.infradead.org>
-	<20101208174603.GA7107@core.coreip.homeip.net>
-	<20101208135105.a8482d46.randy.dunlap@oracle.com>
-	<1291849721.5992.145.camel@i7.infradead.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 8 Dec 2010 18:42:43 -0500
+Date: Wed, 8 Dec 2010 15:42:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 5/6] mlock: do not hold mmap_sem for extended periods of
+ time
+Message-Id: <20101208154218.4a497920.akpm@linux-foundation.org>
+In-Reply-To: <1291335412-16231-6-git-send-email-walken@google.com>
+References: <1291335412-16231-1-git-send-email-walken@google.com>
+	<1291335412-16231-6-git-send-email-walken@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -34,29 +31,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Dec 2010 23:08:39 +0000 David Woodhouse wrote:
+On Thu,  2 Dec 2010 16:16:51 -0800
+Michel Lespinasse <walken@google.com> wrote:
 
-> On Wed, 2010-12-08 at 13:51 -0800, Randy Dunlap wrote:
-> > 
-> > I dislike select, but reality is that modules do need to select/enable
-> > library code and minor features sometimes.
-> > 
-> > OTOH, where drivers/platform/x86/Kconfig:ACPI_CMPC does "select INPUT"
-> > to enable an entire subsystem is wrong and bad IMO. 
-> 
-> This is just a deficiency in the tools. The correct answer is to fix the
-> damn tools, not invent this silly 'select' facility which means much the
-> same thing as 'depends on' but is implemented differently.
-> 
-> As long ago as the mid-1990s, the Nemesis research OS was using a tcl
-> xconfig tool based on the Linux one, but which would show you the
-> dependencies for an option that was disabled, so you could enable them
-> where you needed to. Rather than just hiding the option completely.
+> __get_user_pages gets a new 'nonblocking' parameter to signal that the
+> caller is prepared to re-acquire mmap_sem and retry the operation if needed.
+> This is used to split off long operations if they are going to block on
+> a disk transfer, or when we detect contention on the mmap_sem.
+
+Doesn't apply to linux-next because the KVM guys snuck in a new
+FAULT_FLAG_MINOR (who knew?).  With a bonus, undocumented,
+exported-to-modules get_user_pages_noio().
+
+I liked your code better so I munged __get_user_pages() together thusly:
 
 
-xconfig has options that show all symbols.  I use that most of the time,
-but I bet that most people do not.
+			cond_resched();
+			while (!(page = follow_page(vma, start, foll_flags))) {
+				int ret;
+				unsigned int fault_flags = 0;
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+				if (foll_flags & FOLL_WRITE)
+					fault_flags |= FAULT_FLAG_WRITE;
+				if (nonblocking)
+					fault_flags |= FAULT_FLAG_ALLOW_RETRY;
+				if (foll_flags & FOLL_MINOR)
+					fault_flags |= FAULT_FLAG_MINOR;
+
+				ret = handle_mm_fault(mm, vma, start,
+							fault_flags);
+
+
+please review the end result..
