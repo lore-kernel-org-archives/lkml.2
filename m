@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab0LHAqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:46:47 -0500
-Received: from kroah.org ([198.145.64.141]:45924 "EHLO coco.kroah.org"
+	id S1756172Ab0LHAr0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:26 -0500
+Received: from kroah.org ([198.145.64.141]:58369 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729Ab0LHAqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:46 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
-Message-Id: <20101208004426.395756365@clark.site>
+	id S1756137Ab0LHArV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:21 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:30 2010
+Message-Id: <20101208004430.007164848@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:26 -0800
+Date: Tue, 07 Dec 2010 16:44:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: [020/127] numa: fix slab_node(MPOL_BIND)
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [057/127] bio: take care not overflow page count when mapping/copying user data
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Jens Axboe <jaxboe@fusionio.com>
 
-commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
+commit cb4644cac4a2797afc847e6c92736664d4b0ea34 upstream.
 
-When a node contains only HighMem memory, slab_node(MPOL_BIND)
-dereferences a NULL pointer.
+If the iovec is being set up in a way that causes uaddr + PAGE_SIZE
+to overflow, we could end up attempting to map a huge number of
+pages. Check for this invalid input type.
 
-[ This code seems to go back all the way to commit 19770b32609b: "mm:
-  filter based on a nodemask as well as a gfp_mask".  Which was back in
-  April 2008, and it got merged into 2.6.26.  - Linus ]
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/bio.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1482,7 +1482,7 @@ unsigned slab_node(struct mempolicy *pol
- 		(void)first_zones_zonelist(zonelist, highest_zoneidx,
- 							&policy->v.nodes,
- 							&zone);
--		return zone->node;
-+		return zone ? zone->node : numa_node_id();
- 	}
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -838,6 +838,12 @@ struct bio *bio_copy_user_iov(struct req
+ 		end = (uaddr + iov[i].iov_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		start = uaddr >> PAGE_SHIFT;
  
- 	default:
++		/*
++		 * Overflow, abort
++		 */
++		if (end < start)
++			return ERR_PTR(-EINVAL);
++
+ 		nr_pages += end - start;
+ 		len += iov[i].iov_len;
+ 	}
+@@ -965,6 +971,12 @@ static struct bio *__bio_map_user_iov(st
+ 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 
++		/*
++		 * Overflow, abort
++		 */
++		if (end < start)
++			return ERR_PTR(-EINVAL);
++
+ 		nr_pages += end - start;
+ 		/*
+ 		 * buffer must be aligned to at least hardsector size for now
+@@ -992,7 +1004,7 @@ static struct bio *__bio_map_user_iov(st
+ 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 		const int local_nr_pages = end - start;
+ 		const int page_limit = cur_page + local_nr_pages;
+-		
++
+ 		ret = get_user_pages_fast(uaddr, local_nr_pages,
+ 				write_to_vm, &pages[cur_page]);
+ 		if (ret < local_nr_pages) {
 
 
