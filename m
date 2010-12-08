@@ -1,194 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab0LHSaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:30:22 -0500
-Received: from zucker.schokokeks.org ([78.46.69.5]:49767 "EHLO
-	zucker.schokokeks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab0LHSaU (ORCPT
+	id S1756039Ab0LHSa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:30:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57699 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0LHSa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:30:20 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Dec 2010 13:30:20 EST
-From: Hanno =?utf-8?q?B=C3=B6ck?= <hanno@hboeck.de>
-To: lenb@kernel.org
-Subject: [PATCH] acpi: const-ify functions
-Date: Wed, 8 Dec 2010 19:25:10 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.1; KDE/4.5.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart7784889.8XrazIs9Ki";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	Wed, 8 Dec 2010 13:30:58 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Bph6ssctQ44A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tBb2bbeoAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=R5z1oqr90NEaCzVe3EAA:9 a=eHgT1TnorDCjTaAbLnwA:7 a=_vYWKDqEWA0obBHMBdUnuomFF18A:4 a=PUjeQqilurYA:10 a=YuKU6ANggZ8A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate from
+ ntp_error
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 08 Dec 2010 13:30:54 -0500
+Message-ID: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012081925.10292.hanno@hboeck.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart7784889.8XrazIs9Ki
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+While doing my end of year unlikely() cleanup, running the annotate
+branch profiler, I came across this:
 
-Will const a couple of functions and variables. This is extracted
-from grsecurity (with only a slight modification to limit a line
-to 80 chars).
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+  122588 65653641  99 timekeeping_adjust             timekeeping.c        664
+  167493 14584927  98 timekeeping_adjust             timekeeping.c        658
 
-Patch is against linux-acpi-2.6 git.
+This shows that the following likely()'s are wrong most of the time:
 
-Similar patches have been sent in the past but not applied,
-supposedly because they weren't sent to subsystem maintainers.
-(I may continue to send similar extracts to other subsystems)
+	if (error > interval) {
+		error >>= 2;
+		if (likely(error <= interval))
+			adj = 1;
+		else
+			adj = timekeeping_bigadjust(error, &interval, &offset);
+	} else if (error < -interval) {
+		error >>= 2;
+		if (likely(error >= -interval)) {
 
-=2D--
-Signed-off-by: Hanno Boeck <hanno@hboeck.de>
-diff -Naurp linux-acpi-1//drivers/acpi/battery.c linux-acpi-2/drivers/acpi/=
-battery.c
-=2D-- linux-acpi-1//drivers/acpi/battery.c	2010-12-08 18:42:26.187000005 +0=
-100
-+++ linux-acpi-2/drivers/acpi/battery.c	2010-12-08 18:42:53.595000204 +0100
-@@ -851,7 +851,7 @@ DECLARE_FILE_FUNCTIONS(alarm);
- 	}
-=20
- static struct battery_file {
-=2D	struct file_operations ops;
-+	const struct file_operations ops;
- 	mode_t mode;
- 	const char *name;
- } acpi_battery_file[] =3D {
-diff -Naurp linux-acpi-1//drivers/acpi/dock.c linux-acpi-2/drivers/acpi/doc=
-k.c
-=2D-- linux-acpi-1//drivers/acpi/dock.c	2010-12-08 18:42:26.147999998 +0100
-+++ linux-acpi-2/drivers/acpi/dock.c	2010-12-08 18:42:53.608999978 +0100
-@@ -77,7 +77,7 @@ struct dock_dependent_device {
- 	struct list_head list;
- 	struct list_head hotplug_list;
- 	acpi_handle handle;
-=2D	struct acpi_dock_ops *ops;
-+	const struct acpi_dock_ops *ops;
- 	void *context;
- };
-=20
-@@ -589,7 +589,8 @@ EXPORT_SYMBOL_GPL(unregister_dock_notifi
-  * the dock driver after _DCK is executed.
-  */
- int
-=2Dregister_hotplug_dock_device(acpi_handle handle, struct acpi_dock_ops *o=
-ps,
-+register_hotplug_dock_device(acpi_handle handle,
-+			     const struct acpi_dock_ops *ops,
- 			     void *context)
- {
- 	struct dock_dependent_device *dd;
-diff -Naurp linux-acpi-1//drivers/acpi/sleep.c linux-acpi-2/drivers/acpi/sl=
-eep.c
-=2D-- linux-acpi-1//drivers/acpi/sleep.c	2010-12-08 18:42:27.559999989 +0100
-+++ linux-acpi-2/drivers/acpi/sleep.c	2010-12-08 18:42:53.615000007 +0100
-@@ -319,7 +319,7 @@ static int acpi_suspend_state_valid(susp
- 	}
- }
-=20
-=2Dstatic struct platform_suspend_ops acpi_suspend_ops =3D {
-+static const struct platform_suspend_ops acpi_suspend_ops =3D {
- 	.valid =3D acpi_suspend_state_valid,
- 	.begin =3D acpi_suspend_begin,
- 	.prepare_late =3D acpi_pm_prepare,
-@@ -347,7 +347,7 @@ static int acpi_suspend_begin_old(suspen
-  * The following callbacks are used if the pre-ACPI 2.0 suspend ordering h=
-as
-  * been requested.
-  */
-=2Dstatic struct platform_suspend_ops acpi_suspend_ops_old =3D {
-+static const struct platform_suspend_ops acpi_suspend_ops_old =3D {
- 	.valid =3D acpi_suspend_state_valid,
- 	.begin =3D acpi_suspend_begin_old,
- 	.prepare_late =3D acpi_pm_pre_suspend,
-@@ -498,7 +498,7 @@ static void acpi_pm_thaw(void)
- 	acpi_enable_all_runtime_gpes();
- }
-=20
-=2Dstatic struct platform_hibernation_ops acpi_hibernation_ops =3D {
-+static const struct platform_hibernation_ops acpi_hibernation_ops =3D {
- 	.begin =3D acpi_hibernation_begin,
- 	.end =3D acpi_pm_end,
- 	.pre_snapshot =3D acpi_pm_prepare,
-@@ -541,7 +541,7 @@ static int acpi_hibernation_begin_old(vo
-  * The following callbacks are used if the pre-ACPI 2.0 suspend ordering h=
-as
-  * been requested.
-  */
-=2Dstatic struct platform_hibernation_ops acpi_hibernation_ops_old =3D {
-+static const struct platform_hibernation_ops acpi_hibernation_ops_old =3D {
- 	.begin =3D acpi_hibernation_begin_old,
- 	.end =3D acpi_pm_end,
- 	.pre_snapshot =3D acpi_pm_pre_suspend,
-diff -Naurp linux-acpi-1//drivers/acpi/video.c linux-acpi-2/drivers/acpi/vi=
-deo.c
-=2D-- linux-acpi-1//drivers/acpi/video.c	2010-12-08 18:42:27.627999905 +0100
-+++ linux-acpi-2/drivers/acpi/video.c	2010-12-08 18:42:53.621000001 +0100
-@@ -260,7 +260,7 @@ static int acpi_video_set_brightness(str
- 				vd->brightness->levels[request_level]);
- }
-=20
-=2Dstatic struct backlight_ops acpi_backlight_ops =3D {
-+static const struct backlight_ops acpi_backlight_ops =3D {
- 	.get_brightness =3D acpi_video_get_brightness,
- 	.update_status  =3D acpi_video_set_brightness,
- };
-diff -Naurp linux-acpi-1//include/acpi/acpi_drivers.h linux-acpi-2/include/=
-acpi/acpi_drivers.h
-=2D-- linux-acpi-1//include/acpi/acpi_drivers.h	2010-12-08 18:42:33.0990000=
-02 +0100
-+++ linux-acpi-2/include/acpi/acpi_drivers.h	2010-12-08 18:42:53.628000001 =
-+0100
-@@ -119,8 +119,8 @@ void pci_acpi_crs_quirks(void);
-                                   Dock Station
-   ------------------------------------------------------------------------=
-=2D- */
- struct acpi_dock_ops {
-=2D	acpi_notify_handler handler;
-=2D	acpi_notify_handler uevent;
-+	const acpi_notify_handler handler;
-+	const acpi_notify_handler uevent;
- };
-=20
- #if defined(CONFIG_ACPI_DOCK) || defined(CONFIG_ACPI_DOCK_MODULE)
-@@ -128,7 +128,7 @@ extern int is_dock_device(acpi_handle ha
- extern int register_dock_notifier(struct notifier_block *nb);
- extern void unregister_dock_notifier(struct notifier_block *nb);
- extern int register_hotplug_dock_device(acpi_handle handle,
-=2D					struct acpi_dock_ops *ops,
-+					const struct acpi_dock_ops *ops,
- 					void *context);
- extern void unregister_hotplug_dock_device(acpi_handle handle);
- #else
-@@ -144,7 +144,7 @@ static inline void unregister_dock_notif
- {
- }
- static inline int register_hotplug_dock_device(acpi_handle handle,
-=2D					       struct acpi_dock_ops *ops,
-+					       const struct acpi_dock_ops *ops,
- 					       void *context)
- {
- 	return -ENODEV;
+Talking about this with John Stultz, we both agreed that the annotations
+should be correct and is not the issue, but something else is going
+wrong.
+
+Adding in trace_printks(), I saw that the adj values that were added to
+the "mult" multiplier were sometimes quite large. The time intervals
+never got down into a small error, but instead was making large
+oscillations, both positive and negative to where it should be.
+
+John noticed that if he removed the commit:
+
+commit 5cd1c9c5cf30d4b33df3d3f74d8142f278d536b7
+timekeeping: fix rounding problem during clock update
+
+that the problem would go away and we would get back into a tight
+oscillation that would stay within the fast path (and the likely()'s
+were again likely).
+
+What the above commit did was to fix a bug that caused time to go
+backward a nanosec due to the truncating of the xtime_nsec shifted into
+the xtime.tv_nsec.  The fix for that bug (and what that commit did) was
+to always round up one. It added +1 to the xtime.tv_nsec after it did
+the conversion, and then took the difference between this shifted and
+the xtime_nsec and stored that into the ntp_error.
+
+The ntp_error is used to control the frequency, and this constant adding
+of the shift remainder would cause the large oscillation.
+
+This patch instead adds another field to the timekeeping structure that
+stores the remainder separately. On re-entry into update_wall_time(),
+the remainder is added back onto the xtime_nsec after it is set to the
+xtime.tv_nsec and restoring its original value.
+
+This handles the rounding problem that the original commit addressed but
+does not cause the large oscillation that it caused.
+
+The new results of the branch annotation profiler is now:
+
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+  736971      129   0 timekeeping_adjust             timekeeping.c        685
+  736943      115   0 timekeeping_adjust             timekeeping.c        676
 
 
-=2D-=20
-Hanno B=C3=B6ck		Blog:		http://www.hboeck.de/
-GPG: 3DBD3B20		Jabber/Mail:	hanno@hboeck.de
+Cc: Roman Zippel <zippel@linux-m68k.org>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-http://schokokeks.org - professional webhosting
+Index: linux-compile.git/kernel/time/timekeeping.c
+===================================================================
+--- linux-compile.git.orig/kernel/time/timekeeping.c
++++ linux-compile.git/kernel/time/timekeeping.c
+@@ -37,6 +37,10 @@ struct timekeeper {
+ 
+ 	/* Clock shifted nano seconds remainder not stored in xtime.tv_nsec. */
+ 	u64	xtime_nsec;
++
++	/* remainder in xtime subtraction */
++	u64	xtime_nsec_rem;
++
+ 	/* Difference between accumulated time and NTP time in ntp
+ 	 * shifted nano seconds. */
+ 	s64	ntp_error;
+@@ -84,6 +88,7 @@ static void timekeeper_setup_internals(s
+ 		((u64) interval * clock->mult) >> clock->shift;
+ 
+ 	timekeeper.xtime_nsec = 0;
++	timekeeper.xtime_nsec_rem = 0;
+ 	timekeeper.shift = clock->shift;
+ 
+ 	timekeeper.ntp_error = 0;
+@@ -751,6 +756,12 @@ void update_wall_time(void)
+ 	timekeeper.xtime_nsec = (s64)xtime.tv_nsec << timekeeper.shift;
+ 
+ 	/*
++	 * Add back the remainder that was left over when adding +1 to
++	 * xtime.tv_nsec;
++	 */
++	timekeeper.xtime_nsec += timekeeper.xtime_nsec_rem;
++
++	/*
+ 	 * With NO_HZ we may have to accumulate many cycle_intervals
+ 	 * (think "ticks") worth of time at once. To do this efficiently,
+ 	 * we calculate the largest doubling multiple of cycle_intervals
+@@ -797,12 +808,11 @@ void update_wall_time(void)
+ 
+ 	/*
+ 	 * Store full nanoseconds into xtime after rounding it up and
+-	 * add the remainder to the error difference.
++	 * store the remainder to update xtime_nsec on the next iteration.
+ 	 */
+ 	xtime.tv_nsec =	((s64) timekeeper.xtime_nsec >> timekeeper.shift) + 1;
+ 	timekeeper.xtime_nsec -= (s64) xtime.tv_nsec << timekeeper.shift;
+-	timekeeper.ntp_error +=	timekeeper.xtime_nsec <<
+-				timekeeper.ntp_error_shift;
++	timekeeper.xtime_nsec_rem = timekeeper.xtime_nsec;
+ 
+ 	/*
+ 	 * Finally, make sure that after the rounding
 
---nextPart7784889.8XrazIs9Ki
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAkz/zYYACgkQr2QksT29OyCqHwCdHz4lGBfCJehsprMDSiguEN1p
-zUcAn1Xl7+bW2Hn9OKXyxr7P6mkIfwPc
-=RGYT
------END PGP SIGNATURE-----
-
---nextPart7784889.8XrazIs9Ki--
