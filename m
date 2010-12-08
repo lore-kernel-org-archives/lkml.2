@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab0LHBje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:39:34 -0500
-Received: from kroah.org ([198.145.64.141]:48891 "EHLO coco.kroah.org"
+	id S1757187Ab0LHBAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:00:52 -0500
+Received: from kroah.org ([198.145.64.141]:48856 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757076Ab0LHBA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:56 -0500
+	id S1757153Ab0LHBAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:46 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:32 2010
-Message-Id: <20101208005732.674435716@clark.site>
+Message-Id: <20101208005731.943729010@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:10 -0800
+Date: Tue, 07 Dec 2010 16:58:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [113/289] mm: fix is_mem_section_removable() page_order BUG_ON check
+        Tim Abbott <tabbott@ksplice.com>, Jeff Dike <jdike@addtoit.com>
+Subject: [106/289] um: remove PAGE_SIZE alignment in linker script causing kernel segfault.
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 572438f9b52236bd8938b1647cc15e027d27ef55 upstream.
+commit 6915e04f8847bea16d0890f559694ad8eedd026c upstream.
 
-page_order() is called by memory hotplug's user interface to check the
-section is removable or not.  (is_mem_section_removable())
+The linker script cleanup that I did in commit 5d150a97f93 ("um: Clean up
+linker script using standard macros.") (2.6.32) accidentally introduced an
+ALIGN(PAGE_SIZE) when converting to use INIT_TEXT_SECTION; Richard
+Weinberger reported that this causes the kernel to segfault with
+CONFIG_STATIC_LINK=y.
 
-It calls page_order() withoug holding zone->lock.
-So, even if the caller does
+I'm not certain why this extra alignment is a problem, but it seems likely
+it is because previously
 
-	if (PageBuddy(page))
-		ret = page_order(page) ...
-The caller may hit BUG_ON().
+__init_begin = _stext = _text = _sinittext
 
-For fixing this, there are 2 choices.
-  1. add zone->lock.
-  2. remove BUG_ON().
+and with the extra ALIGN(PAGE_SIZE), _sinittext becomes different from the
+rest.  So there is likely a bug here where something is assuming that
+_sinittext is the same as one of those other symbols.  But reverting the
+accidental change fixes the regression, so it seems worth committing that
+now.
 
-is_mem_section_removable() is used for some "advice" and doesn't need to
-be 100% accurate.  This is_removable() can be called via user program..
-We don't want to take this important lock for long by user's request.  So,
-this patch removes BUG_ON().
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Tim Abbott <tabbott@ksplice.com>
+Reported-by: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>
+Tested by: Antoine Martin <antoine@nagafix.co.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/internal.h |    2 +-
+ arch/um/kernel/uml.lds.S |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -62,7 +62,7 @@ extern bool is_free_buddy_page(struct pa
-  */
- static inline unsigned long page_order(struct page *page)
- {
--	VM_BUG_ON(!PageBuddy(page));
-+	/* PageBuddy() must be checked by the caller */
- 	return page_private(page);
- }
+--- a/arch/um/kernel/uml.lds.S
++++ b/arch/um/kernel/uml.lds.S
+@@ -22,7 +22,7 @@ SECTIONS
+   _text = .;
+   _stext = .;
+   __init_begin = .;
+-  INIT_TEXT_SECTION(PAGE_SIZE)
++  INIT_TEXT_SECTION(0)
+   . = ALIGN(PAGE_SIZE);
  
+   .text      :
 
 
