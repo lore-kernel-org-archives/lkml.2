@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab0LHCKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:10:19 -0500
-Received: from kroah.org ([198.145.64.141]:58348 "EHLO coco.kroah.org"
+	id S1757714Ab0LHCKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:10:43 -0500
+Received: from kroah.org ([198.145.64.141]:58343 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119Ab0LHArS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:18 -0500
+	id S1756026Ab0LHArR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:17 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:29 2010
-Message-Id: <20101208004429.717024987@clark.site>
+Message-Id: <20101208004429.606985268@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:00 -0800
+Date: Tue, 07 Dec 2010 16:43:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [054/127] netfilter: nf_conntrack: allow nf_ct_alloc_hashtable() to get highmem pages
+        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [053/127] ALSA: hda: Use "alienware" model quirk for another SSID
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 6b1686a71e3158d3c5f125260effce171cc7852b upstream.
+commit 0defe09ca70daccdc83abd9c3c24cd89ae6a1141 upstream.
 
-commit ea781f197d6a8 (use SLAB_DESTROY_BY_RCU and get rid of call_rcu())
-did a mistake in __vmalloc() call in nf_ct_alloc_hashtable().
+BugLink: https://launchpad.net/bugs/683695
 
-I forgot to add __GFP_HIGHMEM, so pages were taken from LOWMEM only.
+The original reporter states that headphone jacks do not appear to
+work.  Upon inspecting his codec dump, and upon further testing, it is
+confirmed that the "alienware" model quirk is correct.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Reported-and-tested-by: Cody Thierauf
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/nf_conntrack_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1173,7 +1173,8 @@ void *nf_ct_alloc_hashtable(unsigned int
- 	if (!hash) {
- 		*vmalloced = 1;
- 		printk(KERN_WARNING "nf_conntrack: falling back to vmalloc.\n");
--		hash = __vmalloc(sz, GFP_KERNEL | __GFP_ZERO, PAGE_KERNEL);
-+		hash = __vmalloc(sz, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
-+				 PAGE_KERNEL);
- 	}
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1602,6 +1602,8 @@ static struct snd_pci_quirk stac92hd73xx
+ static struct snd_pci_quirk stac92hd73xx_codec_id_cfg_tbl[] = {
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02a1,
+ 		      "Alienware M17x", STAC_ALIENWARE_M17X),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x043a,
++		      "Alienware M17x", STAC_ALIENWARE_M17X),
+ 	{} /* terminator */
+ };
  
- 	if (hash && nulls)
 
 
