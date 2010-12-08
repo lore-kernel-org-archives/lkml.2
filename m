@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab0LHBw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:52:57 -0500
-Received: from kroah.org ([198.145.64.141]:48596 "EHLO coco.kroah.org"
+	id S1756968Ab0LHA7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:45 -0500
+Received: from kroah.org ([198.145.64.141]:48574 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756975Ab0LHA7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:46 -0500
+	id S1756842Ab0LHA7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:42 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:26 2010
-Message-Id: <20101208005726.539262212@clark.site>
+Message-Id: <20101208005726.158366461@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:09 -0800
+Date: Tue, 07 Dec 2010 16:57:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
+        Amod Bodas <amod.bodas@atheros.com>,
+        Vasanth Thiagarajan <vasanth.thiagarajan@atheros.com>,
         "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [052/289] mac80211: make the beacon monitor available externally
+Subject: [048/289] mac80211: fix offchannel assumption upon association
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,70 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit d3a910a8e4e846b9a767d35483f4dc7c6de7af82 upstream.
+commit 8d4780eb1ece4e8109b4f6b2e5e61f7fc593c3f4 upstream.
 
-This will be used by other components next. The beacon
-monitor was added as of 2.6.34 so these fixes are applicable
-only to kernels >= 2.6.34.
+Association is dealt with as an atomic offchannel operation,
+we do this because we don't know we are associated until we
+get the associatin response from the AP. When we do get the
+associatin response though we were never clearing the offchannel
+state. This has a few implications, we told drivers we were
+still offchannel, and the first configured TX power for the
+channel does not take into account any power constraints.
 
-Cc: Paul Stewart <pstew@google.com>
+For ath9k this meant ANI calibration would not start upon
+association, and we'd have to wait until the first bgscan
+to be triggered. There may be other issues this resolves
+but I'm too lazy to comb the code to check.
+
 Cc: Amod Bodas <amod.bodas@atheros.com>
+Cc: Vasanth Thiagarajan <vasanth.thiagarajan@atheros.com>
 Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/ieee80211_i.h |    1 +
- net/mac80211/mlme.c        |    8 ++++----
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ net/mac80211/main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1003,6 +1003,7 @@ void ieee80211_sta_restart(struct ieee80
- void ieee80211_sta_work(struct ieee80211_sub_if_data *sdata);
- void ieee80211_sta_rx_queued_mgmt(struct ieee80211_sub_if_data *sdata,
- 				  struct sk_buff *skb);
-+void ieee80211_sta_reset_beacon_monitor(struct ieee80211_sub_if_data *sdata);
- void ieee80211_sta_reset_conn_monitor(struct ieee80211_sub_if_data *sdata);
- 
- /* IBSS code */
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -109,7 +109,7 @@ static void run_again(struct ieee80211_i
- 		mod_timer(&ifmgd->timer, timeout);
- }
- 
--static void mod_beacon_timer(struct ieee80211_sub_if_data *sdata)
-+void ieee80211_sta_reset_beacon_monitor(struct ieee80211_sub_if_data *sdata)
- {
- 	if (sdata->local->hw.flags & IEEE80211_HW_BEACON_FILTER)
- 		return;
-@@ -1367,7 +1367,7 @@ static bool ieee80211_assoc_success(stru
- 	 * Also start the timer that will detect beacon loss.
- 	 */
- 	ieee80211_sta_rx_notify(sdata, (struct ieee80211_hdr *)mgmt);
--	mod_beacon_timer(sdata);
-+	ieee80211_sta_reset_beacon_monitor(sdata);
- 
- 	return true;
- }
-@@ -1470,7 +1470,7 @@ static void ieee80211_rx_mgmt_probe_resp
- 		 * we have or will be receiving any beacons or data, so let's
- 		 * schedule the timers again, just in case.
- 		 */
--		mod_beacon_timer(sdata);
-+		ieee80211_sta_reset_beacon_monitor(sdata);
- 
- 		mod_timer(&ifmgd->conn_mon_timer,
- 			  round_jiffies_up(jiffies +
-@@ -1593,7 +1593,7 @@ static void ieee80211_rx_mgmt_beacon(str
- 	 * Push the beacon loss detection into the future since
- 	 * we are processing a beacon from the AP just now.
- 	 */
--	mod_beacon_timer(sdata);
-+	ieee80211_sta_reset_beacon_monitor(sdata);
- 
- 	ncrc = crc32_be(0, (void *)&mgmt->u.beacon.beacon_int, 4);
- 	ncrc = ieee802_11_parse_elems_crc(mgmt->u.beacon.variable,
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -108,7 +108,8 @@ int ieee80211_hw_config(struct ieee80211
+ 		chan = scan_chan;
+ 		channel_type = NL80211_CHAN_NO_HT;
+ 		local->hw.conf.flags |= IEEE80211_CONF_OFFCHANNEL;
+-	} else if (local->tmp_channel) {
++	} else if (local->tmp_channel &&
++		   local->oper_channel != local->tmp_channel) {
+ 		chan = scan_chan = local->tmp_channel;
+ 		channel_type = local->tmp_channel_type;
+ 		local->hw.conf.flags |= IEEE80211_CONF_OFFCHANNEL;
 
 
