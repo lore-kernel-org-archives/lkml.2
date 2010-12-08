@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab0LHBPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:15:12 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:9022 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756494Ab0LHBPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:15:08 -0500
-From: Dmitry Torokhov <dtor@vmware.com>
-Organization: VMware, Inc.
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] VMware balloon: stop locking pages when hypervisor tells us enough
-Date: Tue, 7 Dec 2010 17:15:08 -0800
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4+; KDE/4.5.3; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>
-References: <20101203165226.GA16146@dtor-ws.eng.vmware.com> <20101207171023.d28e20ee.akpm@linux-foundation.org>
-In-Reply-To: <20101207171023.d28e20ee.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012071715.08384.dtor@vmware.com>
+	id S1757454Ab0LHBPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:15:44 -0500
+Received: from kroah.org ([198.145.64.141]:33712 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932709Ab0LHBD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:28 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:44 2010
+Message-Id: <20101208005744.818414498@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 17:00:11 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Greg Ungerer <gerg@snapgear.com>
+Subject: [234/289] nommu: yield CPU while disposing VM
+In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 07, 2010 05:10:23 pm Andrew Morton wrote:
-> On Fri, 3 Dec 2010 08:52:26 -0800
-> 
-> Dmitry Torokhov <dtor@vmware.com> wrote:
-> > When hypervisor decides to decrease target balloon size while the
-> > balloon driver tries to lock pages hypervisor may respond with
-> > VMW_BALLOON_PPN_NOTNEEDED. Use this data and immediately stop reserving
-> > pages and wait for the next update cycle to fetch new target instead
-> > of continuing trying to lock pages until size of refused list grows
-> > above VMW_BALLOON_MAX_REFUSED (16) pages.
-> 
-> OK, but ... why?  What is the externally visible effect of this change?
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-As a result the driver stops bothering hypervisor with its attempts to
-lock more pages that are not needed anymore. Most likely next order from
-hypervisor will be to reduce ballon size anyway.
+------------------
 
-It is a small optimization.
+From: Steven J. Magnani <steve@digidescorp.com>
 
-Thanks,
+commit 04c3496152394d17e3bc2316f9731ee3e8a026bc upstream.
 
-Dmitry
+Depending on processor speed, page size, and the amount of memory a
+process is allowed to amass, cleanup of a large VM may freeze the system
+for many seconds.  This can result in a watchdog timeout.
+
+Make sure other tasks receive some service when cleaning up large VMs.
+
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Cc: Greg Ungerer <gerg@snapgear.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ mm/nommu.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1668,6 +1668,7 @@ void exit_mmap(struct mm_struct *mm)
+ 		mm->mmap = vma->vm_next;
+ 		delete_vma_from_mm(vma);
+ 		delete_vma(mm, vma);
++		cond_resched();
+ 	}
+ 
+ 	kleave("");
+
+
