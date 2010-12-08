@@ -1,164 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab0LHUGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:06:45 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:36628 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753283Ab0LHUGo (ORCPT
+	id S1756562Ab0LHUJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:09:47 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:2516 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755844Ab0LHUJp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:06:44 -0500
-Message-ID: <4CFFE5A9.4040407@bluewatersys.com>
-Date: Thu, 09 Dec 2010 09:08:09 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	Wed, 8 Dec 2010 15:09:45 -0500
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Jian Peng" <jipeng@broadcom.com>
+To: "Tejun Heo" <tj@kernel.org>
+cc: "Robert Hancock" <hancockrwd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>
+Date: Wed, 8 Dec 2010 12:09:32 -0800
+Subject: RE: questions regarding possible violation of AHCI spec in AHCI
+ driver
+Thread-Topic: questions regarding possible violation of AHCI spec in
+ AHCI driver
+Thread-Index: AcuXEebttFKedGAuSHmimI78IyVnNAAAEZxg
+Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
+References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFEE569.4030204@gmail.com> <4CFF58D2.4040006@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>,<4CFFCD56.6050608@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>,<4CFFD3EB.10800@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFE29C.7080205@kernel.org>
+In-Reply-To: <4CFFE29C.7080205@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Christian Glindkamp <christian.glindkamp@taskit.de>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, Igor Plyatov <plyatov@gmail.com>,
-        linux@arm.linux.org.uk, costa.antonior@gmail.com,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux@maxim.org.za, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] mach-at91: Support for gms board added
-References: <1291732927-9429-1-git-send-email-plyatov@gmail.com> <4CFE90CA.9050004@bluewatersys.com> <4CFF47A0.8010208@atmel.com> <20101208145037.GA16435@taskit.de>
-In-Reply-To: <20101208145037.GA16435@taskit.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 60E139AB5RK10793208-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 03:50 AM, Christian Glindkamp wrote:
-> On 2010-12-08 09:53, Nicolas Ferre wrote:
->> Hi Igor,
->>
->> Le 07/12/2010 20:53, Ryan Mallon :
->>> On 12/08/2010 03:42 AM, Igor Plyatov wrote:
->>>> * The gms is a board from GeoSIG Ltd company.
->>>>   It is based on the Stamp9G20 module from Taskit company.
->>>> * This is a second version of the patch with adjustments according
->>>>   to comments from Ryan Mallon.
->>>> * This patch made for Linux 2.6.37-rc5.
->>
->> First thank you for submitting this board support.
->>
->>>> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
->>>> ---
->>
->> [..]
->>
->>> Couple more comments below.
->>> Looking at this a bit more closely, the Stamp9G20 is a system on module
->>> (SoM) board. The MACH_STAMP9G20 option supports the Stamp9G20 on
->>> taskits's evaluation board and the MACH_PCONTROL_G20 option supports it
->>> on the PControl carrier board. There is a reasonable amount of code
->>> replication in each of the board files for the UARTs, NAND, MMC, etc.
->>>
->>> Would it be better to have MACH_STAMPG20/board-stamp-9g20.c contain the
->>> core support for the Stamp9G20 module and then each of the carrier board
->>> files contain only the setup/devices found on the carrier board?
->>
->> I have exactly the same feeling as Ryan. We should make sure 
->> to factorize as much code as possible for maintenance reasons.
->>
->> If you need to distinguish between board features, you can 
->> pass information in system_rev as implemented in this 
->> board merging commit:
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=a6e016f19d393fbe4e040bee8155b03b840fa689
->>
-> 
-> I don't think system_rev is such a good idea for carrier boards from
-> different vendors. Somebody would have to control the assigned numbers.
-> 
-> This is what I would do:
-> 1. Refactor board-stamp9g20.c have three board init functions:
-> - portuxg20_board_init for PortuxG20 SBC (MACH_PORTUXG20)
+The controller may take much longer time to recover in this case, and leads to wrong HW state after stop_engine() inside ahci_hardreset() and cause device type checking failure due to unfinished HW state change and missing D2H FIS after start_engine() again inside ahci_hardreset(). I guess this is the reason why AHCI spec try to emphasize.
 
-I don't like the idea of having all of the carrier boards in the same
-file as the SoM. Carrier boards may be developed by different people and
-if there are a large number of them then the board files will start to
-get quite big and confusing.
+Yes, without this change, Broadcom controller will fail due to above reason.
 
-I think we need a standardised architecture for managing SoMs. A simple,
-crude way would be to export the init functions from the SoM, i.e:
-stam9g20_map_io and stamp9g20_board_init. Have the core SoM
-functionality in those functions, for example in board-stamp9g20.c:
+Thanks,
+Jian
 
-void __init stamp9g20_map_io(void)
-{	
-	/* Initialize processor: 18.432 MHz crystal */
-	at91sam9260_initialize(18432000);
+-----Original Message-----
+From: Tejun Heo [mailto:tj@kernel.org] 
+Sent: Wednesday, December 08, 2010 11:55 AM
+To: Jian Peng
+Cc: Robert Hancock; linux-kernel@vger.kernel.org; jgarzik@pobox.com; ide
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
 
-	/* DGBU on ttyS0. (Rx & Tx only) */
-	at91_register_uart(0, 0, 0);
+Hello,
 
-	/* USART0 on ttyS1. (Rx, Tx, CTS, RTS, DTR, DSR, DCD, RI) */
-	at91_register_uart(AT91SAM9260_ID_US0, 1, ATMEL_UART_CTS
-			| ATMEL_UART_RTS | ATMEL_UART_DTR
-			| ATMEL_UART_DSR | ATMEL_UART_DCD
-			| ATMEL_UART_RI);
+On 12/08/2010 08:49 PM, Jian Peng wrote:
+> I agree. I have AHCI based PCI card using HBA from Marvell, Via and
+> Silicon Image, and am going to test my patch.  Before this patch can
+> be applied universally, I like to use it for specific PCI_VENDOR_ID
+> first. Here is my new patch to limit it to Broadcom's AHCI core
 
-	/* set serial console to ttyS0 (ie, DBGU) */
-	at91_set_serial_console(0);
-}
-EXPORT_SYMBOL(stamp9g20_map_io);
+Hmmm... is the change actually necessary for broadcom controllers?  As
+I wrote before, any ahci controller should just work without the above
+checks because,
 
-and then have the carrier specific initialisation in board-portuxg20.c:
+> +	/* avoid race condition per spec (end of section 10.1.2) */
+> +	if (pdev->vendor == PCI_VENDOR_ID_BROADCOM) {
+> +		u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
+> +
+> +		if (status & (ATA_BUSY | ATA_DRQ) ||
+> +		    ahci_scr_read(&ap->link, SCR_STATUS, &tmp) ||
+> +		    (tmp & 0x0f) != 0x03)
+> +			return;
 
-static void __init portuxg20_map_io(void)
-{
-	stamp9g20_map_io();
-		
-	/* USART1 on ttyS2. (Rx, Tx, CTS, RTS) */
-	at91_register_uart(AT91SAM9260_ID_US1, 2,
-			ATMEL_UART_CTS | ATMEL_UART_RTS);
+PHY event can occur here which causes the device to send D2H Reg FIS
+w/ BSY set.
 
-	/* USART2 on ttyS3. (Rx, Tx, CTS, RTS) */
-	at91_register_uart(AT91SAM9260_ID_US2, 3,
-			 ATMEL_UART_CTS | ATMEL_UART_RTS);
+1. So, the controller _MUST NOT_ fail in irrecoverable way even if the
+   driver sets ST while BSY is set.
 
-	/* USART4 on ttyS5. (Rx, Tx only) */
-	at91_register_uart(AT91SAM9260_ID_US4, 5, 0);
-	
-	/* USART5 on ttyS6. (Rx, Tx only) */
-	at91_register_uart(AT91SAM9260_ID_US5, 6, 0);
-}
+2. The driver guarantees the final ST setting before entering normal
+   operation is done when the prerequisites are met.
 
-This reduces code reuse, and also means that if the carrier board has
-some esoteric setup it can do its own initialisation rather than calling
-stamp9g20_map_io. The downsides to this approach are the necessity of
-having the exported functions and the relationship between the SoM and
-the carrier board is not completely clear.
+If you combine 1 and 2, the current behavior is perfectly fine.  Do
+broadcom controllers actually fail without the above change?
 
-Maybe having additional macros similar to MACHINE_START for SoMs so that
-we can have a machine_desc type struct for the SoM and can do things
-like som->map_io()?
-
-> - stamp9g20_board_init only containing the functions used on the
->   Stamp9G20 alone
-
-Agreed.
-
-> - stamp9g20evb_board_init calling stamp9g20_board_init and adding
->   functionality of the evaluation board (MACH_STAMP9G20)
->
-> 2. Modify board-pcontrol-g20.c to use stamp9g20_board_init
-
-Okay, I think we are both for the same approach :-).
-
-> This would still duplicate the UART config (there is not much to share,
-> only the DBGU would be configured on all boards), but share NAND, MMC,
-> 1-wire. Everything else can't be shared as it is carrier board specific.
-> 
-> The gms board would then have to have its own machine number and call
-> stamp9g20_board_init.
-
-~Ryan
+Thanks.
 
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+tejun
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+
