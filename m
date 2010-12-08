@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab0LHBfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:35:30 -0500
-Received: from kroah.org ([198.145.64.141]:48990 "EHLO coco.kroah.org"
+	id S932342Ab0LHBf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:35:27 -0500
+Received: from kroah.org ([198.145.64.141]:49001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757096Ab0LHBBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:22 -0500
+	id S1757216Ab0LHBBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:25 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:34 2010
-Message-Id: <20101208005734.563651424@clark.site>
+Message-Id: <20101208005734.769146064@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:29 -0800
+Date: Tue, 07 Dec 2010 16:58:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [132/289] md/raid1: really fix recovery looping when single good device fails.
+        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [134/289] ALSA: hda: Use BIOS auto-parsing instead of existing model quirk for MEDION MD2
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 8f9e0ee38f75d4740daa9e42c8af628d33d19a02 upstream.
+commit ac70eb1305d5a81efd1e32327d7e79be15a63a5a upstream.
 
-Commit 4044ba58dd15cb01797c4fd034f39ef4a75f7cc3 supposedly fixed a
-problem where if a raid1 with just one good device gets a read-error
-during recovery, the recovery would abort and immediately restart in
-an infinite loop.
+BugLink: https://launchpad.net/bugs/682199
 
-However it depended on raid1_remove_disk removing the spare device
-from the array.  But that does not happen in this case.  So add a test
-so that in the 'recovery_disabled' case, the device will be removed.
+A 2.6.35 (Ubuntu Maverick) user, burningphantom1, reported a regression
+in audio: playback was inaudible through both speakers and headphones.
+In commit 272a527c04 of sound-2.6.git, a new model was added with this
+machine's PCI SSID.  Fortunately, it is now sufficient to use the auto
+model for BIOS auto-parsing instead of the existing quirk.
 
-This suitable for any kernel since 2.6.29 which is when
-recovery_disabled was introduced.
+Playback, capture, and jack sense were verified working for both
+2.6.35 and the alsa-driver snapshot from 2010-11-27 when model=auto is
+used.
 
-Reported-by: Sebastian Färber <faerber@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-and-tested-by: burningphantom1
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid1.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1210,6 +1210,7 @@ static int raid1_remove_disk(mddev_t *md
- 		 * is not possible.
- 		 */
- 		if (!test_bit(Faulty, &rdev->flags) &&
-+		    !mddev->recovery_disabled &&
- 		    mddev->degraded < conf->raid_disks) {
- 			err = -EBUSY;
- 			goto abort;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -9664,7 +9664,6 @@ static struct snd_pci_quirk alc882_cfg_t
+ 	SND_PCI_QUIRK(0x17aa, 0x3bfc, "Lenovo NB0763", ALC883_LENOVO_NB0763),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bfd, "Lenovo NB0763", ALC883_LENOVO_NB0763),
+ 	SND_PCI_QUIRK(0x17aa, 0x101d, "Lenovo Sky", ALC888_LENOVO_SKY),
+-	SND_PCI_QUIRK(0x17c0, 0x4071, "MEDION MD2", ALC883_MEDION_MD2),
+ 	SND_PCI_QUIRK(0x17c0, 0x4085, "MEDION MD96630", ALC888_LENOVO_MS7195_DIG),
+ 	SND_PCI_QUIRK(0x17f2, 0x5000, "Albatron KI690-AM2", ALC883_6ST_DIG),
+ 	SND_PCI_QUIRK(0x1991, 0x5625, "Haier W66", ALC883_HAIER_W66),
 
 
