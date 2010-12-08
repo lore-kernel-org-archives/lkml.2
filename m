@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0LHR41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:56:27 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:40493 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755125Ab0LHRzq (ORCPT
+	id S1755691Ab0LHR42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:56:28 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:40824 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755127Ab0LHRzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Dec 2010 12:55:46 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: gfyg7_IVM1lgK82NiWcHKJ.dG8OQI5Kl6qLLpLULxpuGXFu
- vWWxRgv7eEXsUW0cCWp80DfH1Z92GOKH6TfCRWKFzgNR26D6oR4ITaaHVmEH
- q2YKH4KltCEerkkbzi1qJXRD4gkazlomEJ4Y9BuEdSO9Qbq7TXANWYUH8pg.
- kxX42u0U.dCnOB0bV4ElEcYfZFwqOQnGDCtv8uvIQP3Zwfdb4dQ1H5ho6Tc3
- 4_cpxg_GdiLF88m5sd_kWTkke3NXCeF.FJci4PsTT3WZmf.mqsAn_BEISlEB
- Ux6QbGD_TjT2TVP8ziUyr
+X-YMail-OSG: pqITQkcVM1lBonDoFvCnBMCRD6lbwqTVQY2fSvA4ibwZPJX
+ kdrho7otDuFXoi8nrFH8x4L2t8Pr9BewYMrmWcPX_1E9UQpq3tOh.YdmkzSV
+ U54eE_U4FoutpaK5l09UxPACsB1LzxVCeDhLcDUGrZ9GxnEeCszM70iigOyf
+ 1x57_CwiPdjIJ13EloXNaHDypHMp0cbI7hTP3m18y23gHgI0g._npiz9tG7Z
+ H8AsJNFlw8FNFAqqjd30nYuPaSB_fIR7Tex_bckQrr_rf1epIzYiL
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101208175543.000201149@linux.com>
+Message-Id: <20101208175544.161829511@linux.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 08 Dec 2010 11:55:22 -0600
+Date: Wed, 08 Dec 2010 11:55:24 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linux-foundation.org
@@ -25,199 +24,164 @@ Cc: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [cpuops cmpxchg V1 2/4] x86: this_cpu_cmpxchg and this_cpu_xchg operations
+Subject: [cpuops cmpxchg V1 4/4] vmstat: User per cpu atomics to avoid interrupt disable / enable
 References: <20101208175520.456864019@linux.com>
-Content-Disposition: inline; filename=cpuops_cmpxchg_x86
+Content-Disposition: inline; filename=cpuops_cmpxchg_vmstat
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide support as far as the hardware capabilities of the x86 cpus
-allow.
+Currently the operations to increment vm counters must disable interrupts
+in order to not mess up their housekeeping of counters.
 
-Define CONFIG_CMPXCHG_LOCAL in Kconfig.cpu to allow core code to test for
-fast cpuops implementations.
+So use this_cpu_cmpxchg() to avoid the overhead. Since we can no longer
+count on preremption being disabled we still have some minor issues.
+The fetching of the counter thresholds is racy.
+A threshold from another cpu may be applied if we happen to be
+rescheduled on another cpu.  However, the following vmstat operation
+will then bring the counter again under the threshold limit.
+
+The operations for __xxx_zone_state are not changed since the caller
+has taken care of the synchronization needs (and therefore the cycle
+count is even less than the optimized version for the irq disable case
+provided here).
+
+The optimization using this_cpu_cmpxchg will only be used if the arch
+supports efficient this_cpu_ops (must have CONFIG_CMPXCHG_LOCAL set!)
+
+The use of this_cpu_cmpxchg reduces the cycle count for the counter
+operations by %80 (inc_zone_page_state goes from 170 cycles to 32).
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/Kconfig.cpu          |    3 
- arch/x86/include/asm/percpu.h |  129 +++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 131 insertions(+), 1 deletion(-)
+ mm/vmstat.c |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 87 insertions(+), 14 deletions(-)
 
-Index: linux-2.6/arch/x86/include/asm/percpu.h
+Index: linux-2.6/mm/vmstat.c
 ===================================================================
---- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-08 11:33:48.000000000 -0600
-+++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-08 11:34:44.000000000 -0600
-@@ -212,6 +212,83 @@ do {									\
- 	ret__;								\
- })
+--- linux-2.6.orig/mm/vmstat.c	2010-12-01 10:04:19.000000000 -0600
++++ linux-2.6/mm/vmstat.c	2010-12-01 10:09:06.000000000 -0600
+@@ -185,20 +185,6 @@ void __mod_zone_page_state(struct zone *
+ EXPORT_SYMBOL(__mod_zone_page_state);
  
-+/*
-+ * Beware: xchg on x86 has an implied lock prefix. There will be the cost of
-+ * full lock semantics even though they are not needed.
-+ */
-+#define percpu_xchg_op(var, nval)					\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __new = (nval);					\
-+	switch (sizeof(var)) {						\
-+	case 1:								\
-+		asm("xchgb %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "q" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 2:								\
-+		asm("xchgw %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 4:								\
-+		asm("xchgl %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 8:								\
-+		asm("xchgq %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	default: __bad_percpu_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
-+/*
-+ * cmpxchg has no such implied lock semantics as a result it is much
-+ * more efficient for cpu local operations.
-+ */
-+#define percpu_cmpxchg_op(var, oval, nval)				\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __old = (oval);					\
-+	typeof(var) __new = (nval);					\
-+	switch (sizeof(var)) {						\
-+	case 1:								\
-+		asm("cmpxchgb %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "q" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 2:								\
-+		asm("cmpxchgw %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 4:								\
-+		asm("cmpxchgl %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 8:								\
-+		asm("cmpxchgq %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	default: __bad_percpu_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
- #define percpu_from_op(op, var, constraint)		\
- ({							\
- 	typeof(var) pfo_ret__;				\
-@@ -335,6 +412,16 @@ do {									\
- #define irqsafe_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
- #define irqsafe_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
- 
-+#define __this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define __this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define __this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+
- #ifndef CONFIG_M386
- #define __this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
- #define __this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
-@@ -342,7 +429,39 @@ do {									\
- #define this_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
--#endif
-+
-+#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#endif /* !CONFIG_M386 */
-+
-+#ifndef CONFIG_X86_64
-+#ifdef CONFIG_X86_CMPXCHG64
-+/* We can support a 8 byte cmpxchg with a special instruction on 32 bit */
-+#define __this_cpu_cmpxchg_8(pcp, oval, nval)				\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __old = (oval);					\
-+	typeof(var) __new = (nval);					\
-+	asm("cmpxchg8b %2, "__percpu_arg(1)				\
-+	    : "=A" (__ret), "+m" (&pcp)					\
-+	    : "b" (((u32)new), "c" ((u32)(new >> 32)),  "0" (__old)	\
-+	    : "memory");						\
-+	__ret;								\
-+})
-+
-+#define this_cpu_cmpxchg_8(pcp, oval, nval)	__this_cpu_cmpxchg_8(pcp, oval, nval)
-+#define irqsafe_cmpxchg_8(pcp, oval, nval)	__this_cpu_cmpxchg_8(pcp, oval, nval)
-+
-+#endif /* CONFIG_X86_CMPXCHG64 */
-+#endif /* !CONFIG_X86_64 */
-+
  /*
-  * Per cpu atomic 64 bit operations are only available under 64 bit.
-  * 32 bit must fall back to generic operations.
-@@ -370,6 +489,14 @@ do {									\
- #define __this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
+- * For an unknown interrupt state
+- */
+-void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
+-					int delta)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-	__mod_zone_page_state(zone, item, delta);
+-	local_irq_restore(flags);
+-}
+-EXPORT_SYMBOL(mod_zone_page_state);
+-
+-/*
+  * Optimized increment and decrement functions.
+  *
+  * These are only for a single page and therefore can take a struct page *
+@@ -265,6 +251,92 @@ void __dec_zone_page_state(struct page *
+ }
+ EXPORT_SYMBOL(__dec_zone_page_state);
  
-+#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
++#ifdef CONFIG_CMPXCHG_LOCAL
++/*
++ * If we have cmpxchg_local support then we do not need to incur the overhead
++ * that comes with local_irq_save/restore if we use this_cpu_cmpxchg.
++ *
++ * mod_state() modifies the zone counter state through atomic per cpu
++ * operations.
++ *
++ * Overstep mode specifies how overstep should handled:
++ *     0       No overstepping
++ *     1       Overstepping half of threshold
++ *     -1      Overstepping minus half of threshold
++*/
++static inline void mod_state(struct zone *zone,
++       enum zone_stat_item item, int delta, int overstep_mode)
++{
++	struct per_cpu_pageset __percpu *pcp = zone->pageset;
++	s8 __percpu *p = pcp->vm_stat_diff + item;
++	long o, n, t, z;
 +
-+#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
++	do {
++		z = 0;  /* overflow to zone counters */
 +
- #endif
++		/*
++		 * The fetching of the stat_threshold is racy. We may apply
++		 * a counter threshold to the wrong the cpu if we get
++		 * rescheduled while executing here. However, the following
++		 * will apply the threshold again and therefore bring the
++		 * counter under the threshold.
++		 */
++		t = this_cpu_read(pcp->stat_threshold);
++
++		o = this_cpu_read(*p);
++		n = delta + o;
++
++		if (n > t || n < -t) {
++			int os = overstep_mode * (t >> 1) ;
++
++			/* Overflow must be added to zone counters */
++			z = n + os;
++			n = -os;
++		}
++	} while (this_cpu_cmpxchg(*p, o, n) != o);
++
++	if (z)
++		zone_page_state_add(z, zone, item);
++}
++
++void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
++					int delta)
++{
++	mod_state(zone, item, delta, 0);
++}
++EXPORT_SYMBOL(mod_zone_page_state);
++
++void inc_zone_state(struct zone *zone, enum zone_stat_item item)
++{
++	mod_state(zone, item, 1, 1);
++}
++
++void inc_zone_page_state(struct page *page, enum zone_stat_item item)
++{
++	mod_state(page_zone(page), item, 1, 1);
++}
++EXPORT_SYMBOL(inc_zone_page_state);
++
++void dec_zone_page_state(struct page *page, enum zone_stat_item item)
++{
++	mod_state(page_zone(page), item, -1, -1);
++}
++EXPORT_SYMBOL(dec_zone_page_state);
++#else
++/*
++ * Use interrupt disable to serialize counter updates
++ */
++void mod_zone_page_state(struct zone *zone, enum zone_stat_item item,
++					int delta)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++	__mod_zone_page_state(zone, item, delta);
++	local_irq_restore(flags);
++}
++EXPORT_SYMBOL(mod_zone_page_state);
++
+ void inc_zone_state(struct zone *zone, enum zone_stat_item item)
+ {
+ 	unsigned long flags;
+@@ -295,6 +367,7 @@ void dec_zone_page_state(struct page *pa
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(dec_zone_page_state);
++#endif
  
- /* This is not atomic against other CPUs -- CPU preemption needs to be off */
-Index: linux-2.6/arch/x86/Kconfig.cpu
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig.cpu	2010-12-08 11:33:48.000000000 -0600
-+++ linux-2.6/arch/x86/Kconfig.cpu	2010-12-08 11:33:53.000000000 -0600
-@@ -310,6 +310,9 @@ config X86_INTERNODE_CACHE_SHIFT
- config X86_CMPXCHG
- 	def_bool X86_64 || (X86_32 && !M386)
- 
-+config CMPXCHG_LOCAL
-+	def_bool X86_64 || (X86_32 && !M386)
-+
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
+ /*
+  * Update the zone counters for one cpu.
 
