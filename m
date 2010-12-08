@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0LHG46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 01:56:58 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:32975 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301Ab0LHG44 (ORCPT
+	id S1753396Ab0LHHAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:00:06 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:50002 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750746Ab0LHHAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 01:56:56 -0500
-Date: Wed, 8 Dec 2010 12:26:50 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
-Message-ID: <20101208065650.GP3158@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101207144923.GB2356@cmpxchg.org>
- <20101207150710.GA26613@barrios-desktop>
- <20101207151939.GF2356@cmpxchg.org>
- <20101207152625.GB608@barrios-desktop>
- <20101207155645.GG2356@cmpxchg.org>
- <AANLkTi=iNGT_p_VfW9GxdaKXLt2xBHM2jdwmCbF_u8uh@mail.gmail.com>
- <20101208095642.8128ab33.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTimtkb7Nczhads4u3r21RJauZvviLFkXjaL1ErDb@mail.gmail.com>
- <20101208105637.5103de75.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTim9to0Wa_iWyVA4FSV6sfT4tcR2bmV7t54HOQ1c@mail.gmail.com>
+	Wed, 8 Dec 2010 02:00:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAM+6/kx5Lclt/2dsb2JhbACjSnLAbIVJBJAL
+Date: Wed, 8 Dec 2010 17:59:55 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/46] fs: d_validate fixes
+Message-ID: <20101208065955.GA14846@amd>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <0fff695735c9b652a3f63b8480686c64811e89d0.1290852958.git.npiggin@kernel.dk>
+ <20101208015344.GE29333@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTim9to0Wa_iWyVA4FSV6sfT4tcR2bmV7t54HOQ1c@mail.gmail.com>
+In-Reply-To: <20101208015344.GE29333@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* MinChan Kim <minchan.kim@gmail.com> [2010-12-08 11:15:19]:
+On Wed, Dec 08, 2010 at 12:53:44PM +1100, Dave Chinner wrote:
+> On Sat, Nov 27, 2010 at 08:44:32PM +1100, Nick Piggin wrote:
+> > d_validate has been broken for a long time.
+> > 
+> > kmem_ptr_validate does not guarantee that a pointer can be dereferenced
+> > if it can go away at any time. Even rcu_read_lock doesn't help, because
+> > the pointer might be queued in RCU callbacks but not executed yet.
+> > 
+> > So the parent cannot be checked, nor the name hashed. The dentry pointer
+> > can not be touched until it can be verified under lock. Hashing simply
+> > cannot be used.
+> > 
+> > Instead, verify the parent/child relationship by traversing parent's
+> > d_child list. It's slow, but only ncpfs and the destaged smbfs care
+> > about it, at this point.
+> 
+> I'd drop the previous revert patch and just convert the RCU hash
+> traversal straight to the d_child traversal code you introduce here.
+> This is a much better explanation of why the d_validate mechanism
+> needs to be changed, and the revert is really an unnecessary extra
+> step...
 
-> On Wed, Dec 8, 2010 at 10:56 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Wed, 8 Dec 2010 10:43:08 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> Hi Kame,
-> >>
-> > Hi,
-> >
-> >> > I wonder ...how about adding "victim" list for "Reclaim" pages ? Then, we don't need
-> >> > extra LRU rotation.
-> >>
-> >> It can make the code clean.
-> >> As far as I think, victim list does following as.
-> >>
-> >> 1. select victim pages by strong hint
-> >> 2. move the page from LRU to victim
-> >> 3. reclaimer always peeks victim list before diving into LRU list.
-> >> 4-1. If the victim pages is used by others or dirty, it can be moved
-> >> into LRU, again or remain the page in victim list.
-> >> If the page is remained victim, when do we move it into LRU again if
-> >> the reclaimer continues to fail the page?
-> > When sometone touches it.
-> >
-> >> We have to put the new rule.
-> >> 4-2. If the victim pages isn't used by others and clean, we can
-> >> reclaim the page asap.
-> >>
-> >> AFAIK, strong hints are just two(invalidation, readahead max window heuristic).
-> >> I am not sure it's valuable to add new hierarchy(ie, LRU, victim,
-> >> unevictable) for cleaning the minor codes.
-> >> In addition, we have to put the new rule so it would make the LRU code
-> >> complicated.
-> >> I remember how unevictable feature merge is hard.
-> >>
-> > yes, it was hard.
-> >
-> >> But I am not against if we have more usecases. In this case, it's
-> >> valuable to implement it although it's not easy.
-> >>
-> >
-> > I wonder "victim list" can be used for something like Cleancache, when
-> > we have very-low-latency backend devices.
-> > And we may able to have page-cache-limit, which Balbir proposed as.
-> 
-> Yes, I thought that, too. I think it would be a good feature in embedded system.
-> 
-> >
-> >  - kvictimed? will move unmappedd page caches to victim list
-> > This may work like a InactiveClean list which we had before and make
-> > sizing easy.
-> >
-> 
-> Before further discuss, we need customer's confirm.
-> We know very well it is very hard to merge if anyone doesn't use.
-> 
-> Balbir, What do think about it?
-> 
+Has to be backported, though. Patch that is to be reverted obviously
+adds more brokenness and is a good example that you cannot dget() under
+rcu read protection even if the rest of the surrounding function is
+bugfree. I wouldn't have thought it's a big deal.
 
-The idea seems interesting, I am in the process of refreshing my
-patches for unmapped page cache control. I presume the process of
-filling the victim list will be similar to what I have or unmapped
-page cache isolation.
 
-> 
-> > Thanks,
-> > -Kame
-> >
-> >
-> >
-> >
-> 
-> 
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
 
--- 
-	Three Cheers,
-	Balbir
