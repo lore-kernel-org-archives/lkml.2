@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab0LHBIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:08:47 -0500
-Received: from kroah.org ([198.145.64.141]:33865 "EHLO coco.kroah.org"
+	id S1755484Ab0LHBIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:08:45 -0500
+Received: from kroah.org ([198.145.64.141]:33880 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932873Ab0LHBEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:04:01 -0500
+	id S932695Ab0LHBEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:04:02 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:48 2010
-Message-Id: <20101208005748.239994657@clark.site>
+Message-Id: <20101208005748.439673465@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:45 -0800
+Date: Tue, 07 Dec 2010 17:00:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Jesse Gross <jesse@nicira.com>
-Subject: [268/289] [stable] [PATCH 2.6.36 stable] vlan: Avoid hwaccel vlan packets when vid not used.
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [270/289] filter: make sure filters dont read uninitialized memory
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +26,236 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Gross <jesse@nicira.com>
+From: David S. Miller <davem@davemloft.net>
 
-[This patch applies only to 2.6.36 stable.  The problem was introduced
-in that release and is already fixed by larger changes to the vlan
-code in 2.6.37.]
+commit 57fe93b374a6b8711995c2d466c502af9f3a08bb upstream.
 
-Normally hardware accelerated vlan packets are quickly dropped if
-there is no corresponding vlan device configured.  The one exception
-is promiscuous mode, where we allow all of these packets through so
-they can be picked up by tcpdump.  However, this behavior causes a
-crash if we actually try to receive these packets.  This fixes that
-crash by ignoring packets with vids not corresponding to a configured
-device in the vlan hwaccel routines and then dropping them before they
-get to consumers in the network stack.
+There is a possibility malicious users can get limited information about
+uninitialized stack mem array. Even if sk_run_filter() result is bound
+to packet length (0 .. 65535), we could imagine this can be used by
+hostile user.
 
+Initializing mem[] array, like Dan Rosenberg suggested in his patch is
+expensive since most filters dont even use this array.
 
-Reported-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Nikola Ciprich <extmaillist@linuxbox.cz>
-Signed-off-by: Jesse Gross <jesse@nicira.com>
-Acked-by: David Miller <davem@davemloft.net>
+Its hard to make the filter validation in sk_chk_filter(), because of
+the jumps. This might be done later.
+
+In this patch, I use a bitmap (a single long var) so that only filters
+using mem[] loads/stores pay the price of added security checks.
+
+For other filters, additional cost is a single instruction.
+
+[ Since we access fentry->k a lot now, cache it in a local variable
+  and mark filter entry pointer as const. -DaveM ]
+
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/8021q/vlan_core.c |    3 +++
- net/core/dev.c        |   13 +++++++++++++
- 2 files changed, 16 insertions(+)
+ net/core/filter.c |   64 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 35 insertions(+), 29 deletions(-)
 
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -43,6 +43,9 @@ int vlan_hwaccel_do_receive(struct sk_bu
- 	struct net_device *dev = skb->dev;
- 	struct vlan_rx_stats     *rx_stats;
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -112,39 +112,41 @@ EXPORT_SYMBOL(sk_filter);
+  */
+ unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int flen)
+ {
+-	struct sock_filter *fentry;	/* We walk down these */
+ 	void *ptr;
+ 	u32 A = 0;			/* Accumulator */
+ 	u32 X = 0;			/* Index Register */
+ 	u32 mem[BPF_MEMWORDS];		/* Scratch Memory Store */
++	unsigned long memvalid = 0;
+ 	u32 tmp;
+ 	int k;
+ 	int pc;
  
-+	if (unlikely(!is_vlan_dev(dev)))
-+		return 0;
-+
- 	skb->dev = vlan_dev_info(dev)->real_dev;
- 	netif_nit_deliver(skb);
++	BUILD_BUG_ON(BPF_MEMWORDS > BITS_PER_LONG);
+ 	/*
+ 	 * Process array of filter instructions.
+ 	 */
+ 	for (pc = 0; pc < flen; pc++) {
+-		fentry = &filter[pc];
++		const struct sock_filter *fentry = &filter[pc];
++		u32 f_k = fentry->k;
  
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2891,6 +2891,19 @@ static int __netif_receive_skb(struct sk
- ncls:
- #endif
- 
-+	/* If we got this far with a hardware accelerated VLAN tag, it means
-+	 * that we were put in promiscuous mode but nobody is interested in
-+	 * this vid.  Drop the packet now to prevent it from getting propagated
-+	 * to other parts of the stack that won't know how to deal with packets
-+	 * tagged in this manner.
-+	 */
-+	if (unlikely(vlan_tx_tag_present(skb))) {
-+		if (pt_prev)
-+			ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
-+		kfree_skb(skb);
-+		goto out;
-+	}
-+
- 	/* Handle special case of bridge or macvlan */
- 	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
+ 		switch (fentry->code) {
+ 		case BPF_S_ALU_ADD_X:
+ 			A += X;
+ 			continue;
+ 		case BPF_S_ALU_ADD_K:
+-			A += fentry->k;
++			A += f_k;
+ 			continue;
+ 		case BPF_S_ALU_SUB_X:
+ 			A -= X;
+ 			continue;
+ 		case BPF_S_ALU_SUB_K:
+-			A -= fentry->k;
++			A -= f_k;
+ 			continue;
+ 		case BPF_S_ALU_MUL_X:
+ 			A *= X;
+ 			continue;
+ 		case BPF_S_ALU_MUL_K:
+-			A *= fentry->k;
++			A *= f_k;
+ 			continue;
+ 		case BPF_S_ALU_DIV_X:
+ 			if (X == 0)
+@@ -152,49 +154,49 @@ unsigned int sk_run_filter(struct sk_buf
+ 			A /= X;
+ 			continue;
+ 		case BPF_S_ALU_DIV_K:
+-			A /= fentry->k;
++			A /= f_k;
+ 			continue;
+ 		case BPF_S_ALU_AND_X:
+ 			A &= X;
+ 			continue;
+ 		case BPF_S_ALU_AND_K:
+-			A &= fentry->k;
++			A &= f_k;
+ 			continue;
+ 		case BPF_S_ALU_OR_X:
+ 			A |= X;
+ 			continue;
+ 		case BPF_S_ALU_OR_K:
+-			A |= fentry->k;
++			A |= f_k;
+ 			continue;
+ 		case BPF_S_ALU_LSH_X:
+ 			A <<= X;
+ 			continue;
+ 		case BPF_S_ALU_LSH_K:
+-			A <<= fentry->k;
++			A <<= f_k;
+ 			continue;
+ 		case BPF_S_ALU_RSH_X:
+ 			A >>= X;
+ 			continue;
+ 		case BPF_S_ALU_RSH_K:
+-			A >>= fentry->k;
++			A >>= f_k;
+ 			continue;
+ 		case BPF_S_ALU_NEG:
+ 			A = -A;
+ 			continue;
+ 		case BPF_S_JMP_JA:
+-			pc += fentry->k;
++			pc += f_k;
+ 			continue;
+ 		case BPF_S_JMP_JGT_K:
+-			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A > f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_S_JMP_JGE_K:
+-			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A >= f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_S_JMP_JEQ_K:
+-			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A == f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_S_JMP_JSET_K:
+-			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
++			pc += (A & f_k) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_S_JMP_JGT_X:
+ 			pc += (A > X) ? fentry->jt : fentry->jf;
+@@ -209,7 +211,7 @@ unsigned int sk_run_filter(struct sk_buf
+ 			pc += (A & X) ? fentry->jt : fentry->jf;
+ 			continue;
+ 		case BPF_S_LD_W_ABS:
+-			k = fentry->k;
++			k = f_k;
+ load_w:
+ 			ptr = load_pointer(skb, k, 4, &tmp);
+ 			if (ptr != NULL) {
+@@ -218,7 +220,7 @@ load_w:
+ 			}
+ 			break;
+ 		case BPF_S_LD_H_ABS:
+-			k = fentry->k;
++			k = f_k;
+ load_h:
+ 			ptr = load_pointer(skb, k, 2, &tmp);
+ 			if (ptr != NULL) {
+@@ -227,7 +229,7 @@ load_h:
+ 			}
+ 			break;
+ 		case BPF_S_LD_B_ABS:
+-			k = fentry->k;
++			k = f_k;
+ load_b:
+ 			ptr = load_pointer(skb, k, 1, &tmp);
+ 			if (ptr != NULL) {
+@@ -242,32 +244,34 @@ load_b:
+ 			X = skb->len;
+ 			continue;
+ 		case BPF_S_LD_W_IND:
+-			k = X + fentry->k;
++			k = X + f_k;
+ 			goto load_w;
+ 		case BPF_S_LD_H_IND:
+-			k = X + fentry->k;
++			k = X + f_k;
+ 			goto load_h;
+ 		case BPF_S_LD_B_IND:
+-			k = X + fentry->k;
++			k = X + f_k;
+ 			goto load_b;
+ 		case BPF_S_LDX_B_MSH:
+-			ptr = load_pointer(skb, fentry->k, 1, &tmp);
++			ptr = load_pointer(skb, f_k, 1, &tmp);
+ 			if (ptr != NULL) {
+ 				X = (*(u8 *)ptr & 0xf) << 2;
+ 				continue;
+ 			}
+ 			return 0;
+ 		case BPF_S_LD_IMM:
+-			A = fentry->k;
++			A = f_k;
+ 			continue;
+ 		case BPF_S_LDX_IMM:
+-			X = fentry->k;
++			X = f_k;
+ 			continue;
+ 		case BPF_S_LD_MEM:
+-			A = mem[fentry->k];
++			A = (memvalid & (1UL << f_k)) ?
++				mem[f_k] : 0;
+ 			continue;
+ 		case BPF_S_LDX_MEM:
+-			X = mem[fentry->k];
++			X = (memvalid & (1UL << f_k)) ?
++				mem[f_k] : 0;
+ 			continue;
+ 		case BPF_S_MISC_TAX:
+ 			X = A;
+@@ -276,14 +280,16 @@ load_b:
+ 			A = X;
+ 			continue;
+ 		case BPF_S_RET_K:
+-			return fentry->k;
++			return f_k;
+ 		case BPF_S_RET_A:
+ 			return A;
+ 		case BPF_S_ST:
+-			mem[fentry->k] = A;
++			memvalid |= 1UL << f_k;
++			mem[f_k] = A;
+ 			continue;
+ 		case BPF_S_STX:
+-			mem[fentry->k] = X;
++			memvalid |= 1UL << f_k;
++			mem[f_k] = X;
+ 			continue;
+ 		default:
+ 			WARN_ON(1);
 
 
