@@ -1,162 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab0LHBsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:48:54 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:39311 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab0LHBsw convert rfc822-to-8bit (ORCPT
+	id S932541Ab0LHBtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:49:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62025 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab0LHBtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:48:52 -0500
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 20:48:52 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gdCwTJ6hc5tX+9qldtZByRF2s66RJOohjt0pHi83eaAf8U5VNYYcbPiR3YJBfSwC7S
-         L0PWeDgDbWkwkWjJg2RV0AIvqeYHWt8bUMR8dxrZhnVl924nC063AexG/x+F2lmy216S
-         IpK4Jsxkmp87+UyZOxAMflW7o1Nx33E068jxk=
+	Tue, 7 Dec 2010 20:49:20 -0500
+Message-ID: <4CFEE3A2.2050908@kernel.org>
+Date: Tue, 07 Dec 2010 17:47:14 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <20101208095642.8128ab33.kamezawa.hiroyu@jp.fujitsu.com>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
-	<d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
-	<20101207144923.GB2356@cmpxchg.org>
-	<20101207150710.GA26613@barrios-desktop>
-	<20101207151939.GF2356@cmpxchg.org>
-	<20101207152625.GB608@barrios-desktop>
-	<20101207155645.GG2356@cmpxchg.org>
-	<AANLkTi=iNGT_p_VfW9GxdaKXLt2xBHM2jdwmCbF_u8uh@mail.gmail.com>
-	<20101208095642.8128ab33.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 8 Dec 2010 10:43:08 +0900
-Message-ID: <AANLkTimtkb7Nczhads4u3r21RJauZvviLFkXjaL1ErDb@mail.gmail.com>
-Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>
+To: Thomas Gleixner <tglx@linutronix.de>, Feng Tang <feng.tang@intel.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
+ IRQ info
+References: <1291349518-3502-1-git-send-email-feng.tang@intel.com> <tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org> <4CFD226C.60308@kernel.org> <20101207133204.4d913c5a@feng-i7> <alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6> <4CFE8045.2030101@kernel.org> <alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6> <4CFEE2D3.6050107@kernel.org>
+In-Reply-To: <4CFEE2D3.6050107@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kame,
-
-On Wed, Dec 8, 2010 at 9:56 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 8 Dec 2010 07:51:25 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Wed, Dec 8, 2010 at 12:56 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> > On Wed, Dec 08, 2010 at 12:26:25AM +0900, Minchan Kim wrote:
->> >> On Tue, Dec 07, 2010 at 04:19:39PM +0100, Johannes Weiner wrote:
->> >> > On Wed, Dec 08, 2010 at 12:07:10AM +0900, Minchan Kim wrote:
->> >> > > On Tue, Dec 07, 2010 at 03:49:24PM +0100, Johannes Weiner wrote:
->> >> > > > On Mon, Dec 06, 2010 at 02:29:10AM +0900, Minchan Kim wrote:
->> >> > > > > Changelog since v3:
->> >> > > > >  - Change function comments - suggested by Johannes
->> >> > > > >  - Change function name - suggested by Johannes
->> >> > > > >  - add only dirty/writeback pages to deactive pagevec
->> >> > > >
->> >> > > > Why the extra check?
->> >> > > >
->> >> > > > > @@ -359,8 +360,16 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->> >> > > > >                       if (lock_failed)
->> >> > > > >                               continue;
->> >> > > > >
->> >> > > > > -                     ret += invalidate_inode_page(page);
->> >> > > > > -
->> >> > > > > +                     ret = invalidate_inode_page(page);
->> >> > > > > +                     /*
->> >> > > > > +                      * If the page is dirty or under writeback, we can not
->> >> > > > > +                      * invalidate it now.  But we assume that attempted
->> >> > > > > +                      * invalidation is a hint that the page is no longer
->> >> > > > > +                      * of interest and try to speed up its reclaim.
->> >> > > > > +                      */
->> >> > > > > +                     if (!ret && (PageDirty(page) || PageWriteback(page)))
->> >> > > > > +                             deactivate_page(page);
->> >> > > >
->> >> > > > The writeback completion handler does not take the page lock, so you
->> >> > > > can still miss pages that finish writeback before this test, no?
->> >> > >
->> >> > > Yes. but I think it's rare and even though it happens, it's not critical.
->> >> > > >
->> >> > > > Can you explain why you felt the need to add these checks?
->> >> > >
->> >> > > invalidate_inode_page can return 0 although the pages is !{dirty|writeback}.
->> >> > > Look invalidate_complete_page. As easiest example, if the page has buffer and
->> >> > > try_to_release_page can't release the buffer, it could return 0.
->> >> >
->> >> > Ok, but somebody still tried to truncate the page, so why shouldn't we
->> >> > try to reclaim it?  The reason for deactivating at this location is
->> >> > that truncation is a strong hint for reclaim, not that it failed due
->> >> > to dirty/writeback pages.
->> >> >
->> >> > What's the problem with deactivating pages where try_to_release_page()
->> >> > failed?
->> >>
->> >> If try_to_release_page fails and the such pages stay long time in pagevec,
->> >> pagevec drain often happens.
->> >
->> > You mean because the pagevec becomes full more often?  These are not
->> > many pages you get extra without the checks, the race window is very
->> > small after all.
+On 12/07/2010 05:43 PM, Yinghai Lu wrote:
+> On 12/07/2010 02:32 PM, Thomas Gleixner wrote:
+>> On Tue, 7 Dec 2010, Yinghai Lu wrote:
+>>> On 12/07/2010 07:56 AM, Thomas Gleixner wrote:
+>>>>
+>>>>   Same here. No caller is interested in the detailed return value.
+>>>>
+>>>
 >>
->> Right.
->> It was a totally bad answer. The work in midnight makes my mind to be hurt. :)
+>>> ok, after look at code and git log, i knew the reasons for those
+>>> strange duplicated functions.
+>>>
+>>> Alexy changed
+>>>
+>>>  /* MP IRQ source entries */
+>>> -struct mpc_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
+>>> +struct mp_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
+>>>
+>>> to make it decouple that with mpstable definition. so mptable will
+>>> have mpc_intsrc, and acpi etc will use mp_config_intsrc
+>>>
+>>> and he planed to add more member to mp_config_intsrc .... never happened.
+>>>
+>>> then I added those functions with different parameters.
+>>>
+>>> one year later JSR changed all back to mpc_instr...
+>>>
+>>> so now have some duplicated functions....
 >>
->> Another point is that we can move such pages(!try_to_release_page,
->> someone else holding the ref) into tail of inactive.
->> We can't expect such pages will be freed sooner or later and it can
->> stir lru pages unnecessary.
->> On the other hand it's a _really_ rare so couldn't we move the pages into tail?
->> If it can be justified, I will remove the check.
->> What do you think about it?
+>>> So yes, we should use simple versions in
+>>> arch/x86/kernel/acpi/boot.c. ( assume functions mrst.c are copied
+>>> from there)
+>>>
+>>> and should kill print_mp_irq_info or print_MP_intsrc_info...
 >>
->
-> I wonder ...how about adding "victim" list for "Reclaim" pages ? Then, we don't need
-> extra LRU rotation.
+>> Nice archaelogical detective work ! :)
+>>
+>> So now I have Fengs patch plus Yinghais series which seem to go nicely
+>> together, but I have the feeling that there is some stuff unresolved.
+>>
+>> Yinghai, Feng: could you please work out the missing bits an pieces
+>> (if any) and provide me a delta patch on top of the existing patches?
+>>
+> 
+> Maybe Feng could send you updated version with simpler function?
+> 
 
-It can make the code clean.
-As far as I think, victim list does following as.
+also I prefer to keep save_mp_irq() instead of changing it to mp_save_irq().
 
-1. select victim pages by strong hint
-2. move the page from LRU to victim
-3. reclaimer always peeks victim list before diving into LRU list.
-4-1. If the victim pages is used by others or dirty, it can be moved
-into LRU, again or remain the page in victim list.
-If the page is remained victim, when do we move it into LRU again if
-the reclaimer continues to fail the page?
-We have to put the new rule.
-4-2. If the victim pages isn't used by others and clean, we can
-reclaim the page asap.
+Thanks
 
-AFAIK, strong hints are just two(invalidation, readahead max window heuristic).
-I am not sure it's valuable to add new hierarchy(ie, LRU, victim,
-unevictable) for cleaning the minor codes.
-In addition, we have to put the new rule so it would make the LRU code
-complicated.
-I remember how unevictable feature merge is hard.
-
-But I am not against if we have more usecases. In this case, it's
-valuable to implement it although it's not easy.
-
-Thanks, Kame.
-
->
-> Thanks,
-> -Kame
->
->
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+	Yinghai
