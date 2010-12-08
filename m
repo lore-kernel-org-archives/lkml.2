@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0LHAyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:54:43 -0500
-Received: from kroah.org ([198.145.64.141]:58578 "EHLO coco.kroah.org"
+	id S1756675Ab0LHAy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:54:58 -0500
+Received: from kroah.org ([198.145.64.141]:58574 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab0LHAr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:58 -0500
+	id S1756350Ab0LHAr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:57 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
-Message-Id: <20101208004433.905646052@clark.site>
+Message-Id: <20101208004433.810778286@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:42 -0800
+Date: Tue, 07 Dec 2010 16:44:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        Andy Fleming <afleming@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [096/127] gianfar: Fix crashes on RX path (Was Re: [Bugme-new] [Bug 19692] New: linux-2.6.36-rc5 crash with gianfar ethernet at full line rate traffic)
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [095/127] HID: hidraw, fix a NULL pointer dereference in hidraw_write
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,61 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Antonio Ospite <ospite@studenti.unina.it>
 
-From: Jarek Poplawski <jarkao2@gmail.com>
+commit e42dee9a99a3ecd32b5c027e8f7411fb5bc11eb6 upstream.
 
-[ Upstream commit 0d1fe1111c667e9c713d7efc7ae468a605f236a4 ]
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+IP: [<ffffffffa0f0a625>] hidraw_write+0x3b/0x116 [hid]
+[...]
 
-The rx_recycle queue is global per device but can be accesed by many
-napi handlers at the same time, so it needs full skb_queue primitives
-(with locking). Otherwise, various crashes caused by broken skbs are
-possible.
+This is reproducible by disconnecting the device while userspace writes
+to dev node in a loop and doesn't check return values in order to exit
+the loop.
 
-This patch resolves, at least partly, bugzilla bug 19692. (Because of
-some doubts that there could be still something around which is hard
-to reproduce my proposal is to leave this bug opened for a month.)
-
-Fixes commit: 0fd56bb5be6455d0d42241e65aed057244665e5e ("gianfar: Add
-support for skb recycling")
-
-Reported-by: emin ak <eminak71@gmail.com>
-Tested-by: emin ak <eminak71@gmail.com>
-Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-CC: Andy Fleming <afleming@freescale.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/gianfar.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -1621,7 +1621,7 @@ static int gfar_clean_tx_ring(struct net
- 		if (skb_queue_len(&priv->rx_recycle) < priv->rx_ring_size &&
- 				skb_recycle_check(skb, priv->rx_buffer_size +
- 					RXBUF_ALIGNMENT))
--			__skb_queue_head(&priv->rx_recycle, skb);
-+			skb_queue_head(&priv->rx_recycle, skb);
- 		else
- 			dev_kfree_skb_any(skb);
+---
+ drivers/hid/hidraw.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -105,11 +105,15 @@ out:
+ static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
+ {
+ 	unsigned int minor = iminor(file->f_path.dentry->d_inode);
+-	/* FIXME: What stops hidraw_table going NULL */
+-	struct hid_device *dev = hidraw_table[minor]->hid;
++	struct hid_device *dev;
+ 	__u8 *buf;
+ 	int ret = 0;
  
-@@ -1703,7 +1703,7 @@ struct sk_buff * gfar_new_skb(struct net
- 	struct gfar_private *priv = netdev_priv(dev);
- 	struct sk_buff *skb = NULL;
++	if (!hidraw_table[minor])
++		return -ENODEV;
++
++	dev = hidraw_table[minor]->hid;
++
+ 	if (!dev->hid_output_raw_report)
+ 		return -ENODEV;
  
--	skb = __skb_dequeue(&priv->rx_recycle);
-+	skb = skb_dequeue(&priv->rx_recycle);
- 	if (!skb)
- 		skb = netdev_alloc_skb(dev,
- 				priv->rx_buffer_size + RXBUF_ALIGNMENT);
-@@ -1862,7 +1862,7 @@ int gfar_clean_rx_ring(struct net_device
- 				 * recycle list.
- 				 */
- 				skb->data = skb->head + NET_SKB_PAD;
--				__skb_queue_head(&priv->rx_recycle, skb);
-+				skb_queue_head(&priv->rx_recycle, skb);
- 			}
- 		} else {
- 			/* Increment the number of packets */
 
 
