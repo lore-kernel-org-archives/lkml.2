@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049Ab0LHB60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:58:26 -0500
-Received: from kroah.org ([198.145.64.141]:48477 "EHLO coco.kroah.org"
+	id S1757147Ab0LHB6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:58:39 -0500
+Received: from kroah.org ([198.145.64.141]:48470 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756858Ab0LHA70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:26 -0500
+	id S1756853Ab0LHA7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:25 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:24 2010
-Message-Id: <20101208005724.488697200@clark.site>
+Message-Id: <20101208005724.401851335@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:48 -0800
+Date: Tue, 07 Dec 2010 16:56:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Greear <greearb@candelatech.com>,
-        Kyungwan Nam <kyungwan.nam@atheros.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [031/289] ath9k: add locking for stopping RX
+Subject: [030/289] ath9k: fix tx aggregation flush on AR9003
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,67 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 1e450285281bdf766272c181ecd43d4f2f0711ce upstream.
+commit e609e2ea2cdb3448e7849703179cd792a28dcc55 upstream.
 
-ath9k locks for starting RX but not for stopping RX. We could
-potentially run into a situation where tried to stop RX
-but immediately started RX. This allows for races on the
-the RX engine deciding what buffer we last left off on
-and could potentially cause ath9k to DMA into already
-free'd memory or in the worst case at a later time to
-already given memory to other drivers.
+Completing aggregate frames can lead to new buffers being pushed into
+the tid queues due to software retransmission.
+When the tx queues are being drained, all pending aggregates must be
+completed before the tid queues get drained, otherwise buffers might be
+leaked.
 
-Fix this by locking stopping RX.
-
-This is part of a series that will help resolve the bug:
-
-https://bugzilla.kernel.org/show_bug.cgi?id=14624
-
-For more details about this issue refer to:
-
-http://marc.info/?l=linux-wireless&m=128629803703756&w=2
-
-Cc: Ben Greear <greearb@candelatech.com>
-Cc: Kyungwan Nam <kyungwan.nam@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -297,10 +297,8 @@ static void ath_edma_start_recv(struct a
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1101,15 +1101,6 @@ void ath_draintxq(struct ath_softc *sc,
+ 	txq->axq_tx_inprogress = false;
+ 	spin_unlock_bh(&txq->axq_lock);
  
- static void ath_edma_stop_recv(struct ath_softc *sc)
- {
--	spin_lock_bh(&sc->rx.rxbuflock);
- 	ath_rx_remove_buffer(sc, ATH9K_RX_QUEUE_HP);
- 	ath_rx_remove_buffer(sc, ATH9K_RX_QUEUE_LP);
--	spin_unlock_bh(&sc->rx.rxbuflock);
+-	/* flush any pending frames if aggregation is enabled */
+-	if (sc->sc_flags & SC_OP_TXAGGR) {
+-		if (!retry_tx) {
+-			spin_lock_bh(&txq->axq_lock);
+-			ath_txq_drain_pending_buffers(sc, txq);
+-			spin_unlock_bh(&txq->axq_lock);
+-		}
+-	}
+-
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA) {
+ 		spin_lock_bh(&txq->axq_lock);
+ 		while (!list_empty(&txq->txq_fifo_pending)) {
+@@ -1130,6 +1121,15 @@ void ath_draintxq(struct ath_softc *sc,
+ 		}
+ 		spin_unlock_bh(&txq->axq_lock);
+ 	}
++
++	/* flush any pending frames if aggregation is enabled */
++	if (sc->sc_flags & SC_OP_TXAGGR) {
++		if (!retry_tx) {
++			spin_lock_bh(&txq->axq_lock);
++			ath_txq_drain_pending_buffers(sc, txq);
++			spin_unlock_bh(&txq->axq_lock);
++		}
++	}
  }
  
- int ath_rx_init(struct ath_softc *sc, int nbufs)
-@@ -508,6 +506,7 @@ bool ath_stoprecv(struct ath_softc *sc)
- 	struct ath_hw *ah = sc->sc_ah;
- 	bool stopped;
- 
-+	spin_lock_bh(&sc->rx.rxbuflock);
- 	ath9k_hw_stoppcurecv(ah);
- 	ath9k_hw_setrxfilter(ah, 0);
- 	stopped = ath9k_hw_stopdmarecv(ah);
-@@ -516,6 +515,7 @@ bool ath_stoprecv(struct ath_softc *sc)
- 		ath_edma_stop_recv(sc);
- 	else
- 		sc->rx.rxlink = NULL;
-+	spin_unlock_bh(&sc->rx.rxbuflock);
- 
- 	return stopped;
- }
+ void ath_drain_all_txq(struct ath_softc *sc, bool retry_tx)
 
 
