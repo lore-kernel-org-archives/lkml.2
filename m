@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab0LHAy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:54:58 -0500
-Received: from kroah.org ([198.145.64.141]:58574 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756350Ab0LHAr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:57 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
-Message-Id: <20101208004433.810778286@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:41 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [095/127] HID: hidraw, fix a NULL pointer dereference in hidraw_write
-In-Reply-To: <20101208004456.GA23578@kroah.com>
+	id S1756692Ab0LHAzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:55:12 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:52749 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab0LHAzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:55:09 -0500
+X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 19:55:08 EST
+Message-ID: <20101208024509.pstk3pce80ks444g@webmail.welho.com>
+Date: Wed, 08 Dec 2010 02:45:09 +0200
+From: Customer Services <info@bmw.co.uk>
+Reply-to: bmwclaims10@shqiptar.eu
+To: undisclosed-recipients:;
+Subject: REFNO.:BMW/75-A080332010
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
 
-From: Antonio Ospite <ospite@studenti.unina.it>
+-- 
+CUSTOMER SERVICE
+REFNO.:BMW/75-A080332010
+Batch: 174/05/ZY369
 
-commit e42dee9a99a3ecd32b5c027e8f7411fb5bc11eb6 upstream.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-IP: [<ffffffffa0f0a625>] hidraw_write+0x3b/0x116 [hid]
-[...]
+Dear E-mail Owner,
 
-This is reproducible by disconnecting the device while userspace writes
-to dev node in a loop and doesn't check return values in order to exit
-the loop.
 
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+You are receiving this message because you are a Winner of (300,000.00 G.B.P)
+from BMW Automobile end of year promo Online Lottery game.
 
----
- drivers/hid/hidraw.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+A random email balloting system selected your email address amongst a total of
+five (5) winners without the sale of any tickets.
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -105,11 +105,15 @@ out:
- static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
- {
- 	unsigned int minor = iminor(file->f_path.dentry->d_inode);
--	/* FIXME: What stops hidraw_table going NULL */
--	struct hid_device *dev = hidraw_table[minor]->hid;
-+	struct hid_device *dev;
- 	__u8 *buf;
- 	int ret = 0;
- 
-+	if (!hidraw_table[minor])
-+		return -ENODEV;
-+
-+	dev = hidraw_table[minor]->hid;
-+
- 	if (!dev->hid_output_raw_report)
- 		return -ENODEV;
- 
+Confirm receipt by sending your Name: Address: Age: Nationality:  
+Mobile Number:
+and Occupation etc to Mr. Thomas Hillary on (bmwclaims10@shqiptar.eu).
+Telephone : +44-704-570-7201.
 
+You will be furnished with details on how to receive your prize as soon as we
+receive your response to this mail. Be sure to check all incoming mail folders
+including your junk folder for subsequent mails from us.
+
+Cynthia Morris
+Annoucer For BMW Automobile Promo.
 
