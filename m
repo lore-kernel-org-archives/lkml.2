@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab0LHBLU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:11:20 -0500
-Received: from kroah.org ([198.145.64.141]:33817 "EHLO coco.kroah.org"
+	id S1754910Ab0LHBLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:11:51 -0500
+Received: from kroah.org ([198.145.64.141]:33798 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932821Ab0LHBDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:49 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:47 2010
-Message-Id: <20101208005747.106830569@clark.site>
+	id S932750Ab0LHBDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:46 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:46 2010
+Message-Id: <20101208005746.688112751@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:34 -0800
+Date: Tue, 07 Dec 2010 17:00:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: [257/289] ARM: cns3xxx: Fix build with CONFIG_PCI=y
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [253/289] staging: rtl8187se: Change panic to warn when RF switch turned off
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <cbouatmailru@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 44266416f786514ec43a0d15ad951c34566b99c9 upstream.
+commit f36d83a8cb7224f45fdfa1129a616dff56479a09 upstream.
 
-commit 6338a6aa7c082f11d55712251e14178c68bf5869 ("ARM: 6269/1: Add 'code'
-parameter for hook_fault_code()") breaks CNS3xxx build:
+This driver issues a kernel panic over conditions that do not
+justify such drastic action. Change these to log entries with
+a stack dump.
 
-  CC      arch/arm/mach-cns3xxx/pcie.o
-pcie.c: In function 'cns3xxx_pcie_init':
-pcie.c:373: warning: passing argument 4 of 'hook_fault_code' makes integer from pointer without a cast
-pcie.c:373: error: too few arguments to function 'hook_fault_code'
+This patch fixes the system crash reported in
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/674285.
 
-This commit fixes the small issue.
-
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-and-Tested-by: Robie Basik <rb-oss-3@justgohome.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-cns3xxx/pcie.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8187se/r8185b_init.c |   32 +++++++++++++++++++++++---------
+ 1 file changed, 23 insertions(+), 9 deletions(-)
 
---- a/arch/arm/mach-cns3xxx/pcie.c
-+++ b/arch/arm/mach-cns3xxx/pcie.c
-@@ -369,7 +369,7 @@ static int __init cns3xxx_pcie_init(void
- {
- 	int i;
+--- a/drivers/staging/rtl8187se/r8185b_init.c
++++ b/drivers/staging/rtl8187se/r8185b_init.c
+@@ -268,8 +268,12 @@ HwHSSIThreeWire(
+ 			}
+ 			udelay(10);
+ 		}
+-		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT)
+-			panic("HwThreeWire(): CmdReg: %#X RE|WE bits are not clear!!\n", u1bTmp);
++		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT) {
++			printk(KERN_ERR "rtl8187se: HwThreeWire(): CmdReg:"
++			       " %#X RE|WE bits are not clear!!\n", u1bTmp);
++			dump_stack();
++			return 0;
++		}
  
--	hook_fault_code(16 + 6, cns3xxx_pcie_abort_handler, SIGBUS,
-+	hook_fault_code(16 + 6, cns3xxx_pcie_abort_handler, SIGBUS, 0,
- 			"imprecise external abort");
+ 		// RTL8187S HSSI Read/Write Function
+ 		u1bTmp = read_nic_byte(dev, RF_SW_CONFIG);
+@@ -309,13 +313,23 @@ HwHSSIThreeWire(
+ 				int idx;
+ 				int ByteCnt = nDataBufBitCnt / 8;
+                                 //printk("%d\n",nDataBufBitCnt);
+-				if ((nDataBufBitCnt % 8) != 0)
+-				panic("HwThreeWire(): nDataBufBitCnt(%d) should be multiple of 8!!!\n",
+-				nDataBufBitCnt);
+-
+-			       if (nDataBufBitCnt > 64)
+-				panic("HwThreeWire(): nDataBufBitCnt(%d) should <= 64!!!\n",
+-				nDataBufBitCnt);
++				if ((nDataBufBitCnt % 8) != 0) {
++					printk(KERN_ERR "rtl8187se: "
++					       "HwThreeWire(): nDataBufBitCnt(%d)"
++					       " should be multiple of 8!!!\n",
++					       nDataBufBitCnt);
++					dump_stack();
++					nDataBufBitCnt += 8;
++					nDataBufBitCnt &= ~7;
++				}
++
++			       if (nDataBufBitCnt > 64) {
++					printk(KERN_ERR "rtl8187se: HwThreeWire():"
++					       " nDataBufBitCnt(%d) should <= 64!!!\n",
++					       nDataBufBitCnt);
++					dump_stack();
++					nDataBufBitCnt = 64;
++				}
  
- 	for (i = 0; i < ARRAY_SIZE(cns3xxx_pcie); i++) {
+ 				for(idx = 0; idx < ByteCnt; idx++)
+ 				{
 
 
