@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab0LHBnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:43:03 -0500
-Received: from kroah.org ([198.145.64.141]:48792 "EHLO coco.kroah.org"
+	id S1758074Ab0LHBmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:42:47 -0500
+Received: from kroah.org ([198.145.64.141]:48797 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757020Ab0LHBA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:28 -0500
+	id S1757071Ab0LHBA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:29 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:30 2010
-Message-Id: <20101208005730.641509513@clark.site>
+Message-Id: <20101208005730.741753228@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:50 -0800
+Date: Tue, 07 Dec 2010 16:57:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [093/289] reiserfs: dont acquire lock recursively in reiserfs_acl_chmod
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [094/289] staging: rt2870: Add new USB ID for Belkin F6D4050 v1
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 238af8751f64a75f8b638193353b1c31ea32e738 upstream.
+commit 705059a670f3af2b37695e82de0ee58e75e656ed upstream.
 
-reiserfs_acl_chmod() can be called by reiserfs_set_attr() and then take
-the reiserfs lock a second time.  Thereafter it may call journal_begin()
-that definitely requires the lock not to be nested in order to release
-it before taking the journal mutex because the reiserfs lock depends on
-the journal mutex already.
+Add new USB ID for FT2870 for Belkin F6D4050 v1
 
-So, aviod nesting the lock in reiserfs_acl_chmod().
-
-Reported-by: Pawel Zawora <pzawora@gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Pawel Zawora <pzawora@gmail.com>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported- and Tested-by: James Long <crogonint@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/xattr_acl.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/rt2860/usb_main_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/reiserfs/xattr_acl.c
-+++ b/fs/reiserfs/xattr_acl.c
-@@ -472,7 +472,9 @@ int reiserfs_acl_chmod(struct inode *ino
- 		struct reiserfs_transaction_handle th;
- 		size_t size = reiserfs_xattr_nblocks(inode,
- 					     reiserfs_acl_size(clone->a_count));
--		reiserfs_write_lock(inode->i_sb);
-+		int depth;
-+
-+		depth = reiserfs_write_lock_once(inode->i_sb);
- 		error = journal_begin(&th, inode->i_sb, size * 2);
- 		if (!error) {
- 			int error2;
-@@ -482,7 +484,7 @@ int reiserfs_acl_chmod(struct inode *ino
- 			if (error2)
- 				error = error2;
- 		}
--		reiserfs_write_unlock(inode->i_sb);
-+		reiserfs_write_unlock_once(inode->i_sb, depth);
- 	}
- 	posix_acl_release(clone);
- 	return error;
+--- a/drivers/staging/rt2860/usb_main_dev.c
++++ b/drivers/staging/rt2860/usb_main_dev.c
+@@ -65,6 +65,7 @@ struct usb_device_id rtusb_usb_id[] = {
+ 	{USB_DEVICE(0x14B2, 0x3C07)},	/* AL */
+ 	{USB_DEVICE(0x050D, 0x8053)},	/* Belkin */
+ 	{USB_DEVICE(0x050D, 0x825B)},	/* Belkin */
++	{USB_DEVICE(0x050D, 0x935A)},	/* Belkin F6D4050 v1 */
+ 	{USB_DEVICE(0x050D, 0x935B)},	/* Belkin F6D4050 v2 */
+ 	{USB_DEVICE(0x14B2, 0x3C23)},	/* Airlink */
+ 	{USB_DEVICE(0x14B2, 0x3C27)},	/* Airlink */
 
 
