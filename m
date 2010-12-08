@@ -1,56 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab0LHDHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 22:07:43 -0500
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:44780 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753216Ab0LHDHl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 22:07:41 -0500
-X-AuditID: 1209190c-b7ba9ae0000009f8-59-4cfef67c121c
-Subject: Re: ext4 memory leak?
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <20101208024019.GA14424@localhost>
-Date: Tue, 7 Dec 2010 22:07:24 -0500
-Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A9D7CD0F-0A46-4EE6-9454-8689CD3FC03D@MIT.EDU>
-References: <20101205064430.GA15027@localhost> <4CFB9BE1.3030902@redhat.com> <20101207131136.GA20366@localhost> <20101207143351.GA23377@localhost> <20101207152120.GA28220@localhost> <20101207163820.GF24607@thunk.org> <20101208024019.GA14424@localhost>
-To: Wu Fengguang <fengguang.wu@intel.com>
-X-Mailer: Apple Mail (2.1082)
-X-Brightmail-Tracker: AAAAAA==
+	id S1754068Ab0LHD2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 22:28:20 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:52454 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753467Ab0LHD2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 22:28:18 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJeJ/kx5Lclt/2dsb2JhbACjSXLBHoVJBA
+Date: Wed, 8 Dec 2010 14:28:13 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
+Message-ID: <20101208032813.GA6812@amd>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <20101207112555.GE16103@dastard>
+ <AANLkTinAt9PEWMCP55o64E7wsfZ=depU+YXbG8DdGYdO@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinAt9PEWMCP55o64E7wsfZ=depU+YXbG8DdGYdO@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Dec 7, 2010, at 9:40 PM, Wu Fengguang wrote:
-
-> Here is the full data collected with "mem=512M", where the reclaimable
-> memory size still declines slowly. slabinfo is also collected.
+On Wed, Dec 08, 2010 at 02:24:23AM +1100, Nick Piggin wrote:
+> On Tue, Dec 7, 2010 at 10:25 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > [ 5954.061633] BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1081
+> > [ 5954.062466] in_atomic(): 0, irqs_disabled(): 1, pid: 2927, name: rm
+> > [ 5954.063122] 3 locks held by rm/2927:
+> > [ 5954.063476]  #0:  (&sb->s_type->i_mutex_key#12/1){+.+.+.}, at: [<ffffffff8116f5e1>] do_rmdir+0x81/0x130
+> > [ 5954.064014]  #1:  (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff8116d3a8>] vfs_rmdir+0x58/0xe0
+> > [ 5954.064014]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff811779c0>] shrink_dentry_list+0x0/0x430
+> > [ 5954.064014] irq event stamp: 1484376719
+> > [ 5954.064014] hardirqs last  enabled at (1484376719): [<ffffffff810ebf07>] __call_rcu+0xd7/0x1a0
+> > [ 5954.064014] hardirqs last disabled at (1484376718): [<ffffffff810ebe7a>] __call_rcu+0x4a/0x1a0
+> > [ 5954.064014] softirqs last  enabled at (1484376586): [<ffffffff8108b911>] __do_softirq+0x161/0x270
+> > [ 5954.064014] softirqs last disabled at (1484376581): [<ffffffff8103af1c>] call_softirq+0x1c/0x50
+> > [ 5954.064014] Pid: 2927, comm: rm Not tainted 2.6.37-rc4-dgc+ #794
+> > [ 5954.064014] Call Trace:
+> > [ 5954.064014]  [<ffffffff810b95b0>] ? print_irqtrace_events+0xd0/0xe0
+> > [ 5954.064014]  [<ffffffff81076455>] __might_sleep+0xf5/0x130
+> > [ 5954.064014]  [<ffffffff81b1e603>] do_page_fault+0x103/0x4f0
+> > [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
+> > [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
+> > [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
+> > [ 5954.064014]  [<ffffffff81b19b28>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+> > [ 5954.064014]  [<ffffffff810b8e20>] ? usage_match+0x0/0x20
+> > [ 5954.064014]  [<ffffffff81b1af25>] page_fault+0x25/0x30
+> > [ 5954.064014]  [<ffffffff810b8e20>] ? usage_match+0x0/0x20
+> > [ 5954.064014]  [<ffffffff810ba1c8>] ? __bfs+0xc8/0x260
+> > [ 5954.064014]  [<ffffffff810ba123>] ? __bfs+0x23/0x260
+> > [ 5954.064014]  [<ffffffff810ba4d2>] find_usage_backwards+0x42/0x80
+> > [ 5954.064014]  [<ffffffff810bcec4>] check_usage_backwards+0x64/0xf0
+> > [ 5954.064014]  [<ffffffff8104796f>] ? save_stack_trace+0x2f/0x50
+> > [ 5954.064014]  [<ffffffff810bce60>] ? check_usage_backwards+0x0/0xf0
+> > [ 5954.064014]  [<ffffffff810bd9a9>] mark_lock+0x1a9/0x440
+> > [ 5954.064014]  [<ffffffff810be989>] __lock_acquire+0x5a9/0x14b0
+> > [ 5954.064014]  [<ffffffff810be716>] ? __lock_acquire+0x336/0x14b0
+> > [ 5954.064014]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
+> > [ 5954.064014]  [<ffffffff810bf944>] lock_acquire+0xb4/0x140
+> > [ 5954.064014]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
+> > [ 5954.064014]  [<ffffffff81b19d86>] _raw_spin_lock+0x36/0x70
+> > [ 5954.064014]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
+> > [ 5954.064014]  [<ffffffff81177a1c>] shrink_dentry_list+0x5c/0x430
+> > [ 5954.064014]  [<ffffffff811779c0>] ? shrink_dentry_list+0x0/0x430
+> > [ 5954.064014]  [<ffffffff816b9c7e>] ? do_raw_spin_unlock+0x5e/0xb0
+> > [ 5954.064014]  [<ffffffff81177f2d>] __shrink_dcache_sb+0x13d/0x1c0
+> > [ 5954.064014]  [<ffffffff811784bf>] shrink_dcache_parent+0x32f/0x390
+> > [ 5954.064014]  [<ffffffff8116d31d>] dentry_unhash+0x3d/0x70
+> > [ 5954.064014]  [<ffffffff8116d3b0>] vfs_rmdir+0x60/0xe0
+> > [ 5954.064014]  [<ffffffff8116f673>] do_rmdir+0x113/0x130
+> > [ 5954.064014]  [<ffffffff8103a03a>] ? sysret_check+0x2e/0x69
+> > [ 5954.064014]  [<ffffffff81b19ae9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > [ 5954.064014]  [<ffffffff8116f6c5>] sys_unlinkat+0x35/0x40
+> > [ 5954.064014]  [<ffffffff8103a002>] system_call_fastpath+0x16/0x1b
 > 
-> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/512M/ext4-10dd-1M-8p-442M-2.6.37-rc4+-2010-12-08-09-19/
+> Seems that lockdep exploded.
 > 
-> The increase of nr_slab_reclaimable roughly equals to the decrease of
-> nr_dirty_threshold. So it may be either the VM not able to reclaim the
-> slabs fast enough, or the slabs are not reclaimable at the time.
+> > [ 5954.092916] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > [ 5954.093806] IP: [<ffffffff810ba1c8>] __bfs+0xc8/0x260
+> > [ 5954.094331] PGD 1084e5067 PUD 102368067 PMD 0
+> > [ 5954.094830] Oops: 0000 [#1] SMP
+> > [ 5954.095194] last sysfs file: /sys/devices/system/cpu/online
+> > [ 5954.095760] CPU 6
+> > [ 5954.095954] Modules linked in:
+> > [ 5954.096319]
+> > [ 5954.096483] Pid: 2927, comm: rm Not tainted 2.6.37-rc4-dgc+ #794 /Bochs
+> > [ 5954.096665] RIP: 0010:[<ffffffff810ba1c8>]  [<ffffffff810ba1c8>] __bfs+0xc8/0x260
+> > [ 5954.096665] RSP: 0018:ffff8801175539a8  EFLAGS: 00010046
+> > [ 5954.096665] RAX: ffffffff8267d980 RBX: ffffffff8267d980 RCX: ffff880117553a48
+> > [ 5954.096665] RDX: ffff8801175539d0 RSI: 0000000000000000 RDI: ffff880117553a48
+> > [ 5954.096665] RBP: ffff880117553a08 R08: 0000000000000000 R09: 0000000000000000
+> > [ 5954.096665] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+> > [ 5954.096665] R13: ffffffff810b8e20 R14: ffff880117553a90 R15: 0000000000000000
+> > [ 5954.096665] FS:  00007f4594cf3700(0000) GS:ffff8800dfa00000(0000) knlGS:0000000000000000
+> > [ 5954.096665] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [ 5954.096665] CR2: 00007f2f21e89c60 CR3: 0000000110b0f000 CR4: 00000000000006e0
+> > [ 5954.096665] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > [ 5954.096665] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > [ 5954.096665] Process rm (pid: 2927, threadinfo ffff880117552000, task ffff88010ff10b00)
+> > [ 5954.096665] Stack:
+> > [ 5954.096665]  ffffffff8267d868 00007fffa02d1428 ffff8800ffffffff ffff880100000000
+> > [ 5954.096665]  000000000000b720 ffff880117553a48 ffffffff8267d868 ffff880117553a48
+> > [ 5954.096665]  0000000000000000 ffff88010ff10b00 0000000000000000 ffffffff81dacba0
+> > [ 5954.096665] Call Trace:
+> > [ 5954.096665]  [<ffffffff810ba4d2>] find_usage_backwards+0x42/0x80
+> > [ 5954.096665]  [<ffffffff810bcec4>] check_usage_backwards+0x64/0xf0
+> > [ 5954.096665]  [<ffffffff8104796f>] ? save_stack_trace+0x2f/0x50
+> > [ 5954.096665]  [<ffffffff810bce60>] ? check_usage_backwards+0x0/0xf0
+> > [ 5954.096665]  [<ffffffff810bd9a9>] mark_lock+0x1a9/0x440
+> > [ 5954.096665]  [<ffffffff810be989>] __lock_acquire+0x5a9/0x14b0
+> > [ 5954.096665]  [<ffffffff810be716>] ? __lock_acquire+0x336/0x14b0
+> > [ 5954.096665]  [<ffffffff810645b8>] ? pvclock_clocksource_read+0x58/0xd0
+> > [ 5954.096665]  [<ffffffff810bf944>] lock_acquire+0xb4/0x140
+> > [ 5954.096665]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
+> > [ 5954.096665]  [<ffffffff81b19d86>] _raw_spin_lock+0x36/0x70
+> > [ 5954.096665]  [<ffffffff81177a1c>] ? shrink_dentry_list+0x5c/0x430
+> > [ 5954.096665]  [<ffffffff81177a1c>] shrink_dentry_list+0x5c/0x430
+> > [ 5954.096665]  [<ffffffff811779c0>] ? shrink_dentry_list+0x0/0x430
+> > [ 5954.096665]  [<ffffffff816b9c7e>] ? do_raw_spin_unlock+0x5e/0xb0
+> > [ 5954.096665]  [<ffffffff81177f2d>] __shrink_dcache_sb+0x13d/0x1c0
+> > [ 5954.096665]  [<ffffffff811784bf>] shrink_dcache_parent+0x32f/0x390
+> > [ 5954.096665]  [<ffffffff8116d31d>] dentry_unhash+0x3d/0x70
+> > [ 5954.096665]  [<ffffffff8116d3b0>] vfs_rmdir+0x60/0xe0
+> > [ 5954.096665]  [<ffffffff8116f673>] do_rmdir+0x113/0x130
+> > [ 5954.096665]  [<ffffffff8103a03a>] ? sysret_check+0x2e/0x69
+> > [ 5954.096665]  [<ffffffff81b19ae9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > [ 5954.096665]  [<ffffffff8116f6c5>] sys_unlinkat+0x35/0x40
+> > [ 5954.096665]  [<ffffffff8103a002>] system_call_fastpath+0x16/0x1b
+> > [ 5954.096665] Code: 0a 89 05 dc 0f a8 01 48 8b 41 10 48 85 c0 0f 84 1f 01 00 00 48 8d 98 70 01 00 00 48 05 80 01 00 00 45 85 c0 48 0f 44 d8 4c 8b 3b <49> 8b 07 49 39
+> > [ 5954.096665] RIP  [<ffffffff810ba1c8>] __bfs+0xc8/0x260
+> > [ 5954.096665]  RSP <ffff8801175539a8>
+> > [ 5954.096665] CR2: 0000000000000000
+> > [ 5954.127991] ---[ end trace 85a6727c2d4e3d90 ]---
+> 
+> So vfs-scale-working branch may not be entirely in the clear, seeing
 
-Can you try running this with CONFIG_SLAB instead of the SLUB allocator?   One of the things I hate about the SLUB allocator is it tries too hard to prevent cache line ping-pong effects, which is fine if you have lots of memory, but if you have 8 processors and memory constrained to 256 megs, I suspect it doesn't work too well because it leaves too many slabs allocated so that every single CPU has its own portion of the slab cache.   In the case of slabs like ext4_io_end, which is 8 pages per slab, if you have 8 cpu's, and memory constrained down to 256 megs, memory starts getting wasted like it was going out of style.
+Ah, may have been a stupid little bug. The list entry check was being done
+and then the pointer reloaded to be used.
 
-Worse yet, with the SLUB allocator, you can't trust the number of active objects (I've had cases where it would swear up and down that all 16000 out of 16000 objects were in use, but then I'd run "slabinfo -s", and all of the slabs would be shrunk down to zero.  Grrr.... I wasted a lot of time looking for a memory leak before I realized that you can't trust # of active objects information in /proc/slabinfo when you enable CONFIG_SLUB.)
+What does the asm for shrink_dentry_list look like (before this patch)?
 
--- Ted
+Thanks,
+Nick
 
-
-
+Index: linux-2.6/fs/dcache.c
+===================================================================
+--- linux-2.6.orig/fs/dcache.c	2010-12-08 12:41:35.000000000 +1100
++++ linux-2.6/fs/dcache.c	2010-12-08 14:23:46.000000000 +1100
+@@ -657,10 +657,10 @@ static void shrink_dentry_list(struct li
+ 	struct dentry *dentry;
+ 
+ 	rcu_read_lock();
+-	while (!list_empty(list)) {
+-		dentry = list_entry(list->prev, struct dentry, d_lru);
+-
+-		/* Don't need RCU dereference because we recheck under lock */
++	for (;;) {
++		dentry = list_entry_rcu(list->prev, struct dentry, d_lru);
++		if (&dentry->d_lru == list)
++			break;
+ 		spin_lock(&dentry->d_lock);
+ 		if (dentry != list_entry(list->prev, struct dentry, d_lru)) {
+ 			spin_unlock(&dentry->d_lock);
