@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab0LHPF3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:05:29 -0500
-Received: from cantor.suse.de ([195.135.220.2]:39393 "EHLO mx1.suse.de"
+	id S1755577Ab0LHPFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:05:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64448 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754446Ab0LHPF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:05:27 -0500
-Date: Wed, 8 Dec 2010 07:02:09 -0800
-From: Greg KH <gregkh@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: Re: [043/127] TTY: ldisc, fix open flag handling
-Message-ID: <20101208150209.GA5144@suse.de>
-References: <20101208004428.612566004@clark.site>
- <4CFF24AE.1030104@suse.cz>
+	id S1755529Ab0LHPFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:05:41 -0500
+Date: Wed, 8 Dec 2010 10:05:09 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Hannes Reinecke <hare@suse.de>, k-ueda@ct.jp.nec.com, michaelc@cs.wisc.edu,
+        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
+        jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        dm-devel@redhat.com, James.Bottomley@suse.de,
+        konishi.ryusuke@lab.ntt.co.jp, j-nomura@ce.jp.nec.com, vst@vlnb.net,
+        rwheeler@redhat.com, hch@lst.de, chris.mason@oracle.com, tj@kernel.org
+Subject: [PATCH v2 3/3] block: improve detail in I/O error messages
+Message-ID: <20101208150509.GB14056@redhat.com>
+References: <1291763802-8251-1-git-send-email-snitzer@redhat.com>
+ <1291763802-8251-4-git-send-email-snitzer@redhat.com>
+ <4CFF6BE0.4090109@ru.mvista.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CFF24AE.1030104@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CFF6BE0.4090109@ru.mvista.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 07:24:46AM +0100, Jiri Slaby wrote:
-> On 12/08/2010 01:43 AM, Greg KH wrote:
-> > 2.6.32-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > From: Jiri Slaby <jslaby@suse.cz>
-> > 
-> > commit 7f90cfc505d613f4faf096e0d84ffe99208057d9 upstream.
-> > 
-> > When a concrete ldisc open fails in tty_ldisc_open, we forget to clear
-> > TTY_LDISC_OPEN. This causes a false warning on the next ldisc open:
-> > WARNING: at drivers/char/tty_ldisc.c:445 tty_ldisc_open+0x26/0x38()
-> > Hardware name: System Product Name
-> > Modules linked in: ...
-> > Pid: 5251, comm: a.out Tainted: G        W  2.6.32-5-686 #1
-> > Call Trace:
-> >  [<c1030321>] ? warn_slowpath_common+0x5e/0x8a
-> >  [<c1030357>] ? warn_slowpath_null+0xa/0xc
-> >  [<c119311c>] ? tty_ldisc_open+0x26/0x38
-> >  [<c11936c5>] ? tty_set_ldisc+0x218/0x304
-> > ...
-> > 
-> > So clear the bit when failing...
-> > 
-> > Introduced in c65c9bc3efa (tty: rewrite the ldisc locking) back in
-> > 2.6.31-rc1.
-> > 
-> > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> > Cc: Alan Cox <alan@linux.intel.com>
-> > Reported-by: Sergey Lapin <slapin@ossfans.org>
-> > Tested-by: Sergey Lapin <slapin@ossfans.org>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > 
-> > ---
-> >  drivers/char/tty_ldisc.c |    9 +++++++--
-> >  1 file changed, 7 insertions(+), 2 deletions(-)
-> > 
-> > --- a/drivers/char/tty_ldisc.c
-> > +++ b/drivers/char/tty_ldisc.c
-> > @@ -444,9 +444,14 @@ static void tty_set_termios_ldisc(struct
-> >  
-> >  static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
-> >  {
-> > +	int ret;
-> > +
-> >  	WARN_ON(test_and_set_bit(TTY_LDISC_OPEN, &tty->flags));
-> > -	if (ld->ops->open)
-> > -		return ld->ops->open(tty);
-> > +	if (ld->ops->open) {
-> > +		ret = ld->ops->open(tty);
-> > +		if (ret)
-> > +			clear_bit(TTY_LDISC_OPEN, &tty->flags);
-> > +	}
-> >  	return 0;
-> 
-> Whoops, this should write return ret; (with int ret = 0;)
-> 
-> Do you want me to send the patch against rebased on .32?
+Classify severity of I/O errors for target and transport errors.
 
-No, send it based on Linus's tree as it's wrong there, right?  Then it
-will move through to the stable kernels.
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ block/blk-core.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-thanks,
-
-greg k-h
+Index: linux-2.6/block/blk-core.c
+===================================================================
+--- linux-2.6.orig/block/blk-core.c
++++ linux-2.6/block/blk-core.c
+@@ -2028,9 +2028,23 @@ bool blk_update_request(struct request *
+ 
+ 	if (error && req->cmd_type == REQ_TYPE_FS &&
+ 	    !(req->cmd_flags & REQ_QUIET)) {
+-		printk(KERN_ERR "end_request: I/O error, dev %s, sector %llu\n",
+-				req->rq_disk ? req->rq_disk->disk_name : "?",
+-				(unsigned long long)blk_rq_pos(req));
++		char *error_type;
++
++		switch (error) {
++		case -ENOLINK:
++			error_type = "recoverable transport";
++			break;
++		case -EREMOTEIO:
++			error_type = "critical target";
++			break;
++		case -EIO:
++		default:
++			error_type = "I/O";
++			break;
++		}
++		printk(KERN_ERR "end_request: %s error, dev %s, sector %llu\n",
++		       error_type, req->rq_disk ? req->rq_disk->disk_name : "?",
++		       (unsigned long long)blk_rq_pos(req));
+ 	}
+ 
+ 	blk_account_io_completion(req, nr_bytes);
