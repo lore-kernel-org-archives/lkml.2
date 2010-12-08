@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab0LHA1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:27:13 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54465 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab0LHA1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:27:12 -0500
-Message-ID: <4CFED0AE.9000900@kernel.org>
-Date: Tue, 07 Dec 2010 16:26:22 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-Subject: Re: perf hw  in kexeced kernel broken in tip
-References: <1291219906.32004.1671.camel@laptop> <20101201162335.GB2511@redhat.com> <1291232292.32004.1969.camel@laptop> <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop> <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop> <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com> <1291275270.4023.20.camel@twins> <20101207211614.GL21786@redhat.com>
-In-Reply-To: <20101207211614.GL21786@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754802Ab0LHAeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:34:18 -0500
+Received: from kroah.org ([198.145.64.141]:54688 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754013Ab0LHAeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:16 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:39 2010
+Message-Id: <20101208000639.826506614@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:04:02 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Samuel Ortiz <samuel@sortiz.org>
+Subject: [03/44] irda: Fix heap memory corruption in iriap.c
+In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 01:16 PM, Don Zickus wrote:
-> On Thu, Dec 02, 2010 at 08:34:30AM +0100, Peter Zijlstra wrote:
->>>  void __init lockup_detector_init(void)
->>>  {
->>>  	void *cpu = (void *)(long)smp_processor_id();
->>> @@ -563,6 +576,7 @@ void __init lockup_detector_init(void)
->>>  
->>>  	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
->>>  	register_cpu_notifier(&cpu_nfb);
->>> +	register_reboot_notifier(&reboot_nfb);
->>>  
->>>  	return;
->>>  }
->>
->> We'd really want a perf_event.c callback there to do as the hot-unplug
->> code does and detach all running counters from the cpu.
-> 
-> Ok, here is a simpler patch for now.
-> 
-> --------------------------------8<--------
-> From: Don Zickus <dzickus@redhat.com>
-> Date: Tue, 7 Dec 2010 16:06:59 -0500
-> Subject: [PATCH] perf:  Use event select bits for hardware check
-> 
-> The counter registers can continue to increment if left enabled
-> across a kexec or a kdump.  The makes the perf hardware check
-> accidentally return false when the hardware really does exist.
-> 
-> Change the check to use the first bits of event selection.  Those
-> bits should be safe as they are used to program the type of events
-> to use.  And more importantly, they won't increment across kexec/kdump.
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 7b91396..7d869c0 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -377,10 +377,10 @@ static bool check_hw_exists(void)
->  	u64 val, val_new = 0;
->  	int ret = 0;
->  
-> -	val = 0xabcdUL;
-> -	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
-> -	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
-> -	if (ret || val != val_new)
-> +	val = 0xabUL;
-> +	ret |= checking_wrmsrl(x86_pmu.eventsel, val);
-> +	ret |= rdmsrl_safe(x86_pmu.eventsel, &val_new);
-> +	if (ret || val != (val_new & 0xFF))
->  		return false;
->  
->  	return true;
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Thanks. it fixes the problem.
+------------------
 
-Yinghai
+From: Samuel Ortiz <samuel@sortiz.org>
+
+commit 37f9fc452d138dfc4da2ee1ce5ae85094efc3606 upstream.
+
+While parsing the GetValuebyClass command frame, we could potentially write
+passed the skb->data pointer.
+
+Reported-by: Ilja Van Sprundel <ivansprundel@ioactive.com>
+Signed-off-by: Samuel Ortiz <samuel@sortiz.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/irda/iriap.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/net/irda/iriap.c
++++ b/net/irda/iriap.c
+@@ -501,7 +501,8 @@ static void iriap_getvaluebyclass_confir
+ 		IRDA_DEBUG(4, "%s(), strlen=%d\n", __func__, value_len);
+ 
+ 		/* Make sure the string is null-terminated */
+-		fp[n+value_len] = 0x00;
++		if (n + value_len < skb->len)
++			fp[n + value_len] = 0x00;
+ 		IRDA_DEBUG(4, "Got string %s\n", fp+n);
+ 
+ 		/* Will truncate to IAS_MAX_STRING bytes */
+
+
