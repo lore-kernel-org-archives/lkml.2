@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab0LHAxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:53:48 -0500
-Received: from kroah.org ([198.145.64.141]:58625 "EHLO coco.kroah.org"
+	id S1756671Ab0LHAyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:54:01 -0500
+Received: from kroah.org ([198.145.64.141]:58619 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756340Ab0LHAsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:05 -0500
+	id S1756385Ab0LHAsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:04 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
-Message-Id: <20101208004434.620503686@clark.site>
+Message-Id: <20101208004434.524469952@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:49 -0800
+Date: Tue, 07 Dec 2010 16:44:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gerlach <t.m.gerlach@freenet.de>,
-        Peter Jones <pjones@redhat.com>, maximilian attems <max@stro.at>
-Subject: [103/127] drivers/video/efifb.c: support framebuffer for NVIDIA 9400M in MacBook Pro 5,1
+        Jack Steiner <steiner@sgi.com>, Ingo Molnar <mingo@elte.hu>,
+        maximilian attems <max@stro.at>
+Subject: [102/127] x86, UV: Fix initialization of max_pnode
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,91 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gerlach <t.m.gerlach@freenet.de>
+From: Jack Steiner <steiner@sgi.com>
 
-commit 8a3bdfe6cd841880a5d849c40f90093b3817f6e0 upstream.
+commit 36ac4b987bea9a95217e1af552252f275ca7fc44 upstream.
 
-Description of patch:
----------------------
+Fix calculation of "max_pnode" for systems where the the highest
+blade has neither cpus or memory. (And, yes, although rare this
+does occur).
 
-This is a patch for the EFI framebuffer driver to enable the framebuffer
-of the NVIDIA 9400M as found in MacBook Pro (MBP) 5,1 and up.  The
-framebuffer of the NVIDIA graphic cards are located at the following
-addresses in memory:
-
-9400M:    0xC0010000
-9600M GT: 0xB0030000
-
-The patch delivered right here only provides the memory location of the
-framebuffer of the 9400M device.  The 9600M GT is not covered.  It is
-assumed that the 9400M is used when powered up the MBP.
-
-The information which device is currently powered and in use is stored in
-the 64 bytes large EFI variable "gpu-power-prefs".  More specifically,
-byte 0x3B indicates whether 9600M GT (0x00) or 9400M (0x01) is online.
-
-The PCI bus IDs are the following:
-9400M:    PCI 03:00:00
-9600M GT: PCI 02:00:00
-
-The EFI variables can be easily read-out and manipulated with "rEFIt", an
-MBP specific bootloader tool.  For more information on how handle rEFIt
-and EFI variables please consult "http://refit.sourceforge.net" and
-"http://ubuntuforums.org/archive/index.php/t-1076879.html".
-
-IMPORTANT NOTE: The information on how to activate the 9400M device given
-at "ubuntuforums.org" is not correct, since it states
-
-gpu-power-prefs[0x3B] = 0x00 -> 9400M (PCI 02:00:00)
-gpu-power-prefs[0x3B] = 0x01 -> 9600M GT (PCI 03:00:00)
-
-Actually, the assignment of the values and the PCI bus IDs are swapped.
-
-Suggestions:
-------------
-
-To cover framebuffers of both 9400M and 9600M GT, I would suggest to
-implement a conditional on "gpu-power-prefs".  Depending on the value of
-byte 0x3B, the according framebuffer is selected.  However, this requires
-kernel access to the EFI variables.
-
-[akpm@linux-foundation.org: rename optname, per Peter Jones]
-Signed-off-by: Thomas Gerlach <t.m.gerlach@freenet.de>
-Acked-by: Peter Jones <pjones@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+LKML-Reference: <20100910150808.GA19802@sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/efifb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/apic/x2apic_uv_x.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -49,6 +49,7 @@ enum {
- 	M_MBP_2,	/* MacBook Pro 2nd gen */
- 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
- 	M_MBP_4,	/* MacBook Pro, 4th gen */
-+	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
- 	M_UNKNOWN	/* placeholder */
- };
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -595,9 +595,11 @@ void __init uv_system_init(void)
+ 		for (j = 0; j < 64; j++) {
+ 			if (!test_bit(j, &present))
+ 				continue;
+-			uv_blade_info[blade].pnode = (i * 64 + j);
++			pnode = (i * 64 + j);
++			uv_blade_info[blade].pnode = pnode;
+ 			uv_blade_info[blade].nr_possible_cpus = 0;
+ 			uv_blade_info[blade].nr_online_cpus = 0;
++			max_pnode = max(pnode, max_pnode);
+ 			blade++;
+ 		}
+ 	}
+@@ -635,7 +637,6 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->scir.offset = uv_scir_offset(apicid);
+ 		uv_node_to_blade[nid] = blade;
+ 		uv_cpu_to_blade[cpu] = blade;
+-		max_pnode = max(pnode, max_pnode);
+ 	}
  
-@@ -70,6 +71,7 @@ static struct efifb_dmi_info {
- 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
- 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
- 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
- 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
- };
+ 	/* Add blade/pnode info for nodes without cpus */
+@@ -647,7 +648,6 @@ void __init uv_system_init(void)
+ 		pnode = (paddr >> m_val) & pnode_mask;
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+-		max_pnode = max(pnode, max_pnode);
+ 	}
  
-@@ -106,6 +108,7 @@ static struct dmi_system_id __initdata d
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
- 	{},
- };
- 
+ 	map_gru_high(max_pnode);
 
 
