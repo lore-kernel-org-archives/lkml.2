@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab0LHRVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:21:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14267 "EHLO mx1.redhat.com"
+	id S1755384Ab0LHRWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:22:05 -0500
+Received: from hera.kernel.org ([140.211.167.34]:51298 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007Ab0LHRVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755095Ab0LHRVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Dec 2010 12:21:52 -0500
-Date: Wed, 8 Dec 2010 12:21:36 -0500
-From: Neil Horman <nhorman@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] Update MCP55 quirk to not affect non HyperTransport
- variants
-Message-ID: <20101208172136.GK11454@hmsreliant.think-freely.org>
-References: <1291819668-15624-1-git-send-email-nhorman@tuxdriver.com>
- <20101208164423.GH31703@redhat.com>
+Message-ID: <4CFFBE67.8070809@kernel.org>
+Date: Wed, 08 Dec 2010 18:20:39 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] x86: Replace uses of current_cpu_data with this_cpu ops
+References: <20101206171618.302060721@linux.com>	 <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org>	 <4CFE4294.30001@kernel.org>	 <alpine.DEB.2.00.1012070846050.25976@router.home>	 <4CFE4BE0.9040203@kernel.org>	 <alpine.DEB.2.00.1012070906290.26552@router.home>	 <4CFE4E05.7070902@kernel.org>	 <alpine.DEB.2.00.1012071020040.26552@router.home>	 <4CFF8520.4020704@kernel.org> <1291815501.2883.34.camel@edumazet-laptop>	 <alpine.DEB.2.00.1012080929590.23407@router.home> <1291828646.2883.65.camel@edumazet-laptop>
+In-Reply-To: <1291828646.2883.65.camel@edumazet-laptop>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101208164423.GH31703@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 17:20:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 11:44:23AM -0500, Vivek Goyal wrote:
-> On Wed, Dec 08, 2010 at 09:47:48AM -0500, Neil Horman wrote:
-> > I wrote this quirk awhile ago to properly setup MCP55 chips on hypertransport
-> > busses so that interrupts reached whatever cpu happend to boot the kdump kernel.
-> > while that works well, it was recently shown to me that a a non-hypertransport
-> > variant of the MCP55 exists, and on those system the register that this quirk
-> > manipulates causes hangs if you write to it.  Since the quirk was only meant to
-> > handle errors found on MCP55 chips that have a HT interface, this patch adds a
-> > filter to make sure the chip is an HT capable before making the needed register
-> > adjustment.  This lets the broken MCP55s work with kdump while not breaking the
-> > non-HT variants.
-> > 
-> 
-> So Neil, with non hypertransport MCP55s, interrupts are delivered to
-> all the cpus and seond kernel still boots?
-> 
-I cannot guarantee that.  All that I can guarantee is that, on MCP55 chips
-without hypertransport capability, the register which is used to configure
-interrupt delivery is either non-existant, or different in such a way that
-writing to it results in a hang on the boot of the initial kernel.  So this
-quirk has no effect on kdumps behavior regardless of the interrupt delivery
-behavior on such variants of the chip.  I would presume however, given that this
-register is so different that interrupts would be delivered to all cpus, as one
-would expect.  Mathieu, since you have the affected hardware, could you attempt
-to preform a kexec operation and tell us for certain?  Thanks!
-Neil
+Hello,
 
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+On 12/08/2010 06:17 PM, Eric Dumazet wrote:
+> Le mercredi 08 décembre 2010 à 09:33 -0600, Christoph Lameter a écrit :
+>> On Wed, 8 Dec 2010, Eric Dumazet wrote:
+>>
+>>>> In the long run, it might be a good idea to remove cpu_data() macro
+>>>> too and use per_cpu macro directly.
+>>>>
+>>>
+>>> or introduce this_cpu_has() to remove the adress computation
+>>>
+>>> -	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
+>>>
+>>> +	if (this_cpu_has(X86_FEATURE_ARAT)) {
+>>>
+>>
+>> The fundamental problem is that bitops require memory addresses which does
+>> not work with per cpu ops.
+>>
 > 
-> Thanks
-> Vivek
+> Sure, set() or clear() needs the address, but the read doesnt ?
 > 
-> > Resolves https://bugzilla.kernel.org/show_bug.cgi?id=23952
-> > 
-> > Tested successfully by the reporter and myself.
-> > 
-> > Reported-by: Mathieu B�rard <mathieu@mberard.eu>
-> > CC: linux-pci@vger.kernel.org
-> > CC: kexec@lists.infradead.org
-> > CC: Vivek Goyal <vgoyal@redhat.com>
-> > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > ---
-> >  drivers/pci/quirks.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> > index 6f9350c..313c0bd 100644
-> > --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -2329,6 +2329,9 @@ static void __devinit nvbridge_check_legacy_irq_routing(struct pci_dev *dev)
-> >  {
-> >  	u32 cfg;
-> >  
-> > +	if (!pci_find_capability(dev, PCI_CAP_ID_HT))
-> > +		return;
-> > +
-> >  	pci_read_config_dword(dev, 0x74, &cfg);
-> >  
-> >  	if (cfg & ((1 << 2) | (1 << 15))) {
-> > -- 
-> > 1.7.2.3
+> This can be implemented as
 > 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+>   (__this_cpu_read(cpu_info.word[X]) & MASK)
+> 
+> Anyway, even if mapped to cpu_has(__this_cpu_ptr(&cpu_info), XXX), 
+> it would be cleaner to use this_cpu_has() helper.
+
+Agreed.  I'd also like to see cpu_data() gone too.  It isn't used too
+many times and mixed with direct percpu ops only makes things more
+confusing without much benefit.  Does somebody care to send patches
+for these cleanups?
+
+Thanks.
+
+-- 
+tejun
