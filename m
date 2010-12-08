@@ -1,217 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab0LHE2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:28:24 -0500
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:55609 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751815Ab0LHE2X (ORCPT
+	id S1752489Ab0LHE2f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:28:35 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53039 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab0LHE2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:28:23 -0500
-Date: Wed, 8 Dec 2010 15:28:16 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
-Message-ID: <20101208042816.GA32766@dastard>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <20101207215653.GA25864@dastard>
- <AANLkTinwDr7Xga_gk4vjZ2MgGYGXhxka2JvOAVwfvKQ8@mail.gmail.com>
- <20101208033212.GF29333@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101208033212.GF29333@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 7 Dec 2010 23:28:33 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65899435"
+X-IronPort-AV: E=Sophos;i="4.59,313,1288594800"; 
+   d="scan'208";a="34584817"
+From: Jeff Ohlstein <johlstei@codeaurora.org>
+To: Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v2 3/6] msm: scm-boot: Support for setting cold/warm boot addresses
+Date: Tue,  7 Dec 2010 20:28:18 -0800
+Message-Id: <1291782501-3909-4-git-send-email-johlstei@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
+References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 02:32:12PM +1100, Dave Chinner wrote:
-> On Wed, Dec 08, 2010 at 12:47:42PM +1100, Nick Piggin wrote:
-> > On Wed, Dec 8, 2010 at 8:56 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > > On Sat, Nov 27, 2010 at 09:15:58PM +1100, Nick Piggin wrote:
-> > >>
-> > >> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
-> > >>
-> > >> Here is an new set of vfs patches for review, not that there was much interest
-> > >> last time they were posted. It is structured like:
-> > >>
-> > >> * preparation patches
-> > >> * introduce new locks to take over dcache_lock, then remove it
-> > >> * cleaning up and reworking things for new locks
-> > >> * rcu-walk path walking
-> > >> * start on some fine grained locking steps
-> > >
-> > > Stress test doing:
-> > >
-> > >        single thread 50M inode create
-> > >        single thread rm -rf
-> > >        2-way 50M inode create
-> > >        2-way rm -rf
-> > >        4-way 50M inode create
-> > >        4-way rm -rf
-> > >        8-way 50M inode create
-> > >        8-way rm -rf
-> > >        8-way 250M inode create
-> > >        8-way rm -rf
-> > >
-> > > Failed about 5 minutes into the "4-way rm -rf" (~3 hours into the test)
-> > > with a CPU stuck spinning on here:
-> > >
-> > > [37372.084012] NMI backtrace for cpu 5
-> > > [37372.084012] CPU 5
-> > > [37372.084012] Modules linked in:
-> > > [37372.084012]
-> > > [37372.084012] Pid: 15214, comm: rm Not tainted 2.6.37-rc4-dgc+ #797 /Bochs
-> > > [37372.084012] RIP: 0010:[<ffffffff810643c4>]  [<ffffffff810643c4>] __ticket_spin_lock+0x14/0x20
-> > > [37372.084012] RSP: 0018:ffff880114643c98  EFLAGS: 00000213
-> > > [37372.084012] RAX: 0000000000008801 RBX: ffff8800687be6c0 RCX: ffff8800c4eb2688
-> > > [37372.084012] RDX: ffff880114643d38 RSI: ffff8800dfd4ea80 RDI: ffff880114643d14
-> > > [37372.084012] RBP: ffff880114643c98 R08: 0000000000000003 R09: 0000000000000000
-> > > [37372.084012] R10: 0000000000000000 R11: dead000000200200 R12: ffff880114643d14
-> > > [37372.084012] R13: ffff880114643cb8 R14: ffff880114643d38 R15: ffff8800687be71c
-> > > [37372.084012] FS:  00007fd6d7c93700(0000) GS:ffff8800dfd40000(0000) knlGS:0000000000000000
-> > > [37372.084012] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > > [37372.084012] CR2: 0000000000bbd108 CR3: 0000000107146000 CR4: 00000000000006e0
-> > > [37372.084012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > > [37372.084012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > > [37372.084012] Process rm (pid: 15214, threadinfo ffff880114642000, task ffff88011b16f890)
-> > > [37372.084012] Stack:
-> > > [37372.084012]  ffff880114643ca8 ffffffff81ad044e ffff880114643cf8 ffffffff81167ae7
-> > > [37372.084012]  0000000000000000 ffff880114643d38 000000000000000e ffff88011901d800
-> > > [37372.084012]  ffff8800cdb7cf5c ffff88011901d8e0 0000000000000000 0000000000000000
-> > > [37372.084012] Call Trace:
-> > > [37372.084012]  [<ffffffff81ad044e>] _raw_spin_lock+0xe/0x20
-> > > [37372.084012]  [<ffffffff81167ae7>] shrink_dentry_list+0x47/0x370
-> > > [37372.084012]  [<ffffffff81167f5e>] __shrink_dcache_sb+0x14e/0x1e0
-> > > [37372.084012]  [<ffffffff81168456>] shrink_dcache_parent+0x276/0x2d0
-> > > [37372.084012]  [<ffffffff81ad044e>] ? _raw_spin_lock+0xe/0x20
-> > > [37372.084012]  [<ffffffff8115daa2>] dentry_unhash+0x42/0x80
-> > > [37372.084012]  [<ffffffff8115db48>] vfs_rmdir+0x68/0x100
-> > > [37372.084012]  [<ffffffff8115fd93>] do_rmdir+0x113/0x130
-> > > [37372.084012]  [<ffffffff8114f5ad>] ? filp_close+0x5d/0x90
-> > > [37372.084012]  [<ffffffff8115fde5>] sys_unlinkat+0x35/0x40
-> > > [37372.084012]  [<ffffffff8103a002>] system_call_fastpath+0x16/0x1b
-> > 
-> > OK good, with any luck, that's the same bug.
-> > 
-> > Is this XFS?
-> 
-> Yes.
-> 
-> > Is there any concurrent activity happening on the same dentries?
-> 
-> Not from an application perspective.
-> 
-> > Ie. are the rm -rf threads running on the same directories,
-> 
-> No, each thread operating on a different directory.
-> 
-> > or is there any reclaim happening in the background?
-> 
-> IIRC, kswapd was consuming about 5-10% of a CPU during parallel
-> unlink tests. Mainly reclaiming XFS inodes, I think, but there may
-> be dentry cache reclaim going as well.
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-Turns out that the kswapd peaks are upwards of 50% of a CPU for a
-few seconds, then idle for 10-15s. Typical perf top output of kswapd
-while it is active during unlinks is:
+Add support for setting the cold boot address of core 1 and
+the warm boot addresses of cores 0 and 1 using a secure
+domain call.
 
-             samples  pcnt function                    DSO
-             _______ _____ ___________________________ _________________
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+ arch/arm/mach-msm/Makefile   |    2 +-
+ arch/arm/mach-msm/scm-boot.c |   39 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/scm-boot.h |   38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 78 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-msm/scm-boot.c
+ create mode 100644 arch/arm/mach-msm/scm-boot.h
 
-            17168.00 10.2% __call_rcu                  [kernel.kallsyms]
-            13223.00  7.8% kmem_cache_free             [kernel.kallsyms]
-            12917.00  7.6% down_write                  [kernel.kallsyms]
-            12665.00  7.5% xfs_iunlock                 [kernel.kallsyms]
-            10493.00  6.2% xfs_reclaim_inode_grab      [kernel.kallsyms]
-             9314.00  5.5% __lookup_tag                [kernel.kallsyms]
-             9040.00  5.4% radix_tree_delete           [kernel.kallsyms]
-             8694.00  5.1% is_bad_inode                [kernel.kallsyms]
-             7639.00  4.5% __ticket_spin_lock          [kernel.kallsyms]
-             6821.00  4.0% _raw_spin_unlock_irqrestore [kernel.kallsyms]
-             5484.00  3.2% __d_drop                    [kernel.kallsyms]
-             5114.00  3.0% xfs_reclaim_inode           [kernel.kallsyms]
-             4626.00  2.7% __rcu_process_callbacks     [kernel.kallsyms]
-             3556.00  2.1% up_write                    [kernel.kallsyms]
-             3206.00  1.9% _cond_resched               [kernel.kallsyms]
-             3129.00  1.9% xfs_qm_dqdetach             [kernel.kallsyms]
-             2327.00  1.4% radix_tree_tag_clear        [kernel.kallsyms]
-             2327.00  1.4% call_rcu_sched              [kernel.kallsyms]
-             2262.00  1.3% __ticket_spin_unlock        [kernel.kallsyms]
-             2215.00  1.3% xfs_ilock                   [kernel.kallsyms]
-             2200.00  1.3% radix_tree_gang_lookup_tag  [kernel.kallsyms]
-             1982.00  1.2% xfs_reclaim_inodes_ag       [kernel.kallsyms]
-             1736.00  1.0% xfs_trans_unlocked_item     [kernel.kallsyms]
-             1707.00  1.0% __ticket_spin_trylock       [kernel.kallsyms]
-             1688.00  1.0% xfs_perag_get_tag           [kernel.kallsyms]
-             1660.00  1.0% flat_send_IPI_mask          [kernel.kallsyms]
-             1538.00  0.9% xfs_inode_item_destroy      [kernel.kallsyms]
-             1312.00  0.8% __shrink_dcache_sb          [kernel.kallsyms]
-              940.00  0.6% xfs_perag_put               [kernel.kallsyms]
-
-So there is some dentry cache reclaim going on. 
-
-FWIW, it appears there is quite a lot of RCU freeing overhead (~15%
-more CPU time) in the work kswapd is doing during these unlinks, too.
-I just had a look at kswapd when a 8-way create is running - it's running at
-50-60% of a cpu for seconds at a time. I caught this while it was doing pure
-XFS inode cache reclaim (~10s sample, kswapd reclaimed ~1M inodes):
-
-             samples  pcnt function                    DSO
-             _______ _____ ___________________________ _________________
-
-            27171.00  9.0% __call_rcu                  [kernel.kallsyms]
-            21491.00  7.1% down_write                  [kernel.kallsyms]
-            20916.00  6.9% xfs_reclaim_inode           [kernel.kallsyms]
-            20313.00  6.7% radix_tree_delete           [kernel.kallsyms]
-            15828.00  5.3% kmem_cache_free             [kernel.kallsyms]
-            15819.00  5.2% xfs_idestroy_fork           [kernel.kallsyms]
-            14893.00  4.9% is_bad_inode                [kernel.kallsyms]
-            14666.00  4.9% _raw_spin_unlock_irqrestore [kernel.kallsyms]
-            14191.00  4.7% xfs_reclaim_inode_grab      [kernel.kallsyms]
-            14105.00  4.7% xfs_iunlock                 [kernel.kallsyms]
-            10916.00  3.6% __ticket_spin_lock          [kernel.kallsyms]
-            10125.00  3.4% xfs_iflush_cluster          [kernel.kallsyms]
-             8221.00  2.7% xfs_qm_dqdetach             [kernel.kallsyms]
-             7639.00  2.5% xfs_trans_unlocked_item     [kernel.kallsyms]
-             7028.00  2.3% xfs_synchronize_times       [kernel.kallsyms]
-             6974.00  2.3% up_write                    [kernel.kallsyms]
-             5870.00  1.9% call_rcu_sched              [kernel.kallsyms]
-             5634.00  1.9% _cond_resched               [kernel.kallsyms]
-
-Which is showing a similar amount of RCU overhead as the unlink as above.
-And this while it was doing dentry cache reclaim (~10s sample):
-
-            35921.00 15.7% __d_drop                      [kernel.kallsyms]
-            30056.00 13.1% __ticket_spin_trylock         [kernel.kallsyms]
-            29066.00 12.7% __ticket_spin_lock            [kernel.kallsyms]
-            19043.00  8.3% __call_rcu                    [kernel.kallsyms]
-            10098.00  4.4% iput                          [kernel.kallsyms]
-             7013.00  3.1% __shrink_dcache_sb            [kernel.kallsyms]
-             6774.00  3.0% __percpu_counter_add          [kernel.kallsyms]
-             6708.00  2.9% radix_tree_tag_set            [kernel.kallsyms]
-             5362.00  2.3% xfs_inactive                  [kernel.kallsyms]
-             5130.00  2.2% __ticket_spin_unlock          [kernel.kallsyms]
-             4884.00  2.1% call_rcu_sched                [kernel.kallsyms]
-             4621.00  2.0% dentry_lru_del                [kernel.kallsyms]
-             3735.00  1.6% bit_waitqueue                 [kernel.kallsyms]
-             3727.00  1.6% dentry_iput                   [kernel.kallsyms]
-             3473.00  1.5% shrink_icache_memory          [kernel.kallsyms]
-             3279.00  1.4% kfree                         [kernel.kallsyms]
-             3101.00  1.4% xfs_perag_get                 [kernel.kallsyms]
-             2516.00  1.1% kmem_cache_free               [kernel.kallsyms]
-             2272.00  1.0% shrink_dentry_list            [kernel.kallsyms]
-
-I've never really seen any signficant dentry cache reclaim overhead
-in profiles of these workloads before, so this was a bit of a
-surprise....
-
-Cheers,
-
-Dave.
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index eed503b..34cd0a8 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -18,7 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
+ obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
+ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
+-obj-$(CONFIG_MSM_SCM) += scm.o
++obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+ 
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+diff --git a/arch/arm/mach-msm/scm-boot.c b/arch/arm/mach-msm/scm-boot.c
+new file mode 100644
+index 0000000..5671d58
+--- /dev/null
++++ b/arch/arm/mach-msm/scm-boot.c
+@@ -0,0 +1,39 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++
++#include "scm.h"
++#include "scm-boot.h"
++
++/*
++ * Set the cold/warm boot address for one of the CPU cores.
++ */
++int scm_set_boot_addr(void *addr, int flags)
++{
++	struct {
++		unsigned int flags;
++		void *addr;
++	} cmd;
++
++	cmd.addr = addr;
++	cmd.flags = flags;
++	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
++			&cmd, sizeof(cmd), NULL, 0);
++}
++EXPORT_SYMBOL(scm_set_boot_addr);
+diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+new file mode 100644
+index 0000000..fdc1374
+--- /dev/null
++++ b/arch/arm/mach-msm/scm-boot.h
+@@ -0,0 +1,38 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above
++ *       copyright notice, this list of conditions and the following
++ *       disclaimer in the documentation and/or other materials provided
++ *       with the distribution.
++ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
++ *       contributors may be used to endorse or promote products derived
++ *       from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
++ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
++ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
++ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++#ifndef __MACH_SCM_BOOT_H
++#define __MACH_SCM_BOOT_H
++
++#define SCM_BOOT_ADDR			0x1
++#define SCM_FLAG_COLDBOOT_CPU1		0x1
++#define SCM_FLAG_WARMBOOT_CPU1		0x2
++#define SCM_FLAG_WARMBOOT_CPU0		0x4
++
++int scm_set_boot_addr(void *addr, int flags);
++
++#endif
 -- 
-Dave Chinner
-david@fromorbit.com
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
