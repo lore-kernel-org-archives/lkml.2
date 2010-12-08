@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab0LHAy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:54:29 -0500
-Received: from kroah.org ([198.145.64.141]:58590 "EHLO coco.kroah.org"
+	id S1756304Ab0LHAru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:50 -0500
+Received: from kroah.org ([198.145.64.141]:58521 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756311Ab0LHAr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:59 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
-Message-Id: <20101208004434.013045349@clark.site>
+	id S1755603Ab0LHArs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:48 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:32 2010
+Message-Id: <20101208004432.903022187@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:43 -0800
+Date: Tue, 07 Dec 2010 16:44:32 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        "David S. Miller" <davem@davemloft.net>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Willy Tarreau <w@1wt.eu>,
-        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>
-Subject: [097/127] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Greg Ungerer <gerg@snapgear.com>
+Subject: [086/127] nommu: yield CPU while disposing VM
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,90 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Steven J. Magnani <steve@digidescorp.com>
 
-From: Robin Holt <holt@sgi.com>
+commit 04c3496152394d17e3bc2316f9731ee3e8a026bc upstream.
 
-[ Upstream fixed this in a different way. -DaveM ]
+Depending on processor speed, page size, and the amount of memory a
+process is allowed to amass, cleanup of a large VM may freeze the system
+for many seconds.  This can result in a watchdog timeout.
 
-On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
-sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
-maximized without overflowing.
+Make sure other tasks receive some service when cleaning up large VMs.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-sctp@vger.kernel.org
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Cc: Greg Ungerer <gerg@snapgear.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/tcp.c      |    4 +++-
- net/ipv4/udp.c      |    4 +++-
- net/sctp/protocol.c |    4 +++-
- 3 files changed, 9 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2940,12 +2940,14 @@ void __init tcp_init(void)
+---
+ mm/nommu.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1615,6 +1615,7 @@ void exit_mmap(struct mm_struct *mm)
+ 		mm->mmap = vma->vm_next;
+ 		delete_vma_from_mm(vma);
+ 		delete_vma(mm, vma);
++		cond_resched();
+ 	}
  
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
--	 * memory, with a floor of 128 pages.
-+	 * memory, with a floor of 128 pages, and a ceiling that prevents an
-+	 * integer overflow.
- 	 */
- 	nr_pages = totalram_pages - totalhigh_pages;
- 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
- 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
- 	limit = max(limit, 128UL);
-+	limit = min(limit, INT_MAX * 4UL / 3 / 2);
- 	sysctl_tcp_mem[0] = limit / 4 * 3;
- 	sysctl_tcp_mem[1] = limit;
- 	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1832,12 +1832,14 @@ void __init udp_init(void)
- 	udp_table_init(&udp_table);
- 	/* Set the pressure threshold up by the same strategy of TCP. It is a
- 	 * fraction of global memory that is up to 1/2 at 256 MB, decreasing
--	 * toward zero with the amount of memory, with a floor of 128 pages.
-+	 * toward zero with the amount of memory, with a floor of 128 pages,
-+	 * and a ceiling that prevents an integer overflow.
- 	 */
- 	nr_pages = totalram_pages - totalhigh_pages;
- 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
- 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
- 	limit = max(limit, 128UL);
-+	limit = min(limit, INT_MAX * 4UL / 3 / 2);
- 	sysctl_udp_mem[0] = limit / 4 * 3;
- 	sysctl_udp_mem[1] = limit;
- 	sysctl_udp_mem[2] = sysctl_udp_mem[0] * 2;
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -1157,7 +1157,8 @@ SCTP_STATIC __init int sctp_init(void)
- 
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
--	 * memory, with a floor of 128 pages.
-+	 * memory, with a floor of 128 pages, and a ceiling that prevents an
-+	 * integer overflow.
- 	 * Note this initalizes the data in sctpv6_prot too
- 	 * Unabashedly stolen from tcp_init
- 	 */
-@@ -1165,6 +1166,7 @@ SCTP_STATIC __init int sctp_init(void)
- 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
- 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
- 	limit = max(limit, 128UL);
-+	limit = min(limit, INT_MAX * 4UL / 3 / 2);
- 	sysctl_sctp_mem[0] = limit / 4 * 3;
- 	sysctl_sctp_mem[1] = limit;
- 	sysctl_sctp_mem[2] = sysctl_sctp_mem[0] * 2;
+ 	kleave("");
 
 
