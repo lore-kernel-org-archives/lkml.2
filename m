@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab0LHA7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:59:30 -0500
-Received: from kroah.org ([198.145.64.141]:48493 "EHLO coco.kroah.org"
+	id S1756889Ab0LHA7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:32 -0500
+Received: from kroah.org ([198.145.64.141]:48484 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756865Ab0LHA72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:28 -0500
+	id S1756789Ab0LHA71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:27 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:24 2010
-Message-Id: <20101208005724.671143499@clark.site>
+Message-Id: <20101208005724.579432134@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:50 -0800
+Date: Tue, 07 Dec 2010 16:56:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [033/289] ath9k_hw: Fix memory leak on ath9k_hw_rf_alloc_ext_banks failure
+Subject: [032/289] ath9k: fix enabling ANI / tx monitor after bg scan
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +27,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanoharan@atheros.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 48a7c3df14d0cda850337a9b3f9e667a0b12a996 upstream.
+commit 48a6a468198aadb54bc5d3fdd065364d43ff5197 upstream.
 
-The allocated externel radio banks have to be freed in
-case of ath9k_hw_rf_alloc_ext_banks failure.
+ath9k's entire logic with SC_OP_SCANNING is incorrect due to the
+way mac80211 currently implements the scan complete callback and
+we handle it in ath9k. This patch removes the flag completely in
+preference for the SC_OP_OFFCHANNEL which is really what we wanted.
 
-Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+The scanning flag was used to ensure we reset ANI to the old values
+when we go back to the home channel, but if we are offchannel we
+use some defaults. The flag was also used to re-enable the TX monitor.
+
+Without this patch we simply never re-enabled ANI and the TX monitor
+after going offchannel. This means that after one background
+scan we are prone to noise issues and if we had a TX hang we would
+not recover. To get this to work properly we must enable ANI after
+we have configured the beacon timers, otherwise hardware acts really
+oddly.
+
+This patch has stable fixes which apply down to [2.6.36+], there
+*may* be a to fix this on older kernels but requires a bit of
+work since this patch relies on the new mac80211 flag
+IEEE80211_CONF_OFFCHANNEL which was introduced as of 2.6.36.
+
+Cc: Paul Stewart <pstew@google.com>
+Cc: Amod Bodas <amod.bodas@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    1 -
+ drivers/net/wireless/ath/ath9k/main.c  |   10 +++-------
+ drivers/net/wireless/ath/ath9k/recv.c  |    4 ++--
+ 3 files changed, 5 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -486,6 +486,7 @@ static int ath9k_hw_post_init(struct ath
- 		ath_print(ath9k_hw_common(ah), ATH_DBG_FATAL,
- 			  "Failed allocating banks for "
- 			  "external radio\n");
-+		ath9k_hw_rf_free_ext_banks(ah);
- 		return ecode;
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -516,7 +516,6 @@ void ath_deinit_leds(struct ath_softc *s
+ #define SC_OP_RXFLUSH                BIT(7)
+ #define SC_OP_LED_ASSOCIATED         BIT(8)
+ #define SC_OP_LED_ON                 BIT(9)
+-#define SC_OP_SCANNING               BIT(10)
+ #define SC_OP_TSF_RESET              BIT(11)
+ #define SC_OP_BT_PRIORITY_DETECTED   BIT(12)
+ #define SC_OP_BT_SCAN		     BIT(13)
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -254,14 +254,12 @@ int ath_set_channel(struct ath_softc *sc
+ 	ath_update_txpow(sc);
+ 	ath9k_hw_set_interrupts(ah, ah->imask);
+ 
+-	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL | SC_OP_SCANNING))) {
+-		ath_start_ani(common);
++	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL))) {
++		ath_beacon_config(sc, NULL);
+ 		ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work, 0);
++		ath_start_ani(common);
  	}
  
+-	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL)))
+-		ath_beacon_config(sc, NULL);
+-
+  ps_restore:
+ 	ath9k_ps_restore(sc);
+ 	return r;
+@@ -2040,7 +2038,6 @@ static void ath9k_sw_scan_start(struct i
+ 
+ 	aphy->state = ATH_WIPHY_SCAN;
+ 	ath9k_wiphy_pause_all_forced(sc, aphy);
+-	sc->sc_flags |= SC_OP_SCANNING;
+ 	mutex_unlock(&sc->mutex);
+ }
+ 
+@@ -2055,7 +2052,6 @@ static void ath9k_sw_scan_complete(struc
+ 
+ 	mutex_lock(&sc->mutex);
+ 	aphy->state = ATH_WIPHY_ACTIVE;
+-	sc->sc_flags &= ~SC_OP_SCANNING;
+ 	mutex_unlock(&sc->mutex);
+ }
+ 
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -292,7 +292,7 @@ static void ath_edma_start_recv(struct a
+ 
+ 	ath_opmode_init(sc);
+ 
+-	ath9k_hw_startpcureceive(sc->sc_ah, (sc->sc_flags & SC_OP_SCANNING));
++	ath9k_hw_startpcureceive(sc->sc_ah, (sc->sc_flags & SC_OP_OFFCHANNEL));
+ }
+ 
+ static void ath_edma_stop_recv(struct ath_softc *sc)
+@@ -496,7 +496,7 @@ int ath_startrecv(struct ath_softc *sc)
+ start_recv:
+ 	spin_unlock_bh(&sc->rx.rxbuflock);
+ 	ath_opmode_init(sc);
+-	ath9k_hw_startpcureceive(ah, (sc->sc_flags & SC_OP_SCANNING));
++	ath9k_hw_startpcureceive(ah, (sc->sc_flags & SC_OP_OFFCHANNEL));
+ 
+ 	return 0;
+ }
 
 
