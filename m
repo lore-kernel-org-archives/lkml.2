@@ -1,184 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab0LHBy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:54:56 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:39928 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116Ab0LHByx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:54:53 -0500
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.59,313,1288569600"; 
-   d="scan'208";a="229194264"
-From: David Ahern <daahern@cisco.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <daahern@cisco.com>
-Subject: [PATCH 1/2] perf tools: Add reference timestamp to perf header
-Date: Tue,  7 Dec 2010 18:54:44 -0700
-Message-Id: <1291773285-16254-2-git-send-email-daahern@cisco.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1291773285-16254-1-git-send-email-daahern@cisco.com>
-References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
+	id S1757100Ab0LHBzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:55:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16755 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756712Ab0LHBzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:55:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,313,1288594800"; 
+   d="scan'208";a="581582735"
+Date: Wed, 8 Dec 2010 09:52:59 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
+ IRQ info
+Message-ID: <20101208095259.3668e1c7@feng-i7>
+In-Reply-To: <4CFEE2D3.6050107@kernel.org>
+References: <1291349518-3502-1-git-send-email-feng.tang@intel.com>
+	<tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org>
+	<4CFD226C.60308@kernel.org>
+	<20101207133204.4d913c5a@feng-i7>
+	<alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6>
+	<4CFE8045.2030101@kernel.org>
+	<alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
+	<4CFEE2D3.6050107@kernel.org>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a reference timestamp to the perf header - snapshotting kernel
-time to gettimeofday. This allows 'perf report' to convert kernel
-timestamps to time-of-day which is convenient for comparing to other
-(non perf related) log files.
+On Wed, 8 Dec 2010 09:43:47 +0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-The timestamp is added using a feature bit for compatibility with
-older binaries and data files.
+> On 12/07/2010 02:32 PM, Thomas Gleixner wrote:
+> > On Tue, 7 Dec 2010, Yinghai Lu wrote:
+> >> On 12/07/2010 07:56 AM, Thomas Gleixner wrote:
+> >>>
+> >>>   Same here. No caller is interested in the detailed return value.
+> >>>
+> >>
+> > 
+> >> ok, after look at code and git log, i knew the reasons for those
+> >> strange duplicated functions.
+> >>
+> >> Alexy changed
+> >>
+> >>  /* MP IRQ source entries */
+> >> -struct mpc_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
+> >> +struct mp_config_intsrc mp_irqs[MAX_IRQ_SOURCES];
+> >>
+> >> to make it decouple that with mpstable definition. so mptable will
+> >> have mpc_intsrc, and acpi etc will use mp_config_intsrc
+> >>
+> >> and he planed to add more member to mp_config_intsrc .... never
+> >> happened.
+> >>
+> >> then I added those functions with different parameters.
+> >>
+> >> one year later JSR changed all back to mpc_instr...
+> >>
+> >> so now have some duplicated functions....
+> > 
+> >> So yes, we should use simple versions in
+> >> arch/x86/kernel/acpi/boot.c. ( assume functions mrst.c are copied
+> >> from there)
+> >>
+> >> and should kill print_mp_irq_info or print_MP_intsrc_info...
+> > 
+> > Nice archaelogical detective work ! :)
+> > 
+> > So now I have Fengs patch plus Yinghais series which seem to go
+> > nicely together, but I have the feeling that there is some stuff
+> > unresolved.
+> > 
+> > Yinghai, Feng: could you please work out the missing bits an pieces
+> > (if any) and provide me a delta patch on top of the existing
+> > patches?
+> > 
+> 
+> Maybe Feng could send you updated version with simpler function?
 
-Signed-off-by: David Ahern <daahern@cisco.com>
----
- tools/perf/util/header.c  |   51 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h  |    3 ++
- tools/perf/util/session.c |   26 +++++++++++++++++++++++
- 3 files changed, 80 insertions(+), 0 deletions(-)
+Sure, will do.
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 76e949a..2fe893b 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -191,6 +191,40 @@ static int write_padded(int fd, const void *bf, size_t count,
- 	return err;
- }
- 
-+static int perf_header__read_ref_time(struct perf_header *header,
-+			int fd, u64 offset, u64 size)
-+{
-+	size_t sz_nsec = sizeof(header->nsec_ref);
-+	size_t sz_tv   = sizeof(header->tv_ref);
-+	int err = -1;
-+
-+	if (((size - offset) < (sz_nsec + sz_tv)) ||
-+	    (read(fd, &header->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
-+	    (read(fd, &header->tv_ref, sz_tv) != (ssize_t) sz_tv))
-+		goto out;
-+
-+	err = 0;
-+
-+out:
-+	return err;
-+}
-+
-+static int perf_header__write_ref_time(struct perf_header *header, int fd)
-+{
-+	size_t sz_nsec = sizeof(header->nsec_ref);
-+	size_t sz_tv   = sizeof(header->tv_ref);
-+	int err = -1;
-+
-+	if ((write(fd, &header->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
-+	    (write(fd, &header->tv_ref, sz_tv) != (ssize_t) sz_tv))
-+		goto out;
-+
-+	err = 0;
-+
-+out:
-+	return err;
-+}
-+
- #define dsos__for_each_with_build_id(pos, head)	\
- 	list_for_each_entry(pos, head, node)	\
- 		if (!pos->has_build_id)		\
-@@ -483,6 +517,19 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
- 			perf_session__cache_build_ids(session);
- 	}
- 
-+	if (perf_header__has_feat(self, HEADER_REFERENCE_TIME)) {
-+		struct perf_file_section *tref_sec;
-+
-+		tref_sec = &feat_sec[idx++];
-+		tref_sec->offset = lseek(fd, 0, SEEK_CUR);
-+		err = perf_header__write_ref_time(self, fd);
-+		if (err < 0) {
-+			pr_debug("failed to write reference time\n");
-+			goto out_free;
-+		}
-+		tref_sec->size = lseek(fd, 0, SEEK_CUR) - tref_sec->offset;
-+	}
-+
- 	lseek(fd, sec_start, SEEK_SET);
- 	err = do_write(fd, feat_sec, sec_size);
- 	if (err < 0)
-@@ -810,6 +857,10 @@ static int perf_file_section__process(struct perf_file_section *self,
- 		if (perf_header__read_build_ids(ph, fd, self->offset, self->size))
- 			pr_debug("Failed to read buildids, continuing...\n");
- 		break;
-+	case HEADER_REFERENCE_TIME:
-+		if (perf_header__read_ref_time(ph, fd, self->offset, self->size))
-+			pr_debug("Failed to read reference time, continuing...\n");
-+		break;
- 	default:
- 		pr_debug("unknown feature %d, continuing...\n", feat);
- 	}
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 6335965..0721c78 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -19,6 +19,7 @@ struct perf_header_attr {
- enum {
- 	HEADER_TRACE_INFO = 1,
- 	HEADER_BUILD_ID,
-+	HEADER_REFERENCE_TIME,
- 	HEADER_LAST_FEATURE,
- };
- 
-@@ -59,6 +60,8 @@ struct perf_header {
- 	u64			data_size;
- 	u64			event_offset;
- 	u64			event_size;
-+	u64			nsec_ref;
-+	struct timeval		tv_ref;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- };
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3074d38..720838e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -110,6 +110,29 @@ void perf_session__update_sample_type(struct perf_session *self)
- 	perf_session__id_header_size(self);
- }
- 
-+static int perf_session__create_ref_time(struct perf_session *session)
-+{
-+	struct timespec tp;
-+
-+	/* race here between successive calls, but should be close enough */
-+	if (gettimeofday(&session->header.tv_ref, NULL) != 0) {
-+		pr_err("gettimeofday failed. Cannot set reference time.\n");
-+		return -1;
-+	}
-+
-+	if (clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
-+		pr_err("clock_gettime failed. Cannot set reference time.\n");
-+		return -1;
-+	}
-+
-+	session->header.nsec_ref = (u64) tp.tv_sec * NSEC_PER_SEC
-+		                       + (u64) tp.tv_nsec;
-+
-+	perf_header__set_feat(&session->header, HEADER_REFERENCE_TIME);
-+
-+	return 0;
-+}
-+
- int perf_session__create_kernel_maps(struct perf_session *self)
- {
- 	int ret = machine__create_kernel_maps(&self->host_machine);
-@@ -167,6 +190,9 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 		 */
- 		if (perf_session__create_kernel_maps(self) < 0)
- 			goto out_delete;
-+
-+		if (perf_session__create_ref_time(self) < 0)
-+			goto out_delete;
- 	}
- 
- 	perf_session__update_sample_type(self);
--- 
-1.7.2.3
+But I guess Thomas wants more cleanup :) The MP table parsing/ACPI/MRST
+have many things in common, like lapic/ioapic setup and IRQ info setting,
+so generally there may be some other places where we could simplify codes
+by using one copy to cover all three, like what you just did for lapic
+registering.
 
+Anyway I will send one updated one for this patch.
+
+Thanks,
+Feng
+
+
+> 
+> Yinghai
