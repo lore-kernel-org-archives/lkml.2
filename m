@@ -1,21 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab0LHA4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:56:30 -0500
-Received: from kroah.org ([198.145.64.141]:58533 "EHLO coco.kroah.org"
+	id S1756639Ab0LHAy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:54:29 -0500
+Received: from kroah.org ([198.145.64.141]:58590 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756306Ab0LHAru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:50 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
-Message-Id: <20101208004433.103855494@clark.site>
+	id S1756311Ab0LHAr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:59 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
+Message-Id: <20101208004434.013045349@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:34 -0800
+Date: Tue, 07 Dec 2010 16:44:43 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        "David S. Miller" <davem@davemloft.net>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>
-Subject: [088/127] perf_events: Fix perf_counter_mmap() hook in mprotect()
+        Robin Holt <holt@sgi.com>, Willy Tarreau <w@1wt.eu>,
+        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Vlad Yasevich <vladislav.yasevich@hp.com>,
+        Sridhar Samudrala <sri@us.ibm.com>
+Subject: [097/127] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +34,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekka Enberg <penberg@kernel.org>
 
-commit 63bfd7384b119409685a17d5c58f0b56e5dc03da upstream.
+From: Robin Holt <holt@sgi.com>
 
-As pointed out by Linus, commit dab5855 ("perf_counter: Add mmap event hooks to
-mprotect()") is fundamentally wrong as mprotect_fixup() can free 'vma' due to
-merging. Fix the problem by moving perf_event_mmap() hook to
-mprotect_fixup().
+[ Upstream fixed this in a different way. -DaveM ]
 
-Note: there's another successful return path from mprotect_fixup() if old
-flags equal to new flags. We don't, however, need to call
-perf_event_mmap() there because 'perf' already knows the VMA is
-executable.
+On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
+sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
+maximized without overflowing.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Analyzed-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Reviewed-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-sctp@vger.kernel.org
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- mm/mprotect.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp.c      |    4 +++-
+ net/ipv4/udp.c      |    4 +++-
+ net/sctp/protocol.c |    4 +++-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -212,6 +212,7 @@ success:
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
- 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
-+	perf_event_mmap(vma);
- 	return 0;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2940,12 +2940,14 @@ void __init tcp_init(void)
  
- fail:
-@@ -300,7 +301,6 @@ SYSCALL_DEFINE3(mprotect, unsigned long,
- 		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags);
- 		if (error)
- 			goto out;
--		perf_event_mmap(vma);
- 		nstart = tmp;
+ 	/* Set the pressure threshold to be a fraction of global memory that
+ 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
+-	 * memory, with a floor of 128 pages.
++	 * memory, with a floor of 128 pages, and a ceiling that prevents an
++	 * integer overflow.
+ 	 */
+ 	nr_pages = totalram_pages - totalhigh_pages;
+ 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
+ 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
+ 	limit = max(limit, 128UL);
++	limit = min(limit, INT_MAX * 4UL / 3 / 2);
+ 	sysctl_tcp_mem[0] = limit / 4 * 3;
+ 	sysctl_tcp_mem[1] = limit;
+ 	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1832,12 +1832,14 @@ void __init udp_init(void)
+ 	udp_table_init(&udp_table);
+ 	/* Set the pressure threshold up by the same strategy of TCP. It is a
+ 	 * fraction of global memory that is up to 1/2 at 256 MB, decreasing
+-	 * toward zero with the amount of memory, with a floor of 128 pages.
++	 * toward zero with the amount of memory, with a floor of 128 pages,
++	 * and a ceiling that prevents an integer overflow.
+ 	 */
+ 	nr_pages = totalram_pages - totalhigh_pages;
+ 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
+ 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
+ 	limit = max(limit, 128UL);
++	limit = min(limit, INT_MAX * 4UL / 3 / 2);
+ 	sysctl_udp_mem[0] = limit / 4 * 3;
+ 	sysctl_udp_mem[1] = limit;
+ 	sysctl_udp_mem[2] = sysctl_udp_mem[0] * 2;
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1157,7 +1157,8 @@ SCTP_STATIC __init int sctp_init(void)
  
- 		if (nstart < prev->vm_end)
+ 	/* Set the pressure threshold to be a fraction of global memory that
+ 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
+-	 * memory, with a floor of 128 pages.
++	 * memory, with a floor of 128 pages, and a ceiling that prevents an
++	 * integer overflow.
+ 	 * Note this initalizes the data in sctpv6_prot too
+ 	 * Unabashedly stolen from tcp_init
+ 	 */
+@@ -1165,6 +1166,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
+ 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
+ 	limit = max(limit, 128UL);
++	limit = min(limit, INT_MAX * 4UL / 3 / 2);
+ 	sysctl_sctp_mem[0] = limit / 4 * 3;
+ 	sysctl_sctp_mem[1] = limit;
+ 	sysctl_sctp_mem[2] = sysctl_sctp_mem[0] * 2;
 
 
