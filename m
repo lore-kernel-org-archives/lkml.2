@@ -1,34 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0LHRIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:08:10 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25187 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460Ab0LHRIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 12:08:09 -0500
-Message-Id: <0d30dc$kddq6q@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,316,1288594800"; 
-   d="scan'208";a="685172954"
-Date: Wed, 08 Dec 2010 17:08:04 +0000
-To: Florian Mickler <florian@mickler.org>, Keith Packard <keithp@keithp.com>
-Subject: Re: [Intel-gfx] [PATCH 2/2] drm: record monitor status in output_poll_execute
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-In-Reply-To: <20101208173424.76ec4041@schatten.dmk.lab>
-References: <1290797159-3977-1-git-send-email-keithp@keithp.com> <1290797159-3977-2-git-send-email-keithp@keithp.com> <20101205132743.3b3458ab@schatten.dmk.lab> <yunpqtgexml.fsf@aiko.keithp.com> <20101208173424.76ec4041@schatten.dmk.lab>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1754434Ab0LHRJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:09:28 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34022
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753537Ab0LHRJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 12:09:27 -0500
+Date: Wed, 08 Dec 2010 09:09:54 -0800 (PST)
+Message-Id: <20101208.090954.115924303.davem@davemloft.net>
+To: kadlec@blackhole.kfki.hu
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, torvalds@osdl.org,
+        rusty@rustcorp.com.au
+Subject: Re: [PATCH 0/2] New jhash function
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1291379941-31565-1-git-send-email-kadlec@blackhole.kfki.hu>
+References: <201011271401.22773.rusty@rustcorp.com.au>
+	<1291379941-31565-1-git-send-email-kadlec@blackhole.kfki.hu>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Dec 2010 17:34:24 +0100, Florian Mickler <florian@mickler.org> wrote:
-> Does that mean that the kernel regression will not be
-> fixed/worked-around for old userspace? 
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Date: Fri,  3 Dec 2010 13:38:59 +0100
 
-I think there is some confusion in that I believe there is more than one
-backlight bug at play here.
--Chris
+> The current jhash.h implements the lookup2() hash function by Bob Jenkins. 
+> However, lookup2() is outdated as Bob wrote a new hash function called 
+> lookup3(). There is a longer comparison of those two and other hash
+> functions at http://burtleburtle.net/bob/hash/doobs.html.
+> 
+> Please consider applying the following patches.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Patch #1 is already in the net-next-2.6 tree, and as long as there are
+no major objections to the general crowd (including Rusty et al.) I am
+happy to put patch #2 into my tree as well.
+
+Rusty, does the current version of patch #2 look good to you?
+
+Thanks!
