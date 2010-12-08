@@ -1,208 +1,418 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab0LHLYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 06:24:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64562 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753232Ab0LHLYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 06:24:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,315,1288594800"; 
-   d="scan'208";a="581719495"
-Date: Wed, 8 Dec 2010 19:21:01 +0800
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, leonard.mai@intel.com
-Subject: [PATCH v2 1/1]mmc: export enhanced area info to user
-Message-ID: <20101208112101.GA14565@intel.com>
-Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+	id S1754093Ab0LHL3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 06:29:07 -0500
+Received: from mail-iw0-f172.google.com ([209.85.214.172]:59165 "EHLO
+	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab0LHL3F convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 06:29:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101206175957.GD5926@ghostprotocols.net>
+References: <1291656331-24706-1-git-send-email-dave.martin@linaro.org>
+	<20101206175957.GD5926@ghostprotocols.net>
+Date: Wed, 8 Dec 2010 11:29:04 +0000
+Message-ID: <AANLkTin6Ei5F46FuoqX_mYpL_qd1wWcXVfAeW7Ym4yMZ@mail.gmail.com>
+Subject: Re: [PATCH v4] perf symbols: fix symbol offset breakage with
+ separated debug
+From: Dave Martin <dave.martin@linaro.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enhanced area is a new feature of eMMC4.41 card. Since the offsize and size
-of enhaneced area is one time programmable register, driver will not set
-them and just read these values out.
+Hi-- just letting you know I haven't forgotten about this -- thanks
+for your reply.
 
-So this patch just let host driver read out the enhanced area offsize and
-size if the eMMC card is enabled this feature. And expose these values to
-user space through sys fs for use. The feature enabling should be done in
-manufactory.
+I'll have to have a think about how best to rework this patch based on
+your feedback, so it may take me a while to follow up.
 
-Before read out these values, host driver also need set the ERASE_GROUP_DEF
-byte. If this setting this byte failed, driver will set the offsize and size
-to be 0. But not sure whether need to do this.
+Cheers
+---Dave
 
-Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
----
- drivers/mmc/core/mmc.c   |   92 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mmc/card.h |    3 +
- include/linux/mmc/mmc.h  |    3 +
- 3 files changed, 98 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 77f93c3..1f49778 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -302,6 +302,64 @@ static int mmc_read_ext_csd(struct mmc_card *card)
- 	}
- 
- 	if (card->ext_csd.rev >= 4) {
-+		/*
-+		 * Enhanced area feature support
-+		 * check whether eMMC card is enabled enhanced area,
-+		 * if so, export enhanced area offset and size to
-+		 * user by adding sysfs interface
-+		 */
-+		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
-+				(ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
-+			u8 hc_erase_grp_sz =
-+				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-+			u8 hc_wp_grp_sz =
-+				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-+			 /*
-+			  * FIXME
-+			  * Not sure whether need to enable the
-+			  * ERASE_GROUP_DEF bit
-+			  */
-+			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					EXT_CSD_ERASE_GROUP_DEF, 1);
-+
-+			if (err && err != -EBADMSG)
-+				goto out;
-+
-+			if (err) {
-+				/*
-+				 * ignore this err, just disable enhanced area
-+				 */
-+				err = 0;
-+				goto next;
-+			}
-+			/* update ext_csd ERASE_GRP_DEF bit */
-+			ext_csd[EXT_CSD_ERASE_GROUP_DEF] = 1;
-+			card->ext_csd.erase_group_def =
-+				ext_csd[EXT_CSD_ERASE_GROUP_DEF];
-+			/*
-+			 * set a flag to identify whether the enhanced
-+			 * user data are enabled
-+			 */
-+			card->ext_csd.enh_data_area_en = 1;
-+			/*
-+			 * caculate the enhanced data area offset, unit B
-+			 */
-+			card->ext_csd.enh_data_area_off =
-+				(ext_csd[139] << 24) + (ext_csd[138] << 16) +
-+				(ext_csd[137] << 8) + ext_csd[136];
-+			if (mmc_card_blockaddr(card))
-+				card->ext_csd.enh_data_area_off <<= 9;
-+			/*
-+			 * caculate the enhanced data area size, unit KB
-+			 */
-+			card->ext_csd.enh_data_area_sz =
-+				(ext_csd[142] << 16) + (ext_csd[141] << 8) +
-+				ext_csd[140];
-+			card->ext_csd.enh_data_area_sz *=
-+				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-+			card->ext_csd.enh_data_area_sz <<= 9;
-+		}
-+next:
- 		card->ext_csd.sec_trim_mult =
- 			ext_csd[EXT_CSD_SEC_TRIM_MULT];
- 		card->ext_csd.sec_erase_mult =
-@@ -336,6 +394,9 @@ MMC_DEV_ATTR(manfid, "0x%06x\n", card->cid.manfid);
- MMC_DEV_ATTR(name, "%s\n", card->cid.prod_name);
- MMC_DEV_ATTR(oemid, "0x%04x\n", card->cid.oemid);
- MMC_DEV_ATTR(serial, "0x%08x\n", card->cid.serial);
-+MMC_DEV_ATTR(enhen, "%d\n", card->ext_csd.enh_data_area_en);
-+MMC_DEV_ATTR(enhoff, "0x%llxB\n", card->ext_csd.enh_data_area_off);
-+MMC_DEV_ATTR(enhsz, "0x%xKB\n", card->ext_csd.enh_data_area_sz);
- 
- static struct attribute *mmc_std_attrs[] = {
- 	&dev_attr_cid.attr,
-@@ -349,6 +410,9 @@ static struct attribute *mmc_std_attrs[] = {
- 	&dev_attr_name.attr,
- 	&dev_attr_oemid.attr,
- 	&dev_attr_serial.attr,
-+	&dev_attr_enhen.attr,
-+	&dev_attr_enhoff.attr,
-+	&dev_attr_enhsz.attr,
- 	NULL,
- };
- 
-@@ -472,6 +536,34 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 			goto free_card;
- 	}
- 
-+	/*
-+	 * If enh_data_are_en is TRUE, means this init card
-+	 * operation is used to reinit card after a reset
-+	 * ERASE_GRP_DEF register value will be lost everytime
-+	 * after a reset or power off.
-+	 *
-+	 * FIXME
-+	 * Not sure whether need to enable ERASE_GRP_DEF bit.
-+	 */
-+	if (card->ext_csd.enh_data_area_en) {
-+		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+				EXT_CSD_ERASE_GROUP_DEF, 1);
-+
-+		if (err && err != -EBADMSG)
-+			goto free_card;
-+
-+		if (err) {
-+			err = 0;
-+			/*
-+			 * Just disable enhanced area off & sz
-+			 * will try to enable ERASE_GROUP_DEF
-+			 * during next time reinit
-+			 */
-+			card->ext_csd.enh_data_area_off = 0;
-+			card->ext_csd.enh_data_area_sz = 0;
-+		}
-+	}
-+
- 	if (!oldcard) {
- 		/*
- 		 * Fetch and process extended CSD.
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 8ce0827..e850a39 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -54,6 +54,9 @@ struct mmc_ext_csd {
- 	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
- 	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
- 	unsigned int		trim_timeout;		/* In milliseconds */
-+	unsigned int		enh_data_area_en; /* enh area enable bit */
-+	loff_t				enh_data_area_off; /* enh area offset */
-+	size_t				enh_data_area_sz; /* enh area size */
- };
- 
- struct sd_scr {
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 956fbd8..97ca016 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -251,6 +251,8 @@ struct _mmc_csd {
-  * EXT_CSD fields
-  */
- 
-+#define EXT_CSD_PARTITION_ATTRIBUTE 156	/* R/W */
-+#define EXT_CSD_PARTITION_SUPPORT	160	/* RO */
- #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
- #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
- #define EXT_CSD_BUS_WIDTH		183	/* R/W */
-@@ -260,6 +262,7 @@ struct _mmc_csd {
- #define EXT_CSD_CARD_TYPE		196	/* RO */
- #define EXT_CSD_SEC_CNT			212	/* RO, 4 bytes */
- #define EXT_CSD_S_A_TIMEOUT		217	/* RO */
-+#define EXT_CSD_HC_WP_GRP_SIZE		221	/* RO */
- #define EXT_CSD_ERASE_TIMEOUT_MULT	223	/* RO */
- #define EXT_CSD_HC_ERASE_GRP_SIZE	224	/* RO */
- #define EXT_CSD_SEC_TRIM_MULT		229	/* RO */
--- 
-1.6.6.1
-
+On Mon, Dec 6, 2010 at 5:59 PM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+> Em Mon, Dec 06, 2010 at 05:25:31PM +0000, Dave Martin escreveu:
+>> v4: remove assert() calls
+>>
+>>   * Simply removed the assert() to validate section indices
+>>     returned by libelf: libelf should validate the ELF file
+>>     anyway.
+>
+> Thanks for doing this!
+>
+>>   * Replaced the assert() on arguments to dso__load_sym
+>>     with a run-time check.
+>
+> Ditto.
+>
+>> v3: Fixed a minor error in v2 where a check was erronueously
+>> done twice.
+>>
+>> Original description follows:
+>>
+>> The new patch loads the ELF section headers from a separate
+>> file if necessary, to avoid getting confused by the different
+>> section file offsets seen in debug images.  Invalid section
+>> headers are detected by checking for the presence of non-
+>> writable SHT_NOBITS sections, which don't make sense under
+>> normal circumstances.
+>>
+>> In particular, this allows symbols in ET_EXEC images to get
+>> fixed up correctly in the presence of separated debug images.
+>
+> But this is getting complicated, could you please try to reduce
+> complexity by breaking this patch in three?
+>
+> One that fixes this minor bug, another that fixes the fallback to
+> .dynsym that misses the build-id cache and the other checking the NOBITS
+> part?
+>
+> See more below.
+>
+>> The image search loop is also tidied up to fix a minor bug
+>> which would perform the same image load attempt more than
+>> once in some situations.
+>
+> Also this want_symtab ends up just getting to:
+>
+>        sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+>        if (sec == NULL) {
+>                if (want_symtab)
+>                        goto out_elf_end;
+>
+>                sec = elf_section_by_name(elf, &ehdr, &shdr, ".dynsym", NULL);
+>                if (sec == NULL)
+>                        goto out_elf_end;
+>        }
+>
+> Wouldn't be better to have:
+>
+>        sec = elf_section_by_name(elf, &ehdr, &shdr, symtab_name, NULL);
+>        if (sec == NULL)
+>                goto out_elf_end;
+>
+>
+> Instead?
+>
+>> For non-separated images, the headers should get loaded from
+>> the same image as the symbols, in the usual way.
+>> ---
+>> KernelVersion: 2.6.37-rc3
+>>
+>>  tools/perf/util/symbol.c |  188 +++++++++++++++++++++++++++++++++++++++++++---
+>>  1 files changed, 176 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>> index b39f499..7d8fd34 100644
+>> --- a/tools/perf/util/symbol.c
+>> +++ b/tools/perf/util/symbol.c
+>> @@ -992,8 +992,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+>>       return -1;
+>>  }
+>>
+>> +/**
+>> + * Read all section headers, copying them into a separate array so they survive
+>> + * elf_end.
+>> + *
+>> + * @elf: the libelf instance to operate on.
+>> + * @ehdr: the elf header: this must already have been read with gelf_getehdr().
+>> + * @count: the number of headers read is assigned to *count on successful
+>> + *   return.  count must not be NULL.
+>> + *
+>> + * Returns a pointer to the allocated headers, which should be deallocated with
+>> + * free() when no longer needed.
+>> + */
+>> +static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
+>> +                                 unsigned *count)
+>> +{
+>> +     GElf_Shdr *shdrs;
+>> +     Elf_Scn *scn;
+>> +     unsigned max_index = 0;
+>> +     unsigned i;
+>> +
+>> +     shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
+>> +     if (!shdrs)
+>> +             return NULL;
+>> +
+>> +     for (i = 0; i < ehdr->e_shnum; i++)
+>> +             shdrs[i].sh_type = SHT_NULL;
+>> +
+>> +     for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
+>> +             size_t j;
+>> +
+>> +             /*
+>> +              * Just assuming we get section 0, 1, ... in sequence may lead
+>> +              * to wrong section indices.  Check the index explicitly:
+>> +              */
+>> +             j = elf_ndxscn(scn);
+>> +
+>> +             if (j > max_index)
+>> +                     max_index = j;
+>> +
+>> +             if (!gelf_getshdr(scn, &shdrs[j]))
+>> +                     goto error;
+>> +     }
+>> +
+>> +     *count = max_index + 1;
+>> +     return shdrs;
+>> +
+>> +error:
+>> +     free(shdrs);
+>> +     return NULL;
+>> +}
+>> +
+>> +/**
+>> + * Check that the section headers @shdrs reflect accurately the file data
+>> + * layout of the image that was loaded during perf record.  This is generally
+>> + * not true for separated debug images generated with e.g.,
+>> + * objcopy --only-keep-debug.
+>> + *
+>> + * We identify invalid files by checking for non-empty sections which are
+>> + * declared as having no file data (SHT_NOBITS) but are not writable.
+>> + *
+>> + * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
+>> + * @count: the number of headers present in @shdrs.
+>> + *
+>> + * Returns 1 for valid headers, 0 otherwise.
+>> + */
+>> +static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
+>> +{
+>> +     unsigned i;
+>> +
+>> +     for (i = 0; i < count; i++) {
+>> +             if (shdrs[i].sh_type == SHT_NOBITS &&
+>> +                 !(shdrs[i].sh_flags & SHF_WRITE) &&
+>> +                 shdrs[i].sh_size != 0)
+>> +                     return 0;
+>> +     }
+>> +
+>> +     return 1;
+>> +}
+>> +
+>> +/*
+>> + * Notes:
+>> + *
+>> + * If saved_shdrs is non-NULL, the section headers will be read if found, and
+>> + * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
+>> + * this case.  This may be needed for separated debug images, since the section
+>> + * headers and symbols may need to come from separate images in that case.
+>> + *
+>> + * Note: irrespective of whether this function returns successfully,
+>> + * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
+>> + * caller's responsibility to free() it when non longer needed.
+>> + *
+>> + * If want_symtab == 1, this function will only load symbols from .symtab
+>> + * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
+>> + * loaded.  This feature is used by dso__load() to search for the best image
+>> + * to load.
+>> + */
+>>  static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>>                        int fd, symbol_filter_t filter, int kmodule,
+>> +                      GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
+>>                        int want_symtab)
+>>  {
+>>       struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
+>> @@ -1012,6 +1109,17 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>>       int nr = 0;
+>>       size_t opdidx = 0;
+>>
+>> +     if(saved_shdrs != NULL && saved_shdrs_count == NULL) {
+>> +             /*
+>> +              * If you trigger this check, you're calling this function
+>> +              * incorrectly.  Refer to the notes above for details.
+>> +              */
+>> +             pr_debug("%s: warning: saved_shdrs_count == NULL: "
+>> +                      "ignoring the saved section headers.\n",
+>> +                      __func__);
+>> +             saved_shdrs = NULL;
+>> +     }
+>> +
+>>       elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+>>       if (elf == NULL) {
+>>               pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
+>> @@ -1035,6 +1143,34 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>>                       goto out_elf_end;
+>>       }
+>>
+>> +     /*
+>> +      * Copy all section headers from the image if requested and if not
+>> +      * already loaded.
+>> +      */
+>> +     if (saved_shdrs != NULL && *saved_shdrs == NULL) {
+>> +             GElf_Shdr *shdrs;
+>> +             unsigned count;
+>> +
+>> +             shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
+>> +             if (shdrs == NULL)
+>> +                     goto out_elf_end;
+>> +
+>> +             /*
+>> +              * Only keep the headers if they reflect the actual run-time
+>> +              * image's file layout:
+>> +              */
+>> +             if (elf_check_shdrs_valid(shdrs, count)) {
+>> +                     *saved_shdrs = shdrs;
+>> +                     *saved_shdrs_count = count;
+>> +             } else
+>> +                     free(shdrs);
+>> +     }
+>> +
+>> +     /* If no genuine ELF headers are available yet, give up: we can't
+>> +      * adjust symbols correctly in that case: */
+>> +     if (saved_shdrs != NULL && *saved_shdrs == NULL)
+>> +             goto out_elf_end;
+>> +
+>>       sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+>>       if (sec == NULL) {
+>>               if (want_symtab)
+>> @@ -1167,12 +1303,25 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>>                       goto new_symbol;
+>>               }
+>>
+>> +             /*
+>> +              * Currently, symbols for shared objects and PIE executables
+>> +              * (i.e., ET_DYN) do not seem to get adjusted.  This might need
+>> +              * to change if file offset == virtual address is not actually
+>> +              * guaranteed for these images.  ELF doesn't provide this
+>> +              * guarantee natively.
+>> +              */
+>>               if (curr_dso->adjust_symbols) {
+>>                       pr_debug4("%s: adjusting symbol: st_value: %#Lx "
+>>                                 "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
+>>                                 (u64)sym.st_value, (u64)shdr.sh_addr,
+>>                                 (u64)shdr.sh_offset);
+>> -                     sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+>> +                     if (saved_shdrs && *saved_shdrs &&
+>> +                         sym.st_shndx < *saved_shdrs_count)
+>> +                             sym.st_value -=
+>> +                                     (*saved_shdrs)[sym.st_shndx].sh_addr -
+>> +                                     (*saved_shdrs)[sym.st_shndx].sh_offset;
+>> +                     else
+>> +                             sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+>>               }
+>>               /*
+>>                * We need to figure out if the object was created from C++ sources
+>> @@ -1409,6 +1558,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>>       struct machine *machine;
+>>       const char *root_dir;
+>>       int want_symtab;
+>> +     GElf_Shdr *saved_shdrs = NULL;
+>> +     unsigned saved_shdrs_count;
+>>
+>>       dso__set_loaded(self, map->type);
+>>
+>> @@ -1439,13 +1590,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>>        * On the first pass, only load images if they have a full symtab.
+>>        * Failing that, do a second pass where we accept .dynsym also
+>>        */
+>> -     for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
+>> -          self->origin != DSO__ORIG_NOT_FOUND;
+>> -          self->origin++) {
+>> +     self->origin = DSO__ORIG_BUILD_ID_CACHE;
+>> +     want_symtab = 1;
+>> +     while (1) {
+>
+> Doing it this way and then using the continue or continue_next fixes the
+> bug where we don't use the build-id cache for a .dynsym, i.e. when we
+> don't find a .symtab and restart the loop, but then, its a separate
+> patch, please break it into another patch.
+>
+>>               switch (self->origin) {
+>>               case DSO__ORIG_BUILD_ID_CACHE:
+>>                       if (dso__build_id_filename(self, name, size) == NULL)
+>> -                             continue;
+>> +                             goto continue_next;
+>>                       break;
+>>               case DSO__ORIG_FEDORA:
+>>                       snprintf(name, size, "/usr/lib/debug%s.debug",
+>> @@ -1459,7 +1610,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>>                       char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+>>
+>>                       if (!self->has_build_id)
+>> -                             continue;
+>> +                             goto continue_next;
+>>
+>>                       build_id__sprintf(self->build_id,
+>>                                         sizeof(self->build_id),
+>> @@ -1483,21 +1634,24 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>>               default:
+>>                       /*
+>>                        * If we wanted a full symtab but no image had one,
+>> -                      * relax our requirements and repeat the search.
+>> +                      * relax our requirements and repeat the search,
+>> +                      * providing we saw some valid section headers:
+>>                        */
+>> -                     if (want_symtab) {
+>> +                     if (want_symtab && saved_shdrs != NULL) {
+>>                               want_symtab = 0;
+>>                               self->origin = DSO__ORIG_BUILD_ID_CACHE;
+>> -                     } else
+>>                               continue;
+>> +                     } else
+>> +                             goto done;
+>>               }
+>>
+>>               /* Name is now the name of the next image to try */
+>>               fd = open(name, O_RDONLY);
+>>               if (fd < 0)
+>> -                     continue;
+>> +                     goto continue_next;
+>>
+>>               ret = dso__load_sym(self, map, name, fd, filter, 0,
+>> +                                 &saved_shdrs, &saved_shdrs_count,
+>>                                   want_symtab);
+>>               close(fd);
+>>
+>> @@ -1506,7 +1660,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>>                * info!?!?
+>>                */
+>>               if (!ret)
+>> -                     continue;
+>> +                     goto continue_next;
+>>
+>>               if (ret > 0) {
+>>                       int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
+>> @@ -1514,9 +1668,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>>                               ret += nr_plt;
+>>                       break;
+>>               }
+>> +
+>> +continue_next:
+>> +             self->origin++;
+>> +             continue;
+>
+> This continue at the end is not needed, right?
+>
+>>       }
+>>
+>> +done:
+>>       free(name);
+>> +
+>> +     if (saved_shdrs)
+>> +             free(saved_shdrs);
+>
+> No need to check, call free straight away.
+>
+>> +
+>>       if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
+>>               return 0;
+>>       return ret;
+>> @@ -1782,7 +1945,8 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
+>>               return -1;
+>>
+>>       dso__set_loaded(self, map->type);
+>> -     err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
+>> +     err = dso__load_sym(self, map, vmlinux, fd, filter, 0,
+>> +                         NULL, NULL, 0);
+>>       close(fd);
+>>
+>>       if (err > 0)
+>> --
+>> 1.7.1
+>
