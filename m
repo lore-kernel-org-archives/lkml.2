@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab0LHArD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:03 -0500
-Received: from kroah.org ([198.145.64.141]:45988 "EHLO coco.kroah.org"
+	id S1756095Ab0LHCO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:14:28 -0500
+Received: from kroah.org ([198.145.64.141]:46034 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943Ab0LHAqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:55 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:27 2010
-Message-Id: <20101208004427.356573938@clark.site>
+	id S1756007Ab0LHArC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:02 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:28 2010
+Message-Id: <20101208004428.010324394@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:36 -0800
+Date: Tue, 07 Dec 2010 16:43:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [030/127] ipc: initialize structure memory to zero for compat functions
+        NeilBrown <neilb@suse.de>
+Subject: [037/127] md/raid1: really fix recovery looping when single good device fails.
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 03145beb455cf5c20a761e8451e30b8a74ba58d9 upstream.
+commit 8f9e0ee38f75d4740daa9e42c8af628d33d19a02 upstream.
 
-This takes care of leaking uninitialized kernel stack memory to
-userspace from non-zeroed fields in structs in compat ipc functions.
+Commit 4044ba58dd15cb01797c4fd034f39ef4a75f7cc3 supposedly fixed a
+problem where if a raid1 with just one good device gets a read-error
+during recovery, the recovery would abort and immediately restart in
+an infinite loop.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+However it depended on raid1_remove_disk removing the spare device
+from the array.  But that does not happen in this case.  So add a test
+so that in the 'recovery_disabled' case, the device will be removed.
+
+This suitable for any kernel since 2.6.29 which is when
+recovery_disabled was introduced.
+
+Reported-by: Sebastian Färber <faerber@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/compat.c    |    6 ++++++
- ipc/compat_mq.c |    5 +++++
- 2 files changed, 11 insertions(+)
+ drivers/md/raid1.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -242,6 +242,8 @@ long compat_sys_semctl(int first, int se
- 	struct semid64_ds __user *up64;
- 	int version = compat_ipc_parse_version(&third);
- 
-+	memset(&s64, 0, sizeof(s64));
-+
- 	if (!uptr)
- 		return -EINVAL;
- 	if (get_user(pad, (u32 __user *) uptr))
-@@ -422,6 +424,8 @@ long compat_sys_msgctl(int first, int se
- 	int version = compat_ipc_parse_version(&second);
- 	void __user *p;
- 
-+	memset(&m64, 0, sizeof(m64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_INFO:
- 	case IPC_RMID:
-@@ -595,6 +599,8 @@ long compat_sys_shmctl(int first, int se
- 	int err, err2;
- 	int version = compat_ipc_parse_version(&second);
- 
-+	memset(&s64, 0, sizeof(s64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_RMID:
- 	case SHM_LOCK:
---- a/ipc/compat_mq.c
-+++ b/ipc/compat_mq.c
-@@ -53,6 +53,9 @@ asmlinkage long compat_sys_mq_open(const
- 	void __user *p = NULL;
- 	if (u_attr && oflag & O_CREAT) {
- 		struct mq_attr attr;
-+
-+		memset(&attr, 0, sizeof(attr));
-+
- 		p = compat_alloc_user_space(sizeof(attr));
- 		if (get_compat_mq_attr(&attr, u_attr) ||
- 		    copy_to_user(p, &attr, sizeof(attr)))
-@@ -127,6 +130,8 @@ asmlinkage long compat_sys_mq_getsetattr
- 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
- 	long ret;
- 
-+	memset(&mqstat, 0, sizeof(mqstat));
-+
- 	if (u_mqstat) {
- 		if (get_compat_mq_attr(&mqstat, u_mqstat) ||
- 		    copy_to_user(p, &mqstat, sizeof(mqstat)))
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1188,6 +1188,7 @@ static int raid1_remove_disk(mddev_t *md
+ 		 * is not possible.
+ 		 */
+ 		if (!test_bit(Faulty, &rdev->flags) &&
++		    !mddev->recovery_disabled &&
+ 		    mddev->degraded < conf->raid_disks) {
+ 			err = -EBUSY;
+ 			goto abort;
 
 
