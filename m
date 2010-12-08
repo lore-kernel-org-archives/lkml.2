@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab0LHOv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 09:51:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51577 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab0LHOv4 (ORCPT
+	id S1755442Ab0LHO73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 09:59:29 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:44727 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755424Ab0LHO72 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 09:51:56 -0500
-Date: Wed, 8 Dec 2010 15:50:37 +0100
-From: Christian Glindkamp <christian.glindkamp@taskit.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Igor Plyatov <plyatov@gmail.com>, linux@arm.linux.org.uk,
-        costa.antonior@gmail.com, linux-kernel@vger.kernel.org,
-        Ryan Mallon <ryan@bluewatersys.com>, plagnioj@jcrosoft.com,
-        linux@maxim.org.za, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] mach-at91: Support for gms board added
-Message-ID: <20101208145037.GA16435@taskit.de>
-References: <1291732927-9429-1-git-send-email-plyatov@gmail.com>
- <4CFE90CA.9050004@bluewatersys.com>
- <4CFF47A0.8010208@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CFF47A0.8010208@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:IUKE6No5OZ5822CbMBSfUQOkCo69oii4ZVea7pSDzDO
- /ZCQpW7V0CLPj5/Wc2/uGiDfANsiBJApb5iXbSCb/FKuyI9MS1
- /mxIODivyK4j18fOfRv+DVHGRppnF28PYeHJW/n05s4IDbmkYw
- 1m+TFF7t9x1IY6I4f1kKS004WSJQVOFE6gkG99h3DmXTstwdVP
- vR6m5YVdsFXX6LCVvuphw==
+	Wed, 8 Dec 2010 09:59:28 -0500
+Subject: Re: perf hw  in kexeced kernel broken in tip
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+In-Reply-To: <1291818005.28378.38.camel@laptop>
+References: <1291232292.32004.1969.camel@laptop>
+	 <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop>
+	 <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop>
+	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
+	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
+	 <1291764620.2032.1293.camel@laptop>  <20101208140103.GM21786@redhat.com>
+	 <1291818005.28378.38.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Dec 2010 15:59:16 +0100
+Message-ID: <1291820356.28378.83.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-08 09:53, Nicolas Ferre wrote:
-> Hi Igor,
-> 
-> Le 07/12/2010 20:53, Ryan Mallon :
-> > On 12/08/2010 03:42 AM, Igor Plyatov wrote:
-> >> * The gms is a board from GeoSIG Ltd company.
-> >>   It is based on the Stamp9G20 module from Taskit company.
-> >> * This is a second version of the patch with adjustments according
-> >>   to comments from Ryan Mallon.
-> >> * This patch made for Linux 2.6.37-rc5.
-> 
-> First thank you for submitting this board support.
-> 
-> >> Signed-off-by: Igor Plyatov <plyatov@gmail.com>
-> >> ---
-> 
-> [..]
-> 
-> > Couple more comments below.
-> > Looking at this a bit more closely, the Stamp9G20 is a system on module
-> > (SoM) board. The MACH_STAMP9G20 option supports the Stamp9G20 on
-> > taskits's evaluation board and the MACH_PCONTROL_G20 option supports it
-> > on the PControl carrier board. There is a reasonable amount of code
-> > replication in each of the board files for the UARTs, NAND, MMC, etc.
-> > 
-> > Would it be better to have MACH_STAMPG20/board-stamp-9g20.c contain the
-> > core support for the Stamp9G20 module and then each of the carrier board
-> > files contain only the setup/devices found on the carrier board?
-> 
-> I have exactly the same feeling as Ryan. We should make sure 
-> to factorize as much code as possible for maintenance reasons.
-> 
-> If you need to distinguish between board features, you can 
-> pass information in system_rev as implemented in this 
-> board merging commit:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=a6e016f19d393fbe4e040bee8155b03b840fa689
-> 
+On Wed, 2010-12-08 at 15:20 +0100, Peter Zijlstra wrote:
 
-I don't think system_rev is such a good idea for carrier boards from
-different vendors. Somebody would have to control the assigned numbers.
+> > I wonder if you should reverse these checks.  If the bios has the perf
+> > counter enabled, there might be a high chance that it fails the first
+> > check and never gets to the actually bios checks.
+> 
+> Ah, good point. 
 
-This is what I would do:
-1. Refactor board-stamp9g20.c have three board init functions:
-- portuxg20_board_init for PortuxG20 SBC (MACH_PORTUXG20)
+Something like so..
 
-- stamp9g20_board_init only containing the functions used on the
-  Stamp9G20 alone
+---
+Subject: perf, x86: Detect broken BIOSes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed Dec 08 15:56:23 CET 2010
 
-- stamp9g20evb_board_init calling stamp9g20_board_init and adding
-  functionality of the evaluation board (MACH_STAMP9G20)
+Some BIOSes use PMU resources, this is a bug.
 
-2. Modify board-pcontrol-g20.c to use stamp9g20_board_init
+Try to detect this, warn about it, and further refuse to touch the
+PMU ourselves.
 
-This would still duplicate the UART config (there is not much to share,
-only the DBGU would be configured on all boards), but share NAND, MMC,
-1-wire. Everything else can't be shared as it is carrier board specific.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
+@@ -375,15 +375,51 @@ static void release_pmc_hardware(void) {
+ static bool check_hw_exists(void)
+ {
+ 	u64 val, val_new = 0;
+-	int ret = 0;
++	int i, reg, ret = 0;
+ 
++	/*
++	 * Check to see if the BIOS enabled any of the counters, if so
++	 * complain and bail.
++	 */
++	for (i = 0; i < x86_pmu.num_counters; i++) {
++		reg = x86_pmu.eventsel + i;
++		ret = rdmsrl_safe(reg, &val);
++		if (ret)
++			goto msr_fail;
++		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
++			goto bios_fail;
++	}
++
++	for (i = 0; i < x86_pmu.num_counters_fixed; i++) {
++		reg = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
++		ret = rdmsrl_safe(reg, &val);
++		if (ret)
++			goto msr_fail;
++		if (val & (0x03 << i*4))
++			goto bios_fail;
++	}
++
++	/*
++	 * Now write a value and read it back to see if it matches,
++	 * this is needed to detect certain hardware emulators (qemu/kvm)
++	 * that don't trap on the MSR access and always return 0s.
++	 */
+ 	val = 0xabcdUL;
+-	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
++	ret = checking_wrmsrl(x86_pmu.perfctr, val);
+ 	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
+ 	if (ret || val != val_new)
+-		return false;
++		goto msr_fail;
+ 
+ 	return true;
++
++bios_fail:
++	printk(KERN_CONT "Broken BIOS detected, software events only.\n");
++	printk(KERN_ERR FW_BUG "invalid MSR: %x=%Lx\n", reg, val);
++	return false;
++
++msr_fail:
++	printk(KERN_CONT "Broken PMU hardware detected, software events only.\n");
++	return false;
+ }
+ 
+ static void reserve_ds_buffers(void);
+@@ -1378,10 +1414,8 @@ int __init init_hw_perf_events(void)
+ 	pmu_check_apic();
+ 
+ 	/* sanity check that the hardware exists or is emulated */
+-	if (!check_hw_exists()) {
+-		pr_cont("Broken PMU hardware detected, software events only.\n");
++	if (!check_hw_exists())
+ 		return 0;
+-	}
+ 
+ 	pr_cont("%s PMU driver.\n", x86_pmu.name);
+ 
 
-The gms board would then have to have its own machine number and call
-stamp9g20_board_init.
-
-Kind regards,
-Christian Glindkamp
