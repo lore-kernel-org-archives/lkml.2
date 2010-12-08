@@ -1,101 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab0LHEhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:37:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:8731 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab0LHEhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:37:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,314,1288594800"; 
-   d="scan'208";a="634209190"
-Date: Wed, 8 Dec 2010 12:37:46 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] writeback: safety margin for bdi stat error
-Message-ID: <20101208043746.GA15357@localhost>
-References: <20101205064430.GA15027@localhost>
- <20101207165111.d79735c1.akpm@linux-foundation.org>
- <20101208043004.GB15322@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101208043004.GB15322@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753056Ab0LHEi5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:38:57 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:12999 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab0LHEiz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 23:38:55 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65700305"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>
+Subject: [PATCHv3 1/4] ARM: Translate delay.S into (mostly) C
+Date: Tue,  7 Dec 2010 20:38:45 -0800
+Message-Id: <1291783128-27520-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3.398.g0b0cd
+In-Reply-To: <1291783128-27520-1-git-send-email-sboyd@codeaurora.org>
+References: <1291783128-27520-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a simple dd test on a 8p system with "mem=256M", I find all light
-dirtier tasks on the root fs are get heavily throttled. That happens
-because the global limit is exceeded. It's unbelievable at first sight,
-because the test fs doing the heavy dd is under its bdi limit.  After
-doing some tracing, it's discovered that
+We want to allow machines to override the __delay() implementation
+at runtime so they can use a timer based __delay() routine. It's
+easier to do this using C, so let's write udelay and friends in C.
 
-	bdi_dirty < bdi_dirty_limit() < global_dirty_limit() < nr_dirty
+We lose the #if 0 code, which according to Russell is used "to
+make the delay loop more stable and predictable on older CPUs"
+(see http://article.gmane.org/gmane.linux.kernel/888867 for more
+info). We shouldn't be too worried though, since we'll soon add
+functionality allowing a machine to set the __delay() loop
+themselves, thus allowing machines to resurrect the commented out
+code should they need it.
 
-So the root cause is, the bdi_dirty is well under the global nr_dirty
-due to accounting errors. This can be fixed by using bdi_stat_sum(),
-however that's costly on large NUMA machines. So do a less costly fix
-of lowering the bdi limit, so that the accounting errors won't lead to
-the absurd situation "global limit exceeded but bdi limit not exceeded".
+Nico expressed concern that fixed lpj cmdlines will break due to
+compiler optimizations. That doesn't seem to be the case since
+before and after this patch I get the same lpj value when running
+my CPU at 19.2 MHz. That should be sufficiently slow enough to
+cover any machine running Linux.
 
-This provides guarantee when there is only 1 heavily dirtied bdi, and
-works by opportunity for 2+ heavy dirtied bdi's (hopefully they won't
-reach big error _and_ exceed their bdi limit at the same time).
-
-Acked-by: Rik van Riel <riel@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 ---
+ arch/arm/include/asm/delay.h |    2 +-
+ arch/arm/kernel/armksyms.c   |    4 --
+ arch/arm/lib/delay.S         |   65 ------------------------------------------
+ arch/arm/lib/delay.c         |   56 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 57 insertions(+), 70 deletions(-)
+ delete mode 100644 arch/arm/lib/delay.S
+ create mode 100644 arch/arm/lib/delay.c
 
-v2: add kernel doc and correct the terms in changelog.
-
- mm/page-writeback.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2010-12-08 12:26:16.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-08 12:30:45.000000000 +0800
-@@ -434,10 +434,16 @@ void global_dirty_limits(unsigned long *
- 	*pdirty = dirty;
- }
+diff --git a/arch/arm/include/asm/delay.h b/arch/arm/include/asm/delay.h
+index b2deda1..ccc5ed5 100644
+--- a/arch/arm/include/asm/delay.h
++++ b/arch/arm/include/asm/delay.h
+@@ -8,7 +8,7 @@
  
+ #include <asm/param.h>	/* HZ */
+ 
+-extern void __delay(int loops);
++extern void __delay(unsigned long loops);
+ 
+ /*
+  * This function intentionally does not exist; if you see references to
+diff --git a/arch/arm/kernel/armksyms.c b/arch/arm/kernel/armksyms.c
+index e5e1e538..220dce6 100644
+--- a/arch/arm/kernel/armksyms.c
++++ b/arch/arm/kernel/armksyms.c
+@@ -52,10 +52,6 @@ extern void fpundefinstr(void);
+ 
+ EXPORT_SYMBOL(__backtrace);
+ 
+-	/* platform dependent support */
+-EXPORT_SYMBOL(__udelay);
+-EXPORT_SYMBOL(__const_udelay);
+-
+ 	/* networking */
+ EXPORT_SYMBOL(csum_partial);
+ EXPORT_SYMBOL(csum_partial_copy_from_user);
+diff --git a/arch/arm/lib/delay.S b/arch/arm/lib/delay.S
+deleted file mode 100644
+index 8d6a876..0000000
+--- a/arch/arm/lib/delay.S
++++ /dev/null
+@@ -1,65 +0,0 @@
 -/*
-+/**
-  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
-+ * @bdi: the backing_dev_info to query
-+ * @dirty: global dirty limit in pages
-+ * @dirty_pages: current number of dirty pages
-  *
-- * Allocate high/low dirty limits to fast/slow devices, in order to prevent
-+ * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
-+ * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
+- *  linux/arch/arm/lib/delay.S
+- *
+- *  Copyright (C) 1995, 1996 Russell King
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/linkage.h>
+-#include <asm/assembler.h>
+-#include <asm/param.h>
+-		.text
+-
+-.LC0:		.word	loops_per_jiffy
+-.LC1:		.word	(2199023*HZ)>>11
+-
+-/*
+- * r0  <= 2000
+- * lpj <= 0x01ffffff (max. 3355 bogomips)
+- * HZ  <= 1000
+- */
+-
+-ENTRY(__udelay)
+-		ldr	r2, .LC1
+-		mul	r0, r2, r0
+-ENTRY(__const_udelay)				@ 0 <= r0 <= 0x7fffff06
+-		ldr	r2, .LC0
+-		ldr	r2, [r2]		@ max = 0x01ffffff
+-		mov	r0, r0, lsr #14		@ max = 0x0001ffff
+-		mov	r2, r2, lsr #10		@ max = 0x00007fff
+-		mul	r0, r2, r0		@ max = 2^32-1
+-		movs	r0, r0, lsr #6
+-		moveq	pc, lr
+-
+-/*
+- * loops = r0 * HZ * loops_per_jiffy / 1000000
+- *
+- * Oh, if only we had a cycle counter...
+- */
+-
+-@ Delay routine
+-ENTRY(__delay)
+-		subs	r0, r0, #1
+-#if 0
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-		movls	pc, lr
+-		subs	r0, r0, #1
+-#endif
+-		bhi	__delay
+-		mov	pc, lr
+-ENDPROC(__udelay)
+-ENDPROC(__const_udelay)
+-ENDPROC(__delay)
+diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
+new file mode 100644
+index 0000000..f92aca0
+--- /dev/null
++++ b/arch/arm/lib/delay.c
+@@ -0,0 +1,56 @@
++/*
++ *  Originally from linux/arch/arm/lib/delay.S
 + *
-+ * It allocates high/low dirty limits to fast/slow devices, in order to prevent
-  * - starving fast devices
-  * - piling up dirty pages (that will take long time to sync) on slow devices
-  *
-@@ -458,6 +464,14 @@ unsigned long bdi_dirty_limit(struct bac
- 	long numerator, denominator;
- 
- 	/*
-+	 * try to prevent "global limit exceeded but bdi limit not exceeded"
-+	 */
-+	if (likely(dirty > bdi_stat_error(bdi)))
-+		dirty -= bdi_stat_error(bdi);
-+	else
-+		return 0;
++ *  Copyright (C) 1995, 1996 Russell King
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/module.h>
++#include <linux/delay.h>
 +
-+	/*
- 	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
- 	 */
- 	dirty -= min(dirty / 128, 32768ULL >> (PAGE_SHIFT-10));
++/*
++ * loops = usecs * HZ * loops_per_jiffy / 1000000
++ *
++ * Oh, if only we had a cycle counter...
++ */
++void __delay(unsigned long loops)
++{
++	asm volatile(
++	"1:	subs %0, %0, #1 \n"
++	"	bhi 1b		\n"
++	: /* No output */
++	: "r" (loops)
++	);
++}
++EXPORT_SYMBOL(__delay);
++
++/*
++ * 0 <= xloops <= 0x7fffff06
++ * loops_per_jiffy <= 0x01ffffff (max. 3355 bogomips)
++ */
++void __const_udelay(unsigned long xloops)
++{
++	unsigned long lpj;
++	unsigned long loops;
++
++	xloops >>= 14;			/* max = 0x01ffffff */
++	lpj = loops_per_jiffy >> 10;	/* max = 0x0001ffff */
++	loops = lpj * xloops;		/* max = 0x00007fff */
++	loops >>= 6;			/* max = 2^32-1 */
++
++	if (likely(loops))
++		__delay(loops);
++}
++EXPORT_SYMBOL(__const_udelay);
++
++/*
++ * usecs  <= 2000
++ * HZ  <= 1000
++ */
++void __udelay(unsigned long usecs)
++{
++	__const_udelay(usecs * ((2199023*HZ)>>11));
++}
++EXPORT_SYMBOL(__udelay);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
