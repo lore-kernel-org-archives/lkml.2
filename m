@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab0LHAe3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:34:29 -0500
-Received: from kroah.org ([198.145.64.141]:54765 "EHLO coco.kroah.org"
+	id S1755699Ab0LHAky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:40:54 -0500
+Received: from kroah.org ([198.145.64.141]:54760 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928Ab0LHAe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:28 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:41 2010
-Message-Id: <20101208000641.012999481@clark.site>
+	id S1754940Ab0LHAe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:27 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
+Message-Id: <20101208000640.912118071@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:14 -0800
+Date: Tue, 07 Dec 2010 16:04:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [15/44] libata: fix NULL sdev dereference race in atapi_qc_complete()
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [14/44] bio: take care not overflow page count when mapping/copying user data
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Jens Axboe <jaxboe@fusionio.com>
 
-commit 2a5f07b5ec098edc69e05fdd2f35d3fbb1235723 upstream.
+commit cb4644cac4a2797afc847e6c92736664d4b0ea34 upstream.
 
-SCSI commands may be issued between __scsi_add_device() and dev->sdev
-assignment, so it's unsafe for ata_qc_complete() to dereference
-dev->sdev->locked without checking whether it's NULL or not.  Fix it.
+If the iovec is being set up in a way that causes uaddr + PAGE_SIZE
+to overflow, we could end up attempting to map a huge number of
+pages. Check for this invalid input type.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/libata-scsi.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/bio.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -2371,8 +2371,11 @@ static void atapi_qc_complete(struct ata
- 		 *
- 		 * If door lock fails, always clear sdev->locked to
- 		 * avoid this infinite loop.
-+		 *
-+		 * This may happen before SCSI scan is complete.  Make
-+		 * sure qc->dev->sdev isn't NULL before dereferencing.
- 		 */
--		if (qc->cdb[0] == ALLOW_MEDIUM_REMOVAL)
-+		if (qc->cdb[0] == ALLOW_MEDIUM_REMOVAL && qc->dev->sdev)
- 			qc->dev->sdev->locked = 0;
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -593,6 +593,12 @@ struct bio *bio_copy_user_iov(struct req
+ 		end = (uaddr + iov[i].iov_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		start = uaddr >> PAGE_SHIFT;
  
- 		qc->scsicmd->result = SAM_STAT_CHECK_CONDITION;
++		/*
++		 * Overflow, abort
++		 */
++		if (end < start)
++			return ERR_PTR(-EINVAL);
++
+ 		nr_pages += end - start;
+ 		len += iov[i].iov_len;
+ 	}
+@@ -691,6 +697,12 @@ static struct bio *__bio_map_user_iov(st
+ 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 
++		/*
++		 * Overflow, abort
++		 */
++		if (end < start)
++			return ERR_PTR(-EINVAL);
++
+ 		nr_pages += end - start;
+ 		/*
+ 		 * buffer must be aligned to at least hardsector size for now
+@@ -718,7 +730,7 @@ static struct bio *__bio_map_user_iov(st
+ 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 		const int local_nr_pages = end - start;
+ 		const int page_limit = cur_page + local_nr_pages;
+-		
++
+ 		ret = get_user_pages_fast(uaddr, local_nr_pages,
+ 				write_to_vm, &pages[cur_page]);
+ 		if (ret < local_nr_pages) {
 
 
