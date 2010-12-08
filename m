@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab0LHBkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:40:17 -0500
-Received: from kroah.org ([198.145.64.141]:48873 "EHLO coco.kroah.org"
+	id S1758014Ab0LHBkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:40:51 -0500
+Received: from kroah.org ([198.145.64.141]:48851 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757172Ab0LHBAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:50 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:32 2010
-Message-Id: <20101208005732.237998368@clark.site>
+	id S1757109Ab0LHBAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:44 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:31 2010
+Message-Id: <20101208005731.847355029@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:06 -0800
+Date: Tue, 07 Dec 2010 16:58:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [109/289] hwmon: (lm85) Fix ADT7468 frequency table
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, Yinghai Lu <yinghai@kernel.org>,
+        Corey Minyard <cminyard@mvista.com>
+Subject: [105/289] ipmi: proper spinlock initialization
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,30 +27,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit fa7a5797e57d2ed71f9a6fb44f0ae42c2d7b74b7 upstream.
+commit de5e2ddf9bb3ce7b643223b9b0718062254f302f upstream.
 
-The ADT7468 uses the same frequency table as the ADT7463.
+Unloading ipmi module can trigger following error.  (if
+CONFIG_DEBUG_SPINLOCK=y)
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Darrick J. Wong <djwong@us.ibm.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+[ 9633.779590] BUG: spinlock bad magic on CPU#1, rmmod/7170
+[ 9633.779606]  lock: f41f5414, .magic: 00000000, .owner:
+<none>/-1, .owner_cpu: 0
+[ 9633.779626] Pid: 7170, comm: rmmod Not tainted
+2.6.36-rc7-11474-gb71eb1e-dirty #328
+[ 9633.779644] Call Trace:
+[ 9633.779657]  [<c13921cc>] ? printk+0x18/0x1c
+[ 9633.779672]  [<c11a1f33>] spin_bug+0xa3/0xf0
+[ 9633.779685]  [<c11a1ffd>] do_raw_spin_lock+0x7d/0x160
+[ 9633.779702]  [<c1131537>] ? release_sysfs_dirent+0x47/0xb0
+[ 9633.779718]  [<c1131b78>] ? sysfs_addrm_finish+0xa8/0xd0
+[ 9633.779734]  [<c1394bac>] _raw_spin_lock_irqsave+0xc/0x20
+[ 9633.779752]  [<f99d93da>] cleanup_one_si+0x6a/0x200 [ipmi_si]
+[ 9633.779768]  [<c11305b2>] ? sysfs_hash_and_remove+0x72/0x80
+[ 9633.779786]  [<f99dcf26>] ipmi_pnp_remove+0xd/0xf [ipmi_si]
+[ 9633.779802]  [<c11f622b>] pnp_device_remove+0x1b/0x40
+
+Fix this by initializing spinlocks in a smi_info_alloc() helper function,
+right after memory allocation and clearing.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David Miller <davem@davemloft.net>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/lm85.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/ipmi/ipmi_si_intf.c |   30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
---- a/drivers/hwmon/lm85.c
-+++ b/drivers/hwmon/lm85.c
-@@ -1259,6 +1259,7 @@ static int lm85_probe(struct i2c_client
- 	switch (data->type) {
- 	case adm1027:
- 	case adt7463:
-+	case adt7468:
- 	case emc6d100:
- 	case emc6d102:
- 		data->freq_map = adm1027_freq_map;
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -1665,6 +1665,17 @@ static int check_hotmod_int_op(const cha
+ 	return 0;
+ }
+ 
++static struct smi_info *smi_info_alloc(void)
++{
++	struct smi_info *info = kzalloc(sizeof(*info), GFP_KERNEL);
++
++	if (info) {
++		spin_lock_init(&info->si_lock);
++		spin_lock_init(&info->msg_lock);
++	}
++	return info;
++}
++
+ static int hotmod_handler(const char *val, struct kernel_param *kp)
+ {
+ 	char *str = kstrdup(val, GFP_KERNEL);
+@@ -1779,7 +1790,7 @@ static int hotmod_handler(const char *va
+ 		}
+ 
+ 		if (op == HM_ADD) {
+-			info = kzalloc(sizeof(*info), GFP_KERNEL);
++			info = smi_info_alloc();
+ 			if (!info) {
+ 				rv = -ENOMEM;
+ 				goto out;
+@@ -1844,7 +1855,7 @@ static __devinit void hardcode_find_bmc(
+ 		if (!ports[i] && !addrs[i])
+ 			continue;
+ 
+-		info = kzalloc(sizeof(*info), GFP_KERNEL);
++		info = smi_info_alloc();
+ 		if (!info)
+ 			return;
+ 
+@@ -2028,7 +2039,7 @@ static __devinit int try_init_spmi(struc
+ 		return -ENODEV;
+ 	}
+ 
+-	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	info = smi_info_alloc();
+ 	if (!info) {
+ 		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
+ 		return -ENOMEM;
+@@ -2138,7 +2149,7 @@ static int __devinit ipmi_pnp_probe(stru
+ 	if (!acpi_dev)
+ 		return -ENODEV;
+ 
+-	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	info = smi_info_alloc();
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+@@ -2319,7 +2330,7 @@ static __devinit void try_init_dmi(struc
+ {
+ 	struct smi_info *info;
+ 
+-	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	info = smi_info_alloc();
+ 	if (!info) {
+ 		printk(KERN_ERR PFX "Could not allocate SI data\n");
+ 		return;
+@@ -2426,7 +2437,7 @@ static int __devinit ipmi_pci_probe(stru
+ 	int class_type = pdev->class & PCI_ERMC_CLASSCODE_TYPE_MASK;
+ 	struct smi_info *info;
+ 
+-	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	info = smi_info_alloc();
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+@@ -2567,7 +2578,7 @@ static int __devinit ipmi_of_probe(struc
+ 		return -EINVAL;
+ 	}
+ 
+-	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	info = smi_info_alloc();
+ 
+ 	if (!info) {
+ 		dev_err(&dev->dev,
+@@ -3014,7 +3025,7 @@ static __devinit void default_find_bmc(v
+ 		if (check_legacy_ioport(ipmi_defaults[i].port))
+ 			continue;
+ #endif
+-		info = kzalloc(sizeof(*info), GFP_KERNEL);
++		info = smi_info_alloc();
+ 		if (!info)
+ 			return;
+ 
+@@ -3139,9 +3150,6 @@ static int try_smi_init(struct smi_info
+ 		goto out_err;
+ 	}
+ 
+-	spin_lock_init(&(new_smi->si_lock));
+-	spin_lock_init(&(new_smi->msg_lock));
+-
+ 	/* Do low-level detection first. */
+ 	if (new_smi->handlers->detect(new_smi->si_sm)) {
+ 		if (new_smi->addr_source)
 
 
