@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab0LHA5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:57:50 -0500
-Received: from kroah.org ([198.145.64.141]:58490 "EHLO coco.kroah.org"
+	id S1756722Ab0LHA6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:58:23 -0500
+Received: from kroah.org ([198.145.64.141]:58480 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756272Ab0LHArm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:42 -0500
+	id S1756257Ab0LHArl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:41 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:32 2010
-Message-Id: <20101208004432.286942599@clark.site>
+Message-Id: <20101208004432.089180519@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:26 -0800
+Date: Tue, 07 Dec 2010 16:44:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [080/127] acpi-cpufreq: fix a memleak when unloading driver
+        Michael Stuermer <ms@mallorn.de>
+Subject: [078/127] USB: ftdi_sio: Add ID for RT Systems USB-29B radio cable
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Michael Stuermer <ms@mallorn.de>
 
-commit dab5fff14df2cd16eb1ad4c02e83915e1063fece upstream.
+commit 28942bb6a9dd4e2ed793675e515cfb8297ed355b upstream.
 
-We didn't free per_cpu(acfreq_data, cpu)->freq_table
-when acpi_freq driver is unloaded.
+Another variant of the RT Systems programming cable for ham radios.
 
-Resulting in the following messages in /sys/kernel/debug/kmemleak:
-
-unreferenced object 0xf6450e80 (size 64):
-  comm "modprobe", pid 1066, jiffies 4294677317 (age 19290.453s)
-  hex dump (first 32 bytes):
-    00 00 00 00 e8 a2 24 00 01 00 00 00 00 9f 24 00  ......$.......$.
-    02 00 00 00 00 6a 18 00 03 00 00 00 00 35 0c 00  .....j.......5..
-  backtrace:
-    [<c123ba97>] kmemleak_alloc+0x27/0x50
-    [<c109f96f>] __kmalloc+0xcf/0x110
-    [<f9da97ee>] acpi_cpufreq_cpu_init+0x1ee/0x4e4 [acpi_cpufreq]
-    [<c11cd8d2>] cpufreq_add_dev+0x142/0x3a0
-    [<c11920b7>] sysdev_driver_register+0x97/0x110
-    [<c11cce56>] cpufreq_register_driver+0x86/0x140
-    [<f9dad080>] 0xf9dad080
-    [<c1001130>] do_one_initcall+0x30/0x160
-    [<c10626e9>] sys_init_module+0x99/0x1e0
-    [<c1002d97>] sysenter_do_call+0x12/0x26
-    [<ffffffff>] 0xffffffff
-
-https://bugzilla.kernel.org/show_bug.cgi?id=15807#c21
-
-Tested-by: Toralf Forster <toralf.foerster@gmx.de>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Michael Stuermer <ms@mallorn.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-@@ -741,6 +741,7 @@ static int acpi_cpufreq_cpu_exit(struct
- 		per_cpu(drv_data, policy->cpu) = NULL;
- 		acpi_processor_unregister_performance(data->acpi_data,
- 						      policy->cpu);
-+		kfree(data->freq_table);
- 		kfree(data);
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -702,6 +702,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -728,6 +728,7 @@
+  */
+ #define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+ #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
++#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
  
+ /*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
 
 
