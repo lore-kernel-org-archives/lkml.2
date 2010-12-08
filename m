@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0LHH4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:56:11 -0500
-Received: from webbox687.server-home.net ([195.149.74.151]:39616 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab0LHH4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:56:09 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: linux-kernel@vger.kernel.org
-Subject: detached sleepable task during initcall
-Date: Wed, 8 Dec 2010 08:55:41 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34-gentoo-r12; KDE/4.4.5; x86_64; ; )
+	id S1753949Ab0LHH7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:59:14 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35831 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544Ab0LHH7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 02:59:13 -0500
+Date: Wed, 8 Dec 2010 08:58:54 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] sched/printk fixes
+Message-ID: <20101208075854.GA23179@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012080856.06972.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Linus,
 
-we need to run a platform dependant function changing GPIOs which need a 
-specific time between those changes. Actually it is the platform set_power 
-function used by platform_lcd_probe. This itself is no problem. But the 
-currently used msleeps on about 250ms summarized is really much while the 
-system idles.
-We'd like to avoid idle during that msleeps. So, we used a work_queue in that 
-set_power function. But unforturnatly do_initcalls calls flush_scheduled_work 
-at the end. So the system will still idle until this work_queue has finished.
-What can we use to call the set_power function asynchronously and sleepable 
-while not waiting during system startup on this function to be finished? The 
-set_power just enabled the lcd power and nothing need to wait on that.
+Please pull the latest sched-fixes-for-linus git tree from:
 
-Regards,
-Alexander
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Heiko Carstens (2):
+      printk: Fix wake_up_klogd() vs cpu hotplug
+      nohz: Fix printk_needs_cpu() return value on offline cpus
+
+
+ kernel/printk.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 9a2264f..a23315d 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1082,13 +1082,15 @@ void printk_tick(void)
+ 
+ int printk_needs_cpu(int cpu)
+ {
++	if (unlikely(cpu_is_offline(cpu)))
++		printk_tick();
+ 	return per_cpu(printk_pending, cpu);
+ }
+ 
+ void wake_up_klogd(void)
+ {
+ 	if (waitqueue_active(&log_wait))
+-		__raw_get_cpu_var(printk_pending) = 1;
++		this_cpu_write(printk_pending, 1);
+ }
+ 
+ /**
