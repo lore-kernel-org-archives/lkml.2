@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab0LHBIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:08:01 -0500
-Received: from kroah.org ([198.145.64.141]:33896 "EHLO coco.kroah.org"
+	id S932881Ab0LHBEE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:04:04 -0500
+Received: from kroah.org ([198.145.64.141]:33846 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932893Ab0LHBEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:04:06 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:48 2010
-Message-Id: <20101208005748.850592793@clark.site>
+	id S932854Ab0LHBD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:56 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:47 2010
+Message-Id: <20101208005747.836255393@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:51 -0800
+Date: Tue, 07 Dec 2010 17:00:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>, Thomas Meyer <thomas@m3y3r.de>
-Subject: [274/289] ext4: fix NULL pointer dereference in print_daily_error_info()
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [264/289] Input: i8042 - add Sony VAIO VPCZ122GX to nomux list
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit a1c6c5698d53db4c47a25c3a8d11731a4d7b8370 upstream.
+[Note that the mainline will not have this particular fix but rather
+will blacklist entire VAIO line based off DMI board name. For stable
+I am being a bit more cautious and blacklist one particular product.]
 
-Fix NULL pointer dereference in print_daily_error_info, when
-called on unmounted fs (EXT4_SB(sb) returns NULL), by removing error
-reporting timer in ext4_put_super.
+Trying to query/activate active multiplexing mode on this VAIO makes
+both keyboard and touchpad inoperable. Futher kernels will blacklist
+entire VAIO line, however here we blacklist just one particular model.
 
-Google-Bug-Id: 3017663
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Thomas Meyer <thomas@m3y3r.de>
+Reported-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -719,6 +719,7 @@ static void ext4_put_super(struct super_
- 			ext4_abort(sb, "Couldn't clean up the journal");
- 	}
- 
-+	del_timer(&sbi->s_err_report);
- 	ext4_release_system_zone(sb);
- 	ext4_mb_release(sb);
- 	ext4_ext_release(sb);
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -333,6 +333,13 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Sony Vaio VPCZ122GX */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "VPCZ122GX"),
++		},
++	},
++	{
+ 		/* Sony Vaio FS-115b */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 
 
