@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab0LHIMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:12:05 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38210 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab0LHIMD (ORCPT
+	id S1754242Ab0LHINh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 03:13:37 -0500
+Received: from mail-iw0-f172.google.com ([209.85.214.172]:62271 "EHLO
+	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145Ab0LHINg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:12:03 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4CFF3DA4.5060705@jp.fujitsu.com>
-Date: Wed, 08 Dec 2010 17:11:16 +0900
-From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 8 Dec 2010 03:13:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=a/D7l6eNWTaAJrLcIJrpaER/pRSQ/CR5rdHqJ9CE+NMGvnnTjci/ZkhAJCB3/TUYmQ
+         xhHcUgLbC+IAZgvRTqe7TD/MuMcG3lWy5hhosJicZ+ALWqqSZm6f0kWyvFw0Ssekf7yL
+         o2BbgdgAWdeVGzt/LvyHiJzCMeliwlIvzm1Lg=
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "jmarchan@redhat.com" <jmarchan@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
-References: <4CFCB08F.4010509@jp.fujitsu.com> <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com> <4CFDDFC3.2070107@jp.fujitsu.com> <4CFF34E7.2030401@fusionio.com> <4CFF3AD6.6010904@jp.fujitsu.com> <4CFF3C86.2070504@fusionio.com>
-In-Reply-To: <4CFF3C86.2070504@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101208165944.174D.A69D9226@jp.fujitsu.com>
+References: <cover.1291568905.git.minchan.kim@gmail.com>
+	<dff7a42e5877b23a3cc3355743da4b7ef37299f8.1291568905.git.minchan.kim@gmail.com>
+	<20101208165944.174D.A69D9226@jp.fujitsu.com>
+Date: Wed, 8 Dec 2010 17:13:35 +0900
+Message-ID: <AANLkTik4mtr8T6PddQopi4cwWGRmJ+-utykgjywGoxj+@mail.gmail.com>
+Subject: Re: [PATCH v4 5/7] add profile information for invalidated page reclaim
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+Hi KOSAKI,
 
-(2010/12/08 17:06), Jens Axboe wrote:
->>>> I hit on another approach. Although it doesn'tprevent any merge as Linus
->>>> preferred, it can fix the problem anyway. In this idea, in_flight is
->>>> incremented and decremented for the partition which the request belonged
->>>> to in its creation. It has the following merits.
+On Wed, Dec 8, 2010 at 5:02 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> This patch adds profile information about invalidated page reclaim.
+>> It's just for profiling for test so it would be discard when the series
+>> are merged.
 >>
->> Revert is already finished. 2.6.37-rc-5 and latest stable kernel doesn't
->> contain Yasuaki's former logic.
->>
->> https://lkml.org/lkml/2010/10/24/118
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> Cc: Rik van Riel <riel@redhat.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> ---
+>>  include/linux/vmstat.h |    4 ++--
+>>  mm/swap.c              |    3 +++
+>>  mm/vmstat.c            |    3 +++
+>>  3 files changed, 8 insertions(+), 2 deletions(-)
 >
-> Yes I know, that is why I said:
+> Today, we have tracepoint. tracepoint has no overhead if it's unused.
+> but vmstat has a overhead even if unused.
 >
->>> I really would prefer if we fixed up the patchset we ended up reverting.
->>> At least that had a purpose with growing struct request, since we saved
->>> on doing the partition lookups.
->
-> That I prefer we fix that code up, since I think it's the best solution
-> to the problem.
->
+> Then, all new vmstat proposal should be described why you think it is
+> frequently used from administrators.
 
-I already postedit.
+It's just for easy gathering the data when Ben will test.
+I never want to merge it in upstream and even mmtom.
 
-https://lkml.org/lkml/2010/12/8/12
+If you don't like it for just testing, I am happy to change it with tracepoint.
 
-I think it is OK without mail subject :-)
-
-Thanks,
-Satoru
-
+Thanks.
+-- 
+Kind regards,
+Minchan Kim
