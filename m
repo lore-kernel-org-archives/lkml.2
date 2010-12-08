@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab0LHFFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 00:05:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58348 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab0LHFFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 00:05:49 -0500
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-From: James Bottomley <James.Bottomley@suse.de>
-To: Greg KH <greg@kroah.com>
-Cc: Luben Tuikov <ltuikov@yahoo.com>,
-        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org
-In-Reply-To: <20101208001202.GA26530@kroah.com>
-References: <732182.60247.qm@web31816.mail.mud.yahoo.com>
-	 <20101208001202.GA26530@kroah.com>
+	id S1751338Ab0LHFHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 00:07:12 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45599 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab0LHFHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 00:07:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=RwKIT+Y+e5GhBTFrNfHzEY+mxLxR903DHEJDO1FQQsNUE2O0C0QOQwFjnAxb62QVsI
+         pq+IV46/cWRsFIyhdsaXb0OlaK44nGbYCdFAudKwTO0/gLs6tK2Bi1XvUBHQjctpqKi6
+         Mhm7Jbvs2PFrxuLZXlk4FfgJzdMUB6DqhU2D4=
+Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+In-Reply-To: <1291782782.5324.54.camel@edumazet-laptop>
+References: <20101208000640.115606851@clark.site>
+	 <1291777422.26147.70.camel@zaphod>
+	 <1291782782.5324.54.camel@edumazet-laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Dec 2010 23:05:42 -0600
-Message-ID: <1291784742.24312.40.camel@mulgrave.site>
+Date: Wed, 08 Dec 2010 06:07:05 +0100
+Message-ID: <1291784825.5324.59.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-07 at 16:12 -0800, Greg KH wrote:
-> On Tue, Dec 07, 2010 at 04:02:26PM -0800, Luben Tuikov wrote:
-> > --- On Sun, 12/5/10, Luben Tuikov <ltuikov@yahoo.com> wrote:
-> > > --- On Wed, 11/24/10, Luben Tuikov
-> > > <ltuikov@yahoo.com>
-> > > wrote:
-> > > > 
-> > > > CBI/BBB isn't supposed to be, nor is designed to
-> > > support
-> > > > SAM-modern devices. So while REQUEST LUN /may/ work on
-> > > some
-> > > > devices which implement it in their firmware, it is
-> > > NOT a
-> > > > requirement for those devices as they are not required
-> > > to
-> > > > adhere to any SAM version. Those transport protocols
-> > > define
-> > > > a class-specific request to get the maximum LUN, and
-> > > another
-> > > > to reset the target port (instead of I_T Reset or LU
-> > > Reset).
-> > > > They also do not support SCSI Status completion of
-> > > the
-> > > > command, nor Autosense. They also do not provide TMFs.
-> > > They
-> > > > provide none of the SCSI transport protocol services
-> > > in
-> > > > support of the Execute Command procedure call. The
-> > > SCSI
-> > > > layer shouldn't be trying to guess their "SCSI
-> > > version", and
-> > > > or treat them as real SCSI devices sending REPORT
-> > > LUNs, etc.
-> > > > commands.
-> > > > 
-> > > > Newer, modern transport protocols over USB, are part
-> > > of
-> > > > SAM, and it is devices who connect via those protocols
-> > > that
-> > > > are being disadvantaged, due to the adoption
-> > > (assumption) of
-> > > > CBI/BBB well into the SCSI layer.
-> > > > 
-> > > > To this effect, the transport protocol can tell upper
-> > > > layers if the device is true SCSI (new usb transports
-> > > or
-> > > > other) or hybrid (usb-storage). In the former case,
-> > > the
-> > > > device is a SCSI device, in the latter, only basic
-> > > commands
-> > > > should be attempted.
-> > > > 
-> > > > This isn't to say that firmware for those devices
-> > > wouldn't
-> > > > be buggy. Of course it will, and most will probably
-> > > port
-> > > > their legacy FW over to the new SPTL, but the
-> > > protocol
-> > > > requirements are there by design (i.e. there is no
-> > > longer
-> > > > Get Max Lun class-specific request, the application
-> > > client
-> > > > has to send REPORT LUNS, and FW has to answer it) and
-> > > we
-> > > > have to accommodate that.
-> > > > 
-> > > > It is in this spirit that this patch doesn't change
-> > > wire
-> > > > behavior, but simply parses data returned by a
-> > > command
-> > > > already supported by older protocols.
-> > > 
-> > > Did anyone pick up this patch?
-> > 
-> > It's been over 6 weeks now that this patch's been in these mailing lists.
-> > Will anyone pick up this patch, or should I stop posting it every
-> > week? Please let me know--it's been posted here 6 times in the last 6
-> > weeks.
+Le mercredi 08 décembre 2010 à 05:33 +0100, Eric Dumazet a écrit :
+
+> By the way, anybody knows how I can emulate a memoryless node on a dual
+> node x86_64 machine (with memory present on both nodes) ?
 > 
-> James, this is all you.  Any thoughts?
+> 
 
-Well, not other than I've already said:  I think it looks OK, so I
-marked it for my merge window queue.  I'd still rather like USB people
-to confirm that the original reason why this was done (to prevent device
-crashes on the mode sense) is no longer an issue ... but it's only USB
-stuff, so suppose I'm OK with finding out in the field.
+this hack works for me :
 
-James
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index a35cb9d..1087333 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -261,6 +261,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	end = start + ma->length;
+ 	pxm = ma->proximity_domain;
+ 	node = setup_node(pxm);
++	node = 0;
+ 	if (node < 0) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
+ 		bad_srat();
+
+[    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x02 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x03 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x04 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x05 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x06 -> Node 0
+[    0.000000] SRAT: PXM 0 -> APIC 0x07 -> Node 0
+[    0.000000] SRAT: PXM 1 -> APIC 0x10 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x11 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x12 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x13 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x14 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x15 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x16 -> Node 1
+[    0.000000] SRAT: PXM 1 -> APIC 0x17 -> Node 1
+[    0.000000] SRAT: Node 0 PXM 0 0-80000000
+[    0.000000] SRAT: Node 0 PXM 1 80000000-e0000000
+[    0.000000] SRAT: Node 0 PXM 1 100000000-120000000
+[    0.000000] SRAT: Node 0 [0,80000000) + [80000000,e0000000) -> [0,e0000000)
+[    0.000000] SRAT: Node 0 [0,e0000000) + [100000000,120000000) -> [0,120000000)
+[    0.000000] NUMA: Using 63 for the hash shift.
 
 
