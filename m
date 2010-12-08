@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab0LHAev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:34:51 -0500
-Received: from kroah.org ([198.145.64.141]:54870 "EHLO coco.kroah.org"
+	id S1755576Ab0LHAhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:37:33 -0500
+Received: from kroah.org ([198.145.64.141]:54863 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755499Ab0LHAet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:49 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:43 2010
-Message-Id: <20101208000642.975564500@clark.site>
+	id S1755479Ab0LHAes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:48 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:42 2010
+Message-Id: <20101208000642.874563691@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:33 -0800
+Date: Tue, 07 Dec 2010 16:04:32 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        "David S. Miller" <davem@davemloft.net>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Willy Tarreau <w@1wt.eu>,
-        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>
-Subject: [34/44] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
+        Nagendra Singh Tomar <tomer_iisc@yahoo.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [33/44] net: Fix the condition passed to sk_wait_event()
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,88 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
 
-[ Problem was fixed differently upstream. -DaveM ]
+From: Nagendra Tomar <tomer_iisc@yahoo.com>
 
-On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
-sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
-maximized without overflowing.
+[ Upstream commit 482964e56e1320cb7952faa1932d8ecf59c4bf75 ]
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-sctp@vger.kernel.org
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
+This patch fixes the condition (3rd arg) passed to sk_wait_event() in
+sk_stream_wait_memory(). The incorrect check in sk_stream_wait_memory()
+causes the following soft lockup in tcp_sendmsg() when the global tcp
+memory pool has exhausted.
+
+>>> snip <<<
+
+localhost kernel: BUG: soft lockup - CPU#3 stuck for 11s! [sshd:6429]
+localhost kernel: CPU 3:
+localhost kernel: RIP: 0010:[sk_stream_wait_memory+0xcd/0x200]  [sk_stream_wait_memory+0xcd/0x200] sk_stream_wait_memory+0xcd/0x200
+localhost kernel:
+localhost kernel: Call Trace:
+localhost kernel:  [sk_stream_wait_memory+0x1b1/0x200] sk_stream_wait_memory+0x1b1/0x200
+localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
+localhost kernel:  [ipv6:tcp_sendmsg+0x6e6/0xe90] tcp_sendmsg+0x6e6/0xce0
+localhost kernel:  [sock_aio_write+0x126/0x140] sock_aio_write+0x126/0x140
+localhost kernel:  [xfs:do_sync_write+0xf1/0x130] do_sync_write+0xf1/0x130
+localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
+localhost kernel:  [hrtimer_start+0xe3/0x170] hrtimer_start+0xe3/0x170
+localhost kernel:  [vfs_write+0x185/0x190] vfs_write+0x185/0x190
+localhost kernel:  [sys_write+0x50/0x90] sys_write+0x50/0x90
+localhost kernel:  [system_call+0x7e/0x83] system_call+0x7e/0x83
+
+>>> snip <<<
+
+What is happening is, that the sk_wait_event() condition passed from
+sk_stream_wait_memory() evaluates to true for the case of tcp global memory
+exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
+which causes sk_wait_event() to *not* call schedule_timeout().
+Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
+This causes the caller to again try allocation, which again fails and again
+calls sk_stream_wait_memory(), and so on.
+
+[ Bug introduced by commit c1cbe4b7ad0bc4b1d98ea708a3fecb7362aa4088
+  ("[NET]: Avoid atomic xchg() for non-error case") -DaveM ]
+
+Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp.c      |    4 +++-
- net/ipv4/udp.c      |    4 +++-
- net/sctp/protocol.c |    4 +++-
- 3 files changed, 9 insertions(+), 3 deletions(-)
+ net/core/stream.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2754,12 +2754,14 @@ void __init tcp_init(void)
+--- a/net/core/stream.c
++++ b/net/core/stream.c
+@@ -139,10 +139,10 @@ int sk_stream_wait_memory(struct sock *s
  
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
--	 * memory, with a floor of 128 pages.
-+	 * memory, with a floor of 128 pages, and a ceiling that prevents an
-+	 * integer overflow.
- 	 */
- 	nr_pages = totalram_pages - totalhigh_pages;
- 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
- 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
- 	limit = max(limit, 128UL);
-+	limit = min(limit, INT_MAX * 4UL / 3 / 2);
- 	sysctl_tcp_mem[0] = limit / 4 * 3;
- 	sysctl_tcp_mem[1] = limit;
- 	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1722,11 +1722,13 @@ void __init udp_init(void)
+ 		set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+ 		sk->sk_write_pending++;
+-		sk_wait_event(sk, &current_timeo, !sk->sk_err &&
+-						  !(sk->sk_shutdown & SEND_SHUTDOWN) &&
+-						  sk_stream_memory_free(sk) &&
+-						  vm_wait);
++		sk_wait_event(sk, &current_timeo, sk->sk_err ||
++						  (sk->sk_shutdown & SEND_SHUTDOWN) ||
++						  (sk_stream_memory_free(sk) &&
++						  !vm_wait));
+ 		sk->sk_write_pending--;
  
- 	/* Set the pressure threshold up by the same strategy of TCP. It is a
- 	 * fraction of global memory that is up to 1/2 at 256 MB, decreasing
--	 * toward zero with the amount of memory, with a floor of 128 pages.
-+	 * toward zero with the amount of memory, with a floor of 128 pages,
-+	 * and a ceiling that prevents an integer overflow.
- 	 */
- 	limit = min(nr_all_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
- 	limit = (limit * (nr_all_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
- 	limit = max(limit, 128UL);
-+	limit = min(limit, INT_MAX * 4UL / 3 / 2);
- 	sysctl_udp_mem[0] = limit / 4 * 3;
- 	sysctl_udp_mem[1] = limit;
- 	sysctl_udp_mem[2] = sysctl_udp_mem[0] * 2;
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -1179,7 +1179,8 @@ SCTP_STATIC __init int sctp_init(void)
- 
- 	/* Set the pressure threshold to be a fraction of global memory that
- 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
--	 * memory, with a floor of 128 pages.
-+	 * memory, with a floor of 128 pages, and a ceiling that prevents an
-+	 * integer overflow.
- 	 * Note this initalizes the data in sctpv6_prot too
- 	 * Unabashedly stolen from tcp_init
- 	 */
-@@ -1187,6 +1188,7 @@ SCTP_STATIC __init int sctp_init(void)
- 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
- 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
- 	limit = max(limit, 128UL);
-+	limit = min(limit, INT_MAX * 4UL / 3 / 2);
- 	sysctl_sctp_mem[0] = limit / 4 * 3;
- 	sysctl_sctp_mem[1] = limit;
- 	sysctl_sctp_mem[2] = sysctl_sctp_mem[0] * 2;
+ 		if (vm_wait) {
 
 
