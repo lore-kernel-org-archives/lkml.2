@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab0LHCKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:10:43 -0500
-Received: from kroah.org ([198.145.64.141]:58343 "EHLO coco.kroah.org"
+	id S1758017Ab0LHCKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:10:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:25749 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab0LHArR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:17 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:29 2010
-Message-Id: <20101208004429.606985268@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:59 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [053/127] ALSA: hda: Use "alienware" model quirk for another SSID
-In-Reply-To: <20101208004456.GA23578@kroah.com>
+	id S1756198Ab0LHCKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 21:10:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,313,1288594800"; 
+   d="scan'208";a="634176598"
+Date: Wed, 8 Dec 2010 10:08:44 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
+ IRQ info
+Message-ID: <20101208100844.5ea77fc0@feng-i7>
+In-Reply-To: <4CFEE3A2.2050908@kernel.org>
+References: <1291349518-3502-1-git-send-email-feng.tang@intel.com>
+	<tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org>
+	<4CFD226C.60308@kernel.org>
+	<20101207133204.4d913c5a@feng-i7>
+	<alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6>
+	<4CFE8045.2030101@kernel.org>
+	<alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
+	<4CFEE2D3.6050107@kernel.org>
+	<4CFEE3A2.2050908@kernel.org>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Wed, 8 Dec 2010 09:47:14 +0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-------------------
+> >>
+> > 
+> > Maybe Feng could send you updated version with simpler function?
+> > 
+> 
+> also I prefer to keep save_mp_irq() instead of changing it to
+> mp_save_irq().
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+The reason I changed the name is many similar functions and global
+variables' name in io_apic.c start with "mp_", also using "mp_save_irq()"
+may indicate that this piece of code originates from MP parsing code :)
 
-commit 0defe09ca70daccdc83abd9c3c24cd89ae6a1141 upstream.
+Thanks,
+Feng
 
-BugLink: https://launchpad.net/bugs/683695
-
-The original reporter states that headphone jacks do not appear to
-work.  Upon inspecting his codec dump, and upon further testing, it is
-confirmed that the "alienware" model quirk is correct.
-
-Reported-and-tested-by: Cody Thierauf
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/pci/hda/patch_sigmatel.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1602,6 +1602,8 @@ static struct snd_pci_quirk stac92hd73xx
- static struct snd_pci_quirk stac92hd73xx_codec_id_cfg_tbl[] = {
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02a1,
- 		      "Alienware M17x", STAC_ALIENWARE_M17X),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x043a,
-+		      "Alienware M17x", STAC_ALIENWARE_M17X),
- 	{} /* terminator */
- };
- 
-
-
+> 
+> Thanks
+> 
+> 	Yinghai
