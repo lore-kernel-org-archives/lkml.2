@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab0LHCPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:15:24 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:35609 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab0LHCPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 21:15:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NGSf21tnoAdoyFKu4c70BGXYC9aYIr+cz67RBL2X4NfcbaT7ZiyfB0GchuUGcSWbIe
-         m/Bhdth57ZKzldxbkx/bsECHFcdykVY6cTQQ0GJaKQAnMu1yfWoa1gprbqZCMTbFrn1m
-         NVrBHajnTJeOJRYvm7WqioVWKm2Mxt3YLWgq8=
-MIME-Version: 1.0
-In-Reply-To: <20101208105637.5103de75.kamezawa.hiroyu@jp.fujitsu.com>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
-	<d57730effe4b48012d31ceca07938ed3eb401aba.1291568905.git.minchan.kim@gmail.com>
-	<20101207144923.GB2356@cmpxchg.org>
-	<20101207150710.GA26613@barrios-desktop>
-	<20101207151939.GF2356@cmpxchg.org>
-	<20101207152625.GB608@barrios-desktop>
-	<20101207155645.GG2356@cmpxchg.org>
-	<AANLkTi=iNGT_p_VfW9GxdaKXLt2xBHM2jdwmCbF_u8uh@mail.gmail.com>
-	<20101208095642.8128ab33.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTimtkb7Nczhads4u3r21RJauZvviLFkXjaL1ErDb@mail.gmail.com>
-	<20101208105637.5103de75.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 8 Dec 2010 11:15:19 +0900
-Message-ID: <AANLkTim9to0Wa_iWyVA4FSV6sfT4tcR2bmV7t54HOQ1c@mail.gmail.com>
-Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755937Ab0LHAqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:46:54 -0500
+Received: from kroah.org ([198.145.64.141]:45965 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755868Ab0LHAqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:51 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:27 2010
+Message-Id: <20101208004426.980136804@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:43:32 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Daniel Klaffenbach <danielklaffenbach@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [026/127] ssb: b43-pci-bridge: Add new vendor for BCM4318
+In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 10:56 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Wed, 8 Dec 2010 10:43:08 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> Hi Kame,
->>
-> Hi,
->
->> > I wonder ...how about adding "victim" list for "Reclaim" pages ? Then, we don't need
->> > extra LRU rotation.
->>
->> It can make the code clean.
->> As far as I think, victim list does following as.
->>
->> 1. select victim pages by strong hint
->> 2. move the page from LRU to victim
->> 3. reclaimer always peeks victim list before diving into LRU list.
->> 4-1. If the victim pages is used by others or dirty, it can be moved
->> into LRU, again or remain the page in victim list.
->> If the page is remained victim, when do we move it into LRU again if
->> the reclaimer continues to fail the page?
-> When sometone touches it.
->
->> We have to put the new rule.
->> 4-2. If the victim pages isn't used by others and clean, we can
->> reclaim the page asap.
->>
->> AFAIK, strong hints are just two(invalidation, readahead max window heuristic).
->> I am not sure it's valuable to add new hierarchy(ie, LRU, victim,
->> unevictable) for cleaning the minor codes.
->> In addition, we have to put the new rule so it would make the LRU code
->> complicated.
->> I remember how unevictable feature merge is hard.
->>
-> yes, it was hard.
->
->> But I am not against if we have more usecases. In this case, it's
->> valuable to implement it although it's not easy.
->>
->
-> I wonder "victim list" can be used for something like Cleancache, when
-> we have very-low-latency backend devices.
-> And we may able to have page-cache-limit, which Balbir proposed as.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Yes, I thought that, too. I think it would be a good feature in embedded system.
+------------------
 
->
->  - kvictimed? will move unmappedd page caches to victim list
-> This may work like a InactiveClean list which we had before and make
-> sizing easy.
->
+From: Daniel Klaffenbach <danielklaffenbach@gmail.com>
 
-Before further discuss, we need customer's confirm.
-We know very well it is very hard to merge if anyone doesn't use.
+commit 1d8638d4038eb8709edc80e37a0bbb77253d86e9 upstream.
 
-Balbir, What do think about it?
+Add new vendor for Broadcom 4318.
+
+Signed-off-by: Daniel Klaffenbach <danielklaffenbach@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/ssb/b43_pci_bridge.c |    1 +
+ include/linux/pci_ids.h      |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- a/drivers/ssb/b43_pci_bridge.c
++++ b/drivers/ssb/b43_pci_bridge.c
+@@ -24,6 +24,7 @@ static const struct pci_device_id b43_pc
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4312) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4315) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4318) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_BCM_GVC,  0x4318) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4319) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4320) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4321) },
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2034,6 +2034,7 @@
+ #define PCI_DEVICE_ID_AFAVLAB_P030	0x2182
+ #define PCI_SUBDEVICE_ID_AFAVLAB_P061		0x2150
+ 
++#define PCI_VENDOR_ID_BCM_GVC          0x14a4
+ #define PCI_VENDOR_ID_BROADCOM		0x14e4
+ #define PCI_DEVICE_ID_TIGON3_5752	0x1600
+ #define PCI_DEVICE_ID_TIGON3_5752M	0x1601
 
 
-> Thanks,
-> -Kame
->
->
->
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
