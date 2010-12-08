@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab0LHIAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:00:07 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38567 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab0LHIAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:00:05 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4CFF3AD6.6010904@jp.fujitsu.com>
-Date: Wed, 08 Dec 2010 16:59:18 +0900
-From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1753953Ab0LHIBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 03:01:39 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:35727 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab0LHIBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 03:01:38 -0500
+X-ASG-Debug-ID: 1291795296-6da3145a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CFF3B5B.30305@fusionio.com>
+Date: Wed, 8 Dec 2010 16:01:31 +0800
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "jmarchan@redhat.com" <jmarchan@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
-References: <4CFCB08F.4010509@jp.fujitsu.com> <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com> <4CFDDFC3.2070107@jp.fujitsu.com> <4CFF34E7.2030401@fusionio.com>
-In-Reply-To: <4CFF34E7.2030401@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: [RFC]block: change sort order of elv_dispatch_sort
+References: <1291786922.12777.152.camel@sli10-conroe>	 <4CFF2C1A.1010100@fusionio.com> <1291794643.12777.161.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: [RFC]block: change sort order of elv_dispatch_sort
+In-Reply-To: <1291794643.12777.161.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1291795296
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4922 1.0000 0.0000
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.48809
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On 2010-12-08 15:50, Shaohua Li wrote:
+> On Wed, 2010-12-08 at 14:56 +0800, Jens Axboe wrote:
+>> On 2010-12-08 13:42, Shaohua Li wrote:
+>>> Change the sort order a little bit. Makes requests with sector above boundary
+>>> in ascendant order, and requests with sector below boundary in descendant
+>>> order. The goal is we have less disk spindle move.
+>>> For example, boundary is 7, we add sector 8, 1, 9, 2, 3, 4, 10, 12, 5, 11, 6
+>>> In the original sort, the sorted list is:
+>>> 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6
+>>> the spindle move is 8->12->1->6, total movement is 12*2 sectors
+>>> with the new sort, the list is:
+>>> 8, 9, 10, 11, 12, 6, 5, 4, 3, 2, 1
+>>> the spindle move is 8->12->6->1, total movement is 12*1.5 sectors
+>>
+>> It was actually done this way on purpose, it's been a while since we
+>> have done two way elevators even outside the dispatch list sorting
+>> itself.
+>>
+>> Do you have any results to back this change up? I'd argue that
+>> continuing to the end, sweeping back, and reading forwards again will be
+>> faster then doing backwards reads usually.
+> No, have no data, that is why this is a RFC patch. Part reason is I
+> don't know when we dispatch several requests to the list. Appears driver
+> only takes one request one time. What kind of test do you suggest?
 
-(2010/12/08 16:33), Jens Axboe wrote:
-> On 2010-12-07 15:18, Satoru Takeuchi wrote:
+Yes that is usually the case, it's mainly meant as a holding point for
+dispatch, or for requeue, or for request that don't give sort ordering.
+Or on io scheduler switches, for instance.
 
->> I hit on another approach. Although it doesn'tprevent any merge as Linus
->> preferred, it can fix the problem anyway. In this idea, in_flight is
->> incremented and decremented for the partition which the request belonged
->> to in its creation. It has the following merits.
+> I'm curious why the sweeping back is faster. It definitely needs more
+> spindle move. is there any hardware trick here?
 
-Revert is already finished. 2.6.37-rc-5 and latest stable kernel doesn't
-contain Yasuaki's former logic.
+The idea is that while the initial seek is longer, due to drive prefetch
+serving the latter half request series after the sweep is faster.
 
-https://lkml.org/lkml/2010/10/24/118
+I know that classic OS books mentions this is a good method, but I don't
+think that has been the case for a long time.
 
->
-> I really would prefer if we fixed up the patchset we ended up reverting.
-> At least that had a purpose with growing struct request, since we saved
-> on doing the partition lookups.
->
-
-Thanks,
-Satoru
+-- 
+Jens Axboe
 
