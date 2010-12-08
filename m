@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab0LHBDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:03:45 -0500
-Received: from kroah.org ([198.145.64.141]:33763 "EHLO coco.kroah.org"
+	id S1755642Ab0LHBLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:11:20 -0500
+Received: from kroah.org ([198.145.64.141]:33817 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932750Ab0LHBDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:38 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:45 2010
-Message-Id: <20101208005745.897308369@clark.site>
+	id S932821Ab0LHBDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:49 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:47 2010
+Message-Id: <20101208005747.106830569@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:22 -0800
+Date: Tue, 07 Dec 2010 17:00:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [245/289] memcg: avoid deadlock between move charge and try_charge()
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: [257/289] ARM: cns3xxx: Fix build with CONFIG_PCI=y
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,188 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+From: Anton Vorontsov <cbouatmailru@gmail.com>
 
-commit b1dd693e5b9348bd68a80e679e03cf9c0973b01b upstream.
+commit 44266416f786514ec43a0d15ad951c34566b99c9 upstream.
 
-__mem_cgroup_try_charge() can be called under down_write(&mmap_sem)(e.g.
-mlock does it). This means it can cause deadlock if it races with move charge:
+commit 6338a6aa7c082f11d55712251e14178c68bf5869 ("ARM: 6269/1: Add 'code'
+parameter for hook_fault_code()") breaks CNS3xxx build:
 
-Ex.1)
-                move charge             |        try charge
-  --------------------------------------+------------------------------
-    mem_cgroup_can_attach()             |  down_write(&mmap_sem)
-      mc.moving_task = current          |    ..
-      mem_cgroup_precharge_mc()         |  __mem_cgroup_try_charge()
-        mem_cgroup_count_precharge()    |    prepare_to_wait()
-          down_read(&mmap_sem)          |    if (mc.moving_task)
-          -> cannot aquire the lock     |    -> true
-                                        |      schedule()
+  CC      arch/arm/mach-cns3xxx/pcie.o
+pcie.c: In function 'cns3xxx_pcie_init':
+pcie.c:373: warning: passing argument 4 of 'hook_fault_code' makes integer from pointer without a cast
+pcie.c:373: error: too few arguments to function 'hook_fault_code'
 
-Ex.2)
-                move charge             |        try charge
-  --------------------------------------+------------------------------
-    mem_cgroup_can_attach()             |
-      mc.moving_task = current          |
-      mem_cgroup_precharge_mc()         |
-        mem_cgroup_count_precharge()    |
-          down_read(&mmap_sem)          |
-          ..                            |
-          up_read(&mmap_sem)            |
-                                        |  down_write(&mmap_sem)
-    mem_cgroup_move_task()              |    ..
-      mem_cgroup_move_charge()          |  __mem_cgroup_try_charge()
-        down_read(&mmap_sem)            |    prepare_to_wait()
-        -> cannot aquire the lock       |    if (mc.moving_task)
-                                        |    -> true
-                                        |      schedule()
+This commit fixes the small issue.
 
-To avoid this deadlock, we do all the move charge works (both can_attach() and
-attach()) under one mmap_sem section.
-And after this patch, we set/clear mc.moving_task outside mc.lock, because we
-use the lock only to check mc.from/to.
-
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memcontrol.c |   43 ++++++++++++++++++++++++++-----------------
- 1 file changed, 26 insertions(+), 17 deletions(-)
+ arch/arm/mach-cns3xxx/pcie.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -269,13 +269,14 @@ enum move_type {
- 
- /* "mc" and its members are protected by cgroup_mutex */
- static struct move_charge_struct {
--	spinlock_t	  lock; /* for from, to, moving_task */
-+	spinlock_t	  lock; /* for from, to */
- 	struct mem_cgroup *from;
- 	struct mem_cgroup *to;
- 	unsigned long precharge;
- 	unsigned long moved_charge;
- 	unsigned long moved_swap;
- 	struct task_struct *moving_task;	/* a task moving charges */
-+	struct mm_struct *mm;
- 	wait_queue_head_t waitq;		/* a waitq for other context */
- } mc = {
- 	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
-@@ -4445,7 +4446,7 @@ static unsigned long mem_cgroup_count_pr
- 	unsigned long precharge;
- 	struct vm_area_struct *vma;
- 
--	down_read(&mm->mmap_sem);
-+	/* We've already held the mmap_sem */
- 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
- 		struct mm_walk mem_cgroup_count_precharge_walk = {
- 			.pmd_entry = mem_cgroup_count_precharge_pte_range,
-@@ -4457,7 +4458,6 @@ static unsigned long mem_cgroup_count_pr
- 		walk_page_range(vma->vm_start, vma->vm_end,
- 					&mem_cgroup_count_precharge_walk);
- 	}
--	up_read(&mm->mmap_sem);
- 
- 	precharge = mc.precharge;
- 	mc.precharge = 0;
-@@ -4508,11 +4508,16 @@ static void mem_cgroup_clear_mc(void)
- 
- 		mc.moved_swap = 0;
- 	}
-+	if (mc.mm) {
-+		up_read(&mc.mm->mmap_sem);
-+		mmput(mc.mm);
-+	}
- 	spin_lock(&mc.lock);
- 	mc.from = NULL;
- 	mc.to = NULL;
--	mc.moving_task = NULL;
- 	spin_unlock(&mc.lock);
-+	mc.moving_task = NULL;
-+	mc.mm = NULL;
- 	memcg_oom_recover(from);
- 	memcg_oom_recover(to);
- 	wake_up_all(&mc.waitq);
-@@ -4537,26 +4542,37 @@ static int mem_cgroup_can_attach(struct
- 			return 0;
- 		/* We move charges only when we move a owner of the mm */
- 		if (mm->owner == p) {
-+			/*
-+			 * We do all the move charge works under one mmap_sem to
-+			 * avoid deadlock with down_write(&mmap_sem)
-+			 * -> try_charge() -> if (mc.moving_task) -> sleep.
-+			 */
-+			down_read(&mm->mmap_sem);
-+
- 			VM_BUG_ON(mc.from);
- 			VM_BUG_ON(mc.to);
- 			VM_BUG_ON(mc.precharge);
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
- 			VM_BUG_ON(mc.moving_task);
-+			VM_BUG_ON(mc.mm);
-+
- 			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = mem;
- 			mc.precharge = 0;
- 			mc.moved_charge = 0;
- 			mc.moved_swap = 0;
--			mc.moving_task = current;
- 			spin_unlock(&mc.lock);
-+			mc.moving_task = current;
-+			mc.mm = mm;
- 
- 			ret = mem_cgroup_precharge_mc(mm);
- 			if (ret)
- 				mem_cgroup_clear_mc();
--		}
--		mmput(mm);
-+			/* We call up_read() and mmput() in clear_mc(). */
-+		} else
-+			mmput(mm);
- 	}
- 	return ret;
- }
-@@ -4644,7 +4660,7 @@ static void mem_cgroup_move_charge(struc
- 	struct vm_area_struct *vma;
- 
- 	lru_add_drain_all();
--	down_read(&mm->mmap_sem);
-+	/* We've already held the mmap_sem */
- 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
- 		int ret;
- 		struct mm_walk mem_cgroup_move_charge_walk = {
-@@ -4663,7 +4679,6 @@ static void mem_cgroup_move_charge(struc
- 			 */
- 			break;
- 	}
--	up_read(&mm->mmap_sem);
- }
- 
- static void mem_cgroup_move_task(struct cgroup_subsys *ss,
-@@ -4672,17 +4687,11 @@ static void mem_cgroup_move_task(struct
- 				struct task_struct *p,
- 				bool threadgroup)
+--- a/arch/arm/mach-cns3xxx/pcie.c
++++ b/arch/arm/mach-cns3xxx/pcie.c
+@@ -369,7 +369,7 @@ static int __init cns3xxx_pcie_init(void
  {
--	struct mm_struct *mm;
--
--	if (!mc.to)
-+	if (!mc.mm)
- 		/* no need to move charge */
- 		return;
+ 	int i;
  
--	mm = get_task_mm(p);
--	if (mm) {
--		mem_cgroup_move_charge(mm);
--		mmput(mm);
--	}
-+	mem_cgroup_move_charge(mc.mm);
- 	mem_cgroup_clear_mc();
- }
- #else	/* !CONFIG_MMU */
+-	hook_fault_code(16 + 6, cns3xxx_pcie_abort_handler, SIGBUS,
++	hook_fault_code(16 + 6, cns3xxx_pcie_abort_handler, SIGBUS, 0,
+ 			"imprecise external abort");
+ 
+ 	for (i = 0; i < ARRAY_SIZE(cns3xxx_pcie); i++) {
 
 
