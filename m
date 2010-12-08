@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab0LHSuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:50:39 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42661
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755569Ab0LHSui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:50:38 -0500
-Date: Wed, 08 Dec 2010 10:51:05 -0800 (PST)
-Message-Id: <20101208.105105.245397948.davem@davemloft.net>
-To: namhyung@gmail.com
-Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isdn/hisax: fix compiler warning on hisax_pci_tbl
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1291733346-11573-1-git-send-email-namhyung@gmail.com>
-References: <1291733346-11573-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	id S1756207Ab0LHSxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:53:00 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37739 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754912Ab0LHSw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 13:52:59 -0500
+Message-ID: <4CFFD3EB.10800@kernel.org>
+Date: Wed, 08 Dec 2010 19:52:27 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jian Peng <jipeng@broadcom.com>
+CC: Robert Hancock <hancockrwd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com> <4CFEE569.4030204@gmail.com> <4CFF58D2.4040006@kernel.org> <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>,<4CFFCD56.6050608@kernel.org> <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 18:52:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB8IomJv005665
 
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Tue,  7 Dec 2010 23:49:06 +0900
+Hello,
 
-> Annotate hisax_pci_tbl as '__used' to fix following warning:
+On 12/08/2010 07:48 PM, Jian Peng wrote:
+> So it is reasonable to add extra check in ahci_start_engine() without returning status of ST bit. If so, here is my patch
 > 
->   CC      drivers/isdn/hisax/config.o
-> drivers/isdn/hisax/config.c:1920: warning: ¡hisax_pci_tbl¢ defined but not used
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> --- libahci.c.orig	2010-12-08 10:42:48.383976763 -0800
+> +++ libahci.c	2010-12-08 10:45:17.495156944 -0800
+> @@ -542,6 +542,13 @@
+>  {
+>  	void __iomem *port_mmio = ahci_port_base(ap);
+>  	u32 tmp;
+> +	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
+> +
+> +	/* avoid race condition per spec (end of section 10.1.2) */
+> +	if (status & (ATA_BUSY | ATA_DRQ) ||
+> +	    ahci_scr_read(&ap->link, SCR_STATUS, &tmp) ||
+> +	    (tmp & 0x0f) != 0x03)
+> +		return;
+>  
+>  	/* start DMA */
+>  	tmp = readl(port_mmio + PORT_CMD);
 
-This only happens because the hisax driver doesn't actually use this table
-for probing.  Each sub-driver does it's own thing.
+Yes, it is reasonable but I want to see that it actually fixes
+something.  There are just too many controllers which use this path to
+blindly apply the above change and given my previous explanation even
+without the above change any ahci controller _should_ work fine.
 
-What a mess.
+Thanks.
 
-Anyways, applied, thank you.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+tejun
