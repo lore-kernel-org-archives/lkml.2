@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab0LGXug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 18:50:36 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61635 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab0LGXuf convert rfc822-to-8bit (ORCPT
+	id S1754532Ab0LHAJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:09:10 -0500
+Received: from web31816.mail.mud.yahoo.com ([68.142.206.169]:22234 "HELO
+	web31816.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752659Ab0LHAJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 18:50:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=FXyUqYinmkjzvsiV4G97zIe0Rwv6unnqAPPR6n770vT2eHWx7yvna5oCV6CrE7RhDH
-         g6b5rhsBnXMTZCDHdAR3G5Yd3F+UODloZdgYn97P1lVU/w4hL6bFILVQ9H46VAPuEGtu
-         d0Xui/KWIwz6SXk7NrojotZOTShO7GIvakccw=
+	Tue, 7 Dec 2010 19:09:08 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 19:09:08 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type;
+  b=Zy924bNK+bAFkFim1iWbwIfciaiMZfPihSsuojZG8KA7iQMmr6Xm656dsjdQQSpUivh66xiHrUD6mZD4GpGuxJMReyjZTabJhDOuXi43wtnfQPw3wkslUPpbFF84/v7yDWnHkN0w32ss/spk3CUFxmKwiLYcp36BaRd0Nt1g1Ao=;
+Message-ID: <732182.60247.qm@web31816.mail.mud.yahoo.com>
+X-YMail-OSG: l_W7O90VM1ngdkBM9uTEvTRxomQgiX29pGi1fa4Hp3X5UuX
+ wgv3e5Cc5wZMtfd8ow24cNaOsWzx2yx_mYkUfh460KT4Atni3Hi0x2du8FkI
+ zHOuhYOYA2s2ugwqX491giQwM6NvqH27Css7jLbiQ7oKfNpQcUw_tpwGdjSl
+ SfWiHmUoOJiRyBVExajutsrnlpI7tpi4OKZSB4Euy4ZHn14PV4rPk0_3Wn12
+ cSlFqjhmOG_9kvG.JUDXDWfxf9MrCKo354gi4SWD3LK2x39BWOZ7TF.XggdX
+ 1xFoi7FsXN4gCdZ8Qll2OwOt2DpoghrWoiftPN8G2K.TD8chn5rKWTQHajc5
+ p7BB2F4oHWOMlecHxow--
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
+Date: Tue, 7 Dec 2010 16:02:26 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1291630198-9690-3-git-send-email-s.hauer@pengutronix.de>
-References: <1291630198-9690-1-git-send-email-s.hauer@pengutronix.de>
-	<1291630198-9690-3-git-send-email-s.hauer@pengutronix.de>
-Date: Tue, 7 Dec 2010 15:50:33 -0800
-X-Google-Sender-Auth: Q6WiYpY3mUOPT8gGAdG098Kx0w4
-Message-ID: <AANLkTi=T3OCRy9VOVE5JvQe3x8zcKH+fcGBQgOxZbHM1@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dmaengine i.MX SDMA: protect channel0
-From: Dan Williams <dan.j.williams@intel.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 6, 2010 at 2:09 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> Channel 0 of the SDMA engine is a shared resource used by the
-> other channels, thus we have to protect it with a mutex.
->
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
+--- On Sun, 12/5/10, Luben Tuikov <ltuikov@yahoo.com> wrote:
+> --- On Wed, 11/24/10, Luben Tuikov
+> <ltuikov@yahoo.com>
+> wrote:
+> > 
+> > CBI/BBB isn't supposed to be, nor is designed to
+> support
+> > SAM-modern devices. So while REQUEST LUN /may/ work on
+> some
+> > devices which implement it in their firmware, it is
+> NOT a
+> > requirement for those devices as they are not required
+> to
+> > adhere to any SAM version. Those transport protocols
+> define
+> > a class-specific request to get the maximum LUN, and
+> another
+> > to reset the target port (instead of I_T Reset or LU
+> Reset).
+> > They also do not support SCSI Status completion of
+> the
+> > command, nor Autosense. They also do not provide TMFs.
+> They
+> > provide none of the SCSI transport protocol services
+> in
+> > support of the Execute Command procedure call. The
+> SCSI
+> > layer shouldn't be trying to guess their "SCSI
+> version", and
+> > or treat them as real SCSI devices sending REPORT
+> LUNs, etc.
+> > commands.
+> > 
+> > Newer, modern transport protocols over USB, are part
+> of
+> > SAM, and it is devices who connect via those protocols
+> that
+> > are being disadvantaged, due to the adoption
+> (assumption) of
+> > CBI/BBB well into the SCSI layer.
+> > 
+> > To this effect, the transport protocol can tell upper
+> > layers if the device is true SCSI (new usb transports
+> or
+> > other) or hybrid (usb-storage). In the former case,
+> the
+> > device is a SCSI device, in the latter, only basic
+> commands
+> > should be attempted.
+> > 
+> > This isn't to say that firmware for those devices
+> wouldn't
+> > be buggy. Of course it will, and most will probably
+> port
+> > their legacy FW over to the new SPTL, but the
+> protocol
+> > requirements are there by design (i.e. there is no
+> longer
+> > Get Max Lun class-specific request, the application
+> client
+> > has to send REPORT LUNS, and FW has to answer it) and
+> we
+> > have to accommodate that.
+> > 
+> > It is in this spirit that this patch doesn't change
+> wire
+> > behavior, but simply parses data returned by a
+> command
+> > already supported by older protocols.
+> 
+> Did anyone pick up this patch?
 
-This one is not making sense to me...
+It's been over 6 weeks now that this patch's been in these mailing lists.
+Will anyone pick up this patch, or should I stop posting it every week? Please let me know--it's been posted here 6 times in the last 6 weeks.
 
->  drivers/dma/imx-sdma.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index 01c4a5f..b1f5947 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -355,6 +355,7 @@ struct sdma_engine {
->        struct dma_device               dma_device;
->        struct clk                      *clk;
->        struct sdma_script_start_addrs  *script_addrs;
-> +       struct mutex                    channel0_mutex;
->  };
->
->  #define SDMA_H_CONFIG_DSPDMA   (1 << 12) /* indicates if the DSPDMA is used */
-> @@ -437,6 +438,8 @@ static int sdma_load_script(struct sdma_engine *sdma, void *buf, int size,
->        if (!buf_virt)
->                return -ENOMEM;
->
-> +       mutex_lock(&sdma->channel0_mutex);
-> +
->        bd0->mode.command = C0_SETPM;
->        bd0->mode.status = BD_DONE | BD_INTR | BD_WRAP | BD_EXTD;
->        bd0->mode.count = size / 2;
-> @@ -447,6 +450,8 @@ static int sdma_load_script(struct sdma_engine *sdma, void *buf, int size,
->
->        ret = sdma_run_channel(&sdma->channel[0]);
->
-> +       mutex_unlock(&sdma->channel0_mutex);
-> +
+Thanks,
+   Luben
 
-In sdma_load_script() what data structure are we protecting at single
-threaded init time prior to registering channels?
-
->        dma_free_coherent(NULL, size, buf_virt, buf_phys);
->
->        return ret;
-
-> @@ -684,6 +689,8 @@ static int sdma_load_context(struct sdma_channel *sdmac)
->        context->gReg[6] = sdmac->shp_addr;
->        context->gReg[7] = sdmac->watermark_level;
->
-> +       mutex_lock(&sdma->channel0_mutex);
-> +
->        bd0->mode.command = C0_SETDM;
->        bd0->mode.status = BD_DONE | BD_INTR | BD_WRAP | BD_EXTD;
->        bd0->mode.count = sizeof(*context) / 4;
-> @@ -692,6 +699,8 @@ static int sdma_load_context(struct sdma_channel *sdmac)
->
->        ret = sdma_run_channel(&sdma->channel[0]);
->
-> +       mutex_unlock(&sdma->channel0_mutex);
-> +
-
-This sdma_load_context() is called from various ->prep() contexts.
-What guarantees are there that we can sleep in these contexts?  At
-least ->prep_memcpy() might be called in a atomic context.  I have
-been assuming the same for all prep routines across archs.
-
---
-Dan
