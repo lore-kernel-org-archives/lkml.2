@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab0LHBSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:18:37 -0500
-Received: from kroah.org ([198.145.64.141]:33647 "EHLO coco.kroah.org"
+	id S1757527Ab0LHBSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:18:52 -0500
+Received: from kroah.org ([198.145.64.141]:33639 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932663Ab0LHBDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:15 -0500
+	id S932653Ab0LHBDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:14 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:43 2010
-Message-Id: <20101208005743.561070211@clark.site>
+Message-Id: <20101208005743.365079840@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:58 -0800
+Date: Tue, 07 Dec 2010 16:59:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dennis Jansen <dennis.jansen@web.de>, Alex Chiang <achiang@hp.com>,
         Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [221/289] acpi-cpufreq: fix a memleak when unloading driver
+Subject: [219/289] ACPI: install ACPI table handler before any dynamic tables being loaded
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhang Rui <rui.zhang@intel.com>
 
-commit dab5fff14df2cd16eb1ad4c02e83915e1063fece upstream.
+commit b1d248d96c71665c79befb81207f38f894c7c082 upstream.
 
-We didn't free per_cpu(acfreq_data, cpu)->freq_table
-when acpi_freq driver is unloaded.
+ACPI table sysfs I/F is broken by commit
 
-Resulting in the following messages in /sys/kernel/debug/kmemleak:
+78f1699659963fff97975df44db6d5dbe7218e55
+Author: Alex Chiang <achiang@hp.com>
+Date:   Sun Dec 20 12:19:09 2009 -0700
+    ACPI: processor: call _PDC early
 
-unreferenced object 0xf6450e80 (size 64):
-  comm "modprobe", pid 1066, jiffies 4294677317 (age 19290.453s)
-  hex dump (first 32 bytes):
-    00 00 00 00 e8 a2 24 00 01 00 00 00 00 9f 24 00  ......$.......$.
-    02 00 00 00 00 6a 18 00 03 00 00 00 00 35 0c 00  .....j.......5..
-  backtrace:
-    [<c123ba97>] kmemleak_alloc+0x27/0x50
-    [<c109f96f>] __kmalloc+0xcf/0x110
-    [<f9da97ee>] acpi_cpufreq_cpu_init+0x1ee/0x4e4 [acpi_cpufreq]
-    [<c11cd8d2>] cpufreq_add_dev+0x142/0x3a0
-    [<c11920b7>] sysdev_driver_register+0x97/0x110
-    [<c11cce56>] cpufreq_register_driver+0x86/0x140
-    [<f9dad080>] 0xf9dad080
-    [<c1001130>] do_one_initcall+0x30/0x160
-    [<c10626e9>] sys_init_module+0x99/0x1e0
-    [<c1002d97>] sysenter_do_call+0x12/0x26
-    [<ffffffff>] 0xffffffff
+because dynamic SSDT tables may be loaded in _PDC,
+before installing the ACPI table handler.
+As a result, the sysfs I/F of these dynamic tables are
+located at  /sys/firmware/acpi/tables instead of
+/sys/firmware/acpi/tables/dynamic, which is not true.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15807#c21
+Invoke acpi_sysfs_init() before acpi_early_processor_set_pdc(),
+so that the table handler is installed before any dynamic tables loaded.
 
-Tested-by: Toralf Forster <toralf.foerster@gmx.de>
+https://bugzilla.kernel.org/show_bug.cgi?id=21142
+
+CC: Dennis Jansen <dennis.jansen@web.de>
+CC: Alex Chiang <achiang@hp.com>
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/bus.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-@@ -701,6 +701,7 @@ static int acpi_cpufreq_cpu_exit(struct
- 		per_cpu(acfreq_data, policy->cpu) = NULL;
- 		acpi_processor_unregister_performance(data->acpi_data,
- 						      policy->cpu);
-+		kfree(data->freq_table);
- 		kfree(data);
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -935,6 +935,12 @@ static int __init acpi_bus_init(void)
+ 		goto error1;
  	}
  
++	/*
++	 * _PDC control method may load dynamic SSDT tables,
++	 * and we need to install the table handler before that.
++	 */
++	acpi_sysfs_init();
++
+ 	acpi_early_processor_set_pdc();
+ 
+ 	/*
+@@ -1026,7 +1032,6 @@ static int __init acpi_init(void)
+ 	acpi_scan_init();
+ 	acpi_ec_init();
+ 	acpi_power_init();
+-	acpi_sysfs_init();
+ 	acpi_debugfs_init();
+ 	acpi_sleep_proc_init();
+ 	acpi_wakeup_device_init();
 
 
