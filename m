@@ -1,55 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab0LHSQd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:16:33 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:58885 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755858Ab0LHSQb (ORCPT
+	id S1756005Ab0LHSQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:16:52 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42272 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab0LHSQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:16:31 -0500
-Message-ID: <4CFFCB62.90601@euromail.se>
-Date: Wed, 08 Dec 2010 19:16:02 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 8 Dec 2010 13:16:50 -0500
+Date: Wed, 8 Dec 2010 11:16:44 -0700
+From: Eric B Munson <emunson@mgebm.net>
+To: Shaohui Zheng <shaohui.zheng@linux.intel.com>
+Cc: shaohui.zheng@intel.com, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, rientjes@google.com,
+        dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/7,v8] NUMA Hotplug Emulator: documentation
+Message-ID: <20101208181644.GA2152@mgebm.net>
+References: <20101207010033.280301752@intel.com>
+ <20101207010139.681125359@intel.com>
+ <20101207182420.GA2038@mgebm.net>
+ <20101207232000.GA5353@shaohui>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ping Cheng <pingc@wacom.com>
-Subject: Re: [PATCH] input: mt: Add hovering distance axis
-References: <1291710468-2022-1-git-send-email-rydberg@euromail.se> <4CFFC45C.2040107@canonical.com> <20101208180521.GA31522@core.coreip.homeip.net>
-In-Reply-To: <20101208180521.GA31522@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQOYm-0003yM-BK.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQOYm-0003yM-BK 889a5d68d33e31c7cdb6be173dce9dcb
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <20101207232000.GA5353@shaohui>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 07:05 PM, Dmitry Torokhov wrote:
 
-> On Wed, Dec 08, 2010 at 09:46:04AM -0800, Chase Douglas wrote:
->> On 12/07/2010 12:27 AM, Henrik Rydberg wrote:
->>> Touch devices capable of hovering, i.e., fingers detected a distance
->>> from the surface, are not supported by the current input MT
->>> protocol. This patch adds ABS_MT_DISTANCE, which may be used to
->>> indicate the distance between the contact and the surface.
->>
->> Have you given thought to calling it ABS_MT_Z instead? I have no real
->> problem with ABS_MT_DISTANCE per se, but ABS_MT_Z is more clearly
->> defined in my head. If I was new to MT development I may wonder if
->> ABS_MT_DISTANCE had anything to do with distance between points or some
->> other object.
-> 
-> X/Y/Z imply that we fully engaged the device and it is 3 dimensional.
-> Distance says that we are approaching the device but have not directly
-> engaged it yet.
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Shaohui,
 
-Yep, and we will surely start seeing more 3D devices soon, so reserving _Z for
-those is a given.
+I was able to online a cpu to node 0 successfully.  My problem was that I d=
+id
+not take the cpu offline before I released it.  Everything looks to be work=
+ing
+for me.
 
-Thanks,
-Henrik
+Thanks for your help,
+Eric
+On Wed, 08 Dec 2010, Shaohui Zheng wrote:
+
+> On Tue, Dec 07, 2010 at 11:24:20AM -0700, Eric B Munson wrote:
+> > Shaohui,
+> >=20
+> > The documentation patch seems to be stale, it needs to be updated to ma=
+tch the
+> > new file names.
+> >=20
+> Eric,
+> 	the major change on the patchset is on the interface, for the v8 emulato=
+r,
+> we accept David's per-node debugfs add_memory interface, we already inclu=
+ded
+> in the documentation patch. the change is very small, so it is not obviou=
+s.
+>=20
+> This is the change on the documentation compare with v7:
+> +3) Memory hotplug emulation:
+> +
+> +The emulator reserves memory before OS boots, the reserved memory region=
+ is
+> +removed from e820 table. Each online node has an add_memory interface, a=
+nd
+> +memory can be hot-added via the per-ndoe add_memory debugfs interface.
+> +
+> +The difficulty of Memory Release is well-known, we have no plan for it u=
+ntil
+> +now.
+> +
+> + - reserve memory thru a kernel boot paramter
+> + 	mem=3D1024m
+> +
+> + - add a memory section to node 3
+> +    # echo 0x40000000 > mem_hotplug/node3/add_memory
+> +	OR
+> +    # echo 1024m > mem_hotplug/node3/add_memory
+> +
+>=20
+> --=20
+> Thanks & Regards,
+> Shaohui
+>=20
+
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM/8uMAAoJEH65iIruGRnNYS8IAK4GQMrZXfwz5nmtvFrBpbfj
+VAqUR67okBDzpKM1z3RHnueQNQFOByV29zH+b0rk1R3q1kk6BHoIui1gGBE/W/rF
+gIVM+ozPYtPKnf9ogjivgqlu5nXh8E5e6TkSvLheO8idr3UgqE0jmb1bOQ3ZI0Hy
+Gf3w2pWTJQDOgTJGQspOdEGaW322h/qDpLnizDA6aL0PFKuxPWwTdW7jS7jfhpxp
+SpeY/paJFe8fZuxjI49IWx+GMTH0PvMhYprMqswMWT2CTqlT094jg0iy3sF2C+Bv
+2S07qou0e6v3b8OMnGWXEGZwiwMxfpQJWwR6kuBEg9hJxi8ruusRN8K1J9L9XN8=
+=AHrM
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
