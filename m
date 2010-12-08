@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab0LHBDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:03:35 -0500
-Received: from kroah.org ([198.145.64.141]:33736 "EHLO coco.kroah.org"
+	id S932763Ab0LHBDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:03:37 -0500
+Received: from kroah.org ([198.145.64.141]:33748 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932736Ab0LHBDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:32 -0500
+	id S932750Ab0LHBDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:35 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:45 2010
-Message-Id: <20101208005745.295405482@clark.site>
+Message-Id: <20101208005745.593159299@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:16 -0800
+Date: Tue, 07 Dec 2010 17:00:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>
-Subject: [239/289] perf_events: Fix perf_counter_mmap() hook in mprotect()
+        James Jones <jajones@nvidia.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [242/289] ARM: 6482/2: Fix find_next_zero_bit and related assembly
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pekka Enberg <penberg@kernel.org>
+From: James Jones <jajones@nvidia.com>
 
-commit 63bfd7384b119409685a17d5c58f0b56e5dc03da upstream.
+commit 0e91ec0c06d2cd15071a6021c94840a50e6671aa upstream.
 
-As pointed out by Linus, commit dab5855 ("perf_counter: Add mmap event hooks to
-mprotect()") is fundamentally wrong as mprotect_fixup() can free 'vma' due to
-merging. Fix the problem by moving perf_event_mmap() hook to
-mprotect_fixup().
+The find_next_bit, find_first_bit, find_next_zero_bit
+and find_first_zero_bit functions were not properly
+clamping to the maxbit argument at the bit level. They
+were instead only checking maxbit at the byte level.
+To fix this, add a compare and a conditional move
+instruction to the end of the common bit-within-the-
+byte code used by all the functions and be sure not to
+clobber the maxbit argument before it is used.
 
-Note: there's another successful return path from mprotect_fixup() if old
-flags equal to new flags. We don't, however, need to call
-perf_event_mmap() there because 'perf' already knows the VMA is
-executable.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Analyzed-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Reviewed-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: James Jones <jajones@nvidia.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mprotect.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/lib/findbit.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -211,6 +211,7 @@ success:
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
- 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
-+	perf_event_mmap(vma);
- 	return 0;
+--- a/arch/arm/lib/findbit.S
++++ b/arch/arm/lib/findbit.S
+@@ -174,8 +174,8 @@ ENDPROC(_find_next_bit_be)
+  */
+ .L_found:
+ #if __LINUX_ARM_ARCH__ >= 5
+-		rsb	r1, r3, #0
+-		and	r3, r3, r1
++		rsb	r0, r3, #0
++		and	r3, r3, r0
+ 		clz	r3, r3
+ 		rsb	r3, r3, #31
+ 		add	r0, r2, r3
+@@ -190,5 +190,7 @@ ENDPROC(_find_next_bit_be)
+ 		addeq	r2, r2, #1
+ 		mov	r0, r2
+ #endif
++		cmp	r1, r0			@ Clamp to maxbit
++		movlo	r0, r1
+ 		mov	pc, lr
  
- fail:
-@@ -299,7 +300,6 @@ SYSCALL_DEFINE3(mprotect, unsigned long,
- 		error = mprotect_fixup(vma, &prev, nstart, tmp, newflags);
- 		if (error)
- 			goto out;
--		perf_event_mmap(vma);
- 		nstart = tmp;
- 
- 		if (nstart < prev->vm_end)
 
 
