@@ -1,129 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab0LHO73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 09:59:29 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44727 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab0LHO72 convert rfc822-to-8bit (ORCPT
+	id S1755494Ab0LHPBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:01:46 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52823 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab0LHPBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 09:59:28 -0500
-Subject: Re: perf hw  in kexeced kernel broken in tip
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-In-Reply-To: <1291818005.28378.38.camel@laptop>
-References: <1291232292.32004.1969.camel@laptop>
-	 <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop>
-	 <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop>
-	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
-	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
-	 <1291764620.2032.1293.camel@laptop>  <20101208140103.GM21786@redhat.com>
-	 <1291818005.28378.38.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Dec 2010 15:59:16 +0100
-Message-ID: <1291820356.28378.83.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 8 Dec 2010 10:01:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=B+KzB1xdjUnL9J+9+N7c9vHJwFXhQta8BWrsIEThwPfV6KaODA3swIGRne0PLjGOUM
+         uBlZZqFcWoecj1pY2kFSAa95BoIHdNDA1XalPyfGSFylEqmywSTWNLYoxY0k+i+sbR+p
+         Siv/RAom6St/DQlDOahCsDeB6sQItElnBPdhE=
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-arch@vger.kernel.org, mmarek@suse.cz,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 1/4] of: Add support for linking device tree blobs into vmlinux
+Date: Wed,  8 Dec 2010 07:01:13 -0800
+Message-Id: <99ff131ecbee621f0d3178d6d3896d6f39207d6f.1291820034.git.dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <cover.1291820033.git.dirk.brandewie@gmail.com>
+References: <cover.1291820033.git.dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 15:20 +0100, Peter Zijlstra wrote:
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-> > I wonder if you should reverse these checks.  If the bios has the perf
-> > counter enabled, there might be a high chance that it fails the first
-> > check and never gets to the actually bios checks.
-> 
-> Ah, good point. 
+This patch adds support for linking device tree blob(s) into
+vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
+.dtb sections into vmlinux. To maintain compatiblity with the of/fdt
+driver code platforms MUST copy the blob to a non-init memory location
+before the kernel frees the .init.* sections in the image.
 
-Something like so..
+Modifies scripts/Makefile.lib to add a kbuild command to
+compile DTS files to device tree blobs and a rule to create objects to
+wrap the blobs for linking.
 
+STRUCT_ALIGNMENT is defined in vmlinux.lds.h for use in the rule to
+create wrapper objects for the dtb in Makefile.lib.  The
+STRUCT_ALIGN() macro in vmlinux.lds.h is modified to use the
+STRUCT_ALIGNMENT definition.
+
+The DTB's are placed on 32 byte boundries to allow parsing the blob
+with driver/of/fdt.c during early boot without having to copy the blob
+to get the structure alignment GCC expects.
+
+A DTB is linked in by adding the DTB object to the list of objects to
+be linked into vmlinux in the archtecture specific Makefile using
+   obj-y += foo.dtb.o
+
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
-Subject: perf, x86: Detect broken BIOSes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed Dec 08 15:56:23 CET 2010
+ Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
+ include/asm-generic/vmlinux.lds.h  |   13 +++++++++++--
+ scripts/Makefile.lib               |   23 +++++++++++++++++++++++
+ 3 files changed, 49 insertions(+), 2 deletions(-)
 
-Some BIOSes use PMU resources, this is a bug.
-
-Try to detect this, warn about it, and further refuse to touch the
-PMU ourselves.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-@@ -375,15 +375,51 @@ static void release_pmc_hardware(void) {
- static bool check_hw_exists(void)
- {
- 	u64 val, val_new = 0;
--	int ret = 0;
-+	int i, reg, ret = 0;
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index 0ef00bd..86e3cd0 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -1136,6 +1136,21 @@ When kbuild executes, the following steps are followed (roughly):
+ 	      resulting in the target file being recompiled for no
+ 	      obvious reason.
  
-+	/*
-+	 * Check to see if the BIOS enabled any of the counters, if so
-+	 * complain and bail.
-+	 */
-+	for (i = 0; i < x86_pmu.num_counters; i++) {
-+		reg = x86_pmu.eventsel + i;
-+		ret = rdmsrl_safe(reg, &val);
-+		if (ret)
-+			goto msr_fail;
-+		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
-+			goto bios_fail;
-+	}
++    dtc
++	Create flattend device tree blob object suitable for linking
++	into vmlinux. Device tree blobs linked into vmlinux are placed
++	in an init section in the image. Platform code *must* copy the
++	blob to non-init memory prior to calling unflatten_device_tree().
 +
-+	for (i = 0; i < x86_pmu.num_counters_fixed; i++) {
-+		reg = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
-+		ret = rdmsrl_safe(reg, &val);
-+		if (ret)
-+			goto msr_fail;
-+		if (val & (0x03 << i*4))
-+			goto bios_fail;
-+	}
++	Example:
++		#arch/x86/platform/ce4100/Makefile
++		clean-files := *dtb.S
 +
-+	/*
-+	 * Now write a value and read it back to see if it matches,
-+	 * this is needed to detect certain hardware emulators (qemu/kvm)
-+	 * that don't trap on the MSR access and always return 0s.
-+	 */
- 	val = 0xabcdUL;
--	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
-+	ret = checking_wrmsrl(x86_pmu.perfctr, val);
- 	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
- 	if (ret || val != val_new)
--		return false;
-+		goto msr_fail;
- 
- 	return true;
++		DTC_FLAGS := -p 1024
++		obj-y += foo.dtb.o
 +
-+bios_fail:
-+	printk(KERN_CONT "Broken BIOS detected, software events only.\n");
-+	printk(KERN_ERR FW_BUG "invalid MSR: %x=%Lx\n", reg, val);
-+	return false;
++		$(obj)/%.dtb: $(src)/%.dts
++			$(call cmd,dtc)
+ 
+ --- 6.7 Custom kbuild commands
+ 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index bd69d79..05cbad0 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -67,7 +67,8 @@
+  * Align to a 32 byte boundary equal to the
+  * alignment gcc 4.5 uses for a struct
+  */
+-#define STRUCT_ALIGN() . = ALIGN(32)
++#define STRUCT_ALIGNMENT 32
++#define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
+ 
+ /* The actual configuration determine if the init/exit sections
+  * are handled as text/data or they can be discarded (which
+@@ -146,6 +147,13 @@
+ #define TRACE_SYSCALLS()
+ #endif
+ 
 +
-+msr_fail:
-+	printk(KERN_CONT "Broken PMU hardware detected, software events only.\n");
-+	return false;
- }
++#define KERNEL_DTB()							\
++	STRUCT_ALIGN();							\
++	VMLINUX_SYMBOL(__dtb_start) = .;				\
++	*(.dtb.init.rodata)						\
++	VMLINUX_SYMBOL(__dtb_end) = .;
++
+ /* .data section */
+ #define DATA_DATA							\
+ 	*(.data)							\
+@@ -468,7 +476,8 @@
+ 	MCOUNT_REC()							\
+ 	DEV_DISCARD(init.rodata)					\
+ 	CPU_DISCARD(init.rodata)					\
+-	MEM_DISCARD(init.rodata)
++	MEM_DISCARD(init.rodata)					\
++	KERNEL_DTB()
  
- static void reserve_ds_buffers(void);
-@@ -1378,10 +1414,8 @@ int __init init_hw_perf_events(void)
- 	pmu_check_apic();
+ #define INIT_TEXT							\
+ 	*(.init.text)							\
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 4c72c11..63b287c 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -200,6 +200,29 @@ quiet_cmd_gzip = GZIP    $@
+ cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9 > $@) || \
+ 	(rm -f $@ ; false)
  
- 	/* sanity check that the hardware exists or is emulated */
--	if (!check_hw_exists()) {
--		pr_cont("Broken PMU hardware detected, software events only.\n");
-+	if (!check_hw_exists())
- 		return 0;
--	}
++# DTC
++#  ---------------------------------------------------------------------------
++
++# Generate an assembly file to wrap the output of the device tree compiler
++quiet_cmd_dt_S_dtb= DTB    $@
++cmd_dt_S_dtb=						\
++(							\
++	echo '\#include <asm-generic/vmlinux.lds.h>'; 	\
++	echo '.section .dtb.init.rodata,"a"';		\
++	echo '.balign STRUCT_ALIGNMENT';                \
++	echo '.global __dtb_$(*F)_begin';               \
++	echo '__dtb_$(*F)_begin:';                      \
++	echo '.incbin "$<" ';                           \
++	echo '__dtb_$(*F)_end:';                        \
++	echo '.global __dtb_$(*F)_end';                 \
++	echo '.balign STRUCT_ALIGNMENT'; 		\
++) > $@
++
++$(obj)/%.dtb.S: $(obj)/%.dtb 
++	$(call cmd,dt_S_dtb)
++
++quiet_cmd_dtc = DTC $@
++      cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $<
  
- 	pr_cont("%s PMU driver.\n", x86_pmu.name);
- 
+ # Bzip2
+ # ---------------------------------------------------------------------------
+-- 
+1.7.2.3
 
