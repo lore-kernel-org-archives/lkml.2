@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab0LHPZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:25:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36924 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755627Ab0LHPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:25:28 -0500
-Message-ID: <4CFFA31E.6080709@kernel.org>
-Date: Wed, 08 Dec 2010 16:24:14 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755933Ab0LHP0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:26:50 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:43745 "EHLO
+	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755794Ab0LHP0s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:26:48 -0500
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [Use cpuops V1 05/11] core: Replace __get_cpu_var with __this_cpu_read
- if not used for an address.
-References: <20101206171618.302060721@linux.com> <20101206171639.183187260@linux.com> <4CFE44E2.9050408@kernel.org> <alpine.DEB.2.00.1012070850060.25976@router.home> <4CFE510E.2010007@kernel.org> <alpine.DEB.2.00.1012070937440.26552@router.home>
-In-Reply-To: <alpine.DEB.2.00.1012070937440.26552@router.home>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 15:24:17 +0000 (UTC)
+In-Reply-To: <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+References: <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
+ <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+ <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org> <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Wed, 8 Dec 2010 09:26:25 -0600
+Message-ID: <AANLkTinQw6DZuTiKzmJFo10snbSX9r6+eWuTA8tt3J95@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: "Ted Ts'o" <tytso@mit.edu>, Mike Snitzer <snitzer@redhat.com>,
+        Jon Nelson <jnelson@jamponi.net>, Chris Mason <chris.mason@oracle.com>,
+        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 04:38 PM, Christoph Lameter wrote:
-> On Tue, 7 Dec 2010, Tejun Heo wrote:
-> 
->> Can you please fold this into the original patch and resend?  I
->> skipped 04, 05 and 09.  percpu#for-next now contains other patches.
+On Tue, Dec 7, 2010 at 9:37 PM, Jon Nelson <jnelson@jamponi.net> wrote:
+> On Tue, Dec 7, 2010 at 1:35 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>> On Tue, Dec 07, 2010 at 01:22:43PM -0500, Mike Snitzer wrote:
+>>> > 1. create a database (from bash):
+>>> >
+>>> > createdb test
+>>> >
+>>> > 2. place the following contents in a file (I used 't.sql'):
+>>> >
+>>> > begin;
+>>> > create temporary table foo as select x as a, ARRAY[x] as b FROM
+>>> > generate_series(1, 10000000 ) AS x;
+>>> > create index foo_a_idx on foo (a);
+>>> > create index foo_b_idx on foo USING GIN (b);
+>>> > rollback;
+>>> >
+>>> > 3. execute that sql:
+>>> >
+>>> > psql -f t.sql --echo-all test
+>>> >
+>>> > With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
+>>> > without issue.
+>>> >
+>>> > With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
+>>> > pretty frequently.
 >>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-next
+>> So I just tried to reproduce this on an Ubuntu 10.04 system running
+>> 2.6.37-rc5 (completely stock except for a few apparmor patches that I
+>> needed to keep the apparmor userspace from complaining).  I'm using
+>> Postgres 8.4.5-0ubuntu10.04.
 >>
->> Thanks.
-> 
-> Subject: core: Replace __get_cpu_var with __this_cpu_read if not used for an address.
-> 
-> __get_cpu_var() can be replaced with this_cpu_read and will then use a single
-> read instruction with implied address calculation to access the correct per cpu
-> instance.
-> 
-> However, the address of a per cpu variable passed to __this_cpu_read() cannot be
-> determed (since its an implied address conversion through segment prefixes).
-> Therefore apply this only to uses of __get_cpu_var where the addres of the
-> variable is not used.
-> 
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+>> Using the above procedure, I wasn't able to reproduce.  Then I
+>> realized this might have been because I was using an SSD root file
+>> system (which is secured using LUKS/dm-crypt, with LVM on top of
+>> dm-crypt).  So I mounted a file system on a 5400 rpm SSD disk, which
+>> is also protected using LUKS/dm-crypt with LVM on top.  I then
+>> executed the PostgresQL commands:
+>>
+>> CREATE TABLESPACE test LOCATION '/kbuild/postgres';
+>> SET default_tablespace = test;
+>> COMMIT
+>> \quit
+>>
+>> I then re-ran the above proceduing, and verified that all of the I/O
+>> was going to the 5400rpm laptop disk.
+>>
+>> I then ran the above procedure a half-dozen times, and I still haven't
+>> been able to reproduce any Postgresql errors or kernel errors.
+>>
+>> Jon, can you help me identify what might be different with your run
+>> and mine?  What version of Postgres are you using?
+>
+> One difference is the location of the transaction logs (pg_xlog). In
+> my case, /var/lib/pgsql/data *is* mountpoint for the test volume
+> (actually, it's a symlink to the mount point). In your case, that is
+> not so. Perhaps that makes a difference?  pgsql_tmp might also be on
+> two different volumes in your case (I can't be sure).
 
-Applied.  Thanks.
+
+I grabbed a Kubuntu iso and installed Kubuntu 10.10, and then upgraded
+to 'natty', and eventually to 2.6.37-8-generic.
+
+With that install, and postgresql's "data" (/var/lib/postgresql/data)
+being located on a LUKS+ext4 volume, I easily observe the behavior.
+
+Does this help?
 
 -- 
-tejun
+Jon
