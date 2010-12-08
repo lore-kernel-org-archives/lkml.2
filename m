@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab0LHAqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:46:31 -0500
-Received: from kroah.org ([198.145.64.141]:45823 "EHLO coco.kroah.org"
+	id S1755926Ab0LHCVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:21:22 -0500
+Received: from kroah.org ([198.145.64.141]:45816 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713Ab0LHAq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:29 -0500
+	id S1754772Ab0LHAq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:28 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:24 2010
-Message-Id: <20101208004424.704991109@clark.site>
+Message-Id: <20101208004424.609071456@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:09 -0800
+Date: Tue, 07 Dec 2010 16:43:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: [003/127] block: take care not to overflow when calculating total iov length
+Subject: [002/127] block: limit vec count in bio_kmalloc() and bio_alloc_map_data()
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jens Axboe <jaxboe@fusionio.com>
 
-commit 9f864c80913467312c7b8690e41fb5ebd1b50e92 upstream.
+commit f3f63c1c28bc861a931fac283b5bc3585efb8967 upstream.
 
 Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/scsi_ioctl.c |   34 ++++++++++++++++++++++++----------
- 1 file changed, 24 insertions(+), 10 deletions(-)
+ fs/bio.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -319,33 +319,47 @@ static int sg_io(struct request_queue *q
- 	if (hdr->iovec_count) {
- 		const int size = sizeof(struct sg_iovec) * hdr->iovec_count;
- 		size_t iov_data_len;
--		struct sg_iovec *iov;
-+		struct sg_iovec *sg_iov;
-+		struct iovec *iov;
-+		int i;
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -371,6 +371,9 @@ struct bio *bio_kmalloc(gfp_t gfp_mask,
+ {
+ 	struct bio *bio;
  
--		iov = kmalloc(size, GFP_KERNEL);
--		if (!iov) {
-+		sg_iov = kmalloc(size, GFP_KERNEL);
-+		if (!sg_iov) {
- 			ret = -ENOMEM;
- 			goto out;
- 		}
- 
--		if (copy_from_user(iov, hdr->dxferp, size)) {
--			kfree(iov);
-+		if (copy_from_user(sg_iov, hdr->dxferp, size)) {
-+			kfree(sg_iov);
- 			ret = -EFAULT;
- 			goto out;
- 		}
- 
-+		/*
-+		 * Sum up the vecs, making sure they don't overflow
-+		 */
-+		iov = (struct iovec *) sg_iov;
-+		iov_data_len = 0;
-+		for (i = 0; i < hdr->iovec_count; i++) {
-+			if (iov_data_len + iov[i].iov_len < iov_data_len) {
-+				kfree(sg_iov);
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+			iov_data_len += iov[i].iov_len;
-+		}
++	if (nr_iovecs > UIO_MAXIOV)
++		return NULL;
 +
- 		/* SG_IO howto says that the shorter of the two wins */
--		iov_data_len = iov_length((struct iovec *)iov,
--					  hdr->iovec_count);
- 		if (hdr->dxfer_len < iov_data_len) {
--			hdr->iovec_count = iov_shorten((struct iovec *)iov,
-+			hdr->iovec_count = iov_shorten(iov,
- 						       hdr->iovec_count,
- 						       hdr->dxfer_len);
- 			iov_data_len = hdr->dxfer_len;
- 		}
+ 	bio = kmalloc(sizeof(struct bio) + nr_iovecs * sizeof(struct bio_vec),
+ 		      gfp_mask);
+ 	if (unlikely(!bio))
+@@ -701,8 +704,12 @@ static void bio_free_map_data(struct bio
+ static struct bio_map_data *bio_alloc_map_data(int nr_segs, int iov_count,
+ 					       gfp_t gfp_mask)
+ {
+-	struct bio_map_data *bmd = kmalloc(sizeof(*bmd), gfp_mask);
++	struct bio_map_data *bmd;
++
++	if (iov_count > UIO_MAXIOV)
++		return NULL;
  
--		ret = blk_rq_map_user_iov(q, rq, NULL, iov, hdr->iovec_count,
-+		ret = blk_rq_map_user_iov(q, rq, NULL, sg_iov, hdr->iovec_count,
- 					  iov_data_len, GFP_KERNEL);
--		kfree(iov);
-+		kfree(sg_iov);
- 	} else if (hdr->dxfer_len)
- 		ret = blk_rq_map_user(q, rq, NULL, hdr->dxferp, hdr->dxfer_len,
- 				      GFP_KERNEL);
++	bmd = kmalloc(sizeof(*bmd), gfp_mask);
+ 	if (!bmd)
+ 		return NULL;
+ 
 
 
