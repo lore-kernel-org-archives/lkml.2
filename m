@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab0LHBOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:14:17 -0500
-Received: from kroah.org ([198.145.64.141]:33739 "EHLO coco.kroah.org"
+	id S1757462Ab0LHBOi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:14:38 -0500
+Received: from kroah.org ([198.145.64.141]:33730 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932711Ab0LHBDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:33 -0500
+	id S932697Ab0LHBDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:30 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:45 2010
-Message-Id: <20101208005745.390348834@clark.site>
+Message-Id: <20101208005745.110140903@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:17 -0800
+Date: Tue, 07 Dec 2010 17:00:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [240/289] ARM: 6464/2: fix spinlock recursion in adjust_pte()
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Ball <cjb@laptop.org>
+Subject: [237/289] mmc: fix rmmod race for hosts using card-detection polling
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,90 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@iki.fi>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit 4e54d93d3c9846ba1c2644ad06463dafa690d1b7 upstream.
+commit d9bcbf343ec63e1104b5276195888ee06b4d086f upstream.
 
-When running following code in a machine which has VIVT caches and
-USE_SPLIT_PTLOCKS is not defined:
+MMC hosts that poll for card detection by defining the MMC_CAP_NEEDS_POLL
+flag have a race on rmmod, where the delayed work is cancelled without
+waiting for completed polling. To prevent this a _sync version of the work
+cancellation has to be used.
 
-  fd = open("/etc/passwd", O_RDONLY);
-  addr = mmap(NULL, 4096, PROT_READ, MAP_SHARED, fd, 0);
-  addr2 = mmap(NULL, 4096, PROT_READ, MAP_SHARED, fd, 0);
-
-  v = *((int *)addr);
-
-we will hang in spinlock recursion in the page fault handler:
-
-  BUG: spinlock recursion on CPU#0, mmap_test/717
-  lock: c5e295d8, .magic: dead4ead, .owner: mmap_test/717,
-                  .owner_cpu: 0
-  [<c0026604>] (unwind_backtrace+0x0/0xec)
-  [<c014ee48>] (do_raw_spin_lock+0x40/0x140)
-  [<c0027f68>] (update_mmu_cache+0x208/0x250)
-  [<c0079db4>] (__do_fault+0x320/0x3ec)
-  [<c007af7c>] (handle_mm_fault+0x2f0/0x6d8)
-  [<c0027834>] (do_page_fault+0xdc/0x1cc)
-  [<c00202d0>] (do_DataAbort+0x34/0x94)
-
-This comes from the fact that when USE_SPLIT_PTLOCKS is not defined,
-the only lock protecting the page tables is mm->page_table_lock
-which is already locked before update_mmu_cache() is called.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/fault-armv.c |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+ drivers/mmc/core/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/fault-armv.c
-+++ b/arch/arm/mm/fault-armv.c
-@@ -65,6 +65,30 @@ static int do_adjust_pte(struct vm_area_
- 	return ret;
- }
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1514,7 +1514,7 @@ void mmc_stop_host(struct mmc_host *host
  
-+#if USE_SPLIT_PTLOCKS
-+/*
-+ * If we are using split PTE locks, then we need to take the page
-+ * lock here.  Otherwise we are using shared mm->page_table_lock
-+ * which is already locked, thus cannot take it.
-+ */
-+static inline void do_pte_lock(spinlock_t *ptl)
-+{
-+	/*
-+	 * Use nested version here to indicate that we are already
-+	 * holding one similar spinlock.
-+	 */
-+	spin_lock_nested(ptl, SINGLE_DEPTH_NESTING);
-+}
-+
-+static inline void do_pte_unlock(spinlock_t *ptl)
-+{
-+	spin_unlock(ptl);
-+}
-+#else /* !USE_SPLIT_PTLOCKS */
-+static inline void do_pte_lock(spinlock_t *ptl) {}
-+static inline void do_pte_unlock(spinlock_t *ptl) {}
-+#endif /* USE_SPLIT_PTLOCKS */
-+
- static int adjust_pte(struct vm_area_struct *vma, unsigned long address,
- 	unsigned long pfn)
- {
-@@ -89,11 +113,11 @@ static int adjust_pte(struct vm_area_str
- 	 */
- 	ptl = pte_lockptr(vma->vm_mm, pmd);
- 	pte = pte_offset_map_nested(pmd, address);
--	spin_lock(ptl);
-+	do_pte_lock(ptl);
+ 	if (host->caps & MMC_CAP_DISABLE)
+ 		cancel_delayed_work(&host->disable);
+-	cancel_delayed_work(&host->detect);
++	cancel_delayed_work_sync(&host->detect);
+ 	mmc_flush_scheduled_work();
  
- 	ret = do_adjust_pte(vma, address, pfn, pte);
- 
--	spin_unlock(ptl);
-+	do_pte_unlock(ptl);
- 	pte_unmap_nested(pte);
- 
- 	return ret;
+ 	/* clear pm flags now and let card drivers set them as needed */
 
 
