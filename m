@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab0LHAhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:37:00 -0500
-Received: from kroah.org ([198.145.64.141]:54881 "EHLO coco.kroah.org"
+	id S1755535Ab0LHAev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:34:51 -0500
+Received: from kroah.org ([198.145.64.141]:54870 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab0LHAeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:50 -0500
+	id S1755499Ab0LHAet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:49 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:43 2010
-Message-Id: <20101208000643.076689896@clark.site>
+Message-Id: <20101208000642.975564500@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:34 -0800
+Date: Tue, 07 Dec 2010 16:04:33 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        "David S. Miller" <davem@davemloft.net>
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tom Marshall <tdm.code@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [35/44] tcp: Fix race in tcp_poll
+        Robin Holt <holt@sgi.com>, Willy Tarreau <w@1wt.eu>,
+        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Vlad Yasevich <vladislav.yasevich@hp.com>,
+        Sridhar Samudrala <sri@us.ibm.com>
+Subject: [34/44] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +34,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Robin Holt <holt@sgi.com>
 
-From: Tom Marshall <tdm.code@gmail.com>
+[ Problem was fixed differently upstream. -DaveM ]
 
-[ Upstream commit a4d258036ed9b2a1811c3670c6099203a0f284a0 ]
+On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
+sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
+maximized without overflowing.
 
-If a RST comes in immediately after checking sk->sk_err, tcp_poll will
-return POLLIN but not POLLOUT.  Fix this by checking sk->sk_err at the end
-of tcp_poll.  Additionally, ensure the correct order of operations on SMP
-machines with memory barriers.
-
-Signed-off-by: Tom Marshall <tdm.code@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-sctp@vger.kernel.org
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp.c       |    7 +++++--
- net/ipv4/tcp_input.c |    2 ++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ net/ipv4/tcp.c      |    4 +++-
+ net/ipv4/udp.c      |    4 +++-
+ net/sctp/protocol.c |    4 +++-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
 --- a/net/ipv4/tcp.c
 +++ b/net/ipv4/tcp.c
-@@ -347,8 +347,6 @@ unsigned int tcp_poll(struct file *file,
+@@ -2754,12 +2754,14 @@ void __init tcp_init(void)
+ 
+ 	/* Set the pressure threshold to be a fraction of global memory that
+ 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
+-	 * memory, with a floor of 128 pages.
++	 * memory, with a floor of 128 pages, and a ceiling that prevents an
++	 * integer overflow.
  	 */
+ 	nr_pages = totalram_pages - totalhigh_pages;
+ 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
+ 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
+ 	limit = max(limit, 128UL);
++	limit = min(limit, INT_MAX * 4UL / 3 / 2);
+ 	sysctl_tcp_mem[0] = limit / 4 * 3;
+ 	sysctl_tcp_mem[1] = limit;
+ 	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1722,11 +1722,13 @@ void __init udp_init(void)
  
- 	mask = 0;
--	if (sk->sk_err)
--		mask = POLLERR;
+ 	/* Set the pressure threshold up by the same strategy of TCP. It is a
+ 	 * fraction of global memory that is up to 1/2 at 256 MB, decreasing
+-	 * toward zero with the amount of memory, with a floor of 128 pages.
++	 * toward zero with the amount of memory, with a floor of 128 pages,
++	 * and a ceiling that prevents an integer overflow.
+ 	 */
+ 	limit = min(nr_all_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
+ 	limit = (limit * (nr_all_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
+ 	limit = max(limit, 128UL);
++	limit = min(limit, INT_MAX * 4UL / 3 / 2);
+ 	sysctl_udp_mem[0] = limit / 4 * 3;
+ 	sysctl_udp_mem[1] = limit;
+ 	sysctl_udp_mem[2] = sysctl_udp_mem[0] * 2;
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1179,7 +1179,8 @@ SCTP_STATIC __init int sctp_init(void)
  
- 	/*
- 	 * POLLHUP is certainly not done right. But poll() doesn't
-@@ -413,6 +411,11 @@ unsigned int tcp_poll(struct file *file,
- 		if (tp->urg_data & TCP_URG_VALID)
- 			mask |= POLLPRI;
- 	}
-+	/* This barrier is coupled with smp_wmb() in tcp_reset() */
-+	smp_rmb();
-+	if (sk->sk_err)
-+		mask |= POLLERR;
-+
- 	return mask;
- }
- 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3617,6 +3617,8 @@ static void tcp_reset(struct sock *sk)
- 	default:
- 		sk->sk_err = ECONNRESET;
- 	}
-+	/* This barrier is coupled with smp_rmb() in tcp_poll() */
-+	smp_wmb();
- 
- 	if (!sock_flag(sk, SOCK_DEAD))
- 		sk->sk_error_report(sk);
+ 	/* Set the pressure threshold to be a fraction of global memory that
+ 	 * is up to 1/2 at 256 MB, decreasing toward zero with the amount of
+-	 * memory, with a floor of 128 pages.
++	 * memory, with a floor of 128 pages, and a ceiling that prevents an
++	 * integer overflow.
+ 	 * Note this initalizes the data in sctpv6_prot too
+ 	 * Unabashedly stolen from tcp_init
+ 	 */
+@@ -1187,6 +1188,7 @@ SCTP_STATIC __init int sctp_init(void)
+ 	limit = min(nr_pages, 1UL<<(28-PAGE_SHIFT)) >> (20-PAGE_SHIFT);
+ 	limit = (limit * (nr_pages >> (20-PAGE_SHIFT))) >> (PAGE_SHIFT-11);
+ 	limit = max(limit, 128UL);
++	limit = min(limit, INT_MAX * 4UL / 3 / 2);
+ 	sysctl_sctp_mem[0] = limit / 4 * 3;
+ 	sysctl_sctp_mem[1] = limit;
+ 	sysctl_sctp_mem[2] = sysctl_sctp_mem[0] * 2;
 
 
