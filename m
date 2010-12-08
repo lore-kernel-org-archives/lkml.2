@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab0LHBAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:00:11 -0500
-Received: from kroah.org ([198.145.64.141]:48670 "EHLO coco.kroah.org"
+	id S932302Ab0LHBqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:46:47 -0500
+Received: from kroah.org ([198.145.64.141]:48725 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141Ab0LHBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:00 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:28 2010
-Message-Id: <20101208005728.051674479@clark.site>
+	id S932190Ab0LHBAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:10 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:29 2010
+Message-Id: <20101208005729.129182668@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:24 -0800
+Date: Tue, 07 Dec 2010 16:57:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [067/289] ALSA: hda - Disable sticky PCM stream assignment for AD codecs
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [078/289] NFSv4: Dont call nfs4_state_mark_reclaim_reboot() from error handlers
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,104 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0e7adbe263f89ea2ef15b5af5e80a812b2a85025 upstream.
+commit ae1007d37e00144b72906a4bdc47d517ae91bcc1 upstream.
 
-The sticky PCM stream assignment introduced in 2.6.36 kernel seems
-causing problems on AD codecs.  At some time later, the streaming no
-longer works by unknown reason.  A simple workaround is to disable
-sticky-assignment for these codecs.
+In the case of a server reboot, the state recovery thread starts by calling
+nfs4_state_end_reclaim_reboot() in order to avoid edge conditions when
+the server reboots while the client is in the middle of recovery.
 
-Tested-by: Vasily Khoruzhick <anarsoul@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+However, if the client has already marked the nfs4_state as requiring
+reboot recovery, then the above behaviour will cause the recovery thread to
+treat the open as if it was part of such an edge condition: the open will
+be recovered as if it was part of a lease expiration (and all the locks
+will be lost).
+Fix is to remove the call to nfs4_state_mark_reclaim_reboot from
+nfs4_async_handle_error(), and nfs4_handle_exception(). Instead we leave it
+to the recovery thread to do this for us.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_codec.c    |    3 +++
- sound/pci/hda/hda_codec.h    |    1 +
- sound/pci/hda/patch_analog.c |    7 +++++++
- 3 files changed, 11 insertions(+)
+ fs/nfs/nfs4proc.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -1281,6 +1281,9 @@ void __snd_hda_codec_cleanup_stream(stru
- 	if (!nid)
- 		return;
- 
-+	if (codec->no_sticky_stream)
-+		do_now = 1;
-+
- 	snd_printdd("hda_codec_cleanup_stream: NID=0x%x\n", nid);
- 	p = get_hda_cvt_setup(codec, nid);
- 	if (p) {
---- a/sound/pci/hda/hda_codec.h
-+++ b/sound/pci/hda/hda_codec.h
-@@ -850,6 +850,7 @@ struct hda_codec {
- 	unsigned int pin_amp_workaround:1; /* pin out-amp takes index
- 					    * (e.g. Conexant codecs)
- 					    */
-+	unsigned int no_sticky_stream:1; /* no sticky-PCM stream assignment */
- 	unsigned int pins_shutup:1;	/* pins are shut up */
- 	unsigned int no_trigger_sense:1; /* don't trigger at pin-sensing */
- #ifdef CONFIG_SND_HDA_POWER_SAVE
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -1276,6 +1276,7 @@ static int patch_ad1986a(struct hda_code
- 	spec->multiout.no_share_stream = 1;
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
-@@ -1463,6 +1464,7 @@ static int patch_ad1983(struct hda_codec
- 	codec->patch_ops = ad198x_patch_ops;
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
-@@ -1917,6 +1919,7 @@ static int patch_ad1981(struct hda_codec
- 	}
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
-@@ -3235,6 +3238,7 @@ static int patch_ad1988(struct hda_codec
- 	spec->vmaster_nid = 0x04;
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
-@@ -3449,6 +3453,7 @@ static int patch_ad1884(struct hda_codec
- 	codec->patch_ops = ad198x_patch_ops;
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
-@@ -4422,6 +4427,7 @@ static int patch_ad1884a(struct hda_code
- 	}
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
-@@ -4761,6 +4767,7 @@ static int patch_ad1882(struct hda_codec
- 	}
- 
- 	codec->no_trigger_sense = 1;
-+	codec->no_sticky_stream = 1;
- 
- 	return 0;
- }
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -255,9 +255,6 @@ static int nfs4_handle_exception(const s
+ 			nfs4_state_mark_reclaim_nograce(clp, state);
+ 			goto do_state_recovery;
+ 		case -NFS4ERR_STALE_STATEID:
+-			if (state == NULL)
+-				break;
+-			nfs4_state_mark_reclaim_reboot(clp, state);
+ 		case -NFS4ERR_STALE_CLIENTID:
+ 		case -NFS4ERR_EXPIRED:
+ 			goto do_state_recovery;
+@@ -3490,9 +3487,6 @@ nfs4_async_handle_error(struct rpc_task
+ 			nfs4_state_mark_reclaim_nograce(clp, state);
+ 			goto do_state_recovery;
+ 		case -NFS4ERR_STALE_STATEID:
+-			if (state == NULL)
+-				break;
+-			nfs4_state_mark_reclaim_reboot(clp, state);
+ 		case -NFS4ERR_STALE_CLIENTID:
+ 		case -NFS4ERR_EXPIRED:
+ 			goto do_state_recovery;
 
 
