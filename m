@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab0LHBtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:49:39 -0500
-Received: from kroah.org ([198.145.64.141]:48660 "EHLO coco.kroah.org"
+	id S932201Ab0LHBua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:50:30 -0500
+Received: from kroah.org ([198.145.64.141]:48649 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932132Ab0LHA76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:58 -0500
+	id S932117Ab0LHA74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:56 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:27 2010
-Message-Id: <20101208005727.836865092@clark.site>
+Message-Id: <20101208005727.632515177@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:22 -0800
+Date: Tue, 07 Dec 2010 16:57:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Jonathan Corbet <corbet@lwn.net>, Joseph Chan <JosephChan@via.com.tw>
-Subject: [065/289] viafb: fix i2c_transfer error handling
+        Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [063/289] isdn/gigaset: bas_gigaset locking fix
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,95 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 85c5702ac046b14713f776d59768252d8ed8018f upstream.
+commit b33ffa5cbf52ee751bb8068218ebb3c742c5a515 upstream.
 
-i2c_transfer returns negative errno on error and number of messages
-processed on success. Just returning this value would give a poor
-interface as it is not obvious that you must compare with 2 after reading
-1 or n bytes and with 1 after writing 1 byte to determine if it was
-successful. To avoid this error prone interface convert the error code
-of a successful read/write to zero and all other non-negative values to
-an negative error code.
-This fixes a regression introduced by
-	via: Rationalize vt1636 detection
-which resulted in no longer detecting a VT1636 chip and therefore has
-broken the output in configurations which contain this chip.
+Unlock cs->lock before calling error_hangup() which is marked
+"cs->lock must not be held".
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Acked-by: Jonathan Corbet <corbet@lwn.net>
-Cc: Joseph Chan <JosephChan@via.com.tw>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/via/via_i2c.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ drivers/isdn/gigaset/bas-gigaset.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/video/via/via_i2c.c
-+++ b/drivers/video/via/via_i2c.c
-@@ -114,6 +114,7 @@ static void via_i2c_setsda(void *data, i
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -1581,13 +1581,13 @@ static int gigaset_init_bchannel(struct
  
- int viafb_i2c_readbyte(u8 adap, u8 slave_addr, u8 index, u8 *pdata)
- {
-+	int ret;
- 	u8 mm1[] = {0x00};
- 	struct i2c_msg msgs[2];
+ 	ret = starturbs(bcs);
+ 	if (ret < 0) {
++		spin_unlock_irqrestore(&cs->lock, flags);
+ 		dev_err(cs->dev,
+ 			"could not start isochronous I/O for channel B%d: %s\n",
+ 			bcs->channel + 1,
+ 			ret == -EFAULT ? "null URB" : get_usb_rcmsg(ret));
+ 		if (ret != -ENODEV)
+ 			error_hangup(bcs);
+-		spin_unlock_irqrestore(&cs->lock, flags);
+ 		return ret;
+ 	}
  
-@@ -126,11 +127,18 @@ int viafb_i2c_readbyte(u8 adap, u8 slave
- 	mm1[0] = index;
- 	msgs[0].len = 1; msgs[1].len = 1;
- 	msgs[0].buf = mm1; msgs[1].buf = pdata;
--	return i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	ret = i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	if (ret == 2)
-+		ret = 0;
-+	else if (ret >= 0)
-+		ret = -EIO;
-+
-+	return ret;
+@@ -1597,11 +1597,11 @@ static int gigaset_init_bchannel(struct
+ 		dev_err(cs->dev, "could not open channel B%d\n",
+ 			bcs->channel + 1);
+ 		stopurbs(bcs->hw.bas);
+-		if (ret != -ENODEV)
+-			error_hangup(bcs);
+ 	}
+ 
+ 	spin_unlock_irqrestore(&cs->lock, flags);
++	if (ret < 0 && ret != -ENODEV)
++		error_hangup(bcs);
+ 	return ret;
  }
  
- int viafb_i2c_writebyte(u8 adap, u8 slave_addr, u8 index, u8 data)
- {
-+	int ret;
- 	u8 msg[2] = { index, data };
- 	struct i2c_msg msgs;
- 
-@@ -140,11 +148,18 @@ int viafb_i2c_writebyte(u8 adap, u8 slav
- 	msgs.addr = slave_addr / 2;
- 	msgs.len = 2;
- 	msgs.buf = msg;
--	return i2c_transfer(&via_i2c_par[adap].adapter, &msgs, 1);
-+	ret = i2c_transfer(&via_i2c_par[adap].adapter, &msgs, 1);
-+	if (ret == 1)
-+		ret = 0;
-+	else if (ret >= 0)
-+		ret = -EIO;
-+
-+	return ret;
- }
- 
- int viafb_i2c_readbytes(u8 adap, u8 slave_addr, u8 index, u8 *buff, int buff_len)
- {
-+	int ret;
- 	u8 mm1[] = {0x00};
- 	struct i2c_msg msgs[2];
- 
-@@ -156,7 +171,13 @@ int viafb_i2c_readbytes(u8 adap, u8 slav
- 	mm1[0] = index;
- 	msgs[0].len = 1; msgs[1].len = buff_len;
- 	msgs[0].buf = mm1; msgs[1].buf = buff;
--	return i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	ret = i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	if (ret == 2)
-+		ret = 0;
-+	else if (ret >= 0)
-+		ret = -EIO;
-+
-+	return ret;
- }
- 
- /*
 
 
