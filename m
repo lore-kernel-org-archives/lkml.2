@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab0LHArA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:00 -0500
-Received: from kroah.org ([198.145.64.141]:45930 "EHLO coco.kroah.org"
+	id S1756022Ab0LHCOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:14:39 -0500
+Received: from kroah.org ([198.145.64.141]:46028 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755846Ab0LHAqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:47 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
-Message-Id: <20101208004426.492640978@clark.site>
+	id S1755861Ab0LHArB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:01 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:28 2010
+Message-Id: <20101208004427.916110368@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:27 -0800
+Date: Tue, 07 Dec 2010 16:43:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [021/127] hwmon: (lm85) Fix ADT7468 frequency table
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [036/127] eCryptfs: Clear LOOKUP_OPEN flag when creating lower file
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,30 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-commit fa7a5797e57d2ed71f9a6fb44f0ae42c2d7b74b7 upstream.
+commit 2e21b3f124eceb6ab5a07c8a061adce14ac94e14 upstream.
 
-The ADT7468 uses the same frequency table as the ADT7463.
+eCryptfs was passing the LOOKUP_OPEN flag through to the lower file
+system, even though ecryptfs_create() doesn't support the flag. A valid
+filp for the lower filesystem could be returned in the nameidata if the
+lower file system's create() function supported LOOKUP_OPEN, possibly
+resulting in unencrypted writes to the lower file.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Darrick J. Wong <djwong@us.ibm.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+However, this is only a potential problem in filesystems (FUSE, NFS,
+CIFS, CEPH, 9p) that eCryptfs isn't known to support today.
+
+https://bugs.launchpad.net/ecryptfs/+bug/641703
+
+Reported-by: Kevin Buhr
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/lm85.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ecryptfs/inode.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/hwmon/lm85.c
-+++ b/drivers/hwmon/lm85.c
-@@ -1286,6 +1286,7 @@ static int lm85_probe(struct i2c_client
- 	switch (data->type) {
- 	case adm1027:
- 	case adt7463:
-+	case adt7468:
- 	case emc6d100:
- 	case emc6d102:
- 		data->freq_map = adm1027_freq_map;
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -69,15 +69,19 @@ ecryptfs_create_underlying_file(struct i
+ 	struct vfsmount *lower_mnt = ecryptfs_dentry_to_lower_mnt(dentry);
+ 	struct dentry *dentry_save;
+ 	struct vfsmount *vfsmount_save;
++	unsigned int flags_save;
+ 	int rc;
+ 
+ 	dentry_save = nd->path.dentry;
+ 	vfsmount_save = nd->path.mnt;
++	flags_save = nd->flags;
+ 	nd->path.dentry = lower_dentry;
+ 	nd->path.mnt = lower_mnt;
++	nd->flags &= ~LOOKUP_OPEN;
+ 	rc = vfs_create(lower_dir_inode, lower_dentry, mode, nd);
+ 	nd->path.dentry = dentry_save;
+ 	nd->path.mnt = vfsmount_save;
++	nd->flags = flags_save;
+ 	return rc;
+ }
+ 
 
 
