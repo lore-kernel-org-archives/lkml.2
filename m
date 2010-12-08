@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab0LHArz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:55 -0500
-Received: from kroah.org ([198.145.64.141]:58538 "EHLO coco.kroah.org"
+	id S1756250Ab0LHAri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:38 -0500
+Received: from kroah.org ([198.145.64.141]:58445 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756311Ab0LHArv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:51 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
-Message-Id: <20101208004433.190676196@clark.site>
+	id S1756207Ab0LHArf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:35 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:31 2010
+Message-Id: <20101208004431.478151366@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:35 -0800
+Date: Tue, 07 Dec 2010 16:44:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [089/127] ARM: 6489/1: thumb2: fix incorrect optimisation in usracc
+        Matthieu Castet <castet.matthieu@free.fr>,
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        Damien Bergamini <damien.bergamini@free.fr>
+Subject: [072/127] USB: atm: ueagle-atm: fix up some permissions on the sysfs files
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,40 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-commit 1142b71d85894dcff1466dd6c871ea3c89e0352c upstream.
+commit e502ac5e1eca99d7dc3f12b2a6780ccbca674858 upstream.
 
-Commit 8b592783 added a Thumb-2 variant of usracc which, when it is
-called with \rept=2, calls usraccoff once with an offset of 0 and
-secondly with a hard-coded offset of 4 in order to avoid incrementing
-the pointer again. If \inc != 4 then we will store the data to the wrong
-offset from \ptr. Luckily, the only caller that passes \rept=2 to this
-function is __clear_user so we haven't been actively corrupting user data.
+Some of the sysfs files had the incorrect permissions.  Some didn't make
+sense at all (writable for a file that you could not write to?)
 
-This patch fixes usracc to pass \inc instead of #4 to usraccoff
-when it is called a second time.
-
-Reported-by: Tony Thompson <tony.thompson@arm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthieu Castet <castet.matthieu@free.fr>
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>
+Cc: Damien Bergamini <damien.bergamini@free.fr>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/include/asm/assembler.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/atm/ueagle-atm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/include/asm/assembler.h
-+++ b/arch/arm/include/asm/assembler.h
-@@ -215,7 +215,7 @@
- 	@ Slightly optimised to avoid incrementing the pointer twice
- 	usraccoff \instr, \reg, \ptr, \inc, 0, \cond, \abort
- 	.if	\rept == 2
--	usraccoff \instr, \reg, \ptr, \inc, 4, \cond, \abort
-+	usraccoff \instr, \reg, \ptr, \inc, \inc, \cond, \abort
- 	.endif
+--- a/drivers/usb/atm/ueagle-atm.c
++++ b/drivers/usb/atm/ueagle-atm.c
+@@ -2259,7 +2259,7 @@ out:
+ 	return ret;
+ }
  
- 	add\cond \ptr, #\rept * \inc
+-static DEVICE_ATTR(stat_status, S_IWUGO | S_IRUGO, read_status, reboot);
++static DEVICE_ATTR(stat_status, S_IWUSR | S_IRUGO, read_status, reboot);
+ 
+ static ssize_t read_human_status(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+@@ -2322,7 +2322,7 @@ out:
+ 	return ret;
+ }
+ 
+-static DEVICE_ATTR(stat_human_status, S_IWUGO | S_IRUGO, read_human_status, NULL);
++static DEVICE_ATTR(stat_human_status, S_IRUGO, read_human_status, NULL);
+ 
+ static ssize_t read_delin(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+@@ -2354,7 +2354,7 @@ out:
+ 	return ret;
+ }
+ 
+-static DEVICE_ATTR(stat_delin, S_IWUGO | S_IRUGO, read_delin, NULL);
++static DEVICE_ATTR(stat_delin, S_IRUGO, read_delin, NULL);
+ 
+ #define UEA_ATTR(name, reset) 					\
+ 								\
 
 
