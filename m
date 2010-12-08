@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab0LHCQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:16:23 -0500
-Received: from kroah.org ([198.145.64.141]:45995 "EHLO coco.kroah.org"
+	id S1756196Ab0LHCQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:16:38 -0500
+Received: from kroah.org ([198.145.64.141]:45981 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755950Ab0LHAq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:56 -0500
+	id S1755940Ab0LHAqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:54 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:27 2010
-Message-Id: <20101208004427.448576753@clark.site>
+Message-Id: <20101208004427.261053308@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:37 -0800
+Date: Tue, 07 Dec 2010 16:43:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segooon@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [031/127] ipc: shm: fix information leak to userland
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Alok Kataria <akataria@vmware.com>
+Subject: [029/127] xen: dont bother to stop other cpus on shutdown/reboot
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-commit 3af54c9bd9e6f14f896aac1bb0e8405ae0bc7a44 upstream.
+commit 31e323cca9d5c8afd372976c35a5d46192f540d1 upstream.
 
-The shmid_ds structure is copied to userland with shm_unused{,2,3}
-fields unitialized.  It leads to leaking of contents of kernel stack
-memory.
+Xen will shoot all the VCPUs when we do a shutdown hypercall, so there's
+no need to do it manually.
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In any case it will fail because all the IPI irqs have been pulled
+down by this point, so the cross-CPU calls will simply hang forever.
+
+Until change 76fac077db6b34e2c6383a7b4f3f4f7b7d06d8ce the function calls
+were not synchronously waited for, so this wasn't apparent.  However after
+that change the calls became synchronous leading to a hang on shutdown
+on multi-VCPU guests.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Alok Kataria <akataria@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/shm.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/xen/enlighten.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -474,6 +474,7 @@ static inline unsigned long copy_shmid_t
- 	    {
- 		struct shmid_ds out;
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -997,10 +997,6 @@ static void xen_reboot(int reason)
+ {
+ 	struct sched_shutdown r = { .reason = reason };
  
-+		memset(&out, 0, sizeof(out));
- 		ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
- 		out.shm_segsz	= in->shm_segsz;
- 		out.shm_atime	= in->shm_atime;
+-#ifdef CONFIG_SMP
+-	stop_other_cpus();
+-#endif
+-
+ 	if (HYPERVISOR_sched_op(SCHEDOP_shutdown, &r))
+ 		BUG();
+ }
 
 
