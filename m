@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab0LHXTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:19:38 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45962 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755937Ab0LHXTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:19:37 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+X2X0hUmWXsXTaVwM90+Qz13rHoqsweVTJ8Cw8MQ
-	WiIxDHl3/CzPDA
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] avr32: Fix build failure conflicting types for 'sys_execve'
-Date: Thu,  9 Dec 2010 00:19:33 +0100
-Message-Id: <1291850373-6955-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.2.2
-X-Y-GMX-Trusted: 0
+	id S1756746Ab0LHXUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:20:45 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:51063 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab0LHXUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 18:20:44 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+References: <20101201195835.GE2511@redhat.com>
+	<1291234036.32004.2008.camel@laptop>
+	<m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
+	<1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
+	<1291764620.2032.1293.camel@laptop>
+	<20101208140103.GM21786@redhat.com> <1291818005.28378.38.camel@laptop>
+	<1291820356.28378.83.camel@laptop> <20101208223746.GR21786@redhat.com>
+Date: Wed, 08 Dec 2010 15:20:37 -0800
+In-Reply-To: <20101208223746.GR21786@redhat.com> (Don Zickus's message of
+	"Wed, 8 Dec 2010 17:37:46 -0500")
+Message-ID: <m1oc8vetru.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+uZVHmR2EUhRVDumd57aCBCfqLSt/QVxs=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Don Zickus <dzickus@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: perf hw  in kexeced kernel broken in tip
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a build failure[1] for the avr32 architecture which seems
-to be introduced by commit d7627467b7a8
-"Make do_execve() take a const filename pointer"
+Don Zickus <dzickus@redhat.com> writes:
 
-The commit changes the definition in arch/avr32/kernel/process.c but
-forgot to change it here.
+> On Wed, Dec 08, 2010 at 03:59:16PM +0100, Peter Zijlstra wrote:
+>> On Wed, 2010-12-08 at 15:20 +0100, Peter Zijlstra wrote:
+>> 
+>> > > I wonder if you should reverse these checks.  If the bios has the perf
+>> > > counter enabled, there might be a high chance that it fails the first
+>> > > check and never gets to the actually bios checks.
+>> > 
+>> > Ah, good point. 
+>> 
+>> Something like so..
+>
+> This seems to work correctly on my Nehalem and broken bios machines during
+> boot and kexec.  As expected it fails during kdump.  My p4 box failed
+> during kexec for some reason.  But p4 has other issues.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-This build failure exists in linus' tree - added stable@kernel.org to the cc list
+Does the kdump kernel still boot?
 
-KernelVersion: linux-next-20101208
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/3607003/
+It looks like it should I just want to double check.
 
- arch/avr32/include/asm/syscalls.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/avr32/include/asm/syscalls.h b/arch/avr32/include/asm/syscalls.h
-index ab608b7..1440368 100644
---- a/arch/avr32/include/asm/syscalls.h
-+++ b/arch/avr32/include/asm/syscalls.h
-@@ -21,8 +21,10 @@ asmlinkage int sys_clone(unsigned long, unsigned long,
- 			 unsigned long, unsigned long,
- 			 struct pt_regs *);
- asmlinkage int sys_vfork(struct pt_regs *);
--asmlinkage int sys_execve(const char __user *, char __user *__user *,
--			  char __user *__user *, struct pt_regs *);
-+asmlinkage int sys_execve(const char __user *ufilename,
-+			  const char __user *const __user *uargv,
-+			  const char __user *const __user *uenvp,
-+			  struct pt_regs *regs);
- 
- /* kernel/signal.c */
- asmlinkage int sys_sigaltstack(const stack_t __user *, stack_t __user *,
--- 
-1.7.2.2
-
+Eric
