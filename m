@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab0LHWFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 17:05:00 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:65230 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab0LHWE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 17:04:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=QYxQJLQITH7pLKIX5Su9P1854kQGKCKCLzzZSrWWoJbB0GJe+IMwhtMJh1b2+mdVBQ
-         PA8KShaVOfbSKFZCPquNdfmmUkSCjOIJ/Z45imSzF5eeFQy9RkPSZzxdjSnJshKjWshD
-         pJA5RAhjmnCUs4yCfO3z3ucVy9FImNa9q0xSU=
-Subject: Re: [PATCH] mmc: Fix re-probing after hibernation
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Chris Ball <cjb@laptop.org>, Oliver Neukum <oneukum@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1291821839-15088-1-git-send-email-tiwai@suse.de>
-References: <1291821839-15088-1-git-send-email-tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 00:04:52 +0200
-Message-ID: <1291845892.5421.2.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755419Ab0LHWMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 17:12:09 -0500
+Received: from nm12.bullet.mail.ukl.yahoo.com ([217.146.183.186]:36024 "HELO
+	nm12.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751676Ab0LHWMI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 17:12:08 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 886964.48551.bm@omp1032.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.fr;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=gGJuQTyFsZFmJHNhzklfTMR+XCa80MZP3VY2pUZwavok1k0s0SSNk+bsz6BZsEWgsGkql9ob+IV6dFXH/kh0EWfImHjaCdNskAkCEGyEmHt7l1tB0fVDWLZmTThl0I1ow+z79klW/TNouW4uxtw2PMbpeqQibchgXVgwgSqAlgM=;
+Message-ID: <739226.14408.qm@web26002.mail.ukl.yahoo.com>
+X-YMail-OSG: ALGDGF0VM1l0eLK3KNv3SJwJxxGRNOhjJwAtnc.SUhMz4sQ
+ Fb.xNS5lJ1.OYk3wSjqI0qmPb66FZvR20plpdPjdUJrMlgOwbFoQFqLllezV
+ W3yMX0QTeBNd5ho7H_9XHAePZLGZx4sHT5Q4jGWhAbutHHaVSgjUePp13k0N
+ ZcnJ0MIwIebFqRja_0bBMV.jGB1Cmnv4B2Ebh55.D4df6NNpq2M1SJ5tiLpq
+ t54iL_TMPLnp5jZ42cukHktnXcOcn3xPNFPAmdOqcnWn.T3Xaa.FYkV6andI
+ clIvyh8clg340IxdrfTLk1m_xEuWpnHYyxmgvnr76_XCrhNcz6CtRQ.17iLw
+ EtiDQKH03F2pqVLI1DqUXel8n
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Wed, 8 Dec 2010 22:12:05 +0000 (GMT)
+From: Etienne Lorrain <etienne_lorrain@yahoo.fr>
+Subject: [announce] Gujin GPL bootloader version 2.8.3
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 16:23 +0100, Takashi Iwai wrote:
-> The commit 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e
->   mmc: fix all hangs related to mmc/sd card insert/removal during
->   suspend/resume
-> introduced a bug where the device probing no longer works after
-> hibernation.  This was because the pm notifier expects
-> PM_POST_HIBERNATION call while the system sends PM_POST_RESTORE
-> instead, thus disable_rescan is kept as 1.
-> 
-> Cc: <stable@kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/mmc/core/core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 31ae07a..30094f6 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1772,7 +1772,7 @@ int mmc_pm_notify(struct notifier_block *notify_block,
->  		break;
->  
->  	case PM_POST_SUSPEND:
-> -	case PM_POST_HIBERNATION:
-> +	case PM_POST_RESTORE:
->  
->  		spin_lock_irqsave(&host->lock, flags);
->  		host->rescan_disable = 0;
+There is a new version v2.8.3 of the Gujin bootloader at
+http://gujin.org (and sourceforge) with bug fixes and improvements, and
+Debian/Ubuntu/Fedora packages for easy installation on i386/amd64 PC.
 
-So that was the case....
-Takasi, thank you very much.
+In its standard form, Gujin is a graphic bootloader (with mouse support)
+which try to autodetect everything from its environment, and have
+near zero configuration.
+It can be installed on hard disks, CDROMs or USB thumb drives for
+easy testing, the fact that BIOS disk number usually change when
+the PC is booted from different devices is not a problem for Gujin;
+however Gujin arrived in memory has no effect on what it will boot.
 
-I always use the 'unsafe resume' thing so I wasn't affected.
+The major technical improvement is in the removal of the hard coded
+sector size (512 for HD, 2048 for CDROM); Gujin can be installed
+on devices with 512/1024/2048/4096 bytes per sectors, it can boot from
+such devices (when the BIOS support it), and it can chain-boot such
+devices by simulating a BIOS disk with those sector sizes, from a
+disk content stored on standard hard disk or CDROM.
+See the Makefile target "boothdimg" to test yourself.
 
-Best regards,
-	Maxim Levitsky
+There is also improvements and bug fixed for the El-Torito simulator,
+i.e. booting a CDROM image file stored on a hard drive, as if it was
+a real CDROM: more DVD boot now, and a new option has been added to
+detect the underlying file once booted (/sbin/gujin --report-signature).
+Basically, the gujin bootloader simulate the El-Torito BIOS disk
+leaving an extended "$INT13SF" signature containing the BIOS EDD
+disk identification (PCI address...), which is compared at run time to
+/dev/disk/by-path and /dev/disk/by-id to give the partition to mount
+and the file to loop-mount instead of the CDROM.
+
+Some work has also been done to simplify the use of the tiny bootloader,
+for people having a simple configuration - like having a single Linux
+distribution on ext4fs on a PC (or a virtual PC): they can install like
+/sbin/gujin -t tinyext4.bin /boot/minigujin.ebios
+and the bootloader will automatically load the newest (by date)
+vmlinuz/initrd pair without displaying any menu, without probing any
+other disk than the booted one. In case of major problem, one can type
+Control-Break while loading to get an older vmlinuz/initrd pair.
+The command line can be given by the --cmdline="" parameter or stored
+in /boot/gujin.cmd.
+Use "/sbin/gujin --remove /boot/minigujin.ebios" to reinstall the
+previous bootloader (previous MBR saved inside /boot/minigujin.ebios).
+
+The tiny configuration can also be used as an El-Torito bootloader,
+see Makefile target "CDtiny", and on USB thumb drives by using
+respectively tinycdrom.bin and tinyusb.bin metafile (metafiles are
+stored inside the installer itself).
+
+Also, there has been a project-wide rename of file "boot.exe" to
+"gujin.exe", "tiny.exe" to "mingujin.exe" and "boot.bcd" to "gujin.bcd";
+file "gujin" or "gujin64" are the Linux executable installer, and all the
+target bootloaders have "gujin" in their name.
+
+The file "changelog.wri" in the source archive describes many other
+modifications, fixing quite a few bugs.
+
+Downloads at:
+http://sourceforge.net/projects/gujin/files/
+
+Have fun,
+Etienne.
 
 
+
+      
