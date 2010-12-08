@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab0LHBAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:00:13 -0500
-Received: from kroah.org ([198.145.64.141]:48685 "EHLO coco.kroah.org"
+	id S1757189Ab0LHBpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:45:24 -0500
+Received: from kroah.org ([198.145.64.141]:48736 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932148Ab0LHBAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:03 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:28 2010
-Message-Id: <20101208005728.345342853@clark.site>
+	id S932148Ab0LHBAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:13 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:29 2010
+Message-Id: <20101208005729.437949137@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:27 -0800
+Date: Tue, 07 Dec 2010 16:57:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [070/289] ALSA: hda - Add some workarounds for Creative IBG
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [081/289] drm/radeon/kms: MC vram map needs to be >= pci aperture size
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 14d34f166c57e77e3d7f9bc8b43d349186d922c1 upstream.
+commit b7d8cce5b558e0c0aa6898c9865356481598b46d upstream.
 
-Creative HD-audio controller chips require some workarounds:
- - Additional delay before RIRB response
- - Set the initial RIRB counter to 0xc0
+The vram map in the radeon memory controller needs to be
+>= the pci aperture size.  Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=28402
 
-The latter seems to be done in general in Windows driver, so we may
-use this value later for all types if it's confirmed to work better.
+The problematic cards in the above bug have 64 MB of vram,
+but the pci aperture is 128 MB and the MC vram map was only
+64 MB.  This can lead to hangs.
 
-Reported-by: Wai Yew CHAY <wychay@ctl.creative.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/hda_intel.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/r100.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -458,6 +458,7 @@ enum {
- 	AZX_DRIVER_ULI,
- 	AZX_DRIVER_NVIDIA,
- 	AZX_DRIVER_TERA,
-+	AZX_DRIVER_CTX,
- 	AZX_DRIVER_GENERIC,
- 	AZX_NUM_DRIVERS, /* keep this as last entry */
- };
-@@ -473,6 +474,7 @@ static char *driver_short_names[] __devi
- 	[AZX_DRIVER_ULI] = "HDA ULI M5461",
- 	[AZX_DRIVER_NVIDIA] = "HDA NVidia",
- 	[AZX_DRIVER_TERA] = "HDA Teradici", 
-+	[AZX_DRIVER_CTX] = "HDA Creative",
- 	[AZX_DRIVER_GENERIC] = "HD-Audio Generic",
- };
- 
-@@ -563,7 +565,10 @@ static void azx_init_cmd_io(struct azx *
- 	/* reset the rirb hw write pointer */
- 	azx_writew(chip, RIRBWP, ICH6_RIRBWP_RST);
- 	/* set N=1, get RIRB response interrupt for new entry */
--	azx_writew(chip, RINTCNT, 1);
-+	if (chip->driver_type == AZX_DRIVER_CTX)
-+		azx_writew(chip, RINTCNT, 0xc0);
-+	else
-+		azx_writew(chip, RINTCNT, 1);
- 	/* enable rirb dma and response irq */
- 	azx_writeb(chip, RIRBCTL, ICH6_RBCTL_DMA_EN | ICH6_RBCTL_IRQ_EN);
- 	spin_unlock_irq(&chip->reg_lock);
-@@ -1136,8 +1141,11 @@ static irqreturn_t azx_interrupt(int irq
- 	/* clear rirb int */
- 	status = azx_readb(chip, RIRBSTS);
- 	if (status & RIRB_INT_MASK) {
--		if (status & RIRB_INT_RESPONSE)
-+		if (status & RIRB_INT_RESPONSE) {
-+			if (chip->driver_type == AZX_DRIVER_CTX)
-+				udelay(80);
- 			azx_update_rirb(chip);
-+		}
- 		azx_writeb(chip, RIRBSTS, RIRB_INT_MASK);
- 	}
- 
-@@ -2799,10 +2807,10 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
- 	{ PCI_DEVICE(PCI_VENDOR_ID_CREATIVE, PCI_ANY_ID),
- 	  .class = PCI_CLASS_MULTIMEDIA_HD_AUDIO << 8,
- 	  .class_mask = 0xffffff,
--	  .driver_data = AZX_DRIVER_GENERIC },
-+	  .driver_data = AZX_DRIVER_CTX },
- #else
- 	/* this entry seems still valid -- i.e. without emu20kx chip */
--	{ PCI_DEVICE(0x1102, 0x0009), .driver_data = AZX_DRIVER_GENERIC },
-+	{ PCI_DEVICE(0x1102, 0x0009), .driver_data = AZX_DRIVER_CTX },
- #endif
- 	/* AMD/ATI Generic, PCI class code and Vendor ID for HD Audio */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_ANY_ID),
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -2318,6 +2318,9 @@ void r100_vram_init_sizes(struct radeon_
+ 		/* Fix for RN50, M6, M7 with 8/16/32(??) MBs of VRAM - 
+ 		 * Novell bug 204882 + along with lots of ubuntu ones
+ 		 */
++		if (rdev->mc.aper_size > config_aper_size)
++			config_aper_size = rdev->mc.aper_size;
++
+ 		if (config_aper_size > rdev->mc.real_vram_size)
+ 			rdev->mc.mc_vram_size = config_aper_size;
+ 		else
 
 
