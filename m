@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab0LHBbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:31:12 -0500
-Received: from kroah.org ([198.145.64.141]:49103 "EHLO coco.kroah.org"
+	id S1757913Ab0LHBbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:31:35 -0500
+Received: from kroah.org ([198.145.64.141]:49095 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932344Ab0LHBB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:56 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:37 2010
-Message-Id: <20101208005737.013400723@clark.site>
+	id S932326Ab0LHBBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:53 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:36 2010
+Message-Id: <20101208005736.820222445@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:53 -0800
+Date: Tue, 07 Dec 2010 16:58:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [156/289] firewire: ohci: fix race in AR split packet handling
+        Axel Lin <axel.lin@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [154/289] ASoC: wm8961 - clear WM8961_MCLKDIV bit for freq <= 16500000
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,103 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit a1f805e5e73a8fe166b71c6592d3837df0cd5e2e upstream.
+commit 2f7dceeda4708f470fd927adb3861bd8ebbe2310 upstream.
 
-When handling an AR buffer that has been completely filled, we assumed
-that its descriptor will not be read by the controller and can be
-overwritten.  However, when the last received packet happens to end at
-the end of the buffer, the controller might not yet have moved on to the
-next buffer and might read the branch address later.  If we overwrite
-and free the page before that, the DMA context will either go dead
-because of an invalid Z value, or go off into some random memory.
+MCLKDIV bit of Register 04h Clocking1:
+	0 : Divide by 1
+	1 : Divide by 2
 
-To fix this, ensure that the descriptor does not get overwritten by
-using only the actual buffer instead of the entire page for reassembling
-the split packet.  Furthermore, to avoid freeing the page too early,
-move on to the next buffer only when some data in it guarantees that the
-controller has moved on.
+Thus in the case of freq <= 16500000, we should clear MCLKDIV bit.
 
-This should eliminate the remaining firewire-net problems.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Tested-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/ohci.c |   39 +++++++++++++++++++++++----------------
- 1 file changed, 23 insertions(+), 16 deletions(-)
+ sound/soc/codecs/wm8961.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -750,20 +750,19 @@ static void ar_context_tasklet(unsigned
- 		 */
- 
- 		offset = offsetof(struct ar_buffer, data);
--		start = buffer = ab;
-+		start = ab;
- 		start_bus = le32_to_cpu(ab->descriptor.data_address) - offset;
-+		buffer = ab->data;
- 
- 		ab = ab->next;
- 		d = &ab->descriptor;
--		size = buffer + PAGE_SIZE - ctx->pointer;
-+		size = start + PAGE_SIZE - ctx->pointer;
- 		/* valid buffer data in the next page */
- 		rest = le16_to_cpu(d->req_count) - le16_to_cpu(d->res_count);
- 		/* what actually fits in this page */
--		size2 = min(rest, (size_t)PAGE_SIZE - size);
-+		size2 = min(rest, (size_t)PAGE_SIZE - offset - size);
- 		memmove(buffer, ctx->pointer, size);
- 		memcpy(buffer + size, ab->data, size2);
--		ctx->current_buffer = ab;
--		ctx->pointer = (void *) ab->data + rest;
- 
- 		while (size > 0) {
- 			void *next = handle_ar_packet(ctx, buffer);
-@@ -782,22 +781,30 @@ static void ar_context_tasklet(unsigned
- 			size -= pktsize;
- 			/* fill up this page again */
- 			size3 = min(rest - size2,
--				    (size_t)PAGE_SIZE - size - size2);
-+				    (size_t)PAGE_SIZE - offset - size - size2);
- 			memcpy(buffer + size + size2,
- 			       (void *) ab->data + size2, size3);
- 			size2 += size3;
- 		}
- 
--		/* handle the packets that are fully in the next page */
--		buffer = (void *) ab->data + (buffer - (start + size));
--		end = (void *) ab->data + rest;
--
--		while (buffer < end)
--			buffer = handle_ar_packet(ctx, buffer);
--
--		dma_free_coherent(ohci->card.device, PAGE_SIZE,
--				  start, start_bus);
--		ar_context_add_page(ctx);
-+		if (rest > 0) {
-+			/* handle the packets that are fully in the next page */
-+			buffer = (void *) ab->data +
-+					(buffer - (start + offset + size));
-+			end = (void *) ab->data + rest;
-+
-+			while (buffer < end)
-+				buffer = handle_ar_packet(ctx, buffer);
-+
-+			ctx->current_buffer = ab;
-+			ctx->pointer = end;
-+
-+			dma_free_coherent(ohci->card.device, PAGE_SIZE,
-+					  start, start_bus);
-+			ar_context_add_page(ctx);
-+		} else {
-+			ctx->pointer = start + PAGE_SIZE;
-+		}
+--- a/sound/soc/codecs/wm8961.c
++++ b/sound/soc/codecs/wm8961.c
+@@ -736,7 +736,7 @@ static int wm8961_set_sysclk(struct snd_
+ 		freq /= 2;
  	} else {
- 		buffer = ctx->pointer;
- 		ctx->pointer = end =
+ 		dev_dbg(codec->dev, "Using MCLK/1 for %dHz MCLK\n", freq);
+-		reg &= WM8961_MCLKDIV;
++		reg &= ~WM8961_MCLKDIV;
+ 	}
+ 
+ 	snd_soc_write(codec, WM8961_CLOCKING1, reg);
 
 
