@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab0LHRxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:53:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S1754994Ab0LHRxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:53:39 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:43359 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab0LHRxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 12:53:19 -0500
-Message-ID: <4CFFC609.1090506@redhat.com>
-Date: Wed, 08 Dec 2010 11:53:13 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1754860Ab0LHRxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 12:53:37 -0500
+Date: Wed, 8 Dec 2010 09:53:16 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>, dwalsh@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] syslog: check cap_syslog when dmesg_restrict
+Message-ID: <20101208175316.GL5750@outflux.net>
+References: <20101208151901.GA20557@mail.hallyn.com>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@nokia.com>
-CC: tytso@mit.edu, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ext-phil.2.carmody@nokia.com
-Subject: Re: [PATCH] ext4: fix typo in ext4_find_entry()
-References: <1291826002-24989-1-git-send-email-aaro.koskinen@nokia.com>
-In-Reply-To: <1291826002-24989-1-git-send-email-aaro.koskinen@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208151901.GA20557@mail.hallyn.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 10:33 AM, Aaro Koskinen wrote:
-> There should be a check for NUL character instead of '0'.
+On Wed, Dec 08, 2010 at 03:19:01PM +0000, Serge E. Hallyn wrote:
+> Eric Paris pointed out that it doesn't make sense to require
+> both CAP_SYS_ADMIN and CAP_SYSLOG for certain syslog actions.
+> So require CAP_SYSLOG, not CAP_SYS_ADMIN, when dmesg_restrict
+> is set.
 > 
-> Reported-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
-> ---
->  fs/ext4/namei.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> (I'm also consolidating the now common error path)
 > 
-> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-> index 92203b8..dc40e75 100644
-> --- a/fs/ext4/namei.c
-> +++ b/fs/ext4/namei.c
-> @@ -872,7 +872,7 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
->  	if (namelen > EXT4_NAME_LEN)
->  		return NULL;
->  	if ((namelen <= 2) && (name[0] == '.') &&
-> -	    (name[1] == '.' || name[1] == '0')) {
-> +	    (name[1] == '.' || name[1] == '\0')) {
->  		/*
->  		 * "." or ".." will only be in the first block
->  		 * NFS may look up ".."; "." should be handled by the VFS
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-Yep, as it was reviewed on the list when originally sent, oops! ;)
+Acked-by: Kees Cook <kees.cook@canonical.com>
 
--Eric
+-- 
+Kees Cook
+Ubuntu Security Team
