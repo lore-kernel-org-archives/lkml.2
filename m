@@ -1,203 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab0LHKFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 05:05:48 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53446 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752289Ab0LHKFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 05:05:47 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18d/94nt9Qdz77kSKIEvFWCAxdP7QjwWm3EqG7obH
-	I4Fo5/4KUaq5Cw
-Subject: Re: [patchlet] Re: Scheduler bug related to rq->skip_clock_update?
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>,
-        "Bjoern B. Brandenburg" <bbb.lst@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrea Bastoni <bastoni@sprg.uniroma2.it>,
-        "James H. Anderson" <anderson@cs.unc.edu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1291748109.7475.20.camel@marge.simson.net>
-References: <alpine.LNX.2.00.1011202315290.8927@jupiter-cs.cs.unc.edu>
-	 <1290359641.4816.69.camel@maggy.simson.net>
-	 <alpine.LNX.2.00.1011212327250.8927@jupiter-cs.cs.unc.edu>
-	 <1290442781.16393.22.camel@maggy.simson.net>
-	 <alpine.LNX.2.00.1011221310430.8927@jupiter-cs.cs.unc.edu>
-	 <20101205052819.GA2878@zhy> <1291613607.9457.5.camel@marge.simson.net>
-	 <AANLkTimH0YN0fd4zOk3A=_Q7waqM=6V4pw4N+0g0-k=7@mail.gmail.com>
-	 <1291624329.9457.38.camel@marge.simson.net>
-	 <1291740081.2032.751.camel@laptop>
-	 <1291748109.7475.20.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Wed, 08 Dec 2010 11:05:42 +0100
-Message-Id: <1291802742.1417.9.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1754641Ab0LHKGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 05:06:53 -0500
+Received: from hera.kernel.org ([140.211.167.34]:35245 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab0LHKGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 05:06:52 -0500
+Message-ID: <4CFF58D2.4040006@kernel.org>
+Date: Wed, 08 Dec 2010 11:07:14 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: Jian Peng <jipeng@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com> <4CFEE569.4030204@gmail.com>
+In-Reply-To: <4CFEE569.4030204@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 10:06:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-07 at 19:55 +0100, Mike Galbraith wrote:
-> On Tue, 2010-12-07 at 17:41 +0100, Peter Zijlstra wrote:
-> > On Mon, 2010-12-06 at 09:32 +0100, Mike Galbraith wrote:
-> > 
-> > >  kernel/fork.c  |    1 +
-> > >  kernel/sched.c |    6 +++---
-> > >  2 files changed, 4 insertions(+), 3 deletions(-)
-> > > 
-> > > Index: linux-2.6.37.git/kernel/sched.c
-> > > ===================================================================
-> > > --- linux-2.6.37.git.orig/kernel/sched.c
-> > > +++ linux-2.6.37.git/kernel/sched.c
-> > > @@ -660,6 +660,7 @@ inline void update_rq_clock(struct rq *r
-> > >  
-> > >  		sched_irq_time_avg_update(rq, irq_time);
-> > >  	}
-> > > +	rq->skip_clock_update = 0;
-> > >  }
-> > >  
-> > >  /*
-> > 
-> > Shouldn't we do that at the end of schedule()? Since the purpose of
-> > ->skip_clock_update is to avoid multiple calls to:
-> >   - avoid overhead
-> >   - ensure scheduling is accounted at a single point
-> > 
-> > [ for that latter purpose it might also make sense to put that point
-> > somewhere around context_switch() but due to the fact that we need a
-> > clock update early that's a bit impractical. ]
-> > 
-> > Hmm?
-> 
-> Yeah, could do that instead.  There's no gain in any call that may
-> happen in the interval between.  Think I'll measure though, this bug was
-> a surprise :)
+Hello,
 
-Did that, all is well.
+On 12/08/2010 02:54 AM, Robert Hancock wrote:
+> On 12/07/2010 01:43 AM, Jian Peng wrote:
+>> Recently, while bringing up a new AHCI host controller, I found out
+>> that current AHCI driver (in 2.6.37-rc3) may violate AHCI spec in
+>> function libahci.c: ahci_start_engine().
+>>
+>> From end of section 10.1.2 in AHCI 1.3 spec, it claims
+>>
+>> Software shall not set PxCMD.ST to '1' until it is determined that
+>> a functional device is present on the port as determined by
+>> PxTFD.STS.BSY = '0', PxTFD.STS.DRQ = '0', and PxSSTS.DET = 3h.
+>>
+>> It seems working well on most controller without this extra
+>> checking, but does cause problem in our new core. Since toggling
+>> PxCMD.SUD already initiated reset process at early time, and by the
+>> time of ahci_start_engine() got called, BSY bit may not be cleared
+>> yet, and forcing PxCMD.ST bit to 1 will cause problem for HW in
+>> this case.
 
-> > OK.. have we looked if there's more TIF flags that could do with a
-> > reset?
-> 
-> mmm, no.
+Hmmm... interesting.  Yeah, we have never had any problem in that area
+and would like to avoid changing unless necessary but then again if
+it's broken, well, we should.  What kind of problem is the controller
+showing?
 
-Crawling over flags had to be left for another day.
+Thanks.
 
-Sched: fix skip_clock_update optimization
-
-idle_balance() drops/retakes rq->lock, leaving the previous task
-vulnerable to set_tsk_need_resched().  Clear it after we return
-from balancing instead, and in setup_thread_stack() as well, so
-no successfully descheduled or never scheduled task has it set.
- 
-Need resched confused the skip_clock_update logic, which assumes
-that the next call to update_rq_clock() will come nearly immediately
-after being set.  Make the optimization robust against the waking
-a sleeper before it sucessfully deschedules case by checking that
-the current task has not been dequeued before setting the flag,
-since it is that useless clock update we're trying to save, and
-clear unconditionally in schedule() proper instead of conditionally
-in put_prev_task().
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Bjoern B. Brandenburg <bbb.lst@gmail.com>
-Reported-by: Bjoern B. Brandenburg <bbb.lst@gmail.com>
-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
-
----
- kernel/fork.c  |    1 +
- kernel/sched.c |   28 +++++++++++++++-------------
- 2 files changed, 16 insertions(+), 13 deletions(-)
-
-Index: linux-2.6.37.git/kernel/sched.c
-===================================================================
---- linux-2.6.37.git.orig/kernel/sched.c
-+++ linux-2.6.37.git/kernel/sched.c
-@@ -649,17 +649,18 @@ static void sched_irq_time_avg_update(st
- 
- inline void update_rq_clock(struct rq *rq)
- {
--	if (!rq->skip_clock_update) {
--		int cpu = cpu_of(rq);
--		u64 irq_time;
--
--		rq->clock = sched_clock_cpu(cpu);
--		irq_time = irq_time_cpu(cpu);
--		if (rq->clock - irq_time > rq->clock_task)
--			rq->clock_task = rq->clock - irq_time;
-+	int cpu = cpu_of(rq);
-+	u64 irq_time;
- 
--		sched_irq_time_avg_update(rq, irq_time);
--	}
-+	if (rq->skip_clock_update)
-+		return;
-+
-+	rq->clock = sched_clock_cpu(cpu);
-+	irq_time = irq_time_cpu(cpu);
-+	if (rq->clock - irq_time > rq->clock_task)
-+		rq->clock_task = rq->clock - irq_time;
-+
-+	sched_irq_time_avg_update(rq, irq_time);
- }
- 
- /*
-@@ -2138,7 +2139,7 @@ static void check_preempt_curr(struct rq
- 	 * A queue event has occurred, and we're going to schedule.  In
- 	 * this case, we can save a useless back to back clock update.
- 	 */
--	if (test_tsk_need_resched(rq->curr))
-+	if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
- 		rq->skip_clock_update = 1;
- }
- 
-@@ -3854,7 +3855,6 @@ static void put_prev_task(struct rq *rq,
- {
- 	if (prev->se.on_rq)
- 		update_rq_clock(rq);
--	rq->skip_clock_update = 0;
- 	prev->sched_class->put_prev_task(rq, prev);
- }
- 
-@@ -3912,7 +3912,6 @@ need_resched_nonpreemptible:
- 		hrtick_clear(rq);
- 
- 	raw_spin_lock_irq(&rq->lock);
--	clear_tsk_need_resched(prev);
- 
- 	switch_count = &prev->nivcsw;
- 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-@@ -3944,6 +3943,8 @@ need_resched_nonpreemptible:
- 
- 	put_prev_task(rq, prev);
- 	next = pick_next_task(rq);
-+	clear_tsk_need_resched(prev);
-+	rq->skip_clock_update = 0;
- 
- 	if (likely(prev != next)) {
- 		sched_info_switch(prev, next);
-@@ -3952,6 +3953,7 @@ need_resched_nonpreemptible:
- 		rq->nr_switches++;
- 		rq->curr = next;
- 		++*switch_count;
-+		WARN_ON_ONCE(test_tsk_need_resched(next));
- 
- 		context_switch(rq, prev, next); /* unlocks the rq */
- 		/*
-Index: linux-2.6.37.git/kernel/fork.c
-===================================================================
---- linux-2.6.37.git.orig/kernel/fork.c
-+++ linux-2.6.37.git/kernel/fork.c
-@@ -275,6 +275,7 @@ static struct task_struct *dup_task_stru
- 
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
-+	clear_tsk_need_resched(tsk);
- 	stackend = end_of_stack(tsk);
- 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
- 
-
-
+-- 
+tejun
