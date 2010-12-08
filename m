@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab0LHBFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:05:16 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45378 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757396Ab0LHBFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:05:13 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 8 Dec 2010 09:59:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] compaction: Remove mem_cgroup_del_lru
-Message-Id: <20101208095932.7a9aa2e3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1291734086-1405-1-git-send-email-minchan.kim@gmail.com>
-References: <1291734086-1405-1-git-send-email-minchan.kim@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757418Ab0LHBFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:05:52 -0500
+Received: from kroah.org ([198.145.64.141]:33944 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932942Ab0LHBEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:04:16 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:49 2010
+Message-Id: <20101208005749.827037852@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 17:01:01 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Daniel J Blueman <daniel.blueman@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [284/289] r8169: revert "Handle rxfifo errors on 8168 chips"
+In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  8 Dec 2010 00:01:26 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-> del_page_from_lru_list alreay called mem_cgroup_del_lru.
-> So we need to call it again. It makes wrong stat of memcg and
-> even happen VM_BUG_ON hit.
-> 
-> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+------------------
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
 
-Thank you.
+commit 53f57357ff0afc37804f4e82ee3123e0c0a2cad6 upstream.
+
+The original patch helps under obscure conditions (no pun) but
+some 8168 do not like it. The change needs to be tightened with
+a specific 8168 version.
+
+This reverts commit 801e147cde02f04b5c2f42764cd43a89fc7400a2
+("r8169: Handle rxfifo errors on 8168 chips").
+
+Regression at https://bugzilla.kernel.org/show_bug.cgi?id=20882
+
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Tested-by: Andreas Radke <a.radke@arcor.de>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Daniel J Blueman <daniel.blueman@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/r8169.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -2936,7 +2936,7 @@ static const struct rtl_cfg_info {
+ 		.hw_start	= rtl_hw_start_8168,
+ 		.region		= 2,
+ 		.align		= 8,
+-		.intr_event	= SYSErr | RxFIFOOver | LinkChg | RxOverflow |
++		.intr_event	= SYSErr | LinkChg | RxOverflow |
+ 				  TxErr | TxOK | RxOK | RxErr,
+ 		.napi_event	= TxErr | TxOK | RxOK | RxOverflow,
+ 		.features	= RTL_FEATURE_GMII | RTL_FEATURE_MSI,
+@@ -4628,7 +4628,8 @@ static irqreturn_t rtl8169_interrupt(int
+ 		}
+ 
+ 		/* Work around for rx fifo overflow */
+-		if (unlikely(status & RxFIFOOver)) {
++		if (unlikely(status & RxFIFOOver) &&
++		(tp->mac_version == RTL_GIGA_MAC_VER_11)) {
+ 			netif_stop_queue(dev);
+ 			rtl8169_tx_timeout(dev);
+ 			break;
 
 
