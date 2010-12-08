@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab0LHBqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:46:17 -0500
-Received: from kroah.org ([198.145.64.141]:48732 "EHLO coco.kroah.org"
+	id S932193Ab0LHBAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:00:11 -0500
+Received: from kroah.org ([198.145.64.141]:48670 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199Ab0LHBAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:12 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:29 2010
-Message-Id: <20101208005729.329684843@clark.site>
+	id S932141Ab0LHBAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:00 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:28 2010
+Message-Id: <20101208005728.051674479@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:37 -0800
+Date: Tue, 07 Dec 2010 16:57:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [080/289] NFS: Dont SIGBUS if nfs_vm_page_mkwrite races with a cache invalidation
+        Takashi Iwai <tiwai@suse.de>
+Subject: [067/289] ALSA: hda - Disable sticky PCM stream assignment for AD codecs
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit bc4866b6e0b44f8ea0df22a16e5927714beb4983 upstream.
+commit 0e7adbe263f89ea2ef15b5af5e80a812b2a85025 upstream.
 
-In the case where we lock the page, and then find out that the page has
-been thrown out of the page cache, we should just return VM_FAULT_NOPAGE.
-This is what block_page_mkwrite() does in these situations.
+The sticky PCM stream assignment introduced in 2.6.36 kernel seems
+causing problems on AD codecs.  At some time later, the streaming no
+longer works by unknown reason.  A simple workaround is to disable
+sticky-assignment for these codecs.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Vasily Khoruzhick <anarsoul@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/file.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ sound/pci/hda/hda_codec.c    |    3 +++
+ sound/pci/hda/hda_codec.h    |    1 +
+ sound/pci/hda/patch_analog.c |    7 +++++++
+ 3 files changed, 11 insertions(+)
 
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -551,7 +551,7 @@ static int nfs_vm_page_mkwrite(struct vm
- 	struct file *filp = vma->vm_file;
- 	struct dentry *dentry = filp->f_path.dentry;
- 	unsigned pagelen;
--	int ret = -EINVAL;
-+	int ret = VM_FAULT_NOPAGE;
- 	struct address_space *mapping;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -1281,6 +1281,9 @@ void __snd_hda_codec_cleanup_stream(stru
+ 	if (!nid)
+ 		return;
  
- 	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
-@@ -567,21 +567,20 @@ static int nfs_vm_page_mkwrite(struct vm
- 	if (mapping != dentry->d_inode->i_mapping)
- 		goto out_unlock;
++	if (codec->no_sticky_stream)
++		do_now = 1;
++
+ 	snd_printdd("hda_codec_cleanup_stream: NID=0x%x\n", nid);
+ 	p = get_hda_cvt_setup(codec, nid);
+ 	if (p) {
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -850,6 +850,7 @@ struct hda_codec {
+ 	unsigned int pin_amp_workaround:1; /* pin out-amp takes index
+ 					    * (e.g. Conexant codecs)
+ 					    */
++	unsigned int no_sticky_stream:1; /* no sticky-PCM stream assignment */
+ 	unsigned int pins_shutup:1;	/* pins are shut up */
+ 	unsigned int no_trigger_sense:1; /* don't trigger at pin-sensing */
+ #ifdef CONFIG_SND_HDA_POWER_SAVE
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -1276,6 +1276,7 @@ static int patch_ad1986a(struct hda_code
+ 	spec->multiout.no_share_stream = 1;
  
--	ret = 0;
- 	pagelen = nfs_page_length(page);
- 	if (pagelen == 0)
- 		goto out_unlock;
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
  
--	ret = nfs_flush_incompatible(filp, page);
--	if (ret != 0)
--		goto out_unlock;
-+	ret = VM_FAULT_LOCKED;
-+	if (nfs_flush_incompatible(filp, page) == 0 &&
-+	    nfs_updatepage(filp, page, 0, pagelen) == 0)
-+		goto out;
- 
--	ret = nfs_updatepage(filp, page, 0, pagelen);
-+	ret = VM_FAULT_SIGBUS;
- out_unlock:
--	if (!ret)
--		return VM_FAULT_LOCKED;
- 	unlock_page(page);
--	return VM_FAULT_SIGBUS;
-+out:
-+	return ret;
+ 	return 0;
  }
+@@ -1463,6 +1464,7 @@ static int patch_ad1983(struct hda_codec
+ 	codec->patch_ops = ad198x_patch_ops;
  
- static const struct vm_operations_struct nfs_file_vm_ops = {
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
+@@ -1917,6 +1919,7 @@ static int patch_ad1981(struct hda_codec
+ 	}
+ 
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
+@@ -3235,6 +3238,7 @@ static int patch_ad1988(struct hda_codec
+ 	spec->vmaster_nid = 0x04;
+ 
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
+@@ -3449,6 +3453,7 @@ static int patch_ad1884(struct hda_codec
+ 	codec->patch_ops = ad198x_patch_ops;
+ 
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
+@@ -4422,6 +4427,7 @@ static int patch_ad1884a(struct hda_code
+ 	}
+ 
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
+@@ -4761,6 +4767,7 @@ static int patch_ad1882(struct hda_codec
+ 	}
+ 
+ 	codec->no_trigger_sense = 1;
++	codec->no_sticky_stream = 1;
+ 
+ 	return 0;
+ }
 
 
