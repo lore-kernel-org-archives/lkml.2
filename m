@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab0LHAeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:34:25 -0500
-Received: from kroah.org ([198.145.64.141]:54711 "EHLO coco.kroah.org"
+	id S1755318Ab0LHAlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:41:42 -0500
+Received: from kroah.org ([198.145.64.141]:54739 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754816Ab0LHAeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:20 -0500
+	id S1754912Ab0LHAeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:24 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.219231079@clark.site>
+Message-Id: <20101208000640.613595919@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:06 -0800
+Date: Tue, 07 Dec 2010 16:04:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [07/44] mm: fix return value of scan_lru_pages in memory unplug
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [11/44] sys_semctl: fix kernel stack leakage
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit f8f72ad5396987e05a42cf7eff826fb2a15ff148 upstream.
+commit 982f7c2b2e6a28f8f266e075d92e19c0dd4c6e56 upstream.
 
-scan_lru_pages returns pfn. So, it's type should be "unsigned long"
-not "int".
+The semctl syscall has several code paths that lead to the leakage of
+uninitialized kernel stack memory (namely the IPC_INFO, SEM_INFO,
+IPC_STAT, and SEM_STAT commands) during the use of the older, obsolete
+version of the semid_ds struct.
 
-Note: I guess this has been work until now because memory hotplug tester's
-      machine has not very big memory....
-      physical address < 32bit << PAGE_SHIFT.
+The copy_semid_to_user() function declares a semid_ds struct on the stack
+and copies it back to the user without initializing or zeroing the
+"sem_base", "sem_pending", "sem_pending_last", and "undo" pointers,
+allowing the leakage of 16 bytes of kernel stack memory.
 
-Reported-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+The code is still reachable on 32-bit systems - when calling semctl()
+newer glibc's automatically OR the IPC command with the IPC_64 flag, but
+invoking the syscall directly allows users to use the older versions of
+the struct.
+
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory_hotplug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ ipc/sem.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -612,7 +612,7 @@ static int test_pages_in_a_zone(unsigned
-  * Scanning pfn is much easier than scanning lru list.
-  * Scan pfn from start to end and Find LRU page.
-  */
--int scan_lru_pages(unsigned long start, unsigned long end)
-+unsigned long scan_lru_pages(unsigned long start, unsigned long end)
- {
- 	unsigned long pfn;
- 	struct page *page;
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -560,6 +560,8 @@ static unsigned long copy_semid_to_user(
+ 	    {
+ 		struct semid_ds out;
+ 
++		memset(&out, 0, sizeof(out));
++
+ 		ipc64_perm_to_ipc_perm(&in->sem_perm, &out.sem_perm);
+ 
+ 		out.sem_otime	= in->sem_otime;
 
 
