@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab0LHUmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:42:06 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34617 "EHLO hera.kernel.org"
+	id S1756676Ab0LHUmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:42:20 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34639 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756349Ab0LHUmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:42:03 -0500
-Date: Wed, 8 Dec 2010 20:41:27 GMT
-From: tip-bot for Dario Faggioli <raistlin@linux.it>
+	id S1756335Ab0LHUmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:42:17 -0500
+Date: Wed, 8 Dec 2010 20:41:52 GMT
+From: tip-bot for Eric Dumazet <eric.dumazet@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, raistlin@linux.it, rostedt@goodmis.org,
-        tglx@linutronix.de, ghaskins@novell.com, mingo@elte.hu
+        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl, cl@linux.com,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, raistlin@linux.it, rostedt@goodmis.org,
-        tglx@linutronix.de, ghaskins@novell.com, mingo@elte.hu
-In-Reply-To: <1291143093.2697.298.camel@Palantir>
-References: <1291143093.2697.298.camel@Palantir>
+        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl, cl@linux.com,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1290788536.2855.237.camel@edumazet-laptop>
+References: <1290788536.2855.237.camel@edumazet-laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Make pushable_tasks CONFIG_SMP dependant
-Message-ID: <tip-806c09a7db457be3758e14b1f152761135d89af5@git.kernel.org>
-Git-Commit-ID: 806c09a7db457be3758e14b1f152761135d89af5
+Subject: [tip:sched/core] printk: Use this_cpu_{read|write} api on printk_pending
+Message-ID: <tip-40dc11ffb35e8c4e8fa71092048e0f8de9db758c@git.kernel.org>
+Git-Commit-ID: 40dc11ffb35e8c4e8fa71092048e0f8de9db758c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:41:30 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:41:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  806c09a7db457be3758e14b1f152761135d89af5
-Gitweb:     http://git.kernel.org/tip/806c09a7db457be3758e14b1f152761135d89af5
-Author:     Dario Faggioli <raistlin@linux.it>
-AuthorDate: Tue, 30 Nov 2010 19:51:33 +0100
+Commit-ID:  40dc11ffb35e8c4e8fa71092048e0f8de9db758c
+Gitweb:     http://git.kernel.org/tip/40dc11ffb35e8c4e8fa71092048e0f8de9db758c
+Author:     Eric Dumazet <eric.dumazet@gmail.com>
+AuthorDate: Fri, 26 Nov 2010 17:22:16 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 8 Dec 2010 20:16:00 +0100
+CommitDate: Wed, 8 Dec 2010 20:16:01 +0100
 
-sched: Make pushable_tasks CONFIG_SMP dependant
+printk: Use this_cpu_{read|write} api on printk_pending
 
-As noted by Peter Zijlstra at https://lkml.org/lkml/2010/11/10/391
-(while reviewing other stuff, though), tracking pushable tasks
-only makes sense on SMP systems.
+__get_cpu_var() is a bit inefficient, lets use __this_cpu_read() and
+__this_cpu_write() to manipulate printk_pending.
 
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Acked-by: Gregory Haskins <ghaskins@novell.com>
+printk_needs_cpu(cpu) is called only for the current cpu :
+Use faster __this_cpu_read().
+
+Remove the redundant unlikely on (cpu_is_offline(cpu)) test:
+
+ # size kernel/printk.o*
+   text	   data	    bss	    dec	    hex	filename
+   9942	    756	 263488	 274186	  42f0a	kernel/printk.o.new
+   9990	    756	 263488	 274234	  42f3a	kernel/printk.o.old
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Christoph Lameter <cl@linux.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1291143093.2697.298.camel@Palantir>
+LKML-Reference: <1290788536.2855.237.camel@edumazet-laptop>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/init_task.h |    9 ++++++++-
- include/linux/sched.h     |    2 ++
- kernel/sched.c            |    2 ++
- 3 files changed, 12 insertions(+), 1 deletions(-)
+ kernel/printk.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 1f8c06c..6ed8812 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -12,6 +12,13 @@
- #include <linux/securebits.h>
- #include <net/net_namespace.h>
+diff --git a/kernel/printk.c b/kernel/printk.c
+index a23315d..ab3ffc5 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1074,17 +1074,17 @@ static DEFINE_PER_CPU(int, printk_pending);
  
-+#ifdef CONFIG_SMP
-+# define INIT_PUSHABLE_TASKS(tsk)					\
-+	.pushable_tasks = PLIST_NODE_INIT(tsk.pushable_tasks, MAX_PRIO),
-+#else
-+# define INIT_PUSHABLE_TASKS(tsk)
-+#endif
-+
- extern struct files_struct init_files;
- extern struct fs_struct init_fs;
- 
-@@ -137,7 +144,7 @@ extern struct cred init_cred;
- 		.nr_cpus_allowed = NR_CPUS,				\
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
--	.pushable_tasks = PLIST_NODE_INIT(tsk.pushable_tasks, MAX_PRIO), \
-+	INIT_PUSHABLE_TASKS(tsk)					\
- 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
- 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
- 	.real_parent	= &tsk,						\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 9c2d46d..4f92a23 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1240,7 +1240,9 @@ struct task_struct {
- #endif
- 
- 	struct list_head tasks;
-+#ifdef CONFIG_SMP
- 	struct plist_node pushable_tasks;
-+#endif
- 
- 	struct mm_struct *mm, *active_mm;
- #if defined(SPLIT_RSS_COUNTING)
-diff --git a/kernel/sched.c b/kernel/sched.c
-index b646dad..3925a1b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2595,7 +2595,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
- 	/* Want to start with kernel preemption disabled. */
- 	task_thread_info(p)->preempt_count = 1;
- #endif
-+#ifdef CONFIG_SMP
- 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
-+#endif
- 
- 	put_cpu();
+ void printk_tick(void)
+ {
+-	if (__get_cpu_var(printk_pending)) {
+-		__get_cpu_var(printk_pending) = 0;
++	if (__this_cpu_read(printk_pending)) {
++		__this_cpu_write(printk_pending, 0);
+ 		wake_up_interruptible(&log_wait);
+ 	}
  }
+ 
+ int printk_needs_cpu(int cpu)
+ {
+-	if (unlikely(cpu_is_offline(cpu)))
++	if (cpu_is_offline(cpu))
+ 		printk_tick();
+-	return per_cpu(printk_pending, cpu);
++	return __this_cpu_read(printk_pending);
+ }
+ 
+ void wake_up_klogd(void)
