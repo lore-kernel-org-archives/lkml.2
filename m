@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab0LHAsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:48:07 -0500
-Received: from kroah.org ([198.145.64.141]:58599 "EHLO coco.kroah.org"
+	id S1756642Ab0LHAxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:53:06 -0500
+Received: from kroah.org ([198.145.64.141]:58637 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756371Ab0LHAsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:00 -0500
+	id S1756403Ab0LHAsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:06 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
-Message-Id: <20101208004434.124463699@clark.site>
+Message-Id: <20101208004434.816700080@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:44 -0800
+Date: Tue, 07 Dec 2010 16:44:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [098/127] sparc64: Fix race in signal instruction flushing.
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        maximilian attems <max@stro.at>
+Subject: [105/127] V4L/DVB (13154): uvcvideo: Handle garbage at the end of streaming interface descriptors
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,165 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-From: David S. Miller <davem@davemloft.net>
+commit c4ed8c66d79d707d89fe732ff5b97739edf1ba62 upstream.
 
-[ Upstream commit 05c5e7698bdc54b3079a3517d86077f49ebcc788 ]
+At least one 5986:0241 webcam model includes vendor-specific descriptors
+at the end of its streaming interface descriptors. Print an information
+UVC_TRACE_DESCR message and try to continue parsing the descriptors
+rather than bailing out with an error.
 
-If another cpu does a very wide munmap() on the signal frame area,
-it can tear down the page table hierarchy from underneath us.
-
-Borrow an idea from the 64-bit fault path's get_user_insn(), and
-disable cross call interrupts during the page table traversal
-to lock them in place while we operate.
-
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/kernel/signal32.c |  102 +++++++++++++++++++++++++------------------
- 1 file changed, 60 insertions(+), 42 deletions(-)
 
---- a/arch/sparc/kernel/signal32.c
-+++ b/arch/sparc/kernel/signal32.c
-@@ -453,6 +453,64 @@ static int save_fpu_state32(struct pt_re
- 	return err;
- }
- 
-+/* The I-cache flush instruction only works in the primary ASI, which
-+ * right now is the nucleus, aka. kernel space.
-+ *
-+ * Therefore we have to kick the instructions out using the kernel
-+ * side linear mapping of the physical address backing the user
-+ * instructions.
-+ */
-+static void flush_signal_insns(unsigned long address)
-+{
-+	unsigned long pstate, paddr;
-+	pte_t *ptep, pte;
-+	pgd_t *pgdp;
-+	pud_t *pudp;
-+	pmd_t *pmdp;
-+
-+	/* Commit all stores of the instructions we are about to flush.  */
-+	wmb();
-+
-+	/* Disable cross-call reception.  In this way even a very wide
-+	 * munmap() on another cpu can't tear down the page table
-+	 * hierarchy from underneath us, since that can't complete
-+	 * until the IPI tlb flush returns.
-+	 */
-+
-+	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
-+	__asm__ __volatile__("wrpr %0, %1, %%pstate"
-+				: : "r" (pstate), "i" (PSTATE_IE));
-+
-+	pgdp = pgd_offset(current->mm, address);
-+	if (pgd_none(*pgdp))
-+		goto out_irqs_on;
-+	pudp = pud_offset(pgdp, address);
-+	if (pud_none(*pudp))
-+		goto out_irqs_on;
-+	pmdp = pmd_offset(pudp, address);
-+	if (pmd_none(*pmdp))
-+		goto out_irqs_on;
-+
-+	ptep = pte_offset_map(pmdp, address);
-+	pte = *ptep;
-+	if (!pte_present(pte))
-+		goto out_unmap;
-+
-+	paddr = (unsigned long) page_address(pte_page(pte));
-+
-+	__asm__ __volatile__("flush	%0 + %1"
-+			     : /* no outputs */
-+			     : "r" (paddr),
-+			       "r" (address & (PAGE_SIZE - 1))
-+			     : "memory");
-+
-+out_unmap:
-+	pte_unmap(ptep);
-+out_irqs_on:
-+	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
-+
-+}
-+
- static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
- 			  int signo, sigset_t *oldset)
- {
-@@ -547,13 +605,7 @@ static void setup_frame32(struct k_sigac
- 	if (ka->ka_restorer) {
- 		regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
- 	} else {
--		/* Flush instruction space. */
- 		unsigned long address = ((unsigned long)&(sf->insns[0]));
--		pgd_t *pgdp = pgd_offset(current->mm, address);
--		pud_t *pudp = pud_offset(pgdp, address);
--		pmd_t *pmdp = pmd_offset(pudp, address);
--		pte_t *ptep;
--		pte_t pte;
- 
- 		regs->u_regs[UREG_I7] = (unsigned long) (&(sf->insns[0]) - 2);
- 	
-@@ -562,22 +614,7 @@ static void setup_frame32(struct k_sigac
- 		if (err)
- 			goto sigsegv;
- 
--		preempt_disable();
--		ptep = pte_offset_map(pmdp, address);
--		pte = *ptep;
--		if (pte_present(pte)) {
--			unsigned long page = (unsigned long)
--				page_address(pte_page(pte));
--
--			wmb();
--			__asm__ __volatile__("flush	%0 + %1"
--					     : /* no outputs */
--					     : "r" (page),
--					       "r" (address & (PAGE_SIZE - 1))
--					     : "memory");
--		}
--		pte_unmap(ptep);
--		preempt_enable();
-+		flush_signal_insns(address);
+---
+ drivers/media/video/uvc/uvc_driver.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+--- a/drivers/media/video/uvc/uvc_driver.c
++++ b/drivers/media/video/uvc/uvc_driver.c
+@@ -436,7 +436,8 @@ static int uvc_parse_format(struct uvc_d
+ 	/* Parse the frame descriptors. Only uncompressed, MJPEG and frame
+ 	 * based formats have frame descriptors.
+ 	 */
+-	while (buflen > 2 && buffer[2] == ftype) {
++	while (buflen > 2 && buffer[1] == USB_DT_CS_INTERFACE &&
++	       buffer[2] == ftype) {
+ 		frame = &format->frame[format->nframes];
+ 		if (ftype != UVC_VS_FRAME_FRAME_BASED)
+ 			n = buflen > 25 ? buffer[25] : 0;
+@@ -513,12 +514,14 @@ static int uvc_parse_format(struct uvc_d
+ 		buffer += buffer[0];
  	}
- 	return;
  
-@@ -687,12 +724,7 @@ static void setup_rt_frame32(struct k_si
- 	if (ka->ka_restorer)
- 		regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
- 	else {
--		/* Flush instruction space. */
- 		unsigned long address = ((unsigned long)&(sf->insns[0]));
--		pgd_t *pgdp = pgd_offset(current->mm, address);
--		pud_t *pudp = pud_offset(pgdp, address);
--		pmd_t *pmdp = pmd_offset(pudp, address);
--		pte_t *ptep;
- 
- 		regs->u_regs[UREG_I7] = (unsigned long) (&(sf->insns[0]) - 2);
- 	
-@@ -704,21 +736,7 @@ static void setup_rt_frame32(struct k_si
- 		if (err)
- 			goto sigsegv;
- 
--		preempt_disable();
--		ptep = pte_offset_map(pmdp, address);
--		if (pte_present(*ptep)) {
--			unsigned long page = (unsigned long)
--				page_address(pte_page(*ptep));
--
--			wmb();
--			__asm__ __volatile__("flush	%0 + %1"
--					     : /* no outputs */
--					     : "r" (page),
--					       "r" (address & (PAGE_SIZE - 1))
--					     : "memory");
--		}
--		pte_unmap(ptep);
--		preempt_enable();
-+		flush_signal_insns(address);
+-	if (buflen > 2 && buffer[2] == UVC_VS_STILL_IMAGE_FRAME) {
++	if (buflen > 2 && buffer[1] == USB_DT_CS_INTERFACE &&
++	    buffer[2] == UVC_VS_STILL_IMAGE_FRAME) {
+ 		buflen -= buffer[0];
+ 		buffer += buffer[0];
  	}
- 	return;
  
+-	if (buflen > 2 && buffer[2] == UVC_VS_COLORFORMAT) {
++	if (buflen > 2 && buffer[1] == USB_DT_CS_INTERFACE &&
++	    buffer[2] == UVC_VS_COLORFORMAT) {
+ 		if (buflen < 6) {
+ 			uvc_trace(UVC_TRACE_DESCR, "device %d videostreaming "
+ 			       "interface %d COLORFORMAT error\n",
+@@ -759,6 +762,11 @@ static int uvc_parse_streaming(struct uv
+ 		buffer += buffer[0];
+ 	}
+ 
++	if (buflen)
++		uvc_trace(UVC_TRACE_DESCR, "device %d videostreaming interface "
++			"%d has %u bytes of trailing descriptor garbage.\n",
++			dev->udev->devnum, alts->desc.bInterfaceNumber, buflen);
++
+ 	/* Parse the alternate settings to find the maximum bandwidth. */
+ 	for (i = 0; i < intf->num_altsetting; ++i) {
+ 		struct usb_host_endpoint *ep;
 
 
