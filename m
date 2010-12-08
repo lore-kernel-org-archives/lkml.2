@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab0LHPD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:03:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755463Ab0LHPDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:03:24 -0500
-Date: Wed, 8 Dec 2010 10:02:43 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-Subject: Re: perf hw  in kexeced kernel broken in tip
-Message-ID: <20101208150243.GC31703@redhat.com>
-References: <1291234036.32004.2008.camel@laptop>
- <m162vdp3l4.fsf@fess.ebiederm.org>
- <20101202052321.GH18100@redhat.com>
- <1291275270.4023.20.camel@twins>
- <20101202161502.GL18100@redhat.com>
- <1291764620.2032.1293.camel@laptop>
- <20101208140103.GM21786@redhat.com>
- <1291818005.28378.38.camel@laptop>
- <20101208144245.GB31703@redhat.com>
- <1291819684.28378.70.camel@laptop>
+	id S1755545Ab0LHPDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:03:36 -0500
+Received: from mail-iw0-f172.google.com ([209.85.214.172]:46323 "EHLO
+	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab0LHPDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:03:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=enEJeR4H+GpLops5DlwzUToLPHmI5PNBJQHaDWgJQEWYGzUFzKiYr/IPJeUIS4uzKV
+         pADY8eSk8dykKfqusixI7x/4KYciN/1ZO1enTsk2oGIHNhpQsBrJCQxTFGybeVwdsVtM
+         ZdxgeP1751mCiUYVl686Ns0zionVLGwvSKnbM=
+Message-ID: <4CFF9E41.6050006@gmail.com>
+Date: Wed, 08 Dec 2010 07:03:29 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291819684.28378.70.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+CC: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] of/fdt: add kernel command line option for dtb_compat
+ string
+References: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com> <4bb36a12-8d95-4d4e-936c-c1c74a9372cc@VA3EHSMHS025.ehs.local> <4CFD3322.1000503@gmail.com> <4CFD3371.3080807@gmail.com> <805e9139-7c09-45f5-a5a9-0ed0cbf64f2f@VA3EHSMHS025.ehs.local>
+In-Reply-To: <805e9139-7c09-45f5-a5a9-0ed0cbf64f2f@VA3EHSMHS025.ehs.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 03:48:04PM +0100, Peter Zijlstra wrote:
-> On Wed, 2010-12-08 at 09:42 -0500, Vivek Goyal wrote:
-> > 
-> > Either driver itself can detect that device is in inconsistent state and
-> > reset it otherwise we also pass a command line parameter "reset_devices" to
-> > second kernel to explicitly tell kernel that devices might be in bad state,
-> > reset these during initialization. If we want to use these perf counters in
-> > kdump kernel, we shall have to do something similar.
-> 
-> Right, so I'm perfectly fine with leaving the kdump kernel broken for
-> now and if people really do need hardware events we can try and reset
-> the hardware when we find that reset_devices command line parameter.
-> 
-> Not sure how that interacts with these broken BIOSes,
+On 12/06/2010 01:50 PM, Stephen Neuendorffer wrote:
+>
+>
+>> -----Original Message-----
+>> From: Dirk Brandewie [mailto:dirk.brandewie@gmail.com]
+>> Sent: Monday, December 06, 2010 11:03 AM
+>> To: Stephen Neuendorffer
+>> Cc: linux-kernel@vger.kernel.org; Randy Dunlap;
+> devicetree-discuss@lists.ozlabs.org; linux-
+>> doc@vger.kernel.org; grant.likely@secretlab.ca
+>> Subject: Re: [PATCH] of/fdt: add kernel command line option for
+> dtb_compat string
+>>
+>> On 12/06/2010 11:01 AM, Dirk Brandewie wrote:
+>>> On 12/06/2010 10:37 AM, Stephen Neuendorffer wrote:
+>>>>
+>>>>
+>>>>> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+>>>>> index c1360e0..ca1318c 100644
+>>>>> --- a/drivers/of/fdt.c
+>>>>> +++ b/drivers/of/fdt.c
+>>>>> @@ -15,6 +15,8 @@
+>>>>> #include<linux/of_fdt.h>
+>>>>> #include<linux/string.h>
+>>>>> #include<linux/errno.h>
+>>>>> +#include<asm-generic/vmlinux.lds.h>
+>>>>> +
+>>>>>
+>>>>> #ifdef CONFIG_PPC
+>>>>> #include<asm/machdep.h>
+>>>>> @@ -604,3 +606,49 @@ void __init unflatten_device_tree(void)
+>>>>>
+>>>>> pr_debug("<- unflatten_device_tree()\n");
+>>>>> }
+>>>>> +
+>>>>> +extern uint8_t __dtb_start[];
+>>>>> +extern uint8_t __dtb_end[];
+>>>>> +static void __init *of_flat_dt_find_compatible_dtb(char *name)
+>>>>> +{
+>>>>> + void *rc = NULL;
+>>>>> + unsigned long root, size;
+>>>>> + struct boot_param_header *orig_initial_boot_params;
+>>>>> + uint8_t *blob;
+>>>>> +
+>>>>> + orig_initial_boot_params = initial_boot_params;
+>>>>> + blob = __dtb_start;
+>>>>> + initial_boot_params = (struct boot_param_header *)blob;
+>>>>
+>>>> Oy... can you avoid the pointer dance by using
+> of_fdt_is_compatible()
+>>>> from my recent set of patches?
+>>>
+>>> I would like to get rid of the pointer dance. Is your patch set
+> going to make it
+>>> into .37? I didn't see any acks.
+>>>
+>> Obviously I meant .38 :-)
+>
+> I'd like it too, but that's up to Grant.
 
-reset_devices was meant to be dual purpose so that it can handle broken
-BIOSes also. So if BIOS is broken then one can pass "reset_devices" to 
-kernel and driver can attempt to reset the device and boot the kernel.
+Grant any guidance here?
 
->but its kdump so
-> its mostly broken by design anyway ;-)
-
-Kdump has its share of problems especially with the fact that
-kernel/drivers find devices in bad state and are not hardened enough
-to deal with that. But on bare metal what's the better way of capturing
-kernel crash dump? Trying to do anything post crash in the kernel is
-also not very reliable either.
-
-I think the way we fix kernel for boot problems on newer hardware, for broken
-BIOses, we need to keep on fixing it in kdump path also to make sure new
-devices/drivers can cope up with this scenario. 
-
-Thanks
-Vivek 
+I imagine some of the
+> bottleneck is that I don't have
+> an easy way to test on powerpc or microblaze at the moment, so it's not
+> clear that the code doesn't
+> break anything.
+>
