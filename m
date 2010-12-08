@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab0LHA7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:59:38 -0500
-Received: from kroah.org ([198.145.64.141]:48538 "EHLO coco.kroah.org"
+	id S932077Ab0LHA7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:50 -0500
+Received: from kroah.org ([198.145.64.141]:48608 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756914Ab0LHA7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:35 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:25 2010
-Message-Id: <20101208005725.436970867@clark.site>
+	id S1756993Ab0LHA7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:48 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:26 2010
+Message-Id: <20101208005726.738298142@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:58 -0800
+Date: Tue, 07 Dec 2010 16:57:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Greear <greearb@candelatech.com>,
-        Kyungwan Nam <kyungwan.nam@atheros.com>,
+        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
         "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [041/289] ath9k: lock reset and PCU start/stopping
+Subject: [054/289] mac80211: disable beacon monitor while going offchannel
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,180 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 5e848f789d60000d39d9a5f26ab02dbdd963f6cd upstream.
+commit 3bc3c0d748402e8c1f31b8569f5924d25d7b8e30 upstream.
 
-Apart from locking the start and stop PCU we need
-to ensure we also content starting and stopping the PCU
-between hardware resets.
+The beacon monitor should be disabled when going off channel
+to prevent spurious warnings and triggering connection
+deterioration work such as sending probe requests. Re-enable
+the beacon monitor once we come back to the home channel.
 
-This is part of a series that will help resolve the bug:
+This patch has fixes for stable kernels [2.6.34+].
 
-https://bugzilla.kernel.org/show_bug.cgi?id=14624
-
-For more details about this issue refer to:
-
-http://marc.info/?l=linux-wireless&m=128629803703756&w=2
-
-Cc: Ben Greear <greearb@candelatech.com>
-Cc: Kyungwan Nam <kyungwan.nam@atheros.com>
+Cc: Paul Stewart <pstew@google.com>
+Cc: Amod Bodas <amod.bodas@atheros.com>
 Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |   27 +++++++++++++++++++++++++++
- drivers/net/wireless/ath/ath9k/recv.c |    2 --
- 2 files changed, 27 insertions(+), 2 deletions(-)
+ net/mac80211/offchannel.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -213,6 +213,9 @@ int ath_set_channel(struct ath_softc *sc
- 	 */
- 	ath9k_hw_set_interrupts(ah, 0);
- 	ath_drain_all_txq(sc, false);
-+
-+	spin_lock_bh(&sc->rx.pcu_lock);
-+
- 	stopped = ath_stoprecv(sc);
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -29,6 +29,7 @@ static void ieee80211_offchannel_ps_enab
+ 	/* FIXME: what to do when local->pspolling is true? */
  
- 	/* XXX: do not flush receive queue here. We don't want
-@@ -239,6 +242,7 @@ int ath_set_channel(struct ath_softc *sc
- 			  "reset status %d\n",
- 			  channel->center_freq, r);
- 		spin_unlock_bh(&sc->sc_resetlock);
-+		spin_unlock_bh(&sc->rx.pcu_lock);
- 		goto ps_restore;
- 	}
- 	spin_unlock_bh(&sc->sc_resetlock);
-@@ -247,9 +251,12 @@ int ath_set_channel(struct ath_softc *sc
- 		ath_print(common, ATH_DBG_FATAL,
- 			  "Unable to restart recv logic\n");
- 		r = -EIO;
-+		spin_unlock_bh(&sc->rx.pcu_lock);
- 		goto ps_restore;
+ 	del_timer_sync(&local->dynamic_ps_timer);
++	del_timer_sync(&ifmgd->bcn_mon_timer);
+ 	del_timer_sync(&ifmgd->conn_mon_timer);
+ 
+ 	cancel_work_sync(&local->dynamic_ps_enable_work);
+@@ -89,6 +90,7 @@ static void ieee80211_offchannel_ps_disa
+ 			  msecs_to_jiffies(local->hw.conf.dynamic_ps_timeout));
  	}
  
-+	spin_unlock_bh(&sc->rx.pcu_lock);
-+
- 	ath_cache_conf_rate(sc, &hw->conf);
- 	ath_update_txpow(sc);
- 	ath9k_hw_set_interrupts(ah, ah->imask);
-@@ -840,6 +847,7 @@ void ath_radio_enable(struct ath_softc *
- 	if (!ah->curchan)
- 		ah->curchan = ath_get_curchannel(sc, sc->hw);
- 
-+	spin_lock_bh(&sc->rx.pcu_lock);
- 	spin_lock_bh(&sc->sc_resetlock);
- 	r = ath9k_hw_reset(ah, ah->curchan, ah->caldata, false);
- 	if (r) {
-@@ -854,8 +862,10 @@ void ath_radio_enable(struct ath_softc *
- 	if (ath_startrecv(sc) != 0) {
- 		ath_print(common, ATH_DBG_FATAL,
- 			  "Unable to restart recv logic\n");
-+		spin_unlock_bh(&sc->rx.pcu_lock);
- 		return;
- 	}
-+	spin_unlock_bh(&sc->rx.pcu_lock);
- 
- 	if (sc->sc_flags & SC_OP_BEACONS)
- 		ath_beacon_config(sc, NULL);	/* restart beacons */
-@@ -894,6 +904,9 @@ void ath_radio_disable(struct ath_softc
- 	ath9k_hw_set_interrupts(ah, 0);
- 
- 	ath_drain_all_txq(sc, false);	/* clear pending tx frames */
-+
-+	spin_lock_bh(&sc->rx.pcu_lock);
-+
- 	ath_stoprecv(sc);		/* turn off frame recv */
- 	ath_flushrecv(sc);		/* flush recv queue */
- 
-@@ -911,6 +924,9 @@ void ath_radio_disable(struct ath_softc
- 	spin_unlock_bh(&sc->sc_resetlock);
- 
- 	ath9k_hw_phy_disable(ah);
-+
-+	spin_unlock_bh(&sc->rx.pcu_lock);
-+
- 	ath9k_hw_configpcipowersave(ah, 1, 1);
- 	ath9k_ps_restore(sc);
- 	ath9k_setpower(sc, ATH9K_PM_FULL_SLEEP);
-@@ -930,6 +946,9 @@ int ath_reset(struct ath_softc *sc, bool
- 
- 	ath9k_hw_set_interrupts(ah, 0);
- 	ath_drain_all_txq(sc, retry_tx);
-+
-+	spin_lock_bh(&sc->rx.pcu_lock);
-+
- 	ath_stoprecv(sc);
- 	ath_flushrecv(sc);
- 
-@@ -944,6 +963,8 @@ int ath_reset(struct ath_softc *sc, bool
- 		ath_print(common, ATH_DBG_FATAL,
- 			  "Unable to start recv logic\n");
- 
-+	spin_unlock_bh(&sc->rx.pcu_lock);
-+
- 	/*
- 	 * We may be doing a reset in response to a request
- 	 * that changes the channel so update any state that
-@@ -1108,6 +1129,7 @@ static int ath9k_start(struct ieee80211_
- 	 * be followed by initialization of the appropriate bits
- 	 * and then setup of the interrupt mask.
- 	 */
-+	spin_lock_bh(&sc->rx.pcu_lock);
- 	spin_lock_bh(&sc->sc_resetlock);
- 	r = ath9k_hw_reset(ah, init_channel, ah->caldata, false);
- 	if (r) {
-@@ -1116,6 +1138,7 @@ static int ath9k_start(struct ieee80211_
- 			  "(freq %u MHz)\n", r,
- 			  curchan->center_freq);
- 		spin_unlock_bh(&sc->sc_resetlock);
-+		spin_unlock_bh(&sc->rx.pcu_lock);
- 		goto mutex_unlock;
- 	}
- 	spin_unlock_bh(&sc->sc_resetlock);
-@@ -1137,8 +1160,10 @@ static int ath9k_start(struct ieee80211_
- 		ath_print(common, ATH_DBG_FATAL,
- 			  "Unable to start recv logic\n");
- 		r = -EIO;
-+		spin_unlock_bh(&sc->rx.pcu_lock);
- 		goto mutex_unlock;
- 	}
-+	spin_unlock_bh(&sc->rx.pcu_lock);
- 
- 	/* Setup our intr mask. */
- 	ah->imask = ATH9K_INT_TX | ATH9K_INT_RXEOL |
-@@ -1340,12 +1365,14 @@ static void ath9k_stop(struct ieee80211_
- 	 * before setting the invalid flag. */
- 	ath9k_hw_set_interrupts(ah, 0);
- 
-+	spin_lock_bh(&sc->rx.pcu_lock);
- 	if (!(sc->sc_flags & SC_OP_INVALID)) {
- 		ath_drain_all_txq(sc, false);
- 		ath_stoprecv(sc);
- 		ath9k_hw_phy_disable(ah);
- 	} else
- 		sc->rx.rxlink = NULL;
-+	spin_unlock_bh(&sc->rx.pcu_lock);
- 
- 	/* disable HAL and put h/w to sleep */
- 	ath9k_hw_disable(ah);
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -523,13 +523,11 @@ bool ath_stoprecv(struct ath_softc *sc)
- 
- void ath_flushrecv(struct ath_softc *sc)
- {
--	spin_lock_bh(&sc->rx.pcu_lock);
- 	sc->sc_flags |= SC_OP_RXFLUSH;
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
- 		ath_rx_tasklet(sc, 1, true);
- 	ath_rx_tasklet(sc, 1, false);
- 	sc->sc_flags &= ~SC_OP_RXFLUSH;
--	spin_unlock_bh(&sc->rx.pcu_lock);
++	ieee80211_sta_reset_beacon_monitor(sdata);
+ 	ieee80211_sta_reset_conn_monitor(sdata);
  }
  
- static bool ath_beacon_dtim_pending_cab(struct sk_buff *skb)
 
 
