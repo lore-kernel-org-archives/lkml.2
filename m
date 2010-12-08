@@ -1,118 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab0LHStp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:49:45 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4837 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753896Ab0LHStm convert rfc822-to-8bit (ORCPT
+	id S1756201Ab0LHSuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:50:39 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42661
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755569Ab0LHSui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:49:42 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Jian Peng" <jipeng@broadcom.com>
-To: "Tejun Heo" <tj@kernel.org>
-cc: "Robert Hancock" <hancockrwd@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        ide <linux-ide@vger.kernel.org>
-Date: Wed, 8 Dec 2010 10:48:26 -0800
-Subject: RE: questions regarding possible violation of AHCI spec in AHCI
- driver
-Thread-Topic: questions regarding possible violation of AHCI spec in
- AHCI driver
-Thread-Index: AcuXBUXQGTkcdhfiQEexKejH/ikDdgAAzlkZ
-Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFEE569.4030204@gmail.com> <4CFF58D2.4040006@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>,<4CFFCD56.6050608@kernel.org>
-In-Reply-To: <4CFFCD56.6050608@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-X-WSS-ID: 60E10CD13P037499306-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Wed, 8 Dec 2010 13:50:38 -0500
+Date: Wed, 08 Dec 2010 10:51:05 -0800 (PST)
+Message-Id: <20101208.105105.245397948.davem@davemloft.net>
+To: namhyung@gmail.com
+Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isdn/hisax: fix compiler warning on hisax_pci_tbl
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1291733346-11573-1-git-send-email-namhyung@gmail.com>
+References: <1291733346-11573-1-git-send-email-namhyung@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oB8IomJv005665
 
-So it is reasonable to add extra check in ahci_start_engine() without returning status of ST bit. If so, here is my patch
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Tue,  7 Dec 2010 23:49:06 +0900
 
---- libahci.c.orig	2010-12-08 10:42:48.383976763 -0800
-+++ libahci.c	2010-12-08 10:45:17.495156944 -0800
-@@ -542,6 +542,13 @@
- {
- 	void __iomem *port_mmio = ahci_port_base(ap);
- 	u32 tmp;
-+	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
-+
-+	/* avoid race condition per spec (end of section 10.1.2) */
-+	if (status & (ATA_BUSY | ATA_DRQ) ||
-+	    ahci_scr_read(&ap->link, SCR_STATUS, &tmp) ||
-+	    (tmp & 0x0f) != 0x03)
-+		return;
- 
- 	/* start DMA */
- 	tmp = readl(port_mmio + PORT_CMD);
+> Annotate hisax_pci_tbl as '__used' to fix following warning:
+> 
+>   CC      drivers/isdn/hisax/config.o
+> drivers/isdn/hisax/config.c:1920: warning: ¡hisax_pci_tbl¢ defined but not used
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-Thanks,
-Jian
-________________________________________
-From: Tejun Heo [tj@kernel.org]
-Sent: Wednesday, December 08, 2010 10:24 AM
-To: Jian Peng
-Cc: Robert Hancock; linux-kernel@vger.kernel.org; jgarzik@pobox.com; ide
-Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+This only happens because the hisax driver doesn't actually use this table
+for probing.  Each sub-driver does it's own thing.
 
-Hello,
+What a mess.
 
-On 12/08/2010 07:14 PM, Jian Peng wrote:
-> The problem happened as follow:
->
-> After power up, inside ahci_init_one(), it will call ahci_power_up()
-> to toggle PxCMD.SUD bit first, then HBA will send COMRESET to
-> device, and device will send first D2H FIS back. Here it will call
-> ahci_start_engine() to turn on PxCMD.ST to process command. In this
-> case, it may run into race condition that transaction triggered by
-> toggling PxCMD.SUD is not completed yet, and that is the reason why
-> extra check is required by spec to guarantee that HBA already
-> received FIS and in sane state.
->
-> In most HBA, either staggered spin-up feature was not supported, or
-> time required for transaction is less than that between two function
-> calls, it may work. IMHO, this is a clear violation of spec, and not
-> robust against all HBA design.
->
-> The major concern is that ahci_start_engine() is used widely in EH
-> and it does not return result to reflect whether ST bit was set or
-> not, this may cause trouble in some cases. I am working on verifying
-> those cases with different HBAs now.
-
-I see, so it's not that the controller actually failed but you
-observed the race condition.  During EH, ahci_start_engine() is used
-rather liberally when the driver wants the controller in working
-condition.  The assumption is that even if the driver tries to set ST
-with the incorrect condition, the controller wouldn't go crazy where
-it can't be restarted later, which _must_ be true as there's no atomic
-way to check the condition and set ST.
-
-The driver at the same time guarantees that if the whole
-initialization protocol succeeds, the last ahci_start_engine() is
-called after hardreset is sucessfully completed and thus all the
-prerequisites are met.
-
-So, yeap, the driver might set ST when the conditions are not met but
-that can't be avoided completely anyway so the controller shouldn't go
-completely bonkers for that (it's okay to fail in recoverable way) and
-the driver will do the last ST setting after all the conditions are
-met on the success path.
-
-Thanks.
-
---
-tejun
-
-
+Anyways, applied, thank you.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
