@@ -1,119 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab0LHIQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:16:48 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:44361 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab0LHIQq convert rfc822-to-8bit (ORCPT
+	id S1754286Ab0LHIRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 03:17:40 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43460 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196Ab0LHIRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:16:46 -0500
+	Wed, 8 Dec 2010 03:17:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=I3BbCgIrXbkDrCIdw5d2jfkkorQsT1psT3KGO0WHsR1prn6XRqSjDpnZ4b7pPoeX0T
-         se5KlX4mN7x7iVUn4EMKuBBBYysCIlNCLDcv8sYH3EZAV1lbl+fZEVFMn0AoP8Ne5PQ3
-         lWxVs6zh98+F4m2i4YlRrZ8EsS3s+tMxVKrwA=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=whrW2i/LNu3ccJMZf/kFBaAW1QR0F+gK9uoFXs+VZnz/fT+1OUSjEjlj78P9VYpqVO
+         9Q1X1H60rEXeGhzUkboWAIBas9MKMeKJQexX3guaqZFOjV8ySbYtxeBf4Rlk7wapS33C
+         GIyq9WabsafFPNG+SwYEiJFY6AXssgY3lC3WY=
 MIME-Version: 1.0
-In-Reply-To: <20101208075218.5792.64791.sendpatchset@localhost.localdomain>
-References: <20101208075208.5792.45247.sendpatchset@localhost.localdomain> <20101208075218.5792.64791.sendpatchset@localhost.localdomain>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Wed, 8 Dec 2010 16:16:22 +0800
-Message-ID: <AANLkTindQMNKhC2aowUyjm=uO8gFKqOOPa9HXSU1q7Gh@mail.gmail.com>
-Subject: Re: [v3 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
-        Neil Horman <nhorman@redhat.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Reply-To: sedat.dilek@gmail.com
+Date: Wed, 8 Dec 2010 09:17:38 +0100
+Message-ID: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 8 (drivers/platform/x86/Kconfig:422:error:
+ recursive dependency detected!)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Matthew Garrett <mjg@redhat.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 3:52 PM, Amerigo Wang <amwang@redhat.com> wrote:
-> From: Amerigo Wang <amwang@redhat.com>
-> Date: Thu, 2 Dec 2010 21:34:44 +0800
-> Subject: [v3 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
->
-> This patch removes the flag IFF_IN_NETPOLL, we don't need it any more since
-> we have netpoll_tx_running() now.
->
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: Neil Horman <nhorman@redhat.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: Jay Vosburgh <fubar@us.ibm.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Jiri Pirko <jpirko@redhat.com>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
->
-> ---
->
->  drivers/net/bonding/bond_main.c |    6 ++----
->  drivers/net/bonding/bonding.h   |    2 +-
->  include/linux/if.h              |    9 ++++-----
->  net/core/netpoll.c              |    2 --
->  4 files changed, 7 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index 7fafe06..21ac08b 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -448,11 +448,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
->        }
->
->        skb->priority = 1;
-> -       if (unlikely(netpoll_tx_running(slave_dev))) {
-> -               slave_dev->priv_flags |= IFF_IN_NETPOLL;
-> +       if (unlikely(netpoll_tx_running(slave_dev)))
->                bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
-> -               slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
-> -       } else
-> +       else
->                dev_queue_xmit(skb);
->
->        return 0;
-> diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-> index c4f6a94..493e645 100644
-> --- a/drivers/net/bonding/bonding.h
-> +++ b/drivers/net/bonding/bonding.h
-> @@ -138,7 +138,7 @@ static inline void unblock_netpoll_tx(void)
->
->  static inline int is_netpoll_tx_blocked(struct net_device *dev)
->  {
-> -       if (unlikely(dev->priv_flags & IFF_IN_NETPOLL))
-> +       if (unlikely(netpoll_tx_running(dev)))
->                return cpumask_test_cpu(smp_processor_id(), netpoll_block_tx);
->        return 0;
->  }
-> diff --git a/include/linux/if.h b/include/linux/if.h
-> index 1239599..3bc63e6 100644
-> --- a/include/linux/if.h
-> +++ b/include/linux/if.h
-> @@ -71,11 +71,10 @@
->                                         * release skb->dst
->                                         */
->  #define IFF_DONT_BRIDGE 0x800          /* disallow bridging this ether dev */
-> -#define IFF_IN_NETPOLL 0x1000          /* whether we are processing netpoll */
-> -#define IFF_DISABLE_NETPOLL    0x2000  /* disable netpoll at run-time */
-> -#define IFF_MACVLAN_PORT       0x4000  /* device used as macvlan port */
-> -#define IFF_BRIDGE_PORT        0x8000          /* device used as bridge port */
-> -#define IFF_OVS_DATAPATH       0x10000 /* device used as Open vSwitch
-> +#define IFF_DISABLE_NETPOLL    0x1000  /* disable netpoll at run-time */
-> +#define IFF_MACVLAN_PORT       0x2000  /* device used as macvlan port */
-> +#define IFF_BRIDGE_PORT        0x4000          /* device used as bridge port */
-> +#define IFF_OVS_DATAPATH       0x8000  /* device used as Open vSwitch
->                                         * datapath port */
->
+Hi,
 
-You can't change the values of these macros or delete some of them,
-because they are exported to user space and are parts of ABI.
+just wanted to build a new linux-next and see this:
 
--- 
+[ setup.log ]
+...
+dileks.1" make -C 'debian/build/source_i386_none'
+O='/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686'
+oldnoconfig
+make[2]: Entering directory
+`/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
+  HOSTCC  scripts/basic/fixdep
+  HOSTCC  scripts/basic/docproc
+  GEN     /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686/Makefile
+  HOSTCC  scripts/kconfig/conf.o
+  HOSTCC  scripts/kconfig/kxgettext.o
+  SHIPPED scripts/kconfig/zconf.tab.c
+  SHIPPED scripts/kconfig/lex.zconf.c
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+scripts/kconfig/conf --oldnoconfig Kconfig
+drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
+drivers/platform/x86/Kconfig:422:       symbol EEEPC_WMI depends on ACPI_WMI
+drivers/platform/x86/Kconfig:438:       symbol ACPI_WMI is selected by ACER_WMI
+drivers/platform/x86/Kconfig:18:        symbol ACER_WMI depends on LEDS_CLASS
+drivers/leds/Kconfig:10:        symbol LEDS_CLASS is selected by EEEPC_WMI
+warning: (ADB_PMU_LED && MACINTOSH_DRIVERS && ADB_PMU || ATH5K &&
+NETDEVICES && WLAN && ATH_COMMON && (PCI || ATHEROS_AR231X) &&
+MAC80211 || ATH9K && NETDEVICES && WLAN && ATH_COMMON && PCI &&
+MAC80211 || ATH9K_HTC && NETDEVICES && WLAN && ATH_COMMON && USB &&
+MAC80211 || CARL9170_LEDS && NETDEVICES && WLAN && ATH_COMMON &&
+CARL9170 || INPUT_WISTRON_BTNS && !S390 && INPUT && INPUT_MISC && X86
+&& !X86_64 || SENSORS_APPLESMC && HWMON && INPUT && X86 ||
+SENSORS_LIS3LV02D && HWMON && ACPI && INPUT || IR_WINBOND_CIR &&
+MEDIA_SUPPORT && X86 && PNP && RC_CORE || BACKLIGHT_ADP8860 &&
+HAS_IOMEM && BACKLIGHT_LCD_SUPPORT && BACKLIGHT_CLASS_DEVICE && I2C ||
+MSM_STAGING && STAGING && !STAGING_EXCLUDE_BUILD && FB && ARCH_MSM &&
+!FB_MSM || ASUS_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI &&
+!ACPI_ASUS && INPUT && (RFKILL || RFKILL=n) || THINKPAD_ACPI && X86 &&
+X86_PLATFORM_DEVICES && ACPI && INPUT && (RFKILL || RFKILL=n) ||
+EEEPC_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && INPUT &&
+EXPERIMENTAL && (RFKILL || RFKILL=n) && HOTPLUG_PCI || EEEPC_WMI &&
+X86 && X86_PLATFORM_DEVICES && ACPI_WMI && INPUT && EXPERIMENTAL &&
+BACKLIGHT_CLASS_DEVICE && (RFKILL || RFKILL=n)) selects LEDS_CLASS
+which has unmet direct dependencies (NEW_LEDS)
+#
+# configuration written to .config
+#
+make[2]: Leaving directory
+`/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
+env -u ABINAME -u ARCH -u FEATURESET -u FLAVOUR -u VERSION -u
+LOCALVERSION DISTRIBUTION_OFFICIAL_BUILD=1
+DISTRIBUTION_UPLOADER=sedat.dilek@gmail.com
+DISTRIBUTION_VERSION="2.6.37~rc5-1~next20101208.dileks.1" make -C
+'debian/build/source_i386_none'
+O='/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686'
+ prepare
+make[2]: Entering directory
+`/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
+  GEN     /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686/Makefile
+scripts/kconfig/conf --silentoldconfig Kconfig
+drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
+drivers/platform/x86/Kconfig:422:       symbol EEEPC_WMI depends on ACPI_WMI
+drivers/platform/x86/Kconfig:438:       symbol ACPI_WMI is selected by ACER_WMI
+drivers/platform/x86/Kconfig:18:        symbol ACER_WMI depends on LEDS_CLASS
+drivers/leds/Kconfig:10:        symbol LEDS_CLASS is selected by EEEPC_WMI
+warning: (ADB_PMU_LED && MACINTOSH_DRIVERS && ADB_PMU || ATH5K &&
+NETDEVICES && WLAN && ATH_COMMON && (PCI || ATHEROS_AR231X) &&
+MAC80211 || ATH9K && NETDEVICES && WLAN && ATH_COMMON && PCI &&
+MAC80211 || ATH9K_HTC && NETDEVICES && WLAN && ATH_COMMON && USB &&
+MAC80211 || CARL9170_LEDS && NETDEVICES && WLAN && ATH_COMMON &&
+CARL9170 || INPUT_WISTRON_BTNS && !S390 && INPUT && INPUT_MISC && X86
+&& !X86_64 || SENSORS_APPLESMC && HWMON && INPUT && X86 ||
+SENSORS_LIS3LV02D && HWMON && ACPI && INPUT || IR_WINBOND_CIR &&
+MEDIA_SUPPORT && X86 && PNP && RC_CORE || BACKLIGHT_ADP8860 &&
+HAS_IOMEM && BACKLIGHT_LCD_SUPPORT && BACKLIGHT_CLASS_DEVICE && I2C ||
+MSM_STAGING && STAGING && !STAGING_EXCLUDE_BUILD && FB && ARCH_MSM &&
+!FB_MSM || ASUS_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI &&
+!ACPI_ASUS && INPUT && (RFKILL || RFKILL=n) || THINKPAD_ACPI && X86 &&
+X86_PLATFORM_DEVICES && ACPI && INPUT && (RFKILL || RFKILL=n) ||
+EEEPC_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && INPUT &&
+EXPERIMENTAL && (RFKILL || RFKILL=n) && HOTPLUG_PCI || EEEPC_WMI &&
+X86 && X86_PLATFORM_DEVICES && ACPI_WMI && INPUT && EXPERIMENTAL &&
+BACKLIGHT_CLASS_DEVICE && (RFKILL || RFKILL=n)) selects LEDS_CLASS
+which has unmet direct dependencies (NEW_LEDS)
+  Using /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none
+as source for kernel
+  GEN     /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/build_i386_none_686/Makefile
+  CHK     include/linux/version.h
+  UPD     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  UPD     include/generated/utsrelease.h
+  CC      kernel/bounds.s
+  GEN     include/generated/bounds.h
+  CC      arch/x86/kernel/asm-offsets.s
+  GEN     include/generated/asm-offsets.h
+  CALL    /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none/scripts/checksyscalls.sh
+make[2]: Leaving directory
+`/home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none'
+make[1]: Leaving directory `/home/sd/src/linux-2.6/linux-2.6.37-rc5'
+
 Regards,
-Changli Gao(xiaosuo@gmail.com)
+- Sedat -
