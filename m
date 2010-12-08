@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab0LHBCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:24 -0500
-Received: from kroah.org ([198.145.64.141]:33422 "EHLO coco.kroah.org"
+	id S932503Ab0LHBCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:35 -0500
+Received: from kroah.org ([198.145.64.141]:33483 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757326Ab0LHBCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:17 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:38 2010
-Message-Id: <20101208005738.570723192@clark.site>
+	id S932493Ab0LHBCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:33 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:39 2010
+Message-Id: <20101208005739.770212585@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:08 -0800
+Date: Tue, 07 Dec 2010 16:59:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ken Chen <kenchen@google.com>
-Subject: [171/289] latencytop: fix per task accumulator
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [183/289] exec: make argv/envp memory visible to oom-killer
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ken Chen <kenchen@google.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 38715258aa2e8cd94bd4aafadc544e5104efd551 upstream.
+commit 3c77f845722158206a7209c45ccddc264d19319c upstream.
 
-Per task latencytop accumulator prematurely terminates due to erroneous
-placement of latency_record_count.  It should be incremented whenever a
-new record is allocated instead of increment on every latencytop event.
+Brad Spengler published a local memory-allocation DoS that
+evades the OOM-killer (though not the virtual memory RLIMIT):
+http://www.grsecurity.net/~spender/64bit_dos.c
 
-Also fix search iterator to only search known record events instead of
-blindly searching all pre-allocated space.
+execve()->copy_strings() can allocate a lot of memory, but
+this is not visible to oom-killer, nobody can see the nascent
+bprm->mm and take it into account.
 
-Signed-off-by: Ken Chen <kenchen@google.com>
-Reviewed-by: Arjan van de Ven <arjan@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+With this patch get_arg_page() increments current's MM_ANONPAGES
+counter every time we allocate the new page for argv/envp. When
+do_execve() succeds or fails, we change this counter back.
+
+Technically this is not 100% correct, we can't know if the new
+page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
+I don't think this really matters and everything becomes correct
+once exec changes ->mm or fails.
+
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/latencytop.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ fs/exec.c               |   32 ++++++++++++++++++++++++++++++--
+ include/linux/binfmts.h |    1 +
+ 2 files changed, 31 insertions(+), 2 deletions(-)
 
---- a/kernel/latencytop.c
-+++ b/kernel/latencytop.c
-@@ -194,14 +194,7 @@ __account_scheduler_latency(struct task_
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -157,6 +157,25 @@ out:
  
- 	account_global_scheduler_latency(tsk, &lat);
+ #ifdef CONFIG_MMU
  
--	/*
--	 * short term hack; if we're > 32 we stop; future we recycle:
--	 */
--	tsk->latency_record_count++;
--	if (tsk->latency_record_count >= LT_SAVECOUNT)
--		goto out_unlock;
--
--	for (i = 0; i < LT_SAVECOUNT; i++) {
-+	for (i = 0; i < tsk->latency_record_count; i++) {
- 		struct latency_record *mylat;
- 		int same = 1;
- 
-@@ -227,8 +220,14 @@ __account_scheduler_latency(struct task_
- 		}
- 	}
- 
-+	/*
-+	 * short term hack; if we're > 32 we stop; future we recycle:
-+	 */
-+	if (tsk->latency_record_count >= LT_SAVECOUNT)
-+		goto out_unlock;
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++	struct mm_struct *mm = current->mm;
++	long diff = (long)(pages - bprm->vma_pages);
 +
- 	/* Allocated a new one: */
--	i = tsk->latency_record_count;
-+	i = tsk->latency_record_count++;
- 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
++	if (!mm || !diff)
++		return;
++
++	bprm->vma_pages = pages;
++
++#ifdef SPLIT_RSS_COUNTING
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++#else
++	spin_lock(&mm->page_table_lock);
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++	spin_unlock(&mm->page_table_lock);
++#endif
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -179,6 +198,8 @@ static struct page *get_arg_page(struct
+ 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
+ 		struct rlimit *rlim;
  
- out_unlock:
++		acct_arg_size(bprm, size / PAGE_SIZE);
++
+ 		/*
+ 		 * We've historically supported up to 32 pages (ARG_MAX)
+ 		 * of argument strings even with small stacks
+@@ -269,6 +290,10 @@ static bool valid_arg_len(struct linux_b
+ 
+ #else
+ 
++static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+@@ -992,6 +1017,7 @@ int flush_old_exec(struct linux_binprm *
+ 	/*
+ 	 * Release all of the old mmap stuff
+ 	 */
++	acct_arg_size(bprm, 0);
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
+@@ -1416,8 +1442,10 @@ int do_execve(const char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput (bprm->mm);
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
++		mmput(bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -29,6 +29,7 @@ struct linux_binprm{
+ 	char buf[BINPRM_BUF_SIZE];
+ #ifdef CONFIG_MMU
+ 	struct vm_area_struct *vma;
++	unsigned long vma_pages;
+ #else
+ # define MAX_ARG_PAGES	32
+ 	struct page *page[MAX_ARG_PAGES];
 
 
