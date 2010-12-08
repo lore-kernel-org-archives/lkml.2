@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab0LHAqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:46:43 -0500
-Received: from kroah.org ([198.145.64.141]:45892 "EHLO coco.kroah.org"
+	id S1756230Ab0LHCRk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:17:40 -0500
+Received: from kroah.org ([198.145.64.141]:45918 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755793Ab0LHAqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:40 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:25 2010
-Message-Id: <20101208004425.758905429@clark.site>
+	id S1755833Ab0LHAqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:45 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
+Message-Id: <20101208004426.295451669@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:20 -0800
+Date: Tue, 07 Dec 2010 16:43:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        john stultz <johnstul@us.ibm.com>, Bob Picco <bpicco@redhat.com>
-Subject: [014/127] hpet: fix unwanted interrupt due to stale irq status bit
+        Richard Weinberger <richard@nod.at>, Pekka Enberg <penberg@kernel.org>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: [019/127] um: fix global timer issue when using CONFIG_NO_HZ
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Richard Weinberger <richard@nod.at>
 
-commit 96e9694df446d1154ec2f4fdba8908588b9cba38 upstream.
+commit 482db6df1746c4fa7d64a2441d4cb2610249c679 upstream.
 
-Jaswinder Singh Rajput wrote:
-> By executing Documentation/timers/hpet_example.c
->
-> for polling, I requested for 3 iterations but it seems iteration work
-> for only 2 as first expired time is always very small.
->
-> # ./hpet_example poll /dev/hpet 10 3
-> -hpet: executing poll
-> hpet_poll: info.hi_flags 0x0
-> hpet_poll: expired time = 0x13
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
-> hpet_poll: expired time = 0x1868c
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
-> hpet_poll: expired time = 0x18645
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
+This fixes a issue which was introduced by fe2cc53e ("uml: track and make
+up lost ticks").
 
-Clearing the HPET interrupt enable bit disables interrupt generation
-but does not disable the timer, so the interrupt status bit will still
-be set when the timer elapses.  If another interrupt arrives before
-the timer has been correctly programmed (due to some other device on
-the same interrupt line, or CONFIG_DEBUG_SHIRQ), this results in an
-extra unwanted interrupt event because the status bit is likely to be
-set from comparator matches that happened before the device was opened.
+timeval_to_ns() returns long long and not int.  Due to that UML's timer
+did not work properlt and caused timer freezes.
 
-Therefore, we have to ensure that the interrupt status bit is and
-stays cleared until we actually program the timer.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: john stultz <johnstul@us.ibm.com>
-Cc: Bob Picco <bpicco@redhat.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Jeff Dike <jdike@addtoit.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/hpet.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/um/os-Linux/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -476,6 +476,21 @@ static int hpet_ioctl_ieon(struct hpet_d
- 	if (irq) {
- 		unsigned long irq_flags;
+--- a/arch/um/os-Linux/time.c
++++ b/arch/um/os-Linux/time.c
+@@ -60,7 +60,7 @@ static inline long long timeval_to_ns(co
+ long long disable_timer(void)
+ {
+ 	struct itimerval time = ((struct itimerval) { { 0, 0 }, { 0, 0 } });
+-	int remain, max = UM_NSEC_PER_SEC / UM_HZ;
++	long long remain, max = UM_NSEC_PER_SEC / UM_HZ;
  
-+		if (devp->hd_flags & HPET_SHARED_IRQ) {
-+			/*
-+			 * To prevent the interrupt handler from seeing an
-+			 * unwanted interrupt status bit, program the timer
-+			 * so that it will not fire in the near future ...
-+			 */
-+			writel(readl(&timer->hpet_config) & ~Tn_TYPE_CNF_MASK,
-+			       &timer->hpet_config);
-+			write_counter(read_counter(&hpet->hpet_mc),
-+				      &timer->hpet_compare);
-+			/* ... and clear any left-over status. */
-+			isr = 1 << (devp - devp->hd_hpets->hp_dev);
-+			writel(isr, &hpet->hpet_isr);
-+		}
-+
- 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
- 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
- 						? IRQF_SHARED : IRQF_DISABLED;
+ 	if (setitimer(ITIMER_VIRTUAL, &time, &time) < 0)
+ 		printk(UM_KERN_ERR "disable_timer - setitimer failed, "
 
 
