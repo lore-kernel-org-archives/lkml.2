@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab0LHOsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 09:48:22 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:55815 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285Ab0LHOsV convert rfc822-to-8bit (ORCPT
+	id S1755370Ab0LHOtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 09:49:11 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35895 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312Ab0LHOtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 09:48:21 -0500
-Subject: Re: perf hw  in kexeced kernel broken in tip
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haren Myneni <hbabu@us.ibm.com>
-In-Reply-To: <20101208144245.GB31703@redhat.com>
-References: <1291232989.32004.1987.camel@laptop>
-	 <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop>
-	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
-	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
-	 <1291764620.2032.1293.camel@laptop> <20101208140103.GM21786@redhat.com>
-	 <1291818005.28378.38.camel@laptop>  <20101208144245.GB31703@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Dec 2010 15:48:04 +0100
-Message-ID: <1291819684.28378.70.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 8 Dec 2010 09:49:09 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
+        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] Update MCP55 quirk to not affect non HyperTransport variants
+Date: Wed,  8 Dec 2010 09:47:48 -0500
+Message-Id: <1291819668-15624-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Spam-Score: -4.0 (----)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 09:42 -0500, Vivek Goyal wrote:
-> 
-> Either driver itself can detect that device is in inconsistent state and
-> reset it otherwise we also pass a command line parameter "reset_devices" to
-> second kernel to explicitly tell kernel that devices might be in bad state,
-> reset these during initialization. If we want to use these perf counters in
-> kdump kernel, we shall have to do something similar.
+I wrote this quirk awhile ago to properly setup MCP55 chips on hypertransport
+busses so that interrupts reached whatever cpu happend to boot the kdump kernel.
+while that works well, it was recently shown to me that a a non-hypertransport
+variant of the MCP55 exists, and on those system the register that this quirk
+manipulates causes hangs if you write to it.  Since the quirk was only meant to
+handle errors found on MCP55 chips that have a HT interface, this patch adds a
+filter to make sure the chip is an HT capable before making the needed register
+adjustment.  This lets the broken MCP55s work with kdump while not breaking the
+non-HT variants.
 
-Right, so I'm perfectly fine with leaving the kdump kernel broken for
-now and if people really do need hardware events we can try and reset
-the hardware when we find that reset_devices command line parameter.
+Resolves https://bugzilla.kernel.org/show_bug.cgi?id=23952
 
-Not sure how that interacts with these broken BIOSes, but its kdump so
-its mostly broken by design anyway ;-)
+Tested successfully by the reporter and myself.
 
+Reported-by: Mathieu Bérard <mathieu@mberard.eu>
+CC: linux-pci@vger.kernel.org
+CC: kexec@lists.infradead.org
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+---
+ drivers/pci/quirks.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 6f9350c..313c0bd 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2329,6 +2329,9 @@ static void __devinit nvbridge_check_legacy_irq_routing(struct pci_dev *dev)
+ {
+ 	u32 cfg;
+ 
++	if (!pci_find_capability(dev, PCI_CAP_ID_HT))
++		return;
++
+ 	pci_read_config_dword(dev, 0x74, &cfg);
+ 
+ 	if (cfg & ((1 << 2) | (1 << 15))) {
+-- 
+1.7.2.3
 
