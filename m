@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab0LHGCK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 01:02:10 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:39066 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab0LHGCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 01:02:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qXj6YzysRu/gGvkW85Bo1qLS8JwyObyuShm+ABt8ujqSP2fHUlqPFh6cWCJAD6jP1M
-         JMioOhq6NOmfAbTU5Zcs5xVodnaY/+DV4pNjKFHVmlOW9iU0GVbN04YBqOhw9l9gftUn
-         dk3Rhw6hH2R3lyxjadk2nyslTKeh/lrm/M19M=
-Date: Tue, 7 Dec 2010 22:02:00 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>,
-        Chris Bagwell <chris@cnpbagwell.com>
-Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
-Message-ID: <20101208060200.GD4140@core.coreip.homeip.net>
-References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
- <20101207091653.GA22416@core.coreip.homeip.net>
- <4CFE919A.1040704@euromail.se>
+	id S1752938Ab0LHGFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 01:05:42 -0500
+Received: from web31708.mail.mud.yahoo.com ([68.142.201.188]:35190 "HELO
+	web31708.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752687Ab0LHGFl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 01:05:41 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=6olrGEknFTW4ZTFK9NCi2re2AfX9OAIoUGlawf1jxdl1C2HRrltbTTLiEruuJMs3g0kIKvCb9fRsSRH1ms0mxGDFTGo/icPJQ7UxWitqCwuH2UrTHyiWlHaewakWSCwpjlmBvNupZx4FmA1UM4esk0OCSk9LrnMSWR9+eR+W4a8=;
+Message-ID: <241570.15232.qm@web31708.mail.mud.yahoo.com>
+X-YMail-OSG: qE0C9AoVM1lBlh7Bq.QaqqYqgG1b4MwxYdZwapyIWMASn8Q
+ poj_zUkMwK51GoMAp2xgBtV1YsryP2Xwu3bH8Nwsiyrh3CNKNxckzGdgWu7g
+ dym63ILhYwXyzj8omSWy508cCgjXJRlKStb5Ok2uHmGvPBm6O8MEmDZyF1dT
+ KPnypBav0bM52htvXUkIQcZkGyCQuK3q8K79SY_2SNh1lEVkM7S8cXAMSLw8
+ hXOwCJ5CRlmhPYXI9M.r20zyQrf.QwMRr0pmmG9iGotv1PDbv5rHfCODxvV3
+ YaYsbkUx1XxhRZd5Ka3h1a7g0oMwcDKyNSTEJWDb8GC3GgFnzrW2.BcC8MC.
+ VYmBSgMhl.Yju45s.fg--
+X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
+References: <712019.56679.qm@web31702.mail.mud.yahoo.com> <4CFEE38E.3020500@gmail.com> <597621.83948.qm@web31707.mail.mud.yahoo.com> <AANLkTi=V_MD5MqkPfBSD0P+J0vYgS3nwHZA37SOvYW-Z@mail.gmail.com>
+Date: Tue, 7 Dec 2010 22:05:40 -0800 (PST)
+From: Sanka Piyaratna <cesanka@yahoo.com>
+Subject: Re: Posted Write onto a PCI end point device using Linux
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTi=V_MD5MqkPfBSD0P+J0vYgS3nwHZA37SOvYW-Z@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CFE919A.1040704@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 08:57:14PM +0100, Henrik Rydberg wrote:
-> On 12/07/2010 10:16 AM, Dmitry Torokhov wrote:
-> 
-> > Hi Henrik,
-> > 
-> > On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
-> >> Today, userspace sets up an input device based on the data it emits.
-> >> This is not always enough; a tablet and a touchscreen may emit exactly
-> >> the same data, for instance, but the former should be set up with a
-> >> pointer whereas the latter does not need to. Recently, a new type of
-> >> touchpad has emerged where the buttons are under the pad, which changes
-> >> handling logic without changing the emitted data. This patch introduces
-> >> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
-> >> about the device resulting in proper setup.
-> > 
-> > If we agree that the new ioctl is suitable we'llalso need to wireit up
-> > through sysfs. Also, can we keep all definitions to INPUT_ namespace?
-> > 
-> > Thanks.
-> > 
-> 
-> 
-> Thanks all for the comments, this is what I extract from them:
-> 
-> * Split struct into separate calls, although this still seems debated.
-> 
-> * Use INPUT_ namespace
-> 
-> * Add sysfs version
-> 
-> * Keep bitmask for types. Is the list of types complete?
+Thanks for that Robert. When you say DMA, this has to be implemented at the 
+endpoint device doesn't it? There is no DMA mode on the CPU for doing this is 
+there?
 
-Most likely not but it can be easily extended on as-needed basis.
+ Sanka Piyaratna
 
-> 
-> * Still only one data point for capabilities. Anything else?
 
-Again, no need to define everything upfront.
 
-One concern is that while 32 distinct device types should be enough
-should we plan for larger capability array? Should we use variable
-length ioctl - like EVIOCGKEY(len) - even though Arnd does not like
-them?
 
-Also, we already have /sys/class/input/input0/capabilities/ so should we
-call new data item something else? Quirks maybe?
+________________________________
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Sanka Piyaratna <cesanka@yahoo.com>
+Cc: linux-kernel@vger.kernel.org
+Sent: Wed, 8 December, 2010 3:25:47 PM
+Subject: Re: Posted Write onto a PCI end point device using Linux
 
--- 
-Dmitry
+On Tue, Dec 7, 2010 at 9:57 PM, Sanka Piyaratna <cesanka@yahoo.com> wrote:
+> Hi Robert,
+> Could you please tell me how I can initiate a posted write towards a PCIe
+> endpoint with larger than 32 bit payload using Linux?
+> Thanks and regards,
+
+You can try writeq to get a 64-bit payload, but I don't think it's
+available on all platforms. In particular with a 32-bit CPU, it may
+not be possible at all. If you need to send bigger payloads then you
+need to use DMA.
+
+>
+> Sanka Piyaratna
+>
+> ________________________________
+> From: Robert Hancock <hancockrwd@gmail.com>
+> To: Sanka Piyaratna <cesanka@yahoo.com>
+> Cc: linux-kernel@vger.kernel.org
+> Sent: Wed, 8 December, 2010 12:16:54 PM
+> Subject: Re: Posted Write onto a PCI end point device using Linux
+>
+> On 12/07/2010 05:29 AM, Sanka Piyaratna wrote:
+>> Hi,
+>>
+>>
+>> I am wondering whether it is possible to issue a posted write using the
+>> host
+>> computer's root complex towards an PCI express end point. I have done this
+>> using
+>>
+>> DMA in the past. However, if posted writes are possible that would save a
+>> lot of
+>>
+>> time and effort and would be quicker too.
+>
+> Writes from the CPU to PCI memory are always posted. However, the posted
+> write buffer size is usually quite limited and so this probably will
+> still cause CPU overhead when writing any significant amount of data
+> this way.
+>
+>
+
+
+
+      
