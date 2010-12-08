@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab0LHMuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 07:50:22 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:32939 "EHLO
+	id S1754801Ab0LHMu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 07:50:57 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:50358 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752521Ab0LHMuU (ORCPT
+	by vger.kernel.org with ESMTP id S1752521Ab0LHMu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 07:50:20 -0500
-X-Sasl-enc: ILJS6nB/8eVYbiVP2vxxmaeXlWzKijU4LgReKUFhCyRD 1291812619
+	Wed, 8 Dec 2010 07:50:56 -0500
+X-Sasl-enc: /GQtcNBDvsGjzdb/ew2MS73rXQM9cz3qSmCggy9oZPwm 1291812655
 To: Stephen Smalley <sds@tycho.nsa.gov>
-Subject: [RFC][PATCH 1/2] selinux: call may_context_mount_inode_relabel() if fscontext_sid is defined
+Subject: [RFC][PATCH 2/2] selinux: fs associate permission check in inode_doinit_with_dentry()
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Wed, 8 Dec 2010 13:45:42 +0100
+Date: Wed, 8 Dec 2010 13:46:28 +0100
 Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         selinux@tycho.nsa.gov
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart5650041.haMKPnGbek";
+  boundary="nextPart80747214.ovnmpJJW6a";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012081345.51190.roberto.sassu@polito.it>
+Message-Id: <201012081346.29268.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5650041.haMKPnGbek
+--nextPart80747214.ovnmpJJW6a
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-One purpose of the function may_context_mount_inode_relabel() is to check
-if the 'associate' permission can be granted to security contexts set in
-some SELinux defined mount parameters that affect the inode labeling
-behavior.
-=46or instance, the 'context' mount parameter allows to label all inodes wi=
-th
-the specified security context, the 'defcontext' mount parameter permits to
-assign a label to inodes, in a filesystem with the 'SECURITY_FS_USE_XATTR'
-labeling behavior, that do not have the getxattr() method defined or lack
-the SELinux's specific extended attribute.
-The 'fscontext' parameter also is involved in the inode labeling process,
-specifically in case the labeling behavior is 'SECURITY_FS_USE_TRANS' and
-the security_transition_sid() function returns an error or in the 'default'
-case for all filesystems except 'proc'.
-This patch adds the missing call of the may_context_mount_inode_relabel()
-function for the security context specified with the mount parameter
-'fscontext' and it should not break any existent functionality because the
-required permission is already granted in the SELinux reference policy
-by the following rule in the file 'policy/modules/kernel/filesystem.te':
-
-    allow filesystem_type self:filesystem associate;
+The 'associate' permission in SELinux allows to determine if a file with a
+given type can be stored on a particular filesystem. Actually this is
+checked at mount time for labels specified with parameters 'context',
+'rootcontext' and 'defcontext', that can be applied to inodes depending to
+the filesystem labeling behavior, during the creation of a file, directory,
+symlink or device and, lastly, when modifying the label of an inode using
+the setxattr() function.
+However the 'associate' permission is not checked in every possible
+situation, for example when an inode is initialized with the label fetched
+from the SELinux's specific extended attribute. This may be useful to
+detect offline changes in the inode's label and to take appropriate
+actions.
+The behavior defined by this patch is to assign to inodes, which label
+does not have the 'associate' permission granted for the containing
+filesystem's security context, the 'SECINITSID_UNLABELED' security
+identifier, as it happens for instance when the security context fetched
+from the extended attribute is not valid.
+It is important to note the patch implements the check of the 'associate'
+permission only for the 'SECURITY_FS_USE_XATTR' filesystem labeling
+behavior. This is not required for the 'SECURITY_FS_USE_TASK' and
+'SECURITY_FS_USE_TRANS' labeling behaviors, where the label assigned to
+inodes depends to the first accessing task. In the remaining cases the
+label is already checked at mount time by the function
+may_context_mount_inode_relabel().
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- security/selinux/hooks.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ security/selinux/hooks.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 65fa8bf..9486f38 100644
+index 9486f38..ff55e8d 100644
 =2D-- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -682,6 +682,11 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 		if (rc)
- 			goto out;
-=20
-+		rc =3D may_context_mount_inode_relabel(fscontext_sid, sbsec,
-+						     cred);
-+		if (rc)
-+			goto out;
-+
- 		sbsec->sid =3D fscontext_sid;
+@@ -1170,6 +1170,7 @@ static int inode_doinit_with_dentry(struct inode *ino=
+de,=20
+struct dentry *opt_dent
+ {
+ 	struct superblock_security_struct *sbsec =3D NULL;
+ 	struct inode_security_struct *isec =3D inode->i_security;
++	struct common_audit_data ad;
+ 	u32 sid;
+ 	struct dentry *dentry;
+ #define INITCONTEXTLEN 255
+@@ -1196,6 +1197,7 @@ static int inode_doinit_with_dentry(struct inode *ino=
+de,=20
+struct dentry *opt_dent
+ 		goto out_unlock;
  	}
 =20
++	COMMON_AUDIT_DATA_INIT(&ad, FS);
+ 	switch (sbsec->behavior) {
+ 	case SECURITY_FS_USE_XATTR:
+ 		if (!inode->i_op->getxattr) {
+@@ -1292,6 +1294,15 @@ static int inode_doinit_with_dentry(struct inode *in=
+ode,=20
+struct dentry *opt_dent
+ 				rc =3D 0;
+ 				break;
+ 			}
++			rc =3D avc_has_perm(sid, sbsec->sid,
++					  SECCLASS_FILESYSTEM,
++					  FILESYSTEM__ASSOCIATE, &ad);
++			if (rc) {
++				kfree(context);
++				/* Leave with the unlabeled SID */
++				rc =3D 0;
++				break;
++			}
+ 		}
+ 		kfree(context);
+ 		isec->sid =3D sid;
 =2D-=20
 1.7.3.2
 
 
---nextPart5650041.haMKPnGbek
+--nextPart80747214.ovnmpJJW6a
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -160,12 +189,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDEyMDgxMjQ1NDNaMCMGCSqGSIb3DQEJBDEWBBS4Tvx6bd3+pg3easF+NXKfZKpPfzAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBL
-mtt4y/tznP4Gx+wHSZkFI2jHbJjxap9OOevGdv66g7QqS46VUef7nu3JrLaAuKa+ZBbuojUhnrdO
-i4clxtBv4B2c03IqyncBd0qqoUnwDMrNNXs3VTi1oqJ11c2pDHHNKkqckmzMhLjpHla5Am1LohIn
-7FN9JWqjbjdTVC+zwrwFUOjGQvUweT5QRsX1WolzDWJf5+HvXyh4ohw+KvVRzO44zy7faVJpCflB
-9ZwcHEvFjMWIcQOLlRA+E9oFTtwaZz5mV7bBfqmIm9F9s7hulKaO63M+UXoVQDAHP2KJHv6FgPBy
-CCrNHcPfezxIaN191AP4UfILej3l1LKTsk62AAAAAAAA
+Fw0xMDEyMDgxMjQ2MjlaMCMGCSqGSIb3DQEJBDEWBBS2mYKwG3EUFl07CdbNl7t6YiR4YjAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQAd
+f/NzqhTNf8ms0RKoi5BgYoiIt7zvbrWsRy+Aa+zAlC3hReM9BydyVhPc31a7lcs/FkMGurN9H0Qa
+XjK8nmHVrZYD5e/HrtmDRwaMs7F8Ivk74fCis9N8VHKqUvsqKdpzFXc2I2fVogJ3sGUuB68ncIva
+SxyuG1ybEIgEFjJp2tQnkqsNvqaJsRl+MzGVSsZ+G3t+nTIGn5+43ubjhjba1I9hrCO3I9nTIsZe
+eGRhQUvjZDMy6fMwEnMNeyjByxn0FkgiYDAm9U9KeWY68gHJP8IYeyzmWlfkhyZYHtuqOyZ2EwDq
+Dfivgj1IAF97mqCk29/tsRgp2Ctt5ASDBmCAAAAAAAAA
 
---nextPart5650041.haMKPnGbek--
+--nextPart80747214.ovnmpJJW6a--
