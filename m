@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab0LHEzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:55:49 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:42981 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab0LHEzs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:55:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lRUpT8hpplqDIqYztv50JAx5GOZ02YC8fFR5sv4jYqAhGsmPp8FN5BNWzQQ/snG0NS
-         dQCHdEWQNjJllFMPe8B9NlaV77XedaFo12hZOQqsPedTiXNCcjLIpT2R1qxk+zilWUzd
-         NfNRCNw80hAgjy6V2ols2crAEqAyQcC3lCndQ=
-MIME-Version: 1.0
-In-Reply-To: <597621.83948.qm@web31707.mail.mud.yahoo.com>
-References: <712019.56679.qm@web31702.mail.mud.yahoo.com>
-	<4CFEE38E.3020500@gmail.com>
-	<597621.83948.qm@web31707.mail.mud.yahoo.com>
-Date: Tue, 7 Dec 2010 22:55:47 -0600
-Message-ID: <AANLkTi=V_MD5MqkPfBSD0P+J0vYgS3nwHZA37SOvYW-Z@mail.gmail.com>
-Subject: Re: Posted Write onto a PCI end point device using Linux
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Sanka Piyaratna <cesanka@yahoo.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1750972Ab0LHFFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 00:05:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58348 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746Ab0LHFFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 00:05:49 -0500
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+From: James Bottomley <James.Bottomley@suse.de>
+To: Greg KH <greg@kroah.com>
+Cc: Luben Tuikov <ltuikov@yahoo.com>,
+        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org
+In-Reply-To: <20101208001202.GA26530@kroah.com>
+References: <732182.60247.qm@web31816.mail.mud.yahoo.com>
+	 <20101208001202.GA26530@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Dec 2010 23:05:42 -0600
+Message-ID: <1291784742.24312.40.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 9:57 PM, Sanka Piyaratna <cesanka@yahoo.com> wrote:
-> Hi Robert,
-> Could you please tell me how I can initiate a posted write towards a PCIe
-> endpoint with larger than 32 bit payload using Linux?
-> Thanks and regards,
+On Tue, 2010-12-07 at 16:12 -0800, Greg KH wrote:
+> On Tue, Dec 07, 2010 at 04:02:26PM -0800, Luben Tuikov wrote:
+> > --- On Sun, 12/5/10, Luben Tuikov <ltuikov@yahoo.com> wrote:
+> > > --- On Wed, 11/24/10, Luben Tuikov
+> > > <ltuikov@yahoo.com>
+> > > wrote:
+> > > > 
+> > > > CBI/BBB isn't supposed to be, nor is designed to
+> > > support
+> > > > SAM-modern devices. So while REQUEST LUN /may/ work on
+> > > some
+> > > > devices which implement it in their firmware, it is
+> > > NOT a
+> > > > requirement for those devices as they are not required
+> > > to
+> > > > adhere to any SAM version. Those transport protocols
+> > > define
+> > > > a class-specific request to get the maximum LUN, and
+> > > another
+> > > > to reset the target port (instead of I_T Reset or LU
+> > > Reset).
+> > > > They also do not support SCSI Status completion of
+> > > the
+> > > > command, nor Autosense. They also do not provide TMFs.
+> > > They
+> > > > provide none of the SCSI transport protocol services
+> > > in
+> > > > support of the Execute Command procedure call. The
+> > > SCSI
+> > > > layer shouldn't be trying to guess their "SCSI
+> > > version", and
+> > > > or treat them as real SCSI devices sending REPORT
+> > > LUNs, etc.
+> > > > commands.
+> > > > 
+> > > > Newer, modern transport protocols over USB, are part
+> > > of
+> > > > SAM, and it is devices who connect via those protocols
+> > > that
+> > > > are being disadvantaged, due to the adoption
+> > > (assumption) of
+> > > > CBI/BBB well into the SCSI layer.
+> > > > 
+> > > > To this effect, the transport protocol can tell upper
+> > > > layers if the device is true SCSI (new usb transports
+> > > or
+> > > > other) or hybrid (usb-storage). In the former case,
+> > > the
+> > > > device is a SCSI device, in the latter, only basic
+> > > commands
+> > > > should be attempted.
+> > > > 
+> > > > This isn't to say that firmware for those devices
+> > > wouldn't
+> > > > be buggy. Of course it will, and most will probably
+> > > port
+> > > > their legacy FW over to the new SPTL, but the
+> > > protocol
+> > > > requirements are there by design (i.e. there is no
+> > > longer
+> > > > Get Max Lun class-specific request, the application
+> > > client
+> > > > has to send REPORT LUNS, and FW has to answer it) and
+> > > we
+> > > > have to accommodate that.
+> > > > 
+> > > > It is in this spirit that this patch doesn't change
+> > > wire
+> > > > behavior, but simply parses data returned by a
+> > > command
+> > > > already supported by older protocols.
+> > > 
+> > > Did anyone pick up this patch?
+> > 
+> > It's been over 6 weeks now that this patch's been in these mailing lists.
+> > Will anyone pick up this patch, or should I stop posting it every
+> > week? Please let me know--it's been posted here 6 times in the last 6
+> > weeks.
+> 
+> James, this is all you.  Any thoughts?
 
-You can try writeq to get a 64-bit payload, but I don't think it's
-available on all platforms. In particular with a 32-bit CPU, it may
-not be possible at all. If you need to send bigger payloads then you
-need to use DMA.
+Well, not other than I've already said:  I think it looks OK, so I
+marked it for my merge window queue.  I'd still rather like USB people
+to confirm that the original reason why this was done (to prevent device
+crashes on the mode sense) is no longer an issue ... but it's only USB
+stuff, so suppose I'm OK with finding out in the field.
 
->
-> Sanka Piyaratna
->
-> ________________________________
-> From: Robert Hancock <hancockrwd@gmail.com>
-> To: Sanka Piyaratna <cesanka@yahoo.com>
-> Cc: linux-kernel@vger.kernel.org
-> Sent: Wed, 8 December, 2010 12:16:54 PM
-> Subject: Re: Posted Write onto a PCI end point device using Linux
->
-> On 12/07/2010 05:29 AM, Sanka Piyaratna wrote:
->> Hi,
->>
->>
->> I am wondering whether it is possible to issue a posted write using the
->> host
->> computer's root complex towards an PCI express end point. I have done this
->> using
->>
->> DMA in the past. However, if posted writes are possible that would save a
->> lot of
->>
->> time and effort and would be quicker too.
->
-> Writes from the CPU to PCI memory are always posted. However, the posted
-> write buffer size is usually quite limited and so this probably will
-> still cause CPU overhead when writing any significant amount of data
-> this way.
->
->
+James
+
+
