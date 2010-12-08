@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab0LHAzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:55:12 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:52749 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756659Ab0LHAzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:55:09 -0500
-X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 19:55:08 EST
-Message-ID: <20101208024509.pstk3pce80ks444g@webmail.welho.com>
-Date: Wed, 08 Dec 2010 02:45:09 +0200
-From: Customer Services <info@bmw.co.uk>
-Reply-to: bmwclaims10@shqiptar.eu
-To: undisclosed-recipients:;
-Subject: REFNO.:BMW/75-A080332010
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+	id S1756331Ab0LHAry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:54 -0500
+Received: from kroah.org ([198.145.64.141]:58544 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756125Ab0LHArw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:52 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
+Message-Id: <20101208004433.298044005@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:44:36 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        James Jones <jajones@nvidia.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [090/127] ARM: 6482/2: Fix find_next_zero_bit and related assembly
+In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
+------------------
 
--- 
-CUSTOMER SERVICE
-REFNO.:BMW/75-A080332010
-Batch: 174/05/ZY369
+From: James Jones <jajones@nvidia.com>
 
+commit 0e91ec0c06d2cd15071a6021c94840a50e6671aa upstream.
 
-Dear E-mail Owner,
+The find_next_bit, find_first_bit, find_next_zero_bit
+and find_first_zero_bit functions were not properly
+clamping to the maxbit argument at the bit level. They
+were instead only checking maxbit at the byte level.
+To fix this, add a compare and a conditional move
+instruction to the end of the common bit-within-the-
+byte code used by all the functions and be sure not to
+clobber the maxbit argument before it is used.
 
+Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: James Jones <jajones@nvidia.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-You are receiving this message because you are a Winner of (300,000.00 G.B.P)
-from BMW Automobile end of year promo Online Lottery game.
+---
+ arch/arm/lib/findbit.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-A random email balloting system selected your email address amongst a total of
-five (5) winners without the sale of any tickets.
+--- a/arch/arm/lib/findbit.S
++++ b/arch/arm/lib/findbit.S
+@@ -174,8 +174,8 @@ ENDPROC(_find_next_bit_be)
+  */
+ .L_found:
+ #if __LINUX_ARM_ARCH__ >= 5
+-		rsb	r1, r3, #0
+-		and	r3, r3, r1
++		rsb	r0, r3, #0
++		and	r3, r3, r0
+ 		clz	r3, r3
+ 		rsb	r3, r3, #31
+ 		add	r0, r2, r3
+@@ -190,5 +190,7 @@ ENDPROC(_find_next_bit_be)
+ 		addeq	r2, r2, #1
+ 		mov	r0, r2
+ #endif
++		cmp	r1, r0			@ Clamp to maxbit
++		movlo	r0, r1
+ 		mov	pc, lr
+ 
 
-Confirm receipt by sending your Name: Address: Age: Nationality:  
-Mobile Number:
-and Occupation etc to Mr. Thomas Hillary on (bmwclaims10@shqiptar.eu).
-Telephone : +44-704-570-7201.
-
-You will be furnished with details on how to receive your prize as soon as we
-receive your response to this mail. Be sure to check all incoming mail folders
-including your junk folder for subsequent mails from us.
-
-Cynthia Morris
-Annoucer For BMW Automobile Promo.
 
