@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab0LHB3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:29:14 -0500
-Received: from kroah.org ([198.145.64.141]:33410 "EHLO coco.kroah.org"
+	id S932382Ab0LHBCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:12 -0500
+Received: from kroah.org ([198.145.64.141]:49150 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab0LHBCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:13 -0500
+	id S1757326Ab0LHBCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:09 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:38 2010
-Message-Id: <20101208005738.276029204@clark.site>
+Message-Id: <20101208005737.941366626@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:05 -0800
+Date: Tue, 07 Dec 2010 16:59:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [168/289] netfilter: nf_conntrack: allow nf_ct_alloc_hashtable() to get highmem pages
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [165/289] ALSA: HDA: Add an extra DAC for Realtek ALC887-VD
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 6b1686a71e3158d3c5f125260effce171cc7852b upstream.
+commit cc1c452e509aefc28f7ad2deed75bc69d4f915f7 upstream.
 
-commit ea781f197d6a8 (use SLAB_DESTROY_BY_RCU and get rid of call_rcu())
-did a mistake in __vmalloc() call in nf_ct_alloc_hashtable().
+The patch enables ALC887-VD to use the DAC at nid 0x26,
+which makes it possible to use this DAC for e g Headphone
+volume.
 
-I forgot to add __GFP_HIGHMEM, so pages were taken from LOWMEM only.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/nf_conntrack_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -1260,7 +1260,8 @@ void *nf_ct_alloc_hashtable(unsigned int
- 	if (!hash) {
- 		*vmalloced = 1;
- 		printk(KERN_WARNING "nf_conntrack: falling back to vmalloc.\n");
--		hash = __vmalloc(sz, GFP_KERNEL | __GFP_ZERO, PAGE_KERNEL);
-+		hash = __vmalloc(sz, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
-+				 PAGE_KERNEL);
- 	}
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -18612,6 +18612,8 @@ static inline hda_nid_t alc662_mix_to_da
+ 		return 0x02;
+ 	else if (nid >= 0x0c && nid <= 0x0e)
+ 		return nid - 0x0c + 0x02;
++	else if (nid == 0x26) /* ALC887-VD has this DAC too */
++		return 0x25;
+ 	else
+ 		return 0;
+ }
+@@ -18620,7 +18622,7 @@ static inline hda_nid_t alc662_mix_to_da
+ static hda_nid_t alc662_dac_to_mix(struct hda_codec *codec, hda_nid_t pin,
+ 				   hda_nid_t dac)
+ {
+-	hda_nid_t mix[4];
++	hda_nid_t mix[5];
+ 	int i, num;
  
- 	if (hash && nulls)
+ 	num = snd_hda_get_connections(codec, pin, mix, ARRAY_SIZE(mix));
 
 
