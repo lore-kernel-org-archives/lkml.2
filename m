@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab0LHCM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:12:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52526 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756111Ab0LHCMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 21:12:25 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com,
-        avi@redhat.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20101208004428.893591835@clark.site>
-References: <20101208004428.893591835@clark.site>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ZXk3QBwFeXw9bog4QTsz"
-Date: Wed, 08 Dec 2010 02:12:17 +0000
-Message-ID: <1291774337.25629.96.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [046/127] KVM: VMX: Fix host userspace gsbase
- corruption
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1756064Ab0LHArJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:09 -0500
+Received: from kroah.org ([198.145.64.141]:46042 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755943Ab0LHArE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:04 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:28 2010
+Message-Id: <20101208004428.224683861@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:43:45 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Prarit Bhargava <prarit@redhat.com>, bhavna.sarathy@amd.com,
+        jbarnes@virtuousgeek.org, andreas.herrmann3@amd.com,
+        Ingo Molnar <mingo@elte.hu>, maximilian attems <max@stro.at>
+Subject: [039/127] x86: AMD Northbridge: Verify NBs node is online
+In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
---=-ZXk3QBwFeXw9bog4QTsz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Tue, 2010-12-07 at 16:43 -0800, Greg KH wrote:
-> 2.6.32-stable review patch.  If anyone has any objections, please let us =
-know.
->=20
-> ------------------
->=20
-> From: Ben Hutchings <ben@decadent.org.uk>
+From: Prarit Bhargava <prarit@redhat.com>
 
-This should be credited primarily to Avi.
+commit 303fc0870f8fbfabe260c5c32b18e53458d597ea upstream.
 
-Ben.
+Fix panic seen on some IBM and HP systems on 2.6.32-rc6:
 
-> commit c8770e7ba63bb5dd8fe5f9d251275a8fa717fb78 upstream.
->=20
-> We now use load_gs_index() to load gs safely; unfortunately this also
-> changes MSR_KERNEL_GS_BASE, which we managed separately.  This resulted
-> in confusion and breakage running 32-bit host userspace on a 64-bit kerne=
-l.
->=20
-> Fix by
-> - saving guest MSR_KERNEL_GS_BASE before we we reload the host's gs
-> - doing the host save/load unconditionally, instead of only when in guest
->   long mode
->=20
-> Things can be cleaned up further, but this is the minmal fix for now.
->=20
-> Signed-off-by: Avi Kivity <avi@redhat.com>
-> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> [bwh: Backport to 2.6.32]
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[...]
+ BUG: unable to handle kernel NULL pointer dereference at (null)
+ IP: [<ffffffff8120bf3f>] find_next_bit+0x77/0x9c
+  [...]
+  [<ffffffff8120bbde>] cpumask_next_and+0x2e/0x3b
+  [<ffffffff81225c62>] pci_device_probe+0x8e/0xf5
+  [<ffffffff812b9be6>] ? driver_sysfs_add+0x47/0x6c
+  [<ffffffff812b9da5>] driver_probe_device+0xd9/0x1f9
+  [<ffffffff812b9f1d>] __driver_attach+0x58/0x7c
+  [<ffffffff812b9ec5>] ? __driver_attach+0x0/0x7c
+  [<ffffffff812b9298>] bus_for_each_dev+0x54/0x89
+  [<ffffffff812b9b4f>] driver_attach+0x19/0x1b
+  [<ffffffff812b97ae>] bus_add_driver+0xd3/0x23d
+  [<ffffffff812ba1e7>] driver_register+0x98/0x109
+  [<ffffffff81225ed0>] __pci_register_driver+0x63/0xd3
+  [<ffffffff81072776>] ? up_read+0x26/0x2a
+  [<ffffffffa0081000>] ? k8temp_init+0x0/0x20 [k8temp]
+  [<ffffffffa008101e>] k8temp_init+0x1e/0x20 [k8temp]
+  [<ffffffff8100a073>] do_one_initcall+0x6d/0x185
+  [<ffffffff8108d765>] sys_init_module+0xd3/0x236
+  [<ffffffff81011ac2>] system_call_fastpath+0x16/0x1b
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+I put in a printk and commented out the set_dev_node()
+call when and got this output:
 
---=-ZXk3QBwFeXw9bog4QTsz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+ quirk_amd_nb_node: current numa_node = 0x0, would set to val & 7 = 0x0
+ quirk_amd_nb_node: current numa_node = 0x0, would set to val & 7 = 0x1
+ quirk_amd_nb_node: current numa_node = 0x0, would set to val & 7 = 0x2
+ quirk_amd_nb_node: current numa_node = 0x0, would set to val & 7 = 0x3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I.e. the issue appears to be that the HW has set val to a valid
+value, however, the system is only configured for a single
+node -- 0, the others are offline.
 
-iQIVAwUATP7peOe/yOyVhhEJAQK0jhAA1bJnaPlQ7ejepye2+mEnIL/pAqvKHxij
-x3o0JVNlp22etr5PDKvb1zdgVI60e0tmA9Dgr4J7LT0/6c438wHCm5h2TDuBw22B
-rh+37O4gHNHN9wmQiyxQFV/8rgny7577jcpOeWJTqzft+9WoLa45WPmrtlkuA2pB
-5ao7XtYmaI8QYIrx6wRPHx3MdQGvpW6IfzQg8wWKpQCKucGjgiUgC8S89Ggd75fL
-ovMQ2fHliEalpV/L0zXu+0l7Nbo+2Wr7tdQONIWeZHm5SSCWHSun8y0G6AWTbby7
-HCg+Ce7yEvbi+y5cj583Zda+H+hnHn1m2jzvQpTZLoy+YXiA0dg2iJ6wcmlAnzwc
-S7ol57qocBXTho/ykHTnq7TdO6gnTPWZzknaNxMeEAwBqmlSjOfkcj0Hzk+7w3TD
-eKxnzvkaIxA9YQ7iqvV9UEsWWIy9iAHMwBSzaIUPuKcb8+v6u/tGCz+YK9/qThbl
-4gNSIkCKl+EGCejIg/WatO5MyrfaAcEt3WqUtWPzpGfPKyNv1p2Ixs/nGJAI/cjN
-Ws39VZRYC8uKxdj8RN8Ko4jD7gut99LRuGcIObBwWt3kmXPYF8uVq8OCaoCb3l+5
-c4Di6QCtOHIMAzAegTT9i6DzxUlzZQMkE8TJvS1W1J4kiFo8waiaDwoelqHi46Kb
-Trxu8AW4Ovw=
-=Q/f4
------END PGP SIGNATURE-----
+Check to see if the node is actually online before setting
+the numa node for an AMD northbridge in quirk_amd_nb_node().
 
---=-ZXk3QBwFeXw9bog4QTsz--
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: bhavna.sarathy@amd.com
+Cc: jbarnes@virtuousgeek.org
+Cc: andreas.herrmann3@amd.com
+LKML-Reference: <20091112180933.12532.98685.sendpatchset@prarit.bos.redhat.com>
+[ v2: clean up the code and add comments ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: maximilian attems <max@stro.at>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/kernel/quirks.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -512,6 +512,7 @@ static void __init quirk_amd_nb_node(str
+ {
+ 	struct pci_dev *nb_ht;
+ 	unsigned int devfn;
++	u32 node;
+ 	u32 val;
+ 
+ 	devfn = PCI_DEVFN(PCI_SLOT(dev->devfn), 0);
+@@ -520,7 +521,13 @@ static void __init quirk_amd_nb_node(str
+ 		return;
+ 
+ 	pci_read_config_dword(nb_ht, 0x60, &val);
+-	set_dev_node(&dev->dev, val & 7);
++	node = val & 7;
++	/*
++	 * Some hardware may return an invalid node ID,
++	 * so check it first:
++	 */
++	if (node_online(node))
++		set_dev_node(&dev->dev, node);
+ 	pci_dev_put(nb_ht);
+ }
+ 
+
+
