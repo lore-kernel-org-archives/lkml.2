@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab0LHTRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 14:17:45 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:33799 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756321Ab0LHTRn (ORCPT
+	id S1756366Ab0LHTSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 14:18:09 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:51303 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab0LHTSG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 14:17:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Vcr1NKfBydM+1vkX7bbrzMGZpLDANU6Vr6afg4DO1t2BY/Yd2Bcdz/PbLYM50kAYLL
-         GFHUVEMDOL9fo8Yl6NKBAjMEhwyLDGflIfmttPJkfh1yBswDvpx/GQAeisHTyJfm1efg
-         RzGO60aMS3jn/UQOLx7Hvs6TNVNlf6i4loC4o=
-Date: Wed, 8 Dec 2010 21:17:36 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Hanno =?iso-8859-1?Q?B=F6ck?= <hanno@hboeck.de>
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] acpi: const-ify functions
-Message-ID: <20101208191736.GA6694@core2.telecom.by>
-References: <201012081925.10292.hanno@hboeck.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201012081925.10292.hanno@hboeck.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 Dec 2010 14:18:06 -0500
+Subject: Re: perf hw  in kexeced kernel broken in tip
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Don Zickus <dzickus@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+In-Reply-To: <4CFFD715.4090900@kernel.org>
+References: <1291234036.32004.2008.camel@laptop>
+	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
+	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
+	 <1291764620.2032.1293.camel@laptop> <20101208140103.GM21786@redhat.com>
+	 <1291818005.28378.38.camel@laptop> <1291820356.28378.83.camel@laptop>
+	 <4CFFD1C2.1080108@kernel.org> <20101208190158.GA8565@redhat.com>
+	 <4CFFD715.4090900@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Dec 2010 20:17:35 +0100
+Message-ID: <1291835855.28378.149.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 07:25:10PM +0100, Hanno Böck wrote:
-> Will const a couple of functions and variables. This is extracted
-> from grsecurity (with only a slight modification to limit a line
-> to 80 chars).
-
-Why don't they do it themselves? :^)
-
-> Patch is against linux-acpi-2.6 git.
+On Wed, 2010-12-08 at 11:05 -0800, Yinghai Lu wrote:
+> On 12/08/2010 11:01 AM, Don Zickus wrote:
+> > On Wed, Dec 08, 2010 at 10:43:14AM -0800, Yinghai Lu wrote:
+> >>
+> >> can you add sth force_... in command line to take over ownership of perf from BIOS or previous kernel ?
+> >>
+> >> then still can use perf etc after we kexec from RHEL or SLES kernel to later kernel ( from 2.6.37)
+> > 
+> > My understand is that you can't because the BIOS is actively using it
+> > behind the scenes of the kernel (well during an SMI).  I have a machine
+> > where I tried to force take it but it still stopped triggering interrupts.
 > 
-> Similar patches have been sent in the past but not applied,
-> supposedly because they weren't sent to subsystem maintainers.
-> (I may continue to send similar extracts to other subsystems)
-> 
-> ---
-> Signed-off-by: Hanno Boeck <hanno@hboeck.de>
+> how about second case: kexec from RHEL 6 stock kernel to upstream kernel ?
 
-Signed-off-by should be before --- -- it must make into changelog.
+Its impossible to distinguish between a BIOS having claimed a counter
+and a previous kernel not having shut things down properly.
 
-> diff -Naurp linux-acpi-1//drivers/acpi/battery.c linux-acpi-2/drivers/acpi/battery.c
-> --- linux-acpi-1//drivers/acpi/battery.c	2010-12-08 18:42:26.187000005 +0100
-> +++ linux-acpi-2/drivers/acpi/battery.c	2010-12-08 18:42:53.595000204 +0100
-> @@ -851,7 +851,7 @@ DECLARE_FILE_FUNCTIONS(alarm);
->  	}
->  
->  static struct battery_file {
-> -	struct file_operations ops;
-> +	const struct file_operations ops;
-
-Whoa, does this work?
-
->  	mode_t mode;
->  	const char *name;
->  } acpi_battery_file[] = {
-
-It maybe better to call proc_create_date() by hand (and even handle
-errors gracefully?
+The best we can do is allow a force parameter and let the user keep all
+pieces when he uses it.
