@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab0LHArn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:43 -0500
-Received: from kroah.org ([198.145.64.141]:58462 "EHLO coco.kroah.org"
+	id S1756347Ab0LHArz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:55 -0500
+Received: from kroah.org ([198.145.64.141]:58538 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756249Ab0LHAri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:38 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:31 2010
-Message-Id: <20101208004431.794699465@clark.site>
+	id S1756311Ab0LHArv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:51 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
+Message-Id: <20101208004433.190676196@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:21 -0800
+Date: Tue, 07 Dec 2010 16:44:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [075/127] USB: ftdi_sio: revert "USB: ftdi_sio: fix DTR/RTS line modes"
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [089/127] ARM: 6489/1: thumb2: fix incorrect optimisation in usracc
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 677aeafe19e88c282af74564048243ccabb1c590 upstream.
+commit 1142b71d85894dcff1466dd6c871ea3c89e0352c upstream.
 
-This reverts commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd.
+Commit 8b592783 added a Thumb-2 variant of usracc which, when it is
+called with \rept=2, calls usraccoff once with an offset of 0 and
+secondly with a hard-coded offset of 4 in order to avoid incrementing
+the pointer again. If \inc != 4 then we will store the data to the wrong
+offset from \ptr. Luckily, the only caller that passes \rept=2 to this
+function is __clear_user so we haven't been actively corrupting user data.
 
-RTS and DTR should not be modified based on CRTSCTS when calling
-set_termios.
+This patch fixes usracc to pass \inc instead of #4 to usraccoff
+when it is called a second time.
 
-Modem control lines are raised at port open by the tty layer and should stay
-raised regardless of whether hardware flow control is enabled or not.
-
-This is in conformance with the way serial ports work today and many
-applications depend on this behaviour to be able to talk to hardware
-implementing hardware flow control (without the applications actually using
-it).
-
-Hardware which expects different behaviour on these lines can always
-use TIOCMSET/TIOCMBI[SC] after port open to change them.
-
-Reported-by: Daniel Mack <daniel@caiaq.de>
-Reported-by: Dave Mielke <dave@mielke.cc>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Tony Thompson <tony.thompson@arm.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    4 ----
- 1 file changed, 4 deletions(-)
+ arch/arm/include/asm/assembler.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2365,8 +2365,6 @@ static void ftdi_set_termios(struct tty_
- 				"urb failed to set to rts/cts flow control\n");
- 		}
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -215,7 +215,7 @@
+ 	@ Slightly optimised to avoid incrementing the pointer twice
+ 	usraccoff \instr, \reg, \ptr, \inc, 0, \cond, \abort
+ 	.if	\rept == 2
+-	usraccoff \instr, \reg, \ptr, \inc, 4, \cond, \abort
++	usraccoff \instr, \reg, \ptr, \inc, \inc, \cond, \abort
+ 	.endif
  
--		/* raise DTR/RTS */
--		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	} else {
- 		/*
- 		 * Xon/Xoff code
-@@ -2414,8 +2412,6 @@ static void ftdi_set_termios(struct tty_
- 			}
- 		}
- 
--		/* lower DTR/RTS */
--		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	}
- 	return;
- }
+ 	add\cond \ptr, #\rept * \inc
 
 
