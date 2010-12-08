@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab0LHAv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:51:58 -0500
-Received: from kroah.org ([198.145.64.141]:58677 "EHLO coco.kroah.org"
+	id S1756411Ab0LHAsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:48:07 -0500
+Received: from kroah.org ([198.145.64.141]:58599 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756455Ab0LHAsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:12 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:35 2010
-Message-Id: <20101208004435.416065395@clark.site>
+	id S1756371Ab0LHAsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:00 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
+Message-Id: <20101208004434.124463699@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:57 -0800
+Date: Tue, 07 Dec 2010 16:44:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [111/127] x25: Prevent crashing when parsing bad X.25 facilities
+Subject: [098/127] sparc64: Fix race in signal instruction flushing.
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,75 +25,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 5ef41308f94dcbb3b7afc56cdef1c2ba53fa5d2f upstream.
+From: David S. Miller <davem@davemloft.net>
 
-Now with improved comma support.
+[ Upstream commit 05c5e7698bdc54b3079a3517d86077f49ebcc788 ]
 
-On parsing malformed X.25 facilities, decrementing the remaining length
-may cause it to underflow.  Since the length is an unsigned integer,
-this will result in the loop continuing until the kernel crashes.
+If another cpu does a very wide munmap() on the signal frame area,
+it can tear down the page table hierarchy from underneath us.
 
-This patch adds checks to ensure decrementing the remaining length does
-not cause it to wrap around.
+Borrow an idea from the 64-bit fault path's get_user_insn(), and
+disable cross call interrupts during the page table traversal
+to lock them in place while we operate.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/x25/x25_facilities.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/signal32.c |  102 +++++++++++++++++++++++++------------------
+ 1 file changed, 60 insertions(+), 42 deletions(-)
 
---- a/net/x25/x25_facilities.c
-+++ b/net/x25/x25_facilities.c
-@@ -61,6 +61,8 @@ int x25_parse_facilities(struct sk_buff
- 	while (len > 0) {
- 		switch (*p & X25_FAC_CLASS_MASK) {
- 		case X25_FAC_CLASS_A:
-+			if (len < 2)
-+				return 0;
- 			switch (*p) {
- 			case X25_FAC_REVERSE:
- 				if((p[1] & 0x81) == 0x81) {
-@@ -104,6 +106,8 @@ int x25_parse_facilities(struct sk_buff
- 			len -= 2;
- 			break;
- 		case X25_FAC_CLASS_B:
-+			if (len < 3)
-+				return 0;
- 			switch (*p) {
- 			case X25_FAC_PACKET_SIZE:
- 				facilities->pacsize_in  = p[1];
-@@ -125,6 +129,8 @@ int x25_parse_facilities(struct sk_buff
- 			len -= 3;
- 			break;
- 		case X25_FAC_CLASS_C:
-+			if (len < 4)
-+				return 0;
- 			printk(KERN_DEBUG "X.25: unknown facility %02X, "
- 			       "values %02X, %02X, %02X\n",
- 			       p[0], p[1], p[2], p[3]);
-@@ -132,6 +138,8 @@ int x25_parse_facilities(struct sk_buff
- 			len -= 4;
- 			break;
- 		case X25_FAC_CLASS_D:
-+			if (len < p[1] + 2)
-+				return 0;
- 			switch (*p) {
- 			case X25_FAC_CALLING_AE:
- 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
-@@ -149,9 +157,7 @@ int x25_parse_facilities(struct sk_buff
- 				break;
- 			default:
- 				printk(KERN_DEBUG "X.25: unknown facility %02X,"
--					"length %d, values %02X, %02X, "
--					"%02X, %02X\n",
--					p[0], p[1], p[2], p[3], p[4], p[5]);
-+					"length %d\n", p[0], p[1]);
- 				break;
- 			}
- 			len -= p[1] + 2;
+--- a/arch/sparc/kernel/signal32.c
++++ b/arch/sparc/kernel/signal32.c
+@@ -453,6 +453,64 @@ static int save_fpu_state32(struct pt_re
+ 	return err;
+ }
+ 
++/* The I-cache flush instruction only works in the primary ASI, which
++ * right now is the nucleus, aka. kernel space.
++ *
++ * Therefore we have to kick the instructions out using the kernel
++ * side linear mapping of the physical address backing the user
++ * instructions.
++ */
++static void flush_signal_insns(unsigned long address)
++{
++	unsigned long pstate, paddr;
++	pte_t *ptep, pte;
++	pgd_t *pgdp;
++	pud_t *pudp;
++	pmd_t *pmdp;
++
++	/* Commit all stores of the instructions we are about to flush.  */
++	wmb();
++
++	/* Disable cross-call reception.  In this way even a very wide
++	 * munmap() on another cpu can't tear down the page table
++	 * hierarchy from underneath us, since that can't complete
++	 * until the IPI tlb flush returns.
++	 */
++
++	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
++	__asm__ __volatile__("wrpr %0, %1, %%pstate"
++				: : "r" (pstate), "i" (PSTATE_IE));
++
++	pgdp = pgd_offset(current->mm, address);
++	if (pgd_none(*pgdp))
++		goto out_irqs_on;
++	pudp = pud_offset(pgdp, address);
++	if (pud_none(*pudp))
++		goto out_irqs_on;
++	pmdp = pmd_offset(pudp, address);
++	if (pmd_none(*pmdp))
++		goto out_irqs_on;
++
++	ptep = pte_offset_map(pmdp, address);
++	pte = *ptep;
++	if (!pte_present(pte))
++		goto out_unmap;
++
++	paddr = (unsigned long) page_address(pte_page(pte));
++
++	__asm__ __volatile__("flush	%0 + %1"
++			     : /* no outputs */
++			     : "r" (paddr),
++			       "r" (address & (PAGE_SIZE - 1))
++			     : "memory");
++
++out_unmap:
++	pte_unmap(ptep);
++out_irqs_on:
++	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
++
++}
++
+ static void setup_frame32(struct k_sigaction *ka, struct pt_regs *regs,
+ 			  int signo, sigset_t *oldset)
+ {
+@@ -547,13 +605,7 @@ static void setup_frame32(struct k_sigac
+ 	if (ka->ka_restorer) {
+ 		regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
+ 	} else {
+-		/* Flush instruction space. */
+ 		unsigned long address = ((unsigned long)&(sf->insns[0]));
+-		pgd_t *pgdp = pgd_offset(current->mm, address);
+-		pud_t *pudp = pud_offset(pgdp, address);
+-		pmd_t *pmdp = pmd_offset(pudp, address);
+-		pte_t *ptep;
+-		pte_t pte;
+ 
+ 		regs->u_regs[UREG_I7] = (unsigned long) (&(sf->insns[0]) - 2);
+ 	
+@@ -562,22 +614,7 @@ static void setup_frame32(struct k_sigac
+ 		if (err)
+ 			goto sigsegv;
+ 
+-		preempt_disable();
+-		ptep = pte_offset_map(pmdp, address);
+-		pte = *ptep;
+-		if (pte_present(pte)) {
+-			unsigned long page = (unsigned long)
+-				page_address(pte_page(pte));
+-
+-			wmb();
+-			__asm__ __volatile__("flush	%0 + %1"
+-					     : /* no outputs */
+-					     : "r" (page),
+-					       "r" (address & (PAGE_SIZE - 1))
+-					     : "memory");
+-		}
+-		pte_unmap(ptep);
+-		preempt_enable();
++		flush_signal_insns(address);
+ 	}
+ 	return;
+ 
+@@ -687,12 +724,7 @@ static void setup_rt_frame32(struct k_si
+ 	if (ka->ka_restorer)
+ 		regs->u_regs[UREG_I7] = (unsigned long)ka->ka_restorer;
+ 	else {
+-		/* Flush instruction space. */
+ 		unsigned long address = ((unsigned long)&(sf->insns[0]));
+-		pgd_t *pgdp = pgd_offset(current->mm, address);
+-		pud_t *pudp = pud_offset(pgdp, address);
+-		pmd_t *pmdp = pmd_offset(pudp, address);
+-		pte_t *ptep;
+ 
+ 		regs->u_regs[UREG_I7] = (unsigned long) (&(sf->insns[0]) - 2);
+ 	
+@@ -704,21 +736,7 @@ static void setup_rt_frame32(struct k_si
+ 		if (err)
+ 			goto sigsegv;
+ 
+-		preempt_disable();
+-		ptep = pte_offset_map(pmdp, address);
+-		if (pte_present(*ptep)) {
+-			unsigned long page = (unsigned long)
+-				page_address(pte_page(*ptep));
+-
+-			wmb();
+-			__asm__ __volatile__("flush	%0 + %1"
+-					     : /* no outputs */
+-					     : "r" (page),
+-					       "r" (address & (PAGE_SIZE - 1))
+-					     : "memory");
+-		}
+-		pte_unmap(ptep);
+-		preempt_enable();
++		flush_signal_insns(address);
+ 	}
+ 	return;
+ 
 
 
