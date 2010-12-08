@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab0LHCQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:16:57 -0500
-Received: from kroah.org ([198.145.64.141]:45975 "EHLO coco.kroah.org"
+	id S1755998Ab0LHCRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:17:23 -0500
+Received: from kroah.org ([198.145.64.141]:45971 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755862Ab0LHAqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:53 -0500
+	id S1755877Ab0LHAqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:52 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:27 2010
-Message-Id: <20101208004427.160800002@clark.site>
+Message-Id: <20101208004427.071058996@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:34 -0800
+Date: Tue, 07 Dec 2010 16:43:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [028/127] xen: ensure that all event channels start off bound to VCPU 0
+        Robin Holt <holt@sgi.com>
+Subject: [027/127] sgi-xpc: XPC fails to discover partitions with all nasids above 128
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Robin@sgi.com <Robin@sgi.com>
 
-commit b0097adeec27e30223c989561ab0f7aa60d1fe93 upstream.
+commit c22c7aeff69796f46ae0fcec141538e28f50b24e upstream.
 
-All event channels startbound to VCPU 0 so ensure that cpu_evtchn_mask
-is initialised to reflect this. Otherwise there is a race after registering an
-event channel but before the affinity is explicitly set where the event channel
-can be delivered. If this happens then the event channel remains pending in the
-L1 (evtchn_pending) array but is cleared in L2 (evtchn_pending_sel), this means
-the event channel cannot be reraised until another event channel happens to
-trigger the same L2 entry on that VCPU.
+UV hardware defines 256 memory protection regions versus the baseline 64
+with increasing size for the SN2 ia64.  This was overlooked when XPC was
+modified to accomodate both UV and SN2.
 
-sizeof(cpu_evtchn_mask(0))==sizeof(unsigned long*) which is not correct, and
-causes only the first 32 or 64 event channels (depending on architecture) to be
-initially bound to VCPU0. Use sizeof(struct cpu_evtchn_s) instead.
+Without this patch, a user could reconfigure their existing system and
+suddenly disable cross-partition communications with no indication of what
+has gone wrong.  It also prevents larger configurations from using
+cross-partition communication.
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/events.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/sgi-xp/xpc_partition.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -255,7 +255,7 @@ static void init_evtchn_cpu_bindings(voi
+--- a/drivers/misc/sgi-xp/xpc_partition.c
++++ b/drivers/misc/sgi-xp/xpc_partition.c
+@@ -433,18 +433,23 @@ xpc_discovery(void)
+ 	 * nodes that can comprise an access protection grouping. The access
+ 	 * protection is in regards to memory, IOI and IPI.
+ 	 */
+-	max_regions = 64;
+ 	region_size = xp_region_size;
+ 
+-	switch (region_size) {
+-	case 128:
+-		max_regions *= 2;
+-	case 64:
+-		max_regions *= 2;
+-	case 32:
+-		max_regions *= 2;
+-		region_size = 16;
+-		DBUG_ON(!is_shub2());
++	if (is_uv())
++		max_regions = 256;
++	else {
++		max_regions = 64;
++
++		switch (region_size) {
++		case 128:
++			max_regions *= 2;
++		case 64:
++			max_regions *= 2;
++		case 32:
++			max_regions *= 2;
++			region_size = 16;
++			DBUG_ON(!is_shub2());
++		}
  	}
- #endif
  
--	memset(cpu_evtchn_mask(0), ~0, sizeof(cpu_evtchn_mask(0)));
-+	memset(cpu_evtchn_mask(0), ~0, sizeof(struct cpu_evtchn_s));
- }
- 
- static inline void clear_evtchn(int port)
+ 	for (region = 0; region < max_regions; region++) {
 
 
