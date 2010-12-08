@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab0LHQY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:24:57 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49773
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905Ab0LHQYz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:24:55 -0500
-Date: Wed, 08 Dec 2010 08:25:22 -0800 (PST)
-Message-Id: <20101208.082522.226789733.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: gregkh@suse.de, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, holt@sgi.com, w@1wt.eu,
-        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, vladislav.yasevich@hp.com,
-        sri@us.ibm.com
-Subject: Re: [34/44] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
- to prevent integer overflows.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1291787445.5324.64.camel@edumazet-laptop>
-References: <AANLkTimTw3O-OM-5Cgv0ELNj8SmMjaaeMHMd2NNezxi7@mail.gmail.com>
-	<20101208041656.GA2291@suse.de>
-	<1291787445.5324.64.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752459Ab0LHQ2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:28:08 -0500
+Received: from www.tglx.de ([62.245.132.106]:44511 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab0LHQ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 11:28:06 -0500
+Date: Wed, 8 Dec 2010 17:27:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Edouard Gomez <ed.gomez@free.fr>
+cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Thomas Backlund <tmb@mandriva.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Dell Precision WorkStation 690 reboot quirk
+In-Reply-To: <4d8b4b3a1d3c6034b868.1291822674@egomez.in.mobiclip.com>
+Message-ID: <alpine.LFD.2.00.1012081701130.2653@localhost6.localdomain6>
+References: <4d8b4b3a1d3c6034b868.1291822674@egomez.in.mobiclip.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 08 Dec 2010 06:50:45 +0100
+On Wed, 8 Dec 2010, Edouard Gomez wrote:
 
-> Le mardi 07 décembre 2010 à 20:16 -0800, Greg KH a écrit :
->> On Tue, Dec 07, 2010 at 05:22:34PM -0800, Linus Torvalds wrote:
->> > On Tue, Dec 7, 2010 at 4:04 PM, Greg KH <gregkh@suse.de> wrote:
->> > >
->> > > From: Robin Holt <holt@sgi.com>
->> > >
->> > > [ Problem was fixed differently upstream. -DaveM ]
->> > 
->> > Gaah. I'd really like to see more of a description for things like
->> > this. A commit ID for the alternate fix, or at least a few words about
->> > the different fix or reason why upstream doesn't need the stable
->> > commit.
->> 
->> I'll let David confirm this, he's the one who sent it to me :)
+> # HG changeset patch
+> # User Edouard Gomez <ed.gomez@free.fr>
+> # Date 1291821505 -3600
+> # Node ID 4d8b4b3a1d3c6034b86889fac38dd53e6579bb42
+> # Parent  53e51000d59963c8ca408db4db619d2c82374c5e
+> x86: Dell Precision WorkStation 690 reboot quirk
 > 
-> upstream uses commit 8d987e5c7510 (net: avoid limits overflow)
+> This Dell workstation gets stuck on reboot unless booted with
+> the paremeter reboot=bios.
 > 
-> This commit is a bit more untrusive for stable kernels :
-> 
-> It depends on :
-> a9febbb4bd13 (sysctl: min/max bounds are optional)
-> 27b3d80a7b6a (sysctl: fix min/max handling in __do_proc_doulongvec_minmax())
+> This patch has been submitted 3 times already to X86 ARCHITECTURE
+> maintainers w/o any feedback so far. Trying my chance on the LKML.
 
-Yep, this is the case.  Greg, you can add a reference to:
+Sorry, but I haven't seen this patch in my inbox and my mail server
+log has only a single connection attempt to deliver mail from you on
+Dec. 8 which ended up in one of my spam traps.
 
-a9febbb4bd13
-27b3d80a7b6a
-8d987e5c7510
+Cc'ing LKML (or some other relevant mailinglist) is recommended for
+sending patches anyway. Documentation/SubmittingPatches says:
+ 
+Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
 
-in my "[ ... ]" in the commit message to clear this up.
+Thanks,
+
+	tglx
