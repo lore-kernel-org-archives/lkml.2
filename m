@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab0LHAsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:48:11 -0500
-Received: from kroah.org ([198.145.64.141]:58612 "EHLO coco.kroah.org"
+	id S1756570Ab0LHAwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:52:31 -0500
+Received: from kroah.org ([198.145.64.141]:58661 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756017Ab0LHAsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:03 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
-Message-Id: <20101208004434.431857431@clark.site>
+	id S1756381Ab0LHAsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:10 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:35 2010
+Message-Id: <20101208004435.212016014@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:47 -0800
+Date: Tue, 07 Dec 2010 16:44:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jack Steiner <steiner@sgi.com>, Ingo Molnar <mingo@elte.hu>,
-        maximilian attems <max@stro.at>
-Subject: [101/127] x86, UV: Delete unneeded boot messages
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [109/127] can-bcm: fix minor heap overflow
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Steiner <steiner@sgi.com>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 2acebe9ecb2b77876e87a1480729cfb2db4570dd upstream.
+commit 0597d1b99fcfc2c0eada09a698f85ed413d4ba84 upstream.
 
-SGI:UV: Delete extra boot messages that describe the system
-topology. These messages are no longer useful.
+On 64-bit platforms the ASCII representation of a pointer may be up to 17
+bytes long. This patch increases the length of the buffer accordingly.
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-LKML-Reference: <20100317154038.GA29346@sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: maximilian attems <max@stro.at>
+http://marc.info/?l=linux-netdev&m=128872251418192&w=2
+
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/x2apic_uv_x.c |    3 ---
- 1 file changed, 3 deletions(-)
+ net/can/bcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -636,9 +636,6 @@ void __init uv_system_init(void)
- 		uv_node_to_blade[nid] = blade;
- 		uv_cpu_to_blade[cpu] = blade;
- 		max_pnode = max(pnode, max_pnode);
--
--		printk(KERN_DEBUG "UV: cpu %d, apicid 0x%x, pnode %d, nid %d, lcpu %d, blade %d\n",
--			cpu, apicid, pnode, nid, lcpu, blade);
- 	}
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -124,7 +124,7 @@ struct bcm_sock {
+ 	struct list_head tx_ops;
+ 	unsigned long dropped_usr_msgs;
+ 	struct proc_dir_entry *bcm_proc_read;
+-	char procname [9]; /* pointer printed in ASCII with \0 */
++	char procname [20]; /* pointer printed in ASCII with \0 */
+ };
  
- 	/* Add blade/pnode info for nodes without cpus */
+ static inline struct bcm_sock *bcm_sk(const struct sock *sk)
 
 
