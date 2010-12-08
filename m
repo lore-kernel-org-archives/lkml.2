@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab0LHPdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:33:45 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40580 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755313Ab0LHPdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:33:44 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 9KvPqsIVM1kGI_2At0a2UlZOfjzI4Mc6eqE.LPAHIM5xeMG
- OdmbDDjus96f8eubpPCPd7dP7ZLsorVxYpsQOzRLgRZ_6yQ26g749dpfAaAC
- c8FHjU8nDaoqAZapOy2VvqDpPml0RYQj98rdeTA3B8BAxNEO8GrNgqQdEcMi
- GSDYnewC3ueBOVw05cIOJJUzOGUu_O7w0xOUieYYWfBOF0osmgMaU2HFf5C4
- 7FLP4sX1Csg4SCSMaLHfw59lmRl_gyghEH2BBgdE-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 8 Dec 2010 09:33:40 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] x86: Replace uses of current_cpu_data with this_cpu
- ops
-In-Reply-To: <1291815501.2883.34.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1012080929590.23407@router.home>
-References: <20101206171618.302060721@linux.com>  <20101206171638.595205962@linux.com> <4CFE41F8.7040400@kernel.org>  <4CFE4294.30001@kernel.org>  <alpine.DEB.2.00.1012070846050.25976@router.home>  <4CFE4BE0.9040203@kernel.org>  <alpine.DEB.2.00.1012070906290.26552@router.home>
-  <4CFE4E05.7070902@kernel.org>  <alpine.DEB.2.00.1012071020040.26552@router.home>  <4CFF8520.4020704@kernel.org> <1291815501.2883.34.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755969Ab0LHPiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:38:11 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:50829 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754444Ab0LHPiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:38:09 -0500
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH] x86: Dell Precision WorkStation 690 reboot quirk
+X-Mercurial-Node: 4d8b4b3a1d3c6034b86889fac38dd53e6579bb42
+Message-Id: <4d8b4b3a1d3c6034b868.1291822674@egomez.in.mobiclip.com>
+User-Agent: Mercurial-patchbomb/1.7.1+23-8766585f5259
+Date: Wed, 08 Dec 2010 16:37:54 +0100
+From: Edouard Gomez <ed.gomez@free.fr>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Thomas Backlund <tmb@mandriva.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        linux-kernel@vger.kernel.org
+Cc: ed.gomez@free.fr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Dec 2010, Eric Dumazet wrote:
+# HG changeset patch
+# User Edouard Gomez <ed.gomez@free.fr>
+# Date 1291821505 -3600
+# Node ID 4d8b4b3a1d3c6034b86889fac38dd53e6579bb42
+# Parent  53e51000d59963c8ca408db4db619d2c82374c5e
+x86: Dell Precision WorkStation 690 reboot quirk
 
-> > In the long run, it might be a good idea to remove cpu_data() macro
-> > too and use per_cpu macro directly.
-> >
->
-> or introduce this_cpu_has() to remove the adress computation
->
-> -	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
->
-> +	if (this_cpu_has(X86_FEATURE_ARAT)) {
->
+This Dell workstation gets stuck on reboot unless booted with
+the paremeter reboot=bios.
 
-The fundamental problem is that bitops require memory addresses which does
-not work with per cpu ops.
+This patch has been submitted 3 times already to X86 ARCHITECTURE
+maintainers w/o any feedback so far. Trying my chance on the LKML.
 
+Patch is against 2.6.36.1
+
+Signed-off-by: Edouard Gomez <ed.gomez@free.fr>
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -236,6 +236,15 @@
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation T7400"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on Dell 690's */
++		.callback = set_bios_reboot,
++		.ident = "Dell Precision 690",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Precision WorkStation 690"),
++			DMI_MATCH(DMI_BOARD_NAME, "0MY171"),
++		},
++	},
+ 	{	/* Handle problems with rebooting on HP laptops */
+ 		.callback = set_bios_reboot,
+ 		.ident = "HP Compaq Laptop",
