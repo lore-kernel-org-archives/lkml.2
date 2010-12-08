@@ -1,173 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab0LHAqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:46:40 -0500
-Received: from kroah.org ([198.145.64.141]:45871 "EHLO coco.kroah.org"
+	id S1755840Ab0LHAqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:46:45 -0500
+Received: from kroah.org ([198.145.64.141]:45901 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729Ab0LHAqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:37 -0500
-Date: Tue, 7 Dec 2010 16:44:56 -0800
+	id S1755729Ab0LHAql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:41 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:25 2010
+Message-Id: <20101208004425.861130281@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:43:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [000/127] 2.6.32.27-stable review
-Message-ID: <20101208004456.GA23578@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Slaby <jslaby@suse.cz>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [015/127] hpet: unmap unused I/O space
+In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.32.27 release.
-There are 127 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Thursday, December 9, 2010, 20:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.32.27-rc1.gz
-and the diffstat can be found below.
+From: Jiri Slaby <jslaby@suse.cz>
 
-thanks,
+commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
 
-greg k-h
+When the initialization code in hpet finds a memory resource and does not
+find an IRQ, it does not unmap the memory resource previously mapped.
+
+There are buggy BIOSes which report resources exactly like this and what
+is worse the memory region bases point to normal RAM.  This normally would
+not matter since the space is not touched.  But when PAT is turned on,
+ioremap causes the page to be uncached and sets this bit in page->flags.
+
+Then when the page is about to be used by the allocator, it is reported
+as:
+
+BUG: Bad page state in process md5sum  pfn:3ed00
+page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x20000001000000(uncached)
+Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
+Call Trace:
+ [<ffffffff810df851>] bad_page+0xb1/0x100
+ [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
+ [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
+ [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
+...
+
+In this particular case:
+
+1) HPET returns 3ed00000 as memory region base, but it is not in
+reserved ranges reported by the BIOS (excerpt):
+ BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
+ BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
+
+2) there is no IRQ resource reported by HPET method. On the other
+hand, the Intel HPET specs (1.0a) says (3.2.5.1):
+_CRS (
+  // Report 1K of memory consumed by this Timer Block
+  memory range consumed
+  // Optional: only used if BIOS allocates Interrupts [1]
+  IRQs consumed
+)
+
+[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
+Legacy 8254/Legacy RTC hardware still exists, the device objects
+associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
+"consumed resources".
+
+So in theory we should check whether if it is the case and use those
+interrupts instead.
+
+Anyway the address reported by the BIOS here is bogus, so non-presence
+of IRQ doesn't mean the "optional" part in point 2).
+
+Since I got no reply previously, fix this by simply unmapping the space
+when IRQ is not found and memory region was mapped previously.  It would
+be probably more safe to walk the resources again and unmap appropriately
+depending on type.  But as we now use only ioremap for both 2 memory
+resource types, it is not necessarily needed right now.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
+
+Reported-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/char/hpet.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -985,6 +985,8 @@ static int hpet_acpi_add(struct acpi_dev
+ 		return -ENODEV;
+ 
+ 	if (!data.hd_address || !data.hd_nirqs) {
++		if (data.hd_address)
++			iounmap(data.hd_address);
+ 		printk("%s: no address or irqs in _CRS\n", __func__);
+ 		return -ENODEV;
+ 	}
 
 
- MAINTAINERS                                |    6 +
- Makefile                                   |    2 +-
- arch/arm/include/asm/assembler.h           |    2 +-
- arch/arm/lib/findbit.S                     |    6 +-
- arch/microblaze/Makefile                   |    8 +-
- arch/s390/kernel/nmi.c                     |   10 +-
- arch/s390/lib/delay.c                      |   14 ++-
- arch/sparc/kernel/signal32.c               |  161 +++++++++++++---------
- arch/sparc/kernel/signal_32.c              |   55 +++++---
- arch/sparc/kernel/signal_64.c              |   45 ++++---
- arch/um/drivers/line.c                     |    5 +-
- arch/um/kernel/uml.lds.S                   |    2 +-
- arch/um/os-Linux/time.c                    |    2 +-
- arch/x86/include/asm/pgtable_32.h          |    1 +
- arch/x86/include/asm/trampoline.h          |    5 +-
- arch/x86/kernel/apic/x2apic_uv_x.c         |    9 +-
- arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
- arch/x86/kernel/head_32.S                  |    8 +-
- arch/x86/kernel/quirks.c                   |    9 +-
- arch/x86/kernel/setup.c                    |    3 +
- arch/x86/kernel/smpboot.c                  |   32 ++---
- arch/x86/kernel/trampoline.c               |   17 +++
- arch/x86/kvm/vmx.c                         |   16 ++-
- arch/x86/kvm/x86.c                         |    8 +
- arch/x86/xen/enlighten.c                   |    4 -
- block/blk-map.c                            |    2 +
- block/blk-settings.c                       |    2 +-
- block/scsi_ioctl.c                         |   34 ++++--
- drivers/acpi/blacklist.c                   |    8 +
- drivers/ata/ahci.c                         |   10 ++
- drivers/ata/ata_generic.c                  |   30 ++++-
- drivers/ata/libata-scsi.c                  |    7 +-
- drivers/char/hpet.c                        |   17 +++
- drivers/char/tty_buffer.c                  |   14 ++-
- drivers/char/tty_ldisc.c                   |   58 +++++++--
- drivers/char/vt_ioctl.c                    |   11 +-
- drivers/crypto/padlock-aes.c               |    2 +-
- drivers/firewire/core-cdev.c               |   18 ++--
- drivers/firewire/core-device.c             |    1 +
- drivers/firewire/ohci.c                    |   64 +++++++--
- drivers/gpu/drm/ttm/ttm_bo_util.c          |    1 +
- drivers/hid/hidraw.c                       |   18 ++-
- drivers/hwmon/lm85.c                       |    1 +
- drivers/i2c/busses/i2c-pca-platform.c      |    2 +-
- drivers/input/serio/i8042-x86ia64io.h      |    7 +
- drivers/md/md.c                            |    4 +-
- drivers/md/raid1.c                         |    1 +
- drivers/media/video/ivtv/ivtvfb.c          |    2 +
- drivers/media/video/uvc/uvc_driver.c       |   14 ++-
- drivers/misc/sgi-xp/xpc_partition.c        |   25 ++--
- drivers/misc/sgi-xp/xpc_uv.c               |   19 ++-
- drivers/net/gianfar.c                      |    6 +-
- drivers/net/jme.c                          |   22 +++-
- drivers/pci/pci-sysfs.c                    |   22 ++-
- drivers/pci/pci.h                          |    7 +-
- drivers/pci/proc.c                         |    2 +-
- drivers/power/olpc_battery.c               |    8 +-
- drivers/ssb/b43_pci_bridge.c               |    1 +
- drivers/staging/asus_oled/asus_oled.c      |    8 +-
- drivers/staging/frontier/tranzport.c       |    2 +-
- drivers/staging/line6/control.c            |  204 ++++++++++++++--------------
- drivers/staging/line6/midi.c               |    4 +-
- drivers/staging/line6/pod.c                |   32 ++--
- drivers/staging/line6/toneport.c           |    4 +-
- drivers/staging/line6/variax.c             |   12 +-
- drivers/staging/rtl8187se/r8185b_init.c    |   30 +++-
- drivers/usb/atm/ueagle-atm.c               |    6 +-
- drivers/usb/core/devio.c                   |    7 +-
- drivers/usb/gadget/atmel_usba_udc.c        |    2 +-
- drivers/usb/host/ehci-hcd.c                |   10 +-
- drivers/usb/misc/cypress_cy7c63.c          |    6 +-
- drivers/usb/misc/iowarrior.c               |    1 +
- drivers/usb/misc/sisusbvga/sisusb.c        |    1 +
- drivers/usb/misc/trancevibrator.c          |    2 +-
- drivers/usb/misc/usbled.c                  |    2 +-
- drivers/usb/misc/usbsevseg.c               |   10 +-
- drivers/usb/serial/ftdi_sio.c              |    8 +-
- drivers/usb/serial/ftdi_sio_ids.h          |   11 ++
- drivers/usb/serial/option.c                |    2 +-
- drivers/usb/storage/sierra_ms.c            |    2 +-
- drivers/video/backlight/backlight.c        |   12 +-
- drivers/video/efifb.c                      |  106 +++++++++++++--
- drivers/video/via/accel.c                  |    7 +-
- drivers/xen/events.c                       |    2 +-
- fs/bio.c                                   |   23 +++-
- fs/ecryptfs/inode.c                        |    4 +
- fs/fuse/file.c                             |   10 ++
- include/linux/blkdev.h                     |    4 +-
- include/linux/pci_ids.h                    |    2 +
- include/linux/socket.h                     |    2 +-
- include/net/x25.h                          |    4 +
- ipc/compat.c                               |    6 +
- ipc/compat_mq.c                            |    5 +
- ipc/sem.c                                  |    2 +
- ipc/shm.c                                  |    1 +
- kernel/exit.c                              |    9 ++
- kernel/latencytop.c                        |   17 +--
- lib/percpu_counter.c                       |    1 +
- mm/filemap.c                               |    3 +
- mm/internal.h                              |    2 +-
- mm/memory_hotplug.c                        |    2 +-
- mm/mempolicy.c                             |    2 +-
- mm/mprotect.c                              |    2 +-
- mm/nommu.c                                 |    1 +
- net/can/bcm.c                              |    2 +-
- net/compat.c                               |   10 +-
- net/core/dev.c                             |    6 +-
- net/core/ethtool.c                         |    2 +-
- net/core/iovec.c                           |   20 ++--
- net/decnet/af_decnet.c                     |    2 +
- net/econet/af_econet.c                     |   29 ++---
- net/ipv4/tcp.c                             |    4 +-
- net/ipv4/udp.c                             |    4 +-
- net/irda/iriap.c                           |    3 +-
- net/irda/parameters.c                      |    4 +-
- net/netfilter/nf_conntrack_core.c          |    3 +-
- net/rds/rdma.c                             |    2 +-
- net/sched/act_gact.c                       |   21 ++--
- net/sched/act_mirred.c                     |   15 +-
- net/sched/act_nat.c                        |   35 ++---
- net/sched/act_police.c                     |   21 ++--
- net/sched/act_simple.c                     |   11 +-
- net/sched/act_skbedit.c                    |   11 +-
- net/sctp/protocol.c                        |    4 +-
- net/socket.c                               |    4 +
- net/x25/af_x25.c                           |   47 ++++++-
- net/x25/x25_facilities.c                   |   32 ++++-
- net/x25/x25_in.c                           |   17 ++-
- sound/pci/hda/patch_realtek.c              |    4 +-
- sound/pci/hda/patch_sigmatel.c             |    2 +
- sound/pci/intel8x0.c                       |    6 +
- 131 files changed, 1191 insertions(+), 596 deletions(-)
