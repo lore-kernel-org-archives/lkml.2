@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0LHXuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:50:03 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55499 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab0LHXuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:50:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nHPttAeMaH7OfMXj2cx80xYMoFsXexiq434M2m24F8CKq/93XElvnpYCEfkhUG4Rig
-         oLqJPBKhFYSUKqyPQICZVvdcXZj0aGAIp9RyThFg/081lxolGW06+yzYw8u7105PTZzZ
-         Rf68RKuJW3Bdn8zGIRpaqBC/5AEvQGKv0awuw=
-Date: Wed, 8 Dec 2010 15:49:50 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Corentin Chary <corentin.chary@gmail.com>, sedat.dilek@gmail.com,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for December 8
- (drivers/platform/x86/Kconfig:422:error: recursive dependency detected!)
-Message-ID: <20101208234950.GB15294@core.coreip.homeip.net>
-References: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com>
- <AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
- <1291801990.5992.105.camel@i7.infradead.org>
- <20101208174603.GA7107@core.coreip.homeip.net>
- <20101208135105.a8482d46.randy.dunlap@oracle.com>
- <1291849721.5992.145.camel@i7.infradead.org>
- <20101208233101.GA15294@core.coreip.homeip.net>
- <1291851309.5992.150.camel@i7.infradead.org>
+	id S1755090Ab0LHXuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:50:46 -0500
+Received: from kroah.org ([198.145.64.141]:45194 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754033Ab0LHXup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 18:50:45 -0500
+Date: Wed, 8 Dec 2010 15:49:40 -0800
+From: Greg KH <greg@kroah.com>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Nishanth Menon <nm@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
+Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions
+ for loader
+Message-ID: <20101208234940.GA11587@kroah.com>
+References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
+ <20101208222642.GA31802@kroah.com>
+ <AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
+ <20101208230802.GA8176@kroah.com>
+ <AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1291851309.5992.150.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 11:35:08PM +0000, David Woodhouse wrote:
-> On Wed, 2010-12-08 at 15:31 -0800, Dmitry Torokhov wrote:
-> > Even better tool would allow selecting the needed optios right there,
-> > without the need of moving away from teh current option.
+On Wed, Dec 08, 2010 at 05:32:50PM -0600, Ramirez Luna, Omar wrote:
+> On Wed, Dec 8, 2010 at 5:08 PM, Greg KH <greg@kroah.com> wrote:
+> > On Wed, Dec 08, 2010 at 05:02:20PM -0600, Ramirez Luna, Omar wrote:
+> >> Hi,
+> >>
+> >> On Wed, Dec 8, 2010 at 4:26 PM, Greg KH <greg@kroah.com> wrote:
+> >> > On Tue, Dec 07, 2010 at 12:09:06AM -0600, Omar Ramirez Luna wrote:
+> >> >> Instead use request_firmware and friends to get a valid firmware
+> >> >> image.
+> >> >>
+> >> >> Right now the image is supplied dynamically through udev and the
+> >> >> following rule:
+> >> >>
+> >> >> KERNEL=="omap-dsp", SUBSYSTEM=="firmware", ACTION=="add",     \
+> >> >>       RUN+="/bin/sh -c 'echo 1 > /sys/$DEVPATH/loading;       \
+> >> >>               cat $FIRMWARE > /sys/$DEVPATH/data;             \
+> >> >>               echo 0 > /sys/$DEVPATH/loading'"
+> >> >
+> >> > Why do you need a custom firmware rule?
+> >>
+> >> It was meant as an example, when I compiled my minimal file system it
+> >> didn't supply the firmware.sh script nor created /lib/firmware... I
+> >> thought that not everybody would have the firmware.sh, so I just
+> >> provided a sample rule.
+> >
+> > So, can I remove this from the changelog comment, as it's not really
+> > needed at all?
 > 
-> That's exactly what the Nemesis version of xconfig did, almost 15 years
-> ago.
+> Yes it can be removed.
 > 
-> >  And yet better tool would not even ask user and enable them on its
-> > own. Hey, but we have it! It's called "select".
+> BTW, I don't expect this pushed through staging yet, I need to include
+> it to my branch first and then I'll send a pull request with the pile
+> of patches. Sorry for the misunderstanding and thanks for the review.
+
+Well, don't send me patches you don't want me to apply without a big "DO
+NOT APPLY" in them, otherwise I might try to :)
+
+> >> insmod bridgedriver.ko base_img=baseimage.dof
+> >
+> > Ick, why use a module parameter name at all?  Why is this "special" and
+> > different from all other firmware users?  They don't have to manually
+> > specify a file name, the driver does that.
 > 
-> The tools could do that with 'depends on' too. Why make a distinction?
-
-To allow automatic/manual selection. Sometimes the only answer to
-"shoudl it be enabled" is "Yes". I.e. drivers that need polling need
-input-polldev support. There is no reason whatsoever to even ask user.
-
-Same thing for platform drivers. "Don't you also want to enable option for
-your keyboard and mouse to work? Go do that, you won't regret." "Well,
-duh!"
-
+> The thing is that there are N number of firmwares, e.g.:
 > 
-> > Seriously, select is dangerous. I wonder if a rule like "One can only
-> > select a symbol whose dependencies are all satisfied by the current
-> > symbol and/or its parents and the symbols they select or depend on"
-> > would not make select safe enough. 
+> There is the official and usable firmware to play with multimedia
+> "baseimage.dof"
 > 
-> "One can only select a symbol which isn't otherwise presented to the
-> user as a choice".
+> But there are also minimal firmwares to just ping or swap buffers with
+> the dsp, when you just want to play around with basic features.
 
-Input-polldev _is_ presented as a choice in case user or distro want to
-use out of tree driver that depends on it. Does this mean we shoudl
-disallow selects on it? I don't think so.
+Then mess with the firmware symlink in userspace, don't have the driver
+have to worry about it.
 
-> So things like CONFIG_REED_SOLOMON are fine to be selected, because the
-> user would never see it anyway.
+> > Please fix up the patch to not require a module parameter, distros hate
+> > them, and users hate them even more.
 > 
-> Otherwise, just use depends. And if that's a problem for you, fix the
-> damn tools.
+> The driver is the one requiring the parameter (it was already this
+> way), this patch doesn't introduce any parameter. I'll check what can
+> be done and if nobody rejects I'll use the baseimage.dof  as firmware
+> by default.
 
-Yep, starting with kconfig.
+That would be good.  Again, you can put whatever firmware image you want
+in that location if you wish to use different ones.  That is for
+userspace to do, not have the kernel worry about.
 
--- 
-Dmitry
+thanks,
+
+greg k-h
