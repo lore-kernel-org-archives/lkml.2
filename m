@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab0LHA6C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:58:02 -0500
-Received: from kroah.org ([198.145.64.141]:58487 "EHLO coco.kroah.org"
+	id S1756737Ab0LHA5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:57:50 -0500
+Received: from kroah.org ([198.145.64.141]:58490 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756268Ab0LHArm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756272Ab0LHArm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Dec 2010 19:47:42 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:32 2010
-Message-Id: <20101208004432.189434182@clark.site>
+Message-Id: <20101208004432.286942599@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:25 -0800
+Date: Tue, 07 Dec 2010 16:44:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jacques Viviers <jacques.viviers@gmail.com>
-Subject: [079/127] USB: serial: ftdi_sio: Vardaan USB RS422/485 converter PID added
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [080/127] acpi-cpufreq: fix a memleak when unloading driver
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacques Viviers <jacques.viviers@gmail.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 6fdbad8021151a9e93af8159a6232c8f26415c09 upstream.
+commit dab5fff14df2cd16eb1ad4c02e83915e1063fece upstream.
 
-Add the PID for the Vardaan Enterprises VEUSB422R3 USB to RS422/485
-converter. It uses the same chip as the FTDI_8U232AM_PID 0x6001.
+We didn't free per_cpu(acfreq_data, cpu)->freq_table
+when acpi_freq driver is unloaded.
 
-This should also work with the stable branches for:
-2.6.31, 2.6.32, 2.6.33, 2.6.34, 2.6.35, 2.6.36
+Resulting in the following messages in /sys/kernel/debug/kmemleak:
 
-Signed-off-by: Jacques Viviers <jacques.viviers@gmail.com>
+unreferenced object 0xf6450e80 (size 64):
+  comm "modprobe", pid 1066, jiffies 4294677317 (age 19290.453s)
+  hex dump (first 32 bytes):
+    00 00 00 00 e8 a2 24 00 01 00 00 00 00 9f 24 00  ......$.......$.
+    02 00 00 00 00 6a 18 00 03 00 00 00 00 35 0c 00  .....j.......5..
+  backtrace:
+    [<c123ba97>] kmemleak_alloc+0x27/0x50
+    [<c109f96f>] __kmalloc+0xcf/0x110
+    [<f9da97ee>] acpi_cpufreq_cpu_init+0x1ee/0x4e4 [acpi_cpufreq]
+    [<c11cd8d2>] cpufreq_add_dev+0x142/0x3a0
+    [<c11920b7>] sysdev_driver_register+0x97/0x110
+    [<c11cce56>] cpufreq_register_driver+0x86/0x140
+    [<f9dad080>] 0xf9dad080
+    [<c1001130>] do_one_initcall+0x30/0x160
+    [<c10626e9>] sys_init_module+0x99/0x1e0
+    [<c1002d97>] sysenter_do_call+0x12/0x26
+    [<ffffffff>] 0xffffffff
+
+https://bugzilla.kernel.org/show_bug.cgi?id=15807#c21
+
+Tested-by: Toralf Forster <toralf.foerster@gmx.de>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    3 +++
- 2 files changed, 4 insertions(+)
+ arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -206,6 +206,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_MTXORB_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MTXORB_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_R2000KU_TRUE_RNG) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_VARDAAN_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_0100_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_0101_PID) },
- 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_0102_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -114,6 +114,9 @@
- /* Lenz LI-USB Computer Interface. */
- #define FTDI_LENZ_LIUSB_PID	0xD780
+--- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+@@ -741,6 +741,7 @@ static int acpi_cpufreq_cpu_exit(struct
+ 		per_cpu(drv_data, policy->cpu) = NULL;
+ 		acpi_processor_unregister_performance(data->acpi_data,
+ 						      policy->cpu);
++		kfree(data->freq_table);
+ 		kfree(data);
+ 	}
  
-+/* Vardaan Enterprises Serial Interface VEUSB422R3 */
-+#define FTDI_VARDAAN_PID	0xF070
-+
- /*
-  * Xsens Technologies BV products (http://www.xsens.com).
-  */
 
 
