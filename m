@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0LHPSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:18:17 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:39902
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755597Ab0LHPSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:18:15 -0500
-Date: Wed, 8 Dec 2010 15:19:01 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>, dwalsh@redhat.com,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] syslog: check cap_syslog when dmesg_restrict
-Message-ID: <20101208151901.GA20557@mail.hallyn.com>
+	id S1755698Ab0LHPVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:21:54 -0500
+Received: from claw.goop.org ([74.207.240.146]:43485 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755285Ab0LHPVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:21:53 -0500
+Message-ID: <4CFFA28E.5030805@goop.org>
+Date: Wed, 08 Dec 2010 07:21:50 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <bp@amd64.org>
+CC: Ian Campbell <Ian.Campbell@eu.citrix.com>, Greg KH <greg@kroah.com>,
+        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86-32: Separate 1:1 pagetables from swapper_pg_dir
+References: <20101111141358.GA4641@kroah.com> <1289488576-18117-2-git-send-email-joerg.roedel@amd.com> <20101207210512.GA14849@kroah.com> <4CFEF637.4020203@goop.org> <20101208041528.GA2211@kroah.com> <1291800855.13966.4404.camel@zakaz.uk.xensource.com> <20101208115806.GA11716@aftab>
+In-Reply-To: <20101208115806.GA11716@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Paris pointed out that it doesn't make sense to require
-both CAP_SYS_ADMIN and CAP_SYSLOG for certain syslog actions.
-So require CAP_SYSLOG, not CAP_SYS_ADMIN, when dmesg_restrict
-is set.
+On 12/08/2010 03:58 AM, Borislav Petkov wrote:
+> On Wed, Dec 08, 2010 at 04:34:15AM -0500, Ian Campbell wrote:
+>> On Wed, 2010-12-08 at 04:15 +0000, Greg KH wrote:
+>>> On Tue, Dec 07, 2010 at 07:06:31PM -0800, Jeremy Fitzhardinge wrote:
+>>>> On 12/07/2010 01:05 PM, Greg KH wrote:
+>>>>> On Thu, Nov 11, 2010 at 04:16:14PM +0100, Joerg Roedel wrote:
+>>>>>> commit fd89a137924e0710078c3ae855e7cec1c43cb845 upstream
+>>>>> applied, thanks.
+>>>> This will need as well 5b5c1af104ab5adec1be9dcb4c787492d83d8d83 to
+>>>> prevent Xen regressions.
+>>> So should I add that to a specific release? The next .36 stable or something else?
+>> 5b5c1af104ab5 fixed an issue exposed by b40827fa7268. I'm not sure if
+>> fd89a13792 also exposes a similar issue, but I think it does not:
+>>
+>> It looks to me like fd89a13792 only reads from swapper_pg_dir and writes
+>> to trampoline_pg_dir which is unpinned (and unused) under Xen and hence
+>> there is no problem and 5b5c1af104ab5 is not needed.
+> I tend to agree with Ian's assessment here.
+>
+> Let me put it this way: have you guys seen any Xen-related regressions
+> with fd89a13792? I mean, this patch went in after 2.6.36-rc1 and if
+> it were breaking Xen, we (or maybe you :)) would've caught it by now,
+> right?
 
-(I'm also consolidating the now common error path)
+No,  I got confused.  Sorry for spreading the confusion around...
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
----
- Documentation/sysctl/kernel.txt |    2 +-
- kernel/printk.c                 |   20 ++++++++++----------
- 2 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 209e158..5740671 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -219,7 +219,7 @@ dmesg_restrict:
- This toggle indicates whether unprivileged users are prevented from using
- dmesg(8) to view messages from the kernel's log buffer.  When
- dmesg_restrict is set to (0) there are no restrictions.  When
--dmesg_restrict is set set to (1), users must have CAP_SYS_ADMIN to use
-+dmesg_restrict is set set to (1), users must have CAP_SYSLOG to use
- dmesg(8).
- 
- The kernel config option CONFIG_SECURITY_DMESG_RESTRICT sets the default
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 0712380..0cecba0 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -279,18 +279,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 	 * at open time.
- 	 */
- 	if (type == SYSLOG_ACTION_OPEN || !from_file) {
--		if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
--			return -EPERM;
-+		if (dmesg_restrict && !capable(CAP_SYSLOG))
-+			goto warn; /* switch to return -EPERM after 2.6.39 */
- 		if ((type != SYSLOG_ACTION_READ_ALL &&
- 		     type != SYSLOG_ACTION_SIZE_BUFFER) &&
--		    !capable(CAP_SYSLOG)) {
--			/* remove after 2.6.38 */
--			if (capable(CAP_SYS_ADMIN))
--				WARN_ONCE(1, "Attempt to access syslog with "
--				  "CAP_SYS_ADMIN but no CAP_SYSLOG "
--				  "(deprecated and denied).\n");
--			return -EPERM;
--		}
-+		    !capable(CAP_SYSLOG))
-+			goto warn; /* switch to return -EPERM after 2.6.39 */
- 	}
- 
- 	error = security_syslog(type);
-@@ -434,6 +428,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 	}
- out:
- 	return error;
-+warn:
-+	/* remove after 2.6.39 */
-+	if (capable(CAP_SYS_ADMIN))
-+		WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
-+		  "but no CAP_SYSLOG (deprecated and denied).\n");
-+	return -EPERM;
- }
- 
- SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
--- 
-1.7.0.4
-
+    J
