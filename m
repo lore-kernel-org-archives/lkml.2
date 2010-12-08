@@ -1,87 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab0LHNi0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 08:38:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44078 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890Ab0LHNiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 08:38:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=UMYJczqMlw/XdBAHxZUD181o8UpjZdEjll8u7TBKEbJ+ehEwn12jmzeOiD0Kvqspyh
-         e6mnn6VQUS5vdTvQ0tzHuviqGEkHIgTre92qeJ6km36pOFF0xGrKdYWwd9mk48/9Ze3U
-         VwGe/Agu/Nz4Q/6vUcXgHsM5L8FAwovZHJraI=
+	id S1754958Ab0LHNpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 08:45:12 -0500
+Received: from cantor.suse.de ([195.135.220.2]:36653 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960Ab0LHNpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 08:45:10 -0500
+Date: Wed, 8 Dec 2010 14:45:08 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: kverlin@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rydberg@euromail.se
+Subject: Re: [PATCH] USB: HID: Panasonic ub-t780 whiteboard hid driver
+ stub.
+In-Reply-To: <1290529358-6616-1-git-send-email-Anton.Chikin@dataart.com>
+Message-ID: <alpine.LNX.2.00.1012081438110.14806@pobox.suse.cz>
+References: <1290529358-6616-1-git-send-email-Anton.Chikin@dataart.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Wed, 8 Dec 2010 14:38:23 +0100
-Message-ID: <AANLkTim0-EY8z6_XYG9ZGc3RnK7v8Du4njygsH62Wc5M@mail.gmail.com>
-Subject: [PATCH] speakup: fakekey.c: Fix error: macro "__this_cpu_write"
- requires 2 arguments, but only 1 given
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Content-Type: multipart/mixed; boundary=00163631028b3a20600496e63c3f
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00163631028b3a20600496e63c3f
-Content-Type: text/plain; charset=UTF-8
+On Tue, 23 Nov 2010, kverlin@gmail.com wrote:
 
-While building linux-next (next-20101208) I fell over this build failure.
-The attached patch is compile-tested-only.
+> From: Anton Chikin <kverlin@panasonic-box.(none)>
+> 
+> ---
+>  drivers/hid/Kconfig      |    6 +
+>  drivers/hid/Makefile     |    1 +
+>  drivers/hid/hid-core.c   |    2 +
+>  drivers/hid/hid-ubt780.c |  237 ++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/hid/ubt780ctrl.h |  109 +++++++++++++++++++++
+>  5 files changed, 355 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/hid/hid-ubt780.c
+>  create mode 100644 drivers/hid/ubt780ctrl.h
+> 
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index 3052e29..ee912e2 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -114,6 +114,12 @@ config HID_CHICONY
+>  	---help---
+>  	Support for Chicony Tactical pad.
+>  
+> +config HID_PANASONIC
+> +	tristate "Panasonic UB-T780 whiteboard"
+> +	depends on USB_HID
+> +	---help---
+> +	Support for Panasonic Elite Panaboard UB-T780
+> +
+>  config HID_PRODIKEYS
+>  	tristate "Prodikeys PC-MIDI Keyboard support"
+>  	depends on USB_HID && SND
+> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+> index c335605..7404929 100644
+> --- a/drivers/hid/Makefile
+> +++ b/drivers/hid/Makefile
+> @@ -70,6 +70,7 @@ obj-$(CONFIG_HID_ZEROPLUS)	+= hid-zpff.o
+>  obj-$(CONFIG_HID_ZYDACRON)	+= hid-zydacron.o
+>  obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
+>  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
+> +obj-$(CONFIG_HID_PANASONIC)	+= hid-ubt780.o
+>  
+>  obj-$(CONFIG_USB_HID)		+= usbhid/
+>  obj-$(CONFIG_USB_MOUSE)		+= usbhid/
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 515345b..263210a 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1366,6 +1366,8 @@ static const struct hid_device_id hid_blacklist[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_PANASONIC, USB_DEVICE_ID_PANASONIC_PANABOARD_T780)},
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_PANASONIC, USB_DEVICE_ID_PANASONIC_PANABOARD_T880)},
 
-- Sedat -
+This adds two new device IDs to hid_blacklist[]. I don't see any hunk in 
+the provided patch which would be adding these to hid-ids.h.
 
---00163631028b3a20600496e63c3f
-Content-Type: text/x-diff; charset=UTF-8; 
-	name="0001-speakup-fakekey.c-Fix-error-macro-__this_cpu_write-r.patch"
-Content-Disposition: attachment; 
-	filename="0001-speakup-fakekey.c-Fix-error-macro-__this_cpu_write-r.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ghg9k7cn0
+> diff --git a/drivers/hid/hid-ubt780.c b/drivers/hid/hid-ubt780.c
+> new file mode 100644
+> index 0000000..c2c2e20
+> --- /dev/null
+> +++ b/drivers/hid/hid-ubt780.c
+> @@ -0,0 +1,237 @@
+> +/*
+> + *  HID driver for Cando dual-touch panels
+> + *
+> + *  Copyright (c) 2010 Stephane Chatty <chatty@enac.fr>
 
-RnJvbSA0ZjI1ZGU4NWQyOWZhMzI3NTFjODc5ZTY0NTI2OTExOWEzZWYzNTc5IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
-YXRlOiBXZWQsIDggRGVjIDIwMTAgMTQ6MjI6NDkgKzAxMDAKU3ViamVjdDogW1BBVENIXSBzcGVh
-a3VwOmZha2VrZXkuYzogRml4IGVycm9yOiBtYWNybyAiX190aGlzX2NwdV93cml0ZSIgcmVxdWly
-ZXMgMiBhcmd1bWVudHMsIGJ1dCBvbmx5IDEgZ2l2ZW4KTUlNRS1WZXJzaW9uOiAxLjAKQ29udGVu
-dC1UeXBlOiB0ZXh0L3BsYWluOyBjaGFyc2V0PVVURi04CkNvbnRlbnQtVHJhbnNmZXItRW5jb2Rp
-bmc6IDhiaXQKCkZyb20gYnVpbGQubG9nOgoKZHJpdmVycy9zdGFnaW5nL3NwZWFrdXAvZmFrZWtl
-eS5jOjgxOjM4OiBlcnJvcjogbWFjcm8gIl9fdGhpc19jcHVfd3JpdGUiIHJlcXVpcmVzIDIgYXJn
-dW1lbnRzLCBidXQgb25seSAxIGdpdmVuCmRyaXZlcnMvc3RhZ2luZy9zcGVha3VwL2Zha2VrZXku
-YzogSW4gZnVuY3Rpb24g4oCYc3BlYWt1cF9mYWtlX2Rvd25fYXJyb3figJk6CmRyaXZlcnMvc3Rh
-Z2luZy9zcGVha3VwL2Zha2VrZXkuYzo4MTogZXJyb3I6IOKAmF9fdGhpc19jcHVfd3JpdGXigJkg
-dW5kZWNsYXJlZCAoZmlyc3QgdXNlIGluIHRoaXMgZnVuY3Rpb24pCmRyaXZlcnMvc3RhZ2luZy9z
-cGVha3VwL2Zha2VrZXkuYzo4MTogZXJyb3I6IChFYWNoIHVuZGVjbGFyZWQgaWRlbnRpZmllciBp
-cyByZXBvcnRlZCBvbmx5IG9uY2UKZHJpdmVycy9zdGFnaW5nL3NwZWFrdXAvZmFrZWtleS5jOjgx
-OiBlcnJvcjogZm9yIGVhY2ggZnVuY3Rpb24gaXQgYXBwZWFycyBpbi4pCmRyaXZlcnMvc3RhZ2lu
-Zy9zcGVha3VwL2Zha2VrZXkuYzo4MTogd2FybmluZzogbGVmdC1oYW5kIG9wZXJhbmQgb2YgY29t
-bWEgZXhwcmVzc2lvbiBoYXMgbm8gZWZmZWN0CmRyaXZlcnMvc3RhZ2luZy9zcGVha3VwL2Zha2Vr
-ZXkuYzo4MTogd2FybmluZzogc3RhdGVtZW50IHdpdGggbm8gZWZmZWN0CmRyaXZlcnMvc3RhZ2lu
-Zy9zcGVha3VwL2Zha2VrZXkuYzo4MTogZXJyb3I6IGV4cGVjdGVkIOKAmDvigJkgYmVmb3JlIOKA
-mCnigJkgdG9rZW4KZHJpdmVycy9zdGFnaW5nL3NwZWFrdXAvZmFrZWtleS5jOjgxOiBlcnJvcjog
-ZXhwZWN0ZWQgc3RhdGVtZW50IGJlZm9yZSDigJgp4oCZIHRva2VuCgpJc3N1ZSB3YXMgaW50cm9k
-dWNlZCBieToKICAgY29tbWl0IDZjOWJmNjAxYjkwOTdmODM4MzliYWVlMDliOWYzZWFhMDk5ZmMz
-ZjQKICAgImRyaXZlcnM6IFJlcGxhY2UgX19nZXRfY3B1X3ZhciB3aXRoIF9fdGhpc19jcHVfcmVh
-ZCBpZiBub3QgdXNlZCBmb3IgYW4gYWRkcmVzcy4iCgpTaWduZWQtb2ZmLWJ5OiBTZWRhdCBEaWxl
-ayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgotLS0KIGRyaXZlcnMvc3RhZ2luZy9zcGVha3VwL2Zh
-a2VrZXkuYyB8ICAgIDIgKy0KIDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAxIGRl
-bGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvc3RhZ2luZy9zcGVha3VwL2Zha2VrZXku
-YyBiL2RyaXZlcnMvc3RhZ2luZy9zcGVha3VwL2Zha2VrZXkuYwppbmRleCA5ZjJhN2ExLi4xYjM0
-YTg3IDEwMDY0NAotLS0gYS9kcml2ZXJzL3N0YWdpbmcvc3BlYWt1cC9mYWtla2V5LmMKKysrIGIv
-ZHJpdmVycy9zdGFnaW5nL3NwZWFrdXAvZmFrZWtleS5jCkBAIC03OCw3ICs3OCw3IEBAIHZvaWQg
-c3BlYWt1cF9mYWtlX2Rvd25fYXJyb3codm9pZCkKIAkvKiBkb24ndCBjaGFuZ2UgQ1BVICovCiAJ
-cHJlZW1wdF9kaXNhYmxlKCk7CiAKLQlfX3RoaXNfY3B1X3dyaXRlKHJlcG9ydGluZ19rZXlzdHJv
-a2UpLCB0cnVlKTsKKwlfX3RoaXNfY3B1X3dyaXRlKHJlcG9ydGluZ19rZXlzdHJva2UsIHRydWUp
-OwogCWlucHV0X3JlcG9ydF9rZXkodmlydF9rZXlib2FyZCwgS0VZX0RPV04sIFBSRVNTRUQpOwog
-CWlucHV0X3JlcG9ydF9rZXkodmlydF9rZXlib2FyZCwgS0VZX0RPV04sIFJFTEVBU0VEKTsKIAlf
-X3RoaXNfY3B1X3dyaXRlKHJlcG9ydGluZ19rZXlzdHJva2UsIGZhbHNlKTsKLS0gCjEuNy4yLjMK
-Cg==
---00163631028b3a20600496e63c3f--
+The copyright looks bogus :)
+
+[... snip ... ]
+> +static struct hid_device_id ubt780_devices[] = {
+> +	{ HID_USB_DEVICE(0x04da, 0x1044) },
+> +	{ }
+
+Here you are adding only one device ID, which seems to be slight 
+discrepancy with the change in hid-core.
+
+> +};
+> +MODULE_DEVICE_TABLE(hid, ubt780_devices);
+> +
+> +static const struct hid_usage_id ubt780_grabbed_usages[] = {
+> +	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
+> +	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1}
+> +};
+
+Why do you need this?
+
+
+> diff --git a/drivers/hid/ubt780ctrl.h b/drivers/hid/ubt780ctrl.h
+> new file mode 100644
+> index 0000000..11810c8
+> --- /dev/null
+> +++ b/drivers/hid/ubt780ctrl.h
+> @@ -0,0 +1,108 @@
+> +/*
+> + *  USB HID driver for Panasonic elite Panaboard UTB780
+> + *  Copyright (c) 2008 Igor Shakirov, Victor Grenke <comp.vision@gmail.com>
+> +
+> + * Information.
+> + * It's driver for supporting Panaboard elite USB device.
+> + * The driver is redesigned using usb hid core driver:
+> + * Copyright (c) 1999 Andreas Gal
+> + * Copyright (c) 2000-2005 Vojtech Pavlik <vojtech@suse.cz>
+> + * Copyright (c) 2005 Michael Haboustak <mike-@cinci.rr.com> for Concept2, Inc
+> + * Copyright (c) 2010 Panasonic
+> + */
+> +
+> +/*
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the Free
+> + * Software Foundation; either version 2 of the License, or (at your option)
+> + * any later version.
+> + */
+> +
+> +#ifndef UBT780CTRL
+> +#define UBT780CTRL
+> +
+> +//////////////////////////////////////////////////////////////////////////////////////////////////
+> +//IOCTRL codes
+> +/** Battary status IOCTL defines */
+> +#define GET_BATTERY_STATUS		0x01 /*get battery status, return BATTERY_STATUS_UKN, BATTERY_STATUS_FINE, BATTERY_STATUS_WEAK*/
+> +#define GET_LAST_PACKET_OLD		0x02 /*get last packet (ubt780_dgtzr). It is necessary for calibration*/
+> +
+> +/** Modes of work IOCTL */
+> +#define GET_MODE			0x10 /*get current mode, return MODE_MOUSE, MODE_DGTZR*/
+> +#define SET_MODE			0x11 /*switch to mouse mode, MODE_MOUSE, MODE_DGTZR*/
+> +#define SET_CALIB			0x20 /*set calibration mode*/
+> +#define GET_LAST_PACKET			0x21 /*get last packet (ubt780_dgtzr). It is necessary for calibration*/
+> +
+> +////////////////////////////////
+> +//return values for ioctrl
+> +/** Battary status defines */
+> +#define BATTERY_STATUS_FINE		0x00 /*battery is fine*/
+> +#define BATTERY_STATUS_WEAK		0x01 /*battery is weak*/
+> +#define BATTERY_STATUS_UKN		0x02 /*unknown status. Status will be known after the first pen touch*/
+> +
+> +/** Mode status defines */
+> +#define MODE_MOUSE			0x10 /*current mode is mouse*/
+> +#define MODE_DGTZR			0x11 /*current mode is digitizer*/
+> +#define MODE_UKN			0x12 /*current mode is unknown. It will be known after the first pen touch*/
+> +
+> +////////////////////////////////
+> +/** Digitize mode stucture: contains packet data */
+> +struct ubt780_dgtzr
+> +{
+> +	/** Report contains the type of packet: 0 - mouse, 1 - digitize */
+> +	unsigned char report;
+> +	/** Command is coming from device */
+> +	unsigned char command;
+> +	/** Packet size */
+> +	unsigned char number;
+> +	/** Data part of packet */
+> +	unsigned char data[17];
+> +};
+> +
+> +/** Calibration stucture: contains calibration data */
+> +struct ubt780_calib
+> +{
+> +	/** Screen coordinates: Left Top X */
+> +	int LTx;
+> +	/** Screen coordinates: Left Top Y */
+> +	int LTy;
+> +	/** Screen coordinates: Left Bottom X */
+> +	int LBx;
+> +	/** Screen coordinates: Left Bottom Y */
+> +	int LBy;
+> +	/** Screen coordinates: Right Top X */
+> +	int RTx;
+> +	/** Screen coordinates: Right Top Y */
+> +	int RTy;
+> +	/** Screen coordinates: Right Bottom X */
+> +	int RBx;
+> +	/** Screen coordinates: Right Bottom Y */
+> +	int RBy;
+> +
+> +	/** Board coordinates: Left Top X */
+> +	int LTX;
+> +	/** Board coordinates: Left Top Y */
+> +	int LTY;
+> +	/** Board coordinates: Left Bottom X */
+> +	int LBX;
+> +	/** Board coordinates: Left Bottom Y */
+> +	int LBY;
+> +	/** Board coordinates: Right Top X */
+> +	int RTX;
+> +	/** Board coordinates: Right Top Y */
+> +	int RTY;
+> +	/** Board coordinates: Right Bottom X */
+> +	int RBX;
+> +	/** Board coordinates: Right Bottom Y */
+> +	int RBY;
+> +
+> +	/** Calculated values */
+> +	int Xoff_A;
+> +	int Xmag_A;
+> +	int Xmag_B;
+> +	int Yoff_A;
+> +	int Ymag_A;
+> +	int Ymag_B;
+> +};
+> +
+> +#endif //UBT780CTRL
+
+This file is completely not compliant with kernel coding style, but that's 
+not a main issue right now.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
