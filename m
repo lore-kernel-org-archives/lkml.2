@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab0LHCSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:18:15 -0500
-Received: from kroah.org ([198.145.64.141]:45910 "EHLO coco.kroah.org"
+	id S1755781Ab0LHAqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:46:39 -0500
+Received: from kroah.org ([198.145.64.141]:45876 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755812Ab0LHAqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:43 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
-Message-Id: <20101208004426.091932805@clark.site>
+	id S1755731Ab0LHAqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:37 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:25 2010
+Message-Id: <20101208004425.462048818@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:23 -0800
+Date: Tue, 07 Dec 2010 16:43:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Masanori Itoh <itoumsn@nttdata.co.jp>, Tejun Heo <tj@kernel.org>
-Subject: [017/127] percpu: fix list_head init bug in __percpu_counter_init()
+        Jakub Schmidtke <sjakub@gmail.com>
+Subject: [011/127] Staging: asus_oled: fix up some sysfs attribute permissions
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masanori ITOH <itoumsn@nttdata.co.jp>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-commit 8474b591faf3bb0a1e08a60d21d6baac498f15e4 upstream.
+commit 590b0b9754bd8928926bae7194b6da7ead9bda3b upstream.
 
-WARNING: at lib/list_debug.c:26 __list_add+0x3f/0x81()
-Hardware name: Express5800/B120a [N8400-085]
-list_add corruption. next->prev should be prev (ffffffff81a7ea00), but was dead000000200200. (next=ffff88080b872d58).
-Modules linked in: aoe ipt_MASQUERADE iptable_nat nf_nat autofs4 sunrpc bridge 8021q garp stp llc ipv6 cpufreq_ondemand acpi_cpufreq freq_table dm_round_robin dm_multipath kvm_intel kvm uinput lpfc scsi_transport_fc igb ioatdma scsi_tgt i2c_i801 i2c_core dca iTCO_wdt iTCO_vendor_support pcspkr shpchp megaraid_sas [last unloaded: aoe]
-Pid: 54, comm: events/3 Tainted: G        W  2.6.34-vanilla1 #1
-Call Trace:
-[<ffffffff8104bd77>] warn_slowpath_common+0x7c/0x94
-[<ffffffff8104bde6>] warn_slowpath_fmt+0x41/0x43
-[<ffffffff8120fd2e>] __list_add+0x3f/0x81
-[<ffffffff81212a12>] __percpu_counter_init+0x59/0x6b
-[<ffffffff810d8499>] bdi_init+0x118/0x17e
-[<ffffffff811f2c50>] blk_alloc_queue_node+0x79/0x143
-[<ffffffff811f2d2b>] blk_alloc_queue+0x11/0x13
-[<ffffffffa02a931d>] aoeblk_gdalloc+0x8e/0x1c9 [aoe]
-[<ffffffffa02aa655>] aoecmd_sleepwork+0x25/0xa8 [aoe]
-[<ffffffff8106186c>] worker_thread+0x1a9/0x237
-[<ffffffffa02aa630>] ? aoecmd_sleepwork+0x0/0xa8 [aoe]
-[<ffffffff81065827>] ? autoremove_wake_function+0x0/0x39
-[<ffffffff810616c3>] ? worker_thread+0x0/0x237
-[<ffffffff810653ad>] kthread+0x7f/0x87
-[<ffffffff8100aa24>] kernel_thread_helper+0x4/0x10
-[<ffffffff8106532e>] ? kthread+0x0/0x87
-[<ffffffff8100aa20>] ? kernel_thread_helper+0x0/0x10
+They should not be writable by any user
 
-It's because there is no initialization code for a list_head contained in
-the struct backing_dev_info under CONFIG_HOTPLUG_CPU, and the bug comes up
-when block device drivers calling blk_alloc_queue() are used.  In case of
-me, I got them by using aoe.
-
-Signed-off-by: Masanori Itoh <itoumsn@nttdata.co.jp>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jakub Schmidtke <sjakub@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- lib/percpu_counter.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/asus_oled/asus_oled.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -76,6 +76,7 @@ int __percpu_counter_init(struct percpu_
- 	if (!fbc->counters)
- 		return -ENOMEM;
- #ifdef CONFIG_HOTPLUG_CPU
-+	INIT_LIST_HEAD(&fbc->list);
- 	mutex_lock(&percpu_counters_lock);
- 	list_add(&fbc->list, &percpu_counters);
- 	mutex_unlock(&percpu_counters_lock);
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -609,13 +609,13 @@ static ssize_t class_set_picture(struct
+ 
+ #define ASUS_OLED_DEVICE_ATTR(_file)		dev_attr_asus_oled_##_file
+ 
+-static DEVICE_ATTR(asus_oled_enabled, S_IWUGO | S_IRUGO,
++static DEVICE_ATTR(asus_oled_enabled, S_IRUSR | S_IRUGO,
+ 		   get_enabled, set_enabled);
+-static DEVICE_ATTR(asus_oled_picture, S_IWUGO , NULL, set_picture);
++static DEVICE_ATTR(asus_oled_picture, S_IRUSR , NULL, set_picture);
+ 
+-static DEVICE_ATTR(enabled, S_IWUGO | S_IRUGO,
++static DEVICE_ATTR(enabled, S_IRUSR | S_IRUGO,
+ 		   class_get_enabled, class_set_enabled);
+-static DEVICE_ATTR(picture, S_IWUGO, NULL, class_set_picture);
++static DEVICE_ATTR(picture, S_IRUSR, NULL, class_set_picture);
+ 
+ static int asus_oled_probe(struct usb_interface *interface,
+ 			   const struct usb_device_id *id)
 
 
