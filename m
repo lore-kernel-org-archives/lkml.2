@@ -1,164 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab0LHUAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:00:40 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59019 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756079Ab0LHT6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 14:58:03 -0500
-From: Tejun Heo <tj@kernel.org>
-To: jeff@garzik.org, linux-ide@vger.kernel.org, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kay.sievers@vrfy.org, jack@suse.cz,
-        James.Bottomley@HansenPartnership.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/8] cdrom: add ->check_events() support
-Date: Wed,  8 Dec 2010 20:57:38 +0100
-Message-Id: <1291838262-21274-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291838262-21274-1-git-send-email-tj@kernel.org>
-References: <1291838262-21274-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 19:57:47 +0000 (UTC)
+	id S1756484Ab0LHUDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:03:12 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:55866 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755118Ab0LHUDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:03:10 -0500
+Message-ID: <4CFFE46C.60401@euromail.se>
+Date: Wed, 08 Dec 2010 21:02:52 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+CC: Chase Douglas <chase.douglas@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Add an envelope tool type
+References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <4CFFCD10.5030202@euromail.se> <4CFFD0BF.2020601@canonical.com> <4CFFD3FE.1090103@euromail.se> <4CFFD801.8060704@canonical.com> <4CFFDB35.2020506@euromail.se> <AANLkTi=iw+7CDhbO4N9rMVSwS0t93BaaBVgoAwz-GeHo@mail.gmail.com>
+In-Reply-To: <AANLkTi=iw+7CDhbO4N9rMVSwS0t93BaaBVgoAwz-GeHo@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PQQE3-0000ZL-5C.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PQQE3-0000ZL-5C b42dcce3f602924246e129e23c5a5931
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In principle, cdrom just needs to pass through ->check_events() but
-CDROM_MEDIA_CHANGED ioctl makes things a bit more complex.  Just as
-with ->media_changed() support, cdrom code needs to buffer the events
-and serve them to ioctl and vfs as requested.
+On 12/08/2010 08:51 PM, Mohamed Ikbel Boulabiar wrote:
 
-As the code has to deal with both ->check_events() and
-->media_changed(), and vfs and ioctl event buffering, this patch adds
-check_events caching on top of the existing cdi->mc_flags buffering.
+> I have seen this touchless touchpad hardware (huh?)
+> it detects finger/hand and it's better explained by a video:
+> http://www.youtube.com/watch?v=6SjMdtdhXlA
+> 
+> How it fit in the convex notion?
 
-It may be a good idea to deprecate CDROM_MEDIA_CHANGED ioctl and
-remove all this mess.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/cdrom/cdrom.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/cdrom.h |    6 +++++
- 2 files changed, 58 insertions(+), 3 deletions(-)
+This is precisely what the patch for ABS_MT_DISTANCE is for. Perhaps you meant
+to comment on that email. This one is about support for hardware without
+individual finger detection capabilities.
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index af13c62..1ea8f8d 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -1348,7 +1348,10 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
- 	if (!CDROM_CAN(CDC_SELECT_DISC))
- 		return -EDRIVE_CANT_DO_THIS;
- 
--	(void) cdi->ops->media_changed(cdi, slot);
-+	if (cdi->ops->check_events)
-+		cdi->ops->check_events(cdi, 0, slot);
-+	else
-+		cdi->ops->media_changed(cdi, slot);
- 
- 	if (slot == CDSL_NONE) {
- 		/* set media changed bits, on both queues */
-@@ -1392,6 +1395,41 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
- 	return slot;
- }
- 
-+/*
-+ * As cdrom implements an extra ioctl consumer for media changed
-+ * event, it needs to buffer ->check_events() output, such that event
-+ * is not lost for both the usual VFS and ioctl paths.
-+ * cdi->{vfs|ioctl}_events are used to buffer pending events for each
-+ * path.
-+ *
-+ * XXX: Locking is non-existent.  cdi->ops->check_events() can be
-+ * called in parallel and buffering fields are accessed without any
-+ * exclusion.  The original media_changed code had the same problem.
-+ * It might be better to simply deprecate CDROM_MEDIA_CHANGED ioctl
-+ * and remove this cruft altogether.  It doesn't have much usefulness
-+ * at this point.
-+ */
-+static void cdrom_update_events(struct cdrom_device_info *cdi,
-+				unsigned int clearing)
-+{
-+	unsigned int events;
-+
-+	events = cdi->ops->check_events(cdi, clearing, CDSL_CURRENT);
-+	cdi->vfs_events |= events;
-+	cdi->ioctl_events |= events;
-+}
-+
-+unsigned int cdrom_check_events(struct cdrom_device_info *cdi,
-+				unsigned int clearing)
-+{
-+	unsigned int events;
-+
-+	cdrom_update_events(cdi, clearing);
-+	events = cdi->vfs_events;
-+	cdi->vfs_events = 0;
-+	return events;
-+}
-+
- /* We want to make media_changed accessible to the user through an
-  * ioctl. The main problem now is that we must double-buffer the
-  * low-level implementation, to assure that the VFS and the user both
-@@ -1403,15 +1441,26 @@ int media_changed(struct cdrom_device_info *cdi, int queue)
- {
- 	unsigned int mask = (1 << (queue & 1));
- 	int ret = !!(cdi->mc_flags & mask);
-+	bool changed;
- 
- 	if (!CDROM_CAN(CDC_MEDIA_CHANGED))
--	    return ret;
-+		return ret;
-+
- 	/* changed since last call? */
--	if (cdi->ops->media_changed(cdi, CDSL_CURRENT)) {
-+	if (cdi->ops->check_events) {
-+		BUG_ON(!queue);	/* shouldn't be called from VFS path */
-+		cdrom_update_events(cdi, DISK_EVENT_MEDIA_CHANGE);
-+		changed = cdi->ioctl_events & DISK_EVENT_MEDIA_CHANGE;
-+		cdi->ioctl_events = 0;
-+	} else
-+		changed = cdi->ops->media_changed(cdi, CDSL_CURRENT);
-+
-+	if (changed) {
- 		cdi->mc_flags = 0x3;    /* set bit on both queues */
- 		ret |= 1;
- 		cdi->media_written = 0;
- 	}
-+
- 	cdi->mc_flags &= ~mask;         /* clear bit */
- 	return ret;
- }
-diff --git a/include/linux/cdrom.h b/include/linux/cdrom.h
-index 78e9047..35eae4b 100644
---- a/include/linux/cdrom.h
-+++ b/include/linux/cdrom.h
-@@ -946,6 +946,8 @@ struct cdrom_device_info {
- /* device-related storage */
- 	unsigned int options	: 30;	/* options flags */
- 	unsigned mc_flags	: 2;	/* media change buffer flags */
-+	unsigned int vfs_events;	/* cached events for vfs path */
-+	unsigned int ioctl_events;	/* cached events for ioctl path */
-     	int use_count;                  /* number of times device opened */
-     	char name[20];                  /* name of the device type */
- /* per-device flags */
-@@ -965,6 +967,8 @@ struct cdrom_device_ops {
- 	int (*open) (struct cdrom_device_info *, int);
- 	void (*release) (struct cdrom_device_info *);
- 	int (*drive_status) (struct cdrom_device_info *, int);
-+	unsigned int (*check_events) (struct cdrom_device_info *cdi,
-+				      unsigned int clearing, int slot);
- 	int (*media_changed) (struct cdrom_device_info *, int);
- 	int (*tray_move) (struct cdrom_device_info *, int);
- 	int (*lock_door) (struct cdrom_device_info *, int);
-@@ -993,6 +997,8 @@ extern int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev,
- extern void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode);
- extern int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
- 		       fmode_t mode, unsigned int cmd, unsigned long arg);
-+extern unsigned int cdrom_check_events(struct cdrom_device_info *cdi,
-+				       unsigned int clearing);
- extern int cdrom_media_changed(struct cdrom_device_info *);
- 
- extern int register_cdrom(struct cdrom_device_info *cdi);
--- 
-1.7.1
-
+Henrik
