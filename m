@@ -1,342 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab0LHCm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:42:58 -0500
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:51793 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859Ab0LHCm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 21:42:56 -0500
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.59,314,1288569600"; 
-   d="scan'208";a="388766925"
-From: David Ahern <daahern@cisco.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <daahern@cisco.com>
-Subject: [PATCH] perf tools: Add symfs option for off-box analysis using specified tree
-Date: Tue,  7 Dec 2010 19:42:54 -0700
-Message-Id: <1291776174-16535-1-git-send-email-daahern@cisco.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1753318Ab0LHC7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:59:06 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:47660 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752918Ab0LHC7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 21:59:03 -0500
+Date: Wed, 8 Dec 2010 13:58:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for December 8
+Message-Id: <20101208135858.c1208651.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__8_Dec_2010_13_58_58_+1100_NhYnRSpHF0nBhlGB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symfs argument allows analysis of perf.data file using a locally
-accessible filesystem tree with debug symbols - e.g., tree created
-during image builds, sshfs mount, loop mounted KVM disk images,
-USB keys, initrds, etc. Anything with an OS tree can be analyzed from
-anywhere without the need to populate a local data store with
-build-ids.
+--Signature=_Wed__8_Dec_2010_13_58_58_+1100_NhYnRSpHF0nBhlGB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: David Ahern <daahern@cisco.com>
----
- tools/perf/builtin-annotate.c  |   16 +++++--
- tools/perf/builtin-diff.c      |    2 +
- tools/perf/builtin-report.c    |    2 +
- tools/perf/builtin-timechart.c |    2 +
- tools/perf/util/hist.c         |   14 +++++-
- tools/perf/util/symbol.c       |   82 +++++++++++++++++++++++++---------------
- tools/perf/util/symbol.h       |    1 +
- 7 files changed, 80 insertions(+), 39 deletions(-)
+Hi all,
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 569a276..0c47bee 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -280,7 +280,8 @@ static int hist_entry__tty_annotate(struct hist_entry *he)
- 	struct map *map = he->ms.map;
- 	struct dso *dso = map->dso;
- 	struct symbol *sym = he->ms.sym;
--	const char *filename = dso->long_name, *d_filename;
-+	const char *filename = dso->long_name;
-+	char d_filename[PATH_MAX];
- 	u64 len;
- 	LIST_HEAD(head);
- 	struct objdump_line *pos, *n;
-@@ -288,10 +289,13 @@ static int hist_entry__tty_annotate(struct hist_entry *he)
- 	if (hist_entry__annotate(he, &head, 0) < 0)
- 		return -1;
- 
--	if (full_paths)
--		d_filename = filename;
--	else
--		d_filename = basename(filename);
-+	if (full_paths) {
-+		snprintf(d_filename, sizeof(d_filename), "%s%s",
-+			 symbol_conf.symfs, filename);
-+	} else {
-+		snprintf(d_filename, sizeof(d_filename), "%s/%s",
-+			 symbol_conf.symfs, basename(filename));
-+	}
- 
- 	len = sym->end - sym->start;
- 
-@@ -437,6 +441,8 @@ static const struct option options[] = {
- 		    "print matching source lines (may be slow)"),
- 	OPT_BOOLEAN('P', "full-paths", &full_paths,
- 		    "Don't shorten the displayed pathnames"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 5e1a043..71126a6 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -192,6 +192,8 @@ static const struct option options[] = {
- 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
- 		   "separator for columns, no spaces will be added between "
- 		   "columns '.' is reserved."),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 904519f..57b0f49 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -479,6 +479,8 @@ static const struct option options[] = {
- 		   "columns '.' is reserved."),
- 	OPT_BOOLEAN('U', "hide-unresolved", &hide_unresolved,
- 		    "Only display entries resolved to a symbol"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index d2fc461..965aa4e 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1021,6 +1021,8 @@ static const struct option options[] = {
- 	OPT_CALLBACK('p', "process", NULL, "process",
- 		      "process selector. Pass a pid or process name.",
- 		       parse_process),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 2022e87..b24ae53 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1092,6 +1092,12 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
- 	FILE *file;
- 	int err = 0;
- 	u64 len;
-+	char symfs_filename[PATH_MAX];
-+
-+	if (filename) {
-+		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-+		 symbol_conf.symfs, filename);
-+	}
- 
- 	if (filename == NULL) {
- 		if (dso->has_build_id) {
-@@ -1100,9 +1106,9 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
- 			return -ENOMEM;
- 		}
- 		goto fallback;
--	} else if (readlink(filename, command, sizeof(command)) < 0 ||
-+	} else if (readlink(symfs_filename, command, sizeof(command)) < 0 ||
- 		   strstr(command, "[kernel.kallsyms]") ||
--		   access(filename, R_OK)) {
-+		   access(symfs_filename, R_OK)) {
- 		free(filename);
- fallback:
- 		/*
-@@ -1111,6 +1117,8 @@ fallback:
- 		 * DSO is the same as when 'perf record' ran.
- 		 */
- 		filename = dso->long_name;
-+		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-+		 symbol_conf.symfs, filename);
- 		free_filename = false;
- 	}
- 
-@@ -1137,7 +1145,7 @@ fallback:
- 		 "objdump --start-address=0x%016Lx --stop-address=0x%016Lx -dS -C %s|grep -v %s|expand",
- 		 map__rip_2objdump(map, sym->start),
- 		 map__rip_2objdump(map, sym->end),
--		 filename, filename);
-+		 symfs_filename, filename);
- 
- 	pr_debug("Executing: %s\n", command);
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index a348906..7a0d284 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -41,6 +41,7 @@ struct symbol_conf symbol_conf = {
- 	.exclude_other	  = true,
- 	.use_modules	  = true,
- 	.try_vmlinux_path = true,
-+	.symfs           = "",
- };
- 
- int dso__name_len(const struct dso *self)
-@@ -833,8 +834,11 @@ static int dso__synthesize_plt_symbols(struct  dso *self, struct map *map,
- 	char sympltname[1024];
- 	Elf *elf;
- 	int nr = 0, symidx, fd, err = 0;
-+	char name[PATH_MAX];
- 
--	fd = open(self->long_name, O_RDONLY);
-+	snprintf(name, sizeof(name), "%s%s",
-+		 symbol_conf.symfs, self->long_name);
-+	fd = open(name, O_RDONLY);
- 	if (fd < 0)
- 		goto out;
- 
-@@ -1446,16 +1450,19 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 	     self->origin++) {
- 		switch (self->origin) {
- 		case DSO__ORIG_BUILD_ID_CACHE:
--			if (dso__build_id_filename(self, name, size) == NULL)
-+			/* skip the locally configured cache if a symfs is given */
-+			if ((strlen(symbol_conf.symfs) != 0) ||
-+			    (dso__build_id_filename(self, name, size) == NULL)) {
- 				continue;
-+			}
- 			break;
- 		case DSO__ORIG_FEDORA:
--			snprintf(name, size, "/usr/lib/debug%s.debug",
--				 self->long_name);
-+			snprintf(name, size, "%s/usr/lib/debug%s.debug",
-+				 symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_UBUNTU:
--			snprintf(name, size, "/usr/lib/debug%s",
--				 self->long_name);
-+			snprintf(name, size, "%s/usr/lib/debug%s",
-+				 symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_BUILDID: {
- 			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-@@ -1467,12 +1474,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 					  sizeof(self->build_id),
- 					  build_id_hex);
- 			snprintf(name, size,
--				 "/usr/lib/debug/.build-id/%.2s/%s.debug",
--				 build_id_hex, build_id_hex + 2);
-+				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
-+				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
- 			}
- 			break;
- 		case DSO__ORIG_DSO:
--			snprintf(name, size, "%s", self->long_name);
-+			snprintf(name, size, "%s%s",
-+			     symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_GUEST_KMODULE:
- 			if (map->groups && map->groups->machine)
-@@ -1778,17 +1786,20 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
- 			     const char *vmlinux, symbol_filter_t filter)
- {
- 	int err = -1, fd;
-+	char symfs_vmlinux[PATH_MAX];
- 
--	fd = open(vmlinux, O_RDONLY);
-+	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
-+		 symbol_conf.symfs, vmlinux);
-+	fd = open(symfs_vmlinux, O_RDONLY);
- 	if (fd < 0)
- 		return -1;
- 
- 	dso__set_loaded(self, map->type);
--	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
-+	err = dso__load_sym(self, map, symfs_vmlinux, fd, filter, 0, 0);
- 	close(fd);
- 
- 	if (err > 0)
--		pr_debug("Using %s for symbols\n", vmlinux);
-+		pr_debug("Using %s for symbols\n", symfs_vmlinux);
- 
- 	return err;
- }
-@@ -1861,6 +1872,10 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
- 			goto out_fixup;
- 	}
- 
-+	/* do not try local files if a symfs was given */
-+	if (strlen(symbol_conf.symfs) != 0)
-+		return -1;
-+
- 	/*
- 	 * Say the kernel DSO was created when processing the build-id header table,
- 	 * we have a build-id, so check if it is the same as the running kernel,
-@@ -2210,9 +2225,6 @@ static int vmlinux_path__init(void)
- 	struct utsname uts;
- 	char bf[PATH_MAX];
- 
--	if (uname(&uts) < 0)
--		return -1;
--
- 	vmlinux_path = malloc(sizeof(char *) * 5);
- 	if (vmlinux_path == NULL)
- 		return -1;
-@@ -2225,22 +2237,30 @@ static int vmlinux_path__init(void)
- 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
- 		goto out_fail;
- 	++vmlinux_path__nr_entries;
--	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
--	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
--	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
--		goto out_fail;
--	++vmlinux_path__nr_entries;
--	snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux", uts.release);
--	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
--	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
--		goto out_fail;
--	++vmlinux_path__nr_entries;
--	snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
--		 uts.release);
--	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
--	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
--		goto out_fail;
--	++vmlinux_path__nr_entries;
-+
-+	/* if no symfs has been given try running kernel version too */
-+	if (strlen(symbol_conf.symfs) == 0) {
-+		if (uname(&uts) < 0)
-+			return -1;
-+
-+		snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
-+		vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
-+		if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-+			goto out_fail;
-+		++vmlinux_path__nr_entries;
-+		snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux",
-+			 uts.release);
-+		vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
-+		if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-+			goto out_fail;
-+		++vmlinux_path__nr_entries;
-+		snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
-+			 uts.release);
-+		vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
-+		if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-+			goto out_fail;
-+		++vmlinux_path__nr_entries;
-+	}
- 
- 	return 0;
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 038f220..bbe90d1 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -85,6 +85,7 @@ struct symbol_conf {
-        struct strlist	*dso_list,
- 			*comm_list,
- 			*sym_list;
-+	const char	*symfs;
- };
- 
- extern struct symbol_conf symbol_conf;
--- 
-1.7.2.3
+Changes since 20101207:
 
+The arm tree lost its conflict.
+
+The v4l-dvb tree still has its build failure for which I applied a patch.
+
+The acpi tree still has its build failure so I used the version from
+next-20101201.
+
+The net tree lost its build failure.
+
+The wireless tree lost its build failure.
+
+The tip tree still has its build failures so I have reverted 3 commits.
+
+The drivers-x86 tree lost its build failure.
+
+The staging tree lost its conflicts.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 181 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
+Applying: rmobile: merge fixup for clkdev changes
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Applying: media: const and __devinitdata do not mix
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+$ git reset --hard HEAD^
+Merging refs/next/20101201/acpi
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ath9k/ar9003=
+_eeprom.c
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in sound/soc/sh/fsi.c
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+CONFLICT (content): Merge conflict in drivers/regulator/core.c
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging tip/auto-latest
+$ git commit -v -a[master 8e885e1] Revert "x86, nmi_watchdog: Remove all st=
+ub function calls from old nmi_watchdog"
+$ git commit -v -a[master 6ace3fa] Revert "x86, nmi_watchdog: Remove the ol=
+d nmi_watchdog"
+[master dd127fc] Revert "perf, arch: Cleanup perf-pmu init vs lockup-detect=
+or"
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen/upstream/xen
+Merging swiotlb-xen/master
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/sh/Kconfig
+CONFLICT (content): Merge conflict in drivers/usb/musb/blackfin.c
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Wed__8_Dec_2010_13_58_58_+1100_NhYnRSpHF0nBhlGB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM/vRyAAoJEDMEi1NhKgbs1k0H/i52WMZpfwc9phKsXWA2r4EG
+tzhAqZHE7ufcGxGHIhFPufJVvyPBM4pCpjehc/juryFON0bcRS6OwYWP07cobVFS
+NfFURJ+Skxrgdx2iir2Qsc/MfUW9Rf8yDGECbSIKm+jPQi9tsoxu+N8s9fvfmZcD
+nDDpc1aaZumEUJBplCZWPiSkF9FpV0pQPqNDv5FX2Qvx025D7KiYGLC45QytldZF
+NLCwXAQrvlcryQgNHY0nt+sj9+hQlHTGWwTTzvfnGMP8+wLtuN0XgbQpAwxu3YKl
+qiuAh9AWl4K9oydzrYeAGKG9TnAD1fbEXwbZHwocqA+wVGmray6sLkvuGIRVPC8=
+=649V
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__8_Dec_2010_13_58_58_+1100_NhYnRSpHF0nBhlGB--
