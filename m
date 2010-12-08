@@ -1,194 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab0LHHzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:55:13 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:44032 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab0LHHzL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:55:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vU6XTd7XWhuuN/2vQJzWr7lMrdc2SmHatABoTZ5VPQgS/9550BZ2z9fTdephF73sfT
-         hH21XpKffEAiNEZ2LdOZ3d8lx6Oi5VuTj53VoxME4OyyRJaFe+7DXV+98W5r0BbZzSLX
-         3RPpyPKCzfRTxJfiAh+eR6nyntw62U2rxF028=
+	id S1753997Ab0LHHzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:55:25 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58570 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753949Ab0LHHzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 02:55:21 -0500
+Date: Wed, 8 Dec 2010 08:55:06 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20101208075506.GA20898@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1012072258420.5260@sister.anvils>
-References: <cover.1291568905.git.minchan.kim@gmail.com>
-	<ca25c4e33beceeb3a96e8437671e5e0a188602fa.1291568905.git.minchan.kim@gmail.com>
-	<alpine.LSU.2.00.1012062027100.8572@tigran.mtv.corp.google.com>
-	<AANLkTindkfPJxxjR-nVy+Tmu6Q=fs2c=KOmdOQyfXaCP@mail.gmail.com>
-	<alpine.LSU.2.00.1012072258420.5260@sister.anvils>
-Date: Wed, 8 Dec 2010 16:55:11 +0900
-Message-ID: <AANLkTinx6wBUxQKWeCfcLbqB60qvTFWd8EHS0cGTj-Ma@mail.gmail.com>
-Subject: Re: [PATCH v4 7/7] Prevent activation of page in madvise_dontneed
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 4:26 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Tue, 7 Dec 2010, Minchan Kim wrote:
->>
->> How about this? Although it doesn't remove null dependency, it meet my
->> goal without big overhead.
->> It's just quick patch.
->
-> Roughly, yes; by "just quick patch" I take you to mean that I should
-> not waste time on all the minor carelessnesses scattered through it.
->
->> If you agree, I will resend this version as formal patch.
->> (If you suffered from seeing below word-wrapped source, see the
->> attachment. I asked to google two time to support text-plain mode in
->> gmail web but I can't receive any response until now. ;(. Lots of
->> kernel developer in google. Please support this mode for us who can't
->> use SMTP although it's a very small VOC)
->
-> Tiresome.  Seems not to be high on gmail's priorities.
-> It's sad to see even Linus attaching patches these days.
+Linus,
 
-That encourages me(But I don't mean I will use attachment again. :)).
+Please pull the latest perf-fixes-for-linus git tree from:
 
->
->>
->> diff --git a/include/linux/mm.h b/include/linux/mm.h
->> index e097df6..14ae918 100644
->> --- a/include/linux/mm.h
->> +++ b/include/linux/mm.h
->> @@ -771,6 +771,7 @@ struct zap_details {
->>         pgoff_t last_index;                     /* Highest page->index
->> to unmap */
->>         spinlock_t *i_mmap_lock;                /* For unmap_mapping_range: */
->>         unsigned long truncate_count;           /* Compare vm_truncate_count */
->> +       int ignore_reference;
->>  };
->>
->>  struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
->> diff --git a/mm/madvise.c b/mm/madvise.c
->> index 319528b..fdb0253 100644
->> --- a/mm/madvise.c
->> +++ b/mm/madvise.c
->> @@ -162,18 +162,22 @@ static long madvise_dontneed(struct vm_area_struct * vma,
->>                              struct vm_area_struct ** prev,
->>                              unsigned long start, unsigned long end)
->>  {
->> +       struct zap_details details ;
->> +
->>         *prev = vma;
->>         if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
->>                 return -EINVAL;
->>
->>         if (unlikely(vma->vm_flags & VM_NONLINEAR)) {
->> -               struct zap_details details = {
->> -                       .nonlinear_vma = vma,
->> -                       .last_index = ULONG_MAX,
->> -               };
->> -               zap_page_range(vma, start, end - start, &details);
->> -       } else
->> -               zap_page_range(vma, start, end - start, NULL);
->> +               details.nonlinear_vma = vma;
->> +               details.last_index = ULONG_MAX;
->> +       } else {
->> +               details.nonlinear_vma = NULL;
->> +               details.last_index = NULL;
->> +       }
->> +
->> +       details.ignore_references = true;
->> +       zap_page_range(vma, start, end - start, &details);
->>         return 0;
->>  }
->>
->> diff --git a/mm/memory.c b/mm/memory.c
->> index ebfeedf..d46ac42 100644
->> --- a/mm/memory.c
->> +++ b/mm/memory.c
->> @@ -897,9 +897,15 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->>         pte_t *pte;
->>         spinlock_t *ptl;
->>         int rss[NR_MM_COUNTERS];
->> -
->> +       bool ignore_reference = false;
->>         init_rss_vec(rss);
->>
->> +       if (details && ((!details->check_mapping && !details->nonlinear_vma)
->> +                                        || !details->ignore_reference))
->> +               details = NULL;
->> +
->
->        bool mark_accessed = true;
->
->        if (VM_SequentialReadHint(vma) ||
->            (details && details->ignore_reference))
->                mark_accessed = false;
->        if (details && !details->check_mapping && !details->nonlinear_vma)
->                details = NULL;
->
->
->>         pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
->>         arch_enter_lazy_mmu_mode();
->>         do {
->> @@ -949,7 +955,8 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
->>                                 if (pte_dirty(ptent))
->>                                         set_page_dirty(page);
->>                                 if (pte_young(ptent) &&
->> -                                   likely(!VM_SequentialReadHint(vma)))
->> +                                   likely(!VM_SequentialReadHint(vma)) &&
->> +                                   likely(!ignore_reference))
->>                                         mark_page_accessed(page);
->
->                                if (pte_young(ptent) && mark_accessed)
->                                        mark_page_accessed(page);
->
->
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 
-Much clean.
+ Thanks,
 
->>                                 rss[MM_FILEPAGES]--;
->>                         }
->> @@ -1038,8 +1045,6 @@ static unsigned long unmap_page_range(struct
->> mmu_gather *tlb,
->>         pgd_t *pgd;
->>         unsigned long next;
->>
->> -       if (details && !details->check_mapping && !details->nonlinear_vma)
->> -               details = NULL;
->>
->>         BUG_ON(addr >= end);
->>         mem_cgroup_uncharge_start();
->> @@ -1102,7 +1107,8 @@ unsigned long unmap_vmas(struct mmu_gather **tlbp,
->>         unsigned long tlb_start = 0;    /* For tlb_finish_mmu */
->>         int tlb_start_valid = 0;
->>         unsigned long start = start_addr;
->> -       spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
->> +       spinlock_t *i_mmap_lock = details ?
->> +               (detais->check_mapping ? details->i_mmap_lock: NULL) : NULL;
->
-> Why that change?
+	Ingo
 
-It has done very careless. Sorry for that. I thought i_mmap_lock
-always is used with check_mapping. Clear wrong!
-My concern is that if we don't have such routine, caller use only
-ingore_reference should initialize i_mmap_lock with NULL.
-It's bad.
+------------------>
+Arnaldo Carvalho de Melo (2):
+      perf symbols: Fix kallsyms kernel/module map splitting
+      perf record: Fix eternal wait for stillborn child
 
-Hmm...
+Franck Bui-Huu (1):
+      perf header: Don't assume there's no attr info if no sample ids is provided
 
->
-> Hugh
->
+Ming Lei (1):
+      perf symbols: Figure out start address of kernel map from kallsyms
 
 
+ tools/perf/builtin-record.c |    6 +++-
+ tools/perf/util/header.c    |   11 ++++++--
+ tools/perf/util/symbol.c    |   59 ++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 65 insertions(+), 11 deletions(-)
 
--- 
-Kind regards,
-Minchan Kim
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index e2c2de2..564491f 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -197,7 +197,7 @@ static void sig_atexit(void)
+ 	if (child_pid > 0)
+ 		kill(child_pid, SIGTERM);
+ 
+-	if (signr == -1)
++	if (signr == -1 || signr == SIGUSR1)
+ 		return;
+ 
+ 	signal(signr, SIG_DFL);
+@@ -515,6 +515,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	atexit(sig_atexit);
+ 	signal(SIGCHLD, sig_handler);
+ 	signal(SIGINT, sig_handler);
++	signal(SIGUSR1, sig_handler);
+ 
+ 	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+ 		perror("failed to create pipes");
+@@ -606,6 +607,7 @@ static int __cmd_record(int argc, const char **argv)
+ 			execvp(argv[0], (char **)argv);
+ 
+ 			perror(argv[0]);
++			kill(getppid(), SIGUSR1);
+ 			exit(-1);
+ 		}
+ 
+@@ -762,7 +764,7 @@ static int __cmd_record(int argc, const char **argv)
+ 		}
+ 	}
+ 
+-	if (quiet)
++	if (quiet || signr == SIGUSR1)
+ 		return 0;
+ 
+ 	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index d7e67b1..64a85ba 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -946,11 +946,16 @@ perf_header__find_attr(u64 id, struct perf_header *header)
+ 
+ 	/*
+ 	 * We set id to -1 if the data file doesn't contain sample
+-	 * ids. Check for this and avoid walking through the entire
+-	 * list of ids which may be large.
++	 * ids. This can happen when the data file contains one type
++	 * of event and in that case, the header can still store the
++	 * event attribute information. Check for this and avoid
++	 * walking through the entire list of ids which may be large.
+ 	 */
+-	if (id == -1ULL)
++	if (id == -1ULL) {
++		if (header->attrs > 0)
++			return &header->attr[0]->attr;
+ 		return NULL;
++	}
+ 
+ 	for (i = 0; i < header->attrs; i++) {
+ 		struct perf_header_attr *attr = header->attr[i];
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 0500895..d628c8d 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -532,7 +532,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 	struct machine *machine = kmaps->machine;
+ 	struct map *curr_map = map;
+ 	struct symbol *pos;
+-	int count = 0;
++	int count = 0, moved = 0;	
+ 	struct rb_root *root = &self->symbols[map->type];
+ 	struct rb_node *next = rb_first(root);
+ 	int kernel_range = 0;
+@@ -590,6 +590,11 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 			char dso_name[PATH_MAX];
+ 			struct dso *dso;
+ 
++			if (count == 0) {
++				curr_map = map;
++				goto filter_symbol;
++			}
++
+ 			if (self->kernel == DSO_TYPE_GUEST_KERNEL)
+ 				snprintf(dso_name, sizeof(dso_name),
+ 					"[guest.kernel].%d",
+@@ -615,7 +620,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 			map_groups__insert(kmaps, curr_map);
+ 			++kernel_range;
+ 		}
+-
++filter_symbol:
+ 		if (filter && filter(curr_map, pos)) {
+ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 			symbol__delete(pos);
+@@ -623,8 +628,9 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 			if (curr_map != map) {
+ 				rb_erase(&pos->rb_node, root);
+ 				symbols__insert(&curr_map->dso->symbols[curr_map->type], pos);
+-			}
+-			count++;
++				++moved;
++			} else
++				++count;
+ 		}
+ 	}
+ 
+@@ -634,7 +640,7 @@ discard_symbol:		rb_erase(&pos->rb_node, root);
+ 		dso__set_loaded(curr_map->dso, curr_map->type);
+ 	}
+ 
+-	return count;
++	return count + moved;
+ }
+ 
+ int dso__load_kallsyms(struct dso *self, const char *filename,
+@@ -2125,14 +2131,55 @@ static struct dso *machine__create_kernel(struct machine *self)
+ 	return kernel;
+ }
+ 
++struct process_args {
++	u64 start;
++};
++
++static int symbol__in_kernel(void *arg, const char *name,
++			     char type __used, u64 start)
++{
++	struct process_args *args = arg;
++
++	if (strchr(name, '['))
++		return 0;
++
++	args->start = start;
++	return 1;
++}
++
++/* Figure out the start address of kernel map from /proc/kallsyms */
++static u64 machine__get_kernel_start_addr(struct machine *machine)
++{
++	const char *filename;
++	char path[PATH_MAX];
++	struct process_args args;
++
++	if (machine__is_host(machine)) {
++		filename = "/proc/kallsyms";
++	} else {
++		if (machine__is_default_guest(machine))
++			filename = (char *)symbol_conf.default_guest_kallsyms;
++		else {
++			sprintf(path, "%s/proc/kallsyms", machine->root_dir);
++			filename = path;
++		}
++	}
++
++	if (kallsyms__parse(filename, &args, symbol__in_kernel) <= 0)
++		return 0;
++
++	return args.start;
++}
++
+ int __machine__create_kernel_maps(struct machine *self, struct dso *kernel)
+ {
+ 	enum map_type type;
++	u64 start = machine__get_kernel_start_addr(self);
+ 
+ 	for (type = 0; type < MAP__NR_TYPES; ++type) {
+ 		struct kmap *kmap;
+ 
+-		self->vmlinux_maps[type] = map__new2(0, kernel, type);
++		self->vmlinux_maps[type] = map__new2(start, kernel, type);
+ 		if (self->vmlinux_maps[type] == NULL)
+ 			return -1;
+ 
