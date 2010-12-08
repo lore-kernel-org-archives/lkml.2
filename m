@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab0LHAqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:46:45 -0500
-Received: from kroah.org ([198.145.64.141]:45901 "EHLO coco.kroah.org"
+	id S1755727Ab0LHAqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:46:34 -0500
+Received: from kroah.org ([198.145.64.141]:45834 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729Ab0LHAql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:41 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:25 2010
-Message-Id: <20101208004425.861130281@clark.site>
+	id S1755393Ab0LHAqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:31 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:24 2010
+Message-Id: <20101208004424.906445616@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:21 -0800
+Date: Tue, 07 Dec 2010 16:43:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [015/127] hpet: unmap unused I/O space
+        Guo-Fu Tseng <cooldavid@cooldavid.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [005/127] jme: Fix PHY power-off error
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,88 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Guo-Fu Tseng <cooldavid@cooldavid.org>
 
-commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
+commit c8a8684d5cfb0f110a962c93586630c0bf91ebc1 upstream.
 
-When the initialization code in hpet finds a memory resource and does not
-find an IRQ, it does not unmap the memory resource previously mapped.
+Adding phy_on in opposition to phy_off.
 
-There are buggy BIOSes which report resources exactly like this and what
-is worse the memory region bases point to normal RAM.  This normally would
-not matter since the space is not touched.  But when PAT is turned on,
-ioremap causes the page to be uncached and sets this bit in page->flags.
-
-Then when the page is about to be used by the allocator, it is reported
-as:
-
-BUG: Bad page state in process md5sum  pfn:3ed00
-page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
-page flags: 0x20000001000000(uncached)
-Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
-Call Trace:
- [<ffffffff810df851>] bad_page+0xb1/0x100
- [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
- [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
- [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
-...
-
-In this particular case:
-
-1) HPET returns 3ed00000 as memory region base, but it is not in
-reserved ranges reported by the BIOS (excerpt):
- BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
- BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
-
-2) there is no IRQ resource reported by HPET method. On the other
-hand, the Intel HPET specs (1.0a) says (3.2.5.1):
-_CRS (
-  // Report 1K of memory consumed by this Timer Block
-  memory range consumed
-  // Optional: only used if BIOS allocates Interrupts [1]
-  IRQs consumed
-)
-
-[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
-Legacy 8254/Legacy RTC hardware still exists, the device objects
-associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
-"consumed resources".
-
-So in theory we should check whether if it is the case and use those
-interrupts instead.
-
-Anyway the address reported by the BIOS here is bogus, so non-presence
-of IRQ doesn't mean the "optional" part in point 2).
-
-Since I got no reply previously, fix this by simply unmapping the space
-when IRQ is not found and memory region was mapped previously.  It would
-be probably more safe to walk the resources again and unmap appropriately
-depending on type.  But as we now use only ioremap for both 2 memory
-resource types, it is not necessarily needed right now.
-
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
-
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Guo-Fu Tseng <cooldavid@cooldavid.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/hpet.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/jme.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -985,6 +985,8 @@ static int hpet_acpi_add(struct acpi_dev
- 		return -ENODEV;
- 
- 	if (!data.hd_address || !data.hd_nirqs) {
-+		if (data.hd_address)
-+			iounmap(data.hd_address);
- 		printk("%s: no address or irqs in _CRS\n", __func__);
- 		return -ENODEV;
+--- a/drivers/net/jme.c
++++ b/drivers/net/jme.c
+@@ -1578,6 +1578,16 @@ jme_free_irq(struct jme_adapter *jme)
  	}
+ }
+ 
++static inline void
++jme_phy_on(struct jme_adapter *jme)
++{
++	u32 bmcr;
++
++	bmcr = jme_mdio_read(jme->dev, jme->mii_if.phy_id, MII_BMCR);
++	bmcr &= ~BMCR_PDOWN;
++	jme_mdio_write(jme->dev, jme->mii_if.phy_id, MII_BMCR, bmcr);
++}
++
+ static int
+ jme_open(struct net_device *netdev)
+ {
+@@ -1598,10 +1608,12 @@ jme_open(struct net_device *netdev)
+ 
+ 	jme_start_irq(jme);
+ 
+-	if (test_bit(JME_FLAG_SSET, &jme->flags))
++	if (test_bit(JME_FLAG_SSET, &jme->flags)) {
++		jme_phy_on(jme);
+ 		jme_set_settings(netdev, &jme->old_ecmd);
+-	else
++	} else {
+ 		jme_reset_phy_processor(jme);
++	}
+ 
+ 	jme_reset_link(jme);
+ 
+@@ -3013,10 +3025,12 @@ jme_resume(struct pci_dev *pdev)
+ 	jme_clear_pm(jme);
+ 	pci_restore_state(pdev);
+ 
+-	if (test_bit(JME_FLAG_SSET, &jme->flags))
++	if (test_bit(JME_FLAG_SSET, &jme->flags)) {
++		jme_phy_on(jme);
+ 		jme_set_settings(netdev, &jme->old_ecmd);
+-	else
++	} else {
+ 		jme_reset_phy_processor(jme);
++	}
+ 
+ 	jme_start_irq(jme);
+ 	netif_device_attach(netdev);
 
 
