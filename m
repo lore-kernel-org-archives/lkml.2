@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab0LHBua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:50:30 -0500
-Received: from kroah.org ([198.145.64.141]:48649 "EHLO coco.kroah.org"
+	id S932094Ab0LHA7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:52 -0500
+Received: from kroah.org ([198.145.64.141]:48613 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117Ab0LHA74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:56 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:27 2010
-Message-Id: <20101208005727.632515177@clark.site>
+	id S1756963Ab0LHA7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:49 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:26 2010
+Message-Id: <20101208005726.828219893@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:20 -0800
+Date: Tue, 07 Dec 2010 16:57:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [063/289] isdn/gigaset: bas_gigaset locking fix
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [055/289] mac80211: use correct station flags lock
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit b33ffa5cbf52ee751bb8068218ebb3c742c5a515 upstream.
+commit f5521b13880f4f4f612e1d20dd4f565122d16e04 upstream.
 
-Unlock cs->lock before calling error_hangup() which is marked
-"cs->lock must not be held".
+This code is modifying the station flags, and
+as such should hold the flags lock so it can
+do so atomically vs. other flags modifications
+and readers. This issue was introduced when
+this code was added in eccb8e8f, as it used
+the wrong lock (thus not fixing the race that
+was previously documented in a comment.)
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/gigaset/bas-gigaset.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/mac80211/cfg.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/isdn/gigaset/bas-gigaset.c
-+++ b/drivers/isdn/gigaset/bas-gigaset.c
-@@ -1581,13 +1581,13 @@ static int gigaset_init_bchannel(struct
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -634,6 +634,7 @@ static void sta_apply_parameters(struct
+ 				 struct sta_info *sta,
+ 				 struct station_parameters *params)
+ {
++	unsigned long flags;
+ 	u32 rates;
+ 	int i, j;
+ 	struct ieee80211_supported_band *sband;
+@@ -642,7 +643,7 @@ static void sta_apply_parameters(struct
  
- 	ret = starturbs(bcs);
- 	if (ret < 0) {
-+		spin_unlock_irqrestore(&cs->lock, flags);
- 		dev_err(cs->dev,
- 			"could not start isochronous I/O for channel B%d: %s\n",
- 			bcs->channel + 1,
- 			ret == -EFAULT ? "null URB" : get_usb_rcmsg(ret));
- 		if (ret != -ENODEV)
- 			error_hangup(bcs);
--		spin_unlock_irqrestore(&cs->lock, flags);
- 		return ret;
+ 	sband = local->hw.wiphy->bands[local->oper_channel->band];
+ 
+-	spin_lock_bh(&sta->lock);
++	spin_lock_irqsave(&sta->flaglock, flags);
+ 	mask = params->sta_flags_mask;
+ 	set = params->sta_flags_set;
+ 
+@@ -669,7 +670,7 @@ static void sta_apply_parameters(struct
+ 		if (set & BIT(NL80211_STA_FLAG_MFP))
+ 			sta->flags |= WLAN_STA_MFP;
  	}
+-	spin_unlock_bh(&sta->lock);
++	spin_unlock_irqrestore(&sta->flaglock, flags);
  
-@@ -1597,11 +1597,11 @@ static int gigaset_init_bchannel(struct
- 		dev_err(cs->dev, "could not open channel B%d\n",
- 			bcs->channel + 1);
- 		stopurbs(bcs->hw.bas);
--		if (ret != -ENODEV)
--			error_hangup(bcs);
- 	}
- 
- 	spin_unlock_irqrestore(&cs->lock, flags);
-+	if (ret < 0 && ret != -ENODEV)
-+		error_hangup(bcs);
- 	return ret;
- }
- 
+ 	/*
+ 	 * cfg80211 validates this (1-2007) and allows setting the AID
 
 
