@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab0LHBEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:04:06 -0500
-Received: from kroah.org ([198.145.64.141]:33842 "EHLO coco.kroah.org"
+	id S1755411Ab0LHBIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:08:31 -0500
+Received: from kroah.org ([198.145.64.141]:33884 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932856Ab0LHBDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:55 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:47 2010
-Message-Id: <20101208005747.731207874@clark.site>
+	id S932875Ab0LHBED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:04:03 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:48 2010
+Message-Id: <20101208005748.530453421@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:40 -0800
+Date: Tue, 07 Dec 2010 17:00:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [263/289] net: Limit socket I/O iovec total length to INT_MAX.
+Subject: [271/289] can-bcm: fix minor heap overflow
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,104 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 8acfe468b0384e834a303f08ebc4953d72fb690a upstream.
+commit 0597d1b99fcfc2c0eada09a698f85ed413d4ba84 upstream.
 
-This helps protect us from overflow issues down in the
-individual protocol sendmsg/recvmsg handlers.  Once
-we hit INT_MAX we truncate out the rest of the iovec
-by setting the iov_len members to zero.
+On 64-bit platforms the ASCII representation of a pointer may be up to 17
+bytes long. This patch increases the length of the buffer accordingly.
 
-This works because:
+http://marc.info/?l=linux-netdev&m=128872251418192&w=2
 
-1) For SOCK_STREAM and SOCK_SEQPACKET sockets, partial
-   writes are allowed and the application will just continue
-   with another write to send the rest of the data.
-
-2) For datagram oriented sockets, where there must be a
-   one-to-one correspondance between write() calls and
-   packets on the wire, INT_MAX is going to be far larger
-   than the packet size limit the protocol is going to
-   check for and signal with -EMSGSIZE.
-
-Based upon a patch by Linus Torvalds.
-
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/socket.h |    2 +-
- net/compat.c           |   10 ++++++----
- net/core/iovec.c       |   20 +++++++++-----------
- 3 files changed, 16 insertions(+), 16 deletions(-)
+ net/can/bcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -322,7 +322,7 @@ extern int csum_partial_copy_fromiovecen
- 					  int offset, 
- 					  unsigned int len, __wsum *csump);
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -125,7 +125,7 @@ struct bcm_sock {
+ 	struct list_head tx_ops;
+ 	unsigned long dropped_usr_msgs;
+ 	struct proc_dir_entry *bcm_proc_read;
+-	char procname [9]; /* pointer printed in ASCII with \0 */
++	char procname [20]; /* pointer printed in ASCII with \0 */
+ };
  
--extern long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
-+extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
- extern int memcpy_toiovec(struct iovec *v, unsigned char *kdata, int len);
- extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
- 			     int offset, int len);
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -41,10 +41,12 @@ static inline int iov_from_user_compat_t
- 		compat_size_t len;
- 
- 		if (get_user(len, &uiov32->iov_len) ||
--		   get_user(buf, &uiov32->iov_base)) {
--			tot_len = -EFAULT;
--			break;
--		}
-+		    get_user(buf, &uiov32->iov_base))
-+			return -EFAULT;
-+
-+		if (len > INT_MAX - tot_len)
-+			len = INT_MAX - tot_len;
-+
- 		tot_len += len;
- 		kiov->iov_base = compat_ptr(buf);
- 		kiov->iov_len = (__kernel_size_t) len;
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -35,10 +35,9 @@
-  *	in any case.
-  */
- 
--long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
-+int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
- {
--	int size, ct;
--	long err;
-+	int size, ct, err;
- 
- 	if (m->msg_namelen) {
- 		if (mode == VERIFY_READ) {
-@@ -60,14 +59,13 @@ long verify_iovec(struct msghdr *m, stru
- 	err = 0;
- 
- 	for (ct = 0; ct < m->msg_iovlen; ct++) {
--		err += iov[ct].iov_len;
--		/*
--		 * Goal is not to verify user data, but to prevent returning
--		 * negative value, which is interpreted as errno.
--		 * Overflow is still possible, but it is harmless.
--		 */
--		if (err < 0)
--			return -EMSGSIZE;
-+		size_t len = iov[ct].iov_len;
-+
-+		if (len > INT_MAX - err) {
-+			len = INT_MAX - err;
-+			iov[ct].iov_len = len;
-+		}
-+		err += len;
- 	}
- 
- 	return err;
+ static inline struct bcm_sock *bcm_sk(const struct sock *sk)
 
 
