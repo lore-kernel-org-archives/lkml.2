@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab0LHRxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:53:39 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:43359 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754860Ab0LHRxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 12:53:37 -0500
-Date: Wed, 8 Dec 2010 09:53:16 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>, dwalsh@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] syslog: check cap_syslog when dmesg_restrict
-Message-ID: <20101208175316.GL5750@outflux.net>
-References: <20101208151901.GA20557@mail.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101208151901.GA20557@mail.hallyn.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1754950Ab0LHRzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:55:37 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49893
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753318Ab0LHRzf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 12:55:35 -0500
+Date: Wed, 08 Dec 2010 09:56:03 -0800 (PST)
+Message-Id: <20101208.095603.232759946.davem@davemloft.net>
+To: tfransosi@gmail.com
+Cc: linux-kernel@vger.kernel.org, ericvh@gmail.com, sripathik@in.ibm.com,
+        aneesh.kumar@linux.vnet.ibm.com, jvrao@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net/9p/protocol.c: Remove duplicated macros.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <3300e3823b702d35658175ff6379a4f77fa9a5b0.1291512089.git.tfransosi@gmail.com>
+References: <3300e3823b702d35658175ff6379a4f77fa9a5b0.1291512089.git.tfransosi@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 03:19:01PM +0000, Serge E. Hallyn wrote:
-> Eric Paris pointed out that it doesn't make sense to require
-> both CAP_SYS_ADMIN and CAP_SYSLOG for certain syslog actions.
-> So require CAP_SYSLOG, not CAP_SYS_ADMIN, when dmesg_restrict
-> is set.
-> 
-> (I'm also consolidating the now common error path)
-> 
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+From: Thiago Farina <tfransosi@gmail.com>
+Date: Sat,  4 Dec 2010 23:22:46 -0200
 
-Acked-by: Kees Cook <kees.cook@canonical.com>
+> Use the macros already provided by kernel.h file.
+> 
+> Signed-off-by: Thiago Farina <tfransosi@gmail.com>
 
--- 
-Kees Cook
-Ubuntu Security Team
+I'll apply this, thanks!
