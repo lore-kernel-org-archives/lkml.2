@@ -1,77 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab0LHVgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 16:36:06 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:34024 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab0LHVgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 16:36:05 -0500
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Subject: [PATCH v2] kbuild, deb-pkg: support overriding userland architecture
-Date: Wed,  8 Dec 2010 21:35:50 +0000
-Message-Id: <1291844150-4541-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101125143739.GC8192@sepie.suse.cz>
-References: <20101125143739.GC8192@sepie.suse.cz>
+	id S1755411Ab0LHVgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 16:36:14 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:40695 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755167Ab0LHVgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 16:36:11 -0500
+Subject: [PATCH 1/5] resources: add arch hook for preventing allocation in
+	reserved areas
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+Date: Wed, 08 Dec 2010 14:36:06 -0700
+Message-ID: <20101208213606.13026.47657.stgit@bob.kio>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usefull if building for sparc64 userland, because the
-sparc and sparc64 userlands use the same 64-bit kernel,
-making it impossible to always select the correct userland
-architecture for the resulting debian package.
 
-Might also be usefull, if you want a i386 userland with a amd64 kernel.
+This adds arch_remove_reservations(), which an arch can implement if it
+needs to protect part of the address space from allocation.
 
-Example usage:
-	make DEBARCH=i386 deb-pkg
+Sometimes that can be done by just requesting a resource.  This hook is to
+cover cases where protected area doesn't fit well in the hierarchical
+resource tree.  For example, x86 BIOS E820 reservations are not related
+to devices, so they may overlap part of, all of, or more than a device
+resource.
 
-LKML-reference: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Acked-by: maximilian attems <max@stro.at>
+Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
- Documentation/kbuild/kbuild.txt |    8 ++++++++
- scripts/package/builddeb        |    3 +++
- 2 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-index 634c625..2940df0 100644
---- a/Documentation/kbuild/kbuild.txt
-+++ b/Documentation/kbuild/kbuild.txt
-@@ -60,6 +60,14 @@ But some architectures such as x86 and sparc have aliases.
- x86: i386 for 32 bit, x86_64 for 64 bit
- sparc: sparc for 32 bit, sparc64 for 64 bit
+ include/linux/ioport.h |    1 +
+ kernel/resource.c      |    8 ++++++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
+
+
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index d377ea8..b92b8b4 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -124,6 +124,7 @@ extern void reserve_region_with_split(struct resource *root,
+ extern struct resource *insert_resource_conflict(struct resource *parent, struct resource *new);
+ extern int insert_resource(struct resource *parent, struct resource *new);
+ extern void insert_resource_expand_to_fit(struct resource *root, struct resource *new);
++extern void arch_remove_reservations(struct resource *avail);
+ extern int allocate_resource(struct resource *root, struct resource *new,
+ 			     resource_size_t size, resource_size_t min,
+ 			     resource_size_t max, resource_size_t align,
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 9fad33e..246957e 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -374,6 +374,10 @@ int __weak page_is_ram(unsigned long pfn)
+ 	return walk_system_ram_range(pfn, 1, NULL, __is_ram) == 1;
+ }
  
-+DEBARCH
-+--------------------------------------------------
-+For the deb-pkg target, allows overriding the normal heuristics deployed by
-+deb-deb. Normally deb-pkg attempts to guess the right architecture based on
-+the UTS_MACHINE variable, and on some architectures also the kernel config.
-+The value of DEBARCH is assumed (not checked) to be a valid Debian
-+architecture.
++void __weak arch_remove_reservations(struct resource *avail)
++{
++}
 +
- CROSS_COMPILE
- --------------------------------------------------
- Specify an optional fixed part of the binutils filename.
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 5d6be3f..22b6995 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -54,6 +54,9 @@ create_package() {
- 		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
- 		echo "" >&2
- 	esac
-+	if [ -n "$DEBARCH" ] ; then
-+		debarch="$DEBARCH"
-+	fi
- 	if [ -n "$debarch" ] ; then
- 		forcearch="-DArchitecture=$debarch"
- 	fi
--- 
-1.7.2.3
+ static resource_size_t simple_align_resource(void *data,
+ 					     const struct resource *avail,
+ 					     resource_size_t size,
+@@ -426,6 +430,7 @@ static int find_resource_from_top(struct resource *root, struct resource *new,
+ 	struct resource *this;
+ 	struct resource tmp, avail, alloc;
+ 
++	tmp.flags = new->flags;
+ 	tmp.start = root->end;
+ 	tmp.end = root->end;
+ 
+@@ -438,6 +443,7 @@ static int find_resource_from_top(struct resource *root, struct resource *new,
+ 			tmp.start = root->start;
+ 
+ 		resource_clip(&tmp, min, max);
++		arch_remove_reservations(&tmp);
+ 
+ 		/* Check for overflow after ALIGN() */
+ 		avail = *new;
+@@ -478,6 +484,7 @@ static int find_resource(struct resource *root, struct resource *new,
+ 	struct resource *this = root->child;
+ 	struct resource tmp = *new, avail, alloc;
+ 
++	tmp.flags = new->flags;
+ 	tmp.start = root->start;
+ 	/*
+ 	 * Skip past an allocated resource that starts at 0, since the
+@@ -495,6 +502,7 @@ static int find_resource(struct resource *root, struct resource *new,
+ 			tmp.end = root->end;
+ 
+ 		resource_clip(&tmp, min, max);
++		arch_remove_reservations(&tmp);
+ 
+ 		/* Check for overflow after ALIGN() */
+ 		avail = *new;
 
