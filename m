@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab0LHBkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:40:51 -0500
-Received: from kroah.org ([198.145.64.141]:48851 "EHLO coco.kroah.org"
+	id S1757122Ab0LHBAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:00:41 -0500
+Received: from kroah.org ([198.145.64.141]:48830 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757109Ab0LHBAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:44 -0500
+	id S1757107Ab0LHBAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:38 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:31 2010
-Message-Id: <20101208005731.847355029@clark.site>
+Message-Id: <20101208005731.471592630@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:02 -0800
+Date: Tue, 07 Dec 2010 16:57:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, Yinghai Lu <yinghai@kernel.org>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: [105/289] ipmi: proper spinlock initialization
+        Jiri Slaby <jslaby@suse.cz>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [101/289] hpet: unmap unused I/O space
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,146 +25,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit de5e2ddf9bb3ce7b643223b9b0718062254f302f upstream.
+commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
 
-Unloading ipmi module can trigger following error.  (if
-CONFIG_DEBUG_SPINLOCK=y)
+When the initialization code in hpet finds a memory resource and does not
+find an IRQ, it does not unmap the memory resource previously mapped.
 
-[ 9633.779590] BUG: spinlock bad magic on CPU#1, rmmod/7170
-[ 9633.779606]  lock: f41f5414, .magic: 00000000, .owner:
-<none>/-1, .owner_cpu: 0
-[ 9633.779626] Pid: 7170, comm: rmmod Not tainted
-2.6.36-rc7-11474-gb71eb1e-dirty #328
-[ 9633.779644] Call Trace:
-[ 9633.779657]  [<c13921cc>] ? printk+0x18/0x1c
-[ 9633.779672]  [<c11a1f33>] spin_bug+0xa3/0xf0
-[ 9633.779685]  [<c11a1ffd>] do_raw_spin_lock+0x7d/0x160
-[ 9633.779702]  [<c1131537>] ? release_sysfs_dirent+0x47/0xb0
-[ 9633.779718]  [<c1131b78>] ? sysfs_addrm_finish+0xa8/0xd0
-[ 9633.779734]  [<c1394bac>] _raw_spin_lock_irqsave+0xc/0x20
-[ 9633.779752]  [<f99d93da>] cleanup_one_si+0x6a/0x200 [ipmi_si]
-[ 9633.779768]  [<c11305b2>] ? sysfs_hash_and_remove+0x72/0x80
-[ 9633.779786]  [<f99dcf26>] ipmi_pnp_remove+0xd/0xf [ipmi_si]
-[ 9633.779802]  [<c11f622b>] pnp_device_remove+0x1b/0x40
+There are buggy BIOSes which report resources exactly like this and what
+is worse the memory region bases point to normal RAM.  This normally would
+not matter since the space is not touched.  But when PAT is turned on,
+ioremap causes the page to be uncached and sets this bit in page->flags.
 
-Fix this by initializing spinlocks in a smi_info_alloc() helper function,
-right after memory allocation and clearing.
+Then when the page is about to be used by the allocator, it is reported
+as:
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Miller <davem@davemloft.net>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Corey Minyard <cminyard@mvista.com>
+BUG: Bad page state in process md5sum  pfn:3ed00
+page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x20000001000000(uncached)
+Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
+Call Trace:
+ [<ffffffff810df851>] bad_page+0xb1/0x100
+ [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
+ [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
+ [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
+...
+
+In this particular case:
+
+1) HPET returns 3ed00000 as memory region base, but it is not in
+reserved ranges reported by the BIOS (excerpt):
+ BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
+ BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
+
+2) there is no IRQ resource reported by HPET method. On the other
+hand, the Intel HPET specs (1.0a) says (3.2.5.1):
+_CRS (
+  // Report 1K of memory consumed by this Timer Block
+  memory range consumed
+  // Optional: only used if BIOS allocates Interrupts [1]
+  IRQs consumed
+)
+
+[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
+Legacy 8254/Legacy RTC hardware still exists, the device objects
+associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
+"consumed resources".
+
+So in theory we should check whether if it is the case and use those
+interrupts instead.
+
+Anyway the address reported by the BIOS here is bogus, so non-presence
+of IRQ doesn't mean the "optional" part in point 2).
+
+Since I got no reply previously, fix this by simply unmapping the space
+when IRQ is not found and memory region was mapped previously.  It would
+be probably more safe to walk the resources again and unmap appropriately
+depending on type.  But as we now use only ioremap for both 2 memory
+resource types, it is not necessarily needed right now.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
+
+Reported-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ drivers/char/hpet.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -1665,6 +1665,17 @@ static int check_hotmod_int_op(const cha
- 	return 0;
- }
- 
-+static struct smi_info *smi_info_alloc(void)
-+{
-+	struct smi_info *info = kzalloc(sizeof(*info), GFP_KERNEL);
-+
-+	if (info) {
-+		spin_lock_init(&info->si_lock);
-+		spin_lock_init(&info->msg_lock);
-+	}
-+	return info;
-+}
-+
- static int hotmod_handler(const char *val, struct kernel_param *kp)
- {
- 	char *str = kstrdup(val, GFP_KERNEL);
-@@ -1779,7 +1790,7 @@ static int hotmod_handler(const char *va
- 		}
- 
- 		if (op == HM_ADD) {
--			info = kzalloc(sizeof(*info), GFP_KERNEL);
-+			info = smi_info_alloc();
- 			if (!info) {
- 				rv = -ENOMEM;
- 				goto out;
-@@ -1844,7 +1855,7 @@ static __devinit void hardcode_find_bmc(
- 		if (!ports[i] && !addrs[i])
- 			continue;
- 
--		info = kzalloc(sizeof(*info), GFP_KERNEL);
-+		info = smi_info_alloc();
- 		if (!info)
- 			return;
- 
-@@ -2028,7 +2039,7 @@ static __devinit int try_init_spmi(struc
- 		return -ENODEV;
- 	}
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info) {
- 		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
- 		return -ENOMEM;
-@@ -2138,7 +2149,7 @@ static int __devinit ipmi_pnp_probe(stru
- 	if (!acpi_dev)
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -985,6 +985,8 @@ static int hpet_acpi_add(struct acpi_dev
  		return -ENODEV;
  
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -2319,7 +2330,7 @@ static __devinit void try_init_dmi(struc
- {
- 	struct smi_info *info;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info) {
- 		printk(KERN_ERR PFX "Could not allocate SI data\n");
- 		return;
-@@ -2426,7 +2437,7 @@ static int __devinit ipmi_pci_probe(stru
- 	int class_type = pdev->class & PCI_ERMC_CLASSCODE_TYPE_MASK;
- 	struct smi_info *info;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -2567,7 +2578,7 @@ static int __devinit ipmi_of_probe(struc
- 		return -EINVAL;
+ 	if (!data.hd_address || !data.hd_nirqs) {
++		if (data.hd_address)
++			iounmap(data.hd_address);
+ 		printk("%s: no address or irqs in _CRS\n", __func__);
+ 		return -ENODEV;
  	}
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 
- 	if (!info) {
- 		dev_err(&dev->dev,
-@@ -3014,7 +3025,7 @@ static __devinit void default_find_bmc(v
- 		if (check_legacy_ioport(ipmi_defaults[i].port))
- 			continue;
- #endif
--		info = kzalloc(sizeof(*info), GFP_KERNEL);
-+		info = smi_info_alloc();
- 		if (!info)
- 			return;
- 
-@@ -3139,9 +3150,6 @@ static int try_smi_init(struct smi_info
- 		goto out_err;
- 	}
- 
--	spin_lock_init(&(new_smi->si_lock));
--	spin_lock_init(&(new_smi->msg_lock));
--
- 	/* Do low-level detection first. */
- 	if (new_smi->handlers->detect(new_smi->si_sm)) {
- 		if (new_smi->addr_source)
 
 
