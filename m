@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab0LHGBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 01:01:12 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18033 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab0LHGBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 01:01:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,314,1288594800"; 
-   d="scan'208";a="634239562"
-From: Sheng Yang <sheng@linux.intel.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        konrad.wilk@oracle.com, xen-devel <xen-devel@lists.xensource.com>,
-        linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>
-Subject: [PATCH 1/2] apic: Move hypervisor detection of x2apic to hypervisor.h
-Date: Wed,  8 Dec 2010 14:03:59 +0800
-Message-Id: <1291788240-12130-1-git-send-email-sheng@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752969Ab0LHGCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 01:02:10 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:39066 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab0LHGCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 01:02:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qXj6YzysRu/gGvkW85Bo1qLS8JwyObyuShm+ABt8ujqSP2fHUlqPFh6cWCJAD6jP1M
+         JMioOhq6NOmfAbTU5Zcs5xVodnaY/+DV4pNjKFHVmlOW9iU0GVbN04YBqOhw9l9gftUn
+         dk3Rhw6hH2R3lyxjadk2nyslTKeh/lrm/M19M=
+Date: Tue, 7 Dec 2010 22:02:00 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>,
+        Chris Bagwell <chris@cnpbagwell.com>
+Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
+Message-ID: <20101208060200.GD4140@core.coreip.homeip.net>
+References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
+ <20101207091653.GA22416@core.coreip.homeip.net>
+ <4CFE919A.1040704@euromail.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CFE919A.1040704@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 07, 2010 at 08:57:14PM +0100, Henrik Rydberg wrote:
+> On 12/07/2010 10:16 AM, Dmitry Torokhov wrote:
+> 
+> > Hi Henrik,
+> > 
+> > On Tue, Dec 07, 2010 at 08:25:26AM +0100, Henrik Rydberg wrote:
+> >> Today, userspace sets up an input device based on the data it emits.
+> >> This is not always enough; a tablet and a touchscreen may emit exactly
+> >> the same data, for instance, but the former should be set up with a
+> >> pointer whereas the latter does not need to. Recently, a new type of
+> >> touchpad has emerged where the buttons are under the pad, which changes
+> >> handling logic without changing the emitted data. This patch introduces
+> >> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
+> >> about the device resulting in proper setup.
+> > 
+> > If we agree that the new ioctl is suitable we'llalso need to wireit up
+> > through sysfs. Also, can we keep all definitions to INPUT_ namespace?
+> > 
+> > Thanks.
+> > 
+> 
+> 
+> Thanks all for the comments, this is what I extract from them:
+> 
+> * Split struct into separate calls, although this still seems debated.
+> 
+> * Use INPUT_ namespace
+> 
+> * Add sysfs version
+> 
+> * Keep bitmask for types. Is the list of types complete?
 
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
----
- arch/x86/include/asm/hypervisor.h |    9 +++++++++
- arch/x86/kernel/apic/apic.c       |    5 +++--
- 2 files changed, 12 insertions(+), 2 deletions(-)
+Most likely not but it can be easily extended on as-needed basis.
 
-diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
-index ff2546c..0c6f7af 100644
---- a/arch/x86/include/asm/hypervisor.h
-+++ b/arch/x86/include/asm/hypervisor.h
-@@ -20,6 +20,8 @@
- #ifndef _ASM_X86_HYPERVISOR_H
- #define _ASM_X86_HYPERVISOR_H
- 
-+#include <asm/kvm_para.h>
-+
- extern void init_hypervisor(struct cpuinfo_x86 *c);
- extern void init_hypervisor_platform(void);
- 
-@@ -47,4 +49,11 @@ extern const struct hypervisor_x86 x86_hyper_vmware;
- extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
- extern const struct hypervisor_x86 x86_hyper_xen_hvm;
- 
-+static inline bool hypervisor_x2apic_available(void)
-+{
-+	if (kvm_para_available())
-+		return true;
-+	return false;
-+}
-+
- #endif
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 3f838d5..8408f2d 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -50,8 +50,8 @@
- #include <asm/mtrr.h>
- #include <asm/smp.h>
- #include <asm/mce.h>
--#include <asm/kvm_para.h>
- #include <asm/tsc.h>
-+#include <asm/hypervisor.h>
- 
- unsigned int num_processors;
- 
-@@ -1476,7 +1476,8 @@ void __init enable_IR_x2apic(void)
- 		/* IR is required if there is APIC ID > 255 even when running
- 		 * under KVM
- 		 */
--		if (max_physical_apicid > 255 || !kvm_para_available())
-+		if (max_physical_apicid > 255 ||
-+		    !hypervisor_x2apic_available())
- 			goto nox2apic;
- 		/*
- 		 * without IR all CPUs can be addressed by IOAPIC/MSI
+> 
+> * Still only one data point for capabilities. Anything else?
+
+Again, no need to define everything upfront.
+
+One concern is that while 32 distinct device types should be enough
+should we plan for larger capability array? Should we use variable
+length ioctl - like EVIOCGKEY(len) - even though Arnd does not like
+them?
+
+Also, we already have /sys/class/input/input0/capabilities/ so should we
+call new data item something else? Quirks maybe?
+
 -- 
-1.7.0.1
-
+Dmitry
