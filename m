@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab0LHU0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:26:19 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38064 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab0LHU0R (ORCPT
+	id S1756178Ab0LHU0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:26:47 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47752 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab0LHU0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:26:17 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>
-Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
-In-Reply-To: Your message of "Tue, 07 Dec 2010 08:25:26 +0100."
-             <1291706726-8835-1-git-send-email-rydberg@euromail.se>
-From: Valdis.Kletnieks@vt.edu
-References: <1291706726-8835-1-git-send-email-rydberg@euromail.se>
+	Wed, 8 Dec 2010 15:26:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6191"; a="66027186"
+Subject: Re: [PATCHv3 2/4] ARM: Allow machines to override __delay()
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        Arve Hj?nnev?g <arve@android.com>
+In-Reply-To: <4CFFE965.30906@codeaurora.org>
+References: <1291783128-27520-1-git-send-email-sboyd@codeaurora.org>
+	 <1291783128-27520-3-git-send-email-sboyd@codeaurora.org>
+	 <1291836162.12568.17.camel@c-dwalke-linux.qualcomm.com>
+	 <4CFFE965.30906@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Dec 2010 12:26:32 -0800
+Message-ID: <1291839992.12568.31.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1291839964_4921P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Date: Wed, 08 Dec 2010 15:26:04 -0500
-Message-ID: <25336.1291839964@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4CFFE9DD.0079,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1291839964_4921P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 2010-12-08 at 12:24 -0800, Stephen Boyd wrote:
+> On 12/08/2010 11:22 AM, Daniel Walker wrote:
+> > On Tue, 2010-12-07 at 20:38 -0800, Stephen Boyd wrote:
+> >> +
+> >> +static void (*delay_fn)(unsigned long) = delay_loop;
+> >> +
+> >> +void set_delay_fn(void (*fn)(unsigned long))
+> >> +{
+> >> +       delay_fn = fn;
+> >> +}
+> >> +
+> >> +/*
+> >> + * loops = usecs * HZ * loops_per_jiffy / 1000000
+> >> + */
+> >> +void __delay(unsigned long loops)
+> >> +{
+> >> +       delay_fn(loops);
+> >> +}
+> >>  EXPORT_SYMBOL(__delay);
+> > Didn't we already go over this part ? Why are aren't you putting these
+> > in a header file ?
+> 
+> Last time we saw that inlining set_delay_fn() actually increased the
+> text size of the kernel. I know it sounds wrong, but its probably due to
+> that compiler behavior Russell posted about last month on arm-lkml.
 
-On Tue, 07 Dec 2010 08:25:26 +0100, Henrik Rydberg said:
-> Today, userspace sets up an input device based on the data it emits.
-> This is not always enough; a tablet and a touchscreen may emit exactly
-> the same data, for instance, but the former should be set up with a
-> pointer whereas the latter does not need to. Recently, a new type of
-> touchpad has emerged where the buttons are under the pad, which changes
-> handling logic without changing the emitted data. This patch introduces
-> a new ioctl, EVIOCGDEVINFO, which allows userspace to extract information
-> about the device resulting in proper setup.
+The last time I thought you said there was no size change ? My tests
+showed a decrease ..
 
->  /*
-> + * Device types
-> + */
-> +
-> +#define DEVTYPE_KEYBOARD	0
-> +#define DEVTYPE_MOUSE		1
-> +#define DEVTYPE_JOYSTICK	2
-> +#define DEVTYPE_TOUCHPAD	3
-> +#define DEVTYPE_TABLET		4
-> +#define DEVTYPE_TOUCHSCREEN	5
+What compiler optimizations are you talking about ?
 
-Add a #define DEVTYPE_UNKNOWN 0 and push everybody else down one. That way,
-an uninitialized 'struct input_devinfo' won't claim to be a keyboard.
+Daniel
 
---==_Exmh_1291839964_4921P
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+-- 
 
-iD8DBQFM/+nccC3lWbTT17ARApKUAJ4l6nWDQaSSwguhEph4vGmCkqHGLwCg5pAb
-7FKTndnt1MZCDQaN2EOhPYM=
-=6hTg
------END PGP SIGNATURE-----
-
---==_Exmh_1291839964_4921P--
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
