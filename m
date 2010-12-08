@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab0LHPwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:52:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab0LHPwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:52:12 -0500
-Date: Wed, 8 Dec 2010 10:51:37 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+	id S1756077Ab0LHP5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:57:51 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:36405 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756014Ab0LHP5u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:57:50 -0500
+Date: Wed, 8 Dec 2010 10:57:46 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Greg KH <greg@kroah.com>, Luben Tuikov <ltuikov@yahoo.com>,
+        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "jmarchan@redhat.com" <jmarchan@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
-Message-ID: <20101208155137.GE31703@redhat.com>
-References: <4CFCB08F.4010509@jp.fujitsu.com>
- <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com>
- <4CFDDFC3.2070107@jp.fujitsu.com>
- <4CFF34E7.2030401@fusionio.com>
- <4CFF3AD6.6010904@jp.fujitsu.com>
- <4CFF3C86.2070504@fusionio.com>
- <4CFF3DA4.5060705@jp.fujitsu.com>
- <4CFF9A2C.1070401@fusionio.com>
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+In-Reply-To: <1291823012.24312.52.camel@mulgrave.site>
+Message-ID: <Pine.LNX.4.44L0.1012081054160.1885-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CFF9A2C.1070401@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 10:46:04PM +0800, Jens Axboe wrote:
-> On 2010-12-08 16:11, Satoru Takeuchi wrote:
-> > Hi Jens,
+On Wed, 8 Dec 2010, James Bottomley wrote:
+
+> On Wed, 2010-12-08 at 10:16 -0500, Alan Stern wrote:
+> > On Tue, 7 Dec 2010, James Bottomley wrote:
 > > 
-> > (2010/12/08 17:06), Jens Axboe wrote:
-> >>>>> I hit on another approach. Although it doesn'tprevent any merge as Linus
-> >>>>> preferred, it can fix the problem anyway. In this idea, in_flight is
-> >>>>> incremented and decremented for the partition which the request belonged
-> >>>>> to in its creation. It has the following merits.
-> >>>
-> >>> Revert is already finished. 2.6.37-rc-5 and latest stable kernel doesn't
-> >>> contain Yasuaki's former logic.
-> >>>
-> >>> https://lkml.org/lkml/2010/10/24/118
-> >>
-> >> Yes I know, that is why I said:
-> >>
-> >>>> I really would prefer if we fixed up the patchset we ended up reverting..
-> >>>> At least that had a purpose with growing struct request, since we saved
-> >>>> on doing the partition lookups.
-> >>
-> >> That I prefer we fix that code up, since I think it's the best solution
-> >> to the problem.
-> >>
+> > > Well, not other than I've already said:  I think it looks OK, so I
+> > > marked it for my merge window queue.  I'd still rather like USB people
+> > > to confirm that the original reason why this was done (to prevent device
+> > > crashes on the mode sense) is no longer an issue
 > > 
-> > I already postedit.
+> > The original reason for adding the skip_ms_page_8 flag still applies.  
+> > To assume it is no longer an issue would not be safe -- there's no 
+> > reason to believe that the buggy devices it was meant for have all been 
+> > retired.
 > > 
-> > https://lkml.org/lkml/2010/12/8/12
+> > >  ... but it's only USB
+> > > stuff, so suppose I'm OK with finding out in the field.
 > > 
-> > I think it is OK without mail subject :-)
+> > With USB there's often no other choice.
 > 
-> No, that's not it at all. What I mean (and what was reverted) was
-> caching the partition lookup, and using that for the stats. The problem
-> with that approach turned out to be the elevator queiscing logic not
-> being fully correct. One easier way to fix that would be to reference
-> count the part stats, instead of having to drain the queue.
+> So the translation is that there's a possibility it will crash USB
+> devices but the only way to find out is to release it and see.
 
-Taking reference to hd_struct and storing it in rq, will definitely save
-us 1 lookup while doing accounting on completion path. It does not save
-on rq size though.
+In the strictest sense, there's always a possibility that any change
+will crash _some_ device somewhere.  In this case I believe the
+probability is very low.  Luben's patch does not change the commands
+sent to a USB device; it only changes the kernel's interpretation of
+the data sent back.  Unless things are terribly badly broken, this 
+won't hurt.
 
-IIUC, current patch does not increase the number of existing lookups. So 
-current situation does not deteriorate with the patch.
+> My problem is that it only takes one bug report from one failing device
+> (which I'm sure some kind soul will dig out of the attic or wherever
+> they threw it) for this to be a regression and then I get to revert the
+> patch ... unless we have a working backup plan?
+> 
+> I think it's easy to put in and easy to revert ... we'll pick up a bit
+> of flack if the failing device doesn't appear for some time, but I'm OK
+> with risking that.
 
-But storing a reference in rq and avoiding 1 lookup in completion path
-definitely sounds better.
+IMO the risk is extremely small.
 
-Thanks
-Vivek
+Alan Stern
+
