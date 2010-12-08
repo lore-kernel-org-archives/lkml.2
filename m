@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0LHQod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:44:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39768 "EHLO mx1.redhat.com"
+	id S1754298Ab0LHQpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:45:05 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38084 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab0LHQob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:44:31 -0500
-Date: Wed, 8 Dec 2010 11:44:23 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] Update MCP55 quirk to not affect non HyperTransport
- variants
-Message-ID: <20101208164423.GH31703@redhat.com>
-References: <1291819668-15624-1-git-send-email-nhorman@tuxdriver.com>
+	id S1750905Ab0LHQpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 11:45:03 -0500
+Message-ID: <4CFFB5F0.6030006@kernel.org>
+Date: Wed, 08 Dec 2010 17:44:32 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291819668-15624-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [cpuops UPDATED 2/9] x86: Support for this_cpu_add, sub, dec, inc_return
+References: <20101206173958.685460926@linux.com> <20101206174014.214410808@linux.com>
+In-Reply-To: <20101206174014.214410808@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 16:44:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 09:47:48AM -0500, Neil Horman wrote:
-> I wrote this quirk awhile ago to properly setup MCP55 chips on hypertransport
-> busses so that interrupts reached whatever cpu happend to boot the kdump kernel.
-> while that works well, it was recently shown to me that a a non-hypertransport
-> variant of the MCP55 exists, and on those system the register that this quirk
-> manipulates causes hangs if you write to it.  Since the quirk was only meant to
-> handle errors found on MCP55 chips that have a HT interface, this patch adds a
-> filter to make sure the chip is an HT capable before making the needed register
-> adjustment.  This lets the broken MCP55s work with kdump while not breaking the
-> non-HT variants.
-> 
+From: Christoph Lameter <cl@linux.com>
 
-So Neil, with non hypertransport MCP55s, interrupts are delivered to
-all the cpus and seond kernel still boots?
+Supply an implementation for x86 in order to generate more efficient code.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+V2->V3:
+	- Cleanup
+	- Remove strange type checking from percpu_add_return_op.
 
-Thanks
-Vivek
+tj: - Dropped unused typedef from percpu_add_return_op().
+    - Renamed ret__ to paro_ret__ in percpu_add_return_op().
+    - Minor indentation adjustments.
 
-> Resolves https://bugzilla.kernel.org/show_bug.cgi?id=23952
-> 
-> Tested successfully by the reporter and myself.
-> 
-> Reported-by: Mathieu Bérard <mathieu@mberard.eu>
-> CC: linux-pci@vger.kernel.org
-> CC: kexec@lists.infradead.org
-> CC: Vivek Goyal <vgoyal@redhat.com>
-> CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> ---
->  drivers/pci/quirks.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 6f9350c..313c0bd 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2329,6 +2329,9 @@ static void __devinit nvbridge_check_legacy_irq_routing(struct pci_dev *dev)
->  {
->  	u32 cfg;
->  
-> +	if (!pci_find_capability(dev, PCI_CAP_ID_HT))
-> +		return;
-> +
->  	pci_read_config_dword(dev, 0x74, &cfg);
->  
->  	if (cfg & ((1 << 2) | (1 << 15))) {
-> -- 
-> 1.7.2.3
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+I got a bit fascistic with this one too.  Here's the updated version.
+
+Thank you.
+
+ arch/x86/include/asm/percpu.h |   43 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+Index: percpu/arch/x86/include/asm/percpu.h
+===================================================================
+--- percpu.orig/arch/x86/include/asm/percpu.h
++++ percpu/arch/x86/include/asm/percpu.h
+@@ -177,6 +177,39 @@ do {									\
+ 	}								\
+ } while (0)
+
++/*
++ * Add return operation
++ */
++#define percpu_add_return_op(var, val)					\
++({									\
++	typeof(var) paro_ret__ = val;					\
++	switch (sizeof(var)) {						\
++	case 1:								\
++		asm("xaddb %0, "__percpu_arg(1)				\
++			    : "+q" (paro_ret__), "+m" (var)		\
++			    : : "memory");				\
++		break;							\
++	case 2:								\
++		asm("xaddw %0, "__percpu_arg(1)				\
++			    : "+r" (paro_ret__), "+m" (var)		\
++			    : : "memory");				\
++		break;							\
++	case 4:								\
++		asm("xaddl %0, "__percpu_arg(1)				\
++			    : "+r" (paro_ret__), "+m" (var)		\
++			    : : "memory");				\
++		break;							\
++	case 8:								\
++		asm("xaddq %0, "__percpu_arg(1)				\
++			    : "+re" (paro_ret__), "+m" (var)		\
++			    : : "memory");				\
++		break;							\
++	default: __bad_percpu_size();					\
++	}								\
++	paro_ret__ += val;						\
++	paro_ret__;							\
++})
++
+ #define percpu_from_op(op, var, constraint)		\
+ ({							\
+ 	typeof(var) pfo_ret__;				\
+@@ -300,6 +333,14 @@ do {									\
+ #define irqsafe_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+ #define irqsafe_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
+
++#ifndef CONFIG_M386
++#define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
++#define __this_cpu_add_return_2(pcp, val) percpu_add_return_op(pcp, val)
++#define __this_cpu_add_return_4(pcp, val) percpu_add_return_op(pcp, val)
++#define this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
++#define this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
++#define this_cpu_add_return_4(pcp, val)	percpu_add_return_op(pcp, val)
++#endif
+ /*
+  * Per cpu atomic 64 bit operations are only available under 64 bit.
+  * 32 bit must fall back to generic operations.
+@@ -324,6 +365,8 @@ do {									\
+ #define irqsafe_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
+ #define irqsafe_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
+
++#define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
++#define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
+ #endif
+
+ /* This is not atomic against other CPUs -- CPU preemption needs to be off */
