@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0LHTFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 14:05:31 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:57015 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756203Ab0LHTF3 (ORCPT
+	id S1756249Ab0LHTG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 14:06:56 -0500
+Received: from casper.infradead.org ([85.118.1.10]:48981 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab0LHTGz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 14:05:29 -0500
-Message-ID: <4CFFD6D2.5060703@euromail.se>
-Date: Wed, 08 Dec 2010 20:04:50 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>,
-        Chris Bagwell <chris@cnpbagwell.com>
-Subject: Re: [RFC][PATCH] input: Introduce device information ioctl
-References: <1291706726-8835-1-git-send-email-rydberg@euromail.se> <20101207091653.GA22416@core.coreip.homeip.net> <4CFE919A.1040704@euromail.se> <20101208060200.GD4140@core.coreip.homeip.net>
-In-Reply-To: <20101208060200.GD4140@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQPJu-00083s-3N.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PQPJu-00083s-3N c5784e828d3809906bb2bc7449f4c2ef
+	Wed, 8 Dec 2010 14:06:55 -0500
+Subject: Re: perf hw  in kexeced kernel broken in tip
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Don Zickus <dzickus@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+In-Reply-To: <4CFFD1C2.1080108@kernel.org>
+References: <1291232292.32004.1969.camel@laptop>
+	 <20101201194644.GD2511@redhat.com> <1291232989.32004.1987.camel@laptop>
+	 <20101201195835.GE2511@redhat.com> <1291234036.32004.2008.camel@laptop>
+	 <m162vdp3l4.fsf@fess.ebiederm.org> <20101202052321.GH18100@redhat.com>
+	 <1291275270.4023.20.camel@twins> <20101202161502.GL18100@redhat.com>
+	 <1291764620.2032.1293.camel@laptop>  <20101208140103.GM21786@redhat.com>
+	 <1291818005.28378.38.camel@laptop> <1291820356.28378.83.camel@laptop>
+	 <4CFFD1C2.1080108@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Dec 2010 20:06:36 +0100
+Message-ID: <1291835196.28378.145.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> One concern is that while 32 distinct device types should be enough
+On Wed, 2010-12-08 at 10:43 -0800, Yinghai Lu wrote:
+> can you add sth force_... in command line to take over ownership of
+> perf from BIOS or previous kernel ?
 
-> should we plan for larger capability array? Should we use variable
-> length ioctl - like EVIOCGKEY(len) - even though Arnd does not like
-> them?
+The problem is, you cannot steal the thing from the BIOS, you'll trample
+on its settings and the next time it runs it will simply re-instate it.
 
+And aside from probing the EN bit on boot there is no way of determining
+this.
 
-Sounds good, but then again the struct approach feels quite extensible too...
+So forcing the state might get you an ill-functioning system.
 
+> then still can use perf etc after we kexec from RHEL or SLES kernel to
+> later kernel ( from 2.6.37)
 
-> Also, we already have /sys/class/input/input0/capabilities/ so should we
-> call new data item something else? Quirks maybe?
-
-
-Works fine in my book.
-
-Thanks,
-Henrik
+I'm not sure why people would do that, but yeah I guess we can do
+something like that.
