@@ -1,62 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0LHL3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 06:29:37 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:53809 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab0LHL3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 06:29:35 -0500
-Message-ID: <4CFF6BE0.4090109@ru.mvista.com>
-Date: Wed, 08 Dec 2010 14:28:32 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754771Ab0LHLsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 06:48:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:38091 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab0LHLsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 06:48:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,315,1288594800"; 
+   d="scan'208";a="685081635"
+Date: Wed, 8 Dec 2010 19:44:52 +0800
+From: Chuanxiao Dong <chuanxiao.dong@intel.com>
+To: linux-mmc@vger.kernel.org, adrian.hunter@nokia.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v1 1/2]move erase timeout calculation part to mmc.c and sd.c
+Message-ID: <20101208114452.GA18249@intel.com>
+Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Hannes Reinecke <hare@suse.de>, k-ueda@ct.jp.nec.com, michaelc@cs.wisc.edu,
-        tytso@mit.edu, sshtylyov@mvista.com, linux-scsi@vger.kernel.org,
-        jaxboe@fusionio.com, jack@suse.cz, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        dm-devel@redhat.com, James.Bottomley@suse.de,
-        konishi.ryusuke@lab.ntt.co.jp, j-nomura@ce.jp.nec.com, vst@vlnb.net,
-        rwheeler@redhat.com, hch@lst.de, chris.mason@oracle.com, tj@kernel.org
-Subject: Re: [RFC PATCH 3/3] block: improve detail in I/O error messages
-References: <1291763802-8251-1-git-send-email-snitzer@redhat.com> <1291763802-8251-4-git-send-email-snitzer@redhat.com>
-In-Reply-To: <1291763802-8251-4-git-send-email-snitzer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi adrian,
+   this 2 patches modify the erase timeout calculation part which added by
+   you. Can you help to review that? Thanks.
 
-On 08-12-2010 2:16, Mike Snitzer wrote:
 
-> Classify severity of I/O errors for target and transport errors.
+Since mmc and sd erase timeout calculation only depends on
+card registers and host clock, it can be done during card
+initialization. No need to calculated the erase timeout value
+for erase/trim command before each time sending.
 
-> Signed-off-by: Mike Snitzer<snitzer@redhat.com>
-[...]
+Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+---
+ drivers/mmc/core/mmc.c   |   50 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/sd.c    |   19 +++++++++++++++++
+ include/linux/mmc/card.h |    4 +++
+ 3 files changed, 73 insertions(+), 0 deletions(-)
 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 4ce953f..ab8c776 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -2028,9 +2028,15 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
->
->   	if (error&&  req->cmd_type == REQ_TYPE_FS&&
->   	!(req->cmd_flags&  REQ_QUIET)) {
-> -		printk(KERN_ERR "end_request: I/O error, dev %s, sector %llu\n",
-> -				req->rq_disk ? req->rq_disk->disk_name : "?",
-> -				(unsigned long long)blk_rq_pos(req));
-> +		char *error_type = "I/O";
-> +
-> +		if (error == -ENOLINK)
-> +			error_type = "recoverable transport";
-> +		else if (error == -EREMOTEIO)
-> +			error_type = "critical target";
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 77f93c3..ee2f196 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -118,6 +118,54 @@ static void mmc_set_erase_size(struct mmc_card *card)
+ 	mmc_init_erase(card);
+ }
+ 
++static void mmc_set_mmc_erase_timeout(struct mmc_card *card)
++{
++	unsigned int erase_timeout;
++
++	if (card->ext_csd.erase_group_def & 1) {
++		/* High Capacity Erase Group Size uses HC timeouts */
++		card->trim_timeout = card->ext_csd.trim_timeout;
++		card->erase_timeout = card->ext_csd.hc_erase_timeout;
++	} else {
++		/* CSD Erase Group Size uses write timeout */
++		unsigned int mult = (10 << card->csd.r2w_factor);
++		unsigned int timeout_clks = card->csd.tacc_clks * mult;
++		unsigned int timeout_us;
++
++		/* Avoid overflow: e.g. tacc_ns=80000000 mult=1280 */
++		if (card->csd.tacc_ns < 1000000)
++			timeout_us = (card->csd.tacc_ns * mult) / 1000;
++		else
++			timeout_us = (card->csd.tacc_ns / 1000) * mult;
++
++		/*
++		 * ios.clock is only a target.  The real clock rate might be
++		 * less but not that much less, so fudge it by multiplying by 2.
++		 */
++		timeout_clks <<= 1;
++		timeout_us += (timeout_clks * 1000) /
++			      (card->host->ios.clock / 1000);
++
++		erase_timeout = timeout_us / 1000;
++
++		/*
++		 * Theoretically, the calculation could underflow so round up
++		 * to 1ms in that case.
++		 */
++		if (!erase_timeout)
++			erase_timeout = 1;
++
++		card->trim_timeout = erase_timeout;
++		card->erase_timeout = erase_timeout;
++	}
++
++	/* Multiplier for secure operations */
++	card->sec_trim_timeout = card->erase_timeout *
++		card->ext_csd.sec_trim_mult;
++	card->sec_erase_timeout = card->erase_timeout *
++		card->ext_csd.sec_erase_mult;
++}
++
+ /*
+  * Given a 128-bit response, decode to our card CSD structure.
+  */
+@@ -528,6 +576,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+ 			&& (host->caps & (MMC_CAP_1_2V_DDR)))
+ 				ddr = MMC_1_2V_DDR_MODE;
+ 	}
++	/* Erase/trim timeout depends on CSD, EXT_CSD and host clock */
++	mmc_set_mmc_erase_timeout(card);
+ 
+ 	/*
+ 	 * Activate wide bus and DDR (if supported).
+diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
+index 49da4df..f9afff7 100644
+--- a/drivers/mmc/core/sd.c
++++ b/drivers/mmc/core/sd.c
+@@ -250,6 +250,20 @@ out:
+ 	return err;
+ }
+ 
++static void mmc_set_sd_erase_timeout(struct mmc_card *card)
++{
++	if (card->ssr.erase_timeout)
++		/* Erase timeout specified in SD Status Register (SSR) */
++		card->erase_timeout = card->ssr.erase_timeout;
++	else
++		/*
++		 * Erase timeout not specified in SD Status Register (SSR) so
++		 * use 250ms per write block.
++		 */
++		card->erase_timeout = 250;
++}
++
++
+ /*
+  * Fetches and decodes switch information
+  */
+@@ -624,6 +638,11 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
+ 	mmc_set_clock(host, mmc_sd_get_max_clock(card));
+ 
+ 	/*
++	 * Set erase timeout
++	 * */
++	mmc_set_sd_erase_timeout(card);
++
++	/*
+ 	 * Switch to wider bus (if supported).
+ 	 */
+ 	if ((host->caps & MMC_CAP_4_BIT_DATA) &&
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 8ce0827..e95c770 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -126,6 +126,10 @@ struct mmc_card {
+  	unsigned int		erase_shift;	/* if erase unit is power 2 */
+  	unsigned int		pref_erase;	/* in sectors */
+  	u8			erased_byte;	/* value of erased bytes */
++	unsigned int	erase_timeout; /* erase timeout value in ms per blk */
++	unsigned int	trim_timeout; /* trim timeout value in ms per blk */
++	unsigned int	sec_erase_timeout; /* sec erase timeout in ms per blk */
++	unsigned int	sec_trim_timeout; /* sec trim timeout in ms per blk */
+ 
+ 	u32			raw_cid[4];	/* raw card CID */
+ 	u32			raw_csd[4];	/* raw card CSD */
+-- 
+1.6.6.1
 
-    *switch* would be more natural here.
-
-WBR, Sergei
