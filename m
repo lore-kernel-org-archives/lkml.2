@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab0LHArQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:16 -0500
-Received: from kroah.org ([198.145.64.141]:46094 "EHLO coco.kroah.org"
+	id S1756149Ab0LHCLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:11:42 -0500
+Received: from kroah.org ([198.145.64.141]:58317 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756026Ab0LHArL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:11 -0500
+	id S1755738Ab0LHArN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:13 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:29 2010
-Message-Id: <20101208004429.006887305@clark.site>
+Message-Id: <20101208004429.206598880@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:53 -0800
+Date: Tue, 07 Dec 2010 16:43:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        maximilian attems <max@stro.at>
-Subject: [047/127] firewire: cdev: fix information leak
+        Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [049/127] firewire: ohci: fix buffer overflow in AR split packet handling
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 9cac00b8f0079d5d3d54ec4dae453d58dec30e7c upstream.
+commit 85f7ffd5d2b320f73912b15fe8cef34bae297daf upstream.
 
-A userspace client got to see uninitialized stack-allocated memory if it
-specified an _IOC_READ type of ioctl and an argument size larger than
-expected by firewire-core's ioctl handlers (but not larger than the
-core's union ioctl_arg).
+When the controller had to split a received asynchronous packet into two
+buffers, the driver tries to reassemble it by copying both parts into
+the first page.  However, if size + rest > PAGE_SIZE, i.e., if the yet
+unhandled packets before the split packet, the split packet itself, and
+any received packets after the split packet are together larger than one
+page, then the memory after the first page would get overwritten.
 
-Fix this by clearing the requested buffer size to zero, but only at _IOR
-ioctls.  This way, there is almost no runtime penalty to legitimate
-ioctls.  The only legitimate _IOR is FW_CDEV_IOC_GET_CYCLE_TIMER with 12
-or 16 bytes to memset.
+To fix this, do not try to copy the data of all unhandled packets at
+once, but copy the possibly needed data every time when handling
+a packet.
 
-[Another way to fix this would be strict checking of argument size (and
-possibly direction) vs. command number.  However, we then need a lookup
-table, and we need to allow for slight size deviations in case of 32bit
-userland on 64bit kernel.]
+This gets rid of most of the infamous crashes and data corruptions when
+using firewire-net.
 
-Reported-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Maxim Levitsky <maximlevitsky@gmail.com>
 Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-[ Backported to 2.6.32 firewire core -maks ]
-Signed-off-by: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/core-cdev.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/firewire/ohci.c |   35 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 32 insertions(+), 3 deletions(-)
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1299,24 +1299,24 @@ static int dispatch_ioctl(struct client
- 	int ret;
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -628,7 +628,7 @@ static void ar_context_tasklet(unsigned
+ 	d = &ab->descriptor;
  
- 	if (_IOC_TYPE(cmd) != '#' ||
--	    _IOC_NR(cmd) >= ARRAY_SIZE(ioctl_handlers))
-+	    _IOC_NR(cmd) >= ARRAY_SIZE(ioctl_handlers) ||
-+	    _IOC_SIZE(cmd) > sizeof(buffer))
- 		return -EINVAL;
+ 	if (d->res_count == 0) {
+-		size_t size, rest, offset;
++		size_t size, size2, rest, pktsize, size3, offset;
+ 		dma_addr_t start_bus;
+ 		void *start;
  
--	if (_IOC_DIR(cmd) & _IOC_WRITE) {
--		if (_IOC_SIZE(cmd) > sizeof(buffer) ||
--		    copy_from_user(buffer, arg, _IOC_SIZE(cmd)))
-+	if (_IOC_DIR(cmd) == _IOC_READ)
-+		memset(&buffer, 0, _IOC_SIZE(cmd));
+@@ -645,12 +645,41 @@ static void ar_context_tasklet(unsigned
+ 		ab = ab->next;
+ 		d = &ab->descriptor;
+ 		size = buffer + PAGE_SIZE - ctx->pointer;
++		/* valid buffer data in the next page */
+ 		rest = le16_to_cpu(d->req_count) - le16_to_cpu(d->res_count);
++		/* what actually fits in this page */
++		size2 = min(rest, (size_t)PAGE_SIZE - size);
+ 		memmove(buffer, ctx->pointer, size);
+-		memcpy(buffer + size, ab->data, rest);
++		memcpy(buffer + size, ab->data, size2);
+ 		ctx->current_buffer = ab;
+ 		ctx->pointer = (void *) ab->data + rest;
+-		end = buffer + size + rest;
 +
-+	if (_IOC_DIR(cmd) & _IOC_WRITE)
-+		if (copy_from_user(buffer, arg, _IOC_SIZE(cmd)))
- 			return -EFAULT;
--	}
++		while (size > 0) {
++			void *next = handle_ar_packet(ctx, buffer);
++			pktsize = next - buffer;
++			if (pktsize >= size) {
++				/*
++				 * We have handled all the data that was
++				 * originally in this page, so we can now
++				 * continue in the next page.
++				 */
++				buffer = next;
++				break;
++			}
++			/* move the next packet to the start of the buffer */
++			memmove(buffer, next, size + size2 - pktsize);
++			size -= pktsize;
++			/* fill up this page again */
++			size3 = min(rest - size2,
++				    (size_t)PAGE_SIZE - size - size2);
++			memcpy(buffer + size + size2,
++			       (void *) ab->data + size2, size3);
++			size2 += size3;
++		}
++
++		/* handle the packets that are fully in the next page */
++		buffer = (void *) ab->data + (buffer - (start + size));
++		end = (void *) ab->data + rest;
  
- 	ret = ioctl_handlers[_IOC_NR(cmd)](client, buffer);
- 	if (ret < 0)
- 		return ret;
- 
--	if (_IOC_DIR(cmd) & _IOC_READ) {
--		if (_IOC_SIZE(cmd) > sizeof(buffer) ||
--		    copy_to_user(arg, buffer, _IOC_SIZE(cmd)))
-+	if (_IOC_DIR(cmd) & _IOC_READ)
-+		if (copy_to_user(arg, buffer, _IOC_SIZE(cmd)))
- 			return -EFAULT;
--	}
- 
- 	return ret;
- }
+ 		while (buffer < end)
+ 			buffer = handle_ar_packet(ctx, buffer);
 
 
