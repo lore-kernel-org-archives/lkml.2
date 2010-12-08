@@ -1,106 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab0LHP0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:26:50 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:43745 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab0LHP0s convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:26:48 -0500
+	id S1755939Ab0LHPbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:31:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9359 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753666Ab0LHPbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:31:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,316,1288594800"; 
+   d="scan'208";a="865923463"
+Date: Wed, 8 Dec 2010 23:31:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] writeback: enabling-gate for light dirtied bdi
+Message-ID: <20101208153145.GA19218@localhost>
+References: <20101205064430.GA15027@localhost>
+ <20101207165111.d79735c1.akpm@linux-foundation.org>
+ <20101208043004.GB15322@localhost>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
-References: <4CF692D1.1010906@redhat.com> <AANLkTimA2PPXZoOHYgeOEV2ocrojeuBby8MYDYJ1yjx1@mail.gmail.com>
- <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org> <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Wed, 8 Dec 2010 09:26:25 -0600
-Message-ID: <AANLkTinQw6DZuTiKzmJFo10snbSX9r6+eWuTA8tt3J95@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Mike Snitzer <snitzer@redhat.com>,
-        Jon Nelson <jnelson@jamponi.net>, Chris Mason <chris.mason@oracle.com>,
-        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101208043004.GB15322@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 9:37 PM, Jon Nelson <jnelson@jamponi.net> wrote:
-> On Tue, Dec 7, 2010 at 1:35 PM, Ted Ts'o <tytso@mit.edu> wrote:
->> On Tue, Dec 07, 2010 at 01:22:43PM -0500, Mike Snitzer wrote:
->>> > 1. create a database (from bash):
->>> >
->>> > createdb test
->>> >
->>> > 2. place the following contents in a file (I used 't.sql'):
->>> >
->>> > begin;
->>> > create temporary table foo as select x as a, ARRAY[x] as b FROM
->>> > generate_series(1, 10000000 ) AS x;
->>> > create index foo_a_idx on foo (a);
->>> > create index foo_b_idx on foo USING GIN (b);
->>> > rollback;
->>> >
->>> > 3. execute that sql:
->>> >
->>> > psql -f t.sql --echo-all test
->>> >
->>> > With 2.6.34.7 I can re-run [3] all day long, as many times as I want,
->>> > without issue.
->>> >
->>> > With 2.6.37-rc4-13 (the currently-installed KOTD kernel) if tails
->>> > pretty frequently.
->>
->> So I just tried to reproduce this on an Ubuntu 10.04 system running
->> 2.6.37-rc5 (completely stock except for a few apparmor patches that I
->> needed to keep the apparmor userspace from complaining).  I'm using
->> Postgres 8.4.5-0ubuntu10.04.
->>
->> Using the above procedure, I wasn't able to reproduce.  Then I
->> realized this might have been because I was using an SSD root file
->> system (which is secured using LUKS/dm-crypt, with LVM on top of
->> dm-crypt).  So I mounted a file system on a 5400 rpm SSD disk, which
->> is also protected using LUKS/dm-crypt with LVM on top.  I then
->> executed the PostgresQL commands:
->>
->> CREATE TABLESPACE test LOCATION '/kbuild/postgres';
->> SET default_tablespace = test;
->> COMMIT
->> \quit
->>
->> I then re-ran the above proceduing, and verified that all of the I/O
->> was going to the 5400rpm laptop disk.
->>
->> I then ran the above procedure a half-dozen times, and I still haven't
->> been able to reproduce any Postgresql errors or kernel errors.
->>
->> Jon, can you help me identify what might be different with your run
->> and mine?  What version of Postgres are you using?
->
-> One difference is the location of the transaction logs (pg_xlog). In
-> my case, /var/lib/pgsql/data *is* mountpoint for the test volume
-> (actually, it's a symlink to the mount point). In your case, that is
-> not so. Perhaps that makes a difference?  pgsql_tmp might also be on
-> two different volumes in your case (I can't be sure).
+> +	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
+> +	 */
+> +	dirty -= min(dirty / 128, 32768ULL >> (PAGE_SHIFT-10));
 
+/home/wfg/cc/linux-next/mm/page-writeback.c: In function ‘bdi_dirty_limit’:
+/home/wfg/cc/linux-next/mm/page-writeback.c:464:133: warning: comparison of distinct pointer types lacks a cast
 
-I grabbed a Kubuntu iso and installed Kubuntu 10.10, and then upgraded
-to 'natty', and eventually to 2.6.37-8-generic.
+Sorry, here is the fixed version.
 
-With that install, and postgresql's "data" (/var/lib/postgresql/data)
-being located on a LUKS+ext4 volume, I easily observe the behavior.
+---
+Subject: writeback: enabling gate limit for light dirtied bdi
+Date: Wed Dec 01 20:22:15 CST 2010
 
-Does this help?
+I noticed that my NFSROOT test system goes slow responding when there
+is heavy dd to a local disk. Traces show that the NFSROOT's bdi limit
+is near 0 and many tasks in the system are repeatedly stuck in
+balance_dirty_pages().
 
--- 
-Jon
+There are two generic problems:
+
+- light dirtiers at one device (more often than not the rootfs) get
+  heavily impacted by heavy dirtiers on another independent device
+
+- the light dirtied device does heavy throttling because bdi limit=0,
+  and the heavy throttling may in turn withhold its bdi limit in 0 as
+  it cannot dirty fast enough to grow up the bdi's proportional weight.
+
+Fix it by introducing some "low pass" gate, which is a small (<=32MB)
+value reserved by others and can be safely "stole" from the current
+global dirty margin.  It does not need to be big to help the bdi gain
+its initial weight.
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/writeback.h |    3 ++-
+ mm/backing-dev.c          |    2 +-
+ mm/page-writeback.c       |   29 ++++++++++++++++++++++++++---
+ 3 files changed, 29 insertions(+), 5 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-12-08 23:28:19.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-08 23:30:45.000000000 +0800
+@@ -443,13 +443,26 @@ void global_dirty_limits(unsigned long *
+  *
+  * The bdi's share of dirty limit will be adapting to its throughput and
+  * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
+- */
+-unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
++ *
++ * There is a chicken and egg problem: when bdi A (eg. /pub) is heavy dirtied
++ * and bdi B (eg. /) is light dirtied hence has 0 dirty limit, tasks writing to
++ * B always get heavily throttled and bdi B's dirty limit might never be able
++ * to grow up from 0. So we do tricks to reserve some global margin and honour
++ * it to the bdi's that run low.
++ */
++unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
++			      unsigned long dirty,
++			      unsigned long dirty_pages)
+ {
+ 	u64 bdi_dirty;
+ 	long numerator, denominator;
+ 
+ 	/*
++	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
++	 */
++	dirty -= min(dirty / 128, 32768UL >> (PAGE_SHIFT-10));
++
++	/*
+ 	 * Calculate this BDI's share of the dirty ratio.
+ 	 */
+ 	bdi_writeout_fraction(bdi, &numerator, &denominator);
+@@ -459,6 +472,15 @@ unsigned long bdi_dirty_limit(struct bac
+ 	do_div(bdi_dirty, denominator);
+ 
+ 	bdi_dirty += (dirty * bdi->min_ratio) / 100;
++
++	/*
++	 * If we can dirty N more pages globally, honour N/2 to the bdi that
++	 * runs low, so as to help it ramp up.
++	 */
++	if (unlikely(bdi_dirty < (dirty - dirty_pages) / 2 &&
++		     dirty > dirty_pages))
++		bdi_dirty = (dirty - dirty_pages) / 2;
++
+ 	if (bdi_dirty > (dirty * bdi->max_ratio) / 100)
+ 		bdi_dirty = dirty * bdi->max_ratio / 100;
+ 
+@@ -508,7 +530,8 @@ static void balance_dirty_pages(struct a
+ 				(background_thresh + dirty_thresh) / 2)
+ 			break;
+ 
+-		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
++		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh,
++					     nr_reclaimable + nr_writeback);
+ 		bdi_thresh = task_dirty_limit(current, bdi_thresh);
+ 
+ 		/*
+--- linux-next.orig/mm/backing-dev.c	2010-12-08 23:28:19.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-12-08 23:28:43.000000000 +0800
+@@ -83,7 +83,7 @@ static int bdi_debug_stats_show(struct s
+ 	spin_unlock(&inode_lock);
+ 
+ 	global_dirty_limits(&background_thresh, &dirty_thresh);
+-	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
++	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh, dirty_thresh);
+ 
+ #define K(x) ((x) << (PAGE_SHIFT - 10))
+ 	seq_printf(m,
+--- linux-next.orig/include/linux/writeback.h	2010-12-08 23:28:19.000000000 +0800
++++ linux-next/include/linux/writeback.h	2010-12-08 23:28:43.000000000 +0800
+@@ -126,7 +126,8 @@ int dirty_writeback_centisecs_handler(st
+ 
+ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
+ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+-			       unsigned long dirty);
++			       unsigned long dirty,
++			       unsigned long dirty_pages);
+ 
+ void page_writeback_init(void);
+ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
