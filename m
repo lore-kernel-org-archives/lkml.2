@@ -1,128 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab0LHUmr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:42:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34666 "EHLO hera.kernel.org"
+	id S1756711Ab0LHUm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:42:56 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34674 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756254Ab0LHUmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:42:44 -0500
-Date: Wed, 8 Dec 2010 20:42:14 GMT
+	id S1756699Ab0LHUmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:42:54 -0500
+Date: Wed, 8 Dec 2010 20:42:34 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, jason.wessel@windriver.com, a.p.zijlstra@chello.nl,
+        vgoyal@redhat.com, ebiederm@xmission.com, tglx@linutronix.de,
+        mingo@elte.hu, dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl, jason.wessel@windriver.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, amd: Remove the nb lock
-Message-ID: <tip-c079c791c5a0627fc7b752d31d72e274e0596ba8@git.kernel.org>
-Git-Commit-ID: c079c791c5a0627fc7b752d31d72e274e0596ba8
+Subject: [tip:perf/core] perf: Stop all counters on reboot
+Message-ID: <tip-c277443cfc29b1623b4923219ff0bdb48b91b589@git.kernel.org>
+Git-Commit-ID: c277443cfc29b1623b4923219ff0bdb48b91b589
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:42:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:42:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c079c791c5a0627fc7b752d31d72e274e0596ba8
-Gitweb:     http://git.kernel.org/tip/c079c791c5a0627fc7b752d31d72e274e0596ba8
+Commit-ID:  c277443cfc29b1623b4923219ff0bdb48b91b589
+Gitweb:     http://git.kernel.org/tip/c277443cfc29b1623b4923219ff0bdb48b91b589
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 25 Nov 2010 08:56:17 +0100
+AuthorDate: Wed, 8 Dec 2010 15:29:02 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 8 Dec 2010 20:16:30 +0100
+CommitDate: Wed, 8 Dec 2010 20:16:31 +0100
 
-perf, amd: Remove the nb lock
+perf: Stop all counters on reboot
 
-Since all the hotplug stuff is serialized by the hotplug mutex,
-do away with the amd_nb_lock.
+Use the reboot notifier to detach all running counters on reboot, this
+solves a problem with kexec where the new kernel doesn't expect
+running counters (rightly so).
 
-Cc: Stephane Eranian <eranian@google.com>
+It will however decrease the coverage of the NMI watchdog. Making a
+kexec specific reboot notifier callback would be best, however that
+would require touching all notifier callback handlers as they are not
+properly structured to deal with new state.
+
+As a compromise, place the perf reboot notifier at the very last
+position in the list.
+
+Reported-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Don Zickus <dzickus@redhat.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_amd.c |   16 +++-------------
- 1 files changed, 3 insertions(+), 13 deletions(-)
+ kernel/perf_event.c |   24 +++++++++++++++++++++++-
+ 1 files changed, 23 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index e421b8c..67e2202 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -1,7 +1,5 @@
- #ifdef CONFIG_CPU_SUP_AMD
- 
--static DEFINE_RAW_SPINLOCK(amd_nb_lock);
--
- static __initconst const u64 amd_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
-@@ -275,7 +273,7 @@ done:
- 	return &emptyconstraint;
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 77ad22c..f9d2645 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -21,6 +21,7 @@
+ #include <linux/dcache.h>
+ #include <linux/percpu.h>
+ #include <linux/ptrace.h>
++#include <linux/reboot.h>
+ #include <linux/vmstat.h>
+ #include <linux/vmalloc.h>
+ #include <linux/hardirq.h>
+@@ -6429,7 +6430,7 @@ static void __cpuinit perf_event_init_cpu(int cpu)
+ 	mutex_unlock(&swhash->hlist_mutex);
  }
  
--static struct amd_nb *amd_alloc_nb(int cpu, int nb_id)
-+static struct amd_nb *amd_alloc_nb(int cpu)
+-#ifdef CONFIG_HOTPLUG_CPU
++#if defined CONFIG_HOTPLUG_CPU || defined CONFIG_KEXEC
+ static void perf_pmu_rotate_stop(struct pmu *pmu)
  {
- 	struct amd_nb *nb;
- 	int i;
-@@ -285,7 +283,7 @@ static struct amd_nb *amd_alloc_nb(int cpu, int nb_id)
- 	if (!nb)
- 		return NULL;
+ 	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+@@ -6483,6 +6484,26 @@ static void perf_event_exit_cpu(int cpu)
+ static inline void perf_event_exit_cpu(int cpu) { }
+ #endif
  
--	nb->nb_id = nb_id;
-+	nb->nb_id = -1;
++static int
++perf_reboot(struct notifier_block *notifier, unsigned long val, void *v)
++{
++	int cpu;
++
++	for_each_online_cpu(cpu)
++		perf_event_exit_cpu(cpu);
++
++	return NOTIFY_OK;
++}
++
++/*
++ * Run the perf reboot notifier at the very last possible moment so that
++ * the generic watchdog code runs as long as possible.
++ */
++static struct notifier_block perf_reboot_notifier = {
++	.notifier_call = perf_reboot,
++	.priority = INT_MIN,
++};
++
+ static int __cpuinit
+ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+@@ -6518,6 +6539,7 @@ void __init perf_event_init(void)
+ 	perf_pmu_register(&perf_task_clock);
+ 	perf_tp_register();
+ 	perf_cpu_notifier(perf_cpu_notify);
++	register_reboot_notifier(&perf_reboot_notifier);
  
- 	/*
- 	 * initialize all possible NB constraints
-@@ -306,7 +304,7 @@ static int amd_pmu_cpu_prepare(int cpu)
- 	if (boot_cpu_data.x86_max_cores < 2)
- 		return NOTIFY_OK;
- 
--	cpuc->amd_nb = amd_alloc_nb(cpu, -1);
-+	cpuc->amd_nb = amd_alloc_nb(cpu);
- 	if (!cpuc->amd_nb)
- 		return NOTIFY_BAD;
- 
-@@ -325,8 +323,6 @@ static void amd_pmu_cpu_starting(int cpu)
- 	nb_id = amd_get_nb_id(cpu);
- 	WARN_ON_ONCE(nb_id == BAD_APICID);
- 
--	raw_spin_lock(&amd_nb_lock);
--
- 	for_each_online_cpu(i) {
- 		nb = per_cpu(cpu_hw_events, i).amd_nb;
- 		if (WARN_ON_ONCE(!nb))
-@@ -341,8 +337,6 @@ static void amd_pmu_cpu_starting(int cpu)
- 
- 	cpuc->amd_nb->nb_id = nb_id;
- 	cpuc->amd_nb->refcnt++;
--
--	raw_spin_unlock(&amd_nb_lock);
- }
- 
- static void amd_pmu_cpu_dead(int cpu)
-@@ -354,8 +348,6 @@ static void amd_pmu_cpu_dead(int cpu)
- 
- 	cpuhw = &per_cpu(cpu_hw_events, cpu);
- 
--	raw_spin_lock(&amd_nb_lock);
--
- 	if (cpuhw->amd_nb) {
- 		struct amd_nb *nb = cpuhw->amd_nb;
- 
-@@ -364,8 +356,6 @@ static void amd_pmu_cpu_dead(int cpu)
- 
- 		cpuhw->amd_nb = NULL;
- 	}
--
--	raw_spin_unlock(&amd_nb_lock);
- }
- 
- static __initconst const struct x86_pmu amd_pmu = {
+ 	ret = init_hw_breakpoint();
+ 	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
