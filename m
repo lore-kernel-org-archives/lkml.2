@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab0LHBRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:17:41 -0500
-Received: from kroah.org ([198.145.64.141]:33676 "EHLO coco.kroah.org"
+	id S1757520Ab0LHBRn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:17:43 -0500
+Received: from kroah.org ([198.145.64.141]:33662 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932680Ab0LHBDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:21 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:44 2010
-Message-Id: <20101208005744.137844789@clark.site>
+	id S932676Ab0LHBDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:18 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:43 2010
+Message-Id: <20101208005743.851192067@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:04 -0800
+Date: Tue, 07 Dec 2010 17:00:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nelson Elhage <nelhage@ksplice.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [227/289] do_exit(): make sure that we run with get_fs() == USER_DS
+        "Beholder Intl. Ltd. Dmitry Belimov" <d.belimov@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [224/289] [media] saa7134: Fix autodetect for Behold A7 and H7 TV cards
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nelson Elhage <nelhage@ksplice.com>
+From: Dmitri Belimov <d.belimov@gmail.com>
 
-commit 33dd94ae1ccbfb7bf0fb6c692bc3d1c4269e6177 upstream.
+commit 35bbe587d0959712b69540077c9e0fd27d3e6baf upstream.
 
-If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
-otherwise reset before do_exit().  do_exit may later (via mm_release in
-fork.c) do a put_user to a user-controlled address, potentially allowing
-a user to leverage an oops into a controlled write into kernel memory.
+The entries for those cards are after the generic entries,
+so they don't work, in practice. Moving them to happen before the
+generic entres fix the issue.
 
-This is only triggerable in the presence of another bug, but this
-potentially turns a lot of DoS bugs into privilege escalations, so it's
-worth fixing.  I have proof-of-concept code which uses this bug along
-with CVE-2010-3849 to write a zero to an arbitrary kernel address, so
-I've tested that this is not theoretical.
-
-A more logical place to put this fix might be when we know an oops has
-occurred, before we call do_exit(), but that would involve changing
-every architecture, in multiple places.
-
-Let's just stick it in do_exit instead.
-
-[akpm@linux-foundation.org: update code comment]
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Beholder Intl. Ltd. Dmitry Belimov <d.belimov@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/exit.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/media/video/saa7134/saa7134-cards.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -903,6 +903,15 @@ NORET_TYPE void do_exit(long code)
- 	if (unlikely(!tsk->pid))
- 		panic("Attempted to kill the idle task!");
- 
-+	/*
-+	 * If do_exit is called because this processes oopsed, it's possible
-+	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
-+	 * continuing. Amongst other possible reasons, this is to prevent
-+	 * mm_release()->clear_child_tid() from writing to a user-controlled
-+	 * kernel address.
-+	 */
-+	set_fs(USER_DS);
-+
- 	tracehook_report_exit(&code);
- 
- 	validate_creds_for_do_exit(tsk);
+--- a/drivers/media/video/saa7134/saa7134-cards.c
++++ b/drivers/media/video/saa7134/saa7134-cards.c
+@@ -6661,6 +6661,18 @@ struct pci_device_id saa7134_pci_tbl[] =
+ 		.subdevice    = 0x2804,
+ 		.driver_data  = SAA7134_BOARD_TECHNOTREND_BUDGET_T3000,
+ 	}, {
++		.vendor       = PCI_VENDOR_ID_PHILIPS,
++		.device       = PCI_DEVICE_ID_PHILIPS_SAA7133,
++		.subvendor    = 0x5ace, /* Beholder Intl. Ltd. */
++		.subdevice    = 0x7190,
++		.driver_data  = SAA7134_BOARD_BEHOLD_H7,
++	}, {
++		.vendor       = PCI_VENDOR_ID_PHILIPS,
++		.device       = PCI_DEVICE_ID_PHILIPS_SAA7133,
++		.subvendor    = 0x5ace, /* Beholder Intl. Ltd. */
++		.subdevice    = 0x7090,
++		.driver_data  = SAA7134_BOARD_BEHOLD_A7,
++	}, {
+ 		/* --- boards without eeprom + subsystem ID --- */
+ 		.vendor       = PCI_VENDOR_ID_PHILIPS,
+ 		.device       = PCI_DEVICE_ID_PHILIPS_SAA7134,
+@@ -6698,18 +6710,6 @@ struct pci_device_id saa7134_pci_tbl[] =
+ 		.subvendor    = PCI_ANY_ID,
+ 		.subdevice    = PCI_ANY_ID,
+ 		.driver_data  = SAA7134_BOARD_UNKNOWN,
+-	}, {
+-		.vendor       = PCI_VENDOR_ID_PHILIPS,
+-		.device       = PCI_DEVICE_ID_PHILIPS_SAA7133,
+-		.subvendor    = 0x5ace, /* Beholder Intl. Ltd. */
+-		.subdevice    = 0x7190,
+-		.driver_data  = SAA7134_BOARD_BEHOLD_H7,
+-	}, {
+-		.vendor       = PCI_VENDOR_ID_PHILIPS,
+-		.device       = PCI_DEVICE_ID_PHILIPS_SAA7133,
+-		.subvendor    = 0x5ace, /* Beholder Intl. Ltd. */
+-		.subdevice    = 0x7090,
+-		.driver_data  = SAA7134_BOARD_BEHOLD_A7,
+ 	},{
+ 		/* --- end of list --- */
+ 	}
 
 
