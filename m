@@ -1,229 +1,598 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab0LHHJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:09:30 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:3566 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753607Ab0LHHJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:09:27 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFO+/kx5Lclt/2dsb2JhbACjSnLAX4VJBA
-Date: Wed, 8 Dec 2010 18:09:09 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/46] rcu-walk and dcache scaling
-Message-ID: <20101208070909.GB14846@amd>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <20101207215653.GA25864@dastard>
- <AANLkTinwDr7Xga_gk4vjZ2MgGYGXhxka2JvOAVwfvKQ8@mail.gmail.com>
- <20101208033212.GF29333@dastard>
- <20101208042816.GA32766@dastard>
+	id S1753720Ab0LHHUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:20:54 -0500
+Received: from mga14.intel.com ([143.182.124.37]:17921 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753672Ab0LHHUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 02:20:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,315,1288594800"; 
+   d="scan'208,223";a="358654793"
+Date: Wed, 8 Dec 2010 15:18:57 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Yinghai Lu <yinghai@kernel.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/platform] x86: Unify current 3 similar ways of saving
+ IRQ info
+Message-ID: <20101208151857.212f0018@feng-i7>
+In-Reply-To: <alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
+References: <1291349518-3502-1-git-send-email-feng.tang@intel.com>
+	<tip-a6427a341985e0379060c86b50fcdb59883e4102@git.kernel.org>
+	<4CFD226C.60308@kernel.org>
+	<20101207133204.4d913c5a@feng-i7>
+	<alpine.LFD.2.00.1012071654080.2653@localhost6.localdomain6>
+	<4CFE8045.2030101@kernel.org>
+	<alpine.LFD.2.00.1012072327000.2653@localhost6.localdomain6>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101208042816.GA32766@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed; boundary="MP_/5NM+_uXi9H3+XscLVO485A="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 03:28:16PM +1100, Dave Chinner wrote:
-> On Wed, Dec 08, 2010 at 02:32:12PM +1100, Dave Chinner wrote:
-> > On Wed, Dec 08, 2010 at 12:47:42PM +1100, Nick Piggin wrote:
-> > > On Wed, Dec 8, 2010 at 8:56 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > > > On Sat, Nov 27, 2010 at 09:15:58PM +1100, Nick Piggin wrote:
-> > > >>
-> > > >> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
-> > > >>
-> > > >> Here is an new set of vfs patches for review, not that there was much interest
-> > > >> last time they were posted. It is structured like:
-> > > >>
-> > > >> * preparation patches
-> > > >> * introduce new locks to take over dcache_lock, then remove it
-> > > >> * cleaning up and reworking things for new locks
-> > > >> * rcu-walk path walking
-> > > >> * start on some fine grained locking steps
-> > > >
-> > > > Stress test doing:
-> > > >
-> > > >        single thread 50M inode create
-> > > >        single thread rm -rf
-> > > >        2-way 50M inode create
-> > > >        2-way rm -rf
-> > > >        4-way 50M inode create
-> > > >        4-way rm -rf
-> > > >        8-way 50M inode create
-> > > >        8-way rm -rf
-> > > >        8-way 250M inode create
-> > > >        8-way rm -rf
-> > > >
-> > > > Failed about 5 minutes into the "4-way rm -rf" (~3 hours into the test)
-> > > > with a CPU stuck spinning on here:
-> > > >
-> > > > [37372.084012] NMI backtrace for cpu 5
-> > > > [37372.084012] CPU 5
-> > > > [37372.084012] Modules linked in:
-> > > > [37372.084012]
-> > > > [37372.084012] Pid: 15214, comm: rm Not tainted 2.6.37-rc4-dgc+ #797 /Bochs
-> > > > [37372.084012] RIP: 0010:[<ffffffff810643c4>]  [<ffffffff810643c4>] __ticket_spin_lock+0x14/0x20
-> > > > [37372.084012] RSP: 0018:ffff880114643c98  EFLAGS: 00000213
-> > > > [37372.084012] RAX: 0000000000008801 RBX: ffff8800687be6c0 RCX: ffff8800c4eb2688
-> > > > [37372.084012] RDX: ffff880114643d38 RSI: ffff8800dfd4ea80 RDI: ffff880114643d14
-> > > > [37372.084012] RBP: ffff880114643c98 R08: 0000000000000003 R09: 0000000000000000
-> > > > [37372.084012] R10: 0000000000000000 R11: dead000000200200 R12: ffff880114643d14
-> > > > [37372.084012] R13: ffff880114643cb8 R14: ffff880114643d38 R15: ffff8800687be71c
-> > > > [37372.084012] FS:  00007fd6d7c93700(0000) GS:ffff8800dfd40000(0000) knlGS:0000000000000000
-> > > > [37372.084012] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > > > [37372.084012] CR2: 0000000000bbd108 CR3: 0000000107146000 CR4: 00000000000006e0
-> > > > [37372.084012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > > > [37372.084012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > > > [37372.084012] Process rm (pid: 15214, threadinfo ffff880114642000, task ffff88011b16f890)
-> > > > [37372.084012] Stack:
-> > > > [37372.084012]  ffff880114643ca8 ffffffff81ad044e ffff880114643cf8 ffffffff81167ae7
-> > > > [37372.084012]  0000000000000000 ffff880114643d38 000000000000000e ffff88011901d800
-> > > > [37372.084012]  ffff8800cdb7cf5c ffff88011901d8e0 0000000000000000 0000000000000000
-> > > > [37372.084012] Call Trace:
-> > > > [37372.084012]  [<ffffffff81ad044e>] _raw_spin_lock+0xe/0x20
-> > > > [37372.084012]  [<ffffffff81167ae7>] shrink_dentry_list+0x47/0x370
-> > > > [37372.084012]  [<ffffffff81167f5e>] __shrink_dcache_sb+0x14e/0x1e0
-> > > > [37372.084012]  [<ffffffff81168456>] shrink_dcache_parent+0x276/0x2d0
-> > > > [37372.084012]  [<ffffffff81ad044e>] ? _raw_spin_lock+0xe/0x20
-> > > > [37372.084012]  [<ffffffff8115daa2>] dentry_unhash+0x42/0x80
-> > > > [37372.084012]  [<ffffffff8115db48>] vfs_rmdir+0x68/0x100
-> > > > [37372.084012]  [<ffffffff8115fd93>] do_rmdir+0x113/0x130
-> > > > [37372.084012]  [<ffffffff8114f5ad>] ? filp_close+0x5d/0x90
-> > > > [37372.084012]  [<ffffffff8115fde5>] sys_unlinkat+0x35/0x40
-> > > > [37372.084012]  [<ffffffff8103a002>] system_call_fastpath+0x16/0x1b
-> > > 
-> > > OK good, with any luck, that's the same bug.
-> > > 
-> > > Is this XFS?
-> > 
-> > Yes.
-> > 
-> > > Is there any concurrent activity happening on the same dentries?
-> > 
-> > Not from an application perspective.
-> > 
-> > > Ie. are the rm -rf threads running on the same directories,
-> > 
-> > No, each thread operating on a different directory.
+--MP_/5NM+_uXi9H3+XscLVO485A=
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-This is probably fixed by the same patch as the lockdep splat trace.
+On Wed, 8 Dec 2010 06:32:46 +0800
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
 
-> > > or is there any reclaim happening in the background?
-> > 
-> > IIRC, kswapd was consuming about 5-10% of a CPU during parallel
-> > unlink tests. Mainly reclaiming XFS inodes, I think, but there may
-> > be dentry cache reclaim going as well.
+> Nice archaelogical detective work ! :)
 > 
-> Turns out that the kswapd peaks are upwards of 50% of a CPU for a
-> few seconds, then idle for 10-15s. Typical perf top output of kswapd
-> while it is active during unlinks is:
+> So now I have Fengs patch plus Yinghais series which seem to go nicely
+> together, but I have the feeling that there is some stuff unresolved.
 > 
->              samples  pcnt function                    DSO
->              _______ _____ ___________________________ _________________
+> Yinghai, Feng: could you please work out the missing bits an pieces
+> (if any) and provide me a delta patch on top of the existing patches?
 > 
->             17168.00 10.2% __call_rcu                  [kernel.kallsyms]
->             13223.00  7.8% kmem_cache_free             [kernel.kallsyms]
->             12917.00  7.6% down_write                  [kernel.kallsyms]
->             12665.00  7.5% xfs_iunlock                 [kernel.kallsyms]
->             10493.00  6.2% xfs_reclaim_inode_grab      [kernel.kallsyms]
->              9314.00  5.5% __lookup_tag                [kernel.kallsyms]
->              9040.00  5.4% radix_tree_delete           [kernel.kallsyms]
->              8694.00  5.1% is_bad_inode                [kernel.kallsyms]
->              7639.00  4.5% __ticket_spin_lock          [kernel.kallsyms]
->              6821.00  4.0% _raw_spin_unlock_irqrestore [kernel.kallsyms]
->              5484.00  3.2% __d_drop                    [kernel.kallsyms]
->              5114.00  3.0% xfs_reclaim_inode           [kernel.kallsyms]
->              4626.00  2.7% __rcu_process_callbacks     [kernel.kallsyms]
->              3556.00  2.1% up_write                    [kernel.kallsyms]
->              3206.00  1.9% _cond_resched               [kernel.kallsyms]
->              3129.00  1.9% xfs_qm_dqdetach             [kernel.kallsyms]
->              2327.00  1.4% radix_tree_tag_clear        [kernel.kallsyms]
->              2327.00  1.4% call_rcu_sched              [kernel.kallsyms]
->              2262.00  1.3% __ticket_spin_unlock        [kernel.kallsyms]
->              2215.00  1.3% xfs_ilock                   [kernel.kallsyms]
->              2200.00  1.3% radix_tree_gang_lookup_tag  [kernel.kallsyms]
->              1982.00  1.2% xfs_reclaim_inodes_ag       [kernel.kallsyms]
->              1736.00  1.0% xfs_trans_unlocked_item     [kernel.kallsyms]
->              1707.00  1.0% __ticket_spin_trylock       [kernel.kallsyms]
->              1688.00  1.0% xfs_perag_get_tag           [kernel.kallsyms]
->              1660.00  1.0% flat_send_IPI_mask          [kernel.kallsyms]
->              1538.00  0.9% xfs_inode_item_destroy      [kernel.kallsyms]
->              1312.00  0.8% __shrink_dcache_sb          [kernel.kallsyms]
->               940.00  0.6% xfs_perag_put               [kernel.kallsyms]
+> Thanks,
 > 
-> So there is some dentry cache reclaim going on. 
-> 
-> FWIW, it appears there is quite a lot of RCU freeing overhead (~15%
-> more CPU time) in the work kswapd is doing during these unlinks, too.
-> I just had a look at kswapd when a 8-way create is running - it's running at
-> 50-60% of a cpu for seconds at a time. I caught this while it was doing pure
-> XFS inode cache reclaim (~10s sample, kswapd reclaimed ~1M inodes):
-> 
->              samples  pcnt function                    DSO
->              _______ _____ ___________________________ _________________
-> 
->             27171.00  9.0% __call_rcu                  [kernel.kallsyms]
->             21491.00  7.1% down_write                  [kernel.kallsyms]
->             20916.00  6.9% xfs_reclaim_inode           [kernel.kallsyms]
->             20313.00  6.7% radix_tree_delete           [kernel.kallsyms]
->             15828.00  5.3% kmem_cache_free             [kernel.kallsyms]
->             15819.00  5.2% xfs_idestroy_fork           [kernel.kallsyms]
->             14893.00  4.9% is_bad_inode                [kernel.kallsyms]
->             14666.00  4.9% _raw_spin_unlock_irqrestore [kernel.kallsyms]
->             14191.00  4.7% xfs_reclaim_inode_grab      [kernel.kallsyms]
->             14105.00  4.7% xfs_iunlock                 [kernel.kallsyms]
->             10916.00  3.6% __ticket_spin_lock          [kernel.kallsyms]
->             10125.00  3.4% xfs_iflush_cluster          [kernel.kallsyms]
->              8221.00  2.7% xfs_qm_dqdetach             [kernel.kallsyms]
->              7639.00  2.5% xfs_trans_unlocked_item     [kernel.kallsyms]
->              7028.00  2.3% xfs_synchronize_times       [kernel.kallsyms]
->              6974.00  2.3% up_write                    [kernel.kallsyms]
->              5870.00  1.9% call_rcu_sched              [kernel.kallsyms]
->              5634.00  1.9% _cond_resched               [kernel.kallsyms]
-> 
-> Which is showing a similar amount of RCU overhead as the unlink as above.
-> And this while it was doing dentry cache reclaim (~10s sample):
-> 
->             35921.00 15.7% __d_drop                      [kernel.kallsyms]
->             30056.00 13.1% __ticket_spin_trylock         [kernel.kallsyms]
->             29066.00 12.7% __ticket_spin_lock            [kernel.kallsyms]
->             19043.00  8.3% __call_rcu                    [kernel.kallsyms]
->             10098.00  4.4% iput                          [kernel.kallsyms]
->              7013.00  3.1% __shrink_dcache_sb            [kernel.kallsyms]
->              6774.00  3.0% __percpu_counter_add          [kernel.kallsyms]
->              6708.00  2.9% radix_tree_tag_set            [kernel.kallsyms]
->              5362.00  2.3% xfs_inactive                  [kernel.kallsyms]
->              5130.00  2.2% __ticket_spin_unlock          [kernel.kallsyms]
->              4884.00  2.1% call_rcu_sched                [kernel.kallsyms]
->              4621.00  2.0% dentry_lru_del                [kernel.kallsyms]
->              3735.00  1.6% bit_waitqueue                 [kernel.kallsyms]
->              3727.00  1.6% dentry_iput                   [kernel.kallsyms]
->              3473.00  1.5% shrink_icache_memory          [kernel.kallsyms]
->              3279.00  1.4% kfree                         [kernel.kallsyms]
->              3101.00  1.4% xfs_perag_get                 [kernel.kallsyms]
->              2516.00  1.1% kmem_cache_free               [kernel.kallsyms]
->              2272.00  1.0% shrink_dentry_list            [kernel.kallsyms]
-> 
-> I've never really seen any signficant dentry cache reclaim overhead
-> in profiles of these workloads before, so this was a bit of a
-> surprise....
+> 	tglx
 
-call_rcu shouldn't be doing much, except for disabling irqs and linking
-the object into the list. I have a patch somewhere to reduce the irq
-disable overhead a bit, but it really shouldn't be doing a lot of work.
+Here is the incremental patch against my last one (I also put the full
+patch in attachment)
 
-Sometimes you find that touching the rcu head field needs to get a
-cacheline exclusive, so a bit of work gets transferred there....
+Thanks,
+Feng
+----------------
 
-But it may also be something going a bit wrong in RCU. I blew it up
-once already, after the files_lock splitup that enabled all CPUs to
-create and destroy files :)
 
+x86: more simplification for saving irq info code
+
+Signed-off-by: Feng Tang <feng.tang@linux.intel.com>
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 4aa4dbc..43eade5 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -126,39 +126,6 @@ static int __init parse_noapic(char *str)
+ }
+ early_param("noapic", parse_noapic);
+ 
+-static void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	mp_irq->dstapic = m->dstapic;
+-	mp_irq->type = m->type;
+-	mp_irq->irqtype = m->irqtype;
+-	mp_irq->irqflag = m->irqflag;
+-	mp_irq->srcbus = m->srcbus;
+-	mp_irq->srcbusirq = m->srcbusirq;
+-	mp_irq->dstirq = m->dstirq;
+-}
+-
+-static int mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
+-					struct mpc_intsrc *m)
+-{
+-	if (mp_irq->dstapic != m->dstapic)
+-		return 1;
+-	if (mp_irq->type != m->type)
+-		return 2;
+-	if (mp_irq->irqtype != m->irqtype)
+-		return 3;
+-	if (mp_irq->irqflag != m->irqflag)
+-		return 4;
+-	if (mp_irq->srcbus != m->srcbus)
+-		return 5;
+-	if (mp_irq->srcbusirq != m->srcbusirq)
+-		return 6;
+-	if (mp_irq->dstirq != m->dstirq)
+-		return 7;
+-
+-	return 0;
+-}
+-
+ /* Will be called in mpparse/acpi/sfi codes for saving IRQ info */
+ void mp_save_irq(struct mpc_intsrc *m)
+ {
+@@ -170,11 +137,11 @@ void mp_save_irq(struct mpc_intsrc *m)
+ 		m->srcbusirq, m->dstapic, m->dstirq);
+ 
+ 	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
++		if (!memcmp(&mp_irqs[i], m, sizeof(*m)))
+ 			return;
+ 	}
+ 
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
++	memcpy(&mp_irqs[mp_irq_entries], m, sizeof(*m));
+ 	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+ 		panic("Max # of irq sources exceeded!!\n");
+ }
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 1fe4e79..c2c2e56 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -118,21 +118,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 
+ static void __init MP_ioapic_info(struct mpc_ioapic *m)
+ {
+-	if (!(m->flags & MPC_APIC_USABLE))
+-		return;
+-
+-	printk(KERN_INFO "I/O APIC #%d Version %d at 0x%X.\n",
+-	       m->apicid, m->apicver, m->apicaddr);
+-
+-	mp_register_ioapic(m->apicid, m->apicaddr, gsi_top);
+-}
+-
+-static void print_MP_intsrc_info(struct mpc_intsrc *m)
+-{
+-	apic_printk(APIC_VERBOSE, "Int: type %d, pol %d, trig %d, bus %02x,"
+-		" IRQ %02x, APIC ID %x, APIC INT %02x\n",
+-		m->irqtype, m->irqflag & 3, (m->irqflag >> 2) & 3, m->srcbus,
+-		m->srcbusirq, m->dstapic, m->dstirq);
++	if (m->flags & MPC_APIC_USABLE)
++		mp_register_ioapic(m->apicid, m->apicaddr, gsi_top);
+ }
+ 
+ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+@@ -144,23 +131,11 @@ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+ 		mp_irq->srcbusirq, mp_irq->dstapic, mp_irq->dstirq);
+ }
+ 
+-static void __init assign_to_mpc_intsrc(struct mpc_intsrc *mp_irq,
+-					struct mpc_intsrc *m)
+-{
+-	m->dstapic = mp_irq->dstapic;
+-	m->type = mp_irq->type;
+-	m->irqtype = mp_irq->irqtype;
+-	m->irqflag = mp_irq->irqflag;
+-	m->srcbus = mp_irq->srcbus;
+-	m->srcbusirq = mp_irq->srcbusirq;
+-	m->dstirq = mp_irq->dstirq;
+-}
+ #else /* CONFIG_X86_IO_APIC */
+ static inline void __init MP_bus_info(struct mpc_bus *m) {}
+ static inline void __init MP_ioapic_info(struct mpc_ioapic *m) {}
+ #endif /* CONFIG_X86_IO_APIC */
+ 
+-
+ static void __init MP_lintsrc_info(struct mpc_lintsrc *m)
+ {
+ 	apic_printk(APIC_VERBOSE, "Lint: type %d, pol %d, trig %d, bus %02x,"
+@@ -172,7 +147,6 @@ static void __init MP_lintsrc_info(struct mpc_lintsrc *m)
+ /*
+  * Read/parse the MPC
+  */
+-
+ static int __init smp_check_mpc(struct mpc_table *mpc, char *oem, char *str)
+ {
+ 
+@@ -734,11 +708,11 @@ static void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare)
+ 	int i;
+ 
+ 	apic_printk(APIC_VERBOSE, "OLD ");
+-	print_MP_intsrc_info(m);
++	print_mp_irq_info(m);
+ 
+ 	i = get_MP_intsrc_index(m);
+ 	if (i > 0) {
+-		assign_to_mpc_intsrc(&mp_irqs[i], m);
++		memcpy(m, &mp_irqs[i], sizeof(*m));
+ 		apic_printk(APIC_VERBOSE, "NEW ");
+ 		print_mp_irq_info(&mp_irqs[i]);
+ 		return;
+@@ -825,14 +799,14 @@ static int  __init replace_intsrc_all(struct mpc_table *mpc,
+ 		if (nr_m_spare > 0) {
+ 			apic_printk(APIC_VERBOSE, "*NEW* found\n");
+ 			nr_m_spare--;
+-			assign_to_mpc_intsrc(&mp_irqs[i], m_spare[nr_m_spare]);
++			memcpy(m_spare[nr_m_spare], &mp_irqs[i], sizeof(mp_irqs[i]));
+ 			m_spare[nr_m_spare] = NULL;
+ 		} else {
+ 			struct mpc_intsrc *m = (struct mpc_intsrc *)mpt;
+ 			count += sizeof(struct mpc_intsrc);
+ 			if (check_slot(mpc_new_phys, mpc_new_length, count) < 0)
+ 				goto out;
+-			assign_to_mpc_intsrc(&mp_irqs[i], m);
++			memcpy(m, &mp_irqs[i], sizeof(*m));
+ 			mpc->length = count;
+ 			mpt += sizeof(struct mpc_intsrc);
+ 		}
+--MP_/5NM+_uXi9H3+XscLVO485A=
+Content-Type: text/x-patch
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="0001-x86-unify-current-3-similar-ways-of-saving-IRQ-info.patch"
+
+>From 115d8b756a14b685a12a60e89ab60e25b05c18c4 Mon Sep 17 00:00:00 2001
+From: Feng Tang <feng.tang@intel.com>
+Date: Fri, 19 Nov 2010 11:33:35 +0800
+Subject: [PATCH] x86: unify current 3 similar ways of saving IRQ info
+
+There are 3 places defining the similar function of saving IRQ
+vector info into mp_irqs[] array: mmparse/acpi/mrst. This patch
+will reduce the redundant code, and make it only one API in
+io_apic.c:
+	void mp_save_irq(struct mpc_intsrc *m);
+as that func will only get called when CONFIG_X86_IO_APIC=y.
+
+Also this patch does some minor clearup for mmparse.c.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/io_apic.h |    2 +
+ arch/x86/kernel/acpi/boot.c    |   32 +------------
+ arch/x86/kernel/apic/io_apic.c |   21 +++++++++
+ arch/x86/kernel/mpparse.c      |   94 ++++------------------------------------
+ arch/x86/platform/mrst/mrst.c  |   30 +------------
+ 5 files changed, 37 insertions(+), 142 deletions(-)
+
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index a6b28d0..df49dd6 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -184,6 +184,8 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void __init pre_init_apic_IRQ0(void);
+ 
++extern void mp_save_irq(struct mpc_intsrc *m);
++
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 71232b9..006f896 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -949,32 +949,6 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ extern int es7000_plat;
+ #endif
+ 
+-static void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static int mp_irq_cmp(struct mpc_intsrc *mp_irq,
+-				struct mpc_intsrc *m)
+-{
+-	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static void save_mp_irq(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+-
+ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ {
+ 	int ioapic;
+@@ -1005,7 +979,7 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ 	mp_irq.dstapic = mp_ioapics[ioapic].apicid; /* APIC ID */
+ 	mp_irq.dstirq = pin;	/* INTIN# */
+ 
+-	save_mp_irq(&mp_irq);
++	mp_save_irq(&mp_irq);
+ 
+ 	isa_irq_to_gsi[bus_irq] = gsi;
+ }
+@@ -1080,7 +1054,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+ 		mp_irq.srcbusirq = i; /* Identity mapped */
+ 		mp_irq.dstirq = pin;
+ 
+-		save_mp_irq(&mp_irq);
++		mp_save_irq(&mp_irq);
+ 	}
+ }
+ 
+@@ -1117,7 +1091,7 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
+ 	mp_irq.dstapic = mp_ioapics[ioapic].apicid;
+ 	mp_irq.dstirq = mp_find_ioapic_pin(ioapic, gsi);
+ 
+-	save_mp_irq(&mp_irq);
++	mp_save_irq(&mp_irq);
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7cc0a72..43eade5 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -126,6 +126,26 @@ static int __init parse_noapic(char *str)
+ }
+ early_param("noapic", parse_noapic);
+ 
++/* Will be called in mpparse/acpi/sfi codes for saving IRQ info */
++void mp_save_irq(struct mpc_intsrc *m)
++{
++	int i;
++
++	apic_printk(APIC_VERBOSE, "Int: type %d, pol %d, trig %d, bus %02x,"
++		" IRQ %02x, APIC ID %x, APIC INT %02x\n",
++		m->irqtype, m->irqflag & 3, (m->irqflag >> 2) & 3, m->srcbus,
++		m->srcbusirq, m->dstapic, m->dstirq);
++
++	for (i = 0; i < mp_irq_entries; i++) {
++		if (!memcmp(&mp_irqs[i], m, sizeof(*m)))
++			return;
++	}
++
++	memcpy(&mp_irqs[mp_irq_entries], m, sizeof(*m));
++	if (++mp_irq_entries == MAX_IRQ_SOURCES)
++		panic("Max # of irq sources exceeded!!\n");
++}
++
+ struct irq_pin_list {
+ 	int apic, pin;
+ 	struct irq_pin_list *next;
+@@ -136,6 +156,7 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+ 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
+ }
+ 
++
+ /* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+ #ifdef CONFIG_SPARSE_IRQ
+ static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 9af64d9..c2c2e56 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -118,21 +118,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 
+ static void __init MP_ioapic_info(struct mpc_ioapic *m)
+ {
+-	if (!(m->flags & MPC_APIC_USABLE))
+-		return;
+-
+-	printk(KERN_INFO "I/O APIC #%d Version %d at 0x%X.\n",
+-	       m->apicid, m->apicver, m->apicaddr);
+-
+-	mp_register_ioapic(m->apicid, m->apicaddr, gsi_top);
+-}
+-
+-static void print_MP_intsrc_info(struct mpc_intsrc *m)
+-{
+-	apic_printk(APIC_VERBOSE, "Int: type %d, pol %d, trig %d, bus %02x,"
+-		" IRQ %02x, APIC ID %x, APIC INT %02x\n",
+-		m->irqtype, m->irqflag & 3, (m->irqflag >> 2) & 3, m->srcbus,
+-		m->srcbusirq, m->dstapic, m->dstirq);
++	if (m->flags & MPC_APIC_USABLE)
++		mp_register_ioapic(m->apicid, m->apicaddr, gsi_top);
+ }
+ 
+ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+@@ -144,73 +131,11 @@ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+ 		mp_irq->srcbusirq, mp_irq->dstapic, mp_irq->dstirq);
+ }
+ 
+-static void __init assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	mp_irq->dstapic = m->dstapic;
+-	mp_irq->type = m->type;
+-	mp_irq->irqtype = m->irqtype;
+-	mp_irq->irqflag = m->irqflag;
+-	mp_irq->srcbus = m->srcbus;
+-	mp_irq->srcbusirq = m->srcbusirq;
+-	mp_irq->dstirq = m->dstirq;
+-}
+-
+-static void __init assign_to_mpc_intsrc(struct mpc_intsrc *mp_irq,
+-					struct mpc_intsrc *m)
+-{
+-	m->dstapic = mp_irq->dstapic;
+-	m->type = mp_irq->type;
+-	m->irqtype = mp_irq->irqtype;
+-	m->irqflag = mp_irq->irqflag;
+-	m->srcbus = mp_irq->srcbus;
+-	m->srcbusirq = mp_irq->srcbusirq;
+-	m->dstirq = mp_irq->dstirq;
+-}
+-
+-static int __init mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
+-					struct mpc_intsrc *m)
+-{
+-	if (mp_irq->dstapic != m->dstapic)
+-		return 1;
+-	if (mp_irq->type != m->type)
+-		return 2;
+-	if (mp_irq->irqtype != m->irqtype)
+-		return 3;
+-	if (mp_irq->irqflag != m->irqflag)
+-		return 4;
+-	if (mp_irq->srcbus != m->srcbus)
+-		return 5;
+-	if (mp_irq->srcbusirq != m->srcbusirq)
+-		return 6;
+-	if (mp_irq->dstirq != m->dstirq)
+-		return 7;
+-
+-	return 0;
+-}
+-
+-static void __init MP_intsrc_info(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	print_MP_intsrc_info(m);
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+ #else /* CONFIG_X86_IO_APIC */
+ static inline void __init MP_bus_info(struct mpc_bus *m) {}
+ static inline void __init MP_ioapic_info(struct mpc_ioapic *m) {}
+-static inline void __init MP_intsrc_info(struct mpc_intsrc *m) {}
+ #endif /* CONFIG_X86_IO_APIC */
+ 
+-
+ static void __init MP_lintsrc_info(struct mpc_lintsrc *m)
+ {
+ 	apic_printk(APIC_VERBOSE, "Lint: type %d, pol %d, trig %d, bus %02x,"
+@@ -222,7 +147,6 @@ static void __init MP_lintsrc_info(struct mpc_lintsrc *m)
+ /*
+  * Read/parse the MPC
+  */
+-
+ static int __init smp_check_mpc(struct mpc_table *mpc, char *oem, char *str)
+ {
+ 
+@@ -337,7 +261,7 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
+ 			break;
+ 		case MP_INTSRC:
+-			MP_intsrc_info((struct mpc_intsrc *)mpt);
++			mp_save_irq((struct mpc_intsrc *)mpt);
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
+ 			break;
+ 		case MP_LINTSRC:
+@@ -429,13 +353,13 @@ static void __init construct_default_ioirq_mptable(int mpc_default_type)
+ 
+ 		intsrc.srcbusirq = i;
+ 		intsrc.dstirq = i ? i : 2;	/* IRQ0 to INTIN2 */
+-		MP_intsrc_info(&intsrc);
++		mp_save_irq(&intsrc);
+ 	}
+ 
+ 	intsrc.irqtype = mp_ExtINT;
+ 	intsrc.srcbusirq = 0;
+ 	intsrc.dstirq = 0;	/* 8259A to INTIN0 */
+-	MP_intsrc_info(&intsrc);
++	mp_save_irq(&intsrc);
+ }
+ 
+ 
+@@ -784,11 +708,11 @@ static void __init check_irq_src(struct mpc_intsrc *m, int *nr_m_spare)
+ 	int i;
+ 
+ 	apic_printk(APIC_VERBOSE, "OLD ");
+-	print_MP_intsrc_info(m);
++	print_mp_irq_info(m);
+ 
+ 	i = get_MP_intsrc_index(m);
+ 	if (i > 0) {
+-		assign_to_mpc_intsrc(&mp_irqs[i], m);
++		memcpy(m, &mp_irqs[i], sizeof(*m));
+ 		apic_printk(APIC_VERBOSE, "NEW ");
+ 		print_mp_irq_info(&mp_irqs[i]);
+ 		return;
+@@ -875,14 +799,14 @@ static int  __init replace_intsrc_all(struct mpc_table *mpc,
+ 		if (nr_m_spare > 0) {
+ 			apic_printk(APIC_VERBOSE, "*NEW* found\n");
+ 			nr_m_spare--;
+-			assign_to_mpc_intsrc(&mp_irqs[i], m_spare[nr_m_spare]);
++			memcpy(m_spare[nr_m_spare], &mp_irqs[i], sizeof(mp_irqs[i]));
+ 			m_spare[nr_m_spare] = NULL;
+ 		} else {
+ 			struct mpc_intsrc *m = (struct mpc_intsrc *)mpt;
+ 			count += sizeof(struct mpc_intsrc);
+ 			if (check_slot(mpc_new_phys, mpc_new_length, count) < 0)
+ 				goto out;
+-			assign_to_mpc_intsrc(&mp_irqs[i], m);
++			memcpy(m, &mp_irqs[i], sizeof(*m));
+ 			mpc->length = count;
+ 			mpt += sizeof(struct mpc_intsrc);
+ 		}
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index fee0b49..ea6529e 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -71,32 +71,6 @@ struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+ EXPORT_SYMBOL_GPL(sfi_mrtc_array);
+ int sfi_mrtc_num;
+ 
+-static inline void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static inline int mp_irq_cmp(struct mpc_intsrc *mp_irq,
+-				struct mpc_intsrc *m)
+-{
+-	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static void save_mp_irq(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+-
+ /* parse all the mtimer info to a static mtimer array */
+ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ {
+@@ -130,7 +104,7 @@ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+-			save_mp_irq(&mp_irq);
++			mp_save_irq(&mp_irq);
+ 	}
+ 
+ 	return 0;
+@@ -200,7 +174,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+-		save_mp_irq(&mp_irq);
++		mp_save_irq(&mp_irq);
+ 	}
+ 	return 0;
+ }
+-- 
+1.7.0.4
+
+
+--MP_/5NM+_uXi9H3+XscLVO485A=--
