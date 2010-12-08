@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab0LHIge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:36:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab0LHIgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:36:33 -0500
-Message-ID: <4CFF437D.1060904@redhat.com>
-Date: Wed, 08 Dec 2010 16:36:13 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1754403Ab0LHIgw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 03:36:52 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40124 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754219Ab0LHIgv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 03:36:51 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH v4 5/7] add profile information for invalidated page reclaim
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <AANLkTik4mtr8T6PddQopi4cwWGRmJ+-utykgjywGoxj+@mail.gmail.com>
+References: <20101208165944.174D.A69D9226@jp.fujitsu.com> <AANLkTik4mtr8T6PddQopi4cwWGRmJ+-utykgjywGoxj+@mail.gmail.com>
+Message-Id: <20101208173520.1759.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Changli Gao <xiaosuo@gmail.com>
-CC: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
-        Neil Horman <nhorman@redhat.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [v3 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
-References: <20101208075208.5792.45247.sendpatchset@localhost.localdomain> <20101208075218.5792.64791.sendpatchset@localhost.localdomain> <AANLkTindQMNKhC2aowUyjm=uO8gFKqOOPa9HXSU1q7Gh@mail.gmail.com>
-In-Reply-To: <AANLkTindQMNKhC2aowUyjm=uO8gFKqOOPa9HXSU1q7Gh@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  8 Dec 2010 17:36:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/10 16:16, Changli Gao wrote:
->
-> You can't change the values of these macros or delete some of them,
-> because they are exported to user space and are parts of ABI.
->
+> Hi KOSAKI,
+> 
+> On Wed, Dec 8, 2010 at 5:02 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> >> This patch adds profile information about invalidated page reclaim.
+> >> It's just for profiling for test so it would be discard when the series
+> >> are merged.
+> >>
+> >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> >> Cc: Rik van Riel <riel@redhat.com>
+> >> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> >> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> >> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> >> Cc: Nick Piggin <npiggin@kernel.dk>
+> >> Cc: Mel Gorman <mel@csn.ul.ie>
+> >> ---
+> >>  include/linux/vmstat.h |    4 ++--
+> >>  mm/swap.c              |    3 +++
+> >>  mm/vmstat.c            |    3 +++
+> >>  3 files changed, 8 insertions(+), 2 deletions(-)
+> >
+> > Today, we have tracepoint. tracepoint has no overhead if it's unused.
+> > but vmstat has a overhead even if unused.
+> >
+> > Then, all new vmstat proposal should be described why you think it is
+> > frequently used from administrators.
+> 
+> It's just for easy gathering the data when Ben will test.
+> I never want to merge it in upstream and even mmtom.
 
-A few lines above that code said:
+Ok, I had not understand your intention. Thank you.
 
-/* Private (from user) interface flags (netdevice->priv_flags). */
 
-unless this comment is wrong, we don't need to worry.
+
+> If you don't like it for just testing, I am happy to change it with tracepoint.
+
+
+
+
+
