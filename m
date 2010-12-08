@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab0LHX40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:56:26 -0500
-Received: from web31806.mail.mud.yahoo.com ([68.142.207.69]:46244 "HELO
-	web31806.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756756Ab0LHX4Y (ORCPT
+	id S1756817Ab0LHX5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:57:21 -0500
+Received: from web31803.mail.mud.yahoo.com ([68.142.207.66]:30506 "HELO
+	web31803.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755283Ab0LHX5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:56:24 -0500
+	Wed, 8 Dec 2010 18:57:20 -0500
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.com;
   h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=ytcrAM5P7AfY6n4Z33JPV/kqqDHa/+h54jdjHrrVmMB6cKUG2OhWD5BDiCtWR03SSvH421ME1E4aZRTw0yjYgEizpB+tFkPWRzZqu9L1N3XN1HqYEkI8/mrBLOx72p8gffrmWhIIVEqcubPeeUfu9+0UGpE1C0aVHxqvQrSneHc=;
-Message-ID: <721095.19643.qm@web31806.mail.mud.yahoo.com>
-X-YMail-OSG: 3UmOkLAVM1lP1ZXJZFeAURcX5bmdP.BK9vusjxEQchgsbkr
- s7QXoEzTx1jlmzrrL89Pv9_ZdoystpDsqEggkBn9sm3XBdo8_TA_wcwfLjzY
- VcZtB.xri1kSUaxD4dfZcDn_.BmTANLi0w0tQ226wzhuR6JlKCpVo6IK5pbD
- bkW.lHwMAP3DbamLC1.uUS3P2MYWVb2k9rVi.UxHXalpxci55y_zS9yYM7Qk
- sTvEcd.uuc2myfddr.dJ4UdL29s4lGjJxubS4B2C8CZLf17TOr8S16eNAaAm
- U0DlgPr4G3aJCYx36Cd5o3YnAqoPpcvL85WGasMfFECDgoFB2VgVQaJxeoHG
- kD3aDgiYPsdgdqMoBVHsARGBD2GiFLZokz37Bk78XMuPW
+  b=MZz9iYBMVd/SYjYTy+WQzRZsCBgO3o+AzVXZ25obzbrLAtddoBtUwrV6NUqX1BppvUM2/3xUi3DnJfoYckq4N2Y8Wva6AX/gXcZG/nkCsNbJJHA+aeQrl5RSOhwlcqg+42/kpDZFo/yIPI5VZG5Al1wd2ntEETlEOuvPMamszBg=;
+Message-ID: <868332.80097.qm@web31803.mail.mud.yahoo.com>
+X-YMail-OSG: aWGq.7IVM1m4LNdvaklVjA7wKowPJ65_CmaIMcj5_mr2dfb
+ O5W349LfYgM3QQpGrnQUIhy7dcNB3PZ_RgecCVmFeU3ZcQIJANu97xm9WiZy
+ NY0fBX3K_UbInkhzLNWR3l6HsQCxlsD9IlgB2buIDFpQRQXIK_sP2dUOKz76
+ nb2fU0RMqASseXH5t3o89RSxGbQ1Jxqpl6af69utvd7HAdhuHsvQuoqVFXNH
+ 1v81bDJEEs_jyNiQxHkkJPd3r91DIP8amB8gQ_Z2uVb9Acxm6VZdm7hmgwgI
+ rF6d9cnX_91KhT9VPu8HON9diNaHU_XlZQbeXeCXUMBno.1rVPHfqIsZ9i3g
+ KUcypI.6YBys3tm3R7w--
 X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
-Date: Wed, 8 Dec 2010 15:56:22 -0800 (PST)
+Date: Wed, 8 Dec 2010 15:57:18 -0800 (PST)
 From: Luben Tuikov <ltuikov@yahoo.com>
 Reply-To: ltuikov@yahoo.com
-Subject: [PATCH 3/4] [USB] UASP: Reorganize stream id assignment
+Subject: [PATCH 4/4] [USB] UASP: Return -ENODEV instead of -1 on error
 To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org
 MIME-Version: 1.0
@@ -32,109 +32,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the host controller reports more streams than
-it actually supports and the device goes into flow
-control due to an unsupported stream id, we can
-now send a TMF with a stream id that the host
-controller can handle.
+Return -ENODEV instead of -1 on configuration
+errors when discovering the attached device.
 
 Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
 ---
- drivers/usb/storage/uasp.c |   35 ++++++++++++++++++++---------------
- 1 files changed, 20 insertions(+), 15 deletions(-)
+ drivers/usb/storage/uasp.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/usb/storage/uasp.c b/drivers/usb/storage/uasp.c
-index e5a26e9..40ee5a4 100644
+index 40ee5a4..eb8933f 100644
 --- a/drivers/usb/storage/uasp.c
 +++ b/drivers/usb/storage/uasp.c
-@@ -43,6 +43,10 @@ MODULE_PARM_DESC(MaxNumStreams, "\n"
- 	"\tattached device and this value. Valid values are -1, default,\n"
- 	"\tand 1 to 0xFFEF.");
- 
-+#define TMF_TAG          1
-+#define CMD_UNTAGGED_TAG 2
-+#define CMD_TAG_OFFS     3
-+
- /* Information unit types
-  */
- #define IU_CMD   1
-@@ -189,7 +193,7 @@ static void uasp_sense(struct urb *urb, struct scsi_cmnd *cmd, u16 tag)
- 		memcpy(cmd->sense_buffer, iu + IU_SENSE_LEN, slen);
+@@ -943,7 +943,7 @@ static int uasp_ep_conf(struct uasp_tport_info *tpinfo)
+ 	    tpinfo->eps[2] == NULL || tpinfo->eps[3] == NULL) {
+ 		dev_err(&udev->dev, "%s: one or more endpoints are missing\n",
+ 			__func__);
+-		return -1;
++		return -ENODEV;
  	}
  
--	if (tag == 1)
-+	if (tag == CMD_UNTAGGED_TAG)
- 		sdev->current_cmnd = NULL;
- 	cmd->scsi_done(cmd);
- 	usb_free_urb(urb);
-@@ -267,10 +271,10 @@ static void uasp_stat_done(struct urb *urb)
- 		return;
- 	}
+ 	tpinfo->cmd_pipe = usb_sndbulkpipe(udev,
+@@ -968,7 +968,7 @@ static int uasp_ep_conf(struct uasp_tport_info *tpinfo)
+ 		
+ 		if (tpinfo->max_streams <= 1) {
+ 			dev_err(&udev->dev, "%s: no streams\n", __func__);
+-			return -1;
++			return -ENODEV;
+ 		}
+ 		
+ 		tpinfo->use_streams = 1;
+@@ -985,7 +985,7 @@ static int uasp_ep_conf(struct uasp_tport_info *tpinfo)
+ 				"%s: Couldn't allocate %d streams (%d)\n",
+ 				__func__, tpinfo->max_streams,
+ 				tpinfo->num_streams);
+-			return -1;
++			return -ENODEV;
+ 		}
  
--	if (tag == 1)
-+	if (tag == CMD_UNTAGGED_TAG)
- 		cmd = sdev->current_cmnd;
--	else if (tag > 1)
--		cmd = scsi_find_tag(sdev, tag-2);
-+	else if (tag >= CMD_TAG_OFFS)
-+		cmd = scsi_find_tag(sdev, tag - CMD_TAG_OFFS);
- 
- 	if (cmd == NULL)
- 		goto Out_no_cmd;
-@@ -583,10 +587,10 @@ static int uasp_queuecommand(struct scsi_cmnd *cmd,
- 	 * regardless of how many tags it supports.
- 	 */
- 	if (blk_rq_tagged(cmd->request)) {
--		cmdinfo->tag = cmd->request->tag + 2;
-+		cmdinfo->tag = cmd->request->tag + CMD_TAG_OFFS;
- 	} else if (sdev->current_cmnd == NULL) {
- 		sdev->current_cmnd = cmd;
--		cmdinfo->tag = 1;
-+		cmdinfo->tag = CMD_UNTAGGED_TAG;
- 	} else {
- 		cmd->result = DID_ABORT << 16;
- 		goto Out_err;
-@@ -643,7 +647,7 @@ static int uasp_alloc_tmf_urb(struct urb **urb, struct uasp_tport_info *tpinfo,
- 	 * it for their own use, as well as being able to free it back
- 	 * later. See the comment in uasp_set_max_cmds().
- 	 */
--	tag = tpinfo->max_cmds + 2;
-+	tag = TMF_TAG;
- 
- 	tiu[0] = IU_TMF;
- 	tiu[2] = tag >> 8;
-@@ -765,9 +769,9 @@ static int uasp_er_tmf(struct scsi_cmnd *cmd, u8 tmf)
- 	int res;
- 
- 	if (sdev->current_cmnd == cmd)
--		tag = 1;
-+		tag = CMD_UNTAGGED_TAG;
- 	else
--		tag = cmd->request->tag + 2;
-+		tag = cmd->request->tag + CMD_TAG_OFFS;
- 
- 	res = uasp_do_tmf(cmd, tmf, tag);
- 
-@@ -888,12 +892,13 @@ static int uasp_set_max_cmds(struct uasp_tport_info *tpinfo)
- {
- 	int mc;
- 
--	/* The range of tags generated by the block layer would be
--	 * [0, max_cmds-1], which is [0, num_streams-3]. Now reserve
--	 * stream 1 for untagged commands submitted to us and the last
--	 * usable stream id for a TMF to get the following stream id
--	 * assignment:
--	 * [1:untagged, [2, num_streams-1]:tagged, num_streams:TMF].
-+	/* Define the following cmd tag assignment:
-+	 * [1:TMF, 2:untagged, [3, num_streams]:tagged].
-+	 * Thus there are num_streams-3+1 = num_streams-2 tags
-+	 * for tagged commands. Report this number to the SCSI Core
-+	 * as the number of maximum commands we can queue, thus
-+	 * giving us a tag range [0, num_streams-3], which we
-+	 * offset by 3 (CMD_TAG_OFFS).
- 	 */
- 	mc = tpinfo->num_streams - 2;
- 	if (mc <= 0) {
+ 		uasp_set_max_cmds(tpinfo);
 -- 
 1.7.0.1
+
 
