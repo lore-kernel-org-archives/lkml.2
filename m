@@ -1,75 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab0LHJDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 04:03:33 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:56840 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751631Ab0LHJD3 (ORCPT
+	id S1754536Ab0LHJD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 04:03:57 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:34373 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754493Ab0LHJDj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 04:03:29 -0500
-Message-ID: <4CFF49BC.8030202@euromail.se>
-Date: Wed, 08 Dec 2010 10:02:52 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] input: mt updates for 2.6.38
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQFvK-0006Zr-6j.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PQFvK-0006Zr-6j 5e5cbd0a3c048d94a975b1f35d3cf758
+	Wed, 8 Dec 2010 04:03:39 -0500
+Date: Wed, 8 Dec 2010 10:02:45 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Ingo Molnar <mingo@elte.hu>, Oleg Nesterov <oleg@redhat.com>
+Cc: =?ISO-8859-15?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
+Message-ID: <20101208100245.01cf23c5@schatten.dmk.lab>
+In-Reply-To: <20101104054718.GC5210@cr0.nay.redhat.com>
+References: <20101103062609.GB31163@dastard>
+	<1288768402.2467.665.camel@edumazet-laptop>
+	<20101103103448.GA9169@dastard>
+	<20101103112936.GB9169@dastard>
+	<20101104002140.GA13830@dastard>
+	<20101104054718.GC5210@cr0.nay.redhat.com>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry,
+[ ccing Ingo and Oleg ] as suggested
 
-Please pull from
+On Thu, 4 Nov 2010 13:47:18 +0800
+Américo Wang <xiyou.wangcong@gmail.com> wrote:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
-
-to receive input-mt updates for 2.6.38.
-
-The tree contains core changes as well as dependent changes to hid drivers. You
-also find the new hid-egalax driver in there, signed off by Jiri.
-
-Thanks,
-Henrik
-
-Henrik Rydberg (13):
-      input: mt: Break out slots handling
-      input: mt: Collect slots initialization code
-      input: mt: Add an envelope tool type
-      input: mt: Move tracking and pointer emulation to input-mt
-      input: mt: Add hovering distance axis
-      hid: egalax: Setup input device manually
-      hid: egalax: Correct for device resolution report error
-      hid: egalax: Report zero as minimum pressure
-      hid: egalax: Add event filtering
-      hid: egalax: Convert to MT slots
-      hid: egalax: Add support for Wetab
-      hid: egalax: Document the new devices in Kconfig
-      MAINTAINERS: Update input-mt entry
-
- Documentation/input/multi-touch-protocol.txt |   14 ++-
- MAINTAINERS                                  |    2 +
- drivers/hid/Kconfig                          |    3 +-
- drivers/hid/hid-3m-pct.c                     |   36 +------
- drivers/hid/hid-core.c                       |    1 +
- drivers/hid/hid-egalax.c                     |  127 +++++++++-------------
- drivers/hid/hid-ids.h                        |    1 +
- drivers/input/Makefile                       |    2 +-
- drivers/input/input-mt.c                     |  153 ++++++++++++++++++++++++++
- drivers/input/input.c                        |   48 +--------
- drivers/input/misc/uinput.c                  |    4 +-
- drivers/input/tablet/wacom_wac.c             |   26 +---
- drivers/input/tablet/wacom_wac.h             |    4 -
- drivers/input/touchscreen/wacom_w8001.c      |   25 +---
- include/linux/input-mt.h                     |   56 ++++++++++
- include/linux/input.h                        |   22 +---
- 16 files changed, 306 insertions(+), 218 deletions(-)
- create mode 100644 drivers/input/input-mt.c
- create mode 100644 include/linux/input-mt.h
+> On Thu, Nov 04, 2010 at 11:21:40AM +1100, Dave Chinner wrote:
+> >On Wed, Nov 03, 2010 at 10:29:36PM +1100, Dave Chinner wrote:
+> >> On Wed, Nov 03, 2010 at 09:34:48PM +1100, Dave Chinner wrote:
+> >> > On Wed, Nov 03, 2010 at 08:13:22AM +0100, Eric Dumazet wrote:
+> >> > > Le mercredi 03 novembre 2010 à 17:26 +1100, Dave Chinner a écrit :
+> >> > > > Folks,
+> >> > > > 
+> >> > > > Starting up KVM on a current mainline kernel using the tap
+> >> > > > device for the networking is resulting in the ip process tryin gto
+> >> > > > up the tap interface hanging. KVM is started with this networking
+> >> > > > config:
+> >> > > > 
+> >> > > > ....
+> >> > > >         -net nic,vlan=0,macaddr=00:e4:b6:63:63:6d,model=virtio \
+> >> > > >         -net tap,vlan=0,script=/vm-images/qemu-ifup,downscript=no \
+> >> > > > ....
+> >> > > > 
+> >> > > > And the script is effectively:
+> >> > > > 
+> >> > > > switch=br0
+> >> > > > if [ -n "$1" ];then
+> >> > > >         /usr/bin/sudo /sbin/ip link set $1 up
+> >> > > >         sleep 0.5s
+> >> > > >         /usr/bin/sudo /usr/sbin/brctl addif $switch $1
+> >> > > > 	exit 0
+> >> > > > fi
+> >> > > > exit 1
+> >> > > > 
+> >> > > > This is resulting in the command 'ip link set tap0 up' hanging as a zombie:
+> >> > > > 
+> >> > > > root      3005     1  0 16:53 pts/3    00:00:00 /bin/sh /vm-images/qemu-ifup tap0
+> >> > > > root      3011  3005  0 16:53 pts/3    00:00:00 /usr/bin/sudo /sbin/ip link set tap0 up
+> >> > > > root      3012  3011  0 16:53 pts/3    00:00:00 [ip] <defunct>
+> >> > > > 
+> >> > > > In do_exit() with this trace:
+> >> > > > 
+> >> > > > [ 1630.782255] ip            x ffff88063fcb3600     0  3012   3011 0x00000000
+> >> > > > [ 1630.789121]  ffff880631328000 0000000000000046 0000000000000000 ffff880633104380
+> >> > > > [ 1630.796524]  0000000000013600 ffff88062f031fd8 0000000000013600 0000000000013600
+> >> > > > [ 1630.803925]  ffff8806313282d8 ffff8806313282e0 ffff880631328000 0000000000013600
+> >> > > > [ 1630.811324] Call Trace:
+> >> > > > [ 1630.813760]  [<ffffffff8104a90d>] ? do_exit+0x716/0x724
+> >> > > > [ 1630.818964]  [<ffffffff8104a995>] ? do_group_exit+0x7a/0xa4
+> >> > > > [ 1630.824512]  [<ffffffff8104a9d1>] ? sys_exit_group+0x12/0x16
+> >> > > > [ 1630.830149]  [<ffffffff81009a82>] ? system_call_fastpath+0x16/0x1b
+> >> > > > 
+> >> > > > The address comes down to the schedule() call:
+> >> > > > 
+> >> > > > (gdb) l *(do_exit+0x716)
+> >> > > > 0xffffffff8104a90d is in do_exit (kernel/exit.c:1034).
+> >> > > > 1029            preempt_disable();
+> >> > > > 1030            exit_rcu();
+> >> > > > 1031            /* causes final put_task_struct in finish_task_switch(). */
+> >> > > > 1032            tsk->state = TASK_DEAD;
+> >> > > > 1033            schedule();
+> >> > > > 1034            BUG();
+> >> > > > 1035            /* Avoid "noreturn function does return".  */
+> >> > > > 1036            for (;;)
+> >> > > > 1037                    cpu_relax();    /* For when BUG is null */
+> >> > > > 1038    }
+> >> > > > 
+> >> > > > Needless to say, KVM is not starting up. This works just fine on
+> >> > > > 2.6.35.1 and so is a regression. I can't do a lot of testing on this as
+> >> > > > the host is the machine that hosts all my build and test environments....
+> >> > > > 
+> >> > > > Cheers,
+> >> > > > 
+> >> > > > Dave.
+> >> > > 
+> >> > > Could it be the same problem than 
+> >> > > 
+> >> > > http://kerneltrap.com/mailarchive/linux-netdev/2010/10/23/6288128
+> >> > > 
+> >> > > Try to revert bee31369ce16fc3898ec9a54161248c9eddb06bc ?
+> >> > 
+> >> > It's working fine on 2.6.36 right now, so it's something that came in
+> >> > with the .37 merge cycle...
+> >> 
+> >> Actually, the machine isn't running a 2.6.36 kernel (it had booted
+> >> to the working .35 kernel and I didn't notice). So i've just tested
+> >> a 2.6.36 kernel, and the problem _is present_ in 2.6.36. I've
+> >> reverted the above commit but that does not fix the problem.
+> >
+> >Ok, so further investigation has shown I can reproduce this on
+> >2.6.32 and 2.6.35. It's not a new bug, nor do I think that it is
+> >a networking bug as it is not specific to the ip command.
+> >
+> >The trigger for the problem is actually an upgrade of the sudo
+> >package in debian unstable which changed the behaviour of sudo (has
+> >some per-login/pty restriction on it now). Basically, the startup
+> >script I'm running does:
+> >
+> >sudo kvm .....
+> >
+> >which then executes the qemu-ifup bash script which does:
+> >
+> >	sudo ip ....
+> >	sudo brctl ...
+> >
+> >because at one point KVM did not create the tap device automatically
+> >and so kvm could be run as a user with only the ifup script
+> >requiring privileges to create the tap device and mark it up. When
+> >KVM started creating the tap device, I added the sudo to the KVM
+> >script, an everything worked again.
+> >
+> >Now if I take the 'sudo' out of the ifup script, the hang goes away.
+> >I first removed it from the ip command, and then the brctl command
+> >hung in the same way the ip command was hanging. Hence my thoughts
+> >that it is not directly related to networking utilities.
+> >Unfortunately, it is not trivial to reproduce as I could only
+> >trigger it through this kvm method, not on the command line. e.g:
+> >
+> >$ sudo bash -c "sudo ip link set tap1 up"
+> >
+> >does not hang.
+> >
+> >This sudo package upgrade coincided with kernel upgrades, and so
+> >that lead to my confusion about where it occurred and what triggered
+> >it.  Still, it appears to be a bug that has been around for some
+> >time.....
+> >
+> 
+> Interesting, the scheduler failed to put the dead task out of
+> run queue, so to me this is likely to be a scheduler bug.
+> I have no idea how sudo can change the behaviour here.
+> 
+> Another guess is we need a smp_wmb() before schedule() above.
+> 
+> We need to Cc Oleg and Ingo.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
