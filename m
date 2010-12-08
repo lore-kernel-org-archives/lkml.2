@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab0LHBCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:41 -0500
-Received: from kroah.org ([198.145.64.141]:33495 "EHLO coco.kroah.org"
+	id S932559Ab0LHBCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:49 -0500
+Received: from kroah.org ([198.145.64.141]:33521 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932488Ab0LHBCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:39 -0500
+	id S932547Ab0LHBCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:46 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:40 2010
-Message-Id: <20101208005740.096172793@clark.site>
+Message-Id: <20101208005740.574261609@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:23 -0800
+Date: Tue, 07 Dec 2010 16:59:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kyle McMartin <kyle@redhat.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [186/289] i915: reprogram power monitoring registers on resume
+        Martin Wilck <martin.wilck@ts.fujitsu.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [191/289] PCI: fix offset check for sysfs mmapped files
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kyle McMartin <kyle@redhat.com>
+From: Darrick J. Wong <djwong@us.ibm.com>
 
-commit 48fcfc888b48ad49dd83faa107264bbfb0089cad upstream.
+commit 8c05cd08a7504b855c265263e84af61aabafa329 upstream.
 
-Fixes issue where i915_gfx_val was reporting values several
-orders of magnitude higher than physically possible (without
-leaving scorch marks on my thighs at least.)
+I just loaded 2.6.37-rc2 on my machines, and I noticed that X no longer starts.
+Running an strace of the X server shows that it's doing this:
 
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+open("/sys/bus/pci/devices/0000:07:00.0/resource0", O_RDWR) = 10
+mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 10, 0) = -1 EINVAL (Invalid argument)
+
+This code seems to be asking for a shared read/write mapping of 16MB worth of
+BAR0 starting at file offset 0, and letting the kernel assign a starting
+address.  Unfortunately, this -EINVAL causes X not to start.  Looking into
+dmesg, there's a complaint like so:
+
+process "Xorg" tried to map 0x01000000 bytes at page 0x00000000 on 0000:07:00.0 BAR 0 (start 0x        96000000, size 0x         1000000)
+
+...with the following code in pci_mmap_fits:
+
+	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
+		pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+        if (start >= pci_start && start < pci_start + size &&
+                        start + nr <= pci_start + size)
+
+It looks like the logic here is set up such that when the mmap call comes via
+sysfs, the check in pci_mmap_fits wants vma->vm_pgoff to be between the
+resource's start and end address, and the end of the vma to be no farther than
+the end.  However, the sysfs PCI resource files always start at offset zero,
+which means that this test always fails for programs that mmap the sysfs files.
+Given the comment in the original commit
+3b519e4ea618b6943a82931630872907f9ac2c2b, I _think_ the old procfs files
+require that the file offset be equal to the resource's base address when
+mmapping.
+
+I think what we want here is for pci_start to be 0 when mmap_api ==
+PCI_MMAP_PROCFS.  The following patch makes that change, after which the Matrox
+and Mach64 X drivers work again.
+
+Acked-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_suspend.c |    4 +++-
- drivers/gpu/drm/i915/intel_drv.h    |    1 +
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/pci/pci-sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -862,8 +862,10 @@ int i915_restore_state(struct drm_device
- 	/* Clock gating state */
- 	intel_init_clock_gating(dev);
- 
--	if (HAS_PCH_SPLIT(dev))
-+	if (HAS_PCH_SPLIT(dev)) {
- 		ironlake_enable_drps(dev);
-+		intel_init_emon(dev);
-+	}
- 
- 	/* Cache mode state */
- 	I915_WRITE (CACHE_MODE_0, dev_priv->saveCACHE_MODE_0 | 0xffff0000);
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -250,6 +250,7 @@ extern void intel_crtc_fb_gamma_get(stru
- extern void intel_init_clock_gating(struct drm_device *dev);
- extern void ironlake_enable_drps(struct drm_device *dev);
- extern void ironlake_disable_drps(struct drm_device *dev);
-+extern void intel_init_emon(struct drm_device *dev);
- 
- extern int intel_pin_and_fence_fb_obj(struct drm_device *dev,
- 				      struct drm_gem_object *obj);
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -715,7 +715,7 @@ int pci_mmap_fits(struct pci_dev *pdev,
+ 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 	start = vma->vm_pgoff;
+ 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+-	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
++	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
+ 			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
+ 	if (start >= pci_start && start < pci_start + size &&
+ 			start + nr <= pci_start + size)
 
 
