@@ -1,32 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab0LHE2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:28:41 -0500
+	id S1752796Ab0LHE2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:28:43 -0500
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:53039 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab0LHE2e (ORCPT
+	with ESMTP id S1752536Ab0LHE2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:28:34 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65899438"
+	Tue, 7 Dec 2010 23:28:38 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65899444"
 X-IronPort-AV: E=Sophos;i="4.59,313,1288594800"; 
-   d="scan'208";a="34584818"
+   d="scan'208";a="34584831"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: [PATCH v2 4/6] msm: timer: SMP timer support for msm
-Date: Tue,  7 Dec 2010 20:28:19 -0800
-Message-Id: <1291782501-3909-5-git-send-email-johlstei@codeaurora.org>
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v2 5/6] msm: hotplug: support cpu hotplug on msm
+Date: Tue,  7 Dec 2010 20:28:20 -0800
+Message-Id: <1291782501-3909-6-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
 References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
@@ -36,257 +31,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    6 +-
- arch/arm/mach-msm/io.c                          |    1 +
- arch/arm/mach-msm/timer.c                       |  130 +++++++++++++++++++----
- 3 files changed, 115 insertions(+), 22 deletions(-)
+ arch/arm/mach-msm/Makefile  |    2 +
+ arch/arm/mach-msm/hotplug.c |  103 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 105 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/hotplug.c
 
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 45bab50..873e0b7 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -60,7 +60,11 @@
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 34cd0a8..7a11b4a 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -20,6 +20,8 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
+ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
  
- #define MSM_TMR_BASE		IOMEM(0xF0200000)
- #define MSM_TMR_PHYS		0x02000000
--#define MSM_TMR_SIZE		(SZ_1M)
-+#define MSM_TMR_SIZE		SZ_4K
++obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
 +
-+#define MSM_TMR0_BASE		IOMEM(0xF0201000)
-+#define MSM_TMR0_PHYS		0x02040000
-+#define MSM_TMR0_SIZE		SZ_4K
- 
- #define MSM_GPT_BASE		(MSM_TMR_BASE + 0x4)
- #define MSM_DGT_BASE		(MSM_TMR_BASE + 0x24)
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index d36b610..b826b6b 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -105,6 +105,7 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
- 	MSM_DEVICE(QGIC_DIST),
- 	MSM_DEVICE(QGIC_CPU),
- 	MSM_DEVICE(TMR),
-+	MSM_DEVICE(TMR0),
- 	MSM_DEVICE(ACC),
- 	MSM_DEVICE(GCC),
- };
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 950100f..92ac220 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -47,6 +47,19 @@ enum {
- 
- #define GPT_HZ 32768
- 
-+enum timer_location {
-+	LOCAL_TIMER = 0,
-+	GLOBAL_TIMER = 1,
-+};
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
+new file mode 100644
+index 0000000..59c1dfa
+--- /dev/null
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -0,0 +1,103 @@
++/*
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+#ifdef MSM_TMR0_BASE
-+#define MSM_TMR_GLOBAL		(MSM_TMR0_BASE - MSM_TMR_BASE)
-+#else
-+#define MSM_TMR_GLOBAL		0
-+#endif
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/smp.h>
++#include <linux/completion.h>
++#include <linux/irq.h>
 +
-+#define MSM_GLOBAL_TIMER MSM_CLOCK_DGT
++#include <asm/cacheflush.h>
 +
- #if defined(CONFIG_ARCH_QSD8X50)
- #define DGT_HZ (19200000 / 4) /* 19.2 MHz / 4 by default */
- #define MSM_DGT_SHIFT (0)
-@@ -65,49 +78,67 @@ struct msm_clock {
- 	void __iomem                *regbase;
- 	uint32_t                    freq;
- 	uint32_t                    shift;
-+	void                        *global_counter;
-+	void                        *local_counter;
- };
- 
-+enum {
-+	MSM_CLOCK_GPT,
-+	MSM_CLOCK_DGT,
-+	NR_TIMERS,
-+};
++#include <mach/smp.h>
 +
++static DECLARE_COMPLETION(cpu_killed);
 +
-+static struct msm_clock msm_clocks[];
-+static struct clock_event_device *local_clock_event;
-+
- static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
- {
- 	struct clock_event_device *evt = dev_id;
-+	if (smp_processor_id() != 0)
-+		evt = local_clock_event;
-+	if (evt->event_handler == NULL)
-+		return IRQ_HANDLED;
- 	evt->event_handler(evt);
- 	return IRQ_HANDLED;
- }
- 
--static cycle_t msm_gpt_read(struct clocksource *cs)
-+static cycle_t msm_read_timer_count(struct clocksource *cs)
- {
--	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
-+	struct msm_clock *clk = container_of(cs, struct msm_clock, clocksource);
-+
-+	return readl(clk->global_counter) >> clk->shift;
- }
- 
--static cycle_t msm_dgt_read(struct clocksource *cs)
-+static struct msm_clock *clockevent_to_clock(struct clock_event_device *evt)
- {
--	return readl(MSM_DGT_BASE + TIMER_COUNT_VAL) >> MSM_DGT_SHIFT;
-+#ifdef CONFIG_SMP
-+	int i;
-+	for (i = 0; i < NR_TIMERS; i++)
-+		if (evt == &(msm_clocks[i].clockevent))
-+			return &msm_clocks[i];
-+	return &msm_clocks[MSM_GLOBAL_TIMER];
-+#else
-+	return container_of(evt, struct msm_clock, clockevent);
-+#endif
- }
- 
- static int msm_timer_set_next_event(unsigned long cycles,
- 				    struct clock_event_device *evt)
- {
--	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
--	uint32_t now = readl(clock->regbase + TIMER_COUNT_VAL);
-+	struct msm_clock *clock = clockevent_to_clock(evt);
-+	uint32_t now = readl(clock->local_counter);
- 	uint32_t alarm = now + (cycles << clock->shift);
--	int late;
- 
- 	writel(alarm, clock->regbase + TIMER_MATCH_VAL);
--	now = readl(clock->regbase + TIMER_COUNT_VAL);
--	late = now - alarm;
--	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
--		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
--		       "alarm already expired, now %x, alarm %x, late %d\n",
--		       cycles, clock->clockevent.name, now, alarm, late);
--		return -ETIME;
--	}
- 	return 0;
- }
- 
- static void msm_timer_set_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *evt)
- {
--	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
-+	struct msm_clock *clock = clockevent_to_clock(evt);
-+
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_RESUME:
- 	case CLOCK_EVT_MODE_PERIODIC:
-@@ -135,7 +166,7 @@ static struct msm_clock msm_clocks[] = {
- 		.clocksource = {
- 			.name           = "gp_timer",
- 			.rating         = 200,
--			.read           = msm_gpt_read,
-+			.read           = msm_read_timer_count,
- 			.mask           = CLOCKSOURCE_MASK(32),
- 			.shift          = 17,
- 			.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -148,7 +179,10 @@ static struct msm_clock msm_clocks[] = {
- 			.irq     = INT_GP_TIMER_EXP
- 		},
- 		.regbase = MSM_GPT_BASE,
--		.freq = GPT_HZ
-+		.freq = GPT_HZ,
-+		.local_counter = MSM_GPT_BASE + TIMER_COUNT_VAL,
-+		.global_counter = MSM_GPT_BASE + TIMER_COUNT_VAL +
-+			MSM_TMR_GLOBAL,
- 	},
- 	{
- 		.clockevent = {
-@@ -162,7 +196,7 @@ static struct msm_clock msm_clocks[] = {
- 		.clocksource = {
- 			.name           = "dg_timer",
- 			.rating         = 300,
--			.read           = msm_dgt_read,
-+			.read           = msm_read_timer_count,
- 			.mask           = CLOCKSOURCE_MASK((32 - MSM_DGT_SHIFT)),
- 			.shift          = 24 - MSM_DGT_SHIFT,
- 			.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -176,7 +210,10 @@ static struct msm_clock msm_clocks[] = {
- 		},
- 		.regbase = MSM_DGT_BASE,
- 		.freq = DGT_HZ >> MSM_DGT_SHIFT,
--		.shift = MSM_DGT_SHIFT
-+		.shift = MSM_DGT_SHIFT,
-+		.local_counter = MSM_DGT_BASE + TIMER_COUNT_VAL,
-+		.global_counter = MSM_DGT_BASE + TIMER_COUNT_VAL +
-+			MSM_TMR_GLOBAL,
- 	}
- };
- 
-@@ -185,7 +222,7 @@ static void __init msm_timer_init(void)
- 	int i;
- 	int res;
- 
--#ifdef CONFIG_ARCH_MSM8X60
-+#ifdef CONFIG_ARCH_MSM_SCORPIONMP
- 	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
- #endif
- 
-@@ -220,6 +257,57 @@ static void __init msm_timer_init(void)
- 	}
- }
- 
-+#ifdef CONFIG_SMP
-+void local_timer_setup(struct clock_event_device *evt)
++static inline void cpu_enter_lowpower(void)
 +{
-+	unsigned long flags;
-+	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
++	flush_cache_all();
++}
 +
-+	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
++static inline void cpu_leave_lowpower(void)
++{
++	pen_release = -1;
++	smp_wmb();
++}
 +
-+	if (!local_clock_event) {
-+		writel(0, clock->regbase  + TIMER_ENABLE);
-+		writel(0, clock->regbase + TIMER_CLEAR);
-+		writel(~0, clock->regbase + TIMER_MATCH_VAL);
++static inline void platform_do_lowpower(unsigned int cpu)
++{
++	/* Just enter wfe for now. */
++	for (;;) {
++		asm("wfe");
++		if (pen_release == cpu) {
++			/*
++			 * OK, proper wakeup, we're done
++			 */
++			break;
++		}
++		smp_rmb();
++
++		/*
++		 * getting here, means that we have come out of WFI without
++		 * having been woken up - this shouldn't happen
++		 *
++		 * The trouble is, letting people know about this is not really
++		 * possible, since we are currently running incoherently, and
++		 * therefore cannot safely call printk() or anything else
++		*/
++		pr_debug("CPU%u: spurious wakeup call\n", cpu);
 +	}
-+	evt->irq = clock->irq.irq;
-+	evt->name = "local_timer";
-+	evt->features = CLOCK_EVT_FEAT_ONESHOT;
-+	evt->rating = clock->clockevent.rating;
-+	evt->set_mode = msm_timer_set_mode;
-+	evt->set_next_event = msm_timer_set_next_event;
-+	evt->shift = clock->clockevent.shift;
-+	evt->mult = div_sc(clock->freq, NSEC_PER_SEC, evt->shift);
-+	evt->max_delta_ns =
-+		clockevent_delta2ns(0xf0000000 >> clock->shift, evt);
-+	evt->min_delta_ns = clockevent_delta2ns(4, evt);
-+	evt->cpumask = cpumask_of(smp_processor_id());
-+
-+	local_clock_event = evt;
-+
-+	local_irq_save(flags);
-+	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
-+	local_irq_restore(flags);
-+
-+	clockevents_register_device(evt);
 +}
 +
-+inline int local_timer_ack(void)
++int platform_cpu_kill(unsigned int cpu)
 +{
-+	return 1;
++	return wait_for_completion_timeout(&cpu_killed, 50000);
 +}
 +
-+#ifdef CONFIG_HOTPLUG_CPU
-+void __cpuexit local_timer_stop(void)
++/*
++ * platform-specific code to shutdown a CPU
++ *
++ * Called with IRQs disabled
++ */
++void platform_cpu_die(unsigned int cpu)
 +{
-+	struct msm_clock *clock = clockevent_to_clock(local_clock_event);
-+	writel(0, clock->regbase + TIMER_MATCH_VAL);
-+	writel(0, clock->regbase + TIMER_ENABLE);
-+	get_irq_chip(local_clock_event->irq)->mask(local_clock_event->irq);
-+}
-+#endif
++#ifdef DEBUG
++	unsigned int this_cpu = hard_smp_processor_id();
++
++	if (cpu != this_cpu) {
++		printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
++			   this_cpu, cpu);
++		BUG();
++	}
 +#endif
 +
- struct sys_timer msm_timer = {
- 	.init = msm_timer_init
- };
++	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
++	complete(&cpu_killed);
++
++	/*
++	 * we're ready for shutdown now, so do it
++	 */
++	cpu_enter_lowpower();
++	platform_do_lowpower(cpu);
++
++	/*
++	 * bring this CPU back into the world of cache
++	 * coherency, and then restore interrupts
++	 */
++	cpu_leave_lowpower();
++}
++
++int platform_cpu_disable(unsigned int cpu)
++{
++	/*
++	 * we don't allow CPU 0 to be shutdown (it is still too special
++	 * e.g. clock tick interrupts)
++	 */
++	return cpu == 0 ? -EPERM : 0;
++}
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
