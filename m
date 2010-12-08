@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0LHAeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:34:37 -0500
-Received: from kroah.org ([198.145.64.141]:54806 "EHLO coco.kroah.org"
+	id S1755651Ab0LHAfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:35:46 -0500
+Received: from kroah.org ([198.145.64.141]:54931 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622Ab0LHAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:35 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:41 2010
-Message-Id: <20101208000641.841546528@clark.site>
+	id S1755576Ab0LHAe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:58 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:44 2010
+Message-Id: <20101208000643.917103359@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:22 -0800
+Date: Tue, 07 Dec 2010 16:04:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [23/44] USB: misc: usbled: fix up some sysfs attribute permissions
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Phil Blundell <philb@gnu.org>, "David S. Miller" <davem@davemloft.net>
+Subject: [43/44] econet: disallow NULL remote addr for sendmsg(), fixes CVE-2010-3849
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,29 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Phil Blundell <philb@gnu.org>
 
-commit 48f115470e68d443436b76b22dad63ffbffd6b97 upstream.
+commit fa0e846494792e722d817b9d3d625a4ef4896c96 upstream.
 
-They should not be writable by any user.
+Later parts of econet_sendmsg() rely on saddr != NULL, so return early
+with EINVAL if NULL was passed otherwise an oops may occur.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Phil Blundell <philb@gnu.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/misc/usbled.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/econet/af_econet.c |   26 ++++++++------------------
+ 1 file changed, 8 insertions(+), 18 deletions(-)
 
---- a/drivers/usb/misc/usbled.c
-+++ b/drivers/usb/misc/usbled.c
-@@ -94,7 +94,7 @@ static ssize_t set_##value(struct device
- 	change_color(led);						\
- 	return count;							\
- }									\
--static DEVICE_ATTR(value, S_IWUGO | S_IRUGO, show_##value, set_##value);
-+static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, show_##value, set_##value);
- show_set(blue);
- show_set(red);
- show_set(green);
+--- a/net/econet/af_econet.c
++++ b/net/econet/af_econet.c
+@@ -296,23 +296,14 @@ static int econet_sendmsg(struct kiocb *
+ 
+ 	mutex_lock(&econet_mutex);
+ 
+-	if (saddr == NULL) {
+-		struct econet_sock *eo = ec_sk(sk);
+-
+-		addr.station = eo->station;
+-		addr.net     = eo->net;
+-		port	     = eo->port;
+-		cb	     = eo->cb;
+-	} else {
+-		if (msg->msg_namelen < sizeof(struct sockaddr_ec)) {
+-			mutex_unlock(&econet_mutex);
+-			return -EINVAL;
+-		}
+-		addr.station = saddr->addr.station;
+-		addr.net = saddr->addr.net;
+-		port = saddr->port;
+-		cb = saddr->cb;
+-	}
++        if (saddr == NULL || msg->msg_namelen < sizeof(struct sockaddr_ec)) {
++                mutex_unlock(&econet_mutex);
++                return -EINVAL;
++        }
++        addr.station = saddr->addr.station;
++        addr.net = saddr->addr.net;
++        port = saddr->port;
++        cb = saddr->cb;
+ 
+ 	/* Look for a device with the right network number. */
+ 	dev = net2dev_map[addr.net];
+@@ -350,7 +341,6 @@ static int econet_sendmsg(struct kiocb *
+ 
+ 		eb = (struct ec_cb *)&skb->cb;
+ 
+-		/* BUG: saddr may be NULL */
+ 		eb->cookie = saddr->cookie;
+ 		eb->sec = *saddr;
+ 		eb->sent = ec_tx_done;
 
 
