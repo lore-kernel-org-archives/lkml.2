@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab0LHAsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:48:31 -0500
-Received: from kroah.org ([198.145.64.141]:58761 "EHLO coco.kroah.org"
+	id S1756623Ab0LHAvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:51:44 -0500
+Received: from kroah.org ([198.145.64.141]:58682 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756343Ab0LHAsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:25 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:36 2010
-Message-Id: <20101208004436.717522477@clark.site>
+	id S1756467Ab0LHAsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:13 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:35 2010
+Message-Id: <20101208004435.529528094@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:45:10 -0800
+Date: Tue, 07 Dec 2010 16:44:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Jack Steiner <steiner@sgi.com>
-Subject: [124/127] UV - XPC: pass nasid instead of nid to gru_create_message_queue
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [112/127] crypto: padlock - Fix AES-CBC handling on odd-block-sized input
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 57e6d258b1e41cd7ceb26fa43ce116939d8440b1 upstream.
+commit c054a076a1bd4731820a9c4d638b13d5c9bf5935 upstream.
 
-Currently, the UV xpc code is passing nid to the gru_create_message_queue
-instead of nasid as it expects.
+On certain VIA chipsets AES-CBC requires the input/output to be
+a multiple of 64 bytes.  We had a workaround for this but it was
+buggy as it sent the whole input for processing when it is meant
+to only send the initial number of blocks which makes the rest
+a multiple of 64 bytes.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+As expected this causes memory corruption whenever the workaround
+kicks in.
+
+Reported-by: Phil Sutter <phil@nwl.cc>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/sgi-xp/xpc_uv.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/crypto/padlock-aes.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -203,6 +203,7 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
- 	enum xp_retval xp_ret;
- 	int ret;
- 	int nid;
-+	int nasid;
- 	int pg_order;
- 	struct page *page;
- 	struct xpc_gru_mq_uv *mq;
-@@ -258,9 +259,11 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
- 		goto out_5;
- 	}
+--- a/drivers/crypto/padlock-aes.c
++++ b/drivers/crypto/padlock-aes.c
+@@ -285,7 +285,7 @@ static inline u8 *padlock_xcrypt_cbc(con
+ 	if (initial)
+ 		asm volatile (".byte 0xf3,0x0f,0xa7,0xd0"	/* rep xcryptcbc */
+ 			      : "+S" (input), "+D" (output), "+a" (iv)
+-			      : "d" (control_word), "b" (key), "c" (count));
++			      : "d" (control_word), "b" (key), "c" (initial));
  
-+	nasid = UV_PNODE_TO_NASID(uv_cpu_to_pnode(cpu));
-+
- 	mmr_value = (struct uv_IO_APIC_route_entry *)&mq->mmr_value;
- 	ret = gru_create_message_queue(mq->gru_mq_desc, mq->address, mq_size,
--				       nid, mmr_value->vector, mmr_value->dest);
-+				     nasid, mmr_value->vector, mmr_value->dest);
- 	if (ret != 0) {
- 		dev_err(xpc_part, "gru_create_message_queue() returned "
- 			"error=%d\n", ret);
+ 	asm volatile (".byte 0xf3,0x0f,0xa7,0xd0"	/* rep xcryptcbc */
+ 		      : "+S" (input), "+D" (output), "+a" (iv)
 
 
