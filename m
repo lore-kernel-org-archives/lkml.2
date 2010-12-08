@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab0LHBwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:52:43 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:38651 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932068Ab0LHBwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:52:40 -0500
-X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Dec 2010 20:52:40 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=i8T2WKf27T8YDKJivVdBGDz0uSjunCwl5M8LiQR0dxn/lTr2S/q6Yb0rlOj5PE5pm/
-         rNfcwyGVzPxo4bie0WdBzHrTSG2L6Zuj9a0ROwxAhPEt18h00lt9s2aUJOngINdlxGt/
-         klya/alBlPn2CA0HIzoQorEAMcntOCyS0crl8=
-Message-ID: <4CFEE2F9.90600@gmail.com>
-Date: Tue, 07 Dec 2010 19:44:25 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: =?UTF-8?B?UGF3ZcWCIFNpa29yYQ==?= <pluto@agmk.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.36.1] IGB driver handles all ethX interrupts on single cpu
- core.
-References: <201012071906.47161.pluto@agmk.net>
-In-Reply-To: <201012071906.47161.pluto@agmk.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1756982Ab0LHA7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:59:46 -0500
+Received: from kroah.org ([198.145.64.141]:48576 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756950Ab0LHA7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:43 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:26 2010
+Message-Id: <20101208005726.251090875@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:57:06 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jouni Malinen <j@w1.fi>, "John W. Linville" <linville@tuxdriver.com>
+Subject: [049/289] mac80211: Fix signal strength average initialization for CQM events
+In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2010 12:06 PM, Paweł Sikora wrote:
-> hi,
->
-> i'm currently testing a new server with 2x opteron-6128 with dual gigabit port
-> and observing that the igb driver uses only single core for all ethX interrupts.
-> is it a correct behaviour for this driver?
->
-> BR,
-> Pawel.
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-The CPU affinity for the IRQ isn't really under the driver's control. It 
-looks like all your interrupts are being handled on CPU0. You likely 
-need to run the irqbalance daemon.
+------------------
+
+From: Jouni Malinen <j@w1.fi>
+
+commit 3ba06c6fbd651ed3377e584026d1c112b492cc8b upstream.
+
+The ave_beacon_signal value uses 1/16 dB unit and as such, must be
+initialized with the signal level of the first Beacon frame multiplied
+by 16. This fixes an issue where the initial CQM events are reported
+incorrectly with a burst of events while the running average
+approaches the correct value after the incorrect initialization. This
+could cause user space -based roaming decision process to get quite
+confused at the moment when we would like to go through authentication
+and DHCP.
+
+Signed-off-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/mac80211/mlme.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1540,7 +1540,7 @@ static void ieee80211_rx_mgmt_beacon(str
+ 	ifmgd->last_beacon_signal = rx_status->signal;
+ 	if (ifmgd->flags & IEEE80211_STA_RESET_SIGNAL_AVE) {
+ 		ifmgd->flags &= ~IEEE80211_STA_RESET_SIGNAL_AVE;
+-		ifmgd->ave_beacon_signal = rx_status->signal;
++		ifmgd->ave_beacon_signal = rx_status->signal * 16;
+ 		ifmgd->last_cqm_event_signal = 0;
+ 	} else {
+ 		ifmgd->ave_beacon_signal =
+
+
