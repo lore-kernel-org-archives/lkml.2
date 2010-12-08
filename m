@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab0LHA7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:59:35 -0500
-Received: from kroah.org ([198.145.64.141]:48527 "EHLO coco.kroah.org"
+	id S1756963Ab0LHBAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:00:15 -0500
+Received: from kroah.org ([198.145.64.141]:48700 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756896Ab0LHA7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:33 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:25 2010
-Message-Id: <20101208005725.249891803@clark.site>
+	id S932090Ab0LHBAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:06 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:28 2010
+Message-Id: <20101208005728.628795907@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:56 -0800
+Date: Tue, 07 Dec 2010 16:57:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Haitao Zhang <minipanda@linuxrobot.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [039/289] ath9k_htc: Add support for device ID 3346
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Neuling <mikey@neuling.org>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [073/289] powerpc: Fix call to subpage_protection()
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haitao Zhang <minipanda@linuxrobot.org>
+From: Michael Neuling <mikey@neuling.org>
 
-commit ac618d70aeb681df7b77c1107fdf26f3249f855f upstream.
+commit 1c2c25c78740b2796c7c06640784cb6732fa4907 upstream.
 
-This patch adds support for USB dongle with device ID 3346 from IMC Networks.
+In:
+  powerpc/mm: Fix pgtable cache cleanup with CONFIG_PPC_SUBPAGE_PROT
+  commit d28513bc7f675d28b479db666d572e078ecf182d
+  Author: David Gibson <david@gibson.dropbear.id.au>
 
-Signed-off-by: Haitao Zhang <minipanda@linuxrobot.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+subpage_protection() was changed to to take an mm rather a pgdir but it
+didn't change calling site in hashpage_preload().  The change wasn't
+noticed at compile time since hashpage_preload() used a void* as the
+parameter to subpage_protection().
+
+This is obviously wrong and can trigger the following crash when
+CONFIG_SLAB, CONFIG_DEBUG_SLAB, CONFIG_PPC_64K_PAGES
+CONFIG_PPC_SUBPAGE_PROT are enabled.
+
+Freeing unused kernel memory: 704k freed
+Unable to handle kernel paging request for data at address 0x6b6b6b6b6b6c49b7
+Faulting instruction address: 0xc0000000000410f4
+cpu 0x2: Vector: 300 (Data Access) at [c00000004233f590]
+    pc: c0000000000410f4: .hash_preload+0x258/0x338
+    lr: c000000000041054: .hash_preload+0x1b8/0x338
+    sp: c00000004233f810
+   msr: 8000000000009032
+   dar: 6b6b6b6b6b6c49b7
+ dsisr: 40000000
+  current = 0xc00000007e2c0070
+  paca    = 0xc000000007fe0500
+    pid   = 1, comm = init
+enter ? for help
+[c00000004233f810] c000000000041020 .hash_preload+0x184/0x338 (unreliable)
+[c00000004233f8f0] c00000000003ed98 .update_mmu_cache+0xb0/0xd0
+[c00000004233f990] c000000000157754 .__do_fault+0x48c/0x5dc
+[c00000004233faa0] c000000000158fd0 .handle_mm_fault+0x508/0xa8c
+[c00000004233fb90] c0000000006acdd4 .do_page_fault+0x428/0x6ac
+[c00000004233fe30] c000000000005260 handle_page_fault+0x20/0x74
+
+Reported-by: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+cc: David Gibson <david@gibson.dropbear.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/mm/hash_utils_64.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -35,6 +35,7 @@ static struct usb_device_id ath9k_hif_us
- 	{ USB_DEVICE(0x07D1, 0x3A10) }, /* Dlink Wireless 150 */
- 	{ USB_DEVICE(0x13D3, 0x3327) }, /* Azurewave */
- 	{ USB_DEVICE(0x13D3, 0x3328) }, /* Azurewave */
-+	{ USB_DEVICE(0x13D3, 0x3346) }, /* IMC Networks */
- 	{ USB_DEVICE(0x04CA, 0x4605) }, /* Liteon */
- 	{ USB_DEVICE(0x083A, 0xA704) }, /* SMC Networks */
- 	{ },
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -1122,7 +1122,7 @@ void hash_preload(struct mm_struct *mm,
+ 	else
+ #endif /* CONFIG_PPC_HAS_HASH_64K */
+ 		rc = __hash_page_4K(ea, access, vsid, ptep, trap, local, ssize,
+-				    subpage_protection(pgdir, ea));
++				    subpage_protection(mm, ea));
+ 
+ 	/* Dump some info in case of hash insertion failure, they should
+ 	 * never happen so it is really useful to know if/when they do
 
 
