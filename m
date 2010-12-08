@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab0LHAlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:41:42 -0500
-Received: from kroah.org ([198.145.64.141]:54739 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754912Ab0LHAeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754907Ab0LHAeY (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 7 Dec 2010 19:34:24 -0500
+Received: from kroah.org ([198.145.64.141]:54706 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754815Ab0LHAeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:19 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.613595919@clark.site>
+Message-Id: <20101208000640.115606851@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:10 -0800
+Date: Tue, 07 Dec 2010 16:04:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [11/44] sys_semctl: fix kernel stack leakage
+        Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Lameter <cl@linux.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: [06/44] numa: fix slab_node(MPOL_BIND)
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 982f7c2b2e6a28f8f266e075d92e19c0dd4c6e56 upstream.
+commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
 
-The semctl syscall has several code paths that lead to the leakage of
-uninitialized kernel stack memory (namely the IPC_INFO, SEM_INFO,
-IPC_STAT, and SEM_STAT commands) during the use of the older, obsolete
-version of the semid_ds struct.
+When a node contains only HighMem memory, slab_node(MPOL_BIND)
+dereferences a NULL pointer.
 
-The copy_semid_to_user() function declares a semid_ds struct on the stack
-and copies it back to the user without initializing or zeroing the
-"sem_base", "sem_pending", "sem_pending_last", and "undo" pointers,
-allowing the leakage of 16 bytes of kernel stack memory.
+[ This code seems to go back all the way to commit 19770b32609b: "mm:
+  filter based on a nodemask as well as a gfp_mask".  Which was back in
+  April 2008, and it got merged into 2.6.26.  - Linus ]
 
-The code is still reachable on 32-bit systems - when calling semctl()
-newer glibc's automatically OR the IPC command with the IPC_64 flag, but
-invoking the syscall directly allows users to use the older versions of
-the struct.
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/sem.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/mempolicy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -560,6 +560,8 @@ static unsigned long copy_semid_to_user(
- 	    {
- 		struct semid_ds out;
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1404,7 +1404,7 @@ unsigned slab_node(struct mempolicy *pol
+ 		(void)first_zones_zonelist(zonelist, highest_zoneidx,
+ 							&policy->v.nodes,
+ 							&zone);
+-		return zone->node;
++		return zone ? zone->node : numa_node_id();
+ 	}
  
-+		memset(&out, 0, sizeof(out));
-+
- 		ipc64_perm_to_ipc_perm(&in->sem_perm, &out.sem_perm);
- 
- 		out.sem_otime	= in->sem_otime;
+ 	default:
 
 
