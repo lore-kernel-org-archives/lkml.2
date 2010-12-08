@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab0LHMx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 07:53:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49626 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab0LHMxz (ORCPT
+	id S1754889Ab0LHM42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 07:56:28 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48284 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544Ab0LHM41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 07:53:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-Subject: Re: [PATCH] Unicore architecture patch review, part 2
-Date: Wed, 8 Dec 2010 13:53:44 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201011301754.17829.arnd@arndb.de> <011401cb96c0$b7dca8d0$2795fa70$@mprc.pku.edu.cn>
-In-Reply-To: <011401cb96c0$b7dca8d0$2795fa70$@mprc.pku.edu.cn>
+	Wed, 8 Dec 2010 07:56:27 -0500
+Date: Wed, 8 Dec 2010 12:55:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, Venkatesh Pallipadi <venki@google.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+Message-ID: <20101208125548.GA9777@n2100.arm.linux.org.uk>
+References: <19697.8378.717761.236202@pilspetsen.it.uu.se> <19707.34405.791777.298955@pilspetsen.it.uu.se> <20101205131702.GE9138@n2100.arm.linux.org.uk> <20101205141921.GF9138@n2100.arm.linux.org.uk> <19707.47304.977978.297596@pilspetsen.it.uu.se> <20101205162151.GH9138@n2100.arm.linux.org.uk> <1291812015.28378.24.camel@laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012081353.44927.arnd@arndb.de>
-X-Provags-ID: V02:K0:ELuF8/R2BpvbMfePtZsg8qku5Z2RVvKa/wah2LbDwzv
- /O6TZIPhNRWlHutDFi8hIB0nlsRi7s0qQ2hV7hbk5zxeipKYiz
- KJwOEgExNMZJegTiibdKWqM+DLLef2MYBAyjhmCXK7lSbUGaBu
- NAazIXGbAZN6gxVl1P4lT7mnpmANS0GRhHTuVnqnzQhhfMjYE9
- FRKkhkQnFA1yfWEZ8JLwA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291812015.28378.24.camel@laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 December 2010, Guan Xuetao wrote:
-
-> > > @@ -0,0 +1,390 @@
-> > > +/* 0 */		CALL(sys_restart_syscall)
-> > > +		CALL(sys_exit)
-> > > +		CALL(sys_fork_wrapper)
-> > > +		CALL(sys_read)
-> > > +		CALL(sys_write)
-> > > +/* 5 */		CALL(sys_open)
-> > > +		CALL(sys_close)
-> > 
-> > When you start using the generic unistd.h file, you can also replace this table
-> > with something like arch/tile/kernel/sys.c.
-> Well. I will use the generic unistd.h in UniCore-64 version.
-
-I thought you had agreed to break ABI compatibility with your existing
-code base and use the generic ABI everywhere.
-
-Did I misunderstand you or did you make up your mind since then?
-
-> > Hmm, when the architecture was being defined, why didn't you ask for a
-> > cycle counter? It really improves the delay code a lot.
-> No software readable cycle counter in UniCore32.
+On Wed, Dec 08, 2010 at 01:40:15PM +0100, Peter Zijlstra wrote:
+> On Sun, 2010-12-05 at 16:21 +0000, Russell King - ARM Linux wrote:
 > 
-> > If you have a good time base by now, you should use it. Is the OST_OSCR
-> > something you could use here?
-> OST_OSCR is much coarse in here, which is 14.318M Hz.
+> > I'm not sure that's the correct fix - it looks like sched_clock_cpu()
+> > should already be preventing scheduler clock time going backwards.
+> > 
+> > Hmm. IOP32x seems to have a 32-bit timer clocked at 200MHz.  That means
+> > it wraps once every 21s.  However, we have that converted to ns by an
+> > unknown multiplier and shift.  It seems that those are chosen to
+> > guarantee that we will cover only 4s without wrapping in the clocksource
+> > conversion.  Maybe that's not sufficient?
+> > 
+> > Could you try looking into sched_clock_cpu(), sched_clock_local() and
+> > sched_clock() to see whether anything odd stands out?
+> 
+> # git grep HAVE_UNSTABLE_SCHED_CLOCK arch/arm | wc -l
+> 0
 
-Ok, I see.
+Hmm, you're right.  In which case it's purely down to sched_clock()
+only being able to cover 4s - which seems to be far too small a gap.
 
-	Arnd
+I'm not sure that the unstable sched clock stuff makes much sense to
+be enabled - we don't have an unstable clock, we just don't have the
+required number of bits for the scheduler to work correctly.
+
+Nevertheless, this provides a good way to find this kind of wrap bug.
+Even with cnt_32_to_63, we still don't get a 64-bit sched_clock(), so
+this bug will still be there.  Even with a 64-bit clock, the bug will
+still be there.  It's basically crap code.
+
+Maybe it's better that on ARM, we just don't implement sched_clock()
+at all?
