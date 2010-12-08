@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab0LHAib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:38:31 -0500
-Received: from kroah.org ([198.145.64.141]:54825 "EHLO coco.kroah.org"
+	id S1755619Ab0LHAin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:38:43 -0500
+Received: from kroah.org ([198.145.64.141]:54820 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755375Ab0LHAej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755369Ab0LHAej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Dec 2010 19:34:39 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:42 2010
-Message-Id: <20101208000642.249091958@clark.site>
+Message-Id: <20101208000642.151033921@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:26 -0800
+Date: Tue, 07 Dec 2010 16:04:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [27/44] DECnet: dont leak uninitialized stack byte
+        Nelson Elhage <nelhage@ksplice.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [26/44] do_exit(): make sure that we run with get_fs() == USER_DS
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Nelson Elhage <nelhage@ksplice.com>
 
-commit 3c6f27bf33052ea6ba9d82369fb460726fb779c0 upstream.
+commit 33dd94ae1ccbfb7bf0fb6c692bc3d1c4269e6177 upstream.
 
-A single uninitialized padding byte is leaked to userspace.
+If a user manages to trigger an oops with fs set to KERNEL_DS, fs is not
+otherwise reset before do_exit().  do_exit may later (via mm_release in
+fork.c) do a put_user to a user-controlled address, potentially allowing
+a user to leverage an oops into a controlled write into kernel memory.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This is only triggerable in the presence of another bug, but this
+potentially turns a lot of DoS bugs into privilege escalations, so it's
+worth fixing.  I have proof-of-concept code which uses this bug along
+with CVE-2010-3849 to write a zero to an arbitrary kernel address, so
+I've tested that this is not theoretical.
+
+A more logical place to put this fix might be when we know an oops has
+occurred, before we call do_exit(), but that would involve changing
+every architecture, in multiple places.
+
+Let's just stick it in do_exit instead.
+
+[akpm@linux-foundation.org: update code comment]
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/decnet/af_decnet.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/exit.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/net/decnet/af_decnet.c
-+++ b/net/decnet/af_decnet.c
-@@ -1558,6 +1558,8 @@ static int __dn_getsockopt(struct socket
- 			if (r_len > sizeof(struct linkinfo_dn))
- 				r_len = sizeof(struct linkinfo_dn);
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1004,6 +1004,15 @@ NORET_TYPE void do_exit(long code)
+ 	if (unlikely(!tsk->pid))
+ 		panic("Attempted to kill the idle task!");
  
-+			memset(&link, 0, sizeof(link));
++	/*
++	 * If do_exit is called because this processes oopsed, it's possible
++	 * that get_fs() was left as KERNEL_DS, so reset it to USER_DS before
++	 * continuing. Amongst other possible reasons, this is to prevent
++	 * mm_release()->clear_child_tid() from writing to a user-controlled
++	 * kernel address.
++	 */
++	set_fs(USER_DS);
 +
- 			switch(sock->state) {
- 				case SS_CONNECTING:
- 					link.idn_linkstate = LL_CONNECTING;
+ 	tracehook_report_exit(&code);
+ 
+ 	/*
 
 
