@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab0LHB70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:59:26 -0500
-Received: from kroah.org ([198.145.64.141]:48447 "EHLO coco.kroah.org"
+	id S932133Ab0LHCAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:00:25 -0500
+Received: from kroah.org ([198.145.64.141]:48418 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab0LHA7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:22 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:24 2010
-Message-Id: <20101208005724.094976112@clark.site>
+	id S1756823Ab0LHA7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:18 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:23 2010
+Message-Id: <20101208005723.683030664@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:44 -0800
+Date: Tue, 07 Dec 2010 16:56:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanoharan@atheros.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [027/289] ath9k_htc: Set proper firmware offset for Netgear WNDA3200
+Subject: [023/289] ath9k: fix spurious MIC failure reports
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanoharan@atheros.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d654567dec75782d6fd9add4b7b9c50e0926d369 upstream.
+commit 56363ddeeed3afc5277ca227209773bc1042cc7b upstream.
 
-Netgear WNDA3200 device uses ar7010 firmware but it is failed to set
-correct firmware offset on firmware download which causes device initialization
-failure.
+According to the hardware documentation, the MIC failure bit is only
+valid if the frame was decrypted using a valid TKIP key and is not a
+fragment.
+In some setups I've seen hardware-reported MIC failures on an AP that
+was configured for CCMP only, so it's clear that additional checks are
+necessary.
 
-Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath.h          |    1 +
+ drivers/net/wireless/ath/ath9k/common.c |   11 +++++++++++
+ drivers/net/wireless/ath/ath9k/mac.c    |    3 ++-
+ drivers/net/wireless/ath/ath9k/recv.c   |   19 +++++++++++--------
+ 4 files changed, 25 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -799,10 +799,16 @@ static int ath9k_hif_usb_download_fw(str
+--- a/drivers/net/wireless/ath/ath.h
++++ b/drivers/net/wireless/ath/ath.h
+@@ -119,6 +119,7 @@ struct ath_common {
+ 
+ 	u32 keymax;
+ 	DECLARE_BITMAP(keymap, ATH_KEYMAX);
++	DECLARE_BITMAP(tkip_keymap, ATH_KEYMAX);
+ 	u8 splitmic;
+ 
+ 	struct ath_regulatory regulatory;
+--- a/drivers/net/wireless/ath/ath9k/common.c
++++ b/drivers/net/wireless/ath/ath9k/common.c
+@@ -366,9 +366,13 @@ int ath9k_cmn_key_config(struct ath_comm
+ 	set_bit(idx, common->keymap);
+ 	if (key->alg == ALG_TKIP) {
+ 		set_bit(idx + 64, common->keymap);
++		set_bit(idx, common->tkip_keymap);
++		set_bit(idx + 64, common->tkip_keymap);
+ 		if (common->splitmic) {
+ 			set_bit(idx + 32, common->keymap);
+ 			set_bit(idx + 64 + 32, common->keymap);
++			set_bit(idx + 32, common->tkip_keymap);
++			set_bit(idx + 64 + 32, common->tkip_keymap);
+ 		}
  	}
- 	kfree(buf);
  
--	if ((hif_dev->device_id == 0x7010) || (hif_dev->device_id == 0x7015))
-+	switch (hif_dev->device_id) {
-+	case 0x7010:
-+	case 0x7015:
-+	case 0x9018:
- 		firm_offset = AR7010_FIRMWARE_TEXT;
--	else
-+		break;
-+	default:
- 		firm_offset = AR9271_FIRMWARE_TEXT;
-+		break;
-+	}
+@@ -393,10 +397,17 @@ void ath9k_cmn_key_delete(struct ath_com
+ 		return;
  
- 	/*
- 	 * Issue FW download complete command to firmware.
+ 	clear_bit(key->hw_key_idx + 64, common->keymap);
++
++	clear_bit(key->hw_key_idx, common->tkip_keymap);
++	clear_bit(key->hw_key_idx + 64, common->tkip_keymap);
++
+ 	if (common->splitmic) {
+ 		ath9k_hw_keyreset(ah, key->hw_key_idx + 32);
+ 		clear_bit(key->hw_key_idx + 32, common->keymap);
+ 		clear_bit(key->hw_key_idx + 64 + 32, common->keymap);
++
++		clear_bit(key->hw_key_idx + 32, common->tkip_keymap);
++		clear_bit(key->hw_key_idx + 64 + 32, common->tkip_keymap);
+ 	}
+ }
+ EXPORT_SYMBOL(ath9k_cmn_key_delete);
+--- a/drivers/net/wireless/ath/ath9k/mac.c
++++ b/drivers/net/wireless/ath/ath9k/mac.c
+@@ -711,7 +711,8 @@ int ath9k_hw_rxprocdesc(struct ath_hw *a
+ 			rs->rs_phyerr = phyerr;
+ 		} else if (ads.ds_rxstatus8 & AR_DecryptCRCErr)
+ 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
+-		else if (ads.ds_rxstatus8 & AR_MichaelErr)
++		else if ((ads.ds_rxstatus8 & AR_MichaelErr) &&
++		         rs->rs_keyix != ATH9K_RXKEYIX_INVALID)
+ 			rs->rs_status |= ATH9K_RXERR_MIC;
+ 		else if (ads.ds_rxstatus8 & AR_KeyMiss)
+ 			rs->rs_status |= ATH9K_RXERR_DECRYPT;
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -870,15 +870,18 @@ static bool ath9k_rx_accept(struct ath_c
+ 		if (rx_stats->rs_status & ATH9K_RXERR_DECRYPT) {
+ 			*decrypt_error = true;
+ 		} else if (rx_stats->rs_status & ATH9K_RXERR_MIC) {
+-			if (ieee80211_is_ctl(fc))
+-				/*
+-				 * Sometimes, we get invalid
+-				 * MIC failures on valid control frames.
+-				 * Remove these mic errors.
+-				 */
+-				rx_stats->rs_status &= ~ATH9K_RXERR_MIC;
+-			else
++			/*
++			 * The MIC error bit is only valid if the frame
++			 * is not a control frame or fragment, and it was
++			 * decrypted using a valid TKIP key.
++			 */
++			if (!ieee80211_is_ctl(fc) &&
++			    !ieee80211_has_morefrags(fc) &&
++			    !(le16_to_cpu(hdr->seq_ctrl) & IEEE80211_SCTL_FRAG) &&
++			    test_bit(rx_stats->rs_keyix, common->tkip_keymap))
+ 				rxs->flag |= RX_FLAG_MMIC_ERROR;
++			else
++				rx_stats->rs_status &= ~ATH9K_RXERR_MIC;
+ 		}
+ 		/*
+ 		 * Reject error frames with the exception of
 
 
