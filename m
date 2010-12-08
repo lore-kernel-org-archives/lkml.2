@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab0LHGYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 01:24:55 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:36955 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab0LHGYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 01:24:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=g3yf4Q+Hjp4Vqi1Q1zmAcLExffz04fVUOsSKwnr1epi1Rh3fun5iTqqHctu/cD172z
-         JC/E5vCVywlN3zL3SPuaMDQt4941IVVynu95Z0GwClJgjDG4zk4P5cdIZtjw0j07Yq3M
-         O9jRTDYXPR18+SvL2FAJG9hf9bA1vDKZZL8n4=
-Message-ID: <4CFF24AE.1030104@suse.cz>
-Date: Wed, 08 Dec 2010 07:24:46 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: Re: [043/127] TTY: ldisc, fix open flag handling
-References: <20101208004428.612566004@clark.site>
-In-Reply-To: <20101208004428.612566004@clark.site>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+	id S1753410Ab0LHGmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 01:42:03 -0500
+Received: from smtpeu1.atmel.com ([195.65.72.27]:54275 "EHLO bagnes.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab0LHGmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 01:42:00 -0500
+Subject: Re: [PATCH 2/4] dmaengine/dw_dmac: allow src/dst masters to be
+ configured at runtime
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
+        Jamie Iles <jamie.iles@picochip.com>
+In-Reply-To: <AANLkTi=Acre04XiLAAKN4fXuHsgY-gCDA=Yus92zmf_5@mail.gmail.com>
+References: <1290510371-23077-1-git-send-email-jamie@jamieiles.com>
+	 <1290510371-23077-3-git-send-email-jamie@jamieiles.com>
+	 <AANLkTi=Acre04XiLAAKN4fXuHsgY-gCDA=Yus92zmf_5@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Wed, 08 Dec 2010 07:41:50 +0100
+Message-ID: <1291790510.2794.1.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Dec 2010 06:41:51.0900 (UTC) FILETIME=[FF1AB5C0:01CB96A2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 01:43 AM, Greg KH wrote:
-> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 2010-12-07 at 17:03 -0800, Dan Williams wrote: 
+> [ adding Hans ]
 > 
-> ------------------
+> On Tue, Nov 23, 2010 at 3:06 AM, Jamie Iles <jamie@jamieiles.com> wrote:
+> > Some platforms have flexible mastering capabilities and this needs
+> > to be selected at runtime. If the platform has specified private
+> > data in the form of the dw_dma_slave then fetch the source and
+> > destination masters from here. If this isn't present, default to
+> > the previous of 0 and 1.
+> >
+> > Cc: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+> > Cc: Dan Williams <dan.j.williams@intel.com>
+> > Signed-off-by: Jamie Iles <jamie.iles@picochip.com>
+> > ---
 > 
-> From: Jiri Slaby <jslaby@suse.cz>
+> Hi James,
 > 
-> commit 7f90cfc505d613f4faf096e0d84ffe99208057d9 upstream.
+> Please integrate checkpatch into your workflow and fixup the trivial
+> whitespace damage (tabs-to-spaces) reports.
 > 
-> When a concrete ldisc open fails in tty_ldisc_open, we forget to clear
-> TTY_LDISC_OPEN. This causes a false warning on the next ldisc open:
-> WARNING: at drivers/char/tty_ldisc.c:445 tty_ldisc_open+0x26/0x38()
-> Hardware name: System Product Name
-> Modules linked in: ...
-> Pid: 5251, comm: a.out Tainted: G        W  2.6.32-5-686 #1
-> Call Trace:
->  [<c1030321>] ? warn_slowpath_common+0x5e/0x8a
->  [<c1030357>] ? warn_slowpath_null+0xa/0xc
->  [<c119311c>] ? tty_ldisc_open+0x26/0x38
->  [<c11936c5>] ? tty_set_ldisc+0x218/0x304
-> ...
+> Also noticed this on patch 1/4 of this series.
 > 
-> So clear the bit when failing...
-> 
-> Introduced in c65c9bc3efa (tty: rewrite the ldisc locking) back in
-> 2.6.31-rc1.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Reported-by: Sergey Lapin <slapin@ossfans.org>
-> Tested-by: Sergey Lapin <slapin@ossfans.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  drivers/char/tty_ldisc.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
-> --- a/drivers/char/tty_ldisc.c
-> +++ b/drivers/char/tty_ldisc.c
-> @@ -444,9 +444,14 @@ static void tty_set_termios_ldisc(struct
->  
->  static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
->  {
-> +	int ret;
-> +
->  	WARN_ON(test_and_set_bit(TTY_LDISC_OPEN, &tty->flags));
-> -	if (ld->ops->open)
-> -		return ld->ops->open(tty);
-> +	if (ld->ops->open) {
-> +		ret = ld->ops->open(tty);
-> +		if (ret)
-> +			clear_bit(TTY_LDISC_OPEN, &tty->flags);
-> +	}
->  	return 0;
+> Hans, can you provide an acked-by for this series when James reposts it?
 
-Whoops, this should write return ret; (with int ret = 0;)
+The arch stuff, or the DMA stuff? I do not track DMA changes, so I don't
+think my acked-by would be very valuable.
 
-Do you want me to send the patch against rebased on .32?
+I didn't see any updated arch patches, was I supposed to see that?
 
-thanks,
 -- 
-js
-suse labs
+Hans-Christian Egtvedt
+
