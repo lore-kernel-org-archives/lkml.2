@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0LHArV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:21 -0500
-Received: from kroah.org ([198.145.64.141]:58330 "EHLO coco.kroah.org"
+	id S1756282Ab0LHArn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:43 -0500
+Received: from kroah.org ([198.145.64.141]:58462 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756094Ab0LHArP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:15 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:29 2010
-Message-Id: <20101208004429.417154252@clark.site>
+	id S1756249Ab0LHAri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:38 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:31 2010
+Message-Id: <20101208004431.794699465@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:57 -0800
+Date: Tue, 07 Dec 2010 16:44:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [051/127] ALSA: ac97: Apply quirk for Dell Latitude D610 binding Master and Headphone controls
+        Johan Hovold <jhovold@gmail.com>
+Subject: [075/127] USB: ftdi_sio: revert "USB: ftdi_sio: fix DTR/RTS line modes"
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 0613a59456980161d0cd468bae6c63d772743102 upstream.
+commit 677aeafe19e88c282af74564048243ccabb1c590 upstream.
 
-BugLink: https://launchpad.net/bugs/669279
+This reverts commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd.
 
-The original reporter states: "The Master mixer does not change the
-volume from the headphone output (which is affected by the headphone
-mixer). Instead it only seems to control the on-board speaker volume.
-This confuses PulseAudio greatly as the Master channel is merged into
-the volume mix."
+RTS and DTR should not be modified based on CRTSCTS when calling
+set_termios.
 
-Fix this symptom by applying the hp_only quirk for the reporter's SSID.
-The fix is applicable to all stable kernels.
+Modem control lines are raised at port open by the tty layer and should stay
+raised regardless of whether hardware flow control is enabled or not.
 
-Reported-and-tested-by: Ben Gamari <bgamari@gmail.com>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This is in conformance with the way serial ports work today and many
+applications depend on this behaviour to be able to talk to hardware
+implementing hardware flow control (without the applications actually using
+it).
+
+Hardware which expects different behaviour on these lines can always
+use TIOCMSET/TIOCMBI[SC] after port open to change them.
+
+Reported-by: Daniel Mack <daniel@caiaq.de>
+Reported-by: Dave Mielke <dave@mielke.cc>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/intel8x0.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/sound/pci/intel8x0.c
-+++ b/sound/pci/intel8x0.c
-@@ -1866,6 +1866,12 @@ static struct ac97_quirk ac97_quirks[] _
- 	},
- 	{
- 		.subvendor = 0x1028,
-+		.subdevice = 0x0182,
-+		.name = "Dell Latitude D610",	/* STAC9750/51 */
-+		.type = AC97_TUNE_HP_ONLY
-+	},
-+	{
-+		.subvendor = 0x1028,
- 		.subdevice = 0x0186,
- 		.name = "Dell Latitude D810", /* cf. Malone #41015 */
- 		.type = AC97_TUNE_HP_MUTE_LED
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2365,8 +2365,6 @@ static void ftdi_set_termios(struct tty_
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
+ 
+-		/* raise DTR/RTS */
+-		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2414,8 +2412,6 @@ static void ftdi_set_termios(struct tty_
+ 			}
+ 		}
+ 
+-		/* lower DTR/RTS */
+-		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+ 	return;
+ }
 
 
