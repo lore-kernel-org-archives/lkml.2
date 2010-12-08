@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab0LHQHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:07:30 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:37272 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753496Ab0LHQH2 (ORCPT
+	id S1753794Ab0LHQOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:14:05 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57647
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750761Ab0LHQOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:07:28 -0500
-Date: Wed, 8 Dec 2010 16:07:27 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
-Message-ID: <20101208160727.GF10998@console-pimps.org>
-References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com> <20101208115510.GD10998@console-pimps.org> <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com> <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 8 Dec 2010 11:14:03 -0500
+Date: Wed, 08 Dec 2010 08:14:29 -0800 (PST)
+Message-Id: <20101208.081429.193694468.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2010-12-03
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101203201602.GE2348@tuxdriver.com>
+References: <20101203201602.GE2348@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 02:21:05PM +0000, Will Newton wrote:
-> This adds the mmc host driver for the Synopsys DesignWare mmc
-> host controller, found in a number of embedded SoC designs.
-> 
-> Signed-off-by: Will Newton <will.newton@imgtec.com>
-> ---
->  drivers/mmc/host/Kconfig   |   15 +
->  drivers/mmc/host/Makefile  |    1 +
->  drivers/mmc/host/dw_mmc.c  | 1806 ++++++++++++++++++++++++++++++++++++++++++++
->  drivers/mmc/host/dw_mmc.h  |  153 ++++
->  include/linux/mmc/dw_mmc.h |  149 ++++
->  5 files changed, 2124 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mmc/host/dw_mmc.c
->  create mode 100644 drivers/mmc/host/dw_mmc.h
->  create mode 100644 include/linux/mmc/dw_mmc.h
-> 
->  - patch v2: make changes based on review by Matt Fleming.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Fri, 3 Dec 2010 15:16:02 -0500
 
-Reviewed-by: Matt Fleming <matt@console-pimps.org>
+> This is a batch of fixes intended for 2.6.37.  There are a number of
+> small fixes that speak for themselves.  Also included are a small patch
+> for ar9170 to advertise Wi-Fi Peer-to-peer capability -- not truly a
+> fix, but helpful for those developing the related userland bits and
+> harmless to everyone else.  There are also some endian related patches
+> for ath9k from Felix that are a bit large, but they mostly just refactor
+> some tables in order to fix an endian problem that can result in invalid
+> regulatory settings on some boxes.
+> 
+> Also includes are some Bluetooth patches via Gustavo Padovan:
+> 
+> "Here goes 3 simple patches intended to 2.6.37. First one is from myself
+> and fix some trivial return values. Then we also have a fix from Stefan
+> Seyfried on btusb to avoid emitting an err when we USB is autosupended.
+> Last, a patch from Bala Shanmugam that fix the firmware loading process
+> for the ath3k driver."
+> 
+> Please let me know if there are problems!
+
+Pulled, thanks John.
