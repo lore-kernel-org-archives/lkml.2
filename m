@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab0LHBBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:01:19 -0500
-Received: from kroah.org ([198.145.64.141]:48963 "EHLO coco.kroah.org"
+	id S932334Ab0LHBBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:01:54 -0500
+Received: from kroah.org ([198.145.64.141]:49089 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab0LHBBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:15 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:34 2010
-Message-Id: <20101208005734.082795896@clark.site>
+	id S932322Ab0LHBBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:52 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:36 2010
+Message-Id: <20101208005736.713434271@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:24 -0800
+Date: Tue, 07 Dec 2010 16:58:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Joseph Chan <JosephChan@via.com.tw>, Daniel Drake <dsd@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: [127/289] viafb: use proper register for colour when doing fill ops
+        Axel Lin <axel.lin@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [153/289] ASoC: wm8961 - clear WM8961_DACSLOPE bit for normal mode
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit efd4f6398dc92b5bf392670df862f42a19f34cf2 upstream.
+commit 08b1a38465cab8c2224a5202c7a3b5e5f5630894 upstream.
 
-The colour was written to a wrong register for fillrect operations.
-This sometimes caused empty console space (for example after 'clear')
-to have a different colour than desired. Fix this by writing to the
-correct register.
-Many thanks to Daniel Drake and Jon Nettleton for pointing out this
-issue and pointing me in the right direction for the fix.
+DACSLOPE bit of Register 06h ADC and DAC Control 2:
+        0: Normal mode
+        1: Sloping stop-band mode
 
-Fixes http://dev.laptop.org/ticket/9323
+Thus in the case of normal mode, we should clear DACSLOPE bit.
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Joseph Chan <JosephChan@via.com.tw>
-Cc: Daniel Drake <dsd@laptop.org>
-Cc: Jon Nettleton <jon.nettleton@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/via/accel.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ sound/soc/codecs/wm8961.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/video/via/accel.c
-+++ b/drivers/video/via/accel.c
-@@ -283,11 +283,12 @@ static int hw_bitblt_2(void __iomem *eng
- 		writel(tmp, engine + 0x1C);
- 	}
+--- a/sound/soc/codecs/wm8961.c
++++ b/sound/soc/codecs/wm8961.c
+@@ -711,7 +711,7 @@ static int wm8961_hw_params(struct snd_p
+ 	if (fs <= 24000)
+ 		reg |= WM8961_DACSLOPE;
+ 	else
+-		reg &= WM8961_DACSLOPE;
++		reg &= ~WM8961_DACSLOPE;
+ 	snd_soc_write(codec, WM8961_ADC_DAC_CONTROL_2, reg);
  
--	if (op != VIA_BITBLT_COLOR)
-+	if (op == VIA_BITBLT_FILL) {
-+		writel(fg_color, engine + 0x58);
-+	} else if (op == VIA_BITBLT_MONO) {
- 		writel(fg_color, engine + 0x4C);
--
--	if (op == VIA_BITBLT_MONO)
- 		writel(bg_color, engine + 0x50);
-+	}
- 
- 	if (op == VIA_BITBLT_FILL)
- 		ge_cmd |= fill_rop << 24 | 0x00002000 | 0x00000001;
+ 	return 0;
 
 
