@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147Ab0LHB6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:58:39 -0500
-Received: from kroah.org ([198.145.64.141]:48470 "EHLO coco.kroah.org"
+	id S1757239Ab0LHB6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:58:52 -0500
+Received: from kroah.org ([198.145.64.141]:48461 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756853Ab0LHA7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:25 -0500
+	id S1755684Ab0LHA7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:24 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:24 2010
-Message-Id: <20101208005724.401851335@clark.site>
+Message-Id: <20101208005724.292602463@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:47 -0800
+Date: Tue, 07 Dec 2010 16:56:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
+        Ben Greear <greearb@candelatech.com>,
+        Kyungwan Nam <kyungwan.nam@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [030/289] ath9k: fix tx aggregation flush on AR9003
+Subject: [029/289] ath9k: rename rxflushlock to pcu_lock
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit e609e2ea2cdb3448e7849703179cd792a28dcc55 upstream.
+commit b79b33c4baf2532aac2c0924dce5a738099b888c upstream.
 
-Completing aggregate frames can lead to new buffers being pushed into
-the tid queues due to software retransmission.
-When the tx queues are being drained, all pending aggregates must be
-completed before the tid queues get drained, otherwise buffers might be
-leaked.
+The real way to lock RX is to contend on the PCU
+and reset, this will be fixed in the next patch but for
+now just do the renames so that the next patch which changes
+the locking order is crystal clear.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+This is part of a series that will help resolve the bug:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=14624
+
+For more details about this issue refer to:
+
+http://marc.info/?l=linux-wireless&m=128629803703756&w=2
+
+Cc: Ben Greear <greearb@candelatech.com>
+Cc: Kyungwan Nam <kyungwan.nam@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    2 +-
+ drivers/net/wireless/ath/ath9k/main.c  |    4 ++--
+ drivers/net/wireless/ath/ath9k/recv.c  |    6 +++---
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1101,15 +1101,6 @@ void ath_draintxq(struct ath_softc *sc,
- 	txq->axq_tx_inprogress = false;
- 	spin_unlock_bh(&txq->axq_lock);
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -312,7 +312,7 @@ struct ath_rx {
+ 	u8 rxotherant;
+ 	u32 *rxlink;
+ 	unsigned int rxfilter;
+-	spinlock_t rxflushlock;
++	spinlock_t pcu_lock;
+ 	spinlock_t rxbuflock;
+ 	struct list_head rxbuf;
+ 	struct ath_descdma rxdma;
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -587,7 +587,7 @@ void ath9k_tasklet(unsigned long data)
+ 		rxmask = (ATH9K_INT_RX | ATH9K_INT_RXEOL | ATH9K_INT_RXORN);
  
--	/* flush any pending frames if aggregation is enabled */
--	if (sc->sc_flags & SC_OP_TXAGGR) {
--		if (!retry_tx) {
--			spin_lock_bh(&txq->axq_lock);
--			ath_txq_drain_pending_buffers(sc, txq);
--			spin_unlock_bh(&txq->axq_lock);
--		}
--	}
--
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA) {
- 		spin_lock_bh(&txq->axq_lock);
- 		while (!list_empty(&txq->txq_fifo_pending)) {
-@@ -1130,6 +1121,15 @@ void ath_draintxq(struct ath_softc *sc,
- 		}
- 		spin_unlock_bh(&txq->axq_lock);
+ 	if (status & rxmask) {
+-		spin_lock_bh(&sc->rx.rxflushlock);
++		spin_lock_bh(&sc->rx.pcu_lock);
+ 
+ 		/* Check for high priority Rx first */
+ 		if ((ah->caps.hw_caps & ATH9K_HW_CAP_EDMA) &&
+@@ -595,7 +595,7 @@ void ath9k_tasklet(unsigned long data)
+ 			ath_rx_tasklet(sc, 0, true);
+ 
+ 		ath_rx_tasklet(sc, 0, false);
+-		spin_unlock_bh(&sc->rx.rxflushlock);
++		spin_unlock_bh(&sc->rx.pcu_lock);
  	}
-+
-+	/* flush any pending frames if aggregation is enabled */
-+	if (sc->sc_flags & SC_OP_TXAGGR) {
-+		if (!retry_tx) {
-+			spin_lock_bh(&txq->axq_lock);
-+			ath_txq_drain_pending_buffers(sc, txq);
-+			spin_unlock_bh(&txq->axq_lock);
-+		}
-+	}
+ 
+ 	if (status & ATH9K_INT_TX) {
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -310,7 +310,7 @@ int ath_rx_init(struct ath_softc *sc, in
+ 	struct ath_buf *bf;
+ 	int error = 0;
+ 
+-	spin_lock_init(&sc->rx.rxflushlock);
++	spin_lock_init(&sc->rx.pcu_lock);
+ 	sc->sc_flags &= ~SC_OP_RXFLUSH;
+ 	spin_lock_init(&sc->rx.rxbuflock);
+ 
+@@ -522,13 +522,13 @@ bool ath_stoprecv(struct ath_softc *sc)
+ 
+ void ath_flushrecv(struct ath_softc *sc)
+ {
+-	spin_lock_bh(&sc->rx.rxflushlock);
++	spin_lock_bh(&sc->rx.pcu_lock);
+ 	sc->sc_flags |= SC_OP_RXFLUSH;
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
+ 		ath_rx_tasklet(sc, 1, true);
+ 	ath_rx_tasklet(sc, 1, false);
+ 	sc->sc_flags &= ~SC_OP_RXFLUSH;
+-	spin_unlock_bh(&sc->rx.rxflushlock);
++	spin_unlock_bh(&sc->rx.pcu_lock);
  }
  
- void ath_drain_all_txq(struct ath_softc *sc, bool retry_tx)
+ static bool ath_beacon_dtim_pending_cab(struct sk_buff *skb)
 
 
