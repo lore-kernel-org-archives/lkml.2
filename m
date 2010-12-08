@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab0LHURa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:17:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61600 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab0LHUR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:17:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=OiRAlug5iHiw1YcTnSCIlPDmx+75DldIhGGQs1F2iRAgPzLQZHfSZ2+QuRCz6gHW+A
-         sa+234pJSD7Zd5IyCSfSIcnmd8zGYAZ3yjjANc7rTxAd9/8nFAjTn8kZ5lJfw+wIA29L
-         jNh0PpEOUpvCuLvnc+KcZhOsBQyvwJ0/bXNac=
+	id S1755575Ab0LHUV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:21:29 -0500
+Received: from mail.sf-mail.de ([62.27.20.61]:55257 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755381Ab0LHUV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:21:28 -0500
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Dec 2010 15:21:27 EST
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 5/8] scsi: fix TUR error handling in sr_media_change()
+Date: Wed, 8 Dec 2010 21:14:40 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.5.3; i686; ; )
+Cc: jeff@garzik.org, linux-ide@vger.kernel.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@hansenpartnership.com
+References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-6-git-send-email-tj@kernel.org>
+In-Reply-To: <1291838262-21274-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <4CFFE46C.60401@euromail.se>
-References: <1291721340-22652-1-git-send-email-rydberg@euromail.se>
- <4CFFC3C2.1080905@canonical.com> <4CFFCD10.5030202@euromail.se>
- <4CFFD0BF.2020601@canonical.com> <4CFFD3FE.1090103@euromail.se>
- <4CFFD801.8060704@canonical.com> <4CFFDB35.2020506@euromail.se>
- <AANLkTi=iw+7CDhbO4N9rMVSwS0t93BaaBVgoAwz-GeHo@mail.gmail.com> <4CFFE46C.60401@euromail.se>
-From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
-Date: Wed, 8 Dec 2010 21:17:07 +0100
-Message-ID: <AANLkTim0bb=fvPYxKKghLz8sS0RE8Ud8QwjFrpinN5CQ@mail.gmail.com>
-Subject: Re: [PATCH] input: mt: Add an envelope tool type
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart3076944.NXSmOvlDyz";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012082114.41509.eike-kernel@sf-tec.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 9:02 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> This is precisely what the patch for ABS_MT_DISTANCE is for. Perhaps you meant
-> to comment on that email. This one is about support for hardware without
-> individual finger detection capabilities.
+--nextPart3076944.NXSmOvlDyz
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-yes, I mixed up mails :)
+Tejun Heo wrote:
 
-i
+> --- a/drivers/scsi/sr.c
+> +++ b/drivers/scsi/sr.c
+> @@ -214,13 +214,17 @@ static int sr_media_change(struct cdrom_device_info
+> *cdi, int slot)
+>=20
+>  	sshdr =3D  kzalloc(sizeof(*sshdr), GFP_KERNEL);
+>  	retval =3D sr_test_unit_ready(cd->device, sshdr);
+> -	if (retval || (scsi_sense_valid(sshdr) &&
+> -		       /* 0x3a is medium not present */
+> -		       sshdr->asc =3D=3D 0x3a)) {
+> -		/* Media not present or unable to test, unit probably not
+> -		 * ready. This usually means there is no disc in the drive.
+> -		 * Mark as changed, and we will figure it out later once
+> -		 * the drive is available again.
+> +	/*
+> +	 * Media is considered to be present if TUR succeeds or fails with
+> +	 * sense data indicating something other than media-not-present
+> +	 * (ASC 0x3a).
+> +	 */
+> +	if (!scsi_status_is_good(retval) &&
+> +	    (!scsi_sense_valid(sshdr) || sshdr->asc =3D=3D 0x3a)) {
+> +		/*
+> +		 * Probably not media in the device.  Mark as changed, and
+> +		 * we will figure it out later once the drive is available
+> +		 * again.
+
+"Probably no media ..."?
+
+Eike
+
+--nextPart3076944.NXSmOvlDyz
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEABECAAYFAkz/5zEACgkQXKSJPmm5/E4RIwCgmLecVbJQphEZPlyM+labK9/2
+ybIAnAxCKEHzpksGxmq+XOHz9DSlTTi8
+=/66e
+-----END PGP SIGNATURE-----
+
+--nextPart3076944.NXSmOvlDyz--
