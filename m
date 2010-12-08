@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab0LHVVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 16:21:53 -0500
-Received: from www.tglx.de ([62.245.132.106]:49152 "EHLO www.tglx.de"
+	id S932078Ab0LHVXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 16:23:53 -0500
+Received: from ozlabs.org ([203.10.76.45]:58804 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756106Ab0LHVVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 16:21:51 -0500
-Date: Wed, 8 Dec 2010 22:21:04 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ralf Baechle <ralf@linux-mips.org>
-cc: David Daney <ddaney@caviumnetworks.com>, Anoop P A <anoop.pa@gmail.com>,
-        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Introduce mips_late_time_init
-In-Reply-To: <20101208203704.GB30923@linux-mips.org>
-Message-ID: <alpine.LFD.2.00.1012082217230.2653@localhost6.localdomain6>
-References: <1291623812.31822.6.camel@paanoop1-desktop> <4CFD2095.9040404@caviumnetworks.com> <20101208203704.GB30923@linux-mips.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756158Ab0LHVXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 16:23:51 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 0/2] New jhash function
+Date: Thu, 9 Dec 2010 07:53:45 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; i686; ; )
+Cc: kadlec@blackhole.kfki.hu, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        torvalds@osdl.org
+References: <201011271401.22773.rusty@rustcorp.com.au> <1291379941-31565-1-git-send-email-kadlec@blackhole.kfki.hu> <20101208.090954.115924303.davem@davemloft.net>
+In-Reply-To: <20101208.090954.115924303.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012090753.46050.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Dec 2010, Ralf Baechle wrote:
-> Running everything from late_time_init() instead allows the use of kmalloc.
-> X86 has the same issue with requiring kmalloc in time_init which is why
-> they had moved everything to late_time_init.
+On Thu, 9 Dec 2010 03:39:54 am David Miller wrote:
+> From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+> Date: Fri,  3 Dec 2010 13:38:59 +0100
+> 
+> > The current jhash.h implements the lookup2() hash function by Bob Jenkins. 
+> > However, lookup2() is outdated as Bob wrote a new hash function called 
+> > lookup3(). There is a longer comparison of those two and other hash
+> > functions at http://burtleburtle.net/bob/hash/doobs.html.
+> > 
+> > Please consider applying the following patches.
+> 
+> Patch #1 is already in the net-next-2.6 tree, and as long as there are
+> no major objections to the general crowd (including Rusty et al.) I am
+> happy to put patch #2 into my tree as well.
+> 
+> Rusty, does the current version of patch #2 look good to you?
 
-It's more ioremap, but yeah.
- 
-> So the real question is, why can't we just move the call of time_init()
-> in setup_kernel() to where late_time_init() is getting called from for
-> all architectures, does anything rely on it getting called early?
+Yes, 2/2 good.  Thanks Jozsef!
 
-That's a good question and I asked it myself already. I can't see a
-real reason why something would need it early. Definitely worth to
-try.
-
-Thanks,
-
-	tglx
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
