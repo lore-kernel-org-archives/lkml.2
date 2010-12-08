@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab0LHBcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:32:33 -0500
-Received: from kroah.org ([198.145.64.141]:49078 "EHLO coco.kroah.org"
+	id S932265Ab0LHBBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:01:44 -0500
+Received: from kroah.org ([198.145.64.141]:49054 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab0LHBBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:47 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:36 2010
-Message-Id: <20101208005736.402742096@clark.site>
+	id S932242Ab0LHBBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:41 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:35 2010
+Message-Id: <20101208005735.915069854@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:47 -0800
+Date: Tue, 07 Dec 2010 16:58:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [150/289] KVM: Correct ordering of ldt reload wrt fs/gs reload
+        Janne Grunau <j@jannau.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [145/289] [media] hdpvr: Add missing URB_NO_TRANSFER_DMA_MAP flag
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: James M McLaren <mclaren@tulane.edu>
 
-commit 0a77fe4c188e25917799f2356d4aa5e6d80c39a2 upstream.
+commit 4f5c933abb34532dc962185c999509b97a97fa1b upstream.
 
-If fs or gs refer to the ldt, they must be reloaded after the ldt.  Reorder
-the code to that effect.
+Necessary on arm.
 
-Userspace code that uses the ldt with kvm is nonexistent, so this doesn't fix
-a user-visible bug.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Janne Grunau <j@jannau.net>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/svm.c |    2 +-
- arch/x86/kvm/vmx.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/media/video/hdpvr/hdpvr-video.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3281,6 +3281,7 @@ static void svm_vcpu_run(struct kvm_vcpu
- 	vcpu->arch.regs[VCPU_REGS_RIP] = svm->vmcb->save.rip;
+--- a/drivers/media/video/hdpvr/hdpvr-video.c
++++ b/drivers/media/video/hdpvr/hdpvr-video.c
+@@ -157,6 +157,7 @@ int hdpvr_alloc_buffers(struct hdpvr_dev
+ 				  mem, dev->bulk_in_size,
+ 				  hdpvr_read_bulk_callback, buf);
  
- 	load_host_msrs(vcpu);
-+	kvm_load_ldt(ldt_selector);
- 	loadsegment(fs, fs_selector);
- #ifdef CONFIG_X86_64
- 	load_gs_index(gs_selector);
-@@ -3288,7 +3289,6 @@ static void svm_vcpu_run(struct kvm_vcpu
- #else
- 	loadsegment(gs, gs_selector);
- #endif
--	kvm_load_ldt(ldt_selector);
- 
- 	reload_tss(vcpu);
- 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -846,8 +846,6 @@ static void __vmx_load_host_state(struct
- 
- 	++vmx->vcpu.stat.host_state_reload;
- 	vmx->host_state.loaded = 0;
--	if (vmx->host_state.fs_reload_needed)
--		loadsegment(fs, vmx->host_state.fs_sel);
- 	if (vmx->host_state.gs_ldt_reload_needed) {
- 		kvm_load_ldt(vmx->host_state.ldt_sel);
- #ifdef CONFIG_X86_64
-@@ -857,6 +855,8 @@ static void __vmx_load_host_state(struct
- 		loadsegment(gs, vmx->host_state.gs_sel);
- #endif
++		buf->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+ 		buf->status = BUFSTAT_AVAILABLE;
+ 		list_add_tail(&buf->buff_list, &dev->free_buff_list);
  	}
-+	if (vmx->host_state.fs_reload_needed)
-+		loadsegment(fs, vmx->host_state.fs_sel);
- 	reload_tss();
- #ifdef CONFIG_X86_64
- 	if (is_long_mode(&vmx->vcpu)) {
 
 
