@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab0LHAky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:40:54 -0500
-Received: from kroah.org ([198.145.64.141]:54760 "EHLO coco.kroah.org"
+	id S1754982Ab0LHAe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:34:26 -0500
+Received: from kroah.org ([198.145.64.141]:54753 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab0LHAe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:27 -0500
+	id S1754940Ab0LHAeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:25 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.912118071@clark.site>
+Message-Id: <20101208000640.714274583@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:13 -0800
+Date: Tue, 07 Dec 2010 16:04:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [14/44] bio: take care not overflow page count when mapping/copying user data
+        Graham Gower <graham.gower@gmail.com>, Greg KH <greg@kroah.com>
+Subject: [12/44] drivers/char/vt_ioctl.c: fix VT_OPENQRY error value
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <jaxboe@fusionio.com>
+From: Graham Gower <graham.gower@gmail.com>
 
-commit cb4644cac4a2797afc847e6c92736664d4b0ea34 upstream.
+commit 1e0ad2881d50becaeea70ec696a80afeadf944d2 upstream.
 
-If the iovec is being set up in a way that causes uaddr + PAGE_SIZE
-to overflow, we could end up attempting to map a huge number of
-pages. Check for this invalid input type.
+When all VT's are in use, VT_OPENQRY casts -1 to unsigned char before
+returning it to userspace as an int.  VT255 is not the next available
+console.
 
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Graham Gower <graham.gower@gmail.com>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/bio.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/char/vt_ioctl.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -593,6 +593,12 @@ struct bio *bio_copy_user_iov(struct req
- 		end = (uaddr + iov[i].iov_len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		start = uaddr >> PAGE_SHIFT;
+--- a/drivers/char/vt_ioctl.c
++++ b/drivers/char/vt_ioctl.c
+@@ -371,6 +371,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 	struct kbd_struct * kbd;
+ 	unsigned int console;
+ 	unsigned char ucval;
++	unsigned int uival;
+ 	void __user *up = (void __user *)arg;
+ 	int i, perm;
+ 	int ret = 0;
+@@ -516,7 +517,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		break;
  
-+		/*
-+		 * Overflow, abort
-+		 */
-+		if (end < start)
-+			return ERR_PTR(-EINVAL);
-+
- 		nr_pages += end - start;
- 		len += iov[i].iov_len;
- 	}
-@@ -691,6 +697,12 @@ static struct bio *__bio_map_user_iov(st
- 		unsigned long end = (uaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		unsigned long start = uaddr >> PAGE_SHIFT;
+ 	case KDGETMODE:
+-		ucval = vc->vc_mode;
++		uival = vc->vc_mode;
+ 		goto setint;
  
-+		/*
-+		 * Overflow, abort
-+		 */
-+		if (end < start)
-+			return ERR_PTR(-EINVAL);
-+
- 		nr_pages += end - start;
- 		/*
- 		 * buffer must be aligned to at least hardsector size for now
-@@ -718,7 +730,7 @@ static struct bio *__bio_map_user_iov(st
- 		unsigned long start = uaddr >> PAGE_SHIFT;
- 		const int local_nr_pages = end - start;
- 		const int page_limit = cur_page + local_nr_pages;
--		
-+
- 		ret = get_user_pages_fast(uaddr, local_nr_pages,
- 				write_to_vm, &pages[cur_page]);
- 		if (ret < local_nr_pages) {
+ 	case KDMAPDISP:
+@@ -554,7 +555,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		break;
+ 
+ 	case KDGKBMODE:
+-		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
++		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
+ 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
+ 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
+ 				 K_XLATE);
+@@ -576,9 +577,9 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		break;
+ 
+ 	case KDGKBMETA:
+-		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
++		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
+ 	setint:
+-		ret = put_user(ucval, (int __user *)arg);
++		ret = put_user(uival, (int __user *)arg);
+ 		break;
+ 
+ 	case KDGETKEYCODE:
+@@ -808,7 +809,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
+ 			if (! VT_IS_IN_USE(i))
+ 				break;
+-		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
++		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
+ 		goto setint;		 
+ 
+ 	/*
 
 
