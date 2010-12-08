@@ -1,73 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab0LHREB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 12:04:01 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:48254 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab0LHREA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 12:04:00 -0500
-Message-ID: <4CFFBA7D.6060802@psi5.com>
-Date: Wed, 08 Dec 2010 18:03:57 +0100
-From: Christian Brandt <brandtc@psi5.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: swap storage alignment and stride size
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1754221Ab0LHRIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 12:08:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25187 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752460Ab0LHRIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 12:08:09 -0500
+Message-Id: <0d30dc$kddq6q@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,316,1288594800"; 
+   d="scan'208";a="685172954"
+Date: Wed, 08 Dec 2010 17:08:04 +0000
+To: Florian Mickler <florian@mickler.org>, Keith Packard <keithp@keithp.com>
+Subject: Re: [Intel-gfx] [PATCH 2/2] drm: record monitor status in output_poll_execute
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+In-Reply-To: <20101208173424.76ec4041@schatten.dmk.lab>
+References: <1290797159-3977-1-git-send-email-keithp@keithp.com> <1290797159-3977-2-git-send-email-keithp@keithp.com> <20101205132743.3b3458ab@schatten.dmk.lab> <yunpqtgexml.fsf@aiko.keithp.com> <20101208173424.76ec4041@schatten.dmk.lab>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preamble:
+On Wed, 8 Dec 2010 17:34:24 +0100, Florian Mickler <florian@mickler.org> wrote:
+> Does that mean that the kernel regression will not be
+> fixed/worked-around for old userspace? 
 
-Hi fellow linux tamers, the following question has bounced around for
-some days in local lists and newsgroups without conclussion and was
-escalated upstream several times, here we are...
-
-We are discussing semi-professional storage systems, e.g. ext4 on luks
-on lvm on raid on gpt-partitions on 4k sector harddrives or 512k sector
-SSDs. Usually every level profits a lot from aligning the data to the
-underlying sector/stride/chunk size, e.g. ext4 with a 128k stripe size
-will run a lot better on a well aligned 64k stride raid5.
-
-In other words, partition tables, LVM, RAID, luks and filesystems know
-how to handle and profit from aligned larger chunks.
-
-In detail:
-
-As far as we can read mm/swapfile.c linux is only concerned about cpu
-page size and does not know anything about underlying
-chunk/sector/stride sizes and alignment.
-
-Therefore we think every small 1/2/4/8kiB page-sized write access leads
-to a read-modify-write cycle for the whole chunk, taking more then twice
-as long than simply writing the whole chunk at once.
-
-Questions:
-
-Is this the right place to ask?
-
-Does or could linux swapping make use of aligning chunks?
-
-And if, how?
-
-If not, would it be an improvement?
-
-Will this effect be mostly compensated by the block elevator?
-
-Does it make any sense to change the mkswap page size to the chunk size?
-We think those are two totally different beasts and should be left
-seperated.
-
-Is Linux already aware of chunk sizes within swap?
-
-How to set up and controlled by the administrator?
+I think there is some confusion in that I believe there is more than one
+backlight bug at play here.
+-Chris
 
 -- 
-Christian Brandt
-
- life is short and in most cases it ends with death
- but my tombstone will carry the hiscore
+Chris Wilson, Intel Open Source Technology Centre
