@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab0LHA7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:59:13 -0500
-Received: from kroah.org ([198.145.64.141]:48326 "EHLO coco.kroah.org"
+	id S1757183Ab0LHCBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:01:37 -0500
+Received: from kroah.org ([198.145.64.141]:48332 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756786Ab0LHA7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:59:06 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:22 2010
-Message-Id: <20101208005722.493462300@clark.site>
+	id S1756794Ab0LHA7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:59:12 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:23 2010
+Message-Id: <20101208005723.102550076@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:56:28 -0800
+Date: Tue, 07 Dec 2010 16:56:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [011/289] drm/radeon/kms: fix 2D tile height alignment in the r600 CS checker
+        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [017/289] ath9k: fix power save race conditions
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 354da653233898ed1e51f20cebac9705456bf9b1 upstream.
+commit 8ab2cd09fecc8819bbaee2d0fd8f3a092d866ce3 upstream.
 
-macro tile heights are aligned to num channels, not num banks.
+ath9k has a race on putting the chip into network sleep and
+having registers read from hardware. The race occurs because
+although ath9k_ps_restore() locks its own callers it makes use
+of some variables which get altered in the driver at different
+code paths. The variables are the ps_enabled and ps_flags.
 
-Noticed by Dave Airlie.
+This is easily reprodicible in large network environments when
+roaming with the wpa_supplicant simple bgscan. You'd get some
+0xdeadbeef read out on certain registers such as:
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+ath: timeout (100000 us) on reg 0x806c: 0xdeadbeef & 0x01f00000 != 0x00000000
+ath: RX failed to go idle in 10 ms RXSM=0xdeadbeef
+
+ath: timeout (100000 us) on reg 0x7000: 0xdeadbeef & 0x00000003 != 0x00000000
+ath: Chip reset failed
+
+The fix is to protect the ath9k_config(hw, IEEE80211_CONF_CHANGE_PS)
+calls with a spin_lock_irqsave() which will disable contendors for
+these variables from interrupt context, timers, re-entry from mac80211
+on the same callback, and most importantly from ath9k_ps_restore()
+which is the only call which will put the device into network sleep.
+
+There are quite a few threads and bug reports on these a few of them are:
+
+https://bugs.launchpad.net/ubuntu/karmic/+source/linux/+bug/407040
+http://code.google.com/p/chromium-os/issues/detail?id=5709
+http://code.google.com/p/chromium-os/issues/detail?id=5943
+
+Stable fixes apply to [2.6.32+]
+
+Cc: Paul Stewart <pstew@google.com>
+Cc: Amod Bodas <amod.bodas@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r600_cs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    5 ++++-
+ drivers/net/wireless/ath/ath9k/recv.c |    3 +++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -228,7 +228,7 @@ static inline int r600_cs_track_validate
- 				__func__, __LINE__, pitch);
- 			return -EINVAL;
- 		}
--		if (!IS_ALIGNED((height / 8), track->nbanks)) {
-+		if (!IS_ALIGNED((height / 8), track->npipes)) {
- 			dev_warn(p->dev, "%s:%d cb height (%d) invalid\n",
- 				 __func__, __LINE__, height);
- 			return -EINVAL;
-@@ -367,7 +367,7 @@ static int r600_cs_track_check(struct ra
- 						 __func__, __LINE__, pitch);
- 					return -EINVAL;
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1558,6 +1558,8 @@ static int ath9k_config(struct ieee80211
+ 	 * IEEE80211_CONF_CHANGE_PS is only passed by mac80211 for STA mode.
+ 	 */
+ 	if (changed & IEEE80211_CONF_CHANGE_PS) {
++		unsigned long flags;
++		spin_lock_irqsave(&sc->sc_pm_lock, flags);
+ 		if (conf->flags & IEEE80211_CONF_PS) {
+ 			sc->ps_flags |= PS_ENABLED;
+ 			/*
+@@ -1572,7 +1574,7 @@ static int ath9k_config(struct ieee80211
+ 			sc->ps_enabled = false;
+ 			sc->ps_flags &= ~(PS_ENABLED |
+ 					  PS_NULLFUNC_COMPLETED);
+-			ath9k_setpower(sc, ATH9K_PM_AWAKE);
++			ath9k_hw_setpower(sc->sc_ah, ATH9K_PM_AWAKE);
+ 			if (!(ah->caps.hw_caps &
+ 			      ATH9K_HW_CAP_AUTOSLEEP)) {
+ 				ath9k_hw_setrxabort(sc->sc_ah, 0);
+@@ -1587,6 +1589,7 @@ static int ath9k_config(struct ieee80211
  				}
--				if ((height / 8) & (track->nbanks - 1)) {
-+				if (!IS_ALIGNED((height / 8), track->npipes)) {
- 					dev_warn(p->dev, "%s:%d db height (%d) invalid\n",
- 						 __func__, __LINE__, height);
- 					return -EINVAL;
+ 			}
+ 		}
++		spin_unlock_irqrestore(&sc->sc_pm_lock, flags);
+ 	}
+ 
+ 	if (changed & IEEE80211_CONF_CHANGE_MONITOR) {
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -1096,6 +1096,7 @@ int ath_rx_tasklet(struct ath_softc *sc,
+ 	u8 rx_status_len = ah->caps.rx_status_len;
+ 	u64 tsf = 0;
+ 	u32 tsf_lower = 0;
++	unsigned long flags;
+ 
+ 	if (edma)
+ 		dma_type = DMA_BIDIRECTIONAL;
+@@ -1204,11 +1205,13 @@ int ath_rx_tasklet(struct ath_softc *sc,
+ 			sc->rx.rxotherant = 0;
+ 		}
+ 
++		spin_lock_irqsave(&sc->sc_pm_lock, flags);
+ 		if (unlikely(ath9k_check_auto_sleep(sc) ||
+ 			     (sc->ps_flags & (PS_WAIT_FOR_BEACON |
+ 					      PS_WAIT_FOR_CAB |
+ 					      PS_WAIT_FOR_PSPOLL_DATA))))
+ 			ath_rx_ps(sc, skb);
++		spin_unlock_irqrestore(&sc->sc_pm_lock, flags);
+ 
+ 		ath_rx_send_to_mac80211(hw, sc, skb, rxs);
+ 
 
 
