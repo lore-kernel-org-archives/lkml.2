@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab0LHPQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:16:48 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:51766 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755571Ab0LHPQr (ORCPT
+	id S1755704Ab0LHPRN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:17:13 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54991 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755669Ab0LHPRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:16:47 -0500
-Date: Wed, 8 Dec 2010 10:16:46 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Greg KH <greg@kroah.com>, Luben Tuikov <ltuikov@yahoo.com>,
-        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-In-Reply-To: <1291784742.24312.40.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.44L0.1012081010470.1885-100000@iolanthe.rowland.org>
+	Wed, 8 Dec 2010 10:17:11 -0500
+Date: Wed, 8 Dec 2010 15:14:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jeff Ohlstein <johlstei@codeaurora.org>
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH v2 5/6] msm: hotplug: support cpu hotplug on msm
+Message-ID: <20101208151451.GG9777@n2100.arm.linux.org.uk>
+References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org> <1291782501-3909-6-git-send-email-johlstei@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291782501-3909-6-git-send-email-johlstei@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, James Bottomley wrote:
+On Tue, Dec 07, 2010 at 08:28:20PM -0800, Jeff Ohlstein wrote:
+> +static DECLARE_COMPLETION(cpu_killed);
 
-> Well, not other than I've already said:  I think it looks OK, so I
-> marked it for my merge window queue.  I'd still rather like USB people
-> to confirm that the original reason why this was done (to prevent device
-> crashes on the mode sense) is no longer an issue
+There's changes in my tree for 2.6.38 which gets rid of this completion
+from platform code.
 
-The original reason for adding the skip_ms_page_8 flag still applies.  
-To assume it is no longer an issue would not be safe -- there's no 
-reason to believe that the buggy devices it was meant for have all been 
-retired.
+> +void platform_cpu_die(unsigned int cpu)
+> +{
+> +#ifdef DEBUG
+> +	unsigned int this_cpu = hard_smp_processor_id();
+> +
+> +	if (cpu != this_cpu) {
+> +		printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
+> +			   this_cpu, cpu);
+> +		BUG();
+> +	}
+> +#endif
 
->  ... but it's only USB
-> stuff, so suppose I'm OK with finding out in the field.
+This debug check can not possibly ever happen; it can be removed.
 
-With USB there's often no other choice.
+> +
+> +	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
 
-Alan Stern
+This printk is not required with those changes I mentioned above.
 
