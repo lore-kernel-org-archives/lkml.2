@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab0LHAmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:42:00 -0500
-Received: from kroah.org ([198.145.64.141]:54735 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013Ab0LHAeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754870Ab0LHAeX (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 7 Dec 2010 19:34:23 -0500
+Received: from kroah.org ([198.145.64.141]:54701 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754013Ab0LHAeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:18 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.520633396@clark.site>
+Message-Id: <20101208000640.013553991@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:09 -0800
+Date: Tue, 07 Dec 2010 16:04:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segooon@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [10/44] ipc: shm: fix information leak to userland
+        Richard Weinberger <richard@nod.at>, Pekka Enberg <penberg@kernel.org>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: [05/44] um: fix global timer issue when using CONFIG_NO_HZ
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 3af54c9bd9e6f14f896aac1bb0e8405ae0bc7a44 upstream.
+commit 482db6df1746c4fa7d64a2441d4cb2610249c679 upstream.
 
-The shmid_ds structure is copied to userland with shm_unused{,2,3}
-fields unitialized.  It leads to leaking of contents of kernel stack
-memory.
+This fixes a issue which was introduced by fe2cc53e ("uml: track and make
+up lost ticks").
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+timeval_to_ns() returns long long and not int.  Due to that UML's timer
+did not work properlt and caused timer freezes.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Jeff Dike <jdike@addtoit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/shm.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/um/os-Linux/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -469,6 +469,7 @@ static inline unsigned long copy_shmid_t
- 	    {
- 		struct shmid_ds out;
+--- a/arch/um/os-Linux/time.c
++++ b/arch/um/os-Linux/time.c
+@@ -60,7 +60,7 @@ static inline long long timeval_to_ns(co
+ long long disable_timer(void)
+ {
+ 	struct itimerval time = ((struct itimerval) { { 0, 0 }, { 0, 0 } });
+-	int remain, max = UM_NSEC_PER_SEC / UM_HZ;
++	long long remain, max = UM_NSEC_PER_SEC / UM_HZ;
  
-+		memset(&out, 0, sizeof(out));
- 		ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
- 		out.shm_segsz	= in->shm_segsz;
- 		out.shm_atime	= in->shm_atime;
+ 	if (setitimer(ITIMER_VIRTUAL, &time, &time) < 0)
+ 		printk(UM_KERN_ERR "disable_timer - setitimer failed, "
 
 
