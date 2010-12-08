@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab0LHBRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:17:07 -0500
-Received: from kroah.org ([198.145.64.141]:33681 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932687Ab0LHBDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:22 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:44 2010
-Message-Id: <20101208005744.244436627@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:05 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dean Nelson <dnelson@redhat.com>
-Subject: [228/289] mm/hugetlb.c: avoid double unlock_page() in hugetlb_fault()
-In-Reply-To: <20101208005821.GA2922@kroah.com>
+	id S1757499Ab0LHBRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:17:05 -0500
+Received: from bld-mail20.adl6.internode.on.net ([150.101.137.105]:35685 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757474Ab0LHBRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:17:03 -0500
+Date: Wed, 8 Dec 2010 12:16:56 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/46] Revert "fs: use RCU read side protection in
+ d_validate"
+Message-ID: <20101208011656.GD29333@dastard>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <2d1d8ffc4acea8b6c4e5b58bb1653b3f0e7071e2.1290852958.git.npiggin@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2d1d8ffc4acea8b6c4e5b58bb1653b3f0e7071e2.1290852958.git.npiggin@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On Sat, Nov 27, 2010 at 08:56:03PM +1100, Nick Piggin wrote:
+> This reverts commit 3825bdb7ed920845961f32f364454bee5f469abb.
+> 
+> Patch is broken, you can't dget() without holding any locks!
 
-------------------
+I believe you can - for the same reasons we can take a reference to
+an inode without holding the inode_lock. That is, as long as the
+caller already holds an active reference to the dentry,
+dget() can be used to take another reference without needing the
+dcache_lock.
 
-From: Dean Nelson <dnelson@redhat.com>
+Such usage appears to be described in the comment above dget() and
+there's a BUG_ON() in dget() to catch callers that don't already
+have an active reference. An example of a valid unlocked dget():
+d_alloc() does an unlocked dget() to take a reference to the parent
+dentry which we already are guaranteed to have a reference to.
 
-commit 1f64d69c7ad2e48e697493e45590679f7a69b7b2 upstream.
+As to d_validate() - it depends on the caller behaviour as to
+whether the unlocked dget() is valid or not.  From a cursory check
+of the NCP and SMB readdir caches, both appear to hold an active
+reference to the dentry it is passing to d_validate(). If that is
+the case then there is nothing wrong with the way d_validate uses
+dget(). Can someone with more SMB/NCP expertise than me validate the
+use of cached dentries?
 
-Have hugetlb_fault() call unlock_page(page) only if it had previously
-called lock_page(page).
+Cheers,
 
-Setting CONFIG_DEBUG_VM=y and then running the libhugetlbfs test suite,
-resulted in the tripping of VM_BUG_ON(!PageLocked(page)) in
-unlock_page() having been called by hugetlb_fault() when page ==
-pagecache_page.  This patch remedied the problem.
-
-Signed-off-by: Dean Nelson <dnelson@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- mm/hugetlb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2668,7 +2668,8 @@ out_page_table_lock:
- 		unlock_page(pagecache_page);
- 		put_page(pagecache_page);
- 	}
--	unlock_page(page);
-+	if (page != pagecache_page)
-+		unlock_page(page);
- 
- out_mutex:
- 	mutex_unlock(&hugetlb_instantiation_mutex);
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
