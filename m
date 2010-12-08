@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab0LHQho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:37:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab0LHQhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:37:43 -0500
-Date: Wed, 8 Dec 2010 10:58:31 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "jmarchan@redhat.com" <jmarchan@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
-Message-ID: <20101208155831.GF31703@redhat.com>
-References: <4CFCB08F.4010509@jp.fujitsu.com>
- <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com>
- <4CFDDFC3.2070107@jp.fujitsu.com>
- <4CFF34E7.2030401@fusionio.com>
- <4CFF3AD6.6010904@jp.fujitsu.com>
- <4CFF3C86.2070504@fusionio.com>
- <4CFF3DA4.5060705@jp.fujitsu.com>
- <4CFF9A2C.1070401@fusionio.com>
- <20101208155137.GE31703@redhat.com>
+	id S1753660Ab0LHQkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:40:23 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:40404 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752607Ab0LHQkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 11:40:22 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOtD/0x5LdBk/2dsb2JhbACjXHnAUIVJBA
+Date: Thu, 9 Dec 2010 03:40:15 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: buggy perf callgraph output
+Message-ID: <20101208164015.GA5444@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101208155137.GE31703@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 10:51:37AM -0500, Vivek Goyal wrote:
-> On Wed, Dec 08, 2010 at 10:46:04PM +0800, Jens Axboe wrote:
-> > On 2010-12-08 16:11, Satoru Takeuchi wrote:
-> > > Hi Jens,
-> > > 
-> > > (2010/12/08 17:06), Jens Axboe wrote:
-> > >>>>> I hit on another approach. Although it doesn'tprevent any merge as Linus
-> > >>>>> preferred, it can fix the problem anyway. In this idea, in_flight is
-> > >>>>> incremented and decremented for the partition which the request belonged
-> > >>>>> to in its creation. It has the following merits.
-> > >>>
-> > >>> Revert is already finished. 2.6.37-rc-5 and latest stable kernel doesn't
-> > >>> contain Yasuaki's former logic.
-> > >>>
-> > >>> https://lkml.org/lkml/2010/10/24/118
-> > >>
-> > >> Yes I know, that is why I said:
-> > >>
-> > >>>> I really would prefer if we fixed up the patchset we ended up reverting..
-> > >>>> At least that had a purpose with growing struct request, since we saved
-> > >>>> on doing the partition lookups.
-> > >>
-> > >> That I prefer we fix that code up, since I think it's the best solution
-> > >> to the problem.
-> > >>
-> > > 
-> > > I already postedit.
-> > > 
-> > > https://lkml.org/lkml/2010/12/8/12
-> > > 
-> > > I think it is OK without mail subject :-)
-> > 
-> > No, that's not it at all. What I mean (and what was reverted) was
-> > caching the partition lookup, and using that for the stats. The problem
-> > with that approach turned out to be the elevator queiscing logic not
-> > being fully correct. One easier way to fix that would be to reference
-> > count the part stats, instead of having to drain the queue.
-> 
-> Taking reference to hd_struct and storing it in rq, will definitely save
-> us 1 lookup while doing accounting on completion path. It does not save
-> on rq size though.
-> 
-> IIUC, current patch does not increase the number of existing lookups. So 
-> current situation does not deteriorate with the patch.
-> 
-> But storing a reference in rq and avoiding 1 lookup in completion path
-> definitely sounds better.
-> 
+Hi,
 
-Storing a pointer to partition in rq also got the advantage that we can
-easily not allow merging of requests across partitions for better
-accounting.
+I get strange looking perf output with the callchain hits not sorted
+properly for graph and fractal:
 
-Satoru, so yes, if you can implement what jens is suggesting, would be
-good.
+     7.34%          open  [kernel.kallsyms]     [k] kmem_cache_alloc
+                    |
+                    --- kmem_cache_alloc
+                       |          
+                       |---0.05%-- get_empty_filp
+                       |          do_filp_open
+                       |          do_sys_open
+                       |          sys_open
+                       |          system_call
+                       |          __open_nocancel
+                       |          
+                        ---0.16%-- getname
+                                  do_sys_open
+                                  sys_open
+                                  system_call
+                                  __open_nocancel
 
-Thanks
-Vivek
+     6.17%          open  [kernel.kallsyms]     [k] _raw_spin_lock
+                    |
+                    --- _raw_spin_lock
+                       |          
+                       |---0.01%-- add_partial
+                       |          __slab_free
+                       |          kmem_cache_free
+                       |          file_free_rcu
+                       |          __rcu_process_callbacks
+                       |          rcu_process_callbacks
+                       |          __do_softirq
+                       |          call_softirq
+                       |          do_softirq
+                       |          irq_exit
+                       |          smp_apic_timer_interrupt
+                       |          apic_timer_interrupt
+                       |          
+                       |---0.16%-- dput
+                       |          |          
+                       |           --0.57%-- fput
+                       |                     filp_close
+                       |                     sys_close
+                       |                     system_call
+                       |                     __libc_close
+                       |          
+                       |--0.60%-- link_path_walk
+                       |          do_path_lookup
+                       |          do_filp_open
+                       |          do_sys_open
+                       |          sys_open
+                       |          system_call
+                       |          __open_nocancel
+                       |          
+                       |--0.57%-- __slab_free
+                       |          kmem_cache_free
+                       |          file_free_rcu
+                       |          __rcu_process_callbacks
+                       |          rcu_process_callbacks
+                       |          __do_softirq
+
+
+With flat it looks a bit better:
+     7.34%          open  [kernel.kallsyms]     [k] kmem_cache_alloc
+             6.09%
+                kmem_cache_alloc
+                get_empty_filp
+                do_filp_open
+                do_sys_open
+                sys_open
+                system_call
+                __open_nocancel
+
+             1.07%
+                kmem_cache_alloc
+                getname
+                do_sys_open
+                sys_open
+                system_call
+                __open_nocancel
+
+     6.17%          open  [kernel.kallsyms]     [k] _raw_spin_lock
+             0.60%
+                _raw_spin_lock
+                link_path_walk
+                do_path_lookup
+                do_filp_open
+                do_sys_open
+                sys_open
+                system_call
+                __open_nocancel
+
+             0.57%
+                _raw_spin_lock
+                fd_install
+                do_sys_open
+                sys_open
+                system_call
+                __open_nocancel
+
+             0.57%
+                _raw_spin_lock
+                dput
+                fput
+                filp_close
+                sys_close
+                system_call
+                __libc_close
+
