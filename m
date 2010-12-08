@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab0LHTKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 14:10:00 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:54652 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224Ab0LHTJ7 (ORCPT
+	id S1756341Ab0LHTRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 14:17:45 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:33799 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756321Ab0LHTRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 14:09:59 -0500
-Message-ID: <4CFFD801.8060704@canonical.com>
-Date: Wed, 08 Dec 2010 11:09:53 -0800
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 8 Dec 2010 14:17:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Vcr1NKfBydM+1vkX7bbrzMGZpLDANU6Vr6afg4DO1t2BY/Yd2Bcdz/PbLYM50kAYLL
+         GFHUVEMDOL9fo8Yl6NKBAjMEhwyLDGflIfmttPJkfh1yBswDvpx/GQAeisHTyJfm1efg
+         RzGO60aMS3jn/UQOLx7Hvs6TNVNlf6i4loC4o=
+Date: Wed, 8 Dec 2010 21:17:36 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Hanno =?iso-8859-1?Q?B=F6ck?= <hanno@hboeck.de>
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] acpi: const-ify functions
+Message-ID: <20101208191736.GA6694@core2.telecom.by>
+References: <201012081925.10292.hanno@hboeck.de>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Add an envelope tool type
-References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <4CFFCD10.5030202@euromail.se> <4CFFD0BF.2020601@canonical.com> <4CFFD3FE.1090103@euromail.se>
-In-Reply-To: <4CFFD3FE.1090103@euromail.se>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201012081925.10292.hanno@hboeck.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 10:52 AM, Henrik Rydberg wrote:
->> As you noted, what we are really interested here is a bounding
->> rectangle. I think Ping has said that Wacom could provide something that
->> is similar to a real convex hull, and mixing the two concepts together
->> could cause another ambiguity like BTN_TOOL_DOUBLETAP :).
+On Wed, Dec 08, 2010 at 07:25:10PM +0100, Hanno Böck wrote:
+> Will const a couple of functions and variables. This is extracted
+> from grsecurity (with only a slight modification to limit a line
+> to 80 chars).
+
+Why don't they do it themselves? :^)
+
+> Patch is against linux-acpi-2.6 git.
 > 
+> Similar patches have been sent in the past but not applied,
+> supposedly because they weren't sent to subsystem maintainers.
+> (I may continue to send similar extracts to other subsystems)
 > 
-> True, we should work towards avoiding such ambiguities.
-> 
->> I suggest merely renaming this to MT_TOOL_RECT to avoid confusion.
+> ---
+> Signed-off-by: Hanno Boeck <hanno@hboeck.de>
 
-This is really the main point I wanted to make, even though it was
-hidden among other things :). Do you have thoughts here?
+Signed-off-by should be before --- -- it must make into changelog.
 
->> 2. We could provide for multiple simultaneous rects by using the value
->> of the MT_TOOL_RECT property. The first rect would have value 0, the
->> second would have value 1, etc. I don't know if this will ever be used
->> since most devices will have real MT soon enough, but it wouldn't hurt
->> to define this.
-> 
-> I do think this is an unnecessary complication.
+> diff -Naurp linux-acpi-1//drivers/acpi/battery.c linux-acpi-2/drivers/acpi/battery.c
+> --- linux-acpi-1//drivers/acpi/battery.c	2010-12-08 18:42:26.187000005 +0100
+> +++ linux-acpi-2/drivers/acpi/battery.c	2010-12-08 18:42:53.595000204 +0100
+> @@ -851,7 +851,7 @@ DECLARE_FILE_FUNCTIONS(alarm);
+>  	}
+>  
+>  static struct battery_file {
+> -	struct file_operations ops;
+> +	const struct file_operations ops;
 
-It's not really any complication. I think we should define what the
-valid values are for MT_TOOL_{RECT,ENVELOPE} even if only one envelope
-is supported. Thus, I don't see why we shouldn't allow for multiple
-values for multiple rects.
+Whoa, does this work?
 
-Hardware manufacturers always seem to surprise us with what they come up
-with too :).
+>  	mode_t mode;
+>  	const char *name;
+>  } acpi_battery_file[] = {
 
--- Chase
+It maybe better to call proc_create_date() by hand (and even handle
+errors gracefully?
