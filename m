@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab0LHQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:24:09 -0500
-Received: from cantor.suse.de ([195.135.220.2]:42345 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab0LHQYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:24:07 -0500
-Subject: Re: [PATCH 1/3] [SCSI] dpt_i2o: fix compiler warning on dptids
-From: James Bottomley <James.Bottomley@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291825220.1741.9.camel@leonhard>
-References: <1291735896-14541-1-git-send-email-namhyung@gmail.com>
-	 <1291737421.17668.5.camel@mulgrave.site> <1291738348.1638.9.camel@leonhard>
-	 <1291739449.17668.9.camel@mulgrave.site>
-	 <1291742693.1638.22.camel@leonhard>  <1291825220.1741.9.camel@leonhard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 10:24:02 -0600
-Message-ID: <1291825442.24312.54.camel@mulgrave.site>
+	id S1752347Ab0LHQY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:24:57 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49773
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750905Ab0LHQYz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 11:24:55 -0500
+Date: Wed, 08 Dec 2010 08:25:22 -0800 (PST)
+Message-Id: <20101208.082522.226789733.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: gregkh@suse.de, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, holt@sgi.com, w@1wt.eu,
+        netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, vladislav.yasevich@hp.com,
+        sri@us.ibm.com
+Subject: Re: [34/44] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
+ to prevent integer overflows.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1291787445.5324.64.camel@edumazet-laptop>
+References: <AANLkTimTw3O-OM-5Cgv0ELNj8SmMjaaeMHMd2NNezxi7@mail.gmail.com>
+	<20101208041656.GA2291@suse.de>
+	<1291787445.5324.64.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-09 at 01:20 +0900, Namhyung Kim wrote:
-> 2010-12-08 (ìˆ˜), 02:24 +0900, Namhyung Kim:
-> > 2010-12-07 (í™”), 10:30 -0600, James Bottomley:
-> > > On Wed, 2010-12-08 at 01:12 +0900, Namhyung Kim wrote:
-> > > > MODULE_DEVICE_TABLE expands to nop when !MODULE (not !CONFIG_MODULE) so
-> > > > allyesconfig build always emits the warnings. Possible patch for this
-> > > > would be wraping it up in #ifdefs but when I sent a same patch to Greg
-> > > > KH he didn't want to add more #ifdefs in .c files.
-> > > 
-> > > I didn't mean changing any c files.  I meant fixing the module include
-> > > to make the table used even in the !MODULE case.  That way we only alter
-> > > one file instead of a significant proportion of the drivers.
-> > > 
-> > 
-> > It would not be a _significant_ proportion because normal drivers may
-> > refer the table in their driver struct. :)
-> > 
-> > Anyway the patch below looks good to me. I'll happily drop my patches if
-> > you apply this in your tree.
-> > 
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 08 Dec 2010 06:50:45 +0100
+
+> Le mardi 07 décembre 2010 à 20:16 -0800, Greg KH a écrit :
+>> On Tue, Dec 07, 2010 at 05:22:34PM -0800, Linus Torvalds wrote:
+>> > On Tue, Dec 7, 2010 at 4:04 PM, Greg KH <gregkh@suse.de> wrote:
+>> > >
+>> > > From: Robin Holt <holt@sgi.com>
+>> > >
+>> > > [ Problem was fixed differently upstream. -DaveM ]
+>> > 
+>> > Gaah. I'd really like to see more of a description for things like
+>> > this. A commit ID for the alternate fix, or at least a few words about
+>> > the different fix or reason why upstream doesn't need the stable
+>> > commit.
+>> 
+>> I'll let David confirm this, he's the one who sent it to me :)
 > 
-> Hi,
+> upstream uses commit 8d987e5c7510 (net: avoid limits overflow)
 > 
-> As akpm told me, using DEFINE_PCI_DEVICE_TABLE could also remove the
-> warnings (probably by making the table const) but it still requires
-> modifying .c files. What do you think?
+> This commit is a bit more untrusive for stable kernels :
+> 
+> It depends on :
+> a9febbb4bd13 (sysctl: min/max bounds are optional)
+> 27b3d80a7b6a (sysctl: fix min/max handling in __do_proc_doulongvec_minmax())
 
-The warning only appears in the non-modular case, which is pretty
-unusual for drivers nowadays, so I think the simplest elimination
-solution is the best one (i.e. just kill it at source in the header).
+Yep, this is the case.  Greg, you can add a reference to:
 
-James
+a9febbb4bd13
+27b3d80a7b6a
+8d987e5c7510
 
-
+in my "[ ... ]" in the commit message to clear this up.
