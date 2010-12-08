@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab0LHAry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:47:54 -0500
-Received: from kroah.org ([198.145.64.141]:58544 "EHLO coco.kroah.org"
+	id S1756657Ab0LHAzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:55:49 -0500
+Received: from kroah.org ([198.145.64.141]:58554 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756125Ab0LHArw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:52 -0500
+	id S1756332Ab0LHAry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:54 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
-Message-Id: <20101208004433.298044005@clark.site>
+Message-Id: <20101208004433.490123647@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:36 -0800
+Date: Tue, 07 Dec 2010 16:44:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Jones <jajones@nvidia.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [090/127] ARM: 6482/2: Fix find_next_zero_bit and related assembly
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [092/127] staging: rtl8187se: Change panic to warn when RF switch turned off
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Jones <jajones@nvidia.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 0e91ec0c06d2cd15071a6021c94840a50e6671aa upstream.
+commit f36d83a8cb7224f45fdfa1129a616dff56479a09 upstream.
 
-The find_next_bit, find_first_bit, find_next_zero_bit
-and find_first_zero_bit functions were not properly
-clamping to the maxbit argument at the bit level. They
-were instead only checking maxbit at the byte level.
-To fix this, add a compare and a conditional move
-instruction to the end of the common bit-within-the-
-byte code used by all the functions and be sure not to
-clobber the maxbit argument before it is used.
+This driver issues a kernel panic over conditions that do not
+justify such drastic action. Change these to log entries with
+a stack dump.
 
-Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: James Jones <jajones@nvidia.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This patch fixes the system crash reported in
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/674285.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-and-Tested-by: Robie Basik <rb-oss-3@justgohome.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/lib/findbit.S |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/rtl8187se/r8185b_init.c |   32 +++++++++++++++++++++++---------
+ 1 file changed, 23 insertions(+), 9 deletions(-)
 
---- a/arch/arm/lib/findbit.S
-+++ b/arch/arm/lib/findbit.S
-@@ -174,8 +174,8 @@ ENDPROC(_find_next_bit_be)
-  */
- .L_found:
- #if __LINUX_ARM_ARCH__ >= 5
--		rsb	r1, r3, #0
--		and	r3, r3, r1
-+		rsb	r0, r3, #0
-+		and	r3, r3, r0
- 		clz	r3, r3
- 		rsb	r3, r3, #31
- 		add	r0, r2, r3
-@@ -190,5 +190,7 @@ ENDPROC(_find_next_bit_be)
- 		addeq	r2, r2, #1
- 		mov	r0, r2
- #endif
-+		cmp	r1, r0			@ Clamp to maxbit
-+		movlo	r0, r1
- 		mov	pc, lr
+--- a/drivers/staging/rtl8187se/r8185b_init.c
++++ b/drivers/staging/rtl8187se/r8185b_init.c
+@@ -356,8 +356,12 @@ HwHSSIThreeWire(
+ 			}
+ 			udelay(10);
+ 		}
+-		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT)
+-			panic("HwThreeWire(): CmdReg: %#X RE|WE bits are not clear!!\n", u1bTmp);
++		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT) {
++			printk(KERN_ERR "rtl8187se: HwThreeWire(): CmdReg:"
++			       " %#X RE|WE bits are not clear!!\n", u1bTmp);
++			dump_stack();
++			return 0;
++		}
  
+ 		// RTL8187S HSSI Read/Write Function
+ 		u1bTmp = read_nic_byte(dev, RF_SW_CONFIG);
+@@ -397,13 +401,23 @@ HwHSSIThreeWire(
+ 				int idx;
+ 				int ByteCnt = nDataBufBitCnt / 8;
+                                 //printk("%d\n",nDataBufBitCnt);
+-				if ((nDataBufBitCnt % 8) != 0)
+-				panic("HwThreeWire(): nDataBufBitCnt(%d) should be multiple of 8!!!\n",
+-				nDataBufBitCnt);
+-
+-			       if (nDataBufBitCnt > 64)
+-				panic("HwThreeWire(): nDataBufBitCnt(%d) should <= 64!!!\n",
+-				nDataBufBitCnt);
++				if ((nDataBufBitCnt % 8) != 0) {
++					printk(KERN_ERR "rtl8187se: "
++					       "HwThreeWire(): nDataBufBitCnt(%d)"
++					       " should be multiple of 8!!!\n",
++					       nDataBufBitCnt);
++					dump_stack();
++					nDataBufBitCnt += 8;
++					nDataBufBitCnt &= ~7;
++				}
++
++			       if (nDataBufBitCnt > 64) {
++					printk(KERN_ERR "rtl8187se: HwThreeWire():"
++					       " nDataBufBitCnt(%d) should <= 64!!!\n",
++					       nDataBufBitCnt);
++					dump_stack();
++					nDataBufBitCnt = 64;
++				}
+ 
+ 				for(idx = 0; idx < ByteCnt; idx++)
+ 				{
 
 
