@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0LHCRX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:17:23 -0500
-Received: from kroah.org ([198.145.64.141]:45971 "EHLO coco.kroah.org"
+	id S1757972Ab0LHCRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:17:53 -0500
+Received: from kroah.org ([198.145.64.141]:45915 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755877Ab0LHAqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:52 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:27 2010
-Message-Id: <20101208004427.071058996@clark.site>
+	id S1755821Ab0LHAqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:44 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
+Message-Id: <20101208004426.198353390@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:33 -0800
+Date: Tue, 07 Dec 2010 16:43:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>
-Subject: [027/127] sgi-xpc: XPC fails to discover partitions with all nasids above 128
+        Tim Abbott <tabbott@ksplice.com>, Jeff Dike <jdike@addtoit.com>
+Subject: [018/127] um: remove PAGE_SIZE alignment in linker script causing kernel segfault.
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin@sgi.com <Robin@sgi.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit c22c7aeff69796f46ae0fcec141538e28f50b24e upstream.
+commit 6915e04f8847bea16d0890f559694ad8eedd026c upstream.
 
-UV hardware defines 256 memory protection regions versus the baseline 64
-with increasing size for the SN2 ia64.  This was overlooked when XPC was
-modified to accomodate both UV and SN2.
+The linker script cleanup that I did in commit 5d150a97f93 ("um: Clean up
+linker script using standard macros.") (2.6.32) accidentally introduced an
+ALIGN(PAGE_SIZE) when converting to use INIT_TEXT_SECTION; Richard
+Weinberger reported that this causes the kernel to segfault with
+CONFIG_STATIC_LINK=y.
 
-Without this patch, a user could reconfigure their existing system and
-suddenly disable cross-partition communications with no indication of what
-has gone wrong.  It also prevents larger configurations from using
-cross-partition communication.
+I'm not certain why this extra alignment is a problem, but it seems likely
+it is because previously
 
-Signed-off-by: Robin Holt <holt@sgi.com>
+__init_begin = _stext = _text = _sinittext
+
+and with the extra ALIGN(PAGE_SIZE), _sinittext becomes different from the
+rest.  So there is likely a bug here where something is assuming that
+_sinittext is the same as one of those other symbols.  But reverting the
+accidental change fixes the regression, so it seems worth committing that
+now.
+
+Signed-off-by: Tim Abbott <tabbott@ksplice.com>
+Reported-by: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>
+Tested by: Antoine Martin <antoine@nagafix.co.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/sgi-xp/xpc_partition.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ arch/um/kernel/uml.lds.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/sgi-xp/xpc_partition.c
-+++ b/drivers/misc/sgi-xp/xpc_partition.c
-@@ -433,18 +433,23 @@ xpc_discovery(void)
- 	 * nodes that can comprise an access protection grouping. The access
- 	 * protection is in regards to memory, IOI and IPI.
- 	 */
--	max_regions = 64;
- 	region_size = xp_region_size;
+--- a/arch/um/kernel/uml.lds.S
++++ b/arch/um/kernel/uml.lds.S
+@@ -22,7 +22,7 @@ SECTIONS
+   _text = .;
+   _stext = .;
+   __init_begin = .;
+-  INIT_TEXT_SECTION(PAGE_SIZE)
++  INIT_TEXT_SECTION(0)
+   . = ALIGN(PAGE_SIZE);
  
--	switch (region_size) {
--	case 128:
--		max_regions *= 2;
--	case 64:
--		max_regions *= 2;
--	case 32:
--		max_regions *= 2;
--		region_size = 16;
--		DBUG_ON(!is_shub2());
-+	if (is_uv())
-+		max_regions = 256;
-+	else {
-+		max_regions = 64;
-+
-+		switch (region_size) {
-+		case 128:
-+			max_regions *= 2;
-+		case 64:
-+			max_regions *= 2;
-+		case 32:
-+			max_regions *= 2;
-+			region_size = 16;
-+			DBUG_ON(!is_shub2());
-+		}
- 	}
- 
- 	for (region = 0; region < max_regions; region++) {
+   .text      :
 
 
