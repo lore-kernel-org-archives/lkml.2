@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab0LHBCG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:06 -0500
-Received: from kroah.org ([198.145.64.141]:49115 "EHLO coco.kroah.org"
+	id S932518Ab0LHBCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:38 -0500
+Received: from kroah.org ([198.145.64.141]:33486 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932226Ab0LHBB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:59 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:37 2010
-Message-Id: <20101208005737.225790685@clark.site>
+	id S932488Ab0LHBCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:36 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:39 2010
+Message-Id: <20101208005739.888899884@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:55 -0800
+Date: Tue, 07 Dec 2010 16:59:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [158/289] ALSA: ac97: Apply quirk for Dell Latitude D610 binding Master and Headphone controls
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [184/289] exec: copy-and-paste the fixes into compat_do_execve() paths
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 0613a59456980161d0cd468bae6c63d772743102 upstream.
+commit 114279be2120a916e8a04feeb2ac976a10016f2f upstream.
 
-BugLink: https://launchpad.net/bugs/669279
+Note: this patch targets 2.6.37 and tries to be as simple as possible.
+That is why it adds more copy-and-paste horror into fs/compat.c and
+uglifies fs/exec.c, this will be cleanuped later.
 
-The original reporter states: "The Master mixer does not change the
-volume from the headphone output (which is affected by the headphone
-mixer). Instead it only seems to control the on-board speaker volume.
-This confuses PulseAudio greatly as the Master channel is merged into
-the volume mix."
+compat_copy_strings() plays with bprm->vma/mm directly and thus has
+two problems: it lacks the RLIMIT_STACK check and argv/envp memory
+is not visible to oom killer.
 
-Fix this symptom by applying the hp_only quirk for the reporter's SSID.
-The fix is applicable to all stable kernels.
+Export acct_arg_size() and get_arg_page(), change compat_copy_strings()
+to use get_arg_page(), change compat_do_execve() to do acct_arg_size(0)
+as do_execve() does.
 
-Reported-and-tested-by: Ben Gamari <bgamari@gmail.com>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Add the fatal_signal_pending/cond_resched checks into compat_count() and
+compat_copy_strings(), this matches the code in fs/exec.c and certainly
+makes sense.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/intel8x0.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/compat.c             |   28 +++++++++++++++-------------
+ fs/exec.c               |    8 ++++----
+ include/linux/binfmts.h |    4 ++++
+ 3 files changed, 23 insertions(+), 17 deletions(-)
 
---- a/sound/pci/intel8x0.c
-+++ b/sound/pci/intel8x0.c
-@@ -1866,6 +1866,12 @@ static struct ac97_quirk ac97_quirks[] _
- 	},
- 	{
- 		.subvendor = 0x1028,
-+		.subdevice = 0x0182,
-+		.name = "Dell Latitude D610",	/* STAC9750/51 */
-+		.type = AC97_TUNE_HP_ONLY
-+	},
-+	{
-+		.subvendor = 0x1028,
- 		.subdevice = 0x0186,
- 		.name = "Dell Latitude D810", /* cf. Malone #41015 */
- 		.type = AC97_TUNE_HP_MUTE_LED
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1378,6 +1378,10 @@ static int compat_count(compat_uptr_t __
+ 			argv++;
+ 			if (i++ >= max)
+ 				return -E2BIG;
++
++			if (fatal_signal_pending(current))
++				return -ERESTARTNOHAND;
++			cond_resched();
+ 		}
+ 	}
+ 	return i;
+@@ -1419,6 +1423,12 @@ static int compat_copy_strings(int argc,
+ 		while (len > 0) {
+ 			int offset, bytes_to_copy;
+ 
++			if (fatal_signal_pending(current)) {
++				ret = -ERESTARTNOHAND;
++				goto out;
++			}
++			cond_resched();
++
+ 			offset = pos % PAGE_SIZE;
+ 			if (offset == 0)
+ 				offset = PAGE_SIZE;
+@@ -1435,18 +1445,8 @@ static int compat_copy_strings(int argc,
+ 			if (!kmapped_page || kpos != (pos & PAGE_MASK)) {
+ 				struct page *page;
+ 
+-#ifdef CONFIG_STACK_GROWSUP
+-				ret = expand_stack_downwards(bprm->vma, pos);
+-				if (ret < 0) {
+-					/* We've exceed the stack rlimit. */
+-					ret = -E2BIG;
+-					goto out;
+-				}
+-#endif
+-				ret = get_user_pages(current, bprm->mm, pos,
+-						     1, 1, 1, &page, NULL);
+-				if (ret <= 0) {
+-					/* We've exceed the stack rlimit. */
++				page = get_arg_page(bprm, pos, 1);
++				if (!page) {
+ 					ret = -E2BIG;
+ 					goto out;
+ 				}
+@@ -1567,8 +1567,10 @@ int compat_do_execve(char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
+ 		mmput(bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -157,7 +157,7 @@ out:
+ 
+ #ifdef CONFIG_MMU
+ 
+-static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	long diff = (long)(pages - bprm->vma_pages);
+@@ -176,7 +176,7 @@ static void acct_arg_size(struct linux_b
+ #endif
+ }
+ 
+-static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+ 	struct page *page;
+@@ -290,11 +290,11 @@ static bool valid_arg_len(struct linux_b
+ 
+ #else
+ 
+-static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
+ {
+ }
+ 
+-static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+ 		int write)
+ {
+ 	struct page *page;
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -60,6 +60,10 @@ struct linux_binprm{
+ 	unsigned long loader, exec;
+ };
+ 
++extern void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
++extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++					int write);
++
+ #define BINPRM_FLAGS_ENFORCE_NONDUMP_BIT 0
+ #define BINPRM_FLAGS_ENFORCE_NONDUMP (1 << BINPRM_FLAGS_ENFORCE_NONDUMP_BIT)
+ 
 
 
