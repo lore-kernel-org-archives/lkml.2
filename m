@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab0LHE2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:28:44 -0500
+	id S1752986Ab0LHE32 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:29:28 -0500
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:53039 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab0LHE2k (ORCPT
+	with ESMTP id S1751815Ab0LHE2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:28:40 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65899452"
+	Tue, 7 Dec 2010 23:28:32 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65899434"
 X-IronPort-AV: E=Sophos;i="4.59,313,1288594800"; 
-   d="scan'208";a="34584833"
+   d="scan'208";a="34584816"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: [PATCH v2 6/6] msm: add SMP support for msm
-Date: Tue,  7 Dec 2010 20:28:21 -0800
-Message-Id: <1291782501-3909-7-git-send-email-johlstei@codeaurora.org>
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v2 2/6] msm: Secure Channel Manager (SCM) support
+Date: Tue,  7 Dec 2010 20:28:17 -0800
+Message-Id: <1291782501-3909-3-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
 References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>
@@ -30,253 +30,392 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+From: Stephen Boyd <sboyd@codeaurora.org>
+
+SCM is the protocol used to communicate between the secure and
+non-secure code executing on the applications processor. The
+non-secure side uses a physically contiguous buffer to pass
+information to the secure side; where the buffer conforms to a
+format that is agreed upon by both sides. The use of a buffer
+allows multiple pending requests to be in flight on the secure
+side. It also benefits use cases where the command or response
+buffer contains large chunks of data.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig            |    1 +
- arch/arm/mach-msm/Makefile           |    1 +
- arch/arm/mach-msm/headsmp.S          |   43 ++++++++++
- arch/arm/mach-msm/include/mach/smp.h |    2 +
- arch/arm/mach-msm/platsmp.c          |  146 ++++++++++++++++++++++++++++++++++
- 5 files changed, 193 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/headsmp.S
- create mode 100644 arch/arm/mach-msm/platsmp.c
+ arch/arm/mach-msm/Kconfig  |    4 +
+ arch/arm/mach-msm/Makefile |    1 +
+ arch/arm/mach-msm/scm.c    |  280 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/scm.h    |   41 +++++++
+ 4 files changed, 326 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/scm.c
+ create mode 100644 arch/arm/mach-msm/scm.h
 
 diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index ab5338f..8c57425 100644
+index 31e5fd6..ab5338f 100644
 --- a/arch/arm/mach-msm/Kconfig
 +++ b/arch/arm/mach-msm/Kconfig
-@@ -40,6 +40,7 @@ config ARCH_MSM8X60
- 	bool "MSM8X60"
- 	select MACH_MSM8X60_SURF if (!MACH_MSM8X60_RUMI3 && !MACH_MSM8X60_SIM \
- 				  && !MACH_MSM8X60_FFA)
-+	select ARCH_MSM_SCORPIONMP
- 	select ARM_GIC
+@@ -44,6 +44,7 @@ config ARCH_MSM8X60
  	select CPU_V7
  	select MSM_V2_TLMM
+ 	select MSM_GPIOMUX
++	select MSM_SCM if SMP
+ 
+ endchoice
+ 
+@@ -164,4 +165,7 @@ config MSM_GPIOMUX
+ 
+ config MSM_V2_TLMM
+ 	bool
++
++config MSM_SCM
++	bool
+ endif
 diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 7a11b4a..1945f9c 100644
+index b5a7b07..eed503b 100644
 --- a/arch/arm/mach-msm/Makefile
 +++ b/arch/arm/mach-msm/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
- obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
- 
- obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
-+obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+@@ -18,6 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
+ obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
+ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
++obj-$(CONFIG_MSM_SCM) += scm.o
  
  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
  obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/headsmp.S b/arch/arm/mach-msm/headsmp.S
+diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
 new file mode 100644
-index 0000000..438cfeb
+index 0000000..85ed2cc
 --- /dev/null
-+++ b/arch/arm/mach-msm/headsmp.S
-@@ -0,0 +1,43 @@
-+/*
-+ *  Copyright (c) 2003 ARM Limited
-+ *  All Rights Reserved
-+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++++ b/arch/arm/mach-msm/scm.c
+@@ -0,0 +1,280 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+
-+/*
-+ * MSM specific entry point for secondary CPUs.  This provides
-+ * a "holding pen" into which all secondary cores are held until we're
-+ * ready for them to initialise.
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
-+ * This is executing in physical space with cache's off.
-+ */
-+ENTRY(msm_secondary_startup)
-+	mrc	p15, 0, r0, c0, c0, 5 	@ MPIDR
-+	and	r0, r0, #15		@ What CPU am I
-+	adr	r4, 1f			@ address of
-+	ldmia	r4, {r5, r6}		@ load curr addr and pen_rel addr
-+	sub	r4, r4, r5		@ determine virtual/phys offsets
-+	add	r6, r6, r4		@ apply
-+pen:
-+	wfe
-+	dsb				@ ensure subsequent access is
-+					@ after event
-+
-+	ldr	r7, [r6]		@ pen_rel has cpu to remove from reset
-+	cmp	r7, r0			@ are we lucky?
-+	bne	pen
-+
-+	/*
-+	 * we've been released from the holding pen: secondary_stack
-+	 * should now contain the SVC stack for this core
-+	 */
-+	b	secondary_startup
-+
-+1:	.long	.
-+	.long	pen_release
-diff --git a/arch/arm/mach-msm/include/mach/smp.h b/arch/arm/mach-msm/include/mach/smp.h
-index 3ff7bf5..79f94b0 100644
---- a/arch/arm/mach-msm/include/mach/smp.h
-+++ b/arch/arm/mach-msm/include/mach/smp.h
-@@ -36,4 +36,6 @@ static inline void smp_cross_call(const struct cpumask *mask)
- 	gic_raise_softirq(mask, 1);
- }
- 
-+extern int pen_release;
-+extern void msm_secondary_startup(void);
- #endif
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-new file mode 100644
-index 0000000..0ab2bba
---- /dev/null
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -0,0 +1,146 @@
-+/*
-+ *  Copyright (C) 2002 ARM Ltd.
-+ *  All Rights Reserved
-+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/cpumask.h>
-+#include <linux/delay.h>
-+#include <linux/interrupt.h>
++#include <linux/slab.h>
 +#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/errno.h>
++#include <linux/err.h>
++#include <linux/dma-mapping.h>
 +
-+#include <asm/hardware/gic.h>
 +#include <asm/cacheflush.h>
-+#include <asm/mach-types.h>
 +
-+#include <mach/smp.h>
-+#include <mach/msm_iomap.h>
++#include "scm.h"
 +
-+#include "scm-boot.h"
++#define SCM_ENOMEM		-5
++#define SCM_EOPNOTSUPP		-4
++#define SCM_EINVAL_ADDR		-3
++#define SCM_EINVAL_ARG		-2
++#define SCM_ERROR		-1
++#define SCM_INTERRUPTED		1
 +
-+#define SECONDARY_CPU_WAIT_MS 10
++static DEFINE_MUTEX(scm_lock);
 +
-+#define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
-+#define SCSS_CPU1CORE_RESET 0xD80
-+#define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
++/**
++ * struct scm_command - one SCM command buffer
++ * @len: total available memory for command and response
++ * @buf_offset: start of command buffer
++ * @resp_hdr_offset: start of response buffer
++ * @id: command to be executed
++ *
++ * An SCM command is layed out in memory as follows:
++ *
++ *	------------------- <--- struct scm_command
++ *	| command header  |
++ *	------------------- <--- scm_get_command_buffer()
++ *	| command buffer  |
++ *	------------------- <--- struct scm_response and
++ *	| response header |      scm_command_to_response()
++ *	------------------- <--- scm_get_response_buffer()
++ *	| response buffer |
++ *	-------------------
++ *
++ * There can be arbitrary padding between the headers and buffers so
++ * you should always use the appropriate scm_get_*_buffer() routines
++ * to access the buffers in a safe manner.
++ */
++struct scm_command {
++	u32	len;
++	u32	buf_offset;
++	u32	resp_hdr_offset;
++	u32	id;
++};
 +
-+int pen_release = -1;
++/**
++ * struct scm_response - one SCM response buffer
++ * @len: total available memory for response
++ * @buf_offset: start of response data relative to start of scm_response
++ * @is_complete: indicates if the command has finished processing
++ */
++struct scm_response {
++	u32	len;
++	u32	buf_offset;
++	u32	is_complete;
++};
 +
-+int get_core_count(void)
++/**
++ * alloc_scm_command() - Allocate an SCM command
++ * @cmd_size: size of the command buffer
++ * @resp_size: size of the response buffer
++ * @handle: dma handle
++ *
++ * Allocate an SCM command, including enough room for the command
++ * and response headers as well as the command and response buffers.
++ *
++ * Returns a valid &scm_command on success or %NULL if the allocation fails.
++ */
++static struct scm_command *alloc_scm_command(size_t cmd_size, size_t resp_size,
++		dma_addr_t *handle)
 +{
-+#ifdef CONFIG_NR_CPUS
-+	return CONFIG_NR_CPUS;
-+#else
-+	return 1;
-+#endif
++	struct scm_command *cmd;
++	size_t len = sizeof(*cmd) + sizeof(struct scm_response) + cmd_size +
++		resp_size;
++
++	cmd = dma_alloc_coherent(NULL, len, handle, GFP_KERNEL);
++	if (cmd) {
++		cmd->len = len;
++		cmd->buf_offset = sizeof(*cmd);
++		cmd->resp_hdr_offset = cmd->buf_offset + cmd_size;
++	}
++	return cmd;
 +}
 +
-+/* Initialize the present map (set_cpu_present(i, true)). */
-+void smp_prepare_cpus(unsigned int max_cpus)
++/**
++ * free_scm_command() - Free an SCM command
++ * @cmd: command to free
++ * @handle: dma handle
++ *
++ * Free an SCM command.
++ */
++static inline void free_scm_command(struct scm_command *cmd, dma_addr_t handle)
 +{
-+	int i;
-+	unsigned int cpu = smp_processor_id();
-+
-+	smp_store_cpu_info(cpu);
-+
-+	for (i = 0; i < max_cpus; i++)
-+		set_cpu_present(i, true);
++	dma_free_coherent(NULL, cmd->len, cmd, handle);
 +}
 +
-+void smp_init_cpus(void)
++/**
++ * scm_command_to_response() - Get a pointer to a scm_response
++ * @cmd: command
++ *
++ * Returns a pointer to a response for a command.
++ */
++static inline struct scm_response *scm_command_to_response(
++		const struct scm_command *cmd)
 +{
-+	unsigned int i, ncores = get_core_count();
-+
-+	for (i = 0; i < ncores; i++)
-+		set_cpu_possible(i, true);
++	return (void *)cmd + cmd->resp_hdr_offset;
 +}
 +
-+static void prepare_cold_cpu(unsigned int cpu)
++/**
++ * scm_get_command_buffer() - Get a pointer to a command buffer
++ * @cmd: command
++ *
++ * Returns a pointer to the command buffer of a command.
++ */
++static inline void *scm_get_command_buffer(const struct scm_command *cmd)
++{
++	return (void *)cmd + cmd->buf_offset;
++}
++
++/**
++ * scm_get_response_buffer() - Get a pointer to a response buffer
++ * @rsp: response
++ *
++ * Returns a pointer to a response buffer of a response.
++ */
++static inline void *scm_get_response_buffer(const struct scm_response *rsp)
++{
++	return (void *)rsp + rsp->buf_offset;
++}
++
++static int scm_remap_error(int err)
++{
++	switch (err) {
++	case SCM_ERROR:
++		return -EIO;
++	case SCM_EINVAL_ADDR:
++	case SCM_EINVAL_ARG:
++		return -EINVAL;
++	case SCM_EOPNOTSUPP:
++		return -EOPNOTSUPP;
++	case SCM_ENOMEM:
++		return -ENOMEM;
++	}
++	return -EINVAL;
++}
++
++static u32 smc(dma_addr_t cmd_addr)
++{
++	int context_id;
++	register u32 r0 asm("r0") = 1;
++	register u32 r1 asm("r1") = (u32)&context_id;
++	register u32 r2 asm("r2") = (u32)cmd_addr;
++	asm(
++		__asmeq("%0", "r0")
++		__asmeq("%1", "r0")
++		__asmeq("%2", "r1")
++		__asmeq("%3", "r2")
++		"smc	#0	@ switch to secure world\n"
++		: "=r" (r0)
++		: "r" (r0), "r" (r1), "r" (r2)
++		: "r3");
++	return r0;
++}
++
++static int __scm_call(const dma_addr_t cmd)
 +{
 +	int ret;
-+	ret = scm_set_boot_addr((void *)
-+				virt_to_phys(msm_secondary_startup),
-+				SCM_FLAG_COLDBOOT_CPU1);
-+	if (ret == 0) {
-+		void *sc1_base_ptr;
-+		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
-+		if (sc1_base_ptr) {
-+			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
-+			writel(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
-+			writel(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
-+			iounmap(sc1_base_ptr);
-+		}
-+	} else
-+		printk(KERN_DEBUG "Failed to set secondary core boot "
-+				  "address\n");
-+}
-+
-+/* Executed by primary CPU, brings other CPUs out of reset. Called at boot
-+   as well as when a CPU is coming out of shutdown induced by echo 0 >
-+   /sys/devices/.../cpuX.
-+*/
-+int boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	static int cold_boot_done;
-+	int cnt = 0;
-+	printk(KERN_DEBUG "Starting secondary CPU %d\n", cpu);
-+
-+	if (cold_boot_done == false) {
-+		prepare_cold_cpu(cpu);
-+		cold_boot_done = true;
-+	}
-+
-+	pen_release = cpu;
-+	dmac_flush_range((void *)&pen_release,
-+			 (void *)(&pen_release + sizeof(pen_release)));
-+	__asm__("sev");
-+	dsb();
-+
-+	/* Use smp_cross_call() to send a soft interrupt to wake up
-+	 * the other core.
-+	 */
-+	smp_cross_call(cpumask_of(cpu));
-+
-+	while (pen_release != 0xFFFFFFFF) {
-+		smp_rmb();
-+		msleep_interruptible(1);
-+		if (cnt++ >= SECONDARY_CPU_WAIT_MS)
-+			break;
-+	}
-+
-+	return 0;
-+}
-+
-+/* Mask for edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
-+#define GIC_PPI_EDGE_MASK 0xFFFFD7FF
-+
-+/* Initialization routine for secondary CPUs after they are brought out of
-+ * reset.
-+*/
-+void platform_secondary_init(unsigned int cpu)
-+{
-+	printk(KERN_DEBUG "%s: cpu:%d\n", __func__, cpu);
-+
-+	trace_hardirqs_off();
-+
-+	writel(GIC_PPI_EDGE_MASK, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
-+
-+	/* RUMI does not adhere to GIC spec by enabling STIs by default.
-+	 * Enable/clear is supposed to be RO for STIs, but is RW on RUMI.
-+	 */
-+	if (!machine_is_msm8x60_sim())
-+		writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
 +
 +	/*
-+	 * setup GIC (GIC number NOT CPU number and the base address of the
-+	 * GIC CPU interface
++	 * Flush the entire cache here so callers don't have to remember
++	 * to flush the cache when passing physical addresses to the secure
++	 * side in the buffer.
 +	 */
-+	gic_cpu_init(0, MSM_QGIC_CPU_BASE);
-+	pen_release = -1;
-+	smp_wmb();
++	flush_cache_all();
++	do {
++		ret = smc(cmd);
++		if (ret < 0) {
++			ret = scm_remap_error(ret);
++			break;
++		}
++	} while (ret == SCM_INTERRUPTED);
++
++	return ret;
 +}
++
++/**
++ * scm_call() - Send an SCM command
++ * @svc_id: service identifier
++ * @cmd_id: command identifier
++ * @cmd_buf: command buffer
++ * @cmd_len: length of the command buffer
++ * @resp_buf: response buffer
++ * @resp_len: length of the response buffer
++ *
++ * Sends a command to the SCM and waits for the command to finish processing.
++ */
++int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
++		void *resp_buf, size_t resp_len)
++{
++	int ret;
++	struct scm_command *cmd;
++	struct scm_response *rsp;
++	dma_addr_t handle;
++
++	cmd = alloc_scm_command(cmd_len, resp_len, &handle);
++	if (!cmd)
++		return -ENOMEM;
++
++	cmd->id = (svc_id << 10) | cmd_id;
++	if (cmd_buf)
++		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
++	wmb();
++
++	mutex_lock(&scm_lock);
++	ret = __scm_call(handle);
++	mutex_unlock(&scm_lock);
++	if (ret)
++		goto out;
++
++	rsp = scm_command_to_response(cmd);
++	do {
++		rmb();
++	} while (!rsp->is_complete);
++
++	if (resp_buf)
++		memcpy(resp_buf, scm_get_response_buffer(rsp), resp_len);
++out:
++	free_scm_command(cmd, handle);
++	return ret;
++}
++EXPORT_SYMBOL(scm_call);
++
++u32 scm_get_version(void)
++{
++	int context_id;
++	static u32 version = -1;
++	register u32 r0 asm("r0") = 0x1 << 8;
++	register u32 r1 asm("r1") = (u32)&context_id;
++
++	if (version != -1)
++		return version;
++
++	mutex_lock(&scm_lock);
++	asm(
++		__asmeq("%0", "r1")
++		__asmeq("%1", "r0")
++		__asmeq("%2", "r1")
++		"smc	#0	@ switch to secure world\n"
++		: "=r" (r1)
++		: "r" (r0), "r" (r1)
++		: "r2", "r3");
++	version = r1;
++	mutex_unlock(&scm_lock);
++
++	return version;
++}
++EXPORT_SYMBOL(scm_get_version);
+diff --git a/arch/arm/mach-msm/scm.h b/arch/arm/mach-msm/scm.h
+new file mode 100644
+index 0000000..261786b
+--- /dev/null
++++ b/arch/arm/mach-msm/scm.h
+@@ -0,0 +1,41 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above
++ *       copyright notice, this list of conditions and the following
++ *       disclaimer in the documentation and/or other materials provided
++ *       with the distribution.
++ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
++ *       contributors may be used to endorse or promote products derived
++ *       from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
++ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
++ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
++ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++#ifndef __MACH_SCM_H
++#define __MACH_SCM_H
++
++#define SCM_SVC_BOOT			0x1
++#define SCM_SVC_PIL			0x2
++
++extern int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
++		void *resp_buf, size_t resp_len);
++
++#define SCM_VERSION(major, minor) (((major) << 16) | ((minor) & 0xFF))
++
++extern u32 scm_get_version(void);
++
++#endif
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
