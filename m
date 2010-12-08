@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab0LHXvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:51:42 -0500
-Received: from web31801.mail.mud.yahoo.com ([68.142.207.64]:30668 "HELO
-	web31801.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755198Ab0LHXvk (ORCPT
+	id S1756776Ab0LHXw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:52:27 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53864 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab0LHXwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:51:40 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=ZCx+Mcd6VVJk7rY/nNJ+pTBCgBzUbAVAizwh3MSNfnoAHGcmVDT/M2Pn3Bll0pJhQHBW2n7IrnURFqfYlop4zDcBaW6Tr8UeYdY9wLgfifTEW6V0YOkklXJ8sGZFQq1P9iIMTeWCSXdz9Eu1avD4H017KM4drxaXYm5NU9b9ULo=;
-Message-ID: <21690.835.qm@web31801.mail.mud.yahoo.com>
-X-YMail-OSG: y6CB2VkVM1kjtmp5PYLZZec97dd8F8x0JrXIccl1RoZ3Lmq
- MHe.SkIsWVEt9NJqrz.JpVhyDgjMzQhtt7KcAMQj3G_yOBNAWlBC_Wxvci2K
- eE3QIzM7u1ft_OSM0hWbe6tuS2IKyHlHJTADg1sWsyFh2GyCe9BRKChhOGi0
- iIQoJkbBYNXtsVf5hk_Z8_DQV5Ezn4O6YIlnm_pJyVq1.bUz5T1acPH1UUU5
- a09_vfJ5dnedjGbQtXm85bO7Ak3xr.vGY_FD_nI.q.f9PqpD3NWaf4AJAB80
- XTu4oGPtAJQHQKxOV62oFJnK2XpCCFiGi2eWWt6HvFOxI9uai7UcZbyVeryu
- QupPYt2fXSgZKpcmLsadjdwljuOdVJTXxaEOwAq3OPxoG
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
-Date: Wed, 8 Dec 2010 15:51:38 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH 1/4] [USB] UASP: Set iface data before scanning host
-To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
+	Wed, 8 Dec 2010 18:52:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=k/I9YkMXS8OdevWHCYoILwj2nbdAMpLIDzw8mUZBT9vwptrn1vBaK03APIe490dDT6
+         pjA4hFBXZmOb3iifoZ3FbfjjbfGXfAFmvqjoSPc1fzn2CEQc79QZ+8POmpeDhDC9plZP
+         4hgGx1MHJA+jqgsi/3V4HbDilCN6BHByvHnTo=
+Date: Wed, 8 Dec 2010 15:52:14 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Corentin Chary <corentin.chary@gmail.com>, sedat.dilek@gmail.com,
+        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: Tree for December 8
+ (drivers/platform/x86/Kconfig:422:error: recursive dependency detected!)
+Message-ID: <20101208235214.GC15294@core.coreip.homeip.net>
+References: <AANLkTim3FJjVpbjM10kJJhXbONpvGSGQFE+mfGX9pAS6@mail.gmail.com>
+ <AANLkTimjVY-6OwRfFUzUbmyacM81M35wf5qDWqAouUYb@mail.gmail.com>
+ <1291801990.5992.105.camel@i7.infradead.org>
+ <20101208174603.GA7107@core.coreip.homeip.net>
+ <20101208135105.a8482d46.randy.dunlap@oracle.com>
+ <1291849721.5992.145.camel@i7.infradead.org>
+ <20101208153428.93c95c54.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208153428.93c95c54.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
----
- drivers/usb/storage/uasp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Wed, Dec 08, 2010 at 03:34:28PM -0800, Randy Dunlap wrote:
+> On Wed, 08 Dec 2010 23:08:39 +0000 David Woodhouse wrote:
+> 
+> > On Wed, 2010-12-08 at 13:51 -0800, Randy Dunlap wrote:
+> > > 
+> > > I dislike select, but reality is that modules do need to select/enable
+> > > library code and minor features sometimes.
+> > > 
+> > > OTOH, where drivers/platform/x86/Kconfig:ACPI_CMPC does "select INPUT"
+> > > to enable an entire subsystem is wrong and bad IMO. 
+> > 
+> > This is just a deficiency in the tools. The correct answer is to fix the
+> > damn tools, not invent this silly 'select' facility which means much the
+> > same thing as 'depends on' but is implemented differently.
+> > 
+> > As long ago as the mid-1990s, the Nemesis research OS was using a tcl
+> > xconfig tool based on the Linux one, but which would show you the
+> > dependencies for an option that was disabled, so you could enable them
+> > where you needed to. Rather than just hiding the option completely.
+> 
+> 
+> xconfig has options that show all symbols.  I use that most of the time,
+> but I bet that most people do not.
+> 
 
-diff --git a/drivers/usb/storage/uasp.c b/drivers/usb/storage/uasp.c
-index 1d2b2e3..3b10efd 100644
---- a/drivers/usb/storage/uasp.c
-+++ b/drivers/usb/storage/uasp.c
-@@ -1059,8 +1059,8 @@ static int uasp_probe(struct usb_interface *iface,
- 		goto Free;
- 
- 	shost->hostdata[0] = (unsigned long)tpinfo;
--	scsi_scan_host(shost);
- 	usb_set_intfdata(iface, shost);
-+	scsi_scan_host(shost);
- 
- 	return res;
-  Free:
+GUI tools have means of presenting this, menuconfig and oldconfig have
+harder time...
+
 -- 
-1.7.0.1
-
-
+Dmitry
