@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab0LHSXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:23:33 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:33807 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755937Ab0LHSXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:23:32 -0500
-Message-ID: <4CFFCD10.5030202@euromail.se>
-Date: Wed, 08 Dec 2010 19:23:12 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1756087Ab0LHSYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:24:54 -0500
+Received: from hera.kernel.org ([140.211.167.34]:48093 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755937Ab0LHSYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 13:24:53 -0500
+Message-ID: <4CFFCD56.6050608@kernel.org>
+Date: Wed, 08 Dec 2010 19:24:22 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Add an envelope tool type
-References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com>
-In-Reply-To: <4CFFC3C2.1080905@canonical.com>
+To: Jian Peng <jipeng@broadcom.com>
+CC: Robert Hancock <hancockrwd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com> <4CFEE569.4030204@gmail.com> <4CFF58D2.4040006@kernel.org> <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQOfZ-0005jE-CF.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQOfZ-0005jE-CF 4c874167f6d455578839210a85c8dc88
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 18:24:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This patch represents an MT solution for those devices that can detect
+Hello,
 
->> and report some effects of dual touch, but cannot report individual
->> contacts. Synaptics and elantech are two examples. Having the drivers
->> report the bounding rectangle of the touches is useful in userland,
->> since the information makes it possible to implement zooming
->> gestures. At the same time, it would be confusing to send these
->> envelope points as fingers, since they clearly are not. As a remedy,
->> introduce MT_TOOL_ENVELOPE, which tells applications that care about
->> details that these are not real fingers, at the same time as it allows
->> gesture applications based on MT data to function without
->> modification.
+On 12/08/2010 07:14 PM, Jian Peng wrote:
+> The problem happened as follow:
 > 
-> Is it assumed that the envelop has only two touches comprising it? Or is
-> it any number of touches? If it's any number of touches, how does one
-> know how many touches it is?
+> After power up, inside ahci_init_one(), it will call ahci_power_up()
+> to toggle PxCMD.SUD bit first, then HBA will send COMRESET to
+> device, and device will send first D2H FIS back. Here it will call
+> ahci_start_engine() to turn on PxCMD.ST to process command. In this
+> case, it may run into race condition that transaction triggered by
+> toggling PxCMD.SUD is not completed yet, and that is the reason why
+> extra check is required by spec to guarantee that HBA already
+> received FIS and in sane state.
+> 
+> In most HBA, either staggered spin-up feature was not supported, or
+> time required for transaction is less than that between two function
+> calls, it may work. IMHO, this is a clear violation of spec, and not
+> robust against all HBA design.
+>
+> The major concern is that ahci_start_engine() is used widely in EH
+> and it does not return result to reflect whether ST bit was set or
+> not, this may cause trouble in some cases. I am working on verifying
+> those cases with different HBAs now.
 
+I see, so it's not that the controller actually failed but you
+observed the race condition.  During EH, ahci_start_engine() is used
+rather liberally when the driver wants the controller in working
+condition.  The assumption is that even if the driver tries to set ST
+with the incorrect condition, the controller wouldn't go crazy where
+it can't be restarted later, which _must_ be true as there's no atomic
+way to check the condition and set ST.
 
-It could be any number of points, although, as you say, the exact semantics of
-multiple points have not yet been defined/documented. Traditionally, a convex
-hull is defined as a sequence of points, such that the last links to the first.
-It makes sense to define the envelope points similarly. However, we can pass
-that bridge as we get there. Right now, we have use for the two-point case. The
-number is determined the same was as for fingers - count the number of active slots.
+The driver at the same time guarantees that if the whole
+initialization protocol succeeds, the last ahci_start_engine() is
+called after hardreset is sucessfully completed and thus all the
+prerequisites are met.
 
-> How are the envelop shape and position determined?
+So, yeap, the driver might set ST when the conditions are not met but
+that can't be avoided completely anyway so the controller shouldn't go
+completely bonkers for that (it's okay to fail in recoverable way) and
+the driver will do the last ST setting after all the conditions are
+met on the success path.
 
+Thanks.
 
-I was imagining a convex polygon shape, but frankly, I see no immediate use for
-anything but the bounding rectangle.
-
-> I think the idea is good, I just don't have enough information to
-> understand how the tool type is supposed to be used. This has been an
-> issue with many evdev properties, so I'm hoping we can provide more
-> detailed documentation this time around :).
-
-
-Yes, it is a good point. The current patch at least documents the intended use,
-and seems apt for the moment. We can always add more as the concept matures.
-
-Thanks,
-Henrik
+-- 
+tejun
