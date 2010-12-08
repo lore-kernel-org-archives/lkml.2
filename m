@@ -1,89 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab0LHT4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 14:56:32 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58557 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012Ab0LHT4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 14:56:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=cgB9jcOFp8FqE5VU/tzdrfXm1fjwKCL0e2zhN3p48nKxV8/MD/Lhcy2fP+03M5+x6y
-         gfUmdXSWqtHYvlCtraBbjqKBNmXtVFG4yk4rY/7ndg6boHHaMejkwjB/ywXuQzCnIXGD
-         dSRmxZxPikOWbYRRQdjmqcwC7IzUTnWIN55OY=
-Message-ID: <4CFFE2EA.9040909@gmail.com>
-Date: Wed, 08 Dec 2010 14:56:26 -0500
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Christian Brandt <brandtc@psi5.com>
-CC: linux-kernel@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: Re: swap storage alignment and stride size
-References: <4CFFBA7D.6060802@psi5.com>
-In-Reply-To: <4CFFBA7D.6060802@psi5.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756546Ab0LHT6K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 14:58:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59018 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756012Ab0LHT6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 14:58:03 -0500
+From: Tejun Heo <tj@kernel.org>
+To: jeff@garzik.org, linux-ide@vger.kernel.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@HansenPartnership.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/8] block: move register_disk() and del_gendisk() to block/genhd.c
+Date: Wed,  8 Dec 2010 20:57:36 +0100
+Message-Id: <1291838262-21274-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291838262-21274-1-git-send-email-tj@kernel.org>
+References: <1291838262-21274-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 19:57:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 12:03 PM, Christian Brandt wrote:
-> Preamble:
->
-> Hi fellow linux tamers, the following question has bounced around for
-> some days in local lists and newsgroups without conclussion and was
-> escalated upstream several times, here we are...
->
-> We are discussing semi-professional storage systems, e.g. ext4 on luks
-> on lvm on raid on gpt-partitions on 4k sector harddrives or 512k sector
-> SSDs. Usually every level profits a lot from aligning the data to the
-> underlying sector/stride/chunk size, e.g. ext4 with a 128k stripe size
-> will run a lot better on a well aligned 64k stride raid5.
->
-> In other words, partition tables, LVM, RAID, luks and filesystems know
-> how to handle and profit from aligned larger chunks.
->
-> In detail:
->
-> As far as we can read mm/swapfile.c linux is only concerned about cpu
-> page size and does not know anything about underlying
-> chunk/sector/stride sizes and alignment.
->
-> Therefore we think every small 1/2/4/8kiB page-sized write access leads
-> to a read-modify-write cycle for the whole chunk, taking more then twice
-> as long than simply writing the whole chunk at once.
->
-> Questions:
->
-> Is this the right place to ask?
->
-> Does or could linux swapping make use of aligning chunks?
->
-> And if, how?
->
-> If not, would it be an improvement?
->
-> Will this effect be mostly compensated by the block elevator?
->
-> Does it make any sense to change the mkswap page size to the chunk size?
-> We think those are two totally different beasts and should be left
-> seperated.
->
-> Is Linux already aware of chunk sizes within swap?
->
-> How to set up and controlled by the administrator?
->
+There's no reason for register_disk() and del_gendisk() to be in
+fs/partitions/check.c.  Move both to genhd.c.  While at it, collapse
+unlink_gendisk(), which was artificially in a separate function due to
+genhd.c / check.c split, into del_gendisk().
 
-Hi Christian,
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/genhd.c          |   90 ++++++++++++++++++++++++++++++++++++++++++++++--
+ fs/partitions/check.c  |   89 -----------------------------------------------
+ include/linux/blkdev.h |    1 -
+ include/linux/genhd.h  |    1 -
+ 4 files changed, 87 insertions(+), 94 deletions(-)
 
-There has been a lot of work on alignment, Martin Petersen lead most of that and 
-is probably the best one to ping.
-
-Ric
-
+diff --git a/block/genhd.c b/block/genhd.c
+index 0905ab2..2e5e4c0 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -502,6 +502,64 @@ static int exact_lock(dev_t devt, void *data)
+ 	return 0;
+ }
+ 
++void register_disk(struct gendisk *disk)
++{
++	struct device *ddev = disk_to_dev(disk);
++	struct block_device *bdev;
++	struct disk_part_iter piter;
++	struct hd_struct *part;
++	int err;
++
++	ddev->parent = disk->driverfs_dev;
++
++	dev_set_name(ddev, disk->disk_name);
++
++	/* delay uevents, until we scanned partition table */
++	dev_set_uevent_suppress(ddev, 1);
++
++	if (device_add(ddev))
++		return;
++	if (!sysfs_deprecated) {
++		err = sysfs_create_link(block_depr, &ddev->kobj,
++					kobject_name(&ddev->kobj));
++		if (err) {
++			device_del(ddev);
++			return;
++		}
++	}
++	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
++	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
++
++	/* No minors to use for partitions */
++	if (!disk_partitionable(disk))
++		goto exit;
++
++	/* No such device (e.g., media were just removed) */
++	if (!get_capacity(disk))
++		goto exit;
++
++	bdev = bdget_disk(disk, 0);
++	if (!bdev)
++		goto exit;
++
++	bdev->bd_invalidated = 1;
++	err = blkdev_get(bdev, FMODE_READ, NULL);
++	if (err < 0)
++		goto exit;
++	blkdev_put(bdev, FMODE_READ);
++
++exit:
++	/* announce disk after possible partitions are created */
++	dev_set_uevent_suppress(ddev, 0);
++	kobject_uevent(&ddev->kobj, KOBJ_ADD);
++
++	/* announce possible partitions */
++	disk_part_iter_init(&piter, disk, 0);
++	while ((part = disk_part_iter_next(&piter)))
++		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
++	disk_part_iter_exit(&piter);
++}
++
+ /**
+  * add_disk - add partitioning information to kernel list
+  * @disk: per-device partitioning information
+@@ -552,17 +610,43 @@ void add_disk(struct gendisk *disk)
+ 				   "bdi");
+ 	WARN_ON(retval);
+ }
+-
+ EXPORT_SYMBOL(add_disk);
+-EXPORT_SYMBOL(del_gendisk);	/* in partitions/check.c */
+ 
+-void unlink_gendisk(struct gendisk *disk)
++void del_gendisk(struct gendisk *disk)
+ {
++	struct disk_part_iter piter;
++	struct hd_struct *part;
++
++	/* invalidate stuff */
++	disk_part_iter_init(&piter, disk,
++			     DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
++	while ((part = disk_part_iter_next(&piter))) {
++		invalidate_partition(disk, part->partno);
++		delete_partition(disk, part->partno);
++	}
++	disk_part_iter_exit(&piter);
++
++	invalidate_partition(disk, 0);
++	blk_free_devt(disk_to_dev(disk)->devt);
++	set_capacity(disk, 0);
++	disk->flags &= ~GENHD_FL_UP;
++
+ 	sysfs_remove_link(&disk_to_dev(disk)->kobj, "bdi");
+ 	bdi_unregister(&disk->queue->backing_dev_info);
+ 	blk_unregister_queue(disk);
+ 	blk_unregister_region(disk_devt(disk), disk->minors);
++
++	part_stat_set_all(&disk->part0, 0);
++	disk->part0.stamp = 0;
++
++	kobject_put(disk->part0.holder_dir);
++	kobject_put(disk->slave_dir);
++	disk->driverfs_dev = NULL;
++	if (!sysfs_deprecated)
++		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
++	device_del(disk_to_dev(disk));
+ }
++EXPORT_SYMBOL(del_gendisk);
+ 
+ /**
+  * get_gendisk - get partitioning information for a given device
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index bdf8d3c..9a48d65 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -516,65 +516,6 @@ out_put:
+ 	return ERR_PTR(err);
+ }
+ 
+-/* Not exported, helper to add_disk(). */
+-void register_disk(struct gendisk *disk)
+-{
+-	struct device *ddev = disk_to_dev(disk);
+-	struct block_device *bdev;
+-	struct disk_part_iter piter;
+-	struct hd_struct *part;
+-	int err;
+-
+-	ddev->parent = disk->driverfs_dev;
+-
+-	dev_set_name(ddev, disk->disk_name);
+-
+-	/* delay uevents, until we scanned partition table */
+-	dev_set_uevent_suppress(ddev, 1);
+-
+-	if (device_add(ddev))
+-		return;
+-	if (!sysfs_deprecated) {
+-		err = sysfs_create_link(block_depr, &ddev->kobj,
+-					kobject_name(&ddev->kobj));
+-		if (err) {
+-			device_del(ddev);
+-			return;
+-		}
+-	}
+-	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
+-	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
+-
+-	/* No minors to use for partitions */
+-	if (!disk_partitionable(disk))
+-		goto exit;
+-
+-	/* No such device (e.g., media were just removed) */
+-	if (!get_capacity(disk))
+-		goto exit;
+-
+-	bdev = bdget_disk(disk, 0);
+-	if (!bdev)
+-		goto exit;
+-
+-	bdev->bd_invalidated = 1;
+-	err = blkdev_get(bdev, FMODE_READ, NULL);
+-	if (err < 0)
+-		goto exit;
+-	blkdev_put(bdev, FMODE_READ);
+-
+-exit:
+-	/* announce disk after possible partitions are created */
+-	dev_set_uevent_suppress(ddev, 0);
+-	kobject_uevent(&ddev->kobj, KOBJ_ADD);
+-
+-	/* announce possible partitions */
+-	disk_part_iter_init(&piter, disk, 0);
+-	while ((part = disk_part_iter_next(&piter)))
+-		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
+-	disk_part_iter_exit(&piter);
+-}
+-
+ static bool disk_unlock_native_capacity(struct gendisk *disk)
+ {
+ 	const struct block_device_operations *bdops = disk->fops;
+@@ -737,33 +678,3 @@ fail:
+ }
+ 
+ EXPORT_SYMBOL(read_dev_sector);
+-
+-void del_gendisk(struct gendisk *disk)
+-{
+-	struct disk_part_iter piter;
+-	struct hd_struct *part;
+-
+-	/* invalidate stuff */
+-	disk_part_iter_init(&piter, disk,
+-			     DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
+-	while ((part = disk_part_iter_next(&piter))) {
+-		invalidate_partition(disk, part->partno);
+-		delete_partition(disk, part->partno);
+-	}
+-	disk_part_iter_exit(&piter);
+-
+-	invalidate_partition(disk, 0);
+-	blk_free_devt(disk_to_dev(disk)->devt);
+-	set_capacity(disk, 0);
+-	disk->flags &= ~GENHD_FL_UP;
+-	unlink_gendisk(disk);
+-	part_stat_set_all(&disk->part0, 0);
+-	disk->part0.stamp = 0;
+-
+-	kobject_put(disk->part0.holder_dir);
+-	kobject_put(disk->slave_dir);
+-	disk->driverfs_dev = NULL;
+-	if (!sysfs_deprecated)
+-		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
+-	device_del(disk_to_dev(disk));
+-}
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index aae86fd..83031bc 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -643,7 +643,6 @@ static inline void rq_flush_dcache_pages(struct request *rq)
+ 
+ extern int blk_register_queue(struct gendisk *disk);
+ extern void blk_unregister_queue(struct gendisk *disk);
+-extern void register_disk(struct gendisk *dev);
+ extern void generic_make_request(struct bio *bio);
+ extern void blk_rq_init(struct request_queue *q, struct request *rq);
+ extern void blk_put_request(struct request *);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 5e4e692..56e17ed 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -394,7 +394,6 @@ extern void part_round_stats(int cpu, struct hd_struct *part);
+ /* block/genhd.c */
+ extern void add_disk(struct gendisk *disk);
+ extern void del_gendisk(struct gendisk *gp);
+-extern void unlink_gendisk(struct gendisk *gp);
+ extern struct gendisk *get_gendisk(dev_t dev, int *partno);
+ extern struct block_device *bdget_disk(struct gendisk *disk, int partno);
+ 
+-- 
+1.7.1
 
