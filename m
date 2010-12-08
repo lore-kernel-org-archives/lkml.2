@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0LHM42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 07:56:28 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48284 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544Ab0LHM41 (ORCPT
+	id S1754929Ab0LHNB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 08:01:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44082 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544Ab0LHNB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 07:56:27 -0500
-Date: Wed, 8 Dec 2010 12:55:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, Venkatesh Pallipadi <venki@google.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-Message-ID: <20101208125548.GA9777@n2100.arm.linux.org.uk>
-References: <19697.8378.717761.236202@pilspetsen.it.uu.se> <19707.34405.791777.298955@pilspetsen.it.uu.se> <20101205131702.GE9138@n2100.arm.linux.org.uk> <20101205141921.GF9138@n2100.arm.linux.org.uk> <19707.47304.977978.297596@pilspetsen.it.uu.se> <20101205162151.GH9138@n2100.arm.linux.org.uk> <1291812015.28378.24.camel@laptop>
+	Wed, 8 Dec 2010 08:01:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=ptArj7pqiG2cYtiNlE8xB02YLwKma2dOgIRDx0EDAT/xGIM6LXFZOx9DnoK8vAXd7U
+         cP+yHMt7C0+YA1Gz6D84xDaf8ZXCDRsdFTTjovv1THHqD1qsAyQBQF1Yb42ln/5Yfp3W
+         4dGo+p8qFejRrhnSjSNaCUi//s3bR0TkUy6h0=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH v4 4/7] Reclaim invalidated page ASAP
+In-Reply-To: <AANLkTikG1EAMm8yPvBVUXjFz1Bu9m+vfwH3TRPDzS9mq@mail.gmail.com>
+References: <cover.1291568905.git.minchan.kim@gmail.com> <0724024711222476a0c8deadb5b366265b8e5824.1291568905.git.minchan.kim@gmail.com> <20101208170504.1750.A69D9226@jp.fujitsu.com> <AANLkTikG1EAMm8yPvBVUXjFz1Bu9m+vfwH3TRPDzS9mq@mail.gmail.com>
+User-Agent: Notmuch/0.5-17-g2d1420b (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Wed, 08 Dec 2010 08:01:24 -0500
+Message-ID: <87oc8wa063.fsf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291812015.28378.24.camel@laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 01:40:15PM +0100, Peter Zijlstra wrote:
-> On Sun, 2010-12-05 at 16:21 +0000, Russell King - ARM Linux wrote:
-> 
-> > I'm not sure that's the correct fix - it looks like sched_clock_cpu()
-> > should already be preventing scheduler clock time going backwards.
-> > 
-> > Hmm. IOP32x seems to have a 32-bit timer clocked at 200MHz.  That means
-> > it wraps once every 21s.  However, we have that converted to ns by an
-> > unknown multiplier and shift.  It seems that those are chosen to
-> > guarantee that we will cover only 4s without wrapping in the clocksource
-> > conversion.  Maybe that's not sufficient?
-> > 
-> > Could you try looking into sched_clock_cpu(), sched_clock_local() and
-> > sched_clock() to see whether anything odd stands out?
-> 
-> # git grep HAVE_UNSTABLE_SCHED_CLOCK arch/arm | wc -l
-> 0
+> Make sense to me. If Ben is busy, I will measure it and send the result.
 
-Hmm, you're right.  In which case it's purely down to sched_clock()
-only being able to cover 4s - which seems to be far too small a gap.
+I've done measurements on the patched kernel. All that remains is to do
+measurements on the baseline unpached case. To summarize the results
+thusfar,
 
-I'm not sure that the unstable sched clock stuff makes much sense to
-be enabled - we don't have an unstable clock, we just don't have the
-required number of bits for the scheduler to work correctly.
+Times:
+=======
+                       user    sys     %cpu    inputs           outputs
+Patched, drop          142     64      46      13557744         14052744
+Patched, nodrop        55      57      33      13557936         13556680
 
-Nevertheless, this provides a good way to find this kind of wrap bug.
-Even with cnt_32_to_63, we still don't get a 64-bit sched_clock(), so
-this bug will still be there.  Even with a 64-bit clock, the bug will
-still be there.  It's basically crap code.
+vmstat:
+========
+                        free_pages      inact_anon      act_anon        inact_file      act_file        dirtied      written  reclaim
+Patched, drop, pre      306043          37541           185463          276266          153955          3689674      3604959  1550641
+Patched, drop, post     13233           38462           175252          536346          178792          5527564      5371563  3169155
 
-Maybe it's better that on ARM, we just don't implement sched_clock()
-at all?
+Patched, nodrop, pre    475211          38602           175242          81979           178820          5527592      5371554  3169155
+Patched, nodrop, post   7697            38959           176986          547984          180855          7324836      7132158  3169155
+
+Altogether, it seems that something is horribly wrong, most likely with
+my test (or rsync patch). I'll do the baseline benchmarks today.
+
+Thoughts?
+
+Thanks,
+
+- Ben
+
