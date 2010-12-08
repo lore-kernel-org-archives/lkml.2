@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab0LHVg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 16:36:27 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:40756 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755724Ab0LHVgW (ORCPT
+	id S1756208Ab0LHVhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 16:37:14 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:2990 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab0LHVgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 16:36:22 -0500
-Subject: [PATCH 4/5] PNP: add framework for platform PNP quirks
+	Wed, 8 Dec 2010 16:36:19 -0500
+Subject: [PATCH 3/5] x86: avoid PNP resources when allocating address space
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: Jiri Slaby <jirislaby@gmail.com>, Dan Williams <dcbw@redhat.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-Date: Wed, 08 Dec 2010 14:36:22 -0700
-Message-ID: <20101208213621.13026.87155.stgit@bob.kio>
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>,
+        Matthew Garrett <mjg@redhat.com>
+Date: Wed, 08 Dec 2010 14:36:16 -0700
+Message-ID: <20101208213616.13026.77390.stgit@bob.kio>
 In-Reply-To: <20101208213606.13026.47657.stgit@bob.kio>
 References: <20101208213606.13026.47657.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -28,86 +30,119 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This allows platform quirks to fabricate PNP devices to describe things
-that should have been described via ACPI.  For example, if the BIOS writer
-forgets to describe a device, we may assign its address space to another
-device, causing a conflict.  We can avoid the conflict by making a fake PNP
-device to stand in for the one the BIOS missed.
+Remove PNP resources from "available space" used by allocate_resource().
+This would be better done by putting the PNP resources directly in the
+resource maps (iomem_resource, etc), but there are some issues that
+keep us from doing that yet.
 
-In that case, there's no ACPI or PNPBIOS device, so we need a new
-pnp_protocol that doesn't go back to firmware for get/set/wakeup/
-suspend/etc.
+This patch keeps us from handing out PNP device address space to other
+callers of allocate_resource().
 
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23332
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23542
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23802
+Reported-by: Matthew Garrett <mjg@redhat.com>
+Reported-by: Dan Williams <dcbw@redhat.com>
+Reported-by: Jiri Slaby <jirislaby@gmail.com>
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- drivers/pnp/base.h   |    2 ++
- drivers/pnp/core.c   |    9 ++++++++-
- drivers/pnp/quirks.c |   15 +++++++++++++++
- 3 files changed, 25 insertions(+), 1 deletions(-)
+ arch/x86/kernel/resource.c |   78 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 78 insertions(+), 0 deletions(-)
 
 
-diff --git a/drivers/pnp/base.h b/drivers/pnp/base.h
-index 19bc736..dca301e 100644
---- a/drivers/pnp/base.h
-+++ b/drivers/pnp/base.h
-@@ -7,6 +7,8 @@ extern spinlock_t pnp_lock;
- extern struct device_attribute pnp_interface_attrs[];
- void *pnp_alloc(long size);
+diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
+index 5dd6473..1daee92 100644
+--- a/arch/x86/kernel/resource.c
++++ b/arch/x86/kernel/resource.c
+@@ -1,6 +1,80 @@
+ #include <linux/ioport.h>
++#include <linux/pnp.h>
+ #include <asm/e820.h>
  
-+void platform_pnp_fixups(void);
-+
- int pnp_register_protocol(struct pnp_protocol *protocol);
- void pnp_unregister_protocol(struct pnp_protocol *protocol);
- 
-diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
-index 0f34d96..5076493 100644
---- a/drivers/pnp/core.c
-+++ b/drivers/pnp/core.c
-@@ -212,7 +212,14 @@ void __pnp_remove_device(struct pnp_dev *dev)
- 
- static int __init pnp_init(void)
- {
--	return bus_register(&pnp_bus_type);
-+	int ret;
-+
-+	ret = bus_register(&pnp_bus_type);
-+	if (ret)
-+		return ret;
-+
-+	platform_pnp_fixups();
-+	return 0;
- }
- 
- subsys_initcall(pnp_init);
-diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
-index dfbd5a6..f18bb69 100644
---- a/drivers/pnp/quirks.c
-+++ b/drivers/pnp/quirks.c
-@@ -15,6 +15,7 @@
- 
- #include <linux/types.h>
- #include <linux/kernel.h>
-+#include <linux/dmi.h>
- #include <linux/string.h>
- #include <linux/slab.h>
- #include <linux/pnp.h>
-@@ -337,3 +338,17 @@ void pnp_fixup_device(struct pnp_dev *dev)
- 		f->quirk_function(dev);
- 	}
- }
-+
-+static struct pnp_protocol pnp_fixup_protocol = {
-+	.name = "Plug and Play fixup",
-+};
-+
-+static const struct dmi_system_id pnp_fixup_table[] __initconst = {
-+	{}
-+};
-+
-+void __init platform_pnp_fixups(void)
++#ifdef CONFIG_PNP
++static bool resource_conflict(struct resource *res, resource_size_t start,
++			      resource_size_t end)
 +{
-+	pnp_register_protocol(&pnp_fixup_protocol);
-+	dmi_check_system(pnp_fixup_table);
++	/*
++	 * Return true if and only if "res" conflicts with the [start-end]
++	 * range.
++	 */
++	return res->start <= end && res->end >= start;
 +}
++
++static void resource_split(struct resource *res, resource_size_t start,
++			   resource_size_t end, struct resource *low,
++			   struct resource *high)
++{
++	/*
++	 * If "res" conflicts with [start-end], split "res" into the
++	 * part below "start" (low) and the part above "end" (high),
++	 * either (or both) of which may be empty.
++	 *
++	 * If there's no conflict, return the entire "res" as "low".
++	 */
++	*low = *res;
++	low->start = res->start;
++	low->end = res->start - 1;	/* default to empty (size 0) */
++
++	*high = *res;
++	high->end = res->end;
++	high->start = res->end + 1;	/* default to empty (size 0) */
++
++	if (!resource_conflict(res, start, end)) {
++		low->end = res->end;
++		return;
++	}
++
++	if (res->start < start)
++		low->end = start - 1;
++
++	if (res->end > end)
++		high->start = end + 1;
++}
++
++static void pnp_remove_reservations(struct resource *avail)
++{
++	unsigned long type = resource_type(avail);
++	struct pnp_dev *dev;
++	int i;
++	struct resource *res, low, high;
++
++	/*
++	 * Clip the available region to avoid PNP devices.  The PNP
++	 * resources really should be in the resource map to begin with,
++	 * but there are still some issues preventing that.
++	 */
++	pnp_for_each_dev(dev) {
++		i = 0;
++		res = pnp_get_resource(dev, type, i++);
++		while (res) {
++			if (!(res->flags & IORESOURCE_WINDOW)) {
++				resource_split(avail, res->start, res->end,
++					       &low, &high);
++				if (resource_size(&low) > resource_size(&high))
++					*avail = low;
++				else
++					*avail = high;
++			}
++
++			res = pnp_get_resource(dev, type, i++);
++		}
++	}
++}
++#endif
++
+ void arch_remove_reservations(struct resource *avail)
+ {
+ 	/*
+@@ -11,4 +85,8 @@ void arch_remove_reservations(struct resource *avail)
+ 		if (avail->start < BIOS_END)
+ 			avail->start = BIOS_END;
+ 	}
++
++#ifdef CONFIG_PNP
++	pnp_remove_reservations(avail);
++#endif
+ }
 
