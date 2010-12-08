@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab0LHI5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:57:11 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:37184 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab0LHI5J convert rfc822-to-8bit (ORCPT
+	id S1754409Ab0LHJDd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 04:03:33 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:56840 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751631Ab0LHJD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:57:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=aTLokGDA92B/GMjUtK/4fDjx1SVwN9ADWIu8dwTRKtu4b0mQt33frW8AuNNBgmFsE2
-         GRa8mjdU+y+fWCDdt/xuNQs8XcIjCvWjhObd38DGhVlcsDG7YZhCBaYKMX2OqBuamMqj
-         h1GqRDor+Tk5ag/VLShqVSNgWaH1O35CrmHPg=
+	Wed, 8 Dec 2010 04:03:29 -0500
+Message-ID: <4CFF49BC.8030202@euromail.se>
+Date: Wed, 08 Dec 2010 10:02:52 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <4CFEB6EB.9070502@redhat.com>
-References: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
-	<AANLkTi=iH6QOAph0iW6MR2khD5KCe8mRLPe8Y3QnTTTW@mail.gmail.com>
-	<AANLkTik2SWrmVJ1o98-e2CwJP9SAo6oMmnuLc4K+rT1R@mail.gmail.com>
-	<AANLkTikdNXdDoixEzGbirH+U_v62vDeEMGaRRpvTsJpu@mail.gmail.com>
-	<AANLkTin8Xf9SPcHrBPRPg+cnbWO94CwB4u6KQ2it1+Y9@mail.gmail.com>
-	<4CFEB6EB.9070502@redhat.com>
-Date: Wed, 8 Dec 2010 09:57:07 +0100
-X-Google-Sender-Auth: 94AG5F3QBGhjUpSuF8tXsT0RgQo
-Message-ID: <AANLkTiki9TXX46ELDuPUEXpW7pQsH666-TU7t1qmh5iC@mail.gmail.com>
-Subject: Re: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        brueckner@linux.vnet.ibm.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] input: mt updates for 2.6.38
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PQFvK-0006Zr-6j.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PQFvK-0006Zr-6j 5e5cbd0a3c048d94a975b1f35d3cf758
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 7, 2010 at 23:36, Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
-> Em 07-12-2010 18:45, Geert Uytterhoeven escreveu:
->> On Tue, Dec 7, 2010 at 21:40, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>> On Tue, Dec 7, 2010 at 3:31 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>>> On Tue, Dec 7, 2010 at 20:51, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>>>> On Tue, Dec 7, 2010 at 2:07 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>>>>> On Sat, Dec 4, 2010 at 14:57, Michal Marek <mmarek@suse.cz> wrote:
->>>>>>> please pull these kbuild/kconfig fixes for the next -rc. The largest
->>>>>>> part are fixes for the annoying kconfig warnings, contributed by Arnaud
->>>>>>> Lacombe and Mauro Carvalho Chehab. The solution adds a new 'visible if'
->>>>>>> keyword to the Kconfig language, so it's not exactly something that one
->>>>>>> would expect in the rc phase, but the kconfig change is not huge (the
->>>>>>> large diff is due to generated files) and it is deployed only in those
->>>>>>> five Kconfig files that had the warnings and were hard to fix by other
->>>>>>> means.  The second part is a forgotten patch by Hendrik Brueckner to
->>>>>>> usr/initramfs, that fixes build for Blackfin and h8300.
->>>>>>
->>>>>>> Arnaud Lacombe (5):
->>>>>>>      kconfig: add an option to determine a menu's visibility
->>>>>>
->>>>>> Hmm, this changeset also went in through the v4l tree?
->>>>>>
->>>>> Mauro merely imported the set in his tree to give them visibility and
->>>>> testing, but they went in trough the kbuild tree after being in -next
->>>>> for a week.
->>>>
->>>> Hmm, git show 86e187ff9bce9fbed7bfed92ae34f491cf1af50f doesn't
->>>> show a SoB from Michal...
->>>>
->>> Why would you expect it to ? Most of the commit in Linus' tree are not
->>> personally SoB by him.
->>
->> Sorry, you're right.
->>
->>>>>> BTW, I got confused:
->>>>>>  - make allmodconfig causes e.g.:
->>>>>>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
->>>>>>        CONFIG_VIDEO_TVAUDIO=m
->>>>>>    => good
->>>>>>  - make oldconfig for my config with almost everything selected,
->>>>>> except for stuff I know that breaks:
->>>>>>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
->>>>>>        # CONFIG_VIDEO_TVAUDIO is not set
->>>>>>    and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
->>>>>>    => bad!
->>>>> that's difficult to judge without your old configuration.
->>>>> VIDEO_TVAUDIO is only selected by VIDEO_BT848 which you don't give
->>>>> information about.
->>>>
->>>> I don't have PCI, so I cannot enable VIDEO_BT848.
->>>>
->>> so why do you expect VIDEO_TVAUDIO to be enabled ?
->>
->> I don't expect it to be enabled, I expected to be able to enable it.
->> Allmodconfig
->> does enable it.
->
-> Why do you want to enable a device that doesn't work? There's no other driver
-> but bttv that has upport for the devices implemented by tvaudio module.
->
-> /me is confused...
+Dmitry,
 
-Compile coverage?
+Please pull from
 
-Haven't checked yet whether it gets enabled with allyesconfig, but allyesconfig
-contains a few things that don't work.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
 
-Gr{oetje,eeting}s,
+to receive input-mt updates for 2.6.38.
 
-                        Geert
+The tree contains core changes as well as dependent changes to hid drivers. You
+also find the new hid-egalax driver in there, signed off by Jiri.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks,
+Henrik
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Henrik Rydberg (13):
+      input: mt: Break out slots handling
+      input: mt: Collect slots initialization code
+      input: mt: Add an envelope tool type
+      input: mt: Move tracking and pointer emulation to input-mt
+      input: mt: Add hovering distance axis
+      hid: egalax: Setup input device manually
+      hid: egalax: Correct for device resolution report error
+      hid: egalax: Report zero as minimum pressure
+      hid: egalax: Add event filtering
+      hid: egalax: Convert to MT slots
+      hid: egalax: Add support for Wetab
+      hid: egalax: Document the new devices in Kconfig
+      MAINTAINERS: Update input-mt entry
+
+ Documentation/input/multi-touch-protocol.txt |   14 ++-
+ MAINTAINERS                                  |    2 +
+ drivers/hid/Kconfig                          |    3 +-
+ drivers/hid/hid-3m-pct.c                     |   36 +------
+ drivers/hid/hid-core.c                       |    1 +
+ drivers/hid/hid-egalax.c                     |  127 +++++++++-------------
+ drivers/hid/hid-ids.h                        |    1 +
+ drivers/input/Makefile                       |    2 +-
+ drivers/input/input-mt.c                     |  153 ++++++++++++++++++++++++++
+ drivers/input/input.c                        |   48 +--------
+ drivers/input/misc/uinput.c                  |    4 +-
+ drivers/input/tablet/wacom_wac.c             |   26 +---
+ drivers/input/tablet/wacom_wac.h             |    4 -
+ drivers/input/touchscreen/wacom_w8001.c      |   25 +---
+ include/linux/input-mt.h                     |   56 ++++++++++
+ include/linux/input.h                        |   22 +---
+ 16 files changed, 306 insertions(+), 218 deletions(-)
+ create mode 100644 drivers/input/input-mt.c
+ create mode 100644 include/linux/input-mt.h
