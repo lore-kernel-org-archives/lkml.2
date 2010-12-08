@@ -1,44 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab0LHIxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 03:53:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754072Ab0LHIxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 03:53:14 -0500
-Message-ID: <4CFF4766.9010909@redhat.com>
-Date: Wed, 08 Dec 2010 16:52:54 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1754482Ab0LHI5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 03:57:11 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:37184 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab0LHI5J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 03:57:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=aTLokGDA92B/GMjUtK/4fDjx1SVwN9ADWIu8dwTRKtu4b0mQt33frW8AuNNBgmFsE2
+         GRa8mjdU+y+fWCDdt/xuNQs8XcIjCvWjhObd38DGhVlcsDG7YZhCBaYKMX2OqBuamMqj
+         h1GqRDor+Tk5ag/VLShqVSNgWaH1O35CrmHPg=
 MIME-Version: 1.0
-To: Changli Gao <xiaosuo@gmail.com>
-CC: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
-        Neil Horman <nhorman@redhat.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [v3 PATCH 2/2] netpoll: remove IFF_IN_NETPOLL flag
-References: <20101208075208.5792.45247.sendpatchset@localhost.localdomain> <20101208075218.5792.64791.sendpatchset@localhost.localdomain> <AANLkTindQMNKhC2aowUyjm=uO8gFKqOOPa9HXSU1q7Gh@mail.gmail.com> <4CFF437D.1060904@redhat.com> <AANLkTikdweTkcsxTgf+phRaHYWMb9eAwrtr1xJr+0C1s@mail.gmail.com>
-In-Reply-To: <AANLkTikdweTkcsxTgf+phRaHYWMb9eAwrtr1xJr+0C1s@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4CFEB6EB.9070502@redhat.com>
+References: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>
+	<AANLkTi=iH6QOAph0iW6MR2khD5KCe8mRLPe8Y3QnTTTW@mail.gmail.com>
+	<AANLkTik2SWrmVJ1o98-e2CwJP9SAo6oMmnuLc4K+rT1R@mail.gmail.com>
+	<AANLkTikdNXdDoixEzGbirH+U_v62vDeEMGaRRpvTsJpu@mail.gmail.com>
+	<AANLkTin8Xf9SPcHrBPRPg+cnbWO94CwB4u6KQ2it1+Y9@mail.gmail.com>
+	<4CFEB6EB.9070502@redhat.com>
+Date: Wed, 8 Dec 2010 09:57:07 +0100
+X-Google-Sender-Auth: 94AG5F3QBGhjUpSuF8tXsT0RgQo
+Message-ID: <AANLkTiki9TXX46ELDuPUEXpW7pQsH666-TU7t1qmh5iC@mail.gmail.com>
+Subject: Re: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for 2.6.37-rc5)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        brueckner@linux.vnet.ibm.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/10 16:49, Changli Gao wrote:
-> On Wed, Dec 8, 2010 at 4:36 PM, Cong Wang<amwang@redhat.com>  wrote:
+On Tue, Dec 7, 2010 at 23:36, Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+> Em 07-12-2010 18:45, Geert Uytterhoeven escreveu:
+>> On Tue, Dec 7, 2010 at 21:40, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>> On Tue, Dec 7, 2010 at 3:31 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>> On Tue, Dec 7, 2010 at 20:51, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>>>> On Tue, Dec 7, 2010 at 2:07 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>>>> On Sat, Dec 4, 2010 at 14:57, Michal Marek <mmarek@suse.cz> wrote:
+>>>>>>> please pull these kbuild/kconfig fixes for the next -rc. The largest
+>>>>>>> part are fixes for the annoying kconfig warnings, contributed by Arnaud
+>>>>>>> Lacombe and Mauro Carvalho Chehab. The solution adds a new 'visible if'
+>>>>>>> keyword to the Kconfig language, so it's not exactly something that one
+>>>>>>> would expect in the rc phase, but the kconfig change is not huge (the
+>>>>>>> large diff is due to generated files) and it is deployed only in those
+>>>>>>> five Kconfig files that had the warnings and were hard to fix by other
+>>>>>>> means.  The second part is a forgotten patch by Hendrik Brueckner to
+>>>>>>> usr/initramfs, that fixes build for Blackfin and h8300.
+>>>>>>
+>>>>>>> Arnaud Lacombe (5):
+>>>>>>>      kconfig: add an option to determine a menu's visibility
+>>>>>>
+>>>>>> Hmm, this changeset also went in through the v4l tree?
+>>>>>>
+>>>>> Mauro merely imported the set in his tree to give them visibility and
+>>>>> testing, but they went in trough the kbuild tree after being in -next
+>>>>> for a week.
+>>>>
+>>>> Hmm, git show 86e187ff9bce9fbed7bfed92ae34f491cf1af50f doesn't
+>>>> show a SoB from Michal...
+>>>>
+>>> Why would you expect it to ? Most of the commit in Linus' tree are not
+>>> personally SoB by him.
 >>
->> A few lines above that code said:
+>> Sorry, you're right.
 >>
->> /* Private (from user) interface flags (netdevice->priv_flags). */
+>>>>>> BTW, I got confused:
+>>>>>>  - make allmodconfig causes e.g.:
+>>>>>>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>>>>>>        CONFIG_VIDEO_TVAUDIO=m
+>>>>>>    => good
+>>>>>>  - make oldconfig for my config with almost everything selected,
+>>>>>> except for stuff I know that breaks:
+>>>>>>        CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>>>>>>        # CONFIG_VIDEO_TVAUDIO is not set
+>>>>>>    and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
+>>>>>>    => bad!
+>>>>> that's difficult to judge without your old configuration.
+>>>>> VIDEO_TVAUDIO is only selected by VIDEO_BT848 which you don't give
+>>>>> information about.
+>>>>
+>>>> I don't have PCI, so I cannot enable VIDEO_BT848.
+>>>>
+>>> so why do you expect VIDEO_TVAUDIO to be enabled ?
 >>
->> unless this comment is wrong, we don't need to worry.
->>
+>> I don't expect it to be enabled, I expected to be able to enable it.
+>> Allmodconfig
+>> does enable it.
 >
-> It seems these macros are exported to user space wrongly.
+> Why do you want to enable a device that doesn't work? There's no other driver
+> but bttv that has upport for the devices implemented by tvaudio module.
 >
+> /me is confused...
 
-Maybe we should add #ifdef __KERNEL__ to protect them, I think.
+Compile coverage?
+
+Haven't checked yet whether it gets enabled with allyesconfig, but allyesconfig
+contains a few things that don't work.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
