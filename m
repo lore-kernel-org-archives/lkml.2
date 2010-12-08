@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab0LHBeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:34:16 -0500
-Received: from kroah.org ([198.145.64.141]:49027 "EHLO coco.kroah.org"
+	id S932313Ab0LHBeg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:34:36 -0500
+Received: from kroah.org ([198.145.64.141]:49019 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757339Ab0LHBBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:34 -0500
+	id S1757353Ab0LHBBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:31 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:35 2010
-Message-Id: <20101208005735.396101648@clark.site>
+Message-Id: <20101208005735.191411243@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:37 -0800
+Date: Tue, 07 Dec 2010 16:58:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [140/289] TTY: open/hangup race fixup
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>
+Subject: [138/289] TTY: ldisc, fix open flag handling
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,106 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Slaby <jslaby@suse.cz>
 
-commit acfa747baf73922021a047f2d87a2d866f5dbab5 upstream.
+commit 7f90cfc505d613f4faf096e0d84ffe99208057d9 upstream.
 
-Like in the "TTY: don't allow reopen when ldisc is changing" patch,
-this one fixes a TTY WARNING as described in the option 1) there:
-1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
-section tty_lock is held. However tty_lock is temporarily dropped in
-the middle of the function by tty_ldisc_hangup.
+When a concrete ldisc open fails in tty_ldisc_open, we forget to clear
+TTY_LDISC_OPEN. This causes a false warning on the next ldisc open:
+WARNING: at drivers/char/tty_ldisc.c:445 tty_ldisc_open+0x26/0x38()
+Hardware name: System Product Name
+Modules linked in: ...
+Pid: 5251, comm: a.out Tainted: G        W  2.6.32-5-686 #1
+Call Trace:
+ [<c1030321>] ? warn_slowpath_common+0x5e/0x8a
+ [<c1030357>] ? warn_slowpath_null+0xa/0xc
+ [<c119311c>] ? tty_ldisc_open+0x26/0x38
+ [<c11936c5>] ? tty_set_ldisc+0x218/0x304
+...
 
-The fix is to introduce a new flag which we set during the unlocked
-window and check it in tty_reopen too. The flag is TTY_HUPPING and is
-cleared after TTY_HUPPED is set.
+So clear the bit when failing...
 
-While at it, remove duplicate TTY_HUPPED set_bit. The one after
-calling ops->hangup seems to be more correct. But anyway, we hold
-tty_lock, so there should be no difference.
-
-Also document the function it does that kind of crap.
-
-Nicely reproducible with two forked children:
-static void do_work(const char *tty)
-{
-	if (signal(SIGHUP, SIG_IGN) == SIG_ERR) exit(1);
-	setsid();
-	while (1) {
-		int fd = open(tty, O_RDWR|O_NOCTTY);
-		if (fd < 0) continue;
-		if (ioctl(fd, TIOCSCTTY)) continue;
-		if (vhangup()) continue;
-		close(fd);
-	}
-	exit(0);
-}
+Introduced in c65c9bc3efa (tty: rewrite the ldisc locking) back in
+2.6.31-rc1.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: <Valdis.Kletnieks@vt.edu>
-Reported-by: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
+Reported-by: Sergey Lapin <slapin@ossfans.org>
+Tested-by: Sergey Lapin <slapin@ossfans.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tty_io.c |   10 +++++++++-
- include/linux/tty.h   |    1 +
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/char/tty_ldisc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -553,6 +553,9 @@ void __tty_hangup(struct tty_struct *tty
- 
- 	tty_lock();
- 
-+	/* some functions below drop BTM, so we need this bit */
-+	set_bit(TTY_HUPPING, &tty->flags);
-+
- 	/* inuse_filps is protected by the single tty lock,
- 	   this really needs to change if we want to flush the
- 	   workqueue with the lock held */
-@@ -572,6 +575,10 @@ void __tty_hangup(struct tty_struct *tty
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -454,6 +454,8 @@ static int tty_ldisc_open(struct tty_str
+                 /* BTM here locks versus a hangup event */
+ 		WARN_ON(!tty_locked());
+ 		ret = ld->ops->open(tty);
++		if (ret)
++			clear_bit(TTY_LDISC_OPEN, &tty->flags);
+ 		return ret;
  	}
- 	spin_unlock(&tty_files_lock);
- 
-+	/*
-+	 * it drops BTM and thus races with reopen
-+	 * we protect the race by TTY_HUPPING
-+	 */
- 	tty_ldisc_hangup(tty);
- 
- 	read_lock(&tasklist_lock);
-@@ -609,7 +616,6 @@ void __tty_hangup(struct tty_struct *tty
- 	tty->session = NULL;
- 	tty->pgrp = NULL;
- 	tty->ctrl_status = 0;
--	set_bit(TTY_HUPPED, &tty->flags);
- 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
- 
- 	/* Account for the p->signal references we killed */
-@@ -635,6 +641,7 @@ void __tty_hangup(struct tty_struct *tty
- 	 * can't yet guarantee all that.
- 	 */
- 	set_bit(TTY_HUPPED, &tty->flags);
-+	clear_bit(TTY_HUPPING, &tty->flags);
- 	tty_ldisc_enable(tty);
- 
- 	tty_unlock();
-@@ -1305,6 +1312,7 @@ static int tty_reopen(struct tty_struct
- 	struct tty_driver *driver = tty->driver;
- 
- 	if (test_bit(TTY_CLOSING, &tty->flags) ||
-+			test_bit(TTY_HUPPING, &tty->flags) ||
- 			test_bit(TTY_LDISC_CHANGING, &tty->flags))
- 		return -EIO;
- 
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -365,6 +365,7 @@ struct tty_file_private {
- #define TTY_HUPPED 		18	/* Post driver->hangup() */
- #define TTY_FLUSHING		19	/* Flushing to ldisc in progress */
- #define TTY_FLUSHPENDING	20	/* Queued buffer flush pending */
-+#define TTY_HUPPING 		21	/* ->hangup() in progress */
- 
- #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
- 
+ 	return 0;
 
 
