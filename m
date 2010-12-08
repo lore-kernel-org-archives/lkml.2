@@ -1,161 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab0LHAxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:53:12 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38798 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756395Ab0LHAxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:53:08 -0500
-Date: Tue, 7 Dec 2010 16:51:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: enabling-gate for light dirtied bdi
-Message-Id: <20101207165111.d79735c1.akpm@linux-foundation.org>
-In-Reply-To: <20101205064430.GA15027@localhost>
-References: <20101205064430.GA15027@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756635Ab0LHAv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:51:58 -0500
+Received: from kroah.org ([198.145.64.141]:58677 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756455Ab0LHAsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:12 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:35 2010
+Message-Id: <20101208004435.416065395@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 07 Dec 2010 16:44:57 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [111/127] x25: Prevent crashing when parsing bad X.25 facilities
+In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Dec 2010 14:44:30 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-> I noticed that my NFSROOT test system goes slow responding when there
-> is heavy dd to a local disk. Traces show that the NFSROOT's bdi_limit
-> is near 0 and many tasks in the system are repeatedly stuck in
-> balance_dirty_pages().
-> 
-> There are two related problems:
-> 
-> - light dirtiers at one device (more often than not the rootfs) get
->   heavily impacted by heavy dirtiers on another independent device
-> 
-> - the light dirtied device does heavy throttling because bdi_limit=0,
->   and the heavy throttling may in turn withhold its bdi_limit in 0 as
->   it cannot dirty fast enough to grow up the bdi's proportional weight.
-> 
-> Fix it by introducing some "low pass" gate, which is a small (<=8MB)
-> value reserved by others and can be safely "stole" from the current
-> global dirty margin.  It does not need to be big to help the bdi gain
-> its initial weight.
-> 
+------------------
 
-The changelog refers to something called "bdi_limit".  But there is no
-such thing.  It occurs nowhere in the Linux tree and it has never
-before been used in a changelog.
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-Can we please use carefully-chosen terminology and make sure that
-everyone can easily understand what the terms are referring to?
+commit 5ef41308f94dcbb3b7afc56cdef1c2ba53fa5d2f upstream.
 
-I'm assuming from context that you've created a new term to refer to
-the bdi_dirty_limit() return value for this bdi.
+Now with improved comma support.
 
+On parsing malformed X.25 facilities, decrementing the remaining length
+may cause it to underflow.  Since the length is an unsigned integer,
+this will result in the loop continuing until the kernel crashes.
 
-And ... oh geeze, you made me look at the code.  Grumbles forthcoming.
+This patch adds checks to ensure decrementing the remaining length does
+not cause it to wrap around.
 
-> 
-> Peter, I suspect this will do good for 2.6.37. Please help review, thanks!
-> 
->  include/linux/writeback.h |    3 ++-
->  mm/backing-dev.c          |    2 +-
->  mm/page-writeback.c       |   23 +++++++++++++++++++++--
->  3 files changed, 24 insertions(+), 4 deletions(-)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2010-12-05 14:29:24.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-12-05 14:31:39.000000000 +0800
-> @@ -444,7 +444,9 @@ void global_dirty_limits(unsigned long *
->   * The bdi's share of dirty limit will be adapting to its throughput and
->   * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
->   */
-> -unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
-> +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
-> +			      unsigned long dirty,
-> +			      unsigned long dirty_pages)
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Forgot to update the bdi_dirty_limit() kerneldoc.
+---
+ net/x25/x25_facilities.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-While you're there, please document the bdi_dirty_limit() return value.
+--- a/net/x25/x25_facilities.c
++++ b/net/x25/x25_facilities.c
+@@ -61,6 +61,8 @@ int x25_parse_facilities(struct sk_buff
+ 	while (len > 0) {
+ 		switch (*p & X25_FAC_CLASS_MASK) {
+ 		case X25_FAC_CLASS_A:
++			if (len < 2)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_REVERSE:
+ 				if((p[1] & 0x81) == 0x81) {
+@@ -104,6 +106,8 @@ int x25_parse_facilities(struct sk_buff
+ 			len -= 2;
+ 			break;
+ 		case X25_FAC_CLASS_B:
++			if (len < 3)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_PACKET_SIZE:
+ 				facilities->pacsize_in  = p[1];
+@@ -125,6 +129,8 @@ int x25_parse_facilities(struct sk_buff
+ 			len -= 3;
+ 			break;
+ 		case X25_FAC_CLASS_C:
++			if (len < 4)
++				return 0;
+ 			printk(KERN_DEBUG "X.25: unknown facility %02X, "
+ 			       "values %02X, %02X, %02X\n",
+ 			       p[0], p[1], p[2], p[3]);
+@@ -132,6 +138,8 @@ int x25_parse_facilities(struct sk_buff
+ 			len -= 4;
+ 			break;
+ 		case X25_FAC_CLASS_D:
++			if (len < p[1] + 2)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_CALLING_AE:
+ 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
+@@ -149,9 +157,7 @@ int x25_parse_facilities(struct sk_buff
+ 				break;
+ 			default:
+ 				printk(KERN_DEBUG "X.25: unknown facility %02X,"
+-					"length %d, values %02X, %02X, "
+-					"%02X, %02X\n",
+-					p[0], p[1], p[2], p[3], p[4], p[5]);
++					"length %d\n", p[0], p[1]);
+ 				break;
+ 			}
+ 			len -= p[1] + 2;
 
-<looks>
-
-It mentions "100" a  lot.  ah-hah!  It returns a 0..99 percentage!
-
-<looks further>
-
-No, ratelimit_pages() compares it with a variable called dirty_pages,
-so it returns an absolute number of pages!
-
-But maybe ratelimit_pages() is buggy.
-
-<looks further>
-
-balance_dirty_pages() passes the bdi_dirty_limit() return value to
-task_dirty_limit() which secretly takes a number-of-pages arg and
-secretly returns a number-of-pages return value.
-
-So I will pronounce with moderate confidence that bdi_dirty_limit()
-returns a page count!
-
-See what I mean?  It shouldn't be that hard!
-
->  {
->  	u64 bdi_dirty;
->  	long numerator, denominator;
-> @@ -459,6 +461,22 @@ unsigned long bdi_dirty_limit(struct bac
->  	do_div(bdi_dirty, denominator);
->  
->  	bdi_dirty += (dirty * bdi->min_ratio) / 100;
-> +
-> +	/*
-> +	 * There is a chicken and egg problem: when bdi A (eg. /pub) is heavy
-> +	 * dirtied and bdi B (eg. /) is light dirtied hence has 0 dirty limit,
-> +	 * tasks writing to B always get heavily throttled and bdi B's dirty
-> +	 * limit may never be able to grow up from 0.
-> +	 *
-> +	 * So if we can dirty N more pages globally, honour N/2 to the bdi that
-> +	 * runs low. To provide such a global margin, we slightly decrease all
-> +	 * heavy dirtied bdi's limit.
-> +	 */
-> +	if (bdi_dirty < (dirty - dirty_pages) / 2 && dirty > dirty_pages)
-> +		bdi_dirty = (dirty - dirty_pages) / 2;
-> +	else
-> +		bdi_dirty -= min(bdi_dirty / 128, 8192ULL >> (PAGE_SHIFT-10));
-
-Good lord, what have we done.
-
-Ho hum.
-
-This problem isn't specific to NFS, is it?  All backing-devices start
-out with a bdi_limit (which doesn't actually exist) of zero, yes?  And
-this "bdi_limit" is a per-bdi state which is stored via some
-undescribed means in some or all of `completions',
-`write_bandwidth_update_time', `write_bandwidth', `dirty_exceeded',
-`min_ratio', `max_ratio' and `max_prop_frac'.  All of which are
-undocumented, naturally.
-
-
-I admire your ability to work on this code, I really do.  I haven't
-looked at it in detail for a year or so and I am aghast at its opacity.
-This makes it extremely hard to review any changes to it.  This is a
-problem.  And I don't think I can (or will) review this patch for these
-reasons.  My dummy is thoroughly spat out.
-
-
-And what's up with that 8192?  I assume it refers to pages?  32MB?  So
-if we're working on eight devices concurrently on a 256MB machine, what
-happens?
 
