@@ -1,108 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab0LHT7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 14:59:51 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57240 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab0LHT7s (ORCPT
+	id S1756635Ab0LHT7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 14:59:52 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9589 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756099Ab0LHT7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Dec 2010 14:59:48 -0500
-Subject: Re: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate
- from ntp_error
-From: john stultz <johnstul@us.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
-References: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 11:59:42 -0800
-Message-ID: <1291838382.2909.17.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-IronPort-AV: E=McAfee;i="5400,1158,6190"; a="65824665"
+Message-ID: <4CFFE3B2.1060600@codeaurora.org>
+Date: Wed, 08 Dec 2010 11:59:46 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Jeff Ohlstein <johlstei@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH v2 2/6] msm: Secure Channel Manager (SCM) support
+References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org> <1291782501-3909-3-git-send-email-johlstei@codeaurora.org> <20101208165317.GP9777@n2100.arm.linux.org.uk>
+In-Reply-To: <20101208165317.GP9777@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 13:30 -0500, Steven Rostedt wrote:
-> While doing my end of year unlikely() cleanup, running the annotate
-> branch profiler, I came across this:
-> 
->  correct incorrect  %        Function                  File              Line
->  ------- ---------  -        --------                  ----              ----
->   122588 65653641  99 timekeeping_adjust             timekeeping.c        664
->   167493 14584927  98 timekeeping_adjust             timekeeping.c        658
-> 
-> This shows that the following likely()'s are wrong most of the time:
-> 
-> 	if (error > interval) {
-> 		error >>= 2;
-> 		if (likely(error <= interval))
-> 			adj = 1;
-> 		else
-> 			adj = timekeeping_bigadjust(error, &interval, &offset);
-> 	} else if (error < -interval) {
-> 		error >>= 2;
-> 		if (likely(error >= -interval)) {
-> 
-> Talking about this with John Stultz, we both agreed that the annotations
-> should be correct and is not the issue, but something else is going
-> wrong.
-> 
-> Adding in trace_printks(), I saw that the adj values that were added to
-> the "mult" multiplier were sometimes quite large. The time intervals
-> never got down into a small error, but instead was making large
-> oscillations, both positive and negative to where it should be.
-> 
-> John noticed that if he removed the commit:
-> 
-> commit 5cd1c9c5cf30d4b33df3d3f74d8142f278d536b7
-> timekeeping: fix rounding problem during clock update
-> 
-> that the problem would go away and we would get back into a tight
-> oscillation that would stay within the fast path (and the likely()'s
-> were again likely).
-> 
-> What the above commit did was to fix a bug that caused time to go
-> backward a nanosec due to the truncating of the xtime_nsec shifted into
-> the xtime.tv_nsec.  The fix for that bug (and what that commit did) was
-> to always round up one. It added +1 to the xtime.tv_nsec after it did
-> the conversion, and then took the difference between this shifted and
-> the xtime_nsec and stored that into the ntp_error.
-> 
-> The ntp_error is used to control the frequency, and this constant adding
-> of the shift remainder would cause the large oscillation.
-> 
-> This patch instead adds another field to the timekeeping structure that
-> stores the remainder separately. On re-entry into update_wall_time(),
-> the remainder is added back onto the xtime_nsec after it is set to the
-> xtime.tv_nsec and restoring its original value.
-> 
-> This handles the rounding problem that the original commit addressed but
-> does not cause the large oscillation that it caused.
+On 12/08/2010 08:53 AM, Russell King - ARM Linux wrote:
+>
+> Ok, so the real command bytes come after this struct scm_command structure.
+> So why not do this:
+>
+> +struct scm_command {
+> +	u32	len;
+> +	u32	buf_offset;
+> +	u32	resp_hdr_offset;
+> +	u32	id;
+> +	u32	cmdwds[0];
+> +};
+>
+> and
+>
+> 		cmd->buff_offset = offsetof(struct scm_command, cmdwds);
+>
+> sizeof(struct scm_command) will still be 32, but now you can do:
+[snip]
+>> +/**
+>> + * scm_get_command_buffer() - Get a pointer to a command buffer
+>> + * @cmd: command
+>> + *
+>> + * Returns a pointer to the command buffer of a command.
+>> + */
+>> +static inline void *scm_get_command_buffer(const struct scm_command *cmd)
+>> +{
+>> +	return (void *)cmd + cmd->buf_offset;
+>
+> and here becomes:
+> 	return (void *)cmd->cmdwds;
+> if it's necessary for it to exist at all.
+>
 
-Hey Steven!
+Ok. I was thinking that the command should be treated the same as the
+response, since the padding between the response header and response
+buffer can be arbitrary (and not under our control). This isn't true for
+the command header and command buffer since we define the padding.
 
-Thanks for the great analysis and tooling to help find these unexpected
-behaviors! 
+I still like the idea of scm_get_command_buffer() though since it duals
+scm_get_response_buffer().
 
-Sadly, I believe your proposed change can still cause minor nsec
-inconsistencies from gettimeofday/vgettimeofday. In fact, the previous
-implementation where the nsec inconsistency error was observed preserved
-the sub-nanosecond remainder in xtime_nsec.
+>> +int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
+>> +		void *resp_buf, size_t resp_len)
+>> +{
+>> +	int ret;
+>> +	struct scm_command *cmd;
+>> +	struct scm_response *rsp;
+>> +	dma_addr_t handle;
+>> +
+>> +	cmd = alloc_scm_command(cmd_len, resp_len, &handle);
+>> +	if (!cmd)
+>> +		return -ENOMEM;
+>> +
+>> +	cmd->id = (svc_id << 10) | cmd_id;
+>> +	if (cmd_buf)
+>> +		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
+>> +	wmb();
+>> +
+>> +	mutex_lock(&scm_lock);
+>> +	ret = __scm_call(handle);
+>> +	mutex_unlock(&scm_lock);
+>> +	if (ret)
+>> +		goto out;
+>> +
+>> +	rsp = scm_command_to_response(cmd);
+>> +	do {
+>> +		rmb();
+>> +	} while (!rsp->is_complete);
+>
+> Hmm, this seems weird.  Doesn't the SMC call only return once the request
+> has been completed?
 
-I suspect we may need to still round up and store the error, but tweak
-the adjustment code to handle the larger error per-iteration then it was
-originally designed for (note: the current code is still functioning
-properly, its just not often hitting the expected trivial case).
+No. __scm_call() returns once the request has been accepted. scm_call()
+returns once the request has completed. Multiple scm_command's can be in
+flight at the same time on the secure side.
 
-The only alternative would be to integrate the sub-ns remainder into the
-gettime caclculation (including reworking all the vsyscall
-implementations to utilize it as well).
-
-thanks
--john
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
