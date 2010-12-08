@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0LHHAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 02:00:06 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:50002 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab0LHHAE (ORCPT
+	id S1753520Ab0LHHCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 02:02:30 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34558 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab0LHHC2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 02:00:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAM+6/kx5Lclt/2dsb2JhbACjSnLAbIVJBJAL
-Date: Wed, 8 Dec 2010 17:59:55 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/46] fs: d_validate fixes
-Message-ID: <20101208065955.GA14846@amd>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <0fff695735c9b652a3f63b8480686c64811e89d0.1290852958.git.npiggin@kernel.dk>
- <20101208015344.GE29333@dastard>
+	Wed, 8 Dec 2010 02:02:28 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: akpm@linux-foundation.org
+Subject: Re: [merged] mm-mempolicyc-add-rcu-read-lock-to-protect-pid-structure.patch removed from -mm tree
+Cc: kosaki.motohiro@jp.fujitsu.com, zengzm.kernel@gmail.com,
+        cl@linux-foundation.org, paulmck@us.ibm.com,
+        mm-commits@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <201012071948.oB7Jm78B004585@imap1.linux-foundation.org>
+References: <201012071948.oB7Jm78B004585@imap1.linux-foundation.org>
+Message-Id: <20101208160009.173F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101208015344.GE29333@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  8 Dec 2010 16:02:26 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 12:53:44PM +1100, Dave Chinner wrote:
-> On Sat, Nov 27, 2010 at 08:44:32PM +1100, Nick Piggin wrote:
-> > d_validate has been broken for a long time.
-> > 
-> > kmem_ptr_validate does not guarantee that a pointer can be dereferenced
-> > if it can go away at any time. Even rcu_read_lock doesn't help, because
-> > the pointer might be queued in RCU callbacks but not executed yet.
-> > 
-> > So the parent cannot be checked, nor the name hashed. The dentry pointer
-> > can not be touched until it can be verified under lock. Hashing simply
-> > cannot be used.
-> > 
-> > Instead, verify the parent/child relationship by traversing parent's
-> > d_child list. It's slow, but only ncpfs and the destaged smbfs care
-> > about it, at this point.
 > 
-> I'd drop the previous revert patch and just convert the RCU hash
-> traversal straight to the d_child traversal code you introduce here.
-> This is a much better explanation of why the d_validate mechanism
-> needs to be changed, and the revert is really an unnecessary extra
-> step...
+> The patch titled
+>      mm/mempolicy.c: add rcu read lock to protect pid structure
+> has been removed from the -mm tree.  Its filename was
+>      mm-mempolicyc-add-rcu-read-lock-to-protect-pid-structure.patch
+> 
+> This patch was dropped because it was merged into mainline or a subsystem tree
+> 
+> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> 
+> ------------------------------------------------------
+> Subject: mm/mempolicy.c: add rcu read lock to protect pid structure
+> From: Zeng Zhaoming <zengzm.kernel@gmail.com>
+> 
+> find_task_by_vpid() should be protected by rcu_read_lock(), to prevent
+> free_pid() reclaiming pid.
+> 
+> Signed-off-by: Zeng Zhaoming <zengzm.kernel@gmail.com>
+> Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Has to be backported, though. Patch that is to be reverted obviously
-adds more brokenness and is a good example that you cannot dget() under
-rcu read protection even if the rest of the surrounding function is
-bugfree. I wouldn't have thought it's a big deal.
+
+Andrew, please consider pick following patch too.
+
+
+
+===========================================================================
+>From 9de9f70f74e55d92b5e9057e22fc629405f63295 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 16 Dec 2010 17:49:23 +0900
+Subject: [PATCH] mempolicy: remove tasklist_lock from migrate_pages
+
+Today, tasklist_lock in migrate_pages doesn't protect anything. 
+rcu_read_lock() provide enough protection from pid hash walk.
+
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/mempolicy.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 11ff260..9064945 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1308,16 +1308,13 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+ 
+ 	/* Find the mm_struct */
+ 	rcu_read_lock();
+-	read_lock(&tasklist_lock);
+ 	task = pid ? find_task_by_vpid(pid) : current;
+ 	if (!task) {
+-		read_unlock(&tasklist_lock);
+ 		rcu_read_unlock();
+ 		err = -ESRCH;
+ 		goto out;
+ 	}
+ 	mm = get_task_mm(task);
+-	read_unlock(&tasklist_lock);
+ 	rcu_read_unlock();
+ 
+ 	err = -EINVAL;
+-- 
+1.6.5.2
 
 
 
