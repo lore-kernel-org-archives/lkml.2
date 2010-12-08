@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab0LHBCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:38 -0500
-Received: from kroah.org ([198.145.64.141]:33486 "EHLO coco.kroah.org"
+	id S932531Ab0LHBCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:41 -0500
+Received: from kroah.org ([198.145.64.141]:33495 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932488Ab0LHBCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:36 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:39 2010
-Message-Id: <20101208005739.888899884@clark.site>
+	id S932488Ab0LHBCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:39 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:40 2010
+Message-Id: <20101208005740.096172793@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:21 -0800
+Date: Tue, 07 Dec 2010 16:59:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [184/289] exec: copy-and-paste the fixes into compat_do_execve() paths
+        Kyle McMartin <kyle@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [186/289] i915: reprogram power monitoring registers on resume
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,142 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Kyle McMartin <kyle@redhat.com>
 
-commit 114279be2120a916e8a04feeb2ac976a10016f2f upstream.
+commit 48fcfc888b48ad49dd83faa107264bbfb0089cad upstream.
 
-Note: this patch targets 2.6.37 and tries to be as simple as possible.
-That is why it adds more copy-and-paste horror into fs/compat.c and
-uglifies fs/exec.c, this will be cleanuped later.
+Fixes issue where i915_gfx_val was reporting values several
+orders of magnitude higher than physically possible (without
+leaving scorch marks on my thighs at least.)
 
-compat_copy_strings() plays with bprm->vma/mm directly and thus has
-two problems: it lacks the RLIMIT_STACK check and argv/envp memory
-is not visible to oom killer.
-
-Export acct_arg_size() and get_arg_page(), change compat_copy_strings()
-to use get_arg_page(), change compat_do_execve() to do acct_arg_size(0)
-as do_execve() does.
-
-Add the fatal_signal_pending/cond_resched checks into compat_count() and
-compat_copy_strings(), this matches the code in fs/exec.c and certainly
-makes sense.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/compat.c             |   28 +++++++++++++++-------------
- fs/exec.c               |    8 ++++----
- include/linux/binfmts.h |    4 ++++
- 3 files changed, 23 insertions(+), 17 deletions(-)
+ drivers/gpu/drm/i915/i915_suspend.c |    4 +++-
+ drivers/gpu/drm/i915/intel_drv.h    |    1 +
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1378,6 +1378,10 @@ static int compat_count(compat_uptr_t __
- 			argv++;
- 			if (i++ >= max)
- 				return -E2BIG;
-+
-+			if (fatal_signal_pending(current))
-+				return -ERESTARTNOHAND;
-+			cond_resched();
- 		}
- 	}
- 	return i;
-@@ -1419,6 +1423,12 @@ static int compat_copy_strings(int argc,
- 		while (len > 0) {
- 			int offset, bytes_to_copy;
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -862,8 +862,10 @@ int i915_restore_state(struct drm_device
+ 	/* Clock gating state */
+ 	intel_init_clock_gating(dev);
  
-+			if (fatal_signal_pending(current)) {
-+				ret = -ERESTARTNOHAND;
-+				goto out;
-+			}
-+			cond_resched();
-+
- 			offset = pos % PAGE_SIZE;
- 			if (offset == 0)
- 				offset = PAGE_SIZE;
-@@ -1435,18 +1445,8 @@ static int compat_copy_strings(int argc,
- 			if (!kmapped_page || kpos != (pos & PAGE_MASK)) {
- 				struct page *page;
- 
--#ifdef CONFIG_STACK_GROWSUP
--				ret = expand_stack_downwards(bprm->vma, pos);
--				if (ret < 0) {
--					/* We've exceed the stack rlimit. */
--					ret = -E2BIG;
--					goto out;
--				}
--#endif
--				ret = get_user_pages(current, bprm->mm, pos,
--						     1, 1, 1, &page, NULL);
--				if (ret <= 0) {
--					/* We've exceed the stack rlimit. */
-+				page = get_arg_page(bprm, pos, 1);
-+				if (!page) {
- 					ret = -E2BIG;
- 					goto out;
- 				}
-@@ -1567,8 +1567,10 @@ int compat_do_execve(char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
-+	if (bprm->mm) {
-+		acct_arg_size(bprm, 0);
- 		mmput(bprm->mm);
+-	if (HAS_PCH_SPLIT(dev))
++	if (HAS_PCH_SPLIT(dev)) {
+ 		ironlake_enable_drps(dev);
++		intel_init_emon(dev);
 +	}
  
- out_file:
- 	if (bprm->file) {
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -157,7 +157,7 @@ out:
+ 	/* Cache mode state */
+ 	I915_WRITE (CACHE_MODE_0, dev_priv->saveCACHE_MODE_0 | 0xffff0000);
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -250,6 +250,7 @@ extern void intel_crtc_fb_gamma_get(stru
+ extern void intel_init_clock_gating(struct drm_device *dev);
+ extern void ironlake_enable_drps(struct drm_device *dev);
+ extern void ironlake_disable_drps(struct drm_device *dev);
++extern void intel_init_emon(struct drm_device *dev);
  
- #ifdef CONFIG_MMU
- 
--static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- 	struct mm_struct *mm = current->mm;
- 	long diff = (long)(pages - bprm->vma_pages);
-@@ -176,7 +176,7 @@ static void acct_arg_size(struct linux_b
- #endif
- }
- 
--static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
- 	struct page *page;
-@@ -290,11 +290,11 @@ static bool valid_arg_len(struct linux_b
- 
- #else
- 
--static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- }
- 
--static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
- 		int write)
- {
- 	struct page *page;
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -60,6 +60,10 @@ struct linux_binprm{
- 	unsigned long loader, exec;
- };
- 
-+extern void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
-+extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+					int write);
-+
- #define BINPRM_FLAGS_ENFORCE_NONDUMP_BIT 0
- #define BINPRM_FLAGS_ENFORCE_NONDUMP (1 << BINPRM_FLAGS_ENFORCE_NONDUMP_BIT)
- 
+ extern int intel_pin_and_fence_fb_obj(struct drm_device *dev,
+ 				      struct drm_gem_object *obj);
 
 
