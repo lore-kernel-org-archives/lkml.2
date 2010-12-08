@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab0LHAwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:52:44 -0500
-Received: from kroah.org ([198.145.64.141]:58649 "EHLO coco.kroah.org"
+	id S1756563Ab0LHAsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:48:31 -0500
+Received: from kroah.org ([198.145.64.141]:58761 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756417Ab0LHAsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:08 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:35 2010
-Message-Id: <20101208004435.019108606@clark.site>
+	id S1756343Ab0LHAsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:48:25 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:36 2010
+Message-Id: <20101208004436.717522477@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:53 -0800
+Date: Tue, 07 Dec 2010 16:45:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        John Hughes <john@calva.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [107/127] x25: Patch to fix bug 15678 - x25 accesses fields beyond end of packet.
+        Robin Holt <holt@sgi.com>, Jack Steiner <steiner@sgi.com>
+Subject: [124/127] UV - XPC: pass nasid instead of nid to gru_create_message_queue
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,181 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Hughes <john@calva.com>
+From: Robin Holt <holt@sgi.com>
 
-commit f5eb917b861828da18dc28854308068c66d1449a upstream.
+commit 57e6d258b1e41cd7ceb26fa43ce116939d8440b1 upstream.
 
-Here is a patch to stop X.25 examining fields beyond the end of the packet.
+Currently, the UV xpc code is passing nid to the gru_create_message_queue
+instead of nasid as it expects.
 
-For example, when a simple CALL ACCEPTED was received:
-
-	10 10 0f
-
-x25_parse_facilities was attempting to decode the FACILITIES field, but this
-packet contains no facilities field.
-
-Signed-off-by: John Hughes <john@calva.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/net/x25.h        |    4 ++++
- net/x25/af_x25.c         |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
- net/x25/x25_facilities.c |   12 +++++++++++-
- net/x25/x25_in.c         |   15 +++++++++++----
- 4 files changed, 72 insertions(+), 6 deletions(-)
+ drivers/misc/sgi-xp/xpc_uv.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/include/net/x25.h
-+++ b/include/net/x25.h
-@@ -182,6 +182,10 @@ extern int  sysctl_x25_clear_request_tim
- extern int  sysctl_x25_ack_holdback_timeout;
- extern int  sysctl_x25_forward;
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -203,6 +203,7 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
+ 	enum xp_retval xp_ret;
+ 	int ret;
+ 	int nid;
++	int nasid;
+ 	int pg_order;
+ 	struct page *page;
+ 	struct xpc_gru_mq_uv *mq;
+@@ -258,9 +259,11 @@ xpc_create_gru_mq_uv(unsigned int mq_siz
+ 		goto out_5;
+ 	}
  
-+extern int x25_parse_address_block(struct sk_buff *skb,
-+		struct x25_address *called_addr,
-+		struct x25_address *calling_addr);
++	nasid = UV_PNODE_TO_NASID(uv_cpu_to_pnode(cpu));
 +
- extern int  x25_addr_ntoa(unsigned char *, struct x25_address *,
- 			  struct x25_address *);
- extern int  x25_addr_aton(unsigned char *, struct x25_address *,
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -81,6 +81,41 @@ struct compat_x25_subscrip_struct {
- };
- #endif
- 
-+
-+int x25_parse_address_block(struct sk_buff *skb,
-+		struct x25_address *called_addr,
-+		struct x25_address *calling_addr)
-+{
-+	unsigned char len;
-+	int needed;
-+	int rc;
-+
-+	if (skb->len < 1) {
-+		/* packet has no address block */
-+		rc = 0;
-+		goto empty;
-+	}
-+
-+	len = *skb->data;
-+	needed = 1 + (len >> 4) + (len & 0x0f);
-+
-+	if (skb->len < needed) {
-+		/* packet is too short to hold the addresses it claims
-+		   to hold */
-+		rc = -1;
-+		goto empty;
-+	}
-+
-+	return x25_addr_ntoa(skb->data, called_addr, calling_addr);
-+
-+empty:
-+	*called_addr->x25_addr = 0;
-+	*calling_addr->x25_addr = 0;
-+
-+	return rc;
-+}
-+
-+
- int x25_addr_ntoa(unsigned char *p, struct x25_address *called_addr,
- 		  struct x25_address *calling_addr)
- {
-@@ -871,16 +906,26 @@ int x25_rx_call_request(struct sk_buff *
- 	/*
- 	 *	Extract the X.25 addresses and convert them to ASCII strings,
- 	 *	and remove them.
-+	 *
-+	 *	Address block is mandatory in call request packets
- 	 */
--	addr_len = x25_addr_ntoa(skb->data, &source_addr, &dest_addr);
-+	addr_len = x25_parse_address_block(skb, &source_addr, &dest_addr);
-+	if (addr_len <= 0)
-+		goto out_clear_request;
- 	skb_pull(skb, addr_len);
- 
- 	/*
- 	 *	Get the length of the facilities, skip past them for the moment
- 	 *	get the call user data because this is needed to determine
- 	 *	the correct listener
-+	 *
-+	 *	Facilities length is mandatory in call request packets
- 	 */
-+	if (skb->len < 1)
-+		goto out_clear_request;
- 	len = skb->data[0] + 1;
-+	if (skb->len < len)
-+		goto out_clear_request;
- 	skb_pull(skb,len);
- 
- 	/*
---- a/net/x25/x25_facilities.c
-+++ b/net/x25/x25_facilities.c
-@@ -35,7 +35,7 @@ int x25_parse_facilities(struct sk_buff
- 		struct x25_dte_facilities *dte_facs, unsigned long *vc_fac_mask)
- {
- 	unsigned char *p = skb->data;
--	unsigned int len = *p++;
-+	unsigned int len;
- 
- 	*vc_fac_mask = 0;
- 
-@@ -50,6 +50,14 @@ int x25_parse_facilities(struct sk_buff
- 	memset(dte_facs->called_ae, '\0', sizeof(dte_facs->called_ae));
- 	memset(dte_facs->calling_ae, '\0', sizeof(dte_facs->calling_ae));
- 
-+	if (skb->len < 1)
-+		return 0;
-+
-+	len = *p++;
-+
-+	if (len >= skb->len)
-+		return -1;
-+
- 	while (len > 0) {
- 		switch (*p & X25_FAC_CLASS_MASK) {
- 		case X25_FAC_CLASS_A:
-@@ -247,6 +255,8 @@ int x25_negotiate_facilities(struct sk_b
- 	memcpy(new, ours, sizeof(*new));
- 
- 	len = x25_parse_facilities(skb, &theirs, dte, &x25->vc_facil_mask);
-+	if (len < 0)
-+		return len;
- 
- 	/*
- 	 *	They want reverse charging, we won't accept it.
---- a/net/x25/x25_in.c
-+++ b/net/x25/x25_in.c
-@@ -89,6 +89,7 @@ static int x25_queue_rx_frame(struct soc
- static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametype)
- {
- 	struct x25_address source_addr, dest_addr;
-+	int len;
- 
- 	switch (frametype) {
- 		case X25_CALL_ACCEPTED: {
-@@ -106,11 +107,17 @@ static int x25_state1_machine(struct soc
- 			 *	Parse the data in the frame.
- 			 */
- 			skb_pull(skb, X25_STD_MIN_LEN);
--			skb_pull(skb, x25_addr_ntoa(skb->data, &source_addr, &dest_addr));
--			skb_pull(skb,
--				 x25_parse_facilities(skb, &x25->facilities,
-+
-+			len = x25_parse_address_block(skb, &source_addr,
-+						&dest_addr);
-+			if (len > 0)
-+				skb_pull(skb, len);
-+
-+			len = x25_parse_facilities(skb, &x25->facilities,
- 						&x25->dte_facilities,
--						&x25->vc_facil_mask));
-+						&x25->vc_facil_mask);
-+			if (len > 0)
-+				skb_pull(skb, len);
- 			/*
- 			 *	Copy any Call User Data.
- 			 */
+ 	mmr_value = (struct uv_IO_APIC_route_entry *)&mq->mmr_value;
+ 	ret = gru_create_message_queue(mq->gru_mq_desc, mq->address, mq_size,
+-				       nid, mmr_value->vector, mmr_value->dest);
++				     nasid, mmr_value->vector, mmr_value->dest);
+ 	if (ret != 0) {
+ 		dev_err(xpc_part, "gru_create_message_queue() returned "
+ 			"error=%d\n", ret);
 
 
