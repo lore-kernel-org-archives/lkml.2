@@ -1,154 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab0LHUlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 15:41:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34227 "EHLO hera.kernel.org"
+	id S1756655Ab0LHUlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 15:41:36 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34582 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab0LHUlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 15:41:14 -0500
-Date: Wed, 8 Dec 2010 20:40:43 GMT
-From: tip-bot for Mike Galbraith <efault@gmx.de>
+	id S1756341Ab0LHUle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 15:41:34 -0500
+Date: Wed, 8 Dec 2010 20:41:05 GMT
+From: tip-bot for Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, bbb.lst@gmail.com, efault@gmx.de,
-        tglx@linutronix.de, yong.zhang0@gmail.com, mingo@elte.hu
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, bbb.lst@gmail.com,
-        tglx@linutronix.de, yong.zhang0@gmail.com, mingo@elte.hu
-In-Reply-To: <1291802742.1417.9.camel@marge.simson.net>
-References: <1291802742.1417.9.camel@marge.simson.net>
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20101201091109.GA8984@osiris.boeblingen.de.ibm.com>
+References: <20101201091109.GA8984@osiris.boeblingen.de.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] Sched: fix skip_clock_update optimization
-Message-ID: <tip-f26f9aff6aaf67e9a430d16c266f91b13a5bff64@git.kernel.org>
-Git-Commit-ID: f26f9aff6aaf67e9a430d16c266f91b13a5bff64
+Subject: [tip:sched/urgent] nohz: Fix get_next_timer_interrupt() vs cpu hotplug
+Message-ID: <tip-dbd87b5af055a0cc9bba17795c9a2b0d17795389@git.kernel.org>
+Git-Commit-ID: dbd87b5af055a0cc9bba17795c9a2b0d17795389
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:40:43 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 20:41:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f26f9aff6aaf67e9a430d16c266f91b13a5bff64
-Gitweb:     http://git.kernel.org/tip/f26f9aff6aaf67e9a430d16c266f91b13a5bff64
-Author:     Mike Galbraith <efault@gmx.de>
-AuthorDate: Wed, 8 Dec 2010 11:05:42 +0100
+Commit-ID:  dbd87b5af055a0cc9bba17795c9a2b0d17795389
+Gitweb:     http://git.kernel.org/tip/dbd87b5af055a0cc9bba17795c9a2b0d17795389
+Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
+AuthorDate: Wed, 1 Dec 2010 10:11:09 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 8 Dec 2010 20:15:06 +0100
+CommitDate: Wed, 8 Dec 2010 20:15:07 +0100
 
-Sched: fix skip_clock_update optimization
+nohz: Fix get_next_timer_interrupt() vs cpu hotplug
 
-idle_balance() drops/retakes rq->lock, leaving the previous task
-vulnerable to set_tsk_need_resched().  Clear it after we return
-from balancing instead, and in setup_thread_stack() as well, so
-no successfully descheduled or never scheduled task has it set.
+This fixes a bug as seen on 2.6.32 based kernels where timers got
+enqueued on offline cpus.
 
-Need resched confused the skip_clock_update logic, which assumes
-that the next call to update_rq_clock() will come nearly immediately
-after being set.  Make the optimization robust against the waking
-a sleeper before it sucessfully deschedules case by checking that
-the current task has not been dequeued before setting the flag,
-since it is that useless clock update we're trying to save, and
-clear unconditionally in schedule() proper instead of conditionally
-in put_prev_task().
+If a cpu goes offline it might still have pending timers. These will
+be migrated during CPU_DEAD handling after the cpu is offline.
+However while the cpu is going offline it will schedule the idle task
+which will then call tick_nohz_stop_sched_tick().
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Bjoern B. Brandenburg <bbb.lst@gmail.com>
-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+That function in turn will call get_next_timer_intterupt() to figure
+out if the tick of the cpu can be stopped or not. If it turns out that
+the next tick is just one jiffy off (delta_jiffies == 1)
+tick_nohz_stop_sched_tick() incorrectly assumes that the tick should
+not stop and takes an early exit and thus it won't update the load
+balancer cpu.
+
+Just afterwards the cpu will be killed and the load balancer cpu could
+be the offline cpu.
+
+On 2.6.32 based kernel get_nohz_load_balancer() gets called to decide
+on which cpu a timer should be enqueued (see __mod_timer()). Which
+leads to the possibility that timers get enqueued on an offline cpu.
+These will never expire and can cause a system hang.
+
+This has been observed 2.6.32 kernels. On current kernels
+__mod_timer() uses get_nohz_timer_target() which doesn't have that
+problem. However there might be other problems because of the too
+early exit tick_nohz_stop_sched_tick() in case a cpu goes offline.
+
+The easiest and probably safest fix seems to be to let
+get_next_timer_interrupt() just lie and let it say there isn't any
+pending timer if the current cpu is offline.
+
+I also thought of moving migrate_[hr]timers() from CPU_DEAD to
+CPU_DYING, but seeing that there already have been fixes at least in
+the hrtimer code in this area I'm afraid that this could add new
+subtle bugs.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101201091109.GA8984@osiris.boeblingen.de.ibm.com>
 Cc: stable@kernel.org
-LKML-Reference: <1291802742.1417.9.camel@marge.simson.net>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/fork.c  |    1 +
- kernel/sched.c |   26 ++++++++++++++------------
- 2 files changed, 15 insertions(+), 12 deletions(-)
+ kernel/timer.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3b159c5..5447dc7 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -273,6 +273,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 7bd715f..353b922 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1252,6 +1252,12 @@ unsigned long get_next_timer_interrupt(unsigned long now)
+ 	struct tvec_base *base = __get_cpu_var(tvec_bases);
+ 	unsigned long expires;
  
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
-+	clear_tsk_need_resched(tsk);
- 	stackend = end_of_stack(tsk);
- 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 6b7c26a..da14302 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -641,17 +641,18 @@ static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
- 
- inline void update_rq_clock(struct rq *rq)
- {
--	if (!rq->skip_clock_update) {
--		int cpu = cpu_of(rq);
--		u64 irq_time;
-+	int cpu = cpu_of(rq);
-+	u64 irq_time;
- 
--		rq->clock = sched_clock_cpu(cpu);
--		irq_time = irq_time_cpu(cpu);
--		if (rq->clock - irq_time > rq->clock_task)
--			rq->clock_task = rq->clock - irq_time;
-+	if (rq->skip_clock_update)
-+		return;
- 
--		sched_irq_time_avg_update(rq, irq_time);
--	}
-+	rq->clock = sched_clock_cpu(cpu);
-+	irq_time = irq_time_cpu(cpu);
-+	if (rq->clock - irq_time > rq->clock_task)
-+		rq->clock_task = rq->clock - irq_time;
-+
-+	sched_irq_time_avg_update(rq, irq_time);
- }
- 
- /*
-@@ -2129,7 +2130,7 @@ static void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
- 	 * A queue event has occurred, and we're going to schedule.  In
- 	 * this case, we can save a useless back to back clock update.
- 	 */
--	if (test_tsk_need_resched(rq->curr))
-+	if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
- 		rq->skip_clock_update = 1;
- }
- 
-@@ -3973,7 +3974,6 @@ static void put_prev_task(struct rq *rq, struct task_struct *prev)
- {
- 	if (prev->se.on_rq)
- 		update_rq_clock(rq);
--	rq->skip_clock_update = 0;
- 	prev->sched_class->put_prev_task(rq, prev);
- }
- 
-@@ -4031,7 +4031,6 @@ need_resched_nonpreemptible:
- 		hrtick_clear(rq);
- 
- 	raw_spin_lock_irq(&rq->lock);
--	clear_tsk_need_resched(prev);
- 
- 	switch_count = &prev->nivcsw;
- 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-@@ -4063,6 +4062,8 @@ need_resched_nonpreemptible:
- 
- 	put_prev_task(rq, prev);
- 	next = pick_next_task(rq);
-+	clear_tsk_need_resched(prev);
-+	rq->skip_clock_update = 0;
- 
- 	if (likely(prev != next)) {
- 		sched_info_switch(prev, next);
-@@ -4071,6 +4072,7 @@ need_resched_nonpreemptible:
- 		rq->nr_switches++;
- 		rq->curr = next;
- 		++*switch_count;
-+		WARN_ON_ONCE(test_tsk_need_resched(next));
- 
- 		context_switch(rq, prev, next); /* unlocks the rq */
- 		/*
++	/*
++	 * Pretend that there is no timer pending if the cpu is offline.
++	 * Possible pending timers will be migrated later to an active cpu.
++	 */
++	if (cpu_is_offline(smp_processor_id()))
++		return now + NEXT_TIMER_MAX_DELTA;
+ 	spin_lock(&base->lock);
+ 	if (time_before_eq(base->next_timer, base->timer_jiffies))
+ 		base->next_timer = __next_timer_interrupt(base);
