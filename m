@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab0LHBAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:00:30 -0500
-Received: from kroah.org ([198.145.64.141]:48787 "EHLO coco.kroah.org"
+	id S1757337Ab0LHBB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:01:27 -0500
+Received: from kroah.org ([198.145.64.141]:48995 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757058Ab0LHBA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:27 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:30 2010
-Message-Id: <20101208005730.541399764@clark.site>
+	id S1757327Ab0LHBBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:23 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:34 2010
+Message-Id: <20101208005734.664911089@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:49 -0800
+Date: Tue, 07 Dec 2010 16:58:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [092/289] reiserfs: fix inode mutex - reiserfs lock misordering
+        Justin Maggard <jmaggard10@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [133/289] md: fix return value of rdev_size_change()
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Justin Maggard <jmaggard10@gmail.com>
 
-commit da905873effecd1c0166e578bc4b5006f041b18b upstream.
+commit c26a44ed1e552aaa1d4ceb71842002d235fe98d7 upstream.
 
-reiserfs_unpack() locks the inode mutex with reiserfs_mutex_lock_safe()
-to protect against reiserfs lock dependency.  However this protection
-requires to have the reiserfs lock to be locked.
+When trying to grow an array by enlarging component devices,
+rdev_size_store() expects the return value of rdev_size_change() to be
+in sectors, but the actual value is returned in KBs.
 
-This is the case if reiserfs_unpack() is called by reiserfs_ioctl but
-not from reiserfs_quota_on() when it tries to unpack tails of quota
-files.
+This functionality was broken by commit
+     dd8ac336c13fd8afdb082ebacb1cddd5cf727889
+so this patch is suitable for any kernel since 2.6.30.
 
-Fix the ordering of the two locks in reiserfs_unpack() to fix this
-issue.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Reported-by: Markus Gapp <markus.gapp@gmx.net>
-Reported-by: Jan Kara <jack@suse.cz>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Justin Maggard <jmaggard10@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/ioctl.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/md/md.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/reiserfs/ioctl.c
-+++ b/fs/reiserfs/ioctl.c
-@@ -186,12 +186,11 @@ int reiserfs_unpack(struct inode *inode,
- 		return 0;
- 	}
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1329,7 +1329,7 @@ super_90_rdev_size_change(mdk_rdev_t *rd
+ 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
+ 		       rdev->sb_page);
+ 	md_super_wait(rdev->mddev);
+-	return num_sectors / 2; /* kB for sysfs */
++	return num_sectors;
+ }
  
--	/* we need to make sure nobody is changing the file size beneath
--	 ** us
--	 */
--	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
- 	depth = reiserfs_write_lock_once(inode->i_sb);
  
-+	/* we need to make sure nobody is changing the file size beneath us */
-+	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
-+
- 	write_from = inode->i_size & (blocksize - 1);
- 	/* if we are on a block boundary, we are already unpacked.  */
- 	if (write_from == 0) {
+@@ -1697,7 +1697,7 @@ super_1_rdev_size_change(mdk_rdev_t *rde
+ 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
+ 		       rdev->sb_page);
+ 	md_super_wait(rdev->mddev);
+-	return num_sectors / 2; /* kB for sysfs */
++	return num_sectors;
+ }
+ 
+ static struct super_type super_types[] = {
 
 
