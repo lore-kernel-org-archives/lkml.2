@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab0LHCSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:18:39 -0500
-Received: from kroah.org ([198.145.64.141]:45905 "EHLO coco.kroah.org"
+	id S1758070Ab0LHCSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:18:15 -0500
+Received: from kroah.org ([198.145.64.141]:45910 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab0LHAqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:42 -0500
+	id S1755812Ab0LHAqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:43 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:26 2010
-Message-Id: <20101208004425.972901756@clark.site>
+Message-Id: <20101208004426.091932805@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:22 -0800
+Date: Tue, 07 Dec 2010 16:43:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Richard A. Smith" <richard@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: [016/127] olpc_battery: Fix endian neutral breakage for s16 values
+        Masanori Itoh <itoumsn@nttdata.co.jp>, Tejun Heo <tj@kernel.org>
+Subject: [017/127] percpu: fix list_head init bug in __percpu_counter_init()
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard A. Smith <richard@laptop.org>
+From: Masanori ITOH <itoumsn@nttdata.co.jp>
 
-commit 7cfbb29466633e6ecdc14f76a693c8478c2b22af upstream.
+commit 8474b591faf3bb0a1e08a60d21d6baac498f15e4 upstream.
 
-When the driver was updated to be endian neutral (8e9c7716c)
-the signed part of the s16 values was lost.  This is because be16_to_cpu()
-returns an unsigned value.  This patch casts the values back to a s16
-number prior to the the implicit cast up to an int.
+WARNING: at lib/list_debug.c:26 __list_add+0x3f/0x81()
+Hardware name: Express5800/B120a [N8400-085]
+list_add corruption. next->prev should be prev (ffffffff81a7ea00), but was dead000000200200. (next=ffff88080b872d58).
+Modules linked in: aoe ipt_MASQUERADE iptable_nat nf_nat autofs4 sunrpc bridge 8021q garp stp llc ipv6 cpufreq_ondemand acpi_cpufreq freq_table dm_round_robin dm_multipath kvm_intel kvm uinput lpfc scsi_transport_fc igb ioatdma scsi_tgt i2c_i801 i2c_core dca iTCO_wdt iTCO_vendor_support pcspkr shpchp megaraid_sas [last unloaded: aoe]
+Pid: 54, comm: events/3 Tainted: G        W  2.6.34-vanilla1 #1
+Call Trace:
+[<ffffffff8104bd77>] warn_slowpath_common+0x7c/0x94
+[<ffffffff8104bde6>] warn_slowpath_fmt+0x41/0x43
+[<ffffffff8120fd2e>] __list_add+0x3f/0x81
+[<ffffffff81212a12>] __percpu_counter_init+0x59/0x6b
+[<ffffffff810d8499>] bdi_init+0x118/0x17e
+[<ffffffff811f2c50>] blk_alloc_queue_node+0x79/0x143
+[<ffffffff811f2d2b>] blk_alloc_queue+0x11/0x13
+[<ffffffffa02a931d>] aoeblk_gdalloc+0x8e/0x1c9 [aoe]
+[<ffffffffa02aa655>] aoecmd_sleepwork+0x25/0xa8 [aoe]
+[<ffffffff8106186c>] worker_thread+0x1a9/0x237
+[<ffffffffa02aa630>] ? aoecmd_sleepwork+0x0/0xa8 [aoe]
+[<ffffffff81065827>] ? autoremove_wake_function+0x0/0x39
+[<ffffffff810616c3>] ? worker_thread+0x0/0x237
+[<ffffffff810653ad>] kthread+0x7f/0x87
+[<ffffffff8100aa24>] kernel_thread_helper+0x4/0x10
+[<ffffffff8106532e>] ? kthread+0x0/0x87
+[<ffffffff8100aa20>] ? kernel_thread_helper+0x0/0x10
 
-Signed-off-by: Richard A. Smith <richard@laptop.org>
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+It's because there is no initialization code for a list_head contained in
+the struct backing_dev_info under CONFIG_HOTPLUG_CPU, and the bug comes up
+when block device drivers calling blk_alloc_queue() are used.  In case of
+me, I got them by using aoe.
+
+Signed-off-by: Masanori Itoh <itoumsn@nttdata.co.jp>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index aafc1c5..5bc1dcf 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -271,14 +271,14 @@ static int olpc_bat_get_property(struct power_supply *psy,
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 9760L / 32;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 9760L / 32;
- 		break;
- 	case POWER_SUPPLY_PROP_CURRENT_AVG:
- 		ret = olpc_ec_cmd(EC_BAT_CURRENT, NULL, 0, (void *)&ec_word, 2);
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 15625L / 120;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 15625L / 120;
- 		break;
- 	case POWER_SUPPLY_PROP_CAPACITY:
- 		ret = olpc_ec_cmd(EC_BAT_SOC, NULL, 0, &ec_byte, 1);
-@@ -299,7 +299,7 @@ static int olpc_bat_get_property(struct power_supply *psy,
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 100 / 256;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 100 / 256;
- 		break;
- 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
- 		ret = olpc_ec_cmd(EC_AMB_TEMP, NULL, 0, (void *)&ec_word, 2);
-@@ -313,7 +313,7 @@ static int olpc_bat_get_property(struct power_supply *psy,
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 6250 / 15;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 6250 / 15;
- 		break;
- 	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
- 		ret = olpc_ec_cmd(EC_BAT_SERIAL, NULL, 0, (void *)&ser_buf, 8);
+---
+ lib/percpu_counter.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -76,6 +76,7 @@ int __percpu_counter_init(struct percpu_
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+ #ifdef CONFIG_HOTPLUG_CPU
++	INIT_LIST_HEAD(&fbc->list);
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_add(&fbc->list, &percpu_counters);
+ 	mutex_unlock(&percpu_counters_lock);
 
 
