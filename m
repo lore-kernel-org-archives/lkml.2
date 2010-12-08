@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab0LHCFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:05:39 -0500
-Received: from kroah.org ([198.145.64.141]:58454 "EHLO coco.kroah.org"
+	id S1757946Ab0LHCFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:05:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:43731 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756228Ab0LHArg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:47:36 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:31 2010
-Message-Id: <20101208004431.578806315@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:19 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oliver Bock <bock@tfh-berlin.de>
-Subject: [073/127] USB: misc: cypress_cy7c63: fix up some sysfs attribute permissions
-In-Reply-To: <20101208004456.GA23578@kroah.com>
+	id S1756228Ab0LHCFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 21:05:41 -0500
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH 2/2] clk: Generic support for fixed-rate clocks
+Message-Id: <1291773932.579113.476506736919.2.gpush@pororo>
+In-Reply-To: <1291773932.578726.468741339223.1.gpush@pororo>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Wed, 08 Dec 2010 10:05:32 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Since most platforms will need a fixed-rate clock, add one. This will
+also serve as a basic example of an implementation of struct clk.
 
-------------------
-
-From: Greg Kroah-Hartman <gregkh@suse.de>
-
-commit c990600d340641150f7270470a64bd99a5c0b225 upstream.
-
-They should not be writable by any user.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oliver Bock <bock@tfh-berlin.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 
 ---
- drivers/usb/misc/cypress_cy7c63.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ include/linux/clk.h |   13 +++++++++++++
+ kernel/clk.c        |   14 ++++++++++++++
+ 2 files changed, 27 insertions(+)
 
---- a/drivers/usb/misc/cypress_cy7c63.c
-+++ b/drivers/usb/misc/cypress_cy7c63.c
-@@ -195,11 +195,9 @@ static ssize_t get_port1_handler(struct
- 	return read_port(dev, attr, buf, 1, CYPRESS_READ_PORT_ID1);
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index e09e40e..ae7e4ed 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -158,6 +158,19 @@ static inline void clk_common_init(struct clk *clk)
+ 		mutex_init(&clk->lock.mutex);
  }
  
--static DEVICE_ATTR(port0, S_IWUGO | S_IRUGO,
--		   get_port0_handler, set_port0_handler);
-+static DEVICE_ATTR(port0, S_IRUGO | S_IWUSR, get_port0_handler, set_port0_handler);
++/* Simple fixed-rate clock */
++struct clk_fixed {
++	struct clk	clk;
++	unsigned long	rate;
++};
++
++extern struct clk_ops clk_fixed_ops;
++
++#define INIT_CLK_FIXED(name, r) { \
++	.clk = INIT_CLK(name.clk, clk_fixed_ops), \
++	.rate = (r) \
++}
++
+ #else /* !CONFIG_USE_COMMON_STRUCT_CLK */
  
--static DEVICE_ATTR(port1, S_IWUGO | S_IRUGO,
--		   get_port1_handler, set_port1_handler);
-+static DEVICE_ATTR(port1, S_IRUGO | S_IWUSR, get_port1_handler, set_port1_handler);
- 
- 
- static int cypress_probe(struct usb_interface *interface,
-
-
+ /*
+diff --git a/kernel/clk.c b/kernel/clk.c
+index 1545e69..2779abb 100644
+--- a/kernel/clk.c
++++ b/kernel/clk.c
+@@ -98,3 +98,17 @@ struct clk *clk_get_parent(struct clk *clk)
+ 	return ERR_PTR(-ENOSYS);
+ }
+ EXPORT_SYMBOL_GPL(clk_get_parent);
++
++/* clk_fixed support */
++
++#define to_clk_fixed(clk) (container_of(clk, struct clk_fixed, clk))
++
++static unsigned long clk_fixed_get_rate(struct clk *clk)
++{
++	return to_clk_fixed(clk)->rate;
++}
++
++struct clk_ops clk_fixed_ops = {
++	.get_rate = clk_fixed_get_rate,
++};
++EXPORT_SYMBOL_GPL(clk_fixed_ops);
