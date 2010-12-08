@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab0LHPnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:43:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48336 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755981Ab0LHPnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:43:41 -0500
-Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
-From: James Bottomley <James.Bottomley@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, Luben Tuikov <ltuikov@yahoo.com>,
-        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-usb@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1012081010470.1885-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1012081010470.1885-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 09:43:32 -0600
-Message-ID: <1291823012.24312.52.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1756044Ab0LHPn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:43:57 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47203 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756027Ab0LHPn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:43:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Ae9KIduQvP7/NCucdSuYw/QHXJiU4ImZlXwuo+kVZSYP6LrNQE3YOW2UGkKa04Hzu+
+         /Jor5EjbK4RCPSZemdffXNGqPtbUMS9tzpIcHRccdyMgS5oLKIBA/ImouDHOlyVJAFj/
+         4sXilPFjaDJw8Am7aA5ZkCZAhhtgmojRBfiq0=
+MIME-Version: 1.0
+In-Reply-To: <1291819459.28378.64.camel@laptop>
+References: <19697.8378.717761.236202@pilspetsen.it.uu.se>
+	<19707.34405.791777.298955@pilspetsen.it.uu.se>
+	<20101205131702.GE9138@n2100.arm.linux.org.uk>
+	<20101205141921.GF9138@n2100.arm.linux.org.uk>
+	<19707.47304.977978.297596@pilspetsen.it.uu.se>
+	<20101205162151.GH9138@n2100.arm.linux.org.uk>
+	<1291812015.28378.24.camel@laptop>
+	<20101208125548.GA9777@n2100.arm.linux.org.uk>
+	<1291817076.28378.28.camel@laptop>
+	<20101208142814.GE9777@n2100.arm.linux.org.uk>
+	<1291819459.28378.64.camel@laptop>
+Date: Wed, 8 Dec 2010 16:43:33 +0100
+Message-ID: <AANLkTi=TYecfTGZ8iUDJPy+2HFTFYOjDEVxxE_1_Dvwf@mail.gmail.com>
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>,
+        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 10:16 -0500, Alan Stern wrote:
-> On Tue, 7 Dec 2010, James Bottomley wrote:
-> 
-> > Well, not other than I've already said:  I think it looks OK, so I
-> > marked it for my merge window queue.  I'd still rather like USB people
-> > to confirm that the original reason why this was done (to prevent device
-> > crashes on the mode sense) is no longer an issue
-> 
-> The original reason for adding the skip_ms_page_8 flag still applies.  
-> To assume it is no longer an issue would not be safe -- there's no 
-> reason to believe that the buggy devices it was meant for have all been 
-> retired.
-> 
-> >  ... but it's only USB
-> > stuff, so suppose I'm OK with finding out in the field.
-> 
-> With USB there's often no other choice.
+2010/12/8 Peter Zijlstra <a.p.zijlstra@chello.nl>:
 
-So the translation is that there's a possibility it will crash USB
-devices but the only way to find out is to release it and see.
+> Like said, John Stultz was already looking at doing something like that
+> because there's a number of architectures suffering this same problem
+> and they're all already using part of the clocksource infrastructure to
+> implement the sched_clock() interface simply because they only have a
+> single hardware resource.
 
-My problem is that it only takes one bug report from one failing device
-(which I'm sure some kind soul will dig out of the attic or wherever
-they threw it) for this to be a regression and then I get to revert the
-patch ... unless we have a working backup plan?
+I was in on that discussion and for the Ux500 this patch was the
+outcome:
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6488/1
 
-I think it's easy to put in and easy to revert ... we'll pick up a bit
-of flack if the failing device doesn't appear for some time, but I'm OK
-with risking that.
+It seems to work, mostly, it's based off Nico's orion code and
+just tries to make everything as explicit as possible.
 
-James
+Uwe has also been onto it I think.
 
-
+Yours,
+Linus Walleij
