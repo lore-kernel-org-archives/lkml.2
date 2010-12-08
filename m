@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab0LHNsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 08:48:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960Ab0LHNsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 08:48:08 -0500
-Date: Wed, 8 Dec 2010 14:41:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
-Message-ID: <20101208134116.GA16923@redhat.com>
-References: <20101103062609.GB31163@dastard> <1288768402.2467.665.camel@edumazet-laptop> <20101103103448.GA9169@dastard> <20101103112936.GB9169@dastard> <20101104002140.GA13830@dastard> <20101104054718.GC5210@cr0.nay.redhat.com> <20101208100245.01cf23c5@schatten.dmk.lab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101208100245.01cf23c5@schatten.dmk.lab>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755070Ab0LHNwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 08:52:44 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:12960 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755048Ab0LHNwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 08:52:43 -0500
+Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
+From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
+In-Reply-To: <1291782782.5324.54.camel@edumazet-laptop>
+References: <20101208000640.115606851@clark.site>
+	 <1291777422.26147.70.camel@zaphod>
+	 <1291782782.5324.54.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: HP/LKTT
+Date: Wed, 08 Dec 2010 08:53:09 -0500
+Message-ID: <1291816389.3941.17.camel@zaphod>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08, Florian Mickler wrote:
->
-> [ ccing Ingo and Oleg ] as suggested
+On Wed, 2010-12-08 at 05:33 +0100, Eric Dumazet wrote:
+> Le mardi 07 décembre 2010 à 22:03 -0500, Lee Schermerhorn a écrit :
+> > On Tue, 2010-12-07 at 16:04 -0800, Greg KH wrote:
+> > > 2.6.27-stable review patch.  If anyone has any objections, please let us know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Eric Dumazet <eric.dumazet@gmail.com>
+> > > 
+> > > commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
+> > > 
+> 
+> > > 
+> > > --- a/mm/mempolicy.c
+> > > +++ b/mm/mempolicy.c
+> > > @@ -1404,7 +1404,7 @@ unsigned slab_node(struct mempolicy *pol
+> > >  		(void)first_zones_zonelist(zonelist, highest_zoneidx,
+> > >  							&policy->v.nodes,
+> > >  							&zone);
+> > > -		return zone->node;
+> > > +		return zone ? zone->node : numa_node_id();
+> > 
+> > I think this should be numa_mem_id().  Given the documented purpose of
+> > slab_node(), we want a node from which page allocation is likely to
+> > succeed.  numa_node_id() can return a memoryless node for, e.g.,  some
+> > configurations of some HP ia64 platforms.  numa_mem_id() was introduced
+> > to return that same node from which "local" mempolicy would allocate
+> > pages.
+> 
+> Hmm... numa_mem_id() was introduced in 2.6.35 as an optimization.
+> 
+> When I did this patch (to fix a bug), mm/mempolicy.c only contained
+> calls to numa_node_id() (and still is today)
 
-Well. Of course I can't explain this bug. But, looking at this email
-I do not see amything strange in exit/schedule/etc.
+Sometimes you want numa_node_id()--e.g., for use with a mempolicy-based
+allocation that allows fallback.  When the node id will be used for a
+'_THIS_NODE allocation, numa_mem_id() is preferred as it will always
+return a node that contains or contained--maybe now oom--memory.  It's
+the same as numa_node_id() on platforms that don't expose memoryless
+nodes.  
 
-> > >> > > > This is resulting in the command 'ip link set tap0 up' hanging as a zombie:
-> > >> > > >
-> > >> > > > root      3005     1  0 16:53 pts/3    00:00:00 /bin/sh /vm-images/qemu-ifup tap0
-> > >> > > > root      3011  3005  0 16:53 pts/3    00:00:00 /usr/bin/sudo /sbin/ip link set tap0 up
-> > >> > > > root      3012  3011  0 16:53 pts/3    00:00:00 [ip] <defunct>
+> 
+> By the way, anybody knows how I can emulate a memoryless node on a dual
+> node x86_64 machine (with memory present on both nodes) ?
+> 
 
-That is. ip is a zombie.
+You can use the mem= boot parameter and specify the amount of memory on
+the 1st/boot node.  Or you can use the memmap parameter to reserve the
+memory on the 2nd/non-boot node.  With the memmap parameter, you can
+reserve the memory of nodes other than the highest numbered
+one[s]--e.g., on a >2 node platform.  However, you'll probably a patch
+to see the cpus on any node that you hide using memmap.  I have such a
+patch if you're interested in going that route.
 
-> > >> > > > In do_exit() with this trace:
-> > >> > > >
-> > >> > > > [ 1630.782255] ip            x ffff88063fcb3600     0  3012   3011 0x00000000
-> > >> > > > [ 1630.789121]  ffff880631328000 0000000000000046 0000000000000000 ffff880633104380
-> > >> > > > [ 1630.796524]  0000000000013600 ffff88062f031fd8 0000000000013600 0000000000013600
-> > >> > > > [ 1630.803925]  ffff8806313282d8 ffff8806313282e0 ffff880631328000 0000000000013600
-> > >> > > > [ 1630.811324] Call Trace:
-> > >> > > > [ 1630.813760]  [<ffffffff8104a90d>] ? do_exit+0x716/0x724
-> > >> > > > [ 1630.818964]  [<ffffffff8104a995>] ? do_group_exit+0x7a/0xa4
-> > >> > > > [ 1630.824512]  [<ffffffff8104a9d1>] ? sys_exit_group+0x12/0x16
-> > >> > > > [ 1630.830149]  [<ffffffff81009a82>] ? system_call_fastpath+0x16/0x1b
-> > >> > > >
-> > >> > > > The address comes down to the schedule() call:
-> > >> > > >
-> > >> > > > (gdb) l *(do_exit+0x716)
-> > >> > > > 0xffffffff8104a90d is in do_exit (kernel/exit.c:1034).
-> > >> > > > 1029            preempt_disable();
-> > >> > > > 1030            exit_rcu();
-> > >> > > > 1031            /* causes final put_task_struct in finish_task_switch(). */
-> > >> > > > 1032            tsk->state = TASK_DEAD;
-> > >> > > > 1033            schedule();
-> > >> > > > 1034            BUG();
-> > >> > > > 1035            /* Avoid "noreturn function does return".  */
-> > >> > > > 1036            for (;;)
-> > >> > > > 1037                    cpu_relax();    /* For when BUG is null */
-> > >> > > > 1038    }
+You can also reduce the amount of memory on any/each node by reserving
+ranges of physical memory with memmap.  Use the 'SRAT.*PXM' boot
+messages to find the nodes' physical memory ranges and reserve how ever
+much you want off the top of the nodes.
 
-Everything is correct. The task is dead, but it wasn't released by its
-parent, task_struct (and thus the stack) is still visible.
+Lee
 
-> > Interesting, the scheduler failed to put the dead task out of
-> > run queue, so to me this is likely to be a scheduler bug.
-> > I have no idea how sudo can change the behaviour here.
-> >
-> > Another guess is we need a smp_wmb() before schedule() above.
 
-No, everything looks fine.
-
-For example,
-
-	$ perl -le 'print fork || exit; <>'
-	17436
-
-	$ ps 17436
-	  PID TTY      STAT   TIME COMMAND
-	17436 pts/22   Z+     0:00 [perl] <defunct>
-
-	$ cat /proc/17436/stack
-	[<ffffffff8104d3a0>] do_exit+0x6c4/0x6d2
-	[<ffffffff8104d429>] do_group_exit+0x7b/0xa4
-	[<ffffffff8104d469>] sys_exit_group+0x17/0x1b
-	[<ffffffff8100bdb2>] system_call_fastpath+0x16/0x1b
-	[<ffffffffffffffff>] 0xffffffffffffffff
-
-Oleg.
 
