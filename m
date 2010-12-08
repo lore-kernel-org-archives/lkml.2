@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab0LHDDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 22:03:25 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:31171 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab0LHDDX (ORCPT
+	id S1753408Ab0LHDDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 22:03:22 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:27491 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab0LHDDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 22:03:23 -0500
+	Tue, 7 Dec 2010 22:03:21 -0500
 Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
 From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 To: Greg KH <gregkh@suse.de>
@@ -18,8 +18,8 @@ In-Reply-To: <20101208000640.115606851@clark.site>
 References: <20101208000640.115606851@clark.site>
 Content-Type: text/plain; charset="UTF-8"
 Organization: HP/LKTT
-Date: Tue, 07 Dec 2010 22:03:42 -0500
-Message-ID: <1291777422.26147.70.camel@zaphod>
+Date: Tue, 07 Dec 2010 22:03:15 -0500
+Message-ID: <1291777395.26147.69.camel@zaphod>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -78,7 +78,6 @@ Lee
 >  	default:
 > 
 > 
-
 
 
 
