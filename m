@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab0LHBGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:06:32 -0500
-Received: from kroah.org ([198.145.64.141]:33923 "EHLO coco.kroah.org"
+	id S932915Ab0LHBEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:04:11 -0500
+Received: from kroah.org ([198.145.64.141]:33889 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932918Ab0LHBEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:04:12 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:49 2010
-Message-Id: <20101208005749.451786145@clark.site>
+	id S932854Ab0LHBEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:04:04 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:48 2010
+Message-Id: <20101208005748.631889761@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 17:00:57 -0800
+Date: Tue, 07 Dec 2010 17:00:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        Madhuranath Iyengar <Madhu.Iyengar@qlogic.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [280/289] [SCSI] qla2xxx: Add module parameter to enable/disable GFF_ID device type check.
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [272/289] x25: Prevent crashing when parsing bad X.25 facilities
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chad Dupuis <chad.dupuis@qlogic.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 4da26e162b69d89c3186a35a052c05e61a555637 upstream.
+commit 5ef41308f94dcbb3b7afc56cdef1c2ba53fa5d2f upstream.
 
-Add the module parameter ql2xgffidenable to disable/enable the use of the
-GFF_ID name server command to prevent non FCP SCSI devices from being added to
-the driver's internal fc_port database.
+Now with improved comma support.
 
-Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: Madhuranath Iyengar <Madhu.Iyengar@qlogic.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+On parsing malformed X.25 facilities, decrementing the remaining length
+may cause it to underflow.  Since the length is an unsigned integer,
+this will result in the loop continuing until the kernel crashes.
+
+This patch adds checks to ensure decrementing the remaining length does
+not cause it to wrap around.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/qla2xxx/qla_gbl.h  |    1 +
- drivers/scsi/qla2xxx/qla_init.c |    5 +++--
- drivers/scsi/qla2xxx/qla_os.c   |    5 +++++
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ net/x25/x25_facilities.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_gbl.h
-+++ b/drivers/scsi/qla2xxx/qla_gbl.h
-@@ -92,6 +92,7 @@ extern int ql2xshiftctondsd;
- extern int ql2xdbwr;
- extern int ql2xdontresethba;
- extern int ql2xasynctmfenable;
-+extern int ql2xgffidenable;
- extern int ql2xenabledif;
- extern int ql2xenablehba_err_chk;
- extern int ql2xtargetreset;
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -3258,8 +3258,9 @@ qla2x00_find_all_fabric_devs(scsi_qla_ho
- 			continue;
- 
- 		/* Bypass ports whose FCP-4 type is not FCP_SCSI */
--		if (new_fcport->fc4_type != FC4_TYPE_FCP_SCSI &&
--		    new_fcport->fc4_type != FC4_TYPE_UNKNOWN)
-+		if (ql2xgffidenable &&
-+		    (new_fcport->fc4_type != FC4_TYPE_FCP_SCSI &&
-+		    new_fcport->fc4_type != FC4_TYPE_UNKNOWN))
- 			continue;
- 
- 		/* Locate matching device in database. */
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -160,6 +160,11 @@ MODULE_PARM_DESC(ql2xtargetreset,
- 		 "Enable target reset."
- 		 "Default is 1 - use hw defaults.");
- 
-+int ql2xgffidenable;
-+module_param(ql2xgffidenable, int, S_IRUGO|S_IRUSR);
-+MODULE_PARM_DESC(ql2xgffidenable,
-+		"Enables GFF_ID checks of port type. "
-+		"Default is 0 - Do not use GFF_ID information.");
- 
- int ql2xasynctmfenable;
- module_param(ql2xasynctmfenable, int, S_IRUGO|S_IRUSR);
+--- a/net/x25/x25_facilities.c
++++ b/net/x25/x25_facilities.c
+@@ -61,6 +61,8 @@ int x25_parse_facilities(struct sk_buff
+ 	while (len > 0) {
+ 		switch (*p & X25_FAC_CLASS_MASK) {
+ 		case X25_FAC_CLASS_A:
++			if (len < 2)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_REVERSE:
+ 				if((p[1] & 0x81) == 0x81) {
+@@ -104,6 +106,8 @@ int x25_parse_facilities(struct sk_buff
+ 			len -= 2;
+ 			break;
+ 		case X25_FAC_CLASS_B:
++			if (len < 3)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_PACKET_SIZE:
+ 				facilities->pacsize_in  = p[1];
+@@ -125,6 +129,8 @@ int x25_parse_facilities(struct sk_buff
+ 			len -= 3;
+ 			break;
+ 		case X25_FAC_CLASS_C:
++			if (len < 4)
++				return 0;
+ 			printk(KERN_DEBUG "X.25: unknown facility %02X, "
+ 			       "values %02X, %02X, %02X\n",
+ 			       p[0], p[1], p[2], p[3]);
+@@ -132,6 +138,8 @@ int x25_parse_facilities(struct sk_buff
+ 			len -= 4;
+ 			break;
+ 		case X25_FAC_CLASS_D:
++			if (len < p[1] + 2)
++				return 0;
+ 			switch (*p) {
+ 			case X25_FAC_CALLING_AE:
+ 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
+@@ -149,9 +157,7 @@ int x25_parse_facilities(struct sk_buff
+ 				break;
+ 			default:
+ 				printk(KERN_DEBUG "X.25: unknown facility %02X,"
+-					"length %d, values %02X, %02X, "
+-					"%02X, %02X\n",
+-					p[0], p[1], p[2], p[3], p[4], p[5]);
++					"length %d\n", p[0], p[1]);
+ 				break;
+ 			}
+ 			len -= p[1] + 2;
 
 
