@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab0LHBAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:00:41 -0500
-Received: from kroah.org ([198.145.64.141]:48830 "EHLO coco.kroah.org"
+	id S1757140Ab0LHBAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:00:43 -0500
+Received: from kroah.org ([198.145.64.141]:48823 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757107Ab0LHBAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:38 -0500
+	id S1757016Ab0LHBAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:37 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:31 2010
-Message-Id: <20101208005731.471592630@clark.site>
+Message-Id: <20101208005731.362628790@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:58 -0800
+Date: Tue, 07 Dec 2010 16:57:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [101/289] hpet: unmap unused I/O space
+        Clemens Ladisch <clemens@ladisch.de>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        john stultz <johnstul@us.ibm.com>, Bob Picco <bpicco@redhat.com>
+Subject: [100/289] hpet: fix unwanted interrupt due to stale irq status bit
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,88 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
+commit 96e9694df446d1154ec2f4fdba8908588b9cba38 upstream.
 
-When the initialization code in hpet finds a memory resource and does not
-find an IRQ, it does not unmap the memory resource previously mapped.
+Jaswinder Singh Rajput wrote:
+> By executing Documentation/timers/hpet_example.c
+>
+> for polling, I requested for 3 iterations but it seems iteration work
+> for only 2 as first expired time is always very small.
+>
+> # ./hpet_example poll /dev/hpet 10 3
+> -hpet: executing poll
+> hpet_poll: info.hi_flags 0x0
+> hpet_poll: expired time = 0x13
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
+> hpet_poll: expired time = 0x1868c
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
+> hpet_poll: expired time = 0x18645
+> hpet_poll: revents = 0x1
+> hpet_poll: data 0x1
 
-There are buggy BIOSes which report resources exactly like this and what
-is worse the memory region bases point to normal RAM.  This normally would
-not matter since the space is not touched.  But when PAT is turned on,
-ioremap causes the page to be uncached and sets this bit in page->flags.
+Clearing the HPET interrupt enable bit disables interrupt generation
+but does not disable the timer, so the interrupt status bit will still
+be set when the timer elapses.  If another interrupt arrives before
+the timer has been correctly programmed (due to some other device on
+the same interrupt line, or CONFIG_DEBUG_SHIRQ), this results in an
+extra unwanted interrupt event because the status bit is likely to be
+set from comparator matches that happened before the device was opened.
 
-Then when the page is about to be used by the allocator, it is reported
-as:
+Therefore, we have to ensure that the interrupt status bit is and
+stays cleared until we actually program the timer.
 
-BUG: Bad page state in process md5sum  pfn:3ed00
-page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
-page flags: 0x20000001000000(uncached)
-Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
-Call Trace:
- [<ffffffff810df851>] bad_page+0xb1/0x100
- [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
- [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
- [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
-...
-
-In this particular case:
-
-1) HPET returns 3ed00000 as memory region base, but it is not in
-reserved ranges reported by the BIOS (excerpt):
- BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
- BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
-
-2) there is no IRQ resource reported by HPET method. On the other
-hand, the Intel HPET specs (1.0a) says (3.2.5.1):
-_CRS (
-  // Report 1K of memory consumed by this Timer Block
-  memory range consumed
-  // Optional: only used if BIOS allocates Interrupts [1]
-  IRQs consumed
-)
-
-[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
-Legacy 8254/Legacy RTC hardware still exists, the device objects
-associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
-"consumed resources".
-
-So in theory we should check whether if it is the case and use those
-interrupts instead.
-
-Anyway the address reported by the BIOS here is bogus, so non-presence
-of IRQ doesn't mean the "optional" part in point 2).
-
-Since I got no reply previously, fix this by simply unmapping the space
-when IRQ is not found and memory region was mapped previously.  It would
-be probably more safe to walk the resources again and unmap appropriately
-depending on type.  But as we now use only ioremap for both 2 memory
-resource types, it is not necessarily needed right now.
-
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
-
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>
+Cc: Bob Picco <bpicco@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/hpet.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/char/hpet.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 --- a/drivers/char/hpet.c
 +++ b/drivers/char/hpet.c
-@@ -985,6 +985,8 @@ static int hpet_acpi_add(struct acpi_dev
- 		return -ENODEV;
+@@ -479,6 +479,21 @@ static int hpet_ioctl_ieon(struct hpet_d
+ 	if (irq) {
+ 		unsigned long irq_flags;
  
- 	if (!data.hd_address || !data.hd_nirqs) {
-+		if (data.hd_address)
-+			iounmap(data.hd_address);
- 		printk("%s: no address or irqs in _CRS\n", __func__);
- 		return -ENODEV;
- 	}
++		if (devp->hd_flags & HPET_SHARED_IRQ) {
++			/*
++			 * To prevent the interrupt handler from seeing an
++			 * unwanted interrupt status bit, program the timer
++			 * so that it will not fire in the near future ...
++			 */
++			writel(readl(&timer->hpet_config) & ~Tn_TYPE_CNF_MASK,
++			       &timer->hpet_config);
++			write_counter(read_counter(&hpet->hpet_mc),
++				      &timer->hpet_compare);
++			/* ... and clear any left-over status. */
++			isr = 1 << (devp - devp->hd_hpets->hp_dev);
++			writel(isr, &hpet->hpet_isr);
++		}
++
+ 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
+ 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
+ 						? IRQF_SHARED : IRQF_DISABLED;
 
 
