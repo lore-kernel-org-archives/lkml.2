@@ -1,148 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab0LHVhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 16:37:14 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:2990 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab0LHVgT (ORCPT
+	id S1756261Ab0LHVht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 16:37:49 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:21170 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab0LHVhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 16:36:19 -0500
-Subject: [PATCH 3/5] x86: avoid PNP resources when allocating address space
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>
+	Wed, 8 Dec 2010 16:37:46 -0500
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Dan Williams <dcbw@redhat.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH 0/5] resources: add arch hook for preventing allocation in reserved areas
+Date: Wed, 8 Dec 2010 14:37:34 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>,
-        Matthew Garrett <mjg@redhat.com>
-Date: Wed, 08 Dec 2010 14:36:16 -0700
-Message-ID: <20101208213616.13026.77390.stgit@bob.kio>
-In-Reply-To: <20101208213606.13026.47657.stgit@bob.kio>
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
 References: <20101208213606.13026.47657.stgit@bob.kio>
-User-Agent: StGit/0.15
+In-Reply-To: <20101208213606.13026.47657.stgit@bob.kio>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012081437.34539.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Crap, here's the cover letter I meant to include.
 
-Remove PNP resources from "available space" used by allocate_resource().
-This would be better done by putting the PNP resources directly in the
-resource maps (iomem_resource, etc), but there are some issues that
-keep us from doing that yet.
+[RFC] PCI, PNP, resources: effectively reserve ACPI device resources
 
-This patch keeps us from handing out PNP device address space to other
-callers of allocate_resource().
+2.6.37-rc includes some patches of mine to change the way we allocate address
+space for devices, and these caused some regressions.
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23332
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23542
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23802
-Reported-by: Matthew Garrett <mjg@redhat.com>
-Reported-by: Dan Williams <dcbw@redhat.com>
-Reported-by: Jiri Slaby <jirislaby@gmail.com>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
+Most device resource allocation is done by the BIOS, but Linux does allocate
+space if the BIOS doesn't do it (e.g., for CardBus or other hotplug devices)
+or if the BIOS did it wrong (e.g., it put a PCI device outside the host bridge
+windows).
 
- arch/x86/kernel/resource.c |   78 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 78 insertions(+), 0 deletions(-)
+My original 2.6.37-rc patches make Linux allocate space from the top down
+instead of from the bottom up.  We did this because that's what Windows does,
+and doing it the same way helps us avoid some BIOS defects, such as
+https://bugzilla.kernel.org/show_bug.cgi?id=16228 .
 
+The regressions caused by these changes include:
 
-diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
-index 5dd6473..1daee92 100644
---- a/arch/x86/kernel/resource.c
-+++ b/arch/x86/kernel/resource.c
-@@ -1,6 +1,80 @@
- #include <linux/ioport.h>
-+#include <linux/pnp.h>
- #include <asm/e820.h>
- 
-+#ifdef CONFIG_PNP
-+static bool resource_conflict(struct resource *res, resource_size_t start,
-+			      resource_size_t end)
-+{
-+	/*
-+	 * Return true if and only if "res" conflicts with the [start-end]
-+	 * range.
-+	 */
-+	return res->start <= end && res->end >= start;
-+}
-+
-+static void resource_split(struct resource *res, resource_size_t start,
-+			   resource_size_t end, struct resource *low,
-+			   struct resource *high)
-+{
-+	/*
-+	 * If "res" conflicts with [start-end], split "res" into the
-+	 * part below "start" (low) and the part above "end" (high),
-+	 * either (or both) of which may be empty.
-+	 *
-+	 * If there's no conflict, return the entire "res" as "low".
-+	 */
-+	*low = *res;
-+	low->start = res->start;
-+	low->end = res->start - 1;	/* default to empty (size 0) */
-+
-+	*high = *res;
-+	high->end = res->end;
-+	high->start = res->end + 1;	/* default to empty (size 0) */
-+
-+	if (!resource_conflict(res, start, end)) {
-+		low->end = res->end;
-+		return;
-+	}
-+
-+	if (res->start < start)
-+		low->end = start - 1;
-+
-+	if (res->end > end)
-+		high->start = end + 1;
-+}
-+
-+static void pnp_remove_reservations(struct resource *avail)
-+{
-+	unsigned long type = resource_type(avail);
-+	struct pnp_dev *dev;
-+	int i;
-+	struct resource *res, low, high;
-+
-+	/*
-+	 * Clip the available region to avoid PNP devices.  The PNP
-+	 * resources really should be in the resource map to begin with,
-+	 * but there are still some issues preventing that.
-+	 */
-+	pnp_for_each_dev(dev) {
-+		i = 0;
-+		res = pnp_get_resource(dev, type, i++);
-+		while (res) {
-+			if (!(res->flags & IORESOURCE_WINDOW)) {
-+				resource_split(avail, res->start, res->end,
-+					       &low, &high);
-+				if (resource_size(&low) > resource_size(&high))
-+					*avail = low;
-+				else
-+					*avail = high;
-+			}
-+
-+			res = pnp_get_resource(dev, type, i++);
-+		}
-+	}
-+}
-+#endif
-+
- void arch_remove_reservations(struct resource *avail)
- {
- 	/*
-@@ -11,4 +85,8 @@ void arch_remove_reservations(struct resource *avail)
- 		if (avail->start < BIOS_END)
- 			avail->start = BIOS_END;
- 	}
-+
-+#ifdef CONFIG_PNP
-+	pnp_remove_reservations(avail);
-+#endif
- }
+https://bugzilla.kernel.org/show_bug.cgi?id=23332
 
+    Here, we allocated a 64MB bridge window for a subtractive-decode bridge
+    leading to a CardBus controller, and the window conflicts with devices not
+    reported by the BIOS.  Windows doesn't see this problem because it relies
+    on the fact that the bridge is in subtractive-decode mode and doesn't
+    program the window at all.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=23542
+https://bugzilla.kernel.org/show_bug.cgi?id=23802
+
+    In both cases, Linux allocated space that conflicts with an ACPI device
+    because it ignores resource usage reported by ACPI.  Windows avoids this
+    problem because it pays attention to the ACPI _CRS methods that report
+    device resource usage.
+
+I think the best way to address these problems would be to put ACPI device
+resources in the resource maps, just like we do for PCI devices.  We tried this
+a couple years ago (http://lkml.org/lkml/2007/11/1/214) and tripped over some
+subtle issues.  We should try again, but not at this stage of the -rc.
+
+Instead, these patches take the approach of adding a filter in the
+allocate_resource() path so each arch can prevent allocation of any address
+ranges it cares about.  For x86, that means looking through all the PNP
+devices and protecting the address space they use.
+
+In addition, for 23332, I added a quirk that builds a fake PNP device to
+protect the unreported devices.  I'm a little nervous about this because I've
+been told that the WHQL tests look for unreported devices, and the HP nx6325
+should have passwd.  But it's the best I can think of for now.
+
+Bjorn
