@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab0LHAyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:54:01 -0500
-Received: from kroah.org ([198.145.64.141]:58619 "EHLO coco.kroah.org"
+	id S1756260Ab0LHAr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:47:58 -0500
+Received: from kroah.org ([198.145.64.141]:58566 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756385Ab0LHAsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:04 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
-Message-Id: <20101208004434.524469952@clark.site>
+	id S1756311Ab0LHAr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:47:56 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:33 2010
+Message-Id: <20101208004433.697737658@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:48 -0800
+Date: Tue, 07 Dec 2010 16:44:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jack Steiner <steiner@sgi.com>, Ingo Molnar <mingo@elte.hu>,
-        maximilian attems <max@stro.at>
-Subject: [102/127] x86, UV: Fix initialization of max_pnode
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [094/127] HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Steiner <steiner@sgi.com>
+From: Antonio Ospite <ospite@studenti.unina.it>
 
-commit 36ac4b987bea9a95217e1af552252f275ca7fc44 upstream.
+commit d20d5ffab92f00188f360c44c791a5ffb988247c upstream.
 
-Fix calculation of "max_pnode" for systems where the the highest
-blade has neither cpus or memory. (And, yes, although rare this
-does occur).
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+IP: [<ffffffffa02c66b4>] hidraw_ioctl+0xfc/0x32c [hid]
+[...]
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-LKML-Reference: <20100910150808.GA19802@sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Cc: maximilian attems <max@stro.at>
+This is reproducible by disconnecting the device while userspace does
+ioctl in a loop and doesn't check return values in order to exit the
+loop.
+
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/x2apic_uv_x.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/hid/hidraw.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -595,9 +595,11 @@ void __init uv_system_init(void)
- 		for (j = 0; j < 64; j++) {
- 			if (!test_bit(j, &present))
- 				continue;
--			uv_blade_info[blade].pnode = (i * 64 + j);
-+			pnode = (i * 64 + j);
-+			uv_blade_info[blade].pnode = pnode;
- 			uv_blade_info[blade].nr_possible_cpus = 0;
- 			uv_blade_info[blade].nr_online_cpus = 0;
-+			max_pnode = max(pnode, max_pnode);
- 			blade++;
- 		}
- 	}
-@@ -635,7 +637,6 @@ void __init uv_system_init(void)
- 		uv_cpu_hub_info(cpu)->scir.offset = uv_scir_offset(apicid);
- 		uv_node_to_blade[nid] = blade;
- 		uv_cpu_to_blade[cpu] = blade;
--		max_pnode = max(pnode, max_pnode);
- 	}
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -237,11 +237,16 @@ static long hidraw_ioctl(struct file *fi
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	unsigned int minor = iminor(inode);
+ 	long ret = 0;
+-	/* FIXME: What stops hidraw_table going NULL */
+-	struct hidraw *dev = hidraw_table[minor];
++	struct hidraw *dev;
+ 	void __user *user_arg = (void __user*) arg;
  
- 	/* Add blade/pnode info for nodes without cpus */
-@@ -647,7 +648,6 @@ void __init uv_system_init(void)
- 		pnode = (paddr >> m_val) & pnode_mask;
- 		blade = boot_pnode_to_blade(pnode);
- 		uv_node_to_blade[nid] = blade;
--		max_pnode = max(pnode, max_pnode);
- 	}
+ 	lock_kernel();
++	dev = hidraw_table[minor];
++	if (!dev) {
++		ret = -ENODEV;
++		goto out;
++	}
++
+ 	switch (cmd) {
+ 		case HIDIOCGRDESCSIZE:
+ 			if (put_user(dev->hid->rsize, (int __user *)arg))
+@@ -314,6 +319,7 @@ static long hidraw_ioctl(struct file *fi
  
- 	map_gru_high(max_pnode);
+ 		ret = -ENOTTY;
+ 	}
++out:
+ 	unlock_kernel();
+ 	return ret;
+ }
 
 
