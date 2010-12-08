@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab0LHQqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:46:06 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65321 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab0LHQqD (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 8 Dec 2010 11:46:03 -0500
-Date: Wed, 8 Dec 2010 11:45:52 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: airlied@linux.ie, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, konrad@kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [RFC PATCH] Utilize the PCI API in the AGP framework.
-Message-ID: <20101208164552.GA18844@dumpdata.com>
-References: <1291677875-30493-1-git-send-email-konrad.wilk@oracle.com>
- <1291680126.8232.5.camel@clockmaker-el6>
- <20101207004844.GA31478@dumpdata.com>
- <1291684609.8232.8.camel@clockmaker-el6>
- <20101207021227.GA31774@dumpdata.com>
+	id S1754854Ab0LHQqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:46:23 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38115 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754608Ab0LHQqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 11:46:22 -0500
+Message-ID: <4CFFB642.6000207@kernel.org>
+Date: Wed, 08 Dec 2010 17:45:54 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101207021227.GA31774@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops inc_return V1 3/9] x86: Use this_cpu_inc_return for nmi
+ counter
+References: <20101206173958.685460926@linux.com> <20101206174014.806809612@linux.com>
+In-Reply-To: <20101206174014.806809612@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Dec 2010 16:45:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think most of them do touch PCIe cards. I swore that there were
-> some AGP users out there, maybe they aren't on those bugs - let me search
-> my mail archive. Maybe it just me who still uses AGP...
-
-Ah, found three individuals :-) If none of them strongly object I am going
-to freeze the AGP patchset and not bother with it for upstreaming.
-> > 
-> > Now if we have fixes for TTM/nouveau/radeon that make it work under Xen
-> > then that is a whole different story, however these patches are not
-> > those.
+On 12/06/2010 06:40 PM, Christoph Lameter wrote:
+> this_cpu_inc_return() saves us a memory access there.
 > 
-> Nope. I just posted them: https://lkml.org/lkml/2010/12/6/516
+> Reviewed-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Pekka Enberg <penberg@kernel.org>
+> Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Dave,
+03-05, the updated 06, 07-09 and the connector patch applied and
+pushed out to percpu#for-next.
 
-If you have some time, I would very much appreciate you looking over those
-TTM patches. I hope they are sane enough, and any recommendation on how to
-make them even better would be quite appreciated.
+Thanks.
+
+-- 
+tejun
