@@ -1,156 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab0LHAxI (ORCPT <rfc822;w@1wt.eu>);
+	id S1756665Ab0LHAxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:53:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38798 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756395Ab0LHAxI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Dec 2010 19:53:08 -0500
-Received: from kroah.org ([198.145.64.141]:58631 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756395Ab0LHAsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:48:06 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:34 2010
-Message-Id: <20101208004434.715081270@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:44:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luke Macken <lmacken@redhat.com>, Peter Jones <pjones@redhat.com>,
-        maximilian attems <max@stro.at>
-Subject: [104/127] efifb: support the EFI framebuffer on more Apple hardware
-In-Reply-To: <20101208004456.GA23578@kroah.com>
+Date: Tue, 7 Dec 2010 16:51:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] writeback: enabling-gate for light dirtied bdi
+Message-Id: <20101207165111.d79735c1.akpm@linux-foundation.org>
+In-Reply-To: <20101205064430.GA15027@localhost>
+References: <20101205064430.GA15027@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Sun, 5 Dec 2010 14:44:30 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-------------------
+> I noticed that my NFSROOT test system goes slow responding when there
+> is heavy dd to a local disk. Traces show that the NFSROOT's bdi_limit
+> is near 0 and many tasks in the system are repeatedly stuck in
+> balance_dirty_pages().
+> 
+> There are two related problems:
+> 
+> - light dirtiers at one device (more often than not the rootfs) get
+>   heavily impacted by heavy dirtiers on another independent device
+> 
+> - the light dirtied device does heavy throttling because bdi_limit=0,
+>   and the heavy throttling may in turn withhold its bdi_limit in 0 as
+>   it cannot dirty fast enough to grow up the bdi's proportional weight.
+> 
+> Fix it by introducing some "low pass" gate, which is a small (<=8MB)
+> value reserved by others and can be safely "stole" from the current
+> global dirty margin.  It does not need to be big to help the bdi gain
+> its initial weight.
+> 
 
-From: Luke Macken <lmacken@redhat.com>
+The changelog refers to something called "bdi_limit".  But there is no
+such thing.  It occurs nowhere in the Linux tree and it has never
+before been used in a changelog.
 
-commit a5757c2a474a15f87e5baa9a4caacc31cde2bae6 upstream.
+Can we please use carefully-chosen terminology and make sure that
+everyone can easily understand what the terms are referring to?
 
-Enable the EFI framebuffer on 14 more Macs, including the iMac11,1
-iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1 MacBook7,1
-MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1 MacBookPro6,2 and
-MacBookPro7,1
+I'm assuming from context that you've created a new term to refer to
+the bdi_dirty_limit() return value for this bdi.
 
-Information gathered from various user submissions.
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=528232
-    http://ubuntuforums.org/showthread.php?t=1557326
+And ... oh geeze, you made me look at the code.  Grumbles forthcoming.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Luke Macken <lmacken@redhat.com>
-Signed-off-by: Peter Jones <pjones@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: maximilian attems <max@stro.at>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> Peter, I suspect this will do good for 2.6.37. Please help review, thanks!
+> 
+>  include/linux/writeback.h |    3 ++-
+>  mm/backing-dev.c          |    2 +-
+>  mm/page-writeback.c       |   23 +++++++++++++++++++++--
+>  3 files changed, 24 insertions(+), 4 deletions(-)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2010-12-05 14:29:24.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2010-12-05 14:31:39.000000000 +0800
+> @@ -444,7 +444,9 @@ void global_dirty_limits(unsigned long *
+>   * The bdi's share of dirty limit will be adapting to its throughput and
+>   * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
+>   */
+> -unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+> +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+> +			      unsigned long dirty,
+> +			      unsigned long dirty_pages)
 
----
- drivers/video/efifb.c |   42 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+Forgot to update the bdi_dirty_limit() kerneldoc.
 
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -39,17 +39,31 @@ enum {
- 	M_I20,		/* 20-Inch iMac */
- 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
- 	M_I24,		/* 24-Inch iMac */
-+	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
-+	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
-+	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
- 	M_MINI,		/* Mac Mini */
-+	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
-+	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
- 	M_MB,		/* MacBook */
- 	M_MB_2,		/* MacBook, 2nd rev. */
- 	M_MB_3,		/* MacBook, 3rd rev. */
-+	M_MB_5_1,	/* MacBook, 5th rev. */
-+	M_MB_6_1,	/* MacBook, 6th rev. */
-+	M_MB_7_1,	/* MacBook, 7th rev. */
- 	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
- 	M_MBA,		/* MacBook Air */
- 	M_MBP,		/* MacBook Pro */
- 	M_MBP_2,	/* MacBook Pro 2nd gen */
-+	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
- 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
- 	M_MBP_4,	/* MacBook Pro, 4th gen */
- 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
-+	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
-+	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
-+	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
-+	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
-+	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
- 	M_UNKNOWN	/* placeholder */
- };
- 
-@@ -64,14 +78,28 @@ static struct efifb_dmi_info {
- 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
- 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
- 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
-+	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
-+	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
-+	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
- 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
-+	[M_MINI_3_1] = { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
-+	[M_MINI_4_1] = { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
- 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
-+	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
- 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
- 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
-+	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
- 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
- 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
-+	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
- 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
- };
- 
-@@ -92,7 +120,12 @@ static struct dmi_system_id __initdata d
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
- 	/* At least one of these two will be right; maybe both? */
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
-@@ -101,14 +134,23 @@ static struct dmi_system_id __initdata d
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
- 	{},
- };
- 
+While you're there, please document the bdi_dirty_limit() return value.
 
+<looks>
+
+It mentions "100" a  lot.  ah-hah!  It returns a 0..99 percentage!
+
+<looks further>
+
+No, ratelimit_pages() compares it with a variable called dirty_pages,
+so it returns an absolute number of pages!
+
+But maybe ratelimit_pages() is buggy.
+
+<looks further>
+
+balance_dirty_pages() passes the bdi_dirty_limit() return value to
+task_dirty_limit() which secretly takes a number-of-pages arg and
+secretly returns a number-of-pages return value.
+
+So I will pronounce with moderate confidence that bdi_dirty_limit()
+returns a page count!
+
+See what I mean?  It shouldn't be that hard!
+
+>  {
+>  	u64 bdi_dirty;
+>  	long numerator, denominator;
+> @@ -459,6 +461,22 @@ unsigned long bdi_dirty_limit(struct bac
+>  	do_div(bdi_dirty, denominator);
+>  
+>  	bdi_dirty += (dirty * bdi->min_ratio) / 100;
+> +
+> +	/*
+> +	 * There is a chicken and egg problem: when bdi A (eg. /pub) is heavy
+> +	 * dirtied and bdi B (eg. /) is light dirtied hence has 0 dirty limit,
+> +	 * tasks writing to B always get heavily throttled and bdi B's dirty
+> +	 * limit may never be able to grow up from 0.
+> +	 *
+> +	 * So if we can dirty N more pages globally, honour N/2 to the bdi that
+> +	 * runs low. To provide such a global margin, we slightly decrease all
+> +	 * heavy dirtied bdi's limit.
+> +	 */
+> +	if (bdi_dirty < (dirty - dirty_pages) / 2 && dirty > dirty_pages)
+> +		bdi_dirty = (dirty - dirty_pages) / 2;
+> +	else
+> +		bdi_dirty -= min(bdi_dirty / 128, 8192ULL >> (PAGE_SHIFT-10));
+
+Good lord, what have we done.
+
+Ho hum.
+
+This problem isn't specific to NFS, is it?  All backing-devices start
+out with a bdi_limit (which doesn't actually exist) of zero, yes?  And
+this "bdi_limit" is a per-bdi state which is stored via some
+undescribed means in some or all of `completions',
+`write_bandwidth_update_time', `write_bandwidth', `dirty_exceeded',
+`min_ratio', `max_ratio' and `max_prop_frac'.  All of which are
+undocumented, naturally.
+
+
+I admire your ability to work on this code, I really do.  I haven't
+looked at it in detail for a year or so and I am aghast at its opacity.
+This makes it extremely hard to review any changes to it.  This is a
+problem.  And I don't think I can (or will) review this patch for these
+reasons.  My dummy is thoroughly spat out.
+
+
+And what's up with that 8192?  I assume it refers to pages?  32MB?  So
+if we're working on eight devices concurrently on a 256MB machine, what
+happens?
 
