@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab0LHQ2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 11:28:08 -0500
-Received: from www.tglx.de ([62.245.132.106]:44511 "EHLO www.tglx.de"
+	id S1752834Ab0LHQcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 11:32:46 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:61675 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab0LHQ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 11:28:06 -0500
-Date: Wed, 8 Dec 2010 17:27:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Edouard Gomez <ed.gomez@free.fr>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Thomas Backlund <tmb@mandriva.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Dell Precision WorkStation 690 reboot quirk
-In-Reply-To: <4d8b4b3a1d3c6034b868.1291822674@egomez.in.mobiclip.com>
-Message-ID: <alpine.LFD.2.00.1012081701130.2653@localhost6.localdomain6>
-References: <4d8b4b3a1d3c6034b868.1291822674@egomez.in.mobiclip.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1750905Ab0LHQco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 11:32:44 -0500
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
+To: tytso@mit.edu, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: ext-phil.2.carmody@nokia.com
+Subject: [PATCH] ext4: fix typo in ext4_find_entry()
+Date: Wed,  8 Dec 2010 18:33:22 +0200
+Message-Id: <1291826002-24989-1-git-send-email-aaro.koskinen@nokia.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Dec 2010, Edouard Gomez wrote:
+There should be a check for NUL character instead of '0'.
 
-> # HG changeset patch
-> # User Edouard Gomez <ed.gomez@free.fr>
-> # Date 1291821505 -3600
-> # Node ID 4d8b4b3a1d3c6034b86889fac38dd53e6579bb42
-> # Parent  53e51000d59963c8ca408db4db619d2c82374c5e
-> x86: Dell Precision WorkStation 690 reboot quirk
-> 
-> This Dell workstation gets stuck on reboot unless booted with
-> the paremeter reboot=bios.
-> 
-> This patch has been submitted 3 times already to X86 ARCHITECTURE
-> maintainers w/o any feedback so far. Trying my chance on the LKML.
+Reported-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+---
+ fs/ext4/namei.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Sorry, but I haven't seen this patch in my inbox and my mail server
-log has only a single connection attempt to deliver mail from you on
-Dec. 8 which ended up in one of my spam traps.
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 92203b8..dc40e75 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -872,7 +872,7 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
+ 	if (namelen > EXT4_NAME_LEN)
+ 		return NULL;
+ 	if ((namelen <= 2) && (name[0] == '.') &&
+-	    (name[1] == '.' || name[1] == '0')) {
++	    (name[1] == '.' || name[1] == '\0')) {
+ 		/*
+ 		 * "." or ".." will only be in the first block
+ 		 * NFS may look up ".."; "." should be handled by the VFS
+-- 
+1.5.6.5
 
-Cc'ing LKML (or some other relevant mailinglist) is recommended for
-sending patches anyway. Documentation/SubmittingPatches says:
- 
-Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
-
-Thanks,
-
-	tglx
