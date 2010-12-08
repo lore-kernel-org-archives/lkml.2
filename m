@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab0LHCTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 21:19:54 -0500
-Received: from kroah.org ([198.145.64.141]:45858 "EHLO coco.kroah.org"
+	id S1755964Ab0LHCUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 21:20:18 -0500
+Received: from kroah.org ([198.145.64.141]:45845 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755733Ab0LHAqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:46:35 -0500
+	id S1755717Ab0LHAqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:46:33 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:44:25 2010
-Message-Id: <20101208004425.288141982@clark.site>
+Message-Id: <20101208004425.089193703@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:43:15 -0800
+Date: Tue, 07 Dec 2010 16:43:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Backlund <tmb@mandriva.org>, Michal Simek <monstr@monstr.eu>
-Subject: [009/127] microblaze: Fix build with make 3.82
+        Samuel Ortiz <samuel@sortiz.org>
+Subject: [007/127] irda: Fix heap memory corruption in iriap.c
 In-Reply-To: <20101208004456.GA23578@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Backlund <tmb@mandriva.org>
+From: Samuel Ortiz <samuel@sortiz.org>
 
-commit b843e4ec01991a386a9e0e9030703524446e03da upstream.
+commit 37f9fc452d138dfc4da2ee1ce5ae85094efc3606 upstream.
 
-When running make headers_install_all on x86_64 and make 3.82 I hit this:
+While parsing the GetValuebyClass command frame, we could potentially write
+passed the skb->data pointer.
 
-arch/microblaze/Makefile:80: *** mixed implicit and normal rules.  Stop.
-make: *** [headers_install_all] Error 2
-
-So split the rules to satisfy make 3.82.
-
-Signed-off-by: Thomas Backlund <tmb@mandriva.org>
-Signed-off-by: Michal Simek <monstr@monstr.eu>
+Reported-by: Ilja Van Sprundel <ivansprundel@ioactive.com>
+Signed-off-by: Samuel Ortiz <samuel@sortiz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/microblaze/Makefile |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/irda/iriap.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/microblaze/Makefile
-+++ b/arch/microblaze/Makefile
-@@ -69,12 +69,16 @@ export MMU DTB
+--- a/net/irda/iriap.c
++++ b/net/irda/iriap.c
+@@ -501,7 +501,8 @@ static void iriap_getvaluebyclass_confir
+ 		IRDA_DEBUG(4, "%s(), strlen=%d\n", __func__, value_len);
  
- all: linux.bin
+ 		/* Make sure the string is null-terminated */
+-		fp[n+value_len] = 0x00;
++		if (n + value_len < skb->len)
++			fp[n + value_len] = 0x00;
+ 		IRDA_DEBUG(4, "Got string %s\n", fp+n);
  
--BOOT_TARGETS = linux.bin linux.bin.gz simpleImage.%
-+# With make 3.82 we cannot mix normal and wildcard targets
-+BOOT_TARGETS1 = linux.bin linux.bin.gz
-+BOOT_TARGETS2 = simpleImage.%
- 
- archclean:
- 	$(Q)$(MAKE) $(clean)=$(boot)
- 
--$(BOOT_TARGETS): vmlinux
-+$(BOOT_TARGETS1): vmlinux
-+	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
-+$(BOOT_TARGETS2): vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
- 
- define archhelp
+ 		/* Will truncate to IAS_MAX_STRING bytes */
 
 
