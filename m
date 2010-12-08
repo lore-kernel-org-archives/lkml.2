@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab0LHW1n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 17:27:43 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:60281 "EHLO smtp.outflux.net"
+	id S1756134Ab0LHWhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 17:37:48 -0500
+Received: from kroah.org ([198.145.64.141]:59757 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab0LHW1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 17:27:42 -0500
-Date: Wed, 8 Dec 2010 14:27:13 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, mingo@redhat.com, penberg@kernel.org,
-        alan@lxorguk.ukuu.org.uk, tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/cpu] x86, cpu: Clear XD_DISABLED flag on Intel to
- regain NX
-Message-ID: <20101208222713.GP5750@outflux.net>
-References: <1289414154-7829-3-git-send-email-kees.cook@canonical.com>
- <tip-ae84739c27b6b3725993202fe02ff35ab86468e1@git.kernel.org>
+	id S1752042Ab0LHWhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 17:37:47 -0500
+Date: Wed, 8 Dec 2010 14:26:42 -0800
+From: Greg KH <greg@kroah.com>
+To: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Nishanth Menon <nm@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
+Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions
+ for loader
+Message-ID: <20101208222642.GA31802@kroah.com>
+References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-ae84739c27b6b3725993202fe02ff35ab86468e1@git.kernel.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 02:49:04AM +0000, tip-bot for Kees Cook wrote:
-> Commit-ID:  ae84739c27b6b3725993202fe02ff35ab86468e1
-> Gitweb:     http://git.kernel.org/tip/ae84739c27b6b3725993202fe02ff35ab86468e1
-> Author:     Kees Cook <kees.cook@canonical.com>
-> AuthorDate: Wed, 10 Nov 2010 10:35:52 -0800
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Wed, 10 Nov 2010 15:42:54 -0800
+On Tue, Dec 07, 2010 at 12:09:06AM -0600, Omar Ramirez Luna wrote:
+> Instead use request_firmware and friends to get a valid firmware
+> image.
 > 
-> x86, cpu: Clear XD_DISABLED flag on Intel to regain NX
+> Right now the image is supplied dynamically through udev and the
+> following rule:
+> 
+> KERNEL=="omap-dsp", SUBSYSTEM=="firmware", ACTION=="add",	\
+> 	RUN+="/bin/sh -c 'echo 1 > /sys/$DEVPATH/loading;	\
+> 		cat $FIRMWARE > /sys/$DEVPATH/data;		\
+> 		echo 0 > /sys/$DEVPATH/loading'"
 
-Just some quick positive feedback on this patch series: I've had at least
-one confirmed report of a user with an Asus system that had NX disabled
-(in the BIOS which offered no toggle to switch it on) is able to use
-the NX bit on their CPU finally. Additionally, no regressions have been
-identified either, and there has been a fair number of people running
-with the patch for a few weeks now in Ubuntu's development kernel.
+Why do you need a custom firmware rule?  Why doesn't the default
+firmware loading rule that comes with udev work properly for you?  What
+are you needing different here that works properly for all other
+drivers?
 
--Kees
+confused,
 
--- 
-Kees Cook
-Ubuntu Security Team
+greg k-h
