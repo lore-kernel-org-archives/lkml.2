@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab0LHBCq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:46 -0500
-Received: from kroah.org ([198.145.64.141]:33500 "EHLO coco.kroah.org"
+	id S1757705Ab0LHBXo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:23:44 -0500
+Received: from kroah.org ([198.145.64.141]:33531 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932528Ab0LHBCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:41 -0500
+	id S932554Ab0LHBCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:49 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:40 2010
-Message-Id: <20101208005740.192429495@clark.site>
+Message-Id: <20101208005740.766708010@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:24 -0800
+Date: Tue, 07 Dec 2010 16:59:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anisse Astier <anisse@astier.eu>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [187/289] intel-gtt: fix gtt_total_entries detection
+        Andiry Xu <andiry.xu@amd.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [193/289] xHCI: fix wMaxPacketSize mask
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,153 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit e5e408fc94595aab897f613b6f4e2f5b36870a6f upstream.
+commit dc07c91b9b4067022210e68d914a6890a4d70622 upstream.
 
-In commit f1befe71 Chris Wilson added some code to clear the full gtt
-on g33/pineview instead of just the mappable part. The code looks like
-it was copy-pasted from agp/intel-gtt.c, at least an identical piece
-of code is still there (in intel_i830_init_gtt_entries). This lead to
-a regression in 2.6.35 which was supposedly fixed in commit e7b96f28
+USB2.0 spec 9.6.6 says: For all endpoints, bit 10..0 specify the maximum
+packet size(in bytes).
 
-Now this commit makes absolutely no sense to me. It seems to be
-slightly confused about chipset generations - it references docs for
-4th gen but the regression concerns 3rd gen g33. Luckily the the g33
-gmch docs are available with the GMCH Graphics Control pci config
-register definitions. The other (bigger problem) is that the new
-check in there uses the i830 stolen mem bits (.5M, 1M or 8M of stolen
-mem). They are different since the i855GM.
+So the wMaxPacketSize mask should be 0x7ff rather than 0x3ff.
 
-The most likely case is that it hits the 512M fallback, which was
-probably the right thing for the boxes this was tested on.
+This patch should be queued for the stable tree.  The bug in
+xhci_endpoint_init() was present as far back as 2.6.31, and the bug in
+xhci_get_max_esit_payload() was present when the function was introduced
+in 2.6.34.
 
-So the original approach by Chris Wilson seems to be wrong and the
-current code is definitely wrong. There is a third approach by Jesse
-Barnes from his RFC patch "Who wants a bigger GTT mapping range?"
-where he simply shoves g33 in the same clause like later chipset
-generations.
-
-I've asked him and Jesse confirmed that this should work. So implement
-it.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16891$
-Tested-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/intel-gtt.c |   63 ++++++++++++++++++-------------------------
- 1 file changed, 27 insertions(+), 36 deletions(-)
+ drivers/usb/host/xhci-mem.c |    4 ++--
+ drivers/usb/host/xhci.h     |    5 +++++
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -534,7 +534,7 @@ static void intel_i830_init_gtt_entries(
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1043,7 +1043,7 @@ static inline u32 xhci_get_max_esit_payl
+ 	if (udev->speed == USB_SPEED_SUPER)
+ 		return ep->ss_ep_comp.wBytesPerInterval;
  
- 	pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
+-	max_packet = ep->desc.wMaxPacketSize & 0x3ff;
++	max_packet = GET_MAX_PACKET(ep->desc.wMaxPacketSize);
+ 	max_burst = (ep->desc.wMaxPacketSize & 0x1800) >> 11;
+ 	/* A 0 in max burst means 1 transfer per ESIT */
+ 	return max_packet * (max_burst + 1);
+@@ -1133,7 +1133,7 @@ int xhci_endpoint_init(struct xhci_hcd *
+ 		/* Fall through */
+ 	case USB_SPEED_FULL:
+ 	case USB_SPEED_LOW:
+-		max_packet = ep->desc.wMaxPacketSize & 0x3ff;
++		max_packet = GET_MAX_PACKET(ep->desc.wMaxPacketSize);
+ 		ep_ctx->ep_info2 |= MAX_PACKET(max_packet);
+ 		break;
+ 	default:
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -614,6 +614,11 @@ struct xhci_ep_ctx {
+ #define MAX_PACKET_MASK		(0xffff << 16)
+ #define MAX_PACKET_DECODED(p)	(((p) >> 16) & 0xffff)
  
--	if (IS_I965) {
-+	if (IS_G33 || IS_I965) {
- 		u32 pgetbl_ctl;
- 		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
- 
-@@ -567,22 +567,6 @@ static void intel_i830_init_gtt_entries(
- 			size = 512;
- 		}
- 		size += 4; /* add in BIOS popup space */
--	} else if (IS_G33 && !IS_PINEVIEW) {
--	/* G33's GTT size defined in gmch_ctrl */
--		switch (gmch_ctrl & G33_PGETBL_SIZE_MASK) {
--		case G33_PGETBL_SIZE_1M:
--			size = 1024;
--			break;
--		case G33_PGETBL_SIZE_2M:
--			size = 2048;
--			break;
--		default:
--			dev_info(&agp_bridge->dev->dev,
--				 "unknown page table size 0x%x, assuming 512KB\n",
--				(gmch_ctrl & G33_PGETBL_SIZE_MASK));
--			size = 512;
--		}
--		size += 4;
- 	} else if (IS_G4X || IS_PINEVIEW) {
- 		/* On 4 series hardware, GTT stolen is separate from graphics
- 		 * stolen, ignore it in stolen gtt entries counting.  However,
-@@ -1257,24 +1241,31 @@ static int intel_i915_get_gtt_size(void)
- 	int size;
- 
- 	if (IS_G33) {
--		u16 gmch_ctrl;
-+		u32 pgetbl_ctl;
-+		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
- 
--		/* G33's GTT size defined in gmch_ctrl */
--		pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
--		switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
--		case I830_GMCH_GMS_STOLEN_512:
-+		switch (pgetbl_ctl & I965_PGETBL_SIZE_MASK) {
-+		case I965_PGETBL_SIZE_128KB:
-+			size = 128;
-+			break;
-+		case I965_PGETBL_SIZE_256KB:
-+			size = 256;
-+			break;
-+		case I965_PGETBL_SIZE_512KB:
- 			size = 512;
- 			break;
--		case I830_GMCH_GMS_STOLEN_1024:
-+		case I965_PGETBL_SIZE_1MB:
- 			size = 1024;
- 			break;
--		case I830_GMCH_GMS_STOLEN_8192:
--			size = 8*1024;
-+		case I965_PGETBL_SIZE_2MB:
-+			size = 2048;
-+			break;
-+		case I965_PGETBL_SIZE_1_5MB:
-+			size = 1024 + 512;
- 			break;
- 		default:
--			dev_info(&agp_bridge->dev->dev,
--				 "unknown page table size 0x%x, assuming 512KB\n",
--				(gmch_ctrl & I830_GMCH_GMS_MASK));
-+			dev_info(&intel_private.pcidev->dev,
-+				 "unknown page table size, assuming 512KB\n");
- 			size = 512;
- 		}
- 	} else {
-@@ -1306,14 +1297,6 @@ static int intel_i915_create_gatt_table(
- 	pci_read_config_dword(intel_private.pcidev, I915_MMADDR, &temp);
- 	pci_read_config_dword(intel_private.pcidev, I915_PTEADDR, &temp2);
- 
--	gtt_map_size = intel_i915_get_gtt_size();
--
--	intel_private.gtt = ioremap(temp2, gtt_map_size);
--	if (!intel_private.gtt)
--		return -ENOMEM;
--
--	intel_private.gtt_total_size = gtt_map_size / 4;
--
- 	temp &= 0xfff80000;
- 
- 	intel_private.registers = ioremap(temp, 128 * 4096);
-@@ -1322,6 +1305,14 @@ static int intel_i915_create_gatt_table(
- 		return -ENOMEM;
- 	}
- 
-+	gtt_map_size = intel_i915_get_gtt_size();
++/* Get max packet size from ep desc. Bit 10..0 specify the max packet size.
++ * USB2.0 spec 9.6.6.
++ */
++#define GET_MAX_PACKET(p)	((p) & 0x7ff)
 +
-+	intel_private.gtt = ioremap(temp2, gtt_map_size);
-+	if (!intel_private.gtt)
-+		return -ENOMEM;
-+
-+	intel_private.gtt_total_size = gtt_map_size / 4;
-+
- 	temp = readl(intel_private.registers+I810_PGETBL_CTL) & 0xfffff000;
- 	global_cache_flush();	/* FIXME: ? */
- 
+ /* tx_info bitmasks */
+ #define AVG_TRB_LENGTH_FOR_EP(p)	((p) & 0xffff)
+ #define MAX_ESIT_PAYLOAD_FOR_EP(p)	(((p) & 0xffff) << 16)
 
 
