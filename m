@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab0LHPju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 10:39:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab0LHPjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 10:39:49 -0500
-Subject: Re: [PATCH] syslog: check cap_syslog when dmesg_restrict
-From: Eric Paris <eparis@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>,
-        dwalsh@redhat.com, Kees Cook <kees.cook@canonical.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101208151901.GA20557@mail.hallyn.com>
-References: <20101208151901.GA20557@mail.hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 10:39:40 -0500
-Message-ID: <1291822780.3072.40.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756001Ab0LHPmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 10:42:10 -0500
+Received: from luminismail.carleton.ca ([134.117.2.27]:51729 "EHLO
+	luminismail.carleton.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab0LHPmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 10:42:08 -0500
+X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Dec 2010 10:42:08 EST
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1
+Message-id: <4CFF993D.3050504@ccsl.carleton.ca>
+Date: Wed, 08 Dec 2010 09:42:05 -0500
+From: Mohammad R Nikseresht <nikser@ccsl.carleton.ca>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101126)
+To: linux-kernel@vger.kernel.org
+Subject: lowering interactive scheduling latency with no TTYs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 15:19 +0000, Serge E. Hallyn wrote:
-> Eric Paris pointed out that it doesn't make sense to require
-> both CAP_SYS_ADMIN and CAP_SYSLOG for certain syslog actions.
-> So require CAP_SYSLOG, not CAP_SYS_ADMIN, when dmesg_restrict
-> is set.
-> 
-> (I'm also consolidating the now common error path)
-> 
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> ---
->  Documentation/sysctl/kernel.txt |    2 +-
->  kernel/printk.c                 |   20 ++++++++++----------
->  2 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index 209e158..5740671 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -219,7 +219,7 @@ dmesg_restrict:
->  This toggle indicates whether unprivileged users are prevented from using
->  dmesg(8) to view messages from the kernel's log buffer.  When
->  dmesg_restrict is set to (0) there are no restrictions.  When
-> -dmesg_restrict is set set to (1), users must have CAP_SYS_ADMIN to use
-> +dmesg_restrict is set set to (1), users must have CAP_SYSLOG to use
->  dmesg(8).
->  
->  The kernel config option CONFIG_SECURITY_DMESG_RESTRICT sets the default
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 0712380..0cecba0 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -279,18 +279,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
->  	 * at open time.
->  	 */
->  	if (type == SYSLOG_ACTION_OPEN || !from_file) {
-> -		if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
-> -			return -EPERM;
-> +		if (dmesg_restrict && !capable(CAP_SYSLOG))
-> +			goto warn; /* switch to return -EPERM after 2.6.39 */
->  		if ((type != SYSLOG_ACTION_READ_ALL &&
->  		     type != SYSLOG_ACTION_SIZE_BUFFER) &&
-> -		    !capable(CAP_SYSLOG)) {
-> -			/* remove after 2.6.38 */
-> -			if (capable(CAP_SYS_ADMIN))
-> -				WARN_ONCE(1, "Attempt to access syslog with "
-> -				  "CAP_SYS_ADMIN but no CAP_SYSLOG "
-> -				  "(deprecated and denied).\n");
-> -			return -EPERM;
-> -		}
-> +		    !capable(CAP_SYSLOG))
-> +			goto warn; /* switch to return -EPERM after 2.6.39 */
+Hi,
 
-Doesn't this return -EPERM right now?  I think the code might be
-incorrect today as well......
+I have developed a Linux scheduling enhancement that gives significantly
+lower scheduling latency for interactive processes (20+% improvement
+versus the Mike Galbraith's recent "200 line" scheduling patch, 80+%
+improvement versus 2.6.35 stock scheduler) but without any reference to
+TTYs or use of cgroups.  It also reduces latency for network server
+processes under background load (mysql, apache).
 
-I thought the flow was supposed to be
+My enhancement is currently implemented as a SystemTap script; as a
+result general scheduling latency is currently a bit high.  I am
+currently working on translating it into a kernel patch.
 
-if (capable(CAP_SYSLOG))
-	all good
-else if (capable(CAP_SYS_ADMIN))
-	WARN, but still good for now
-else
-	EPERM
+More information is here, including a full description in a technical
+report, benchmarks, and my SystemTap script:
 
-But it looks to me like the flow is
+   http://people.scs.carleton.ca/~mniksere/appeasement.html
 
-if (capable(CAP_SYSLOG))
-	all good
-else if (capable(CAP_SYS_ADMIN))
-	WARN, EPERM
-else
-	EPERM
+What follows is a brief description of how Customer Appeasement
+scheduling works.
 
->  	}
->  
->  	error = security_syslog(type);
-> @@ -434,6 +428,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
->  	}
->  out:
->  	return error;
-> +warn:
-> +	/* remove after 2.6.39 */
-> +	if (capable(CAP_SYS_ADMIN))
-> +		WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
-> +		  "but no CAP_SYSLOG (deprecated and denied).\n");
-> +	return -EPERM;
->  }
->  
->  SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
+The basic idea behind my enhancement, which I call the Customer
+Appeasement scheduling policy, is to boost the priority of critical processes
+based upon their socket-level interactions. The assumption is that the processes that are 
+interacting with a customer have a higher non-zero socket read operations.
+Based on this I increase their priority temporary whenever they have a non-zero socket 
+read operation to let them to respond to the customer request faster.
+The exact amount of priority increase and the time interval that the process 
+receives this extra priority depends on the system load. The higher the system load
+the higer the priority and the longer the time interval.
+
+Please try running it, I'd appreciate your feedback,
+
+Thanks,
+
+--
+Mohammad Nikseresht
 
 
