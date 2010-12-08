@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757688Ab0LHBXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:23:33 -0500
-Received: from kroah.org ([198.145.64.141]:33541 "EHLO coco.kroah.org"
+	id S932545Ab0LHBCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:46 -0500
+Received: from kroah.org ([198.145.64.141]:33500 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932561Ab0LHBCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:51 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:41 2010
-Message-Id: <20101208005740.969219449@clark.site>
+	id S932528Ab0LHBCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:41 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:40 2010
+Message-Id: <20101208005740.192429495@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:32 -0800
+Date: Tue, 07 Dec 2010 16:59:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [195/289] xhci: Setup array of USB 2.0 and USB 3.0 ports.
+        Anisse Astier <anisse@astier.eu>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [187/289] intel-gtt: fix gtt_total_entries detection
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,265 +27,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit da6699ce4a889c3795624ccdcfe7181cc89f18e8 upstream.
+commit e5e408fc94595aab897f613b6f4e2f5b36870a6f upstream.
 
-An xHCI host controller contains USB 2.0 and USB 3.0 ports, which can
-occur in any order in the PORTSC registers.  We cannot read the port speed
-bits in the PORTSC registers at init time to determine the port speed,
-since those bits are only valid when a USB device is plugged into the
-port.
+In commit f1befe71 Chris Wilson added some code to clear the full gtt
+on g33/pineview instead of just the mappable part. The code looks like
+it was copy-pasted from agp/intel-gtt.c, at least an identical piece
+of code is still there (in intel_i830_init_gtt_entries). This lead to
+a regression in 2.6.35 which was supposedly fixed in commit e7b96f28
 
-Instead, we read the "Supported Protocol Capability" registers in the xHC
-Extended Capabilities space.  Those describe the protocol, port offset in
-the PORTSC registers, and port count.  We use those registers to create
-two arrays of pointers to the PORTSC registers, one for USB 3.0 ports, and
-another for USB 2.0 ports.  A third array keeps track of the port protocol
-major revision, and is indexed with the internal xHCI port number.
+Now this commit makes absolutely no sense to me. It seems to be
+slightly confused about chipset generations - it references docs for
+4th gen but the regression concerns 3rd gen g33. Luckily the the g33
+gmch docs are available with the GMCH Graphics Control pci config
+register definitions. The other (bigger problem) is that the new
+check in there uses the i830 stolen mem bits (.5M, 1M or 8M of stolen
+mem). They are different since the i855GM.
 
-This commit is a bit big, but it should be queued for stable because the "Don't
-let the USB core disable SuperSpeed ports" patch depends on it.  There is no
-other way to determine which ports are SuperSpeed ports without this patch.
+The most likely case is that it hits the 512M fallback, which was
+probably the right thing for the boxes this was tested on.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Don Zickus <dzickus@redhat.com>
+So the original approach by Chris Wilson seems to be wrong and the
+current code is definitely wrong. There is a third approach by Jesse
+Barnes from his RFC patch "Who wants a bigger GTT mapping range?"
+where he simply shoves g33 in the same clause like later chipset
+generations.
+
+I've asked him and Jesse confirmed that this should work. So implement
+it.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16891$
+Tested-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |  164 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/xhci.h     |   27 +++++++
- 2 files changed, 191 insertions(+)
+ drivers/char/agp/intel-gtt.c |   63 ++++++++++++++++++-------------------------
+ 1 file changed, 27 insertions(+), 36 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1441,6 +1441,13 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	xhci->dcbaa = NULL;
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -534,7 +534,7 @@ static void intel_i830_init_gtt_entries(
  
- 	scratchpad_free(xhci);
-+
-+	xhci->num_usb2_ports = 0;
-+	xhci->num_usb3_ports = 0;
-+	kfree(xhci->usb2_ports);
-+	kfree(xhci->usb3_ports);
-+	kfree(xhci->port_array);
-+
- 	xhci->page_size = 0;
- 	xhci->page_shift = 0;
- }
-@@ -1624,6 +1631,161 @@ static void xhci_set_hc_event_deq(struct
- 			&xhci->ir_set->erst_dequeue);
- }
+ 	pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
  
-+static void xhci_add_in_port(struct xhci_hcd *xhci, unsigned int num_ports,
-+		u32 __iomem *addr, u8 major_revision)
-+{
-+	u32 temp, port_offset, port_count;
-+	int i;
+-	if (IS_I965) {
++	if (IS_G33 || IS_I965) {
+ 		u32 pgetbl_ctl;
+ 		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
+ 
+@@ -567,22 +567,6 @@ static void intel_i830_init_gtt_entries(
+ 			size = 512;
+ 		}
+ 		size += 4; /* add in BIOS popup space */
+-	} else if (IS_G33 && !IS_PINEVIEW) {
+-	/* G33's GTT size defined in gmch_ctrl */
+-		switch (gmch_ctrl & G33_PGETBL_SIZE_MASK) {
+-		case G33_PGETBL_SIZE_1M:
+-			size = 1024;
+-			break;
+-		case G33_PGETBL_SIZE_2M:
+-			size = 2048;
+-			break;
+-		default:
+-			dev_info(&agp_bridge->dev->dev,
+-				 "unknown page table size 0x%x, assuming 512KB\n",
+-				(gmch_ctrl & G33_PGETBL_SIZE_MASK));
+-			size = 512;
+-		}
+-		size += 4;
+ 	} else if (IS_G4X || IS_PINEVIEW) {
+ 		/* On 4 series hardware, GTT stolen is separate from graphics
+ 		 * stolen, ignore it in stolen gtt entries counting.  However,
+@@ -1257,24 +1241,31 @@ static int intel_i915_get_gtt_size(void)
+ 	int size;
+ 
+ 	if (IS_G33) {
+-		u16 gmch_ctrl;
++		u32 pgetbl_ctl;
++		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
+ 
+-		/* G33's GTT size defined in gmch_ctrl */
+-		pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
+-		switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
+-		case I830_GMCH_GMS_STOLEN_512:
++		switch (pgetbl_ctl & I965_PGETBL_SIZE_MASK) {
++		case I965_PGETBL_SIZE_128KB:
++			size = 128;
++			break;
++		case I965_PGETBL_SIZE_256KB:
++			size = 256;
++			break;
++		case I965_PGETBL_SIZE_512KB:
+ 			size = 512;
+ 			break;
+-		case I830_GMCH_GMS_STOLEN_1024:
++		case I965_PGETBL_SIZE_1MB:
+ 			size = 1024;
+ 			break;
+-		case I830_GMCH_GMS_STOLEN_8192:
+-			size = 8*1024;
++		case I965_PGETBL_SIZE_2MB:
++			size = 2048;
++			break;
++		case I965_PGETBL_SIZE_1_5MB:
++			size = 1024 + 512;
+ 			break;
+ 		default:
+-			dev_info(&agp_bridge->dev->dev,
+-				 "unknown page table size 0x%x, assuming 512KB\n",
+-				(gmch_ctrl & I830_GMCH_GMS_MASK));
++			dev_info(&intel_private.pcidev->dev,
++				 "unknown page table size, assuming 512KB\n");
+ 			size = 512;
+ 		}
+ 	} else {
+@@ -1306,14 +1297,6 @@ static int intel_i915_create_gatt_table(
+ 	pci_read_config_dword(intel_private.pcidev, I915_MMADDR, &temp);
+ 	pci_read_config_dword(intel_private.pcidev, I915_PTEADDR, &temp2);
+ 
+-	gtt_map_size = intel_i915_get_gtt_size();
+-
+-	intel_private.gtt = ioremap(temp2, gtt_map_size);
+-	if (!intel_private.gtt)
+-		return -ENOMEM;
+-
+-	intel_private.gtt_total_size = gtt_map_size / 4;
+-
+ 	temp &= 0xfff80000;
+ 
+ 	intel_private.registers = ioremap(temp, 128 * 4096);
+@@ -1322,6 +1305,14 @@ static int intel_i915_create_gatt_table(
+ 		return -ENOMEM;
+ 	}
+ 
++	gtt_map_size = intel_i915_get_gtt_size();
 +
-+	if (major_revision > 0x03) {
-+		xhci_warn(xhci, "Ignoring unknown port speed, "
-+				"Ext Cap %p, revision = 0x%x\n",
-+				addr, major_revision);
-+		/* Ignoring port protocol we can't understand. FIXME */
-+		return;
-+	}
-+
-+	/* Port offset and count in the third dword, see section 7.2 */
-+	temp = xhci_readl(xhci, addr + 2);
-+	port_offset = XHCI_EXT_PORT_OFF(temp);
-+	port_count = XHCI_EXT_PORT_COUNT(temp);
-+	xhci_dbg(xhci, "Ext Cap %p, port offset = %u, "
-+			"count = %u, revision = 0x%x\n",
-+			addr, port_offset, port_count, major_revision);
-+	/* Port count includes the current port offset */
-+	if (port_offset == 0 || (port_offset + port_count - 1) > num_ports)
-+		/* WTF? "Valid values are ‘1’ to MaxPorts" */
-+		return;
-+	port_offset--;
-+	for (i = port_offset; i < (port_offset + port_count); i++) {
-+		/* Duplicate entry.  Ignore the port if the revisions differ. */
-+		if (xhci->port_array[i] != 0) {
-+			xhci_warn(xhci, "Duplicate port entry, Ext Cap %p,"
-+					" port %u\n", addr, i);
-+			xhci_warn(xhci, "Port was marked as USB %u, "
-+					"duplicated as USB %u\n",
-+					xhci->port_array[i], major_revision);
-+			/* Only adjust the roothub port counts if we haven't
-+			 * found a similar duplicate.
-+			 */
-+			if (xhci->port_array[i] != major_revision &&
-+				xhci->port_array[i] != (u8) -1) {
-+				if (xhci->port_array[i] == 0x03)
-+					xhci->num_usb3_ports--;
-+				else
-+					xhci->num_usb2_ports--;
-+				xhci->port_array[i] = (u8) -1;
-+			}
-+			/* FIXME: Should we disable the port? */
-+		}
-+		xhci->port_array[i] = major_revision;
-+		if (major_revision == 0x03)
-+			xhci->num_usb3_ports++;
-+		else
-+			xhci->num_usb2_ports++;
-+	}
-+	/* FIXME: Should we disable ports not in the Extended Capabilities? */
-+}
-+
-+/*
-+ * Scan the Extended Capabilities for the "Supported Protocol Capabilities" that
-+ * specify what speeds each port is supposed to be.  We can't count on the port
-+ * speed bits in the PORTSC register being correct until a device is connected,
-+ * but we need to set up the two fake roothubs with the correct number of USB
-+ * 3.0 and USB 2.0 ports at host controller initialization time.
-+ */
-+static int xhci_setup_port_arrays(struct xhci_hcd *xhci, gfp_t flags)
-+{
-+	u32 __iomem *addr;
-+	u32 offset;
-+	unsigned int num_ports;
-+	int i, port_index;
-+
-+	addr = &xhci->cap_regs->hcc_params;
-+	offset = XHCI_HCC_EXT_CAPS(xhci_readl(xhci, addr));
-+	if (offset == 0) {
-+		xhci_err(xhci, "No Extended Capability registers, "
-+				"unable to set up roothub.\n");
-+		return -ENODEV;
-+	}
-+
-+	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
-+	xhci->port_array = kzalloc(sizeof(*xhci->port_array)*num_ports, flags);
-+	if (!xhci->port_array)
++	intel_private.gtt = ioremap(temp2, gtt_map_size);
++	if (!intel_private.gtt)
 +		return -ENOMEM;
 +
-+	/*
-+	 * For whatever reason, the first capability offset is from the
-+	 * capability register base, not from the HCCPARAMS register.
-+	 * See section 5.3.6 for offset calculation.
-+	 */
-+	addr = &xhci->cap_regs->hc_capbase + offset;
-+	while (1) {
-+		u32 cap_id;
++	intel_private.gtt_total_size = gtt_map_size / 4;
 +
-+		cap_id = xhci_readl(xhci, addr);
-+		if (XHCI_EXT_CAPS_ID(cap_id) == XHCI_EXT_CAPS_PROTOCOL)
-+			xhci_add_in_port(xhci, num_ports, addr,
-+					(u8) XHCI_EXT_PORT_MAJOR(cap_id));
-+		offset = XHCI_EXT_CAPS_NEXT(cap_id);
-+		if (!offset || (xhci->num_usb2_ports + xhci->num_usb3_ports)
-+				== num_ports)
-+			break;
-+		/*
-+		 * Once you're into the Extended Capabilities, the offset is
-+		 * always relative to the register holding the offset.
-+		 */
-+		addr += offset;
-+	}
-+
-+	if (xhci->num_usb2_ports == 0 && xhci->num_usb3_ports == 0) {
-+		xhci_warn(xhci, "No ports on the roothubs?\n");
-+		return -ENODEV;
-+	}
-+	xhci_dbg(xhci, "Found %u USB 2.0 ports and %u USB 3.0 ports.\n",
-+			xhci->num_usb2_ports, xhci->num_usb3_ports);
-+	/*
-+	 * Note we could have all USB 3.0 ports, or all USB 2.0 ports.
-+	 * Not sure how the USB core will handle a hub with no ports...
-+	 */
-+	if (xhci->num_usb2_ports) {
-+		xhci->usb2_ports = kmalloc(sizeof(*xhci->usb2_ports)*
-+				xhci->num_usb2_ports, flags);
-+		if (!xhci->usb2_ports)
-+			return -ENOMEM;
-+
-+		port_index = 0;
-+		for (i = 0; i < num_ports; i++)
-+			if (xhci->port_array[i] != 0x03) {
-+				xhci->usb2_ports[port_index] =
-+					&xhci->op_regs->port_status_base +
-+					NUM_PORT_REGS*i;
-+				xhci_dbg(xhci, "USB 2.0 port at index %u, "
-+						"addr = %p\n", i,
-+						xhci->usb2_ports[port_index]);
-+				port_index++;
-+			}
-+	}
-+	if (xhci->num_usb3_ports) {
-+		xhci->usb3_ports = kmalloc(sizeof(*xhci->usb3_ports)*
-+				xhci->num_usb3_ports, flags);
-+		if (!xhci->usb3_ports)
-+			return -ENOMEM;
-+
-+		port_index = 0;
-+		for (i = 0; i < num_ports; i++)
-+			if (xhci->port_array[i] == 0x03) {
-+				xhci->usb3_ports[port_index] =
-+					&xhci->op_regs->port_status_base +
-+					NUM_PORT_REGS*i;
-+				xhci_dbg(xhci, "USB 3.0 port at index %u, "
-+						"addr = %p\n", i,
-+						xhci->usb3_ports[port_index]);
-+				port_index++;
-+			}
-+	}
-+	return 0;
-+}
+ 	temp = readl(intel_private.registers+I810_PGETBL_CTL) & 0xfffff000;
+ 	global_cache_flush();	/* FIXME: ? */
  
- int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
- {
-@@ -1804,6 +1966,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 
- 	if (scratchpad_alloc(xhci, flags))
- 		goto fail;
-+	if (xhci_setup_port_arrays(xhci, flags))
-+		goto fail;
- 
- 	return 0;
- 
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -448,6 +448,24 @@ struct xhci_doorbell_array {
- 
- 
- /**
-+ * struct xhci_protocol_caps
-+ * @revision:		major revision, minor revision, capability ID,
-+ *			and next capability pointer.
-+ * @name_string:	Four ASCII characters to say which spec this xHC
-+ *			follows, typically "USB ".
-+ * @port_info:		Port offset, count, and protocol-defined information.
-+ */
-+struct xhci_protocol_caps {
-+	u32	revision;
-+	u32	name_string;
-+	u32	port_info;
-+};
-+
-+#define	XHCI_EXT_PORT_MAJOR(x)	(((x) >> 24) & 0xff)
-+#define	XHCI_EXT_PORT_OFF(x)	((x) & 0xff)
-+#define	XHCI_EXT_PORT_COUNT(x)	(((x) >> 8) & 0xff)
-+
-+/**
-  * struct xhci_container_ctx
-  * @type: Type of context.  Used to calculated offsets to contained contexts.
-  * @size: Size of the context data
-@@ -1204,6 +1222,15 @@ struct xhci_hcd {
- #define	XHCI_LINK_TRB_QUIRK	(1 << 0)
- #define XHCI_RESET_EP_QUIRK	(1 << 1)
- #define XHCI_NEC_HOST		(1 << 2)
-+
-+	/* Is each xHCI roothub port a USB 3.0, USB 2.0, or USB 1.1 port? */
-+	u8			*port_array;
-+	/* Array of pointers to USB 3.0 PORTSC registers */
-+	u32 __iomem		**usb3_ports;
-+	unsigned int		num_usb3_ports;
-+	/* Array of pointers to USB 2.0 PORTSC registers */
-+	u32 __iomem		**usb2_ports;
-+	unsigned int		num_usb2_ports;
- };
- 
- /* For testing purposes */
 
 
