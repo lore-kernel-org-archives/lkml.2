@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab0LHBCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:49 -0500
-Received: from kroah.org ([198.145.64.141]:33521 "EHLO coco.kroah.org"
+	id S932451Ab0LHBCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:02:24 -0500
+Received: from kroah.org ([198.145.64.141]:33422 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932547Ab0LHBCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:46 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:40 2010
-Message-Id: <20101208005740.574261609@clark.site>
+	id S1757326Ab0LHBCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:17 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:38 2010
+Message-Id: <20101208005738.570723192@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:28 -0800
+Date: Tue, 07 Dec 2010 16:59:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [191/289] PCI: fix offset check for sysfs mmapped files
+        Ken Chen <kenchen@google.com>
+Subject: [171/289] latencytop: fix per task accumulator
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,63 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darrick J. Wong <djwong@us.ibm.com>
+From: Ken Chen <kenchen@google.com>
 
-commit 8c05cd08a7504b855c265263e84af61aabafa329 upstream.
+commit 38715258aa2e8cd94bd4aafadc544e5104efd551 upstream.
 
-I just loaded 2.6.37-rc2 on my machines, and I noticed that X no longer starts.
-Running an strace of the X server shows that it's doing this:
+Per task latencytop accumulator prematurely terminates due to erroneous
+placement of latency_record_count.  It should be incremented whenever a
+new record is allocated instead of increment on every latencytop event.
 
-open("/sys/bus/pci/devices/0000:07:00.0/resource0", O_RDWR) = 10
-mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 10, 0) = -1 EINVAL (Invalid argument)
+Also fix search iterator to only search known record events instead of
+blindly searching all pre-allocated space.
 
-This code seems to be asking for a shared read/write mapping of 16MB worth of
-BAR0 starting at file offset 0, and letting the kernel assign a starting
-address.  Unfortunately, this -EINVAL causes X not to start.  Looking into
-dmesg, there's a complaint like so:
-
-process "Xorg" tried to map 0x01000000 bytes at page 0x00000000 on 0000:07:00.0 BAR 0 (start 0x        96000000, size 0x         1000000)
-
-...with the following code in pci_mmap_fits:
-
-	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-		pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
-        if (start >= pci_start && start < pci_start + size &&
-                        start + nr <= pci_start + size)
-
-It looks like the logic here is set up such that when the mmap call comes via
-sysfs, the check in pci_mmap_fits wants vma->vm_pgoff to be between the
-resource's start and end address, and the end of the vma to be no farther than
-the end.  However, the sysfs PCI resource files always start at offset zero,
-which means that this test always fails for programs that mmap the sysfs files.
-Given the comment in the original commit
-3b519e4ea618b6943a82931630872907f9ac2c2b, I _think_ the old procfs files
-require that the file offset be equal to the resource's base address when
-mmapping.
-
-I think what we want here is for pci_start to be 0 when mmap_api ==
-PCI_MMAP_PROCFS.  The following patch makes that change, after which the Matrox
-and Mach64 X drivers work again.
-
-Acked-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Ken Chen <kenchen@google.com>
+Reviewed-by: Arjan van de Ven <arjan@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci-sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/latencytop.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -715,7 +715,7 @@ int pci_mmap_fits(struct pci_dev *pdev,
- 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- 	start = vma->vm_pgoff;
- 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
--	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-+	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
- 			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
- 	if (start >= pci_start && start < pci_start + size &&
- 			start + nr <= pci_start + size)
+--- a/kernel/latencytop.c
++++ b/kernel/latencytop.c
+@@ -194,14 +194,7 @@ __account_scheduler_latency(struct task_
+ 
+ 	account_global_scheduler_latency(tsk, &lat);
+ 
+-	/*
+-	 * short term hack; if we're > 32 we stop; future we recycle:
+-	 */
+-	tsk->latency_record_count++;
+-	if (tsk->latency_record_count >= LT_SAVECOUNT)
+-		goto out_unlock;
+-
+-	for (i = 0; i < LT_SAVECOUNT; i++) {
++	for (i = 0; i < tsk->latency_record_count; i++) {
+ 		struct latency_record *mylat;
+ 		int same = 1;
+ 
+@@ -227,8 +220,14 @@ __account_scheduler_latency(struct task_
+ 		}
+ 	}
+ 
++	/*
++	 * short term hack; if we're > 32 we stop; future we recycle:
++	 */
++	if (tsk->latency_record_count >= LT_SAVECOUNT)
++		goto out_unlock;
++
+ 	/* Allocated a new one: */
+-	i = tsk->latency_record_count;
++	i = tsk->latency_record_count++;
+ 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
+ 
+ out_unlock:
 
 
