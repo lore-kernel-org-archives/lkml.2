@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab0LHBTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:19:08 -0500
-Received: from kroah.org ([198.145.64.141]:33634 "EHLO coco.kroah.org"
+	id S1756518Ab0LHBT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:19:29 -0500
+Received: from kroah.org ([198.145.64.141]:33632 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932645Ab0LHBDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:03:13 -0500
+	id S932606Ab0LHBDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:03:12 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:43 2010
-Message-Id: <20101208005743.276128521@clark.site>
+Message-Id: <20101208005743.173251953@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:55 -0800
+Date: Tue, 07 Dec 2010 16:59:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anupam Chanda <anupamc@vmware.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [218/289] e1000: fix screaming IRQ
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [217/289] USB: fix autosuspend bug in usb-serial
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anupam Chanda <anupamc@vmware.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit ab08853fab2093e5c6f5de56827a4c93dce4b055 upstream.
+commit abf03184a31a3286fc0ab30f838ddee8ba9f9b7b upstream.
 
-VMWare reports that the e1000 driver has a bug when bringing down the
-interface, such that interrupts are not disabled in the hardware but the
-driver stops reporting that it consumed the interrupt.
+This patch (as1437) fixes a bug in the usb-serial autosuspend
+handling.  Since the usb-serial core now has autosuspend support, it
+must set the .supports_autosuspend member in every serial driver it
+registers.  Otherwise the usb_autopm_get_interface() call won't work.
 
-The fix is to set the driver's "down" flag later in the routine,
-after all the timers and such have exited, preventing the interrupt
-handler from being called and exiting early without handling the
-interrupt.
+This fixes Bugzilla #23012.
 
-CC: Anupam Chanda <anupamc@vmware.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Kevin Smith <thirdwiggin@gmail.com>
+Reported-and-tested-by: Simon Gerber <gesimu@gmail.com>
+Reported-and-tested-by: Matteo Croce <matteo@openwrt.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000/e1000_main.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/usb/serial/usb-serial.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/e1000/e1000_main.c
-+++ b/drivers/net/e1000/e1000_main.c
-@@ -31,7 +31,7 @@
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -52,6 +52,7 @@ static struct usb_driver usb_serial_driv
+ 	.suspend =	usb_serial_suspend,
+ 	.resume =	usb_serial_resume,
+ 	.no_dynamic_id = 	1,
++	.supports_autosuspend =	1,
+ };
  
- char e1000_driver_name[] = "e1000";
- static char e1000_driver_string[] = "Intel(R) PRO/1000 Network Driver";
--#define DRV_VERSION "7.3.21-k6-NAPI"
-+#define DRV_VERSION "7.3.21-k8-NAPI"
- const char e1000_driver_version[] = DRV_VERSION;
- static const char e1000_copyright[] = "Copyright (c) 1999-2006 Intel Corporation.";
+ /* There is no MODULE_DEVICE_TABLE for usbserial.c.  Instead
+@@ -1331,6 +1332,8 @@ int usb_serial_register(struct usb_seria
+ 		return -ENODEV;
  
-@@ -483,9 +483,6 @@ void e1000_down(struct e1000_adapter *ad
- 	struct net_device *netdev = adapter->netdev;
- 	u32 rctl, tctl;
+ 	fixup_generic(driver);
++	if (driver->usb_driver)
++		driver->usb_driver->supports_autosuspend = 1;
  
--	/* signal that we're down so the interrupt handler does not
--	 * reschedule our watchdog timer */
--	set_bit(__E1000_DOWN, &adapter->flags);
- 
- 	/* disable receives in the hardware */
- 	rctl = er32(RCTL);
-@@ -506,6 +503,13 @@ void e1000_down(struct e1000_adapter *ad
- 
- 	e1000_irq_disable(adapter);
- 
-+	/*
-+	 * Setting DOWN must be after irq_disable to prevent
-+	 * a screaming interrupt.  Setting DOWN also prevents
-+	 * timers and tasks from rescheduling.
-+	 */
-+	set_bit(__E1000_DOWN, &adapter->flags);
-+
- 	del_timer_sync(&adapter->tx_fifo_stall_timer);
- 	del_timer_sync(&adapter->watchdog_timer);
- 	del_timer_sync(&adapter->phy_info_timer);
+ 	if (!driver->description)
+ 		driver->description = driver->driver.name;
 
 
