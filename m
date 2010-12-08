@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab0LHBCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:02:22 -0500
-Received: from kroah.org ([198.145.64.141]:33416 "EHLO coco.kroah.org"
+	id S1757807Ab0LHB1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:27:40 -0500
+Received: from kroah.org ([198.145.64.141]:33445 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932345Ab0LHBCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:02:14 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:38 2010
-Message-Id: <20101208005738.371418861@clark.site>
+	id S932345Ab0LHBCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:02:23 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:39 2010
+Message-Id: <20101208005738.971457477@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:59:06 -0800
+Date: Tue, 07 Dec 2010 16:59:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Paris <eparis@redhat.com>, Patrick McHardy <kaber@trash.net>
-Subject: [169/289] netfilter: NF_HOOK_COND has wrong conditional
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [175/289] drm/radeon/kms: fix typos in disabled vbios code
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit ac5aa2e3332ec04889074afdbd1479424d0227a5 upstream.
+commit 0ec80d645661dda50acd417bdfcb33df2e5dd31e upstream.
 
-The NF_HOOK_COND returns 0 when it shouldn't due to what I believe to be an
-error in the code as the order of operations is not what was intended.  C will
-evalutate == before =.  Which means ret is getting set to the bool result,
-rather than the return value of the function call.  The code says
+6xx/7xx was hitting the wrong BUS_CNTL reg and bits.
 
-if (ret = function() == 1)
-when it meant to say:
-if ((ret = function()) == 1)
-
-Normally the compiler would warn, but it doesn't notice it because its
-a actually complex conditional and so the wrong code is wrapped in an explict
-set of () [exactly what the compiler wants you to do if this was intentional].
-Fixing this means that errors when netfilter denies a packet get propagated
-back up the stack rather than lost.
-
-Problem introduced by commit 2249065f (netfilter: get rid of the grossness
-in netfilter.h).
-
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/netfilter.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r600_reg.h    |    1 +
+ drivers/gpu/drm/radeon/radeon_bios.c |   13 +++++++------
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/include/linux/netfilter.h
-+++ b/include/linux/netfilter.h
-@@ -215,7 +215,7 @@ NF_HOOK_COND(uint8_t pf, unsigned int ho
- 	int ret;
+--- a/drivers/gpu/drm/radeon/r600_reg.h
++++ b/drivers/gpu/drm/radeon/r600_reg.h
+@@ -86,6 +86,7 @@
+ #define R600_HDP_NONSURFACE_BASE                                0x2c04
  
- 	if (!cond ||
--	    (ret = nf_hook_thresh(pf, hook, skb, in, out, okfn, INT_MIN) == 1))
-+	    ((ret = nf_hook_thresh(pf, hook, skb, in, out, okfn, INT_MIN)) == 1))
- 		ret = okfn(skb);
- 	return ret;
+ #define R600_BUS_CNTL                                           0x5420
++#       define R600_BIOS_ROM_DIS                                (1 << 1)
+ #define R600_CONFIG_CNTL                                        0x5424
+ #define R600_CONFIG_MEMSIZE                                     0x5428
+ #define R600_CONFIG_F0_BASE                                     0x542C
+--- a/drivers/gpu/drm/radeon/radeon_bios.c
++++ b/drivers/gpu/drm/radeon/radeon_bios.c
+@@ -130,6 +130,7 @@ static bool radeon_atrm_get_bios(struct
+ 	}
+ 	return true;
  }
++
+ static bool r700_read_disabled_bios(struct radeon_device *rdev)
+ {
+ 	uint32_t viph_control;
+@@ -143,7 +144,7 @@ static bool r700_read_disabled_bios(stru
+ 	bool r;
+ 
+ 	viph_control = RREG32(RADEON_VIPH_CONTROL);
+-	bus_cntl = RREG32(RADEON_BUS_CNTL);
++	bus_cntl = RREG32(R600_BUS_CNTL);
+ 	d1vga_control = RREG32(AVIVO_D1VGA_CONTROL);
+ 	d2vga_control = RREG32(AVIVO_D2VGA_CONTROL);
+ 	vga_render_control = RREG32(AVIVO_VGA_RENDER_CONTROL);
+@@ -152,7 +153,7 @@ static bool r700_read_disabled_bios(stru
+ 	/* disable VIP */
+ 	WREG32(RADEON_VIPH_CONTROL, (viph_control & ~RADEON_VIPH_EN));
+ 	/* enable the rom */
+-	WREG32(RADEON_BUS_CNTL, (bus_cntl & ~RADEON_BUS_BIOS_DIS_ROM));
++	WREG32(R600_BUS_CNTL, (bus_cntl & ~R600_BIOS_ROM_DIS));
+ 	/* Disable VGA mode */
+ 	WREG32(AVIVO_D1VGA_CONTROL,
+ 	       (d1vga_control & ~(AVIVO_DVGA_CONTROL_MODE_ENABLE |
+@@ -191,7 +192,7 @@ static bool r700_read_disabled_bios(stru
+ 			cg_spll_status = RREG32(R600_CG_SPLL_STATUS);
+ 	}
+ 	WREG32(RADEON_VIPH_CONTROL, viph_control);
+-	WREG32(RADEON_BUS_CNTL, bus_cntl);
++	WREG32(R600_BUS_CNTL, bus_cntl);
+ 	WREG32(AVIVO_D1VGA_CONTROL, d1vga_control);
+ 	WREG32(AVIVO_D2VGA_CONTROL, d2vga_control);
+ 	WREG32(AVIVO_VGA_RENDER_CONTROL, vga_render_control);
+@@ -216,7 +217,7 @@ static bool r600_read_disabled_bios(stru
+ 	bool r;
+ 
+ 	viph_control = RREG32(RADEON_VIPH_CONTROL);
+-	bus_cntl = RREG32(RADEON_BUS_CNTL);
++	bus_cntl = RREG32(R600_BUS_CNTL);
+ 	d1vga_control = RREG32(AVIVO_D1VGA_CONTROL);
+ 	d2vga_control = RREG32(AVIVO_D2VGA_CONTROL);
+ 	vga_render_control = RREG32(AVIVO_VGA_RENDER_CONTROL);
+@@ -231,7 +232,7 @@ static bool r600_read_disabled_bios(stru
+ 	/* disable VIP */
+ 	WREG32(RADEON_VIPH_CONTROL, (viph_control & ~RADEON_VIPH_EN));
+ 	/* enable the rom */
+-	WREG32(RADEON_BUS_CNTL, (bus_cntl & ~RADEON_BUS_BIOS_DIS_ROM));
++	WREG32(R600_BUS_CNTL, (bus_cntl & ~R600_BIOS_ROM_DIS));
+ 	/* Disable VGA mode */
+ 	WREG32(AVIVO_D1VGA_CONTROL,
+ 	       (d1vga_control & ~(AVIVO_DVGA_CONTROL_MODE_ENABLE |
+@@ -262,7 +263,7 @@ static bool r600_read_disabled_bios(stru
+ 
+ 	/* restore regs */
+ 	WREG32(RADEON_VIPH_CONTROL, viph_control);
+-	WREG32(RADEON_BUS_CNTL, bus_cntl);
++	WREG32(R600_BUS_CNTL, bus_cntl);
+ 	WREG32(AVIVO_D1VGA_CONTROL, d1vga_control);
+ 	WREG32(AVIVO_D2VGA_CONTROL, d2vga_control);
+ 	WREG32(AVIVO_VGA_RENDER_CONTROL, vga_render_control);
 
 
