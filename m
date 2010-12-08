@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab0LHBd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:33:56 -0500
-Received: from kroah.org ([198.145.64.141]:49030 "EHLO coco.kroah.org"
+	id S932296Ab0LHBeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:34:16 -0500
+Received: from kroah.org ([198.145.64.141]:49027 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932184Ab0LHBBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:01:35 -0500
+	id S1757339Ab0LHBBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:01:34 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:35 2010
-Message-Id: <20101208005735.503461799@clark.site>
+Message-Id: <20101208005735.396101648@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:58:38 -0800
+Date: Tue, 07 Dec 2010 16:58:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>, Joe Perches <joe@perches.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [141/289] usbnet: fix usb_autopm_get_interface failure(v1)
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [140/289] TTY: open/hangup race fixup
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,56 +25,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit b0786b430c982dffbb44d8030e6b6088671ce745 upstream.
+commit acfa747baf73922021a047f2d87a2d866f5dbab5 upstream.
 
-Since usbnet already took usb runtime pm, we have to
-enable runtime pm for usb interface of usbnet, otherwise
-usb_autopm_get_interface may return failure and cause
-'ifconfig usb0 up' failed if USB_SUSPEND(RUNTIME_PM) is
-enabled.
+Like in the "TTY: don't allow reopen when ldisc is changing" patch,
+this one fixes a TTY WARNING as described in the option 1) there:
+1) __tty_hangup from tty_ldisc_hangup to tty_ldisc_enable. During this
+section tty_lock is held. However tty_lock is temporarily dropped in
+the middle of the function by tty_ldisc_hangup.
 
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Joe Perches <joe@perches.com>
-Cc: Oliver Neukum <oliver@neukum.org>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The fix is to introduce a new flag which we set during the unlocked
+window and check it in tty_reopen too. The flag is TTY_HUPPING and is
+cleared after TTY_HUPPED is set.
+
+While at it, remove duplicate TTY_HUPPED set_bit. The one after
+calling ops->hangup seems to be more correct. But anyway, we hold
+tty_lock, so there should be no difference.
+
+Also document the function it does that kind of crap.
+
+Nicely reproducible with two forked children:
+static void do_work(const char *tty)
+{
+	if (signal(SIGHUP, SIG_IGN) == SIG_ERR) exit(1);
+	setsid();
+	while (1) {
+		int fd = open(tty, O_RDWR|O_NOCTTY);
+		if (fd < 0) continue;
+		if (ioctl(fd, TIOCSCTTY)) continue;
+		if (vhangup()) continue;
+		close(fd);
+	}
+	exit(0);
+}
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: <Valdis.Kletnieks@vt.edu>
+Reported-by: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/usb/usbnet.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/char/tty_io.c |   10 +++++++++-
+ include/linux/tty.h   |    1 +
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -45,6 +45,7 @@
- #include <linux/usb/usbnet.h>
- #include <linux/slab.h>
- #include <linux/kernel.h>
-+#include <linux/pm_runtime.h>
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -553,6 +553,9 @@ void __tty_hangup(struct tty_struct *tty
  
- #define DRIVER_VERSION		"22-Aug-2005"
+ 	tty_lock();
  
-@@ -1273,6 +1274,16 @@ usbnet_probe (struct usb_interface *udev
- 	struct usb_device		*xdev;
- 	int				status;
- 	const char			*name;
-+	struct usb_driver 	*driver = to_usb_driver(udev->dev.driver);
++	/* some functions below drop BTM, so we need this bit */
++	set_bit(TTY_HUPPING, &tty->flags);
 +
-+	/* usbnet already took usb runtime pm, so have to enable the feature
-+	 * for usb interface, otherwise usb_autopm_get_interface may return
-+	 * failure if USB_SUSPEND(RUNTIME_PM) is enabled.
-+	 */
-+	if (!driver->supports_autosuspend) {
-+		driver->supports_autosuspend = 1;
-+		pm_runtime_enable(&udev->dev);
-+	}
+ 	/* inuse_filps is protected by the single tty lock,
+ 	   this really needs to change if we want to flush the
+ 	   workqueue with the lock held */
+@@ -572,6 +575,10 @@ void __tty_hangup(struct tty_struct *tty
+ 	}
+ 	spin_unlock(&tty_files_lock);
  
- 	name = udev->dev.driver->name;
- 	info = (struct driver_info *) prod->driver_info;
++	/*
++	 * it drops BTM and thus races with reopen
++	 * we protect the race by TTY_HUPPING
++	 */
+ 	tty_ldisc_hangup(tty);
+ 
+ 	read_lock(&tasklist_lock);
+@@ -609,7 +616,6 @@ void __tty_hangup(struct tty_struct *tty
+ 	tty->session = NULL;
+ 	tty->pgrp = NULL;
+ 	tty->ctrl_status = 0;
+-	set_bit(TTY_HUPPED, &tty->flags);
+ 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+ 
+ 	/* Account for the p->signal references we killed */
+@@ -635,6 +641,7 @@ void __tty_hangup(struct tty_struct *tty
+ 	 * can't yet guarantee all that.
+ 	 */
+ 	set_bit(TTY_HUPPED, &tty->flags);
++	clear_bit(TTY_HUPPING, &tty->flags);
+ 	tty_ldisc_enable(tty);
+ 
+ 	tty_unlock();
+@@ -1305,6 +1312,7 @@ static int tty_reopen(struct tty_struct
+ 	struct tty_driver *driver = tty->driver;
+ 
+ 	if (test_bit(TTY_CLOSING, &tty->flags) ||
++			test_bit(TTY_HUPPING, &tty->flags) ||
+ 			test_bit(TTY_LDISC_CHANGING, &tty->flags))
+ 		return -EIO;
+ 
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -365,6 +365,7 @@ struct tty_file_private {
+ #define TTY_HUPPED 		18	/* Post driver->hangup() */
+ #define TTY_FLUSHING		19	/* Flushing to ldisc in progress */
+ #define TTY_FLUSHPENDING	20	/* Queued buffer flush pending */
++#define TTY_HUPPING 		21	/* ->hangup() in progress */
+ 
+ #define TTY_WRITE_FLUSH(tty) tty_write_flush((tty))
+ 
 
 
