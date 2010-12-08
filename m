@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab0LHAmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 19:42:18 -0500
-Received: from kroah.org ([198.145.64.141]:54724 "EHLO coco.kroah.org"
+	id S1755694Ab0LHAmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 19:42:37 -0500
+Received: from kroah.org ([198.145.64.141]:54716 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754859Ab0LHAeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 19:34:22 -0500
+	id S1754829Ab0LHAeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 19:34:21 -0500
 X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:06:40 2010
-Message-Id: <20101208000640.422863576@clark.site>
+Message-Id: <20101208000640.317555522@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:04:08 -0800
+Date: Tue, 07 Dec 2010 16:04:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [09/44] ipc: initialize structure memory to zero for compat functions
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [08/44] mm: fix is_mem_section_removable() page_order BUG_ON check
 In-Reply-To: <20101208003205.GA4286@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit 03145beb455cf5c20a761e8451e30b8a74ba58d9 upstream.
+commit 572438f9b52236bd8938b1647cc15e027d27ef55 upstream.
 
-This takes care of leaking uninitialized kernel stack memory to
-userspace from non-zeroed fields in structs in compat ipc functions.
+page_order() is called by memory hotplug's user interface to check the
+section is removable or not.  (is_mem_section_removable())
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+It calls page_order() withoug holding zone->lock.
+So, even if the caller does
+
+	if (PageBuddy(page))
+		ret = page_order(page) ...
+The caller may hit BUG_ON().
+
+For fixing this, there are 2 choices.
+  1. add zone->lock.
+  2. remove BUG_ON().
+
+is_mem_section_removable() is used for some "advice" and doesn't need to
+be 100% accurate.  This is_removable() can be called via user program..
+We don't want to take this important lock for long by user's request.  So,
+this patch removes BUG_ON().
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- ipc/compat.c    |    6 ++++++
- ipc/compat_mq.c |    5 +++++
- 2 files changed, 11 insertions(+)
+ mm/internal.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -242,6 +242,8 @@ long compat_sys_semctl(int first, int se
- 	struct semid64_ds __user *up64;
- 	int version = compat_ipc_parse_version(&third);
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -49,7 +49,7 @@ extern void __free_pages_bootmem(struct
+  */
+ static inline unsigned long page_order(struct page *page)
+ {
+-	VM_BUG_ON(!PageBuddy(page));
++	/* PageBuddy() must be checked by the caller */
+ 	return page_private(page);
+ }
  
-+	memset(&s64, 0, sizeof(s64));
-+
- 	if (!uptr)
- 		return -EINVAL;
- 	if (get_user(pad, (u32 __user *) uptr))
-@@ -422,6 +424,8 @@ long compat_sys_msgctl(int first, int se
- 	int version = compat_ipc_parse_version(&second);
- 	void __user *p;
- 
-+	memset(&m64, 0, sizeof(m64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_INFO:
- 	case IPC_RMID:
-@@ -595,6 +599,8 @@ long compat_sys_shmctl(int first, int se
- 	int err, err2;
- 	int version = compat_ipc_parse_version(&second);
- 
-+	memset(&s64, 0, sizeof(s64));
-+
- 	switch (second & (~IPC_64)) {
- 	case IPC_RMID:
- 	case SHM_LOCK:
---- a/ipc/compat_mq.c
-+++ b/ipc/compat_mq.c
-@@ -53,6 +53,9 @@ asmlinkage long compat_sys_mq_open(const
- 	void __user *p = NULL;
- 	if (u_attr && oflag & O_CREAT) {
- 		struct mq_attr attr;
-+
-+		memset(&attr, 0, sizeof(attr));
-+
- 		p = compat_alloc_user_space(sizeof(attr));
- 		if (get_compat_mq_attr(&attr, u_attr) ||
- 		    copy_to_user(p, &attr, sizeof(attr)))
-@@ -127,6 +130,8 @@ asmlinkage long compat_sys_mq_getsetattr
- 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
- 	long ret;
- 
-+	memset(&mqstat, 0, sizeof(mqstat));
-+
- 	if (u_mqstat) {
- 		if (get_compat_mq_attr(&mqstat, u_mqstat) ||
- 		    copy_to_user(p, &mqstat, sizeof(mqstat)))
 
 
