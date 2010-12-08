@@ -1,149 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab0LHXb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:31:56 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:31661 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab0LHXby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:31:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=dNR3wh7+oiQlbZlc+AQCi6OsyiJ/ZScufVJrkQrtLrlwqSXnd31mVYsn7AG6TF1cw9
-         BMJoZLFR/zLcODA1c8IQ==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-Date: Wed,  8 Dec 2010 15:31:19 -0800
-Message-Id: <1291851079-27061-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-X-System-Of-Record: true
+	id S1756766Ab0LHXcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 18:32:53 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:53412 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754659Ab0LHXcv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 18:32:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101208230802.GA8176@kroah.com>
+References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
+	<20101208222642.GA31802@kroah.com>
+	<AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
+	<20101208230802.GA8176@kroah.com>
+Date: Wed, 8 Dec 2010 17:32:50 -0600
+Message-ID: <AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions for loader
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Nishanth Menon <nm@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I mentioned earlier in this thread, there are other places in
-the scheduler, where we do curr_sched_clock - prev_sched_clock kind of math
-in u64 and this 32 bit wraparound will cause problems there as well. Example-
-accounting a big positive number as exec_time for some task. So, we
-need a generic fix for sched_clock. This particular code happened to cause
-an easy to notice failure.
+On Wed, Dec 8, 2010 at 5:08 PM, Greg KH <greg@kroah.com> wrote:
+> On Wed, Dec 08, 2010 at 05:02:20PM -0600, Ramirez Luna, Omar wrote:
+>> Hi,
+>>
+>> On Wed, Dec 8, 2010 at 4:26 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Tue, Dec 07, 2010 at 12:09:06AM -0600, Omar Ramirez Luna wrote:
+>> >> Instead use request_firmware and friends to get a valid firmware
+>> >> image.
+>> >>
+>> >> Right now the image is supplied dynamically through udev and the
+>> >> following rule:
+>> >>
+>> >> KERNEL=="omap-dsp", SUBSYSTEM=="firmware", ACTION=="add",     \
+>> >>       RUN+="/bin/sh -c 'echo 1 > /sys/$DEVPATH/loading;       \
+>> >>               cat $FIRMWARE > /sys/$DEVPATH/data;             \
+>> >>               echo 0 > /sys/$DEVPATH/loading'"
+>> >
+>> > Why do you need a custom firmware rule?
+>>
+>> It was meant as an example, when I compiled my minimal file system it
+>> didn't supply the firmware.sh script nor created /lib/firmware... I
+>> thought that not everybody would have the firmware.sh, so I just
+>> provided a sample rule.
+>
+> So, can I remove this from the changelog comment, as it's not really
+> needed at all?
 
-Anyways, here's the patch that should resolve the wraparound problem with
-this particular piece of code. I haven't been able to test this with latest
-git as my test systems fail to boot with divide error in
-select_task_rq_fair+0x5dd/0x70a
-with vanilla git. Thats an unrelated bug that has been reported earlier.
+Yes it can be removed.
 
-I have only tested with older known to work kernel with this sched irq changes.
+BTW, I don't expect this pushed through staging yet, I need to include
+it to my branch first and then I'll send a pull request with the pile
+of patches. Sorry for the misunderstanding and thanks for the review.
 
-Peter: Also, this change will cause some conflict with pending IRQ time
-reporting changeset. Let me know how you want to deal with this patch and that
-pending patchset.
+>> insmod bridgedriver.ko base_img=baseimage.dof
+>
+> Ick, why use a module parameter name at all?  Why is this "special" and
+> different from all other firmware users?  They don't have to manually
+> specify a file name, the driver does that.
 
-Thanks,
-Venki
+The thing is that there are N number of firmwares, e.g.:
 
-[PATCH] update_rq_clock() with irq_time should handle 64 bit wraparound
+There is the official and usable firmware to play with multimedia
+"baseimage.dof"
 
-update_rq_clock with IRQ_TIME_ACCOUNTING assumed 64 bit sched_clock that
-practically will not wraparound. Change to code to handle wraparounds,
-still preventing rq->clock_task from going backwards.
+But there are also minimal firmwares to just ping or swap buffers with
+the dsp, when you just want to play around with basic features.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- kernel/sched.c |   49 ++++++++++++++++++++++++++++++-------------------
- 1 files changed, 30 insertions(+), 19 deletions(-)
+> Please fix up the patch to not require a module parameter, distros hate
+> them, and users hate them even more.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc91a4d..29ce549 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -636,21 +636,13 @@ static inline struct task_group *task_group(struct task_struct *p)
- 
- #endif /* CONFIG_CGROUP_SCHED */
- 
--static u64 irq_time_cpu(int cpu);
--static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
-+static void update_rq_clock_irqtime(struct rq *rq, int cpu);
- 
- inline void update_rq_clock(struct rq *rq)
- {
- 	if (!rq->skip_clock_update) {
- 		int cpu = cpu_of(rq);
--		u64 irq_time;
--
--		rq->clock = sched_clock_cpu(cpu);
--		irq_time = irq_time_cpu(cpu);
--		if (rq->clock - irq_time > rq->clock_task)
--			rq->clock_task = rq->clock - irq_time;
--
--		sched_irq_time_avg_update(rq, irq_time);
-+		update_rq_clock_irqtime(rq, cpu);
- 	}
- }
- 
-@@ -1983,24 +1975,43 @@ void account_system_vtime(struct task_struct *curr)
- }
- EXPORT_SYMBOL_GPL(account_system_vtime);
- 
--static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
-+/*
-+ * Update rq->clock_task making sure that it does not go backwards due to
-+ * irq_time subtraction, allowing for possible wraparound.
-+ */
-+static void update_rq_clock_irqtime(struct rq *rq, int cpu)
- {
--	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
--		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
--		rq->prev_irq_time = curr_irq_time;
--		sched_rt_avg_update(rq, delta_irq);
-+	u64 curr_rq_clock = sched_clock_cpu(cpu);
-+	u64 curr_irq_time = irq_time_cpu(cpu);
-+
-+	if (!sched_clock_irqtime) {
-+		rq->clock = sched_clock_cpu(cpu);
-+		rq->clock_task = rq->clock;
-+		return;
- 	}
-+
-+	if (unlikely(curr_irq_time - rq->prev_irq_time >
-+		     curr_rq_clock - rq->clock)) {
-+		curr_irq_time = rq->prev_irq_time + curr_rq_clock - rq->clock;
-+	}
-+
-+	rq->clock = curr_rq_clock;
-+	rq->clock_task = rq->clock - curr_irq_time;
-+
-+	if (sched_feat(NONIRQ_POWER))
-+		sched_rt_avg_update(rq, curr_irq_time - rq->prev_irq_time);
-+
-+	rq->prev_irq_time = curr_irq_time;
- }
- 
- #else
- 
--static u64 irq_time_cpu(int cpu)
-+static void update_rq_clock_irqtime(struct rq *rq, int cpu)
- {
--	return 0;
-+	rq->clock = sched_clock_cpu(cpu);
-+	rq->clock_task = rq->clock;
- }
- 
--static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
--
- #endif
- 
- #include "sched_idletask.c"
--- 
-1.7.3.1
+The driver is the one requiring the parameter (it was already this
+way), this patch doesn't introduce any parameter. I'll check what can
+be done and if nobody rejects I'll use the baseimage.dof  as firmware
+by default.
 
+Regards,
+
+Omar
