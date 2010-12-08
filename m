@@ -1,152 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0LHSa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 13:30:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57699 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab0LHSa6 (ORCPT
+	id S1756148Ab0LHSjC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 13:39:02 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:60338 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab0LHSjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 13:30:58 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Bph6ssctQ44A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tBb2bbeoAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=R5z1oqr90NEaCzVe3EAA:9 a=eHgT1TnorDCjTaAbLnwA:7 a=_vYWKDqEWA0obBHMBdUnuomFF18A:4 a=PUjeQqilurYA:10 a=YuKU6ANggZ8A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate from
- ntp_error
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 08 Dec 2010 13:30:54 -0500
-Message-ID: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 8 Dec 2010 13:39:01 -0500
+Message-ID: <4CFFD0BF.2020601@canonical.com>
+Date: Wed, 08 Dec 2010 10:38:55 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Add an envelope tool type
+References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <4CFFCD10.5030202@euromail.se>
+In-Reply-To: <4CFFCD10.5030202@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing my end of year unlikely() cleanup, running the annotate
-branch profiler, I came across this:
+On 12/08/2010 10:23 AM, Henrik Rydberg wrote:
+>>> This patch represents an MT solution for those devices that can detect
+> 
+>>> and report some effects of dual touch, but cannot report individual
+>>> contacts. Synaptics and elantech are two examples. Having the drivers
+>>> report the bounding rectangle of the touches is useful in userland,
+>>> since the information makes it possible to implement zooming
+>>> gestures. At the same time, it would be confusing to send these
+>>> envelope points as fingers, since they clearly are not. As a remedy,
+>>> introduce MT_TOOL_ENVELOPE, which tells applications that care about
+>>> details that these are not real fingers, at the same time as it allows
+>>> gesture applications based on MT data to function without
+>>> modification.
+>>
+>> Is it assumed that the envelop has only two touches comprising it? Or is
+>> it any number of touches? If it's any number of touches, how does one
+>> know how many touches it is?
+> 
+> 
+> It could be any number of points, although, as you say, the exact semantics of
+> multiple points have not yet been defined/documented. Traditionally, a convex
+> hull is defined as a sequence of points, such that the last links to the first.
+> It makes sense to define the envelope points similarly. However, we can pass
+> that bridge as we get there. Right now, we have use for the two-point case. The
+> number is determined the same was as for fingers - count the number of active slots.
 
- correct incorrect  %        Function                  File              Line
- ------- ---------  -        --------                  ----              ----
-  122588 65653641  99 timekeeping_adjust             timekeeping.c        664
-  167493 14584927  98 timekeeping_adjust             timekeeping.c        658
+Ahh. That leaves me with two thoughts:
 
-This shows that the following likely()'s are wrong most of the time:
+1. A real convex hull would imply that the points given are correct.
+This is the fundamental issue with these touchpads though, and I feel
+envelope semantics would only help solve a different problem: touch
+object shape.
 
-	if (error > interval) {
-		error >>= 2;
-		if (likely(error <= interval))
-			adj = 1;
-		else
-			adj = timekeeping_bigadjust(error, &interval, &offset);
-	} else if (error < -interval) {
-		error >>= 2;
-		if (likely(error >= -interval)) {
+As you noted, what we are really interested here is a bounding
+rectangle. I think Ping has said that Wacom could provide something that
+is similar to a real convex hull, and mixing the two concepts together
+could cause another ambiguity like BTN_TOOL_DOUBLETAP :).
 
-Talking about this with John Stultz, we both agreed that the annotations
-should be correct and is not the issue, but something else is going
-wrong.
+I suggest merely renaming this to MT_TOOL_RECT to avoid confusion.
 
-Adding in trace_printks(), I saw that the adj values that were added to
-the "mult" multiplier were sometimes quite large. The time intervals
-never got down into a small error, but instead was making large
-oscillations, both positive and negative to where it should be.
+2. We could provide for multiple simultaneous rects by using the value
+of the MT_TOOL_RECT property. The first rect would have value 0, the
+second would have value 1, etc. I don't know if this will ever be used
+since most devices will have real MT soon enough, but it wouldn't hurt
+to define this.
 
-John noticed that if he removed the commit:
-
-commit 5cd1c9c5cf30d4b33df3d3f74d8142f278d536b7
-timekeeping: fix rounding problem during clock update
-
-that the problem would go away and we would get back into a tight
-oscillation that would stay within the fast path (and the likely()'s
-were again likely).
-
-What the above commit did was to fix a bug that caused time to go
-backward a nanosec due to the truncating of the xtime_nsec shifted into
-the xtime.tv_nsec.  The fix for that bug (and what that commit did) was
-to always round up one. It added +1 to the xtime.tv_nsec after it did
-the conversion, and then took the difference between this shifted and
-the xtime_nsec and stored that into the ntp_error.
-
-The ntp_error is used to control the frequency, and this constant adding
-of the shift remainder would cause the large oscillation.
-
-This patch instead adds another field to the timekeeping structure that
-stores the remainder separately. On re-entry into update_wall_time(),
-the remainder is added back onto the xtime_nsec after it is set to the
-xtime.tv_nsec and restoring its original value.
-
-This handles the rounding problem that the original commit addressed but
-does not cause the large oscillation that it caused.
-
-The new results of the branch annotation profiler is now:
-
- correct incorrect  %        Function                  File              Line
- ------- ---------  -        --------                  ----              ----
-  736971      129   0 timekeeping_adjust             timekeeping.c        685
-  736943      115   0 timekeeping_adjust             timekeeping.c        676
-
-
-Cc: Roman Zippel <zippel@linux-m68k.org>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-Index: linux-compile.git/kernel/time/timekeeping.c
-===================================================================
---- linux-compile.git.orig/kernel/time/timekeeping.c
-+++ linux-compile.git/kernel/time/timekeeping.c
-@@ -37,6 +37,10 @@ struct timekeeper {
- 
- 	/* Clock shifted nano seconds remainder not stored in xtime.tv_nsec. */
- 	u64	xtime_nsec;
-+
-+	/* remainder in xtime subtraction */
-+	u64	xtime_nsec_rem;
-+
- 	/* Difference between accumulated time and NTP time in ntp
- 	 * shifted nano seconds. */
- 	s64	ntp_error;
-@@ -84,6 +88,7 @@ static void timekeeper_setup_internals(s
- 		((u64) interval * clock->mult) >> clock->shift;
- 
- 	timekeeper.xtime_nsec = 0;
-+	timekeeper.xtime_nsec_rem = 0;
- 	timekeeper.shift = clock->shift;
- 
- 	timekeeper.ntp_error = 0;
-@@ -751,6 +756,12 @@ void update_wall_time(void)
- 	timekeeper.xtime_nsec = (s64)xtime.tv_nsec << timekeeper.shift;
- 
- 	/*
-+	 * Add back the remainder that was left over when adding +1 to
-+	 * xtime.tv_nsec;
-+	 */
-+	timekeeper.xtime_nsec += timekeeper.xtime_nsec_rem;
-+
-+	/*
- 	 * With NO_HZ we may have to accumulate many cycle_intervals
- 	 * (think "ticks") worth of time at once. To do this efficiently,
- 	 * we calculate the largest doubling multiple of cycle_intervals
-@@ -797,12 +808,11 @@ void update_wall_time(void)
- 
- 	/*
- 	 * Store full nanoseconds into xtime after rounding it up and
--	 * add the remainder to the error difference.
-+	 * store the remainder to update xtime_nsec on the next iteration.
- 	 */
- 	xtime.tv_nsec =	((s64) timekeeper.xtime_nsec >> timekeeper.shift) + 1;
- 	timekeeper.xtime_nsec -= (s64) xtime.tv_nsec << timekeeper.shift;
--	timekeeper.ntp_error +=	timekeeper.xtime_nsec <<
--				timekeeper.ntp_error_shift;
-+	timekeeper.xtime_nsec_rem = timekeeper.xtime_nsec;
- 
- 	/*
- 	 * Finally, make sure that after the rounding
-
-
+-- Chase
