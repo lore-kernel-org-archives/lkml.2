@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab0LHFMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 00:12:20 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:62173 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab0LHFMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 00:12:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=MVbh1B+iiPQBPkDO1YNidJKKovUTSGRM5520p52le1zeWCYCtnEcMfsUqETD8ngdM+
-         e8i0wk2aoJNPX8MQs9GSooLcNKC+XI5kcFF0KmHzwB8tn7WFrQj/65rTAggjy7u/j94J
-         7AB3j0LKV34rPCl0JWfXzHfQMXgtxrZlQ5VxU=
-Date: Tue, 7 Dec 2010 21:12:11 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Duncan Laurie <dlaurie@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs
- driver rebind
-Message-ID: <20101208051211.GB4140@core.coreip.homeip.net>
-References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org>
- <20101127084153.GC28745@core.coreip.homeip.net>
- <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
+	id S1751984Ab0LHFSU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 00:18:20 -0500
+Received: from ip-85-135-19-82.customer.poda.cz ([85.135.19.82]:36883 "EHLO
+	nik-comp.lan" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751632Ab0LHFSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 00:18:18 -0500
+Date: Wed, 8 Dec 2010 06:17:42 +0100
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "nik@linuxbox.cz" <nik@linuxbox.cz>
+Subject: Re: [Bug #22782] 2.6.36: general protection fault during lockfs
+	lockspace removal
+Message-ID: <20101208051742.GA2145@nik-comp.lan>
+References: <jyQ21do2hOF.A.qwD.m_--MB@chimera> <z3LGq_ncuOB.A.J8D.GA_-MB@chimera>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <z3LGq_ncuOB.A.J8D.GA_-MB@chimera>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 29, 2010 at 01:37:35PM -0800, Duncan Laurie wrote:
-> On Sat, Nov 27, 2010 at 12:41 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > Hi Duncan,
-> >
-> > On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
-> >> When rebinding a serio driver via sysfs drvctl interface it is possible for
-> >> an interrupt to trigger after the disconnect of the existing driver and
-> >> before the binding of the new driver.  This will cause the serio interrupt
-> >> handler to queue a rescan event which will disconnect the new driver
-> >> immediately after it is attached.
-> >>
-> >> This change clears the serio event queue after processing the drvctl
-> >> request but before releasing the serio mutex, which will clear any queued
-> >> rescans before they can get processed.
-> >>
-> >> Reproduction involves issuing a rebind of device port from psmouse driver
-> >> to serio_raw driver while generating input to trigger interrupts.  Then
-> >> checking to see if the corresponding i8042/serio4/driver is correctly
-> >> attached to the serio_raw driver instead of psmouse.
-> >>
-> >> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
-> >> ---
-> >>  drivers/input/serio/serio.c |    1 +
-> >>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-> >> index 405bf21..a66307e 100644
-> >> --- a/drivers/input/serio/serio.c
-> >> +++ b/drivers/input/serio/serio.c
-> >> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
-> >>               serio_disconnect_port(serio);
-> >>               error = serio_bind_driver(serio, to_serio_driver(drv));
-> >>               put_driver(drv);
-> >> +             serio_remove_pending_events(serio);
-> >
-> > Hmm, makes sense, although should we limit events being removed to
-> > rescan events only?
-> >
-> 
-> 
-> That seems reasonable.  It would mean adding a new function or a
-> parameter to the existing serio_remove_pending_events function, do you
-> have a preference?
-> 
 
-I wonder if a boolean parameter (rescan_only) would not be the best
-option.
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+AFAIK the problem hasn't been fixed yet..
+n.
 
--- 
-Dmitry
+On Sun, Dec 05, 2010 at 09:34:33PM +0100, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
+>=20
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>=20
+>=20
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D22782
+> Subject		: 2.6.36: general protection fault during lockfs lockspace remov=
+al
+> Submitter	: nik@linuxbox.cz <nik@linuxbox.cz>
+> Date		: 2010-11-12 12:05 (24 days old)
+>=20
+>=20
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAkz/FPYACgkQ3xdJJrLygV5cJwCcCM1fMF+3rp7TVA1VcCyCyg1Q
+qxUAoKG7tIrOpE+41AOCg3WbkQSYBv8O
+=Cw7i
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
