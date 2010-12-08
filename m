@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab0LHBpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 20:45:04 -0500
-Received: from kroah.org ([198.145.64.141]:48740 "EHLO coco.kroah.org"
+	id S932205Ab0LHBAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 20:00:13 -0500
+Received: from kroah.org ([198.145.64.141]:48685 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932208Ab0LHBAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 20:00:14 -0500
-X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:29 2010
-Message-Id: <20101208005729.545228191@clark.site>
+	id S932148Ab0LHBAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 20:00:03 -0500
+X-Mailbox-Line: From gregkh@clark.site Tue Dec  7 16:57:28 2010
+Message-Id: <20101208005728.345342853@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 07 Dec 2010 16:57:39 -0800
+Date: Tue, 07 Dec 2010 16:57:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [082/289] drm/radeon/kms: properly compute group_size on 6xx/7xx
+        Takashi Iwai <tiwai@suse.de>
+Subject: [070/289] ALSA: hda - Add some workarounds for Creative IBG
 In-Reply-To: <20101208005821.GA2922@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 881fe6c1d06bf49f4ab7aef212cdaf66bd059614 upstream.
+commit 14d34f166c57e77e3d7f9bc8b43d349186d922c1 upstream.
 
-Needed for tiled surfaces.
+Creative HD-audio controller chips require some workarounds:
+ - Additional delay before RIRB response
+ - Set the initial RIRB counter to 0xc0
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The latter seems to be done in general in Windows driver, so we may
+use this value later for all types if it's confirmed to work better.
+
+Reported-by: Wai Yew CHAY <wychay@ctl.creative.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r600.c  |    7 +++++--
- drivers/gpu/drm/radeon/rv770.c |    9 +++++----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ sound/pci/hda/hda_intel.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -1608,8 +1608,11 @@ void r600_gpu_init(struct radeon_device
- 	rdev->config.r600.tiling_npipes = rdev->config.r600.max_tile_pipes;
- 	rdev->config.r600.tiling_nbanks = 4 << ((ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
- 	tiling_config |= BANK_TILING((ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
--	tiling_config |= GROUP_SIZE(0);
--	rdev->config.r600.tiling_group_size = 256;
-+	tiling_config |= GROUP_SIZE((ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
-+	if ((ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
-+		rdev->config.r600.tiling_group_size = 512;
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -458,6 +458,7 @@ enum {
+ 	AZX_DRIVER_ULI,
+ 	AZX_DRIVER_NVIDIA,
+ 	AZX_DRIVER_TERA,
++	AZX_DRIVER_CTX,
+ 	AZX_DRIVER_GENERIC,
+ 	AZX_NUM_DRIVERS, /* keep this as last entry */
+ };
+@@ -473,6 +474,7 @@ static char *driver_short_names[] __devi
+ 	[AZX_DRIVER_ULI] = "HDA ULI M5461",
+ 	[AZX_DRIVER_NVIDIA] = "HDA NVidia",
+ 	[AZX_DRIVER_TERA] = "HDA Teradici", 
++	[AZX_DRIVER_CTX] = "HDA Creative",
+ 	[AZX_DRIVER_GENERIC] = "HD-Audio Generic",
+ };
+ 
+@@ -563,7 +565,10 @@ static void azx_init_cmd_io(struct azx *
+ 	/* reset the rirb hw write pointer */
+ 	azx_writew(chip, RIRBWP, ICH6_RIRBWP_RST);
+ 	/* set N=1, get RIRB response interrupt for new entry */
+-	azx_writew(chip, RINTCNT, 1);
++	if (chip->driver_type == AZX_DRIVER_CTX)
++		azx_writew(chip, RINTCNT, 0xc0);
 +	else
-+		rdev->config.r600.tiling_group_size = 256;
- 	tmp = (ramcfg & NOOFROWS_MASK) >> NOOFROWS_SHIFT;
- 	if (tmp > 3) {
- 		tiling_config |= ROW_TILING(3);
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -643,10 +643,11 @@ static void rv770_gpu_init(struct radeon
- 	else
- 		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
- 	rdev->config.rv770.tiling_nbanks = 4 << ((gb_tiling_config >> 4) & 0x3);
--
--	gb_tiling_config |= GROUP_SIZE(0);
--	rdev->config.rv770.tiling_group_size = 256;
--
-+	gb_tiling_config |= GROUP_SIZE((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
-+	if ((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
-+		rdev->config.rv770.tiling_group_size = 512;
-+	else
-+		rdev->config.rv770.tiling_group_size = 256;
- 	if (((mc_arb_ramcfg & NOOFROWS_MASK) >> NOOFROWS_SHIFT) > 3) {
- 		gb_tiling_config |= ROW_TILING(3);
- 		gb_tiling_config |= SAMPLE_SPLIT(3);
++		azx_writew(chip, RINTCNT, 1);
+ 	/* enable rirb dma and response irq */
+ 	azx_writeb(chip, RIRBCTL, ICH6_RBCTL_DMA_EN | ICH6_RBCTL_IRQ_EN);
+ 	spin_unlock_irq(&chip->reg_lock);
+@@ -1136,8 +1141,11 @@ static irqreturn_t azx_interrupt(int irq
+ 	/* clear rirb int */
+ 	status = azx_readb(chip, RIRBSTS);
+ 	if (status & RIRB_INT_MASK) {
+-		if (status & RIRB_INT_RESPONSE)
++		if (status & RIRB_INT_RESPONSE) {
++			if (chip->driver_type == AZX_DRIVER_CTX)
++				udelay(80);
+ 			azx_update_rirb(chip);
++		}
+ 		azx_writeb(chip, RIRBSTS, RIRB_INT_MASK);
+ 	}
+ 
+@@ -2799,10 +2807,10 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_CREATIVE, PCI_ANY_ID),
+ 	  .class = PCI_CLASS_MULTIMEDIA_HD_AUDIO << 8,
+ 	  .class_mask = 0xffffff,
+-	  .driver_data = AZX_DRIVER_GENERIC },
++	  .driver_data = AZX_DRIVER_CTX },
+ #else
+ 	/* this entry seems still valid -- i.e. without emu20kx chip */
+-	{ PCI_DEVICE(0x1102, 0x0009), .driver_data = AZX_DRIVER_GENERIC },
++	{ PCI_DEVICE(0x1102, 0x0009), .driver_data = AZX_DRIVER_CTX },
+ #endif
+ 	/* AMD/ATI Generic, PCI class code and Vendor ID for HD Audio */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_ANY_ID),
 
 
