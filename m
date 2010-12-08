@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab0LHEhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Dec 2010 23:37:13 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50485 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab0LHEhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Dec 2010 23:37:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=r3YkO1udObnCrGzWb4E9JTwBdYUJlh/JfaQKWrle9dggQpv6YJRe+kivmQEFreqHV1
-         IQPKYP349t3IAiMNTjOZMPJPQkG7gwkwwcF3mSB972wd4qvSbOE02qDDX4LQaEYRYNGo
-         HofrVB3nyLYLD6hL+2MLFE2HJZ4WKVd2yNMP4=
-Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux.com>
-In-Reply-To: <20101208041725.GB2291@suse.de>
-References: <20101208000640.115606851@clark.site>
-	 <1291777422.26147.70.camel@zaphod>  <20101208041725.GB2291@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 05:37:06 +0100
-Message-ID: <1291783026.5324.56.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752459Ab0LHEhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Dec 2010 23:37:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:8731 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab0LHEhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Dec 2010 23:37:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,314,1288594800"; 
+   d="scan'208";a="634209190"
+Date: Wed, 8 Dec 2010 12:37:46 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] writeback: safety margin for bdi stat error
+Message-ID: <20101208043746.GA15357@localhost>
+References: <20101205064430.GA15027@localhost>
+ <20101207165111.d79735c1.akpm@linux-foundation.org>
+ <20101208043004.GB15322@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208043004.GB15322@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 07 décembre 2010 à 20:17 -0800, Greg KH a écrit :
-> On Tue, Dec 07, 2010 at 10:03:42PM -0500, Lee Schermerhorn wrote:
-> > 
-> > I think this should be numa_mem_id().  Given the documented purpose of
-> > slab_node(), we want a node from which page allocation is likely to
-> > succeed.  numa_node_id() can return a memoryless node for, e.g.,  some
-> > configurations of some HP ia64 platforms.  numa_mem_id() was introduced
-> > to return that same node from which "local" mempolicy would allocate
-> > pages.
-> 
-> So should the upstream patch be changed?
+In a simple dd test on a 8p system with "mem=256M", I find all light
+dirtier tasks on the root fs are get heavily throttled. That happens
+because the global limit is exceeded. It's unbelievable at first sight,
+because the test fs doing the heavy dd is under its bdi limit.  After
+doing some tracing, it's discovered that
 
-We certainly can convert most numa_node_id() calls to numa_mem_id()
-ones, but it wont be backported to 2.6.32, 2.6.34 & 2.6.27 :)
+	bdi_dirty < bdi_dirty_limit() < global_dirty_limit() < nr_dirty
 
+So the root cause is, the bdi_dirty is well under the global nr_dirty
+due to accounting errors. This can be fixed by using bdi_stat_sum(),
+however that's costly on large NUMA machines. So do a less costly fix
+of lowering the bdi limit, so that the accounting errors won't lead to
+the absurd situation "global limit exceeded but bdi limit not exceeded".
 
+This provides guarantee when there is only 1 heavily dirtied bdi, and
+works by opportunity for 2+ heavy dirtied bdi's (hopefully they won't
+reach big error _and_ exceed their bdi limit at the same time).
+
+Acked-by: Rik van Riel <riel@redhat.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+
+v2: add kernel doc and correct the terms in changelog.
+
+ mm/page-writeback.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-12-08 12:26:16.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-08 12:30:45.000000000 +0800
+@@ -434,10 +434,16 @@ void global_dirty_limits(unsigned long *
+ 	*pdirty = dirty;
+ }
+ 
+-/*
++/**
+  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
++ * @bdi: the backing_dev_info to query
++ * @dirty: global dirty limit in pages
++ * @dirty_pages: current number of dirty pages
+  *
+- * Allocate high/low dirty limits to fast/slow devices, in order to prevent
++ * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
++ * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
++ *
++ * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+  * - piling up dirty pages (that will take long time to sync) on slow devices
+  *
+@@ -458,6 +464,14 @@ unsigned long bdi_dirty_limit(struct bac
+ 	long numerator, denominator;
+ 
+ 	/*
++	 * try to prevent "global limit exceeded but bdi limit not exceeded"
++	 */
++	if (likely(dirty > bdi_stat_error(bdi)))
++		dirty -= bdi_stat_error(bdi);
++	else
++		return 0;
++
++	/*
+ 	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
+ 	 */
+ 	dirty -= min(dirty / 128, 32768ULL >> (PAGE_SHIFT-10));
