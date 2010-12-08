@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab0LHNwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 08:52:44 -0500
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:12960 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab0LHNwn (ORCPT
+	id S1755116Ab0LHNyB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 08:54:01 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:25767 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755059Ab0LHNyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 08:52:43 -0500
+	Wed, 8 Dec 2010 08:54:00 -0500
 Subject: Re: [06/44] numa: fix slab_node(MPOL_BIND)
 From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
         Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>
-In-Reply-To: <1291782782.5324.54.camel@edumazet-laptop>
+In-Reply-To: <20101208041725.GB2291@suse.de>
 References: <20101208000640.115606851@clark.site>
-	 <1291777422.26147.70.camel@zaphod>
-	 <1291782782.5324.54.camel@edumazet-laptop>
+	 <1291777422.26147.70.camel@zaphod>  <20101208041725.GB2291@suse.de>
 Content-Type: text/plain; charset="UTF-8"
 Organization: HP/LKTT
-Date: Wed, 08 Dec 2010 08:53:09 -0500
-Message-ID: <1291816389.3941.17.camel@zaphod>
+Date: Wed, 08 Dec 2010 08:54:27 -0500
+Message-ID: <1291816467.3941.19.camel@zaphod>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 05:33 +0100, Eric Dumazet wrote:
-> Le mardi 07 décembre 2010 à 22:03 -0500, Lee Schermerhorn a écrit :
+On Tue, 2010-12-07 at 20:17 -0800, Greg KH wrote:
+> On Tue, Dec 07, 2010 at 10:03:42PM -0500, Lee Schermerhorn wrote:
 > > On Tue, 2010-12-07 at 16:04 -0800, Greg KH wrote:
 > > > 2.6.27-stable review patch.  If anyone has any objections, please let us know.
 > > > 
@@ -40,7 +39,24 @@ On Wed, 2010-12-08 at 05:33 +0100, Eric Dumazet wrote:
 > > > 
 > > > commit 800416f799e0723635ac2d720ad4449917a1481c upstream.
 > > > 
-> 
+> > > When a node contains only HighMem memory, slab_node(MPOL_BIND)
+> > > dereferences a NULL pointer.
+> > > 
+> > > [ This code seems to go back all the way to commit 19770b32609b: "mm:
+> > >   filter based on a nodemask as well as a gfp_mask".  Which was back in
+> > >   April 2008, and it got merged into 2.6.26.  - Linus ]
+> > > 
+> > > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > > Cc: Mel Gorman <mel@csn.ul.ie>
+> > > Cc: Christoph Lameter <cl@linux.com>
+> > > Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > > 
+> > > ---
+> > >  mm/mempolicy.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
 > > > 
 > > > --- a/mm/mempolicy.c
 > > > +++ b/mm/mempolicy.c
@@ -58,37 +74,10 @@ On Wed, 2010-12-08 at 05:33 +0100, Eric Dumazet wrote:
 > > to return that same node from which "local" mempolicy would allocate
 > > pages.
 > 
-> Hmm... numa_mem_id() was introduced in 2.6.35 as an optimization.
-> 
-> When I did this patch (to fix a bug), mm/mempolicy.c only contained
-> calls to numa_node_id() (and still is today)
-
-Sometimes you want numa_node_id()--e.g., for use with a mempolicy-based
-allocation that allows fallback.  When the node id will be used for a
-'_THIS_NODE allocation, numa_mem_id() is preferred as it will always
-return a node that contains or contained--maybe now oom--memory.  It's
-the same as numa_node_id() on platforms that don't expose memoryless
-nodes.  
-
-> 
-> By the way, anybody knows how I can emulate a memoryless node on a dual
-> node x86_64 machine (with memory present on both nodes) ?
+> So should the upstream patch be changed?
 > 
 
-You can use the mem= boot parameter and specify the amount of memory on
-the 1st/boot node.  Or you can use the memmap parameter to reserve the
-memory on the 2nd/non-boot node.  With the memmap parameter, you can
-reserve the memory of nodes other than the highest numbered
-one[s]--e.g., on a >2 node platform.  However, you'll probably a patch
-to see the cpus on any node that you hide using memmap.  I have such a
-patch if you're interested in going that route.
-
-You can also reduce the amount of memory on any/each node by reserving
-ranges of physical memory with memmap.  Use the 'SRAT.*PXM' boot
-messages to find the nodes' physical memory ranges and reserve how ever
-much you want off the top of the nodes.
+Yeah, probably should.  I didn't see it go by.
 
 Lee
-
-
 
