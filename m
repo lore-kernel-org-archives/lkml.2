@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab0LIROn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:14:43 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44972 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab0LIROl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:14:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=FLhzumLQusLI0Xu5wExByqlBS9z+lOnHmlDY5WDCKTblRIDjuI1F8QW2vPA/LTht/u
-         BzMxEs+ZA6hjWu3TQqF/kgL5/a22+ghKEc7+HF+0PBjS/Jp9LlIVd3tshIjUzBAZZ/Kx
-         54y40vE3vAg8/SV1F4WRrecqnBFLrNJLeJdz0=
-Date: Thu, 9 Dec 2010 15:14:36 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH-v2] perf tools: Add symfs option for off-box analysis
- using specified tree
-Message-ID: <20101209171436.GA13027@ghostprotocols.net>
-References: <1291862020-24540-1-git-send-email-daahern@cisco.com>
+	id S1755353Ab0LIRQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:16:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64854 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754762Ab0LIRQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:16:17 -0500
+Date: Thu, 9 Dec 2010 18:14:35 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 33 of 66] madvise(MADV_HUGEPAGE)
+Message-ID: <20101209171435.GD19131@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <7193ff8e62fcf7885199.1288798088@v2.random>
+ <20101118151935.GW8135@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291862020-24540-1-git-send-email-daahern@cisco.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101118151935.GW8135@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 08, 2010 at 07:33:40PM -0700, David Ahern escreveu:
-> The symfs argument allows analysis of perf.data file using a locally
-> accessible filesystem tree with debug symbols - e.g., tree created
-> during image builds, sshfs mount, loop mounted KVM disk images,
-> USB keys, initrds, etc. Anything with an OS tree can be analyzed from
-> anywhere without the need to populate a local data store with
-> build-ids.
+On Thu, Nov 18, 2010 at 03:19:35PM +0000, Mel Gorman wrote:
+> On Wed, Nov 03, 2010 at 04:28:08PM +0100, Andrea Arcangeli wrote:
+> > @@ -121,6 +122,11 @@ static inline int split_huge_page(struct
+> >  #define wait_split_huge_page(__anon_vma, __pmd)	\
+> >  	do { } while (0)
+> >  #define PageTransHuge(page) 0
+> > +static inline int hugepage_madvise(unsigned long *vm_flags)
+> > +{
+> > +	BUG_ON(0);
 > 
-> Signed-off-by: David Ahern <daahern@cisco.com>
-> 
-> v1 --> v2: removed symfs changes from builtin-annotate.c
->            fixed tab/space inconsistencies
->            changed new strlen() to symbol_conf.symfs[0]
->            added symfs option to Documentation files
+> What's BUG_ON(0) in aid of?
 
-So I tried it now with:
+When CONFIG_TRANSPARENT_HUGEPAGE is disabled, nothing must call that
+function (madvise must return -EINVAL like older kernels instead). But
+I guess you meant I should convert the BUG_ON(0) to a BUG() instead? (done)
 
-perf report --symfs /
+> I should have said it at patch 4 but don't forget that Michael Kerrisk
+> should be made aware of MADV_HUGEPAGE so it makes it to a manual page
+> at some point.
 
-Which should be equivalent to the common case:
+Ok, I'll forward patch 4.
 
-perf report
-
-Bu kernel symbols didn't got resolved, can you please check this?
-
-- Arnaldo
+Thanks,
+Andrea
