@@ -1,109 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab0LIEi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 23:38:57 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:25440 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753302Ab0LIEiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 23:38:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPfr/0x5LdBk/2dsb2JhbACjaHnAJ4VJBJAL
-Date: Thu, 9 Dec 2010 15:38:42 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, Nick Piggin <npiggin@suse.de>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/46] Revert "fs: use RCU read side protection in
-  d_validate"
-Message-ID: <20101209043842.GB3139@amd>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <2d1d8ffc4acea8b6c4e5b58bb1653b3f0e7071e2.1290852958.git.npiggin@kernel.dk>
- <20101208011656.GD29333@dastard>
- <20101208093824.GA3151@amd>
- <20101209004413.GB32766@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101209004413.GB32766@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754346Ab0LIEl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 23:41:59 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48393 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753766Ab0LIEl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 23:41:57 -0500
+Date: Thu, 9 Dec 2010 15:41:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for December 9
+Message-Id: <20101209154148.ca4ba4e0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__9_Dec_2010_15_41_48_+1100_gbsPtl76VjWRCpif"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 11:44:13AM +1100, Dave Chinner wrote:
-> On Wed, Dec 08, 2010 at 08:38:24PM +1100, Nick Piggin wrote:
-> > On Wed, Dec 08, 2010 at 12:16:56PM +1100, Dave Chinner wrote:
-> > > On Sat, Nov 27, 2010 at 08:56:03PM +1100, Nick Piggin wrote:
-> > > > This reverts commit 3825bdb7ed920845961f32f364454bee5f469abb.
-> > > > 
-> > > > Patch is broken, you can't dget() without holding any locks!
-> > > 
-> > > I believe you can - for the same reasons we can take a reference to
-> > > an inode without holding the inode_lock. That is, as long as the
-> > > caller already holds an active reference to the dentry,
-> > > dget() can be used to take another reference without needing the
-> > > dcache_lock.
-> > > 
-> > > Such usage appears to be described in the comment above dget() and
-> > > there's a BUG_ON() in dget() to catch callers that don't already
-> > > have an active reference. An example of a valid unlocked dget():
-> > > d_alloc() does an unlocked dget() to take a reference to the parent
-> > > dentry whichn we already are guaranteed to have a reference to.
-> > 
-> > Of course you can dget if you already have a reference :)
-> 
-> Right, so the commit message is wrong. Can you update it to tell us why
-> dget() can't be used there - the commit message from the second
-> patch explained it far better....
+--Signature=_Thu__9_Dec_2010_15_41_48_+1100_gbsPtl76VjWRCpif
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I suppose if you're not reading it in the context of d_validate,
-then yes. And as an historical record, I'll clarify.
+Hi all,
 
-Obviously if we do have a reference, then we can take another,
-and if we don't, then we need more than RCU because RCU only
-provides persistence guarantee for the memory, not any persistence
-or validity guarantee for the object.
+Changes since 20101208:
 
- 
-> > > As to d_validate() - it depends on the caller behaviour as to
-> > > whether the unlocked dget() is valid or not.  From a cursory check
-> > > of the NCP and SMB readdir caches, both appear to hold an active
-> > > reference to the dentry it is passing to d_validate().
-> > 
-> > I don't see where? Can you point to where the refcount is taken?
-> > AFAIKS it drops the reference 3 lines after it puts the pointer
-> > into cache.
-> 
-> Yeah, you're right, I missed that one - I spent more tiem checking
-> the validation part of the code than the initial insertion. Hence
-> my request:
+The v4l-dvb tree still has its build failure for which I applied a patch.
 
-Yes, I'm pretty sure it doesn't have any references.
+The acpi tree still has its build failure so I used the version from
+next-20101201.
 
- 
-> > > If that is
-> > > the case then there is nothing wrong with the way d_validate uses
-> > > dget(). Can someone with more SMB/NCP expertise than me validate the
-> > > use of cached dentries?
-> > 
-> > Then why would it have to use d_validate if it has a reference?
-> > That is supposed to be for an "untrusted" pointer (which is why
-> > it had all the crazy checks that it's in kmem and in the right
-> > slab etc).
-> 
-> Code changes. It may not be doing what it was originally
-> needed/intended to be doing - I don't need to waste time on code
-> archeology and second guessing when there are others around that can
-> tell me this off the top oftheir head. ;)
+The net tree gained a build failure so I used the version from
+next-20101208.
 
-Well the d_validate API is meant to provide that, so it's broken
-whether or not its callers use it correctly. It's also exported
-to external modules...
+The tip tree still has its build failures so I have reverted 3 commits.
 
-Yes we should remove smbfs and rip the cache out of ncpfs and
-remove d_validate entirely when possible (or, provide a more
-reasonable API and caching library entirely in the dcache code
-that a filesystem might use). But this is the right first step.
+----------------------------------------------------------------------------
 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 181 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
+Applying: rmobile: merge fixup for clkdev changes
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Applying: media: const and __devinitdata do not mix
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+$ git reset --hard HEAD^
+Merging refs/next/20101201/acpi
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging wireless/master
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ath9k/ar9003=
+_eeprom.c
+$ git reset --hard HEAD^
+Merging refs/next/20101208/net
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in net/bluetooth/Makefile
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in sound/soc/sh/fsi.c
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+CONFLICT (content): Merge conflict in drivers/regulator/core.c
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging tip/auto-latest
+$ git commit -v -a[master c903434] Revert "x86, nmi_watchdog: Remove all st=
+ub function calls from old nmi_watchdog"
+$ git commit -v -a[master f1c1db4] Revert "x86, nmi_watchdog: Remove the ol=
+d nmi_watchdog"
+[master 9d97997] Revert "perf, arch: Cleanup perf-pmu init vs lockup-detect=
+or"
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen/upstream/xen
+Merging swiotlb-xen/master
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in arch/sh/Kconfig
+CONFLICT (content): Merge conflict in drivers/usb/musb/blackfin.c
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Thu__9_Dec_2010_15_41_48_+1100_gbsPtl76VjWRCpif
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNAF4MAAoJEDMEi1NhKgbsmK4H+wQf2uJIVYVdMJt/jeXx7VZd
+rKx1BtOjcOXKViVas343Tlb4Ufa11hkxdU4egl0JJTUxA9o4Ps/L/K6j6dhSlNJA
+aQDqIgJVSaW9QOyYC4J/d4BaOqcfRUOsXmeJQFNC+mp/rTueu8KWydHUfUxtcGiW
+FaHdTOjhaNYwP5OOXOdf99vYwjz9/H28Dcaovp5cRfJ1/NcE6QtL2Qu7gz1uWAkd
+UfmAaBbdPgdgUXHj/2BZ3CQNzHq40wbuh0MTCAetZwMqxQ9r+R0bu9hQrCuetfxd
+SFxOFKEGQ3a5XRb053tAGpNQh/Al+foww4hl/caP5OLb1W8sMPE8GAXkkLrPqGE=
+=70KT
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Dec_2010_15_41_48_+1100_gbsPtl76VjWRCpif--
