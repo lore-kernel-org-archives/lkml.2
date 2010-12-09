@@ -1,133 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088Ab0LIUTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:19:48 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45730
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753721Ab0LIUTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:19:46 -0500
-From: Hank Janssen <hjanssen@microsoft.com>
-To: hjanssen@microsoft.com, zbr@ioremap.net, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Properly check return values of kmalloc and vmbus_recvpacket
-Date: Thu,  9 Dec 2010 12:23:29 -0800
-Message-Id: <1291926209-17120-1-git-send-email-hjanssen@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1757151Ab0LIUUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:20:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756997Ab0LIUUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 15:20:30 -0500
+Date: Thu, 9 Dec 2010 15:20:08 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>, gorcunov@gmail.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jason Wessel <jason.wessel@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haren Myneni <hbabu@us.ibm.com>
+Subject: Re: perf hw  in kexeced kernel broken in tip
+Message-ID: <20101209202008.GA24143@redhat.com>
+References: <20101201195835.GE2511@redhat.com>
+ <1291234036.32004.2008.camel@laptop>
+ <m162vdp3l4.fsf@fess.ebiederm.org>
+ <20101202052321.GH18100@redhat.com>
+ <1291275270.4023.20.camel@twins>
+ <20101202161502.GL18100@redhat.com>
+ <1291764620.2032.1293.camel@laptop>
+ <20101208140103.GM21786@redhat.com>
+ <1291818005.28378.38.camel@laptop>
+ <1291820356.28378.83.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291820356.28378.83.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct ugly oversight, we need to check the return values of kmalloc
-and vmbus_recvpacket and return if they fail. I also tightened up the
-call to kmalloc. 
+On Wed, Dec 08, 2010 at 03:59:16PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-12-08 at 15:20 +0100, Peter Zijlstra wrote:
+> 
+> > > I wonder if you should reverse these checks.  If the bios has the perf
+> > > counter enabled, there might be a high chance that it fails the first
+> > > check and never gets to the actually bios checks.
+> > 
+> > Ah, good point. 
+> 
+> Something like so..
 
-Thanks to Evgeniy Polyakov <zbr@ioremap.net>  for pointing this out.
+Getting closer...
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Pentium4s are special they need the double write, so...
 
----
- drivers/staging/hv/hv_utils.c |   48 ++++++++++++++++++++++++++++------------
- 1 files changed, 33 insertions(+), 15 deletions(-)
+> +	/*
+> +	 * Now write a value and read it back to see if it matches,
+> +	 * this is needed to detect certain hardware emulators (qemu/kvm)
+> +	 * that don't trap on the MSR access and always return 0s.
+> +	 */
+>  	val = 0xabcdUL;
+> -	ret |= checking_wrmsrl(x86_pmu.perfctr, val);
+> +	ret = checking_wrmsrl(x86_pmu.perfctr, val);
 
-diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
-index 53e1e29..ac68575 100644
---- a/drivers/staging/hv/hv_utils.c
-+++ b/drivers/staging/hv/hv_utils.c
-@@ -43,21 +43,27 @@ static void shutdown_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
- 	u8 *buf;
--	u32 buflen, recvlen;
-+	u32 recvlen;
- 	u64 requestid;
- 	u8  execute_shutdown = false;
-+	int ret = 0;
- 
- 	struct shutdown_msg_data *shutdown_msg;
- 
- 	struct icmsg_hdr *icmsghdrp;
- 	struct icmsg_negotiate *negop = NULL;
- 
--	buflen = PAGE_SIZE;
--	buf = kmalloc(buflen, GFP_ATOMIC);
-+	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
- 
--	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-+	if (!buf) {
-+		printk(KERN_INFO
-+		       "Unable to allocate memory for shutdown_onchannelcallback");
-+		return;
-+	}
-+
-+	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
- 
--	if (recvlen > 0) {
-+	if (ret == 0 && recvlen > 0) {
- 		DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
- 			   recvlen, requestid);
- 
-@@ -151,17 +157,23 @@ static void timesync_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
- 	u8 *buf;
--	u32 buflen, recvlen;
-+	u32 recvlen;
- 	u64 requestid;
- 	struct icmsg_hdr *icmsghdrp;
- 	struct ictimesync_data *timedatap;
-+	int ret = 0;
- 
--	buflen = PAGE_SIZE;
--	buf = kmalloc(buflen, GFP_ATOMIC);
-+	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
- 
--	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-+	if (!buf) {
-+		printk(KERN_INFO
-+		       "Unable to allocate memory for timesync_onchannelcallback");
-+		return;
-+	}
- 
--	if (recvlen > 0) {
-+	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
-+
-+	if (ret == 0 && recvlen > 0) {
- 		DPRINT_DBG(VMBUS, "timesync packet: recvlen=%d, requestid=%lld",
- 			recvlen, requestid);
- 
-@@ -197,17 +209,23 @@ static void heartbeat_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
- 	u8 *buf;
--	u32 buflen, recvlen;
-+	u32 recvlen;
- 	u64 requestid;
- 	struct icmsg_hdr *icmsghdrp;
- 	struct heartbeat_msg_data *heartbeat_msg;
-+	int ret = 0;
-+
-+	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
- 
--	buflen = PAGE_SIZE;
--	buf = kmalloc(buflen, GFP_ATOMIC);
-+	if (!buf) {
-+		printk(KERN_INFO
-+		    "Unable to allocate memory for heartbeat_onchannelcallback");
-+		return;
-+	}
- 
--	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-+	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
- 
--	if (recvlen > 0) {
-+	if (ret == 0 && recvlen > 0) {
- 		DPRINT_DBG(VMBUS, "heartbeat packet: len=%d, requestid=%lld",
- 			   recvlen, requestid);
- 
--- 
-1.6.0.2
+	if (x86_pmu.perfctr_second_write)
+		ret |= checking_wrmsrl(x86_pmu.perfctr, val);
 
+
+solved my p4 problems for kexec.
+
+>  	ret |= rdmsrl_safe(x86_pmu.perfctr, &val_new);
+>  	if (ret || val != val_new)
+> -		return false;
+> +		goto msr_fail;
+>  
+>  	return true;
+
+Cheers,
+Don
