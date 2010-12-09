@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab0LIRf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:35:29 -0500
-Received: from void.printf.net ([89.145.121.20]:34589 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754739Ab0LIRf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:35:27 -0500
-Date: Thu, 9 Dec 2010 17:35:25 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Will Newton <will.newton@gmail.com>, Matt Fleming <matt@console-pimps.org>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
-Message-ID: <20101209173525.GA29879@void.printf.net>
-References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com> <20101208115510.GD10998@console-pimps.org> <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com> <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com> <20101209064751.GA21128@void.printf.net> <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com> <20101209160157.GA28586@void.printf.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101209160157.GA28586@void.printf.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755867Ab0LIRiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:38:55 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30405 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab0LIRiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:38:54 -0500
+Date: Thu, 9 Dec 2010 09:38:34 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
+        driverdevel <devel@driverdev.osuosl.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Ben Collins <bcollins@bluecherry.net>
+Subject: [PATCH -next] staging: solo6010 depends on I2C
+Message-Id: <20101209093834.8494cfbf.randy.dunlap@oracle.com>
+In-Reply-To: <20101209154148.ca4ba4e0.sfr@canb.auug.org.au>
+References: <20101209154148.ca4ba4e0.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-On Thu, Dec 09, 2010 at 04:01:57PM +0000, Chris Ball wrote:
-> > > Is there something we could depend on that would stop this driver being
-> > > presented to everyone, without being far too specific?  At the moment
-> > > we'd be making x86 desktop users say whether they have this IP, which
-> > > isn't good.  Are the architectures that use this IP already upstream?
-> > > Are they all ARM architectures, for instance?
-> > 
-> > I don't know of any architectures upstream that use this IP block. There is an
-> > SoC from NXP that uses this it but it is not upstream:
-> > 
-> > http://ics.nxp.com/support/software/lpc313x.bsp.linux/
-> > 
-> > The architecture we tested and debugged this driver on is not upstream either
-> > unfortunately. :-/
-> 
-> Okay.  I think "depends on ARM" is appropriate for now, and we could
-> expand that later if the block appears in a MIPS SoC or something.
-> Does that work for you?
+This driver uses i2c interfaces, so it should depend on I2C
+(unless someone wants to break it into pieces or make it more
+config-dependent).
 
-Oh, hey, rmk says that he seems to recall that akpm says that if the
-driver builds on x86 (it does), we should just allow it to be built
-there too so that it gets build coverage.  Andrew, does this still
-represent your stance?
+drivers/staging/solo6x10/solo6010-i2c.c:47: error: implicit declaration of function 'i2c_transfer'
+drivers/staging/solo6x10/solo6010-i2c.c:299: error: implicit declaration of function 'i2c_add_adapter'
+drivers/staging/solo6x10/solo6010-i2c.c:310: error: implicit declaration of function 'i2c_del_adapter'
 
-I've heard the distro maintainers complain about having to investigate
-Kconfig entries for drivers that their users would never possibly use,
-though, and this certainly falls into that case.  Is there something
-better we can do here, to correctly hide this driver from non-ARM users
-but also make it clear that it can be built if somebody wants to do a
-mass driver build?
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ben Collins <bcollins@bluecherry.net>
+---
+ drivers/staging/solo6x10/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+--- linux-next-20101209.orig/drivers/staging/solo6x10/Kconfig
++++ linux-next-20101209/drivers/staging/solo6x10/Kconfig
+@@ -1,6 +1,6 @@
+ config SOLO6X10
+ 	tristate "Softlogic 6x10 MPEG codec cards"
+-	depends on PCI && VIDEO_DEV && SND
++	depends on PCI && VIDEO_DEV && SND && I2C
+ 	select VIDEOBUF_DMA_SG
+ 	---help---
+ 	  This driver supports the Softlogic based MPEG-4 and h.264 codec
