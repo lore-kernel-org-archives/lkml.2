@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab0LINtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 08:49:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42240 "EHLO
+	id S1755367Ab0LINtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 08:49:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42244 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab0LINr3 (ORCPT
+	with ESMTP id S1753547Ab0LINr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Dec 2010 08:47:29 -0500
 From: Sascha Hauer <s.hauer@pengutronix.de>
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
         Zhang Lily-R58066 <r58066@freescale.com>,
         Arnaud Patard <arnaud.patard@rtp-net.org>,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 9/9] ARM i.MX51 babbage: Add framebuffer support
-Date: Thu,  9 Dec 2010 14:47:21 +0100
-Message-Id: <1291902441-24712-10-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 4/9] fb: export fb mode db table
+Date: Thu,  9 Dec 2010 14:47:16 +0100
+Message-Id: <1291902441-24712-5-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de>
 References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de>
@@ -27,135 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The different modes can be useful for drivers. Currently there is
+no way to expose the modes to sysfs, so export them.
+
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- arch/arm/mach-mx5/Kconfig              |    1 +
- arch/arm/mach-mx5/board-mx51_babbage.c |   74 ++++++++++++++++++++++++++++++++
- 2 files changed, 75 insertions(+), 0 deletions(-)
+ drivers/video/modedb.c |    7 ++++++-
+ include/linux/fb.h     |    3 +++
+ 2 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-mx5/Kconfig b/arch/arm/mach-mx5/Kconfig
-index 5011f42..2a936b7 100644
---- a/arch/arm/mach-mx5/Kconfig
-+++ b/arch/arm/mach-mx5/Kconfig
-@@ -22,6 +22,7 @@ config MACH_MX51_BABBAGE
- 	select IMX_HAVE_PLATFORM_IMX_UART
- 	select IMX_HAVE_PLATFORM_SDHCI_ESDHC_IMX
- 	select IMX_HAVE_PLATFORM_SPI_IMX
-+	select IMX_HAVE_PLATFORM_IMX_IPUV3
- 	help
- 	  Include support for MX51 Babbage platform, also known as MX51EVK in
- 	  u-boot. This includes specific configurations for the board and its
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index a896f84..169c48c 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -22,11 +22,13 @@
- #include <linux/input.h>
- #include <linux/spi/flash.h>
- #include <linux/spi/spi.h>
-+#include <linux/mfd/imx-ipu-v3.h>
+diff --git a/drivers/video/modedb.c b/drivers/video/modedb.c
+index 0a4dbdc..82122a9 100644
+--- a/drivers/video/modedb.c
++++ b/drivers/video/modedb.c
+@@ -36,7 +36,7 @@ EXPORT_SYMBOL_GPL(fb_mode_option);
+      *  Standard video mode definitions (taken from XFree86)
+      */
  
- #include <mach/common.h>
- #include <mach/hardware.h>
- #include <mach/iomux-mx51.h>
- #include <mach/mxc_ehci.h>
-+#include <mach/ipu-v3.h>
- 
- #include <asm/irq.h>
- #include <asm/setup.h>
-@@ -158,6 +160,41 @@ static iomux_v3_cfg_t mx51babbage_pads[] = {
- 	MX51_PAD_CSPI1_SCLK__ECSPI1_SCLK,
- 	MX51_PAD_CSPI1_SS0__GPIO_4_24,
- 	MX51_PAD_CSPI1_SS1__GPIO_4_25,
-+
-+	/* Display */
-+	MX51_PAD_DISPB2_SER_DIN__GPIO_3_5,
-+	MX51_PAD_DISPB2_SER_DIO__GPIO_3_6,
-+	MX51_PAD_NANDF_D12__GPIO_3_28,
-+
-+	MX51_PAD_DISP1_DAT0__DISP1_DAT0,
-+	MX51_PAD_DISP1_DAT1__DISP1_DAT1,
-+	MX51_PAD_DISP1_DAT2__DISP1_DAT2,
-+	MX51_PAD_DISP1_DAT3__DISP1_DAT3,
-+	MX51_PAD_DISP1_DAT4__DISP1_DAT4,
-+	MX51_PAD_DISP1_DAT5__DISP1_DAT5,
-+	MX51_PAD_DISP1_DAT6__DISP1_DAT6,
-+	MX51_PAD_DISP1_DAT7__DISP1_DAT7,
-+	MX51_PAD_DISP1_DAT8__DISP1_DAT8,
-+	MX51_PAD_DISP1_DAT9__DISP1_DAT9,
-+	MX51_PAD_DISP1_DAT10__DISP1_DAT10,
-+	MX51_PAD_DISP1_DAT11__DISP1_DAT11,
-+	MX51_PAD_DISP1_DAT12__DISP1_DAT12,
-+	MX51_PAD_DISP1_DAT13__DISP1_DAT13,
-+	MX51_PAD_DISP1_DAT14__DISP1_DAT14,
-+	MX51_PAD_DISP1_DAT15__DISP1_DAT15,
-+	MX51_PAD_DISP1_DAT16__DISP1_DAT16,
-+	MX51_PAD_DISP1_DAT17__DISP1_DAT17,
-+	MX51_PAD_DISP1_DAT18__DISP1_DAT18,
-+	MX51_PAD_DISP1_DAT19__DISP1_DAT19,
-+	MX51_PAD_DISP1_DAT20__DISP1_DAT20,
-+	MX51_PAD_DISP1_DAT21__DISP1_DAT21,
-+	MX51_PAD_DISP1_DAT22__DISP1_DAT22,
-+	MX51_PAD_DISP1_DAT23__DISP1_DAT23,
-+#define MX51_PAD_DI_GP4__IPU_DI2_PIN15                 IOMUX_PAD(0x758, 0x350, 4, 0x0,   0, NO_PAD_CTRL)
-+	MX51_PAD_DI_GP4__IPU_DI2_PIN15,
-+
-+	/* I2C DVI enable */
-+	MX51_PAD_CSI2_HSYNC__GPIO_4_14,
+-static const struct fb_videomode modedb[] = {
++const struct fb_videomode modedb[] = {
+     {
+ 	/* 640x400 @ 70 Hz, 31.5 kHz hsync */
+ 	NULL, 70, 640, 400, 39721, 40, 24, 39, 9, 96, 2,
+@@ -277,6 +277,11 @@ static const struct fb_videomode modedb[] = {
+     },
  };
  
- /* Serial ports */
-@@ -342,6 +379,21 @@ static const struct spi_imx_master mx51_babbage_spi_pdata __initconst = {
- 	.num_chipselect = ARRAY_SIZE(mx51_babbage_spi_cs),
- };
++const struct fb_videomode *fb_modes = modedb;
++EXPORT_SYMBOL(fb_modes);
++const int num_fb_modes = ARRAY_SIZE(modedb);
++EXPORT_SYMBOL(num_fb_modes);
++
+ #ifdef CONFIG_FB_MODE_HELPERS
+ const struct fb_videomode vesa_modes[] = {
+ 	/* 0 640x350-85 VESA */
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index d1631d3..e006172 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -1151,6 +1151,9 @@ struct fb_videomode {
+ extern const char *fb_mode_option;
+ extern const struct fb_videomode vesa_modes[];
  
-+static struct ipuv3_fb_platform_data babbage_fb0_data = {
-+	.interface_pix_fmt = IPU_PIX_FMT_RGB24,
-+	.flags = IMX_IPU_FB_USE_MODEDB | IMX_IPU_FB_USE_OVERLAY,
-+};
++extern const struct fb_videomode *fb_modes;
++extern const int num_fb_modes;
 +
-+static struct ipuv3_fb_platform_data babbage_fb1_data = {
-+	.interface_pix_fmt = IPU_PIX_FMT_RGB565,
-+	.flags = IMX_IPU_FB_USE_MODEDB,
-+};
-+
-+static struct imx_ipuv3_platform_data ipu_data = {
-+	.fb0_platform_data = &babbage_fb0_data,
-+	.fb1_platform_data = &babbage_fb1_data,
-+};
-+
- /*
-  * Board specific initialization.
-  */
-@@ -388,6 +440,28 @@ static void __init mxc_board_init(void)
- 		ARRAY_SIZE(mx51_babbage_spi_board_info));
- 	imx51_add_ecspi(0, &mx51_babbage_spi_pdata);
- 	imx51_add_imx2_wdt(0, NULL);
-+
-+#define GPIO_DVI_DETECT	(2 * 32 + 28)
-+#define GPIO_DVI_RESET	(2 * 32 + 5)
-+#define GPIO_DVI_PWRDN	(2 * 32 + 6)
-+#define GPIO_DVI_I2C	(3 * 32 + 14)
-+
-+	/* DVI Detect */
-+	gpio_request(GPIO_DVI_DETECT, "dvi detect");
-+	gpio_direction_input(GPIO_DVI_DETECT);
-+	/* DVI Reset - Assert for i2c disabled mode */
-+	gpio_request(GPIO_DVI_RESET, "dvi reset");
-+	gpio_set_value(GPIO_DVI_RESET, 0);
-+	gpio_direction_output(GPIO_DVI_RESET, 0);
-+	/* DVI Power-down */
-+	gpio_request(GPIO_DVI_PWRDN, "dvi pwdn");
-+	gpio_direction_output(GPIO_DVI_PWRDN, 0);
-+	gpio_set_value(GPIO_DVI_PWRDN, 1);
-+
-+	gpio_request(GPIO_DVI_I2C, "dvi i2c");
-+	gpio_direction_output(GPIO_DVI_I2C, 0);
-+
-+	imx51_add_ipuv3(&ipu_data);
- }
- 
- static void __init mx51_babbage_timer_init(void)
+ struct fb_modelist {
+ 	struct list_head list;
+ 	struct fb_videomode mode;
 -- 
 1.7.2.3
 
