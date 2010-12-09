@@ -1,148 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab0LIVhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 16:37:45 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:57894 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab0LIVhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:37:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=dru5NTxotbWiqOVMwAxxS/RswQ11FHtwZN1QBFT9b4raZahORreVYSu6zxw5jAqCTM
-         FSqULHSGBxn97wivGvbhgT/AtWHjGJ7iufLWRq4fxNxODLMAxf/QaXWTL+PXmzB1v6wI
-         CtBpZAAbABhLE+kfMwH0ryQIhUArC8jzvY+I4=
-Date: Thu, 9 Dec 2010 23:39:11 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: NULL pointer dereference in __mark_inode_dirty
-Message-ID: <20101209213911.GB4250@swordfish.minsk.epam.com>
+	id S1757388Ab0LIVnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:43:32 -0500
+Received: from www.tglx.de ([62.245.132.106]:48748 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757311Ab0LIVnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 16:43:31 -0500
+Date: Thu, 9 Dec 2010 22:43:10 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tejun Heo <tj@kernel.org>
+cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
+        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org
+Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
+ 32 and 64bit
+In-Reply-To: <1290871325-3055-14-git-send-email-tj@kernel.org>
+Message-ID: <alpine.LFD.2.00.1012092230010.2653@localhost6.localdomain6>
+References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-14-git-send-email-tj@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XOIedfhf+7KOe/yw"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 27 Nov 2010, Tejun Heo wrote:
 
---XOIedfhf+7KOe/yw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> The mapping between cpu/apicid and node is done via apicid_to_node[]
+> on 64bit and apicid_2_node[] + apic->numa_cpu_node() on 32bit.  This
+> difference makes it difficult to further unify 32 and 64bit NUMA
+> hanlding.
+> 
+> This patch unifies it by replacing both apicid_to_node[] and
+> apicid_2_node[] with __apicid_to_node[] array, which is accessed by
+> two accessors - set_apicid_to_node() and numa_cpu_node().  On 64bit,
+> numa_cpu_node() always consults __apicid_to_node[] directly while
+> 32bit goes through apic->numa_cpu_node() method to allow apic
+> implementation to override it.
+> 
+> There are several places where using numa_cpu_node() is awkward and
+> the override doesn't matter.  In those places, __apicid_to_node[] are
+> used directly.
 
-Hello,
-I had an oops today while copying files from external USB hdd,
-because of NULL pointer dereference in __mark_inode_dirty.
+Why is it awkward? Anything outside the accessor functions or
+specialized setup code using it is awkward, inconsistent and sloppy.
 
-Stack trace looks similar to this one:
-__mark_inode_dirty
-touch_atime
-generic_file_aio_read
-vfs_read
+Thanks,
 
-
-The problem is that, at the same time something similiar=20
-to this happens
-sb->s_bdi =3D NULL
-bdi_prune_sb
-bdi_unregister
-del_gendisk
-sd_remove
-
-due to
-[ 2595.650474] usb 2-1.2: new high speed USB device using ehci_hcd and addr=
-ess 34
-[ 2595.735409] usb 2-1.2: New USB device found, idVendor=3D1058, idProduct=
-=3D0704
-[ 2595.735419] usb 2-1.2: New USB device strings: Mfr=3D1, Product=3D2, Ser=
-ialNumber=3D3
-[ 2595.735427] usb 2-1.2: Product: External HDD   =20
-[ 2595.735434] usb 2-1.2: Manufacturer: Western Digital=20
-[ 2595.735440] usb 2-1.2: SerialNumber: 575845363038453236303437
-[ 2595.738574] usb-storage 2-1.2:1.0: Quirks match for vid 1058 pid 0704: 8=
-000
-[ 2595.738678] scsi34 : usb-storage 2-1.2:1.0
-[ 2596.735886] scsi 34:0:0:0: Direct-Access     WD       3200BMV External 1=
-=2E05 PQ: 0 ANSI: 4
-[ 2596.738702] sd 34:0:0:0: [sdb] 625142448 512-byte logical blocks: (320 G=
-B/298 GiB)
-[ 2596.739695] sd 34:0:0:0: [sdb] Write Protect is off
-[ 2596.739700] sd 34:0:0:0: [sdb] Mode Sense: 21 00 00 00
-[ 2596.739704] sd 34:0:0:0: [sdb] Assuming drive cache: write through
-[ 2596.742589] sd 34:0:0:0: [sdb] Assuming drive cache: write through
-[ 2596.788526]  sdb: sdb1
-[ 2596.791876] sd 34:0:0:0: [sdb] Assuming drive cache: write through
-[ 2596.791886] sd 34:0:0:0: [sdb] Attached SCSI disk
-[ 2602.946272] FAT: utf8 is not a recommended IO charset for FAT filesystem=
-s, filesystem will be case sensitive!
-[ 2614.887119] usb 2-1.2: USB disconnect, address 34
-[ 2614.890093] sd 34:0:0:0: [sdb] Unhandled error code
-[ 2614.890101] sd 34:0:0:0: [sdb]  Result: hostbyte=3DDID_NO_CONNECT driver=
-byte=3DDRIVER_OK
-[ 2614.890112] sd 34:0:0:0: [sdb] CDB: Read(10): 28 00 02 49 27 eb 00 00 10=
- 00
-[ 2614.890144] end_request: I/O error, dev sdb, sector 38348779
-[ 2614.890210] sd 34:0:0:0: [sdb] Unhandled error code
-[ 2614.890216] sd 34:0:0:0: [sdb]  Result: hostbyte=3DDID_NO_CONNECT driver=
-byte=3DDRIVER_OK
-[ 2614.890225] sd 34:0:0:0: [sdb] CDB: Read(10): 28 00 02 49 27 fb 00 00 f0=
- 00
-[ 2614.890256] end_request: I/O error, dev sdb, sector 38348795
-[ 2614.891577] FAT: FAT read failed (blocknr 5025)
-[ 2614.891744] FAT: FAT read failed (blocknr 5037)
-[ 2614.893203] FAT: FAT read failed (blocknr 66)
-[ 2614.893451] FAT: FAT read failed (blocknr 28135)
-[ 2614.894942] FAT: FAT read failed (blocknr 32)
-
-
-Later in __mark_inode_dirty
-bdi =3D inode_to_bdi(inode)
-
-call returns NULL. And the result is Oops.
-
-Below is the first `solution' that I came up with. Yet I don't
-think it's proper.
-
----
-
- fs/fs-writeback.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 3d06ccc..0b0e79c 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -987,6 +987,9 @@ void __mark_inode_dirty(struct inode *inode, int flags)
- 		if (!was_dirty) {
- 			bdi =3D inode_to_bdi(inode);
-=20
-+			if (bdi =3D=3D NULL)
-+				goto out;
-+
- 			if (bdi_cap_writeback_dirty(bdi)) {
- 				WARN(!test_bit(BDI_registered, &bdi->state),
- 				     "bdi-%s not registered\n", bdi->name);
-
-
-
---XOIedfhf+7KOe/yw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk0BTH8ACgkQfKHnntdSXjTvzQP/XDvY3XERtjZCaSIzjgXZi+tn
-a3Db1ypC3yZpAJUBix+lcMWp2X6WcLlRGDcjhBwo9UNteUuDYVZBbyRnIgHXQ7xg
-0GxE9Jgehrl1ZNfisCds2ldJ+IrLLR3rLEaNxpk9L/Lysa16+KUyJ3l2NKdJvwKG
-GD+o00VcP63XiZRT+Ws=
-=F3il
------END PGP SIGNATURE-----
-
---XOIedfhf+7KOe/yw--
+	tglx
