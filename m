@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab0LIPyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:54:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34557 "EHLO mx1.redhat.com"
+	id S1753105Ab0LIP4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:56:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1125 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754137Ab0LIPyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:54:49 -0500
-Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on
- inode creation
-From: Eric Paris <eparis@redhat.com>
-To: John Stoffel <john@stoffel.org>
-Cc: xfs-masters@oss.sgi.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        cluster-devel@redhat.com, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org, xfs@oss.sgi.com, linux-mm@kvack.org,
-        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
-        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
-        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
-        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
-        jeffm@suse.com, paul.moore@hp.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        casey@schaufler-ca.com, kees.cook@canonical.com, dhowells@redhat.com
-In-Reply-To: <19712.61515.201226.938553@quad.stoffel.home>
-References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
-	 <19712.61515.201226.938553@quad.stoffel.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 10:52:21 -0500
-Message-ID: <1291909941.3072.70.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751298Ab0LIP4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 10:56:53 -0500
+Date: Thu, 9 Dec 2010 10:20:33 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] x86: Fix warning in hw_nmi.c
+Message-ID: <20101209152033.GU21786@redhat.com>
+References: <AANLkTi=rcc38QzoKa6LFy4m++-p_9=Zt4_kDQE=GeKxf@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=rcc38QzoKa6LFy4m++-p_9=Zt4_kDQE=GeKxf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-09 at 10:05 -0500, John Stoffel wrote:
-> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+On Thu, Dec 09, 2010 at 02:47:34PM +0600, Rakib Mullick wrote:
+> commit 0e2af2a9abf94b408ff70679b692a8644fed4aab fixed this warning, it
+> again introduced by commit 5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a.
+> This patch fixes it by moving arch_trigger_all_cpu_backtrace few lines
+> above backtrace_mask's declaration.
+> 
+> We were warned by the following warning:
+> 
+> arch/x86/kernel/apic/hw_nmi.c:29: warning: ‘backtrace_mask’ defined but not used
+> 
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
 
-> So what happens when I create a file /home/john/shadow, does selinux
-> (or LSM in general) then run extra checks because the filename is
-> 'shadow' in your model?  
+Thanks Rakib.
 
-It's entirely a question of labeling and one that was discussed on the
-LSM list in some detail:
+I already have this fix lined up for Ingo in another patch series.
 
-http://marc.info/?t=129141308200002&r=1&w=2
+http://thread.gmane.org/gmane.linux.kernel/1069682/focus=1069960
 
-The basic synopsis is that when a new inode is created SELinux must
-apply some label.  It makes the decision for what label to apply based
-on 3 pieces of information.
+Hopefully Ingo will get a chance to include it soon.
 
-The label of the parent inode.
-The label of the process creating the new inode.
-The 'class' of the inode, S_ISREG, S_ISDIR, S_ISLNK, etc
-
-This patch adds a 4th piece of information, the name of the object being
-created.  An obvious situation where this will be useful is devtmpfs
-(although you'll find other examples in the above thread).  devtmpfs
-when it creates char/block devices is unable to distinguish between kmem
-and console and so they are created with a generic label.  hotplug/udev
-is then called which does some pathname like matching and relabels them
-to something more specific.  We've found that many people are able to
-race against this particular updating and get spurious denials in /dev.
-With this patch devtmpfs will be able to get the labels correct to begin
-with.
-
-I'm certainly willing to discuss the security implications of this
-patch, but that would probably be best done with a significantly
-shortened cc-list.  You'll see in the above mentioned thread that a
-number of 'security' people (even those who are staunchly anti-SELinux)
-recognize there is value in this and that it is certainly much better
-than we have today.
-
-> I *think* the overhead shouldn't be there if SELINUX is disabled, but
-> have you confirmed this?  How you run performance tests before/after
-> this change when doing lots of creations of inodes to see what sort of
-> performance changes might be there?
-
-I've actually recently done some perf testing on creating large numbers
-of inodes using bonnie++, since SELinux was a noticeable overhead in
-that operation.  Doing that same test with SELinux disabled (or enabled)
-I do not see a noticeable difference when this patch is applied or not.
-It's just an extra argument to a function that goes unused.
-
--Eric
-
+Cheers,
+Don
