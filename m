@@ -1,187 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab0LIStD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:49:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47091 "EHLO mx1.redhat.com"
+	id S1756554Ab0LISyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:54:06 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45911 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab0LIStB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:49:01 -0500
-Date: Thu, 9 Dec 2010 19:47:42 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 51 of 66] set recommended min free kbytes
-Message-ID: <20101209184742.GH19131@random.random>
-References: <patchbomb.1288798055@v2.random>
- <e4c3f336872db7bfbf58.1288798106@v2.random>
- <20101118161623.GB8135@csn.ul.ie>
+	id S1751872Ab0LISyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 13:54:04 -0500
+Message-ID: <4D01259D.2010409@kernel.org>
+Date: Thu, 09 Dec 2010 19:53:17 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118161623.GB8135@csn.ul.ie>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: jeff@garzik.org, linux-ide@vger.kernel.org, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@HansenPartnership.com
+Subject: Re: [PATCH 5/8] scsi: fix TUR error handling in sr_media_change()
+References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-6-git-send-email-tj@kernel.org> <4D011E05.5030205@ru.mvista.com>
+In-Reply-To: <4D011E05.5030205@ru.mvista.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 18:53:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 04:16:24PM +0000, Mel Gorman wrote:
-> > +	/* Make sure at least 2 hugepages are free for MIGRATE_RESERVE */
-> > +	recommended_min = HPAGE_PMD_NR * nr_zones * 2;
-> > +
+Hello, Sergei.
+
+On 12/09/2010 07:20 PM, Sergei Shtylyov wrote:
+>> +    /*
+>> +     * Media is considered to be present if TUR succeeds or fails with
+>> +     * sense data indicating something other than media-not-present
+>> +     * (ASC 0x3a).
+>> +     */
+>> +    if (!scsi_status_is_good(retval) &&
+>> +        (!scsi_sense_valid(sshdr) || sshdr->asc == 0x3a)) {
+>> +        /*
+>> +         * Probably not media in the device.  Mark as changed, and
 > 
-> The really important value is pageblock_nr_pages here. It'll just happen
-> to work on x86 and x86-64 but anti-fragmentation is really about
-> pageblocks, not PMDs.
-> 
-> > +	/*
-> > +	 * Make sure that on average at least two pageblocks are almost free
-> > +	 * of another type, one for a migratetype to fall back to and a
-> > +	 * second to avoid subsequent fallbacks of other types There are 3
-> > +	 * MIGRATE_TYPES we care about.
-> > +	 */
-> > +	recommended_min += HPAGE_PMD_NR * nr_zones * 3 * 3;
-> > +
-> 
-> Same on the use of pageblock_nr_pages. Also, you can replace 3 with
-> MIGRATE_PCPTYPES.
-> 
-> > +	/* don't ever allow to reserve more than 5% of the lowmem */
-> > +	recommended_min = min(recommended_min,
-> > +			      (unsigned long) nr_free_buffer_pages() / 20);
-> > +	recommended_min <<= (PAGE_SHIFT-10);
-> > +
-> > +	if (recommended_min > min_free_kbytes) {
-> > +		min_free_kbytes = recommended_min;
-> > +		setup_per_zone_wmarks();
-> > +	}
-> 
-> 
-> The timing this is called is important. Would you mind doing a quick
-> debugging check by adding a printk to setup_zone_migrate_reserve() to ensure
-> MIGRATE_RESERVE is getting set on sensible pageblocks? (see where the comment
-> Suitable for reserving if this block is movable is) If MIGRATE_RESERVE blocks
-> are not being created in a sensible fashion, atomic high-order allocations
-> will suffer in mysterious ways.
-> 
-> SEtting the higher min free kbytes from userspace happens to work because
-> the system is initialised and MIGRATE_MOVABLE exists but that might not be
-> the case when automatically set like this patch.
+>    s/not/no/
 
-When min_free_kbytes doesn't need to be increased (like huge system
-with lots of ram) setup_per_zone_wmarks wasn't called in the
-late_initcall where this code runs, and the original
-setup_per_zone_wmarks apparently wasn't calling
-setup_zone_migrate_reserve (how can it be?).
+Updated patch already posted.  Thanks.
 
-Anyway now I patched it like this and it seems to work properly with
-the unconditional setup_per_zone_wmarks in
-late_initcall(set_recommended_min_free_kbytes).
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -103,7 +103,7 @@ static int set_recommended_min_free_kbyt
- 		nr_zones++;
- 
- 	/* Make sure at least 2 hugepages are free for MIGRATE_RESERVE */
--	recommended_min = HPAGE_PMD_NR * nr_zones * 2;
-+	recommended_min = pageblock_nr_pages * nr_zones * 2;
- 
- 	/*
- 	 * Make sure that on average at least two pageblocks are almost free
-@@ -111,17 +111,17 @@ static int set_recommended_min_free_kbyt
- 	 * second to avoid subsequent fallbacks of other types There are 3
- 	 * MIGRATE_TYPES we care about.
- 	 */
--	recommended_min += HPAGE_PMD_NR * nr_zones * 3 * 3;
-+	recommended_min += pageblock_nr_pages * nr_zones *
-+			   MIGRATE_PCPTYPES * MIGRATE_PCPTYPES;
- 
- 	/* don't ever allow to reserve more than 5% of the lowmem */
- 	recommended_min = min(recommended_min,
- 			      (unsigned long) nr_free_buffer_pages() / 20);
- 	recommended_min <<= (PAGE_SHIFT-10);
- 
--	if (recommended_min > min_free_kbytes) {
-+	if (recommended_min > min_free_kbytes)
- 		min_free_kbytes = recommended_min;
--		setup_per_zone_wmarks();
--	}
-+	setup_per_zone_wmarks();
- 	return 0;
- }
- late_initcall(set_recommended_min_free_kbytes);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3188,6 +3188,7 @@ static void setup_zone_migrate_reserve(s
- 	 */
- 	reserve = min(2, reserve);
- 
-+	printk("reserve start %d\n", reserve);
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
- 		if (!pfn_valid(pfn))
- 			continue;
-@@ -3226,6 +3227,7 @@ static void setup_zone_migrate_reserve(s
- 			move_freepages_block(zone, page, MIGRATE_MOVABLE);
- 		}
- 	}
-+	printk("reserve end %d\n", reserve);
- }
- 
- /*
-
-
-
-hugeadm with CONFIG_TRANSPARENT_HUGEPAGE=n leads to:
-
-reserve start 1
-reserve end 0
-reserve start 2
-reserve end 0
-reserve start 2
-reserve end 0
-reserve start 0
-reserve end 0
-reserve start 0
-reserve end 0
-reserve start 0
-reserve end 0
-reserve start 2
-reserve end 0
-reserve start 0
-reserve end 0
-
-With CONFIG_TRANSPARENT_HUGEPAGE=Y I boot I see:
-
-reserve start 1
-reserve end 0
-reserve start 2
-reserve end 0
-reserve start 2
-reserve end 0
-reserve start 0
-reserve end 0
-reserve start 0
-reserve end 0
-reserve start 0
-reserve end 0
-reserve start 2
-reserve end 0
-reserve start 0
+-- 
+tejun
