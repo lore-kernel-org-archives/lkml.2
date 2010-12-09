@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab0LINoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 08:44:11 -0500
-Received: from mail-in-09.arcor-online.net ([151.189.21.49]:35560 "EHLO
-	mail-in-09.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751909Ab0LINoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 08:44:08 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-16.arcor-online.net 6629C45E43
-Date: Thu, 9 Dec 2010 14:44:06 +0100 (CET)
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-To: jkosina@suse.cz, erazor_de@users.sourceforge.net
-Cc: rdunlap@xenotime.net, gregkh@suse.de, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        netdev@vger.kernel.org
-Message-ID: <2069123096.22885.1291902246397.JavaMail.ngmail@webmail07.arcor-online.net>
-In-Reply-To: <alpine.LNX.2.00.1012091430130.508@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012091430130.508@pobox.suse.cz> <1290801444.18750.161.camel@neuromancer>
-Subject: Aw: Re: [PATCH 0/5] HID: roccat: Achieve userspace notification on
- sysfs attribute creation
+	id S1753293Ab0LINrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 08:47:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:38139 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab0LINrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 08:47:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
+   d="scan'208";a="582112643"
+Date: Thu, 9 Dec 2010 14:47:11 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
+        Ludovic Barre <ludovic.barre@stericsson.com>
+Subject: Re: [PATCH v2] MFD: ab8500 chip id exported to sysfs
+Message-ID: <20101209134711.GG8884@sortiz-mobl>
+References: <1291298976-4623-1-git-send-email-mattias.wallin@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ngMessageSubType: MessageSubType_MAIL
-X-WebmailclientIP: 138.246.2.174
-X-Arcor-Original-Account: screamingfist@arcor.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291298976-4623-1-git-send-email-mattias.wallin@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+Hi Mattias,
 
+On Thu, Dec 02, 2010 at 03:09:36PM +0100, Mattias Wallin wrote:
+> This patch adds a file into sysfs for reading out chip id.
+> It have been requested for modem silent reboot.
+Patch applied, thanks.
 
------ Original Nachricht ----
-Von:     Jiri Kosina <jkosina@suse.cz>
-An:      Stefan Achatz <erazor_de@users.sourceforge.net>
-Datum:   09.12.2010 14:30
-Betreff: Re: [PATCH 0/5] HID: roccat: Achieve userspace notification on sysfs
- attribute creation
+Cheers,
+Samuel.
 
-> On Fri, 26 Nov 2010, Stefan Achatz wrote:
-> 
-> > Adding sysfs attributes to an already created device raises no userland
-> > notification.
-> > 
-> > Instead of fiddling around in the depths of busses and devices I reuse
-> the
-> > event char device (module hid-roccat). This device gets now created with
-> > a hardware specific class that contains the device attributes.
-> 
-> Hi Stefan,
-> 
-> I have applied the series, and removed the #pragma pack ugliness. Thanks,
-
-Hello Jiri,
-Using my patch replacing the #pragma pack with the __packed macro would have saved you some time:
-https://lkml.org/lkml/2010/11/27/14
-
-Just for the future: Whats better using the verbose version __attribute__ ((__packed__)) or the macro
-__packed as I did?
-
-Thanks, Stefan
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
