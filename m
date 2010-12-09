@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab0LIAug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 19:50:36 -0500
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:44524 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750930Ab0LIAuf (ORCPT
+	id S1755558Ab0LIBMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:12:35 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:55354 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751729Ab0LIBMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 19:50:35 -0500
-Date: Thu, 9 Dec 2010 11:50:29 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/46] fs: d_validate fixes
-Message-ID: <20101209005029.GC32766@dastard>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <0fff695735c9b652a3f63b8480686c64811e89d0.1290852958.git.npiggin@kernel.dk>
- <20101208015344.GE29333@dastard>
- <20101208065955.GA14846@amd>
+	Wed, 8 Dec 2010 20:12:33 -0500
+Message-ID: <4D002CE8.2060803@euromail.se>
+Date: Thu, 09 Dec 2010 02:12:08 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101208065955.GA14846@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Ping Cheng <pinglinux@gmail.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Add an envelope tool type
+References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <AANLkTikmomm2hd7AAJMTnY+=J2wPyVvodv2Ft0jFe7w2@mail.gmail.com> <20101208235805.GE15294@core.coreip.homeip.net>
+In-Reply-To: <20101208235805.GE15294@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PQV3T-00061i-7M.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PQV3T-00061i-7M dc8ae6747da6951b701c4e8841840393
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 05:59:55PM +1100, Nick Piggin wrote:
-> On Wed, Dec 08, 2010 at 12:53:44PM +1100, Dave Chinner wrote:
-> > On Sat, Nov 27, 2010 at 08:44:32PM +1100, Nick Piggin wrote:
-> > > d_validate has been broken for a long time.
-> > > 
-> > > kmem_ptr_validate does not guarantee that a pointer can be dereferenced
-> > > if it can go away at any time. Even rcu_read_lock doesn't help, because
-> > > the pointer might be queued in RCU callbacks but not executed yet.
-> > > 
-> > > So the parent cannot be checked, nor the name hashed. The dentry pointer
-> > > can not be touched until it can be verified under lock. Hashing simply
-> > > cannot be used.
-> > > 
-> > > Instead, verify the parent/child relationship by traversing parent's
-> > > d_child list. It's slow, but only ncpfs and the destaged smbfs care
-> > > about it, at this point.
-> > 
-> > I'd drop the previous revert patch and just convert the RCU hash
-> > traversal straight to the d_child traversal code you introduce here.
-> > This is a much better explanation of why the d_validate mechanism
-> > needs to be changed, and the revert is really an unnecessary extra
-> > step...
+>>>
+
+>>> Is it assumed that the envelop has only two touches comprising it? Or is
+>>> it any number of touches? If it's any number of touches, how does one
+>>> know how many touches it is?
+>>
+>> Those are good questions. Specifying how many touches are in the
+>> envelop makes sense. It also covers rectangle as a special case of
+>> envelop.
 > 
-> Has to be backported, though.
+> I have a feeling that trying to accomodate non-rectangular, more than 2
+> point shapes without using native MT data is over-engineering the
+> problem... Do we have examples other than older generation Elantechs and
+> Synaptics that need envelope notion?
+> 
 
-Backported where? The d_validate() change only got included in .37-rc1.
 
-> Patch that is to be reverted obviously
-> adds more brokenness and is a good example that you cannot dget() under
-> rcu read protection even if the rest of the surrounding function is
-> bugfree. I wouldn't have thought it's a big deal.
+Those are the ones targeted so far. Maybe appletouch could be added to the list
+as well. I imagine all drivers will end up using zero, one and two envelope points.
 
-Reverting something broken to something already broken just to fix
-to the less broken version seems like an unnecessary step. Just
-fix the brokenneѕs in a single patch - no need to indirect the real
-fix through a revert. One less patch to worry about.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Henrik
