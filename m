@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab0LIBSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:18:15 -0500
-Received: from netnation.com ([204.174.223.2]:55093 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755583Ab0LIBSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:18:13 -0500
-Date: Wed, 8 Dec 2010 17:18:08 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
-	in response to high-order allocations V2
-Message-ID: <20101209011808.GC3796@hostway.ca>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
+	id S1755923Ab0LIBS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:18:58 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:57892 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754919Ab0LIBS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:18:57 -0500
+Message-ID: <4D002E6A.7070709@euromail.se>
+Date: Thu, 09 Dec 2010 02:18:34 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ping Cheng <pinglinux@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Add an envelope tool type
+References: <1291721340-22652-1-git-send-email-rydberg@euromail.se>	<4CFFC3C2.1080905@canonical.com>	<AANLkTikmomm2hd7AAJMTnY+=J2wPyVvodv2Ft0jFe7w2@mail.gmail.com>	<20101208235805.GE15294@core.coreip.homeip.net> <AANLkTink9aX=dV-+n5=2BpPF34kSZGSQQ6x2tUNJ8eSM@mail.gmail.com>
+In-Reply-To: <AANLkTink9aX=dV-+n5=2BpPF34kSZGSQQ6x2tUNJ8eSM@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PQV9Y-00071s-7P.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PQV9Y-00071s-7P 3fd1040eb5ea75a261eb3d55c13f9c86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 11:45:29AM +0000, Mel Gorman wrote:
+>>> Those are good questions. Specifying how many touches are in the
 
-> This still needs testing. I've tried multiple reproduction scenarios locally
-> but two things are tripping me. One, Simon's network card is using GFP_ATOMIC
-> allocations where as the one I use locally does not. Second, Simon's is a real
-> mail workload with network traffic and there are no decent mail simulator
-> benchmarks (that I could find at least) that would replicate the situation.
-> Still, I'm hopeful it'll stop kswapd going mad on his machine and might
-> also alleviate some of the "too much free memory" problem.
+>>> envelop makes sense. It also covers rectangle as a special case of
+>>> envelop.
+>>
+>> I have a feeling that trying to accomodate non-rectangular,
 > 
-> Changelog since V1
->   o Take classzone into account
->   o Ensure that kswapd always balances at order-09
->   o Reset classzone and order after reading
->   o Require a percentage of a node be balanced for high-order allocations,
->     not just any zone as ZONE_DMA could be balanced when the node in general
->     is a mess
+> No, we are not talking about non-rectangular shape here. Envelop is
+> always a rectangle. By rectangle above, I meant 2 touches.
 > 
-> Simon Kirby reported the following problem
-> 
->    We're seeing cases on a number of servers where cache never fully
->    grows to use all available memory.  Sometimes we see servers with 4
->    GB of memory that never seem to have less than 1.5 GB free, even with
->    a constantly-active VM.  In some cases, these servers also swap out
->    while this happens, even though they are constantly reading the working
->    set into memory.  We have been seeing this happening for a long time;
->    I don't think it's anything recent, and it still happens on 2.6.36.
-> 
-> After some debugging work by Simon, Dave Hansen and others, the prevaling
-> theory became that kswapd is reclaiming order-3 pages requested by SLUB
-> too aggressive about it.
-> 
-> There are two apparent problems here. On the target machine, there is a small
-> Normal zone in comparison to DMA32. As kswapd tries to balance all zones, it
-> would continually try reclaiming for Normal even though DMA32 was balanced
-> enough for callers. The second problem is that sleeping_prematurely() uses
-> the requested order, not the order kswapd finally reclaimed at. This keeps
-> kswapd artifically awake.
-> 
-> This series aims to alleviate these problems but needs testing to confirm
-> it alleviates the actual problem and wider review to think if there is a
-> better alternative approach. Local tests passed but are not reproducing
-> the same problem unfortunately so the results are inclusive.
+> An envelop that includes number of touches offers us more information
+> than a rectangle does.
 
-So, we have been running the first version of this series in production
-since November 26th, and this version of this series in production since
-early yesterday morning.  Both versions definitely solve the kswapd not
-sleeping problem and do improve the use of memory for caching.  There are
-still problems with fragmentation causing reclaim of more page cache than
-I would like, but without this patch, the system is in bad shape (it
-keeps reading daemons in from disk because kswapd keeps reclaiming them).
 
-http://0x.ca/sim/ref/2.6.36/?C=M;O=A
-http://0x.ca/sim/ref/2.6.36/mel_v2_memory_day.png
-http://0x.ca/sim/ref/2.6.36/mel_v2_buddyinfo_day.png
-http://0x.ca/sim/ref/2.6.36/mel_v2_buddyinfo_DMA32_day.png
-http://0x.ca/sim/ref/2.6.36/mel_v2_buddyinfo_Normal_day.png
+All you need to do to know how many points there are is to count them. :-)
 
-No problem with page allocation failures or any other problem in the
-weeks of testing.
-
-Simon-
+Henrik
