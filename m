@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab0LIP7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:59:36 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35800 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab0LIP7f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:59:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=r6gSRq5Hl07YabACy1wz2TwrlR6AGYUsjGMDD9C4ewvNXJHZPNZEWXmN7obSk8DB2g
-         Iq7b5PJSdIBmep3nqLTT6ifhlQZIXLb056XT/G/kdd/f7VfTIophQWTxMGEIzHMO3AlB
-         6wN3WVoBV/TC7bJwCZ50vRPKjV3OvV8OuXeG0=
-Date: Fri, 10 Dec 2010 00:59:25 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] mm: kswapd: Reset kswapd_max_order and
- classzone_idx after reading
-Message-ID: <20101209155925.GD1740@barrios-desktop>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
- <1291893500-12342-5-git-send-email-mel@csn.ul.ie>
+	id S1752990Ab0LIQCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:02:00 -0500
+Received: from void.printf.net ([89.145.121.20]:46314 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749Ab0LIQB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 11:01:58 -0500
+Date: Thu, 9 Dec 2010 16:01:57 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Will Newton <will.newton@gmail.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>
+Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
+Message-ID: <20101209160157.GA28586@void.printf.net>
+References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com> <20101208115510.GD10998@console-pimps.org> <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com> <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com> <20101209064751.GA21128@void.printf.net> <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1291893500-12342-5-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 11:18:18AM +0000, Mel Gorman wrote:
-> When kswapd wakes up, it reads its order and classzone from pgdat and
-> calls balance_pgdat. While its awake, it potentially reclaimes at a high
-> order and a low classzone index. This might have been a once-off that
-> was not required by subsequent callers. However, because the pgdat
-> values were not reset, they remain artifically high while
-> balance_pgdat() is running and potentially kswapd enters a second
-> unnecessary reclaim cycle. Reset the pgdat order and classzone index
-> after reading.
+Hi Will,
+
+On Thu, Dec 09, 2010 at 12:11:06PM +0000, Will Newton wrote:
+> > Is there something we could depend on that would stop this driver being
+> > presented to everyone, without being far too specific?  At the moment
+> > we'd be making x86 desktop users say whether they have this IP, which
+> > isn't good.  Are the architectures that use this IP already upstream?
+> > Are they all ARM architectures, for instance?
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> I don't know of any architectures upstream that use this IP block. There is an
+> SoC from NXP that uses this it but it is not upstream:
+> 
+> http://ics.nxp.com/support/software/lpc313x.bsp.linux/
+> 
+> The architecture we tested and debugged this driver on is not upstream either
+> unfortunately. :-/
+
+Okay.  I think "depends on ARM" is appropriate for now, and we could
+expand that later if the block appears in a MIPS SoC or something.
+Does that work for you?
+
+> The driver is available at the link above, I can add the URL to the comment
+> if that would be helpful.
+
+Sure, sounds good.
+
+> > Hm, what's the relationship between NXP and Imagination here?  If
+> > you're submitting a driver with NXP copyright, I think we should have
+> > a Signed-off-by line from whomever owns the copyright/wrote that code.
+> > If that's you, that's fine, but it's unclear to me.
+> 
+> We both have SoCs with this IP block in it, other than that I don't think
+> there has been any communication between NXP and Imagination about this driver.
+> Hence the lack of SOB from the original authors.
+> 
+> The driver is available publically under the GPL, so it was my
+> understanding that
+> no SOB was required as long as we keep appropriate copyright credit in the code.
+
+Okay, makes sense.  Thanks,
 
 -- 
-Kind regards,
-Minchan Kim
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
