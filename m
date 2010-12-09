@@ -1,190 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab0LIMxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 07:53:31 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:63755 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab0LIMx3 convert rfc822-to-8bit (ORCPT
+	id S1756736Ab0LIM43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 07:56:29 -0500
+Received: from smtp.tele.fi ([192.89.123.25]:46467 "EHLO
+	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756297Ab0LIM42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 07:53:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cvG6+PmODlrs/nA5t2CXBPMtuF8Ov74jXIpt1Y6T2B8/HAmTr8vr3iDLygGPxACOiA
-         VNIrOLIV+6x0wnF+dCKoxDMnrjA3BtiWLNh3l5IRQcgEiy7utMnr3N0mXMj7brgpfH4+
-         3ItM2JIZbW9F8fayGt7+zHHbmHsVJ33QuLwB8=
+	Thu, 9 Dec 2010 07:56:28 -0500
+X-Greylist: delayed 2605 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Dec 2010 07:56:28 EST
+X-Originating-Ip: [194.89.68.22]
+Date: Thu, 9 Dec 2010 14:12:59 +0200
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy@ikiaikainen.iki.fi,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 0/2] Xen PV on HVM multiple PV consoles
+Message-ID: <20101209121259.GQ2754@reaktio.net>
+References: <alpine.DEB.2.00.1012011715070.14723@kaball-desktop> <1291236234.22027.0.camel@mobile> <alpine.DEB.2.00.1012021720170.14723@kaball-desktop> <1291404900.5298.15.camel@mobile> <alpine.DEB.2.00.1012061035070.9029@kaball-desktop> <1291640614.32324.85.camel@work.selfip.ru> <alpine.DEB.2.00.1012071026430.2390@kaball-desktop> <1291892412.30565.3.camel@vase>
 MIME-Version: 1.0
-In-Reply-To: <20101209081756.GE8259@dastard>
-References: <cover.1290852958.git.npiggin@kernel.dk>
-	<3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
-	<20101209060911.GB8259@dastard>
-	<20101209062801.GA3749@amd>
-	<20101209081756.GE8259@dastard>
-Date: Thu, 9 Dec 2010 23:53:27 +1100
-Message-ID: <AANLkTimF457VDRTxjjhu+J9E616LBKP_86UcNS-u+P3p@mail.gmail.com>
-Subject: Re: [PATCH 11/46] fs: dcache scale hash
-From: Nick Piggin <npiggin@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291892412.30565.3.camel@vase>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 7:17 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Dec 09, 2010 at 05:28:01PM +1100, Nick Piggin wrote:
->> On Thu, Dec 09, 2010 at 05:09:11PM +1100, Dave Chinner wrote:
->> > On Sat, Nov 27, 2010 at 08:44:41PM +1100, Nick Piggin wrote:
->> > > Add a new lock, dcache_hash_lock, to protect the dcache hash table from
->> > > concurrent modification. d_hash is also protected by d_lock.
->> > >
->> > > Signed-off-by: Nick Piggin <npiggin@kernel.dk>
->> > > ---
->> > >  fs/dcache.c            |   38 +++++++++++++++++++++++++++-----------
->> > >  include/linux/dcache.h |    3 +++
->> > >  2 files changed, 30 insertions(+), 11 deletions(-)
->> > >
->> > > diff --git a/fs/dcache.c b/fs/dcache.c
->> > > index 4f9ccbe..50c65c7 100644
->> > > --- a/fs/dcache.c
->> > > +++ b/fs/dcache.c
->> > > @@ -35,12 +35,27 @@
->> > >  #include <linux/hardirq.h>
->> > >  #include "internal.h"
->> > >
->> > > +/*
->> > > + * Usage:
->> > > + * dcache_hash_lock protects dcache hash table
->> > > + *
->> > > + * Ordering:
->> > > + * dcache_lock
->> > > + *   dentry->d_lock
->> > > + *     dcache_hash_lock
->> > > + *
->> >
->> > What locking is used to keep DCACHE_UNHASHED/d_unhashed() in check
->> > with the whether the dentry is on the hash list or not? It looks to
->> > me that to make any hash modification, you have to hold both the
->> > dentry->d_lock and the dcache_hash_lock to keep them in step. If
->> > this is correct, can you add this to the comments above?
->>
->> No, dcache_lock still does that. d_unhashed is protected with
->> d_lock a few patches later, which adds to the comment.
->
-> d_unhashed() is just a flag bit in ->d_flags, which is apparently
-> protected by ->d_lock in the next the LRU patch.
+On Thu, Dec 09, 2010 at 02:00:12PM +0300, Vasiliy G Tolstov wrote:
+> On Tue, 2010-12-07 at 10:30 +0000, Stefano Stabellini wrote:
+> > On Mon, 6 Dec 2010, Vasiliy G Tolstov wrote:
+> > > On Mon, 2010-12-06 at 10:36 +0000, Stefano Stabellini wrote:
+> > > 
+> > > > 
+> > > > Could you please add CONFIG_DEBUG_INFO=y to your kernel config, so that
+> > > > we can see the name of the functions in the stack trace?
+> > > > 
+> > > 
+> > > After add debug kernel not crushed. I'm test more expensive it now. Can
+> > > You provide ps auxwww | grep qemu-dm after creating domain with two
+> > > serial consoles? (sles does not have libxl, i want to write now wrapper
+> > > to qemu-dm, after that try to compile rpm from spec to support libxl).
+> > > 
+> > 
+> > There is no need for any special command line arguments to qemu-dm, it
+> > is going to create as many PV serials as configured on xenstored by
+> > libxl, give a look at tools/libxl/libxl.c:libxl_device_console_add.
+> > The output of the serial is the one specified on the node "output" on
+> > xenstore.
+> 
+> I reproduce kernel crush:
+> 
 
-No, d_flags in upstream kernel is protected by d_lock (and also you
-can't protected one bit in a word with a lock but not another).
+You need to enable debugging options in your kernel so we can see function
+names in the trace.
 
+-- Pasi
 
-> I say apparently
-> because that patch doesn't appear to protect anything to do with
-> d_flags. I'm struggling to work out what is being protected in each
-> patch because it is not clearexactly what is being done.
-
-Well hopefully the code and changelog is more clear. The lockorder
-doc changes probably aren't a good source for a running commentary.
-Not that it's wrong, it just may have a few nits like this where an existing
-lock order or role is commented in another patch. Meh.
-
-
-> It makes much more sense to me to start by making all access to
-> d_flags atomic (i.e. protected by ->d_lock) in a separate patch than
-> to do it hodge-podge across multiple patches as you currently are.
-> Its hard to follow when things that are intimately related are
-> separated by mutliple patches doing different things...
-
-It might be easier to follow if you know d_flags is already protected
-by d_lock.
-
-The d_unhashed patch uses d_lock to keep _both_ the d_flags and
-the hash list membership status in sync. It does not make the d_flags
-itself atomic.
-
-
->> > > + * if (dentry1 < dentry2)
->> > > + *   dentry1->d_lock
->> > > + *     dentry2->d_lock
->> > > + */
->> >
->> > Perhaps the places where we need to lock two dentries should use a
->> > wrapper like we do for other objects. Such as:
->> >
->> > void dentry_dlock_two(struct dentry *d1, struct dentry *d2)
->> > {
->> >     if (d1 < d2) {
->> >             spin_lock(&d1->d_lock);
->> >             spin_lock_nested(&d2->d_lock, DENTRY_D_LOCK_NESTED);
->> >     } else {
->> >             spin_lock(&d2->d_lock);
->> >             spin_lock_nested(&d1->d_lock, DENTRY_D_LOCK_NESTED);
->> >     }
->> > }
->>
->> It only happens once in rename, so I don't think it's useful.
->
-> It is self documenting code, which does have value...
->
->> Nothing outside core code should be locking 2 unrelated dentries.
->
-> So it is static.
-
-Anyway, cleanup. It can equally well be done before or after, and seeing as
-we're being nice and not breaking my tree with minutiae, can you base it on
-top please?
-
-
->> > > @@ -1581,7 +1598,9 @@ void d_rehash(struct dentry * entry)
->> > >  {
->> > >   spin_lock(&dcache_lock);
->> > >   spin_lock(&entry->d_lock);
->> > > + spin_lock(&dcache_hash_lock);
->> > >   _d_rehash(entry);
->> > > + spin_unlock(&dcache_hash_lock);
->> > >   spin_unlock(&entry->d_lock);
->> > >   spin_unlock(&dcache_lock);
->> > >  }
->> >
->> > Shouldn't we really kill _d_rehash() by replacing all the callers
->> > with direct calls to __d_rehash() first? There doesn't seem to be much
->> > sense to keep both methods around....
->>
->> No. Several filesystems are using it, and it's an exported symbol.
->
-> That's __d_rehash().
-
-Oh I beg your pardon.
-
-
-> _d_rehash() (single underscore) is static and only called by
-> d_rehash() and d_materialise_unique() And is one line of code
-> calling __d_rehash(). Kill it, please.
-
-That doesn't belong in this patch either, it's shuffling. Anyway I like
-_d_rehash, so I'm certainly not going to send a patch to kill it.
-
-
->> I'm
->> focusing on changed to locking, and keeping APIs the same, where
->> possible. I don't want just more and more depencendies on pushing
->> through filesystem changes before this series.
->>
->> Like I said, there are infinite cleanups or improvements you can make.
->> It does not particularly matter that they happen before or after the
->> scaling work, except if there are classes of APIs that the new locking
->> model can no longer support.
->
-> We do plenty of cleanups when changing code when the result gives us
-> simpler and easier to understand code. It's a trivial change that,
-> IMO, makes the code more consistent and easier to follow.
-
-Unrelated "cleanups" in the same patch as non trivial locking change
-is stupid.
-
-Necessary changes to prevent bad ugliness resulting, or preventing
-repeated steps for the particular changes, etc. of course. Killing un
-related functions no.
+> With attached config file kernel from jeremy stable-2.6.32.x boot ok and
+> noisy debug info
+> If i compile with this config from You branch stable-2.6.32-pvconsole
+> kernel crushed. Nothing displays. Only xm dmesg says:
+> 
+> (XEN) d47:v0: unhandled page fault (ec=0000)
+> (XEN) Pagetable walk from 0000000000000010:
+> (XEN)  L4[0x000] = 000000083870a027 00000000000013f9
+> (XEN)  L3[0x000] = 0000000000000000 ffffffffffffffff
+> (XEN) domain_crash_sync called from entry.S
+> (XEN) Domain 47 (vcpu#0) crashed on cpu#15:
+> (XEN) ----[ Xen-4.0.0_21091_06-0.2.1  x86_64  debug=n  Not tainted ]----
+> (XEN) CPU:    15
+> (XEN) RIP:    e019:[<00000000c10aaa3f>]
+> (XEN) RFLAGS: 0000000000000246   EM: 1   CONTEXT: pv guest
+> (XEN) rax: 0000000000000000   rbx: 00000000c146f5a0   rcx:
+> 00000000c1445298
+> (XEN) rdx: 0000000000000000   rsi: 0000000000008000   rdi:
+> 0000000000000000
+> (XEN) rbp: 00000000c13f7e60   rsp: 00000000c13f7e34   r8:
+> 0000000000000000
+> (XEN) r9:  0000000000000000   r10: 0000000000000000   r11:
+> 0000000000000000
+> (XEN) r12: 0000000000000000   r13: 0000000000000000   r14:
+> 0000000000000000
+> (XEN) r15: 0000000000000000   cr0: 000000008005003b   cr4:
+> 00000000000026f0
+> (XEN) cr3: 000000083fe24000   cr2: 0000000000000010
+> (XEN) ds: e021   es: e021   fs: 00d8   gs: 0000   ss: e021   cs: e019
+> (XEN) Guest stack trace from esp=c13f7e34:
+> (XEN)   00000000 c10aaa3f 0001e019 00010046 c10392d6 c1445298 c11d0e17
+> 00000004
+> (XEN)   c146f5a0 00000000 c14b0cd9 c13f7e70 c11d0e17 c146f5a0 00000000
+> c13f7e78
+> (XEN)   c11d0ed4 c13f7e98 c103936f c14b0cc8 004b0cc0 00000000 c14b0cd9
+> 00000000
+> (XEN)   c14b0cd9 c13f7ea8 c1495868 c14d215c c14b0ccd c13f7ebc c148541b
+> c14b0ccd
+> (XEN)   fffffffe 00000000 c13f7ef8 c1048703 c13f7ef8 00000000 c137df19
+> 00000000
+> (XEN)   0000000f 00000000 00000000 00000000 c14b0cd9 c14b0cdd 00000000
+> c1480f40
+> (XEN)   c1481900 c13f7f08 c14851fd 00000000 c14853d2 c13f7f10 c14853c6
+> c13f7f94
+> (XEN)   c148a282 c13f7f20 c13f7fa4 00000000 c104e01e 00000005 00000000
+> 00000000
+> (XEN)   00000000 00000000 00000098 205b7f4c 30202020 3030302e 5d303030
+> c1050020
+> (XEN)   c13f7f78 c1bb60d0 c13f7f68 00000024 00000000 c1bb60c0 c1bb5884
+> c1394221
+> (XEN)   00000000 c13f7fdc 00000000 c13f7f94 c10392f6 00000000 c13f7fdc
+> 00000000
+> (XEN)   c13f7fac c148562f c137e0bc c12b2020 c14b2c60 00000000 c13f7fb8
+> c14850a2
+> (XEN)   c21f8000 c13f7ffc c1487d4a 00000000 00000000 00000000 00000000
+> 00000000
+> (XEN)   00000000 00000000 1f898975 80980201 10100800 000106a5 00000000
+> 00000000
+> (XEN)   c21f8000 00000000 00000000
+> (XEN) cpupool_rm_domain(dom=47,pool=0) n_dom 1
+> (XEN) mm.c:2562:d0 Unknown domain '47'
+> (XEN) mm.c:2562:d0 Unknown domain '47'
+> (XEN) mm.c:2562:d0 Unknown domain '47'
+> (XEN) mm.c:2562:d0 Unknown domain '47'
+> 
+> 
+> 
+> -- 
+> Vasiliy G Tolstov <v.tolstov@selfip.ru>
+> Selfip.Ru
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
