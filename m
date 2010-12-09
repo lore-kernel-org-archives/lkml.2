@@ -1,144 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab0LIOzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 09:55:51 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:48281 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0LIOzt (ORCPT
+	id S1755420Ab0LIPAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:00:13 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38420 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab0LIPAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 09:55:49 -0500
+	Thu, 9 Dec 2010 10:00:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Foi/5EbDNq1wMY1bI6fs0nZ36SVDKH47+rKqafrtasOKh2++6y2etM2OwwHvegIsZu
-         AEkK5uEctW3LqA8VgXzitn2lW2mMyEwc85E1ayOXJ0mhjCBtOY+Gv9osvqNvsfwL3sOa
-         2U3OEn2ao0QrIcQ08leB5cG+derLYvAaMwtjY=
-Date: Thu, 9 Dec 2010 15:55:44 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com
-Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
- events.
-Message-ID: <20101209145541.GC1712@nowhere>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <1291421609-14665-14-git-send-email-dhsharp@google.com>
- <1291427770.16223.15.camel@gandalf.stny.rr.com>
- <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com>
- <1291431252.16223.28.camel@gandalf.stny.rr.com>
+        b=mLHkN66XSDuNZIqJMUEEVw5pMBKJKHtkN0YD99gDrMfpxZKvytm66LLHkYCthT9CXT
+         oiIPzACRtNq88wVigWTTn+R4WjYJXkJAOrgDedTCWknd3kLFMUBZeRgRTnq8zLg0PXW6
+         2uysowhhi6/9ke17WP8nU8pS/wQcMjJIonHlk=
+Date: Thu, 9 Dec 2010 23:59:59 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] compaction: Remove mem_cgroup_del_lru
+Message-ID: <20101209145959.GA1740@barrios-desktop>
+References: <1291734086-1405-1-git-send-email-minchan.kim@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291431252.16223.28.camel@gandalf.stny.rr.com>
+In-Reply-To: <1291734086-1405-1-git-send-email-minchan.kim@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 03, 2010 at 09:54:12PM -0500, Steven Rostedt wrote:
-> On Fri, 2010-12-03 at 18:33 -0800, David Sharp wrote:
-> > I considered that, and I generally thing it's a good idea. However, I
-> > also want to use this switch to shrink individual tracepoint event
-> > structures.
-> > 
-> > eg: sched switch is a high frequency event and it is 68 bytes (60
-> > after these patches)
-> > 
-> > Can you suggest a syntax for TRACE_EVENT, DECLARE_EVENT_CLASS, etc,
-> > that could express the two versions and produce the right code?
-> > 
-> > I'm worried about adding even further complexity to the TRACE_EVENT
-> > macros. I could add TRACE_EVENT_SMALL that takes two versions of
-> > TP_STRUCT__entry, TP_fast_assign, and TP_printk each, but then this
-> > will need to be permuted with your TP_CONDITIONAL patches as well.
+On Wed, Dec 08, 2010 at 12:01:26AM +0900, Minchan Kim wrote:
+> del_page_from_lru_list alreay called mem_cgroup_del_lru.
+> So we need to call it again. It makes wrong stat of memcg and
+> even happen VM_BUG_ON hit.
 > 
-> I would not touch the TRACE_EVENT() structures. They are there as is and
-> I would not think about changing them. Something like that would never
-> make it into mainline.
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  mm/compaction.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> Now what you can do, is to make your own events based off of the same
-> tracepoints. For example, the TRACE_EVENT(sched_switch...) has in
-> sched.c:
-> 
-> 	trace_sched_switch(prev, next);
-> 
-> 
-> You could even write a module that does something like this:
-> 
-> 	register_trace_sched_switch(probe_sched_switch, mydata);
-> 
-> 
-> 
-> void probe_sched_switch(void *mydata,
-> 		struct task_struct *prev,
-> 		struct task_struct *next)
-> {
-> 	struct ring_buffer *buffer;
-> 	struct ring_buffer_event *event;
-> 	struct myentry *entry;
-> 
-> 	event = trace_current_buffer_lock_reserve(buffer,
-> 			mytype, sizeof(*entry),
-> 			0, 0);
-> 
-> 	if (!event)
-> 		return;
-> 
-> 	entry = ring_buffer_event_data(event);
-> 
-> 	entry->myfield = prev->x;
-> 	...
-> 
-> 	trace_nowake_buffer_unlock_commit(buffer, event,
-> 					0, 0);
-> }
-> 
-> You will need to do a register_ftrace_event() to register that 'mytype'
-> and how to output it. Otherwise it would just be ignored in the "trace"
-> file.
-> 
-> All of the above would work fine as a loadable module that you could
-> easily maintain out of tree, and still uses the internals of the system.
-> 
-> -- Steve
-> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 50b0a90..b0fbfdf 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -302,7 +302,6 @@ static unsigned long isolate_migratepages(struct zone *zone,
+>  		/* Successfully isolated */
+>  		del_page_from_lru_list(zone, page, page_lru(page));
+>  		list_add(&page->lru, migratelist);
+> -		mem_cgroup_del_lru(page);
+>  		cc->nr_migratepages++;
+>  		nr_isolated++;
+>  
+> -- 
+> 1.7.0.4
 > 
 
+Hi Andrew, 
+Please drop above(mm-compactionc-avoid-double-mem_cgroup_del_lru.patch)
+This is a new version with modified description and added Acked-by.
 
-But this would improve only google's tracing while this is a general
-mainline tracing problem.
+>From 64b3a2c1205d3ffc55878ab8f00f4d450318bb91 Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan.kim@gmail.com>
+Date: Thu, 9 Dec 2010 23:49:27 +0900
+Subject: [PATCH] mm/compaction.c: avoid double mem_cgroup_del_lru()
 
-The first thing is that we need to get rid of the lock_depth field, the bkl
-is dying.
+del_page_from_lru_list() already called mem_cgroup_del_lru().  So we must
+not call it again. It adds unnecessary overhead.
 
-For the rest what about having a bitmap of the fields we want to ignore,
-which can be setup from a trace file for ftrace and as an ioctl for perf.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/compaction.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-So this bitmap is easy to implement on the common fields.
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 50b0a90..b0fbfdf 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -302,7 +302,6 @@ static unsigned long isolate_migratepages(struct zone *zone,
+ 		/* Successfully isolated */
+ 		del_page_from_lru_list(zone, page, page_lru(page));
+ 		list_add(&page->lru, migratelist);
+-		mem_cgroup_del_lru(page);
+ 		cc->nr_migratepages++;
+ 		nr_isolated++;
+ 
+-- 
+1.7.0.4
 
-For the rest, one could choose between using TP_fast_assign()
-and TP_cond_assign().
 
-TP_fast_assign() stays as is and doesn't implement bitmap field
-ignoring. Those who want conditional record will need
-TP_cond_assign().
-Well, unfortunately this probably requires us to play
-the same trickery than SYSCALL_DEFINE() in that we'll probably
-need TP_cond_assign1(), TP_cond_assign2(), TP_cond_assign3(), etc...
-
-#define TP_cond_assignx(nr, assign)	\
-	if (call->bitmask & nr)	{	\
-		assign
-	}
-
-#define TP_cond_assign2(nr, assign, ...)	\
-	TP_cond_assignx(nr, assign)		\
-	TP_cond_assign1(nr + 1, __VA_ARGS__)
-
-#define TP_cond_assign3(nr, assign, ...)        \
-        TP_cond_assignx(nr, assign)             \
-        TP_cond_assign2(nr + 1, __VA_ARGS__)
-
-That will also require a bit more trickery to dynamically
-pre-compute the size of the trace entry.
+-- 
+Kind regards,
+Minchan Kim
