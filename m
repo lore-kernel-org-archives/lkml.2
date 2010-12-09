@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab0LIBxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:53:08 -0500
-Received: from void.printf.net ([89.145.121.20]:34883 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756452Ab0LIBxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:53:06 -0500
-Date: Thu, 9 Dec 2010 01:53:03 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Oliver Neukum <oneukum@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Fix re-probing after hibernation
-Message-ID: <20101209015303.GB19741@void.printf.net>
-References: <1291821839-15088-1-git-send-email-tiwai@suse.de>
+	id S932127Ab0LIBze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:55:34 -0500
+Received: from netnation.com ([204.174.223.2]:48306 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753041Ab0LIBzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:55:33 -0500
+Date: Wed, 8 Dec 2010 17:55:30 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
+	in response to high-order allocations V2
+Message-ID: <20101209015530.GD3796@hostway.ca>
+References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291821839-15088-1-git-send-email-tiwai@suse.de>
+In-Reply-To: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+Hmm...
 
-On Wed, Dec 08, 2010 at 04:23:59PM +0100, Takashi Iwai wrote:
-> The commit 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e
->   mmc: fix all hangs related to mmc/sd card insert/removal during
->   suspend/resume
-> introduced a bug where the device probing no longer works after
-> hibernation.  This was because the pm notifier expects
-> PM_POST_HIBERNATION call while the system sends PM_POST_RESTORE
-> instead, thus disable_rescan is kept as 1.
-> 
-> Cc: <stable@kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/mmc/core/core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 31ae07a..30094f6 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1772,7 +1772,7 @@ int mmc_pm_notify(struct notifier_block *notify_block,
->  		break;
->  
->  	case PM_POST_SUSPEND:
-> -	case PM_POST_HIBERNATION:
-> +	case PM_POST_RESTORE:
->  
->  		spin_lock_irqsave(&host->lock, flags);
->  		host->rescan_disable = 0;
+Wouldn't it make more sense for the fast path page allocator to allocate
+weighted-round-robin (by zone size) from each zone, rather than just
+starting from the highest and working down?
 
-Thanks very much for tracking this down!  The code suggests that
-POST_RESTORE is only emitted on a *failed* hibernation restore --
-from include/linux/notifier.h:
+This would mean that each zone would get a proportional amount of
+allocations and reclaiming a bit from each would likely throw out the
+oldest allocations, rather than some of that and and some more recent
+stuff that was allocated at the beginning of the lower zone.
 
-/* Hibernation and suspend events */
-#define PM_POST_HIBERNATION     0x0002 /* Hibernation finished */
-#define PM_POST_SUSPEND         0x0004 /* Suspend finished */
-#define PM_POST_RESTORE         0x0006 /* Restore failed */
+For example, with the current approach, a time progression of allocations
+looks like this (N=Normal, D=DMA32): 1N 2N 3N 4D 5D 6D 7D 8D 9D
 
-So, this all suggests that we want to add the POST_RESTORE case but
-also want to keep the POST_HIBERNATION case.  Do you agree?  Was the 
-case you saw of failed probe after hibernation a failed restore from
-hibernation image?
+...once the watermark is hit, kswapd reclaims 1 and 4, since they're
+oldest in each zone, but 2 and 3 were allocated earlier.
 
-By the way, it looks like there are some other drivers which also
-test for POST_HIBERNATION but not POST_RESTORE:
+Versus a weighted-round-robin approach: 1N 2D 3D 4N 5D 6D 7N 8D 9D
 
-  drivers/media/video/tlg2300/pd-main.c
-  drivers/s390/char/vmwatchdog.c
-  drivers/s390/cio/css.c
-  drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+...kswapd reclaims 1 and 2, and they're oldest in time and maybe LRU.
 
-Thanks,
+Things probably eventually mix up enough once the system has reclaimed
+and allocated more for a while with the current approach, but the
+allocations are still chunky depending on how many extra things kswapd
+reclaims to reach higher-order watermarks, and doesn't this always mess
+with the LRU when the there are multiple usable zones?
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Anyway, this approach might be horrible for some other reasons (page
+allocations hoping to be sequential?  bigger cache footprint?), but it
+might reduce the requirements for other other workarounds, and it would
+make the LRU node-wide instead of zone-wide.
+
+Simon-
