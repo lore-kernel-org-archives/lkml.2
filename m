@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab0LIIGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 03:06:24 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62268 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab0LIIGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 03:06:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=k1kz1CKotEa0IUDtpkhSwUJc5tHcxnveRgw0CXRQzGvckVpZgoRkOlxyOFXK376Bfu
-         c4uTcnCdWsUmm1swh7MfRQBZaYyiKxvpQEY/QOG+YeTgcLvXsr48d7DUKCgFAvZ8o2jI
-         QueTvK2cn87TAZHdE/Y1Y9soncZT+36uGxdxo=
+	id S1754191Ab0LIIH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 03:07:29 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47919 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169Ab0LIIH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 03:07:28 -0500
+Date: Thu, 9 Dec 2010 08:07:10 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1012090804470.22839@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Thu, 9 Dec 2010 09:06:22 +0100
-Message-ID: <AANLkTim9P7vpxLOPcRUeEyhe3g4PATK6Fq5UqN3KW6iA@mail.gmail.com>
-Subject: Re: linux-next: Tree for December (Reverts in tip tree)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-while looking over Stehen's "ChangeLog" from [1]:
+Hi Linus,
 
-"...The tip tree still has its build failures so I have reverted 3 commits..."
+didn't see much point in queueing these up for a longer period of time, 
+they are all fairly small and make sense.
 
-This are the patches:
+The use after free is from the vblank leak fixing, so since nobody noticed 
+we probably don't hit the error path so often, the AGP fix is 
+reported/tested in k.org, and the output renames has no userspace 
+effect in case anyone wonders.
 
-Revert "perf, arch: Cleanup perf-pmu init vs lockup-detector"
-Revert "x86, nmi_watchdog: Remove the old nmi_watchdog"
-Revert "x86, nmi_watchdog: Remove all stub function calls from old nmi_watchdog"
+Dave.
 
-The first time they have to be reverted was in next-20101130 [2].
-Just curious, Is this going to be fixed?
-Are there patches around for testing?
-Don't misunderstand me, the solution is not vitally important to me :-).
+The following changes since commit 6313e3c21743cc88bb5bd8aa72948ee1e83937b6:
 
-Regards,
-- Sedat -
+  Merge branches 'x86-fixes-for-linus', 'perf-fixes-for-linus' and 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-12-08 06:40:59 -0800)
 
-[1] http://lkml.org/lkml/2010/12/8/517
-[2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=shortlog;h=refs/tags/next-20101130
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (2):
+      drm/kms: remove spaces from connector names (v2)
+      drm/radeon/kms: don't apply 7xx HDP flush workaround on AGP
+
+Dan Carpenter (1):
+      drm: use after free in drm_queue_vblank_event()
+
+ drivers/gpu/drm/drm_crtc.c    |   10 +++++-----
+ drivers/gpu/drm/drm_irq.c     |    4 ++--
+ drivers/gpu/drm/radeon/r600.c |   11 ++++++++---
+ 3 files changed, 15 insertions(+), 10 deletions(-)
