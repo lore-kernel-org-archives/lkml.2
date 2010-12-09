@@ -1,43 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab0LIR0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:26:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55817 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755770Ab0LIR0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:26:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
-   d="scan'208";a="685558436"
-From: Mark Allyn <mark.a.allyn@intel.com>
-To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
-        alan@linux.intel.com, dmitry.kasatkin@nokia.com
-Subject: [PATCH 11/11] sep: eliminate kernel crash due to null parameter in dma_alloc_coherent
-Date: Thu,  9 Dec 2010 09:32:53 -0800
-Message-Id: <1291915973-18696-1-git-send-email-mark.a.allyn@intel.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1755738Ab0LIR2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:28:42 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:57140
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753944Ab0LIR2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:28:41 -0500
+Date: Thu, 9 Dec 2010 17:28:43 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: LSM <linux-security-module@vger.kernel.org>
+Cc: containers@lists.linux-foundation.org, Kees Cook <kees.cook@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH 2/4] security:  Make capabilities relative to the user
+ namespace.
+Message-ID: <20101209172843.GA10155@mail.hallyn.com>
+References: <20101209172027.GA10085@mail.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101209172027.GA10085@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
----
- drivers/staging/sep/sep_driver.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+- Introduce ns_capable to test for a capability in a non-default
+  user namespace.
+- Teach cap_capable to handle capabilities in a non-default
+  user namespace.
 
-diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index bb42b04..2681fcf 100644
---- a/drivers/staging/sep/sep_driver.c
-+++ b/drivers/staging/sep/sep_driver.c
-@@ -3442,7 +3442,7 @@ static int __devinit sep_probe(struct pci_dev *pdev,
+The motivation is to get to the unprivileged creation of new
+namespaces.  It looks like this gets us 90% of the way there, with
+only potential uid confusion issues left.
+
+I still need to handle getting all caps after creation but otherwise I
+think I have a good starter patch that achieves all of your goals.
+
+Changelog:
+	11/05/2010: [serge] add apparmor
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ include/linux/capability.h |    7 +++++--
+ include/linux/security.h   |   12 +++++++-----
+ kernel/capability.c        |   22 ++++++++++++++++++++--
+ security/apparmor/lsm.c    |    5 +++--
+ security/commoncap.c       |   40 +++++++++++++++++++++++++++++++++-------
+ security/security.c        |   12 ++++++------
+ security/selinux/hooks.c   |   14 +++++++++-----
+ 7 files changed, 83 insertions(+), 29 deletions(-)
+
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 90012b9..cc3e976 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -541,7 +541,7 @@ extern const kernel_cap_t __cap_init_eff_set;
+  *
+  * Note that this does not set PF_SUPERPRIV on the task.
+  */
+-#define has_capability(t, cap) (security_real_capable((t), (cap)) == 0)
++#define has_capability(t, cap) (security_real_capable((t), &init_user_ns, (cap)) == 0)
+ 
+ /**
+  * has_capability_noaudit - Determine if a task has a superior capability available (unaudited)
+@@ -555,9 +555,12 @@ extern const kernel_cap_t __cap_init_eff_set;
+  * Note that this does not set PF_SUPERPRIV on the task.
+  */
+ #define has_capability_noaudit(t, cap) \
+-	(security_real_capable_noaudit((t), (cap)) == 0)
++	(security_real_capable_noaudit((t), &init_user_ns, (cap)) == 0)
+ 
++struct user_namespace;
++extern struct user_namespace init_user_ns;
+ extern int capable(int cap);
++extern int ns_capable(struct user_namespace *ns, int cap);
+ 
+ /* audit system wants to get cap info from files as well */
+ struct dentry;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 39f5b7e..9e05b08 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -46,13 +46,14 @@
+ 
+ struct ctl_table;
+ struct audit_krule;
++struct user_namespace;
+ 
+ /*
+  * These functions are in security/capability.c and are used
+  * as the default capabilities functions
+  */
+ extern int cap_capable(struct task_struct *tsk, const struct cred *cred,
+-		       int cap, int audit);
++		       struct user_namespace *ns, int cap, int audit);
+ extern int cap_settime(struct timespec *ts, struct timezone *tz);
+ extern int cap_ptrace_access_check(struct task_struct *child, unsigned int mode);
+ extern int cap_ptrace_traceme(struct task_struct *parent);
+@@ -1258,6 +1259,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	credentials.
+  *	@tsk contains the task_struct for the process.
+  *	@cred contains the credentials to use.
++ *      @ns contains the user namespace we want the capability in
+  *	@cap contains the capability <include/linux/capability.h>.
+  *	@audit: Whether to write an audit message or not
+  *	Return 0 if the capability is granted for @tsk.
+@@ -1386,7 +1388,7 @@ struct security_operations {
+ 		       const kernel_cap_t *inheritable,
+ 		       const kernel_cap_t *permitted);
+ 	int (*capable) (struct task_struct *tsk, const struct cred *cred,
+-			int cap, int audit);
++			struct user_namespace *ns, int cap, int audit);
+ 	int (*sysctl) (struct ctl_table *table, int op);
+ 	int (*quotactl) (int cmds, int type, int id, struct super_block *sb);
+ 	int (*quota_on) (struct dentry *dentry);
+@@ -1668,9 +1670,9 @@ int security_capset(struct cred *new, const struct cred *old,
+ 		    const kernel_cap_t *effective,
+ 		    const kernel_cap_t *inheritable,
+ 		    const kernel_cap_t *permitted);
+-int security_capable(int cap);
+-int security_real_capable(struct task_struct *tsk, int cap);
+-int security_real_capable_noaudit(struct task_struct *tsk, int cap);
++int security_capable(struct user_namespace *ns, int cap);
++int security_real_capable(struct task_struct *tsk, struct user_namespace *ns, int cap);
++int security_real_capable_noaudit(struct task_struct *tsk, struct user_namespace *ns, int cap);
+ int security_sysctl(struct ctl_table *table, int op);
+ int security_quotactl(int cmds, int type, int id, struct super_block *sb);
+ int security_quota_on(struct dentry *dentry);
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 2f05303..744dd6e 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -14,6 +14,7 @@
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
+ #include <linux/pid_namespace.h>
++#include <linux/user_namespace.h>
+ #include <asm/uaccess.h>
+ 
+ /*
+@@ -301,15 +302,32 @@ error:
+  */
+ int capable(int cap)
+ {
++	return ns_capable(&init_user_ns, cap);
++}
++EXPORT_SYMBOL(capable);
++
++/**
++ * ns_capable - Determine if the current task has a superior capability in effect
++ * @ns:  The usernamespace we want the capability in
++ * @cap: The capability to be tested for
++ *
++ * Return true if the current task has the given superior capability currently
++ * available for use, false if not.
++ *
++ * This sets PF_SUPERPRIV on the task if the capability is available on the
++ * assumption that it's about to be used.
++ */
++int ns_capable(struct user_namespace *ns, int cap)
++{
+ 	if (unlikely(!cap_valid(cap))) {
+ 		printk(KERN_CRIT "capable() called with invalid cap=%u\n", cap);
+ 		BUG();
  	}
  
- 	sep->rar_size = FAKE_RAR_SIZE;
--	sep->rar_addr = dma_alloc_coherent(NULL,
-+	sep->rar_addr = dma_alloc_coherent(&sep->pdev->dev,
- 		sep->rar_size, &sep->rar_bus, GFP_KERNEL);
- 	if (sep->rar_addr == NULL) {
- 		dev_warn(&sep->pdev->dev, "can't allocate mfld rar\n");
+-	if (security_capable(cap) == 0) {
++	if (security_capable(ns, cap) == 0) {
+ 		current->flags |= PF_SUPERPRIV;
+ 		return 1;
+ 	}
+ 	return 0;
+ }
+-EXPORT_SYMBOL(capable);
++EXPORT_SYMBOL(ns_capable);
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index fa778a7..00d227f 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -22,6 +22,7 @@
+ #include <linux/ctype.h>
+ #include <linux/sysctl.h>
+ #include <linux/audit.h>
++#include <linux/user_namespace.h>
+ #include <net/sock.h>
+ 
+ #include "include/apparmor.h"
+@@ -137,11 +138,11 @@ static int apparmor_capget(struct task_struct *target, kernel_cap_t *effective,
+ }
+ 
+ static int apparmor_capable(struct task_struct *task, const struct cred *cred,
+-			    int cap, int audit)
++			    struct user_namespace *ns, int cap, int audit)
+ {
+ 	struct aa_profile *profile;
+ 	/* cap_capable returns 0 on success, else -EPERM */
+-	int error = cap_capable(task, cred, cap, audit);
++	int error = cap_capable(task, cred, ns, cap, audit);
+ 	if (!error) {
+ 		profile = aa_cred_profile(cred);
+ 		if (!unconfined(profile))
+diff --git a/security/commoncap.c b/security/commoncap.c
+index e58b5d8..dcf2bb4 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -27,6 +27,7 @@
+ #include <linux/sched.h>
+ #include <linux/prctl.h>
+ #include <linux/securebits.h>
++#include <linux/user_namespace.h>
+ 
+ /*
+  * If a non-root user executes a setuid-root binary in
+@@ -68,6 +69,7 @@ EXPORT_SYMBOL(cap_netlink_recv);
+  * cap_capable - Determine whether a task has a particular effective capability
+  * @tsk: The task to query
+  * @cred: The credentials to use
++ * @ns:  The user namespace in which we need the capability
+  * @cap: The capability to check for
+  * @audit: Whether to write an audit message or not
+  *
+@@ -79,10 +81,32 @@ EXPORT_SYMBOL(cap_netlink_recv);
+  * cap_has_capability() returns 0 when a task has a capability, but the
+  * kernel's capable() and has_capability() returns 1 for this case.
+  */
+-int cap_capable(struct task_struct *tsk, const struct cred *cred, int cap,
+-		int audit)
++int cap_capable(struct task_struct *tsk, const struct cred *cred,
++		struct user_namespace *targ_ns, int cap, int audit)
+ {
+-	return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
++	for (;;) {
++		/* Do we have the necessary capabilities? */
++		if (targ_ns == cred->user->user_ns)
++			return cap_raised(cred->cap_effective, cap) ? 0 : -EPERM;
++
++		/* The creator of the user namespace has all caps. */
++		if (targ_ns->creator == cred->user)
++			return 0;
++
++		/* Have we tried all of the parent namespaces? */
++		if (targ_ns == &init_user_ns)
++			return -EPERM;
++
++		/* If you have the capability in a parent user ns you have it
++		 * in the over all children user namespaces as well, so see
++		 * if this process has the capability in the parent user
++		 * namespace.
++		 */
++		targ_ns = targ_ns->creator->user_ns;
++	}
++
++	/* We never get here */
++	return -EPERM;
+ }
+ 
+ /**
+@@ -177,7 +201,8 @@ static inline int cap_inh_is_capped(void)
+ 	/* they are so limited unless the current task has the CAP_SETPCAP
+ 	 * capability
+ 	 */
+-	if (cap_capable(current, current_cred(), CAP_SETPCAP,
++	if (cap_capable(current, current_cred(),
++			current_cred()->user->user_ns, CAP_SETPCAP,
+ 			SECURITY_CAP_AUDIT) == 0)
+ 		return 0;
+ 	return 1;
+@@ -829,7 +854,8 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+ 		     & (new->securebits ^ arg2))			/*[1]*/
+ 		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/
+ 		    || (arg2 & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
+-		    || (cap_capable(current, current_cred(), CAP_SETPCAP,
++		    || (cap_capable(current, current_cred(),
++				    current_cred()->user->user_ns, CAP_SETPCAP,
+ 				    SECURITY_CAP_AUDIT) != 0)		/*[4]*/
+ 			/*
+ 			 * [1] no changing of bits that are locked
+@@ -894,7 +920,7 @@ int cap_vm_enough_memory(struct mm_struct *mm, long pages)
+ {
+ 	int cap_sys_admin = 0;
+ 
+-	if (cap_capable(current, current_cred(), CAP_SYS_ADMIN,
++	if (cap_capable(current, current_cred(), &init_user_ns, CAP_SYS_ADMIN,
+ 			SECURITY_CAP_NOAUDIT) == 0)
+ 		cap_sys_admin = 1;
+ 	return __vm_enough_memory(mm, pages, cap_sys_admin);
+@@ -921,7 +947,7 @@ int cap_file_mmap(struct file *file, unsigned long reqprot,
+ 	int ret = 0;
+ 
+ 	if (addr < dac_mmap_min_addr) {
+-		ret = cap_capable(current, current_cred(), CAP_SYS_RAWIO,
++		ret = cap_capable(current, current_cred(), &init_user_ns, CAP_SYS_RAWIO,
+ 				  SECURITY_CAP_AUDIT);
+ 		/* set PF_SUPERPRIV if it turns out we allow the low mmap */
+ 		if (ret == 0)
+diff --git a/security/security.c b/security/security.c
+index a774256..a7c1a1f 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -172,30 +172,30 @@ int security_capset(struct cred *new, const struct cred *old,
+ 				    effective, inheritable, permitted);
+ }
+ 
+-int security_capable(int cap)
++int security_capable(struct user_namespace *ns, int cap)
+ {
+-	return security_ops->capable(current, current_cred(), cap,
++	return security_ops->capable(current, current_cred(), ns, cap,
+ 				     SECURITY_CAP_AUDIT);
+ }
+ 
+-int security_real_capable(struct task_struct *tsk, int cap)
++int security_real_capable(struct task_struct *tsk, struct user_namespace *ns, int cap)
+ {
+ 	const struct cred *cred;
+ 	int ret;
+ 
+ 	cred = get_task_cred(tsk);
+-	ret = security_ops->capable(tsk, cred, cap, SECURITY_CAP_AUDIT);
++	ret = security_ops->capable(tsk, cred, ns, cap, SECURITY_CAP_AUDIT);
+ 	put_cred(cred);
+ 	return ret;
+ }
+ 
+-int security_real_capable_noaudit(struct task_struct *tsk, int cap)
++int security_real_capable_noaudit(struct task_struct *tsk, struct user_namespace *ns, int cap)
+ {
+ 	const struct cred *cred;
+ 	int ret;
+ 
+ 	cred = get_task_cred(tsk);
+-	ret = security_ops->capable(tsk, cred, cap, SECURITY_CAP_NOAUDIT);
++	ret = security_ops->capable(tsk, cred, ns, cap, SECURITY_CAP_NOAUDIT);
+ 	put_cred(cred);
+ 	return ret;
+ }
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 65fa8bf..b9a6a53 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -77,6 +77,7 @@
+ #include <linux/mutex.h>
+ #include <linux/posix-timers.h>
+ #include <linux/syslog.h>
++#include <linux/user_namespace.h>
+ 
+ #include "avc.h"
+ #include "objsec.h"
+@@ -1423,6 +1424,7 @@ static int current_has_perm(const struct task_struct *tsk,
+ /* Check whether a task is allowed to use a capability. */
+ static int task_has_capability(struct task_struct *tsk,
+ 			       const struct cred *cred,
++			       struct user_namespace *ns,
+ 			       int cap, int audit)
+ {
+ 	struct common_audit_data ad;
+@@ -1851,15 +1853,15 @@ static int selinux_capset(struct cred *new, const struct cred *old,
+  */
+ 
+ static int selinux_capable(struct task_struct *tsk, const struct cred *cred,
+-			   int cap, int audit)
++			   struct user_namespace *ns, int cap, int audit)
+ {
+ 	int rc;
+ 
+-	rc = cap_capable(tsk, cred, cap, audit);
++	rc = cap_capable(tsk, cred, ns, cap, audit);
+ 	if (rc)
+ 		return rc;
+ 
+-	return task_has_capability(tsk, cred, cap, audit);
++	return task_has_capability(tsk, cred, ns, cap, audit);
+ }
+ 
+ static int selinux_sysctl_get_sid(ctl_table *table, u16 tclass, u32 *sid)
+@@ -2012,7 +2014,8 @@ static int selinux_vm_enough_memory(struct mm_struct *mm, long pages)
+ {
+ 	int rc, cap_sys_admin = 0;
+ 
+-	rc = selinux_capable(current, current_cred(), CAP_SYS_ADMIN,
++	rc = selinux_capable(current, current_cred(),
++			     &init_user_ns, CAP_SYS_ADMIN,
+ 			     SECURITY_CAP_NOAUDIT);
+ 	if (rc == 0)
+ 		cap_sys_admin = 1;
+@@ -2826,7 +2829,8 @@ static int selinux_inode_getsecurity(const struct inode *inode, const char *name
+ 	 * and lack of permission just means that we fall back to the
+ 	 * in-core context value, not a denial.
+ 	 */
+-	error = selinux_capable(current, current_cred(), CAP_MAC_ADMIN,
++	error = selinux_capable(current, current_cred(),
++				&init_user_ns, CAP_MAC_ADMIN,
+ 				SECURITY_CAP_NOAUDIT);
+ 	if (!error)
+ 		error = security_sid_to_context_force(isec->sid, &context,
 -- 
-1.6.3.3
+1.7.2.3
 
