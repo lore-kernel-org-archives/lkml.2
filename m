@@ -1,37 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab0LIRJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:09:36 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:39702 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab0LIRJe (ORCPT
+	id S1754823Ab0LIRMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:12:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53817 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab0LIRMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:09:34 -0500
+	Thu, 9 Dec 2010 12:12:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=TwOMSFVkUGGXSMN2qF/b37J1BA6aNaBUCkPEFDcLSlxu8iIlmmzf/Y0k/Uj8x9iixM
-         WkB7ipMG6mmBvH7ATaisecR7LAFwfrt4YvdPZt3NBsoqQLn1dIWyza8qVqlEBHYKHebp
-         Up0fP5pXGWvKudUKlycemQAGLd8xdFBA6Xkck=
-Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
+        b=RH832UKb/2GjgqnwZG15Kk+YFF41B3FscpjreeWplVnQU/TYnd/3mSuCRmwzqpy2Uc
+         S4mmar/xSYm1zMuq4cRCMsl1DKgj0askzONcoIkmSDSNVqj7/TDUvQ2sU9z0qtEqItxV
+         /Zb+yjsnMplNLmMISLa9yE6y7HF/TeTTyowNY=
+Subject: Re: [PATCH] Document the kernel_recvmsg() function
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Florian Mickler <florian@mickler.org>,
-        Ingo Molnar <mingo@elte.hu>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <1291914474.4063.68.camel@edumazet-laptop>
-References: <20101103062609.GB31163@dastard>
-	 <1288768402.2467.665.camel@edumazet-laptop> <20101103103448.GA9169@dastard>
-	 <20101103112936.GB9169@dastard> <20101104002140.GA13830@dastard>
-	 <20101104054718.GC5210@cr0.nay.redhat.com>
-	 <20101208100245.01cf23c5@schatten.dmk.lab>
-	 <20101208134116.GA16923@redhat.com> <20101208134712.GB16923@redhat.com>
-	 <20101208140822.GA18681@redhat.com>  <20101209164748.GA3218@hack>
-	 <1291914474.4063.68.camel@edumazet-laptop>
+To: Martin Lucina <mato@kotelna.sk>
+Cc: linux-kernel@vger.kernel.org, Martin Sustrik <sustrik@250bpm.com>
+In-Reply-To: <20101209161734.GA16822@dezo.moloch.sk>
+References: <20101209161734.GA16822@dezo.moloch.sk>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 18:09:29 +0100
-Message-ID: <1291914569.4063.72.camel@edumazet-laptop>
+Date: Thu, 09 Dec 2010 18:12:12 +0100
+Message-ID: <1291914732.4063.75.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
@@ -39,30 +30,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 09 décembre 2010 à 18:07 +0100, Eric Dumazet a écrit :
-> Le vendredi 10 décembre 2010 à 00:47 +0800, Américo Wang a écrit :
+Le jeudi 09 décembre 2010 à 17:17 +0100, Martin Lucina a écrit :
+> Hi,
 > 
-> > Yeah, there is no point that a zombie can trigger a BUG_ON in kenrel.
-> > But it is still interesting to know why it becomes a zombie...
-> > 
-> 
-> A zombie is very easy to get.
-> 
-> Technically speaking, all processes die and become zombies, unless
-> parent said : signal(SIGCLD, SIG_IGN) before fork()
-> 
-> The parent is buggy (sudo in this case ?) and doesnt call wait() to
-> 'free' one of its children.
-> 
+> so, today we spent all day figuring out how the kernel_sendmsg() function
+> *actually* works. This patch adds some documentation to help the next poor
+> sod.
 > 
 
-Before you ask :)
+Network patches should be sent to netdev@vger.kernel.org and David
+Miller, as mentioned in MAINTAINERS file :
 
-If the parent dies before the child, task is re-parented to init.
+NETWORKING [GENERAL]
+M:      "David S. Miller" <davem@davemloft.net>
+L:      netdev@vger.kernel.org
+W:      http://www.linuxfoundation.org/en/Net
+W:      http://patchwork.ozlabs.org/project/netdev/list/
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6.git
+S:      Maintained
+F:      net/
+F:      include/net/
+F:      include/linux/in.h
+F:      include/linux/net.h
+F:      include/linux/netdevice.h
 
-Then, with namespaces, I dont know what happens (is there one init per
-namespace ?)
 
 
+> -mato
+> 
+> From b29ccddeec4b782d710ffe34e0e5e4a0f5e9c24b Mon Sep 17 00:00:00 2001
+> From: Martin Lucina <mato@kotelna.sk>
+> Date: Thu, 9 Dec 2010 17:11:18 +0100
+> Subject: [PATCH] Document the kernel_recvmsg() function
+> 
+> Signed-off-by: Martin Lucina <mato@kotelna.sk>
+> ---
+>  net/socket.c |   15 +++++++++++++++
+>  1 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/socket.c b/net/socket.c
+> index 3ca2fd9..b17333d 100644
+> --- a/net/socket.c
+> +++ b/net/socket.c
+> @@ -732,6 +732,21 @@ static int sock_recvmsg_nosec(struct socket *sock, struct msghdr *msg,
+>  	return ret;
+>  }
+>  
+> +/**
+> + * kernel_recvmsg() - Receive a message from a socket (kernel space)
+
+no need for ()
+
+> + * @sock:       The socket to receive the message from
+> + * @msg:        Received message
+> + * @vec:        Input s/g array for message data
+> + * @num:        Size of input s/g array
+> + * @size:       Number of bytes to read
+> + * @flags:      Message flags (MSG_DONTWAIT, etc...)
+> + *
+> + * On return the msg structure contains the scatter/gather array passed in the
+> + * vec argument. The array is modified so that it consists of the unfilled
+> + * portion of the original array.
+> + *
+> + * The returned value is the total number of bytes received, or an error.
+> + */
+>  int kernel_recvmsg(struct socket *sock, struct msghdr *msg,
+>  		   struct kvec *vec, size_t num, size_t size, int flags)
+>  {
 
 
