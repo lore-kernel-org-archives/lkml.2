@@ -1,149 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab0LIEWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 23:22:39 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:38185 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab0LIEWh (ORCPT
+	id S1754055Ab0LIEYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 23:24:18 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:42630 "EHLO
+	denmail01.apm.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752168Ab0LIEYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 23:22:37 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6191"; a="66084692"
-Message-ID: <4D00598C.3000306@codeaurora.org>
-Date: Wed, 08 Dec 2010 20:22:36 -0800
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Gregory Bean <gbean@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dima@android.com>,
-        =?windows-1252?Q?Arve_Hj=3Fnnev=3Fg?= <arve@android.com>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/6] msm: timer: SMP timer support for msm
-References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>	<1291782501-3909-5-git-send-email-johlstei@codeaurora.org> <20101208163956.GO9777@n2100.arm.linux.org.uk>
-In-Reply-To: <20101208163956.GO9777@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Dec 2010 23:24:16 -0500
+Date: Thu, 9 Dec 2010 09:54:01 +0530
+From: Rupjyoti Sarmah <rsarmah@amcc.com>
+Message-Id: <201012090424.oB94O1DV006463@amcc.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5] ppc44x:PHY fixup for USB on canyonlands board
+Cc: rsarmah@apm.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> On Tue, Dec 07, 2010 at 08:28:19PM -0800, Jeff Ohlstein wrote:
->> Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
->
-> I think Thomas' comments still apply to this patch.  In addition:
->
->> @@ -65,49 +78,67 @@ struct msm_clock {
->>  	void __iomem                *regbase;
->>  	uint32_t                    freq;
->>  	uint32_t                    shift;
->> +	void                        *global_counter;
->> +	void                        *local_counter;
->
-> These seem to be mmio addresses, so they should be 'void __iomem *' not
-> just 'void *'.
->
+This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
 
-Done.
+Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+---
+changes from previous version:
+-- dts node correction, removed the address and size parameters
+-- Kconfig file updated removing dependency on PPC44x_SIMPLE
+-- 44x prefixes in the function names changed
+-- Error paths updated in canyonlands.c
 
->> +enum {
->> +	MSM_CLOCK_GPT,
->> +	MSM_CLOCK_DGT,
->> +	NR_TIMERS,
->> +};
->
-> If these are supposed to be indexes to msm_clocks[], then please use
-> them as explicit array initializers in there - it adds useful
-> documentation so its not necessary to search around to find out
-> what's going on.
->
+ arch/powerpc/boot/dts/canyonlands.dts      |   11 +++
+ arch/powerpc/platforms/44x/44x.h           |    4 +
+ arch/powerpc/platforms/44x/Kconfig         |    1 -
+ arch/powerpc/platforms/44x/Makefile        |    1 +
+ arch/powerpc/platforms/44x/canyonlands.c   |  125 ++++++++++++++++++++++++++++
+ arch/powerpc/platforms/44x/ppc44x_simple.c |    1 -
+ 6 files changed, 141 insertions(+), 2 deletions(-)
+ create mode 100644 arch/powerpc/platforms/44x/canyonlands.c
 
-Yes that is what they are for, done.
-
->> -static cycle_t msm_gpt_read(struct clocksource *cs)
->> +static cycle_t msm_read_timer_count(struct clocksource *cs)
->>  {
->> -	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
->> +	struct msm_clock *clk = container_of(cs, struct msm_clock, clocksource);
->> +
->> +	return readl(clk->global_counter) >> clk->shift;
->>  }
->
-> Err.  This is what the core clocksource code does:
->
->         cycle_now = tc->cc->read(tc->cc);
->
->         /* calculate the delta since the last timecounter_read_delta(): */
->         cycle_delta = (cycle_now - tc->cycle_last) & tc->cc->mask;
->
->         /* convert to nanoseconds: */
->         ns_offset = cyclecounter_cyc2ns(tc->cc, cycle_delta);
->
-> static inline u64 cyclecounter_cyc2ns(const struct cyclecounter *cc,
->                                       cycle_t cycles)
-> {
->         u64 ret = (u64)cycles;
->         ret = (ret * cc->mult) >> cc->shift;
->         return ret;
->
-> So doesn't this result in shifting left twice?
->
-Seems so, fixed.
->> +#ifdef CONFIG_SMP
->> +void local_timer_setup(struct clock_event_device *evt)
->> +{
->> +	unsigned long flags;
->> +	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
->> +
->> +	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
->> +
->> +	if (!local_clock_event) {
->> +		writel(0, clock->regbase  + TIMER_ENABLE);
->> +		writel(0, clock->regbase + TIMER_CLEAR);
->> +		writel(~0, clock->regbase + TIMER_MATCH_VAL);
->> +	}
->> +	evt->irq = clock->irq.irq;
->> +	evt->name = "local_timer";
->> +	evt->features = CLOCK_EVT_FEAT_ONESHOT;
->> +	evt->rating = clock->clockevent.rating;
->> +	evt->set_mode = msm_timer_set_mode;
->> +	evt->set_next_event = msm_timer_set_next_event;
->> +	evt->shift = clock->clockevent.shift;
->> +	evt->mult = div_sc(clock->freq, NSEC_PER_SEC, evt->shift);
->> +	evt->max_delta_ns =
->> +		clockevent_delta2ns(0xf0000000 >> clock->shift, evt);
->> +	evt->min_delta_ns = clockevent_delta2ns(4, evt);
->> +	evt->cpumask = cpumask_of(smp_processor_id());
->> +
->> +	local_clock_event = evt;
->> +
->> +	local_irq_save(flags);
->> +	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
->> +	local_irq_restore(flags);
->
-> I can't make out what the situation is here.  Are you using what is a
-> local timer on CPU0 as a global timer?
->
-Yes, sorry for the lack of clarity here, I will add better commit text
-explaining it. The chip has a set of timers private to each core. They are
-mapped at the same address, and which one you access is dependent on 
-which core
-you are running on. However, since Linux wants a non-percpu clocksource 
-that it
-can read from either core, I have decided to designate cpu 0's timer as the
-global timer. So, we ought to configure the local clock_event_device to 
-be the
-same as whichever timer we are using on cpu0.
-
--Jeff
-
+diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+index a303703..8ff1f3f 100644
+--- a/arch/powerpc/boot/dts/canyonlands.dts
++++ b/arch/powerpc/boot/dts/canyonlands.dts
+@@ -224,6 +224,11 @@
+ 					};
+ 				};
+ 
++				cpld@2,0 {
++					compatible = "amcc,ppc460ex-bcsr";
++					reg = <2 0x0 0x9>;
++				};
++
+ 				ndfc@3,0 {
+ 					compatible = "ibm,ndfc";
+ 					reg = <0x00000003 0x00000000 0x00002000>;
+@@ -320,6 +325,12 @@
+ 				interrupts = <0x3 0x4>;
+ 			};
+ 
++			GPIO0: gpio@ef600b00 {
++				compatible = "ibm,ppc4xx-gpio";
++				reg = <0xef600b00 0x00000048>;
++				gpio-controller;
++			};
++
+ 			ZMII0: emac-zmii@ef600d00 {
+ 				compatible = "ibm,zmii-460ex", "ibm,zmii";
+ 				reg = <0xef600d00 0x0000000c>;
+diff --git a/arch/powerpc/platforms/44x/44x.h b/arch/powerpc/platforms/44x/44x.h
+index dbc4d2b..63f703e 100644
+--- a/arch/powerpc/platforms/44x/44x.h
++++ b/arch/powerpc/platforms/44x/44x.h
+@@ -4,4 +4,8 @@
+ extern u8 as1_readb(volatile u8 __iomem  *addr);
+ extern void as1_writeb(u8 data, volatile u8 __iomem *addr);
+ 
++#define GPIO0_OSRH	0xC
++#define GPIO0_TSRH	0x14
++#define GPIO0_ISR1H	0x34
++
+ #endif /* __POWERPC_PLATFORMS_44X_44X_H */
+diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
+index 0f979c5..f485fc5 100644
+--- a/arch/powerpc/platforms/44x/Kconfig
++++ b/arch/powerpc/platforms/44x/Kconfig
+@@ -115,7 +115,6 @@ config CANYONLANDS
+ 	bool "Canyonlands"
+ 	depends on 44x
+ 	default n
+-	select PPC44x_SIMPLE
+ 	select 460EX
+ 	select PCI
+ 	select PPC4xx_PCI_EXPRESS
+diff --git a/arch/powerpc/platforms/44x/Makefile b/arch/powerpc/platforms/44x/Makefile
+index 82ff326..6854e73 100644
+--- a/arch/powerpc/platforms/44x/Makefile
++++ b/arch/powerpc/platforms/44x/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_WARP)	+= warp.o
+ obj-$(CONFIG_XILINX_VIRTEX_5_FXT) += virtex.o
+ obj-$(CONFIG_XILINX_ML510) += virtex_ml510.o
+ obj-$(CONFIG_ISS4xx)	+= iss4xx.o
++obj-$(CONFIG_CANYONLANDS)+= canyonlands.o
+diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
+new file mode 100644
+index 0000000..9639709
+--- /dev/null
++++ b/arch/powerpc/platforms/44x/canyonlands.c
+@@ -0,0 +1,125 @@
++/*
++ * This contain platform specific code for APM PPC460EX based Canyonlands
++ * board.
++ *
++ * Copyright (c) 2010, Applied Micro Circuits Corporation
++ * Author: Rupjyoti Sarmah <rsarmah@apm.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ */
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <asm/pci-bridge.h>
++#include <asm/ppc4xx.h>
++#include <asm/udbg.h>
++#include <asm/uic.h>
++#include <linux/of_platform.h>
++#include <linux/delay.h>
++#include "44x.h"
++
++#define BCSR_USB_EN	0x11
++
++static __initdata struct of_device_id ppc460ex_of_bus[] = {
++	{ .compatible = "ibm,plb4", },
++	{ .compatible = "ibm,opb", },
++	{ .compatible = "ibm,ebc", },
++	{ .compatible = "simple-bus", },
++	{},
++};
++
++static int __init ppc460ex_device_probe(void)
++{
++	of_platform_bus_probe(NULL, ppc460ex_of_bus, NULL);
++
++	return 0;
++}
++machine_device_initcall(canyonlands, ppc460ex_device_probe);
++
++/* Using this code only for the Canyonlands board.  */
++
++static int __init ppc460ex_probe(void)
++{
++	unsigned long root = of_get_flat_dt_root();
++	if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
++		ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
++		return 1;
++		}
++	return 0;
++}
++
++/* USB PHY fixup code on Canyonlands kit. */
++
++static int __init ppc460ex_canyonlands_fixup(void)
++{
++	u8 __iomem *bcsr ;
++	void __iomem *vaddr;
++	struct device_node *np;
++	int ret = 0;
++
++	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
++	if (!np) {
++		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
++		return -ENODEV;
++	}
++
++	bcsr = of_iomap(np, 0);
++	of_node_put(np);
++
++	if (!bcsr) {
++		printk(KERN_CRIT "Could not remap bcsr\n");
++		ret = -ENODEV;
++	}
++
++	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
++	vaddr = of_iomap(np, 0);
++	if (!vaddr) {
++		printk(KERN_CRIT "Could not get gpio node address\n");
++		ret = -ENODEV;
++		goto err_bcsr;
++	}
++	/* Disable USB, through the BCSR7 bits */
++	setbits8(&bcsr[7], BCSR_USB_EN);
++
++	/* Wait for a while after reset */
++	msleep(100);
++
++	/* Enable USB here */
++	clrbits8(&bcsr[7], BCSR_USB_EN);
++
++	/*
++	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
++	 * source after USB reset. In this configuration gpio16 will be
++	 * USB2HStop and gpio19 will be USB2DStop. For more details refer to
++	 * table 34-7 of PPC460EX user manual.
++	 */
++	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
++	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
++	of_node_put(np);
++err_bcsr:
++	iounmap(bcsr);
++	return ret;
++}
++machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
++define_machine(canyonlands) {
++	.name = "Canyonlands",
++	.probe = ppc460ex_probe,
++	.progress = udbg_progress,
++	.init_IRQ = uic_init_tree,
++	.get_irq = uic_get_irq,
++	.restart = ppc4xx_reset_system,
++	.calibrate_decr = generic_calibrate_decr,
++};
+diff --git a/arch/powerpc/platforms/44x/ppc44x_simple.c b/arch/powerpc/platforms/44x/ppc44x_simple.c
+index 7ddcba3..c81c19c 100644
+--- a/arch/powerpc/platforms/44x/ppc44x_simple.c
++++ b/arch/powerpc/platforms/44x/ppc44x_simple.c
+@@ -53,7 +53,6 @@ static char *board[] __initdata = {
+ 	"amcc,arches",
+ 	"amcc,bamboo",
+ 	"amcc,bluestone",
+-	"amcc,canyonlands",
+ 	"amcc,glacier",
+ 	"ibm,ebony",
+ 	"amcc,eiger",
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.5.6.3
 
