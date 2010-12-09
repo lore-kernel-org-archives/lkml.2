@@ -1,113 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0LITe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 14:34:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893Ab0LITe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 14:34:58 -0500
-Date: Thu, 9 Dec 2010 14:34:48 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Steve French <smfrench@gmail.com>
-Cc: Suresh Jayaraman <sjayaraman@suse.de>, Bernhard Walle <bernhard@bwalle.de>,
-        sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: Add information about noserverino
-Message-ID: <20101209143448.5c479e50@barsoom.rdu.redhat.com>
-In-Reply-To: <AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-	<20101206095725.78422138@tlielax.poochiereds.net>
-	<20101206101214.52a24415@tlielax.poochiereds.net>
-	<20101206163506.56232lqqhc5c3co4@webmail.df.eu>
-	<20101206103836.0714369a@tlielax.poochiereds.net>
-	<4D00C02C.4070006@suse.de>
-	<20101209070952.24793c23@barsoom.rdu.redhat.com>
-	<AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>
+	id S1756043Ab0LITme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 14:42:34 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:24516 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab0LITmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 14:42:32 -0500
+Subject: Re: 2.6.37-rc5: NULL pointer oops in
+ selinux_socket_unix_stream_connect
+From: Paul Moore <paul.moore@hp.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>,
+        NetDev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CFFF3F3.90100@goop.org>
+References: <4CFFF3F3.90100@goop.org>
+Content-Type: text/plain; charset="us-ascii"
+Organization: Hewlett Packard
+Date: Thu, 09 Dec 2010 14:42:26 -0500
+Message-ID: <1291923746.5339.20.camel@sifl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Dec 2010 12:26:39 -0600
-Steve French <smfrench@gmail.com> wrote:
-
-> On Thu, Dec 9, 2010 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> > On Thu, 09 Dec 2010 17:10:28 +0530
-> > Suresh Jayaraman <sjayaraman@suse.de> wrote:
-> >
-> >> On 12/06/2010 09:08 PM, Jeff Layton wrote:
-> >> > On Mon, 06 Dec 2010 16:35:06 +0100
-> >> > Bernhard Walle <bernhard@bwalle.de> wrote:
-> >> >
-> >> >>
-> >> >> Zitat von Jeff Layton <jlayton@redhat.com>:
-> >> >>
-> >> >>>
-> >> >>> I'm still not sure I like this patch however. It potentially means a
-> >> >>> lot of printk spam since these things have no ratelimiting. It also
-> >> >>> doesn't tell me anything about which server might be giving me grief.
-> >> >>>
-> >> >>> Maybe this should be turned into a cFYI?
-> >> >>
-> >> >> Well, if I see it in the kernel log, it doesn't matter if it's info or
-> >> >> something else.
-> >> >>
-> >> >>> The bottom line though is that running 32-bit applications that were
-> >> >>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
-> >> >>> idea. It would be nice to be able to alert users that things aren't
-> >> >>> working the way they expect, but I'm not sure this is the right place
-> >> >>> to do that.
-> >> >>
-> >> >> Well, but there *are* such application (in my case it was Softmaker Office
-> >> >> which is a proprietary word processor) and it's quite nice if you know
-> >> >> how you can workaround it when you encounter such a problem. That's all.
-> >> >>
-> >> >
-> >> > Sure...but this problem is not limited to CIFS. Many modern filesystems
-> >> > use 64-bit inodes. Running this application on XFS or NFS for instance
-> >> > is likely to give you the same trouble. You just hit it on CIFS because
-> >> > the server happened to give you a very large inode number.
-> >> >
-> >> > If we're going to add printk's for this situation, it probably ought to
-> >> > be in a more generic place.
-> >> >
-> >>
-> >> By generic place, did you mean at the VFS level? I think at VFS level,
-> >> there is little information about the Server or underlying fs and this
-> >> information doesn't seem too critical that VFS should warn/care much about.
-> >>
-> >> May be sticking to a cFYI along with Server detail is a good idea?
-> >>
-> > My poing was mainly that there's nothing special about CIFS in this
-> > regard, other than the fact that servers regularly send us inodes that
-> > are larger than 2^32. Why should we do this for cifs but not for nfs,
-> > xfs, ext4, etc?
-> >
-> > The filldir function gets a dentry as an argument, so it could
-> > reasonably generate a printk for this. I'm also not keen on
-> > the printk recommending noserverino for this. That has its own
-> > drawbacks.
-> >
-> > A cFYI for this sort of thing seems reasonable however.
+On Wed, 2010-12-08 at 13:09 -0800, Jeremy Fitzhardinge wrote:
+> I just got this oops in a freshly booted 2.6.37-rc5 Xen domain, while
+> sitting idle at the login prompt:
 > 
-> I agree that a cFYI is reasonable.  The next obvious question is: do
-> we need to add code to generate unique 32 bit inode numbers
-> that don't collide (as IIRC Samba does by xor the high and low 32
-> bits of the inode number) when the app can't support ino64
-> I would prefer not to go back to noserverino since that has worse
-> drawbacks.
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000210
+> IP: [<ffffffff811d55d4>] selinux_socket_unix_stream_connect+0x29/0xa0
+> PGD 1c99d067 PUD 1cb03067 PMD 0 
+> Oops: 0000 [#1] SMP 
+> last sysfs file: /sys/devices/system/cpu/sched_mc_power_savings
+> CPU 0 
+> Modules linked in: sunrpc dm_mirror dm_region_hash dm_log [last unloaded: scsi_wait_scan]
 > 
+> Pid: 2297, comm: at-spi-registry Not tainted 2.6.37-rc5+ #293 /
+> RIP: e030:[<ffffffff811d55d4>]  [<ffffffff811d55d4>] selinux_socket_unix_stream_connect+0x29/0xa0
+> RSP: e02b:ffff880006e7dd68  EFLAGS: 00010292
+> RAX: ffff88001d1ed8c0 RBX: ffff88001d06d9a0 RCX: 0000000000000022
+> RDX: ffff88001d1ed580 RSI: 0000000000000000 RDI: ffff88001b7d6ac0
+> RBP: ffff880006e7de18 R08: 00000000ffff0201 R09: ffff88001e78c968
+> R10: 000000001f47e9c2 R11: ffff88001fbf4400 R12: ffff88001d1ed8c0
+> R13: ffff88001d1ed580 R14: ffff88001ca00cc0 R15: 0000000000000000
+> FS:  00007fa643031920(0000) GS:ffff88001ff85000(0000) knlGS:0000000000000000
+> CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000210 CR3: 000000001d78a000 CR4: 0000000000002660
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process at-spi-registry (pid: 2297, threadinfo ffff880006e7c000, task ffff88001cdd1140)
+> Stack:
+>  ffff88001d4c0bc0 000000004cffecc5 ffff880006e7ddc8 ffffffff81028dc5
+>  ffff8800ffffffff 0001628b2ec3fe22 ffff880006e7dde8 ffff88001d1edb80
+>  0000000000000001 0000936a4da34099 0000000000000000 00000000000000fa
+> Call Trace:
+>  [<ffffffff81028dc5>] ? pvclock_clocksource_read+0x48/0xb1
+>  [<ffffffff810074ab>] ? xen_clocksource_read+0x20/0x22
+>  [<ffffffff81008fd9>] ? xen_spin_lock+0xc6/0xd9
+>  [<ffffffff811d1d1e>] security_unix_stream_connect+0x16/0x18
+>  [<ffffffff81484366>] unix_stream_connect+0x215/0x3ff
+>  [<ffffffff813f351d>] sys_connect+0x7a/0xa0
+>  [<ffffffff8108cd9d>] ? audit_syscall_entry+0x1c2/0x1ee
+>  [<ffffffff8100bb42>] system_call_fastpath+0x16/0x1b
+> Code: c9 c3 55 48 89 e5 41 55 41 54 53 48 81 ec 98 00 00 00 0f 1f 44 00 00 b9 22 00 00 00 48 8b 47 20 48 8b 76 20 48 8b 98 10 02 00 00 <4c> 8b a6 10 02 00 00 31 c0 4c 8b aa 10 02 00 00 4c 8d 85 50 ff 
+> RIP  [<ffffffff811d55d4>] selinux_socket_unix_stream_connect+0x29/0xa0
+>  RSP <ffff880006e7dd68>
+> CR2: 0000000000000210
+> ---[ end trace 50030b578c1ee27e ]---
+> 
+> This corresponds to:
+> 
+> (gdb) list *0xffffffff811d55d4
+> 0xffffffff811d55d4 is in selinux_socket_unix_stream_connect (/home/jeremy/git/upstream/security/selinux/hooks.c:3929).
+> 3924	static int selinux_socket_unix_stream_connect(struct socket *sock,
+> 3925						      struct socket *other,
+> 3926						      struct sock *newsk)
+> 3927	{
+> 3928		struct sk_security_struct *sksec_sock = sock->sk->sk_security;
+> 3929		struct sk_security_struct *sksec_other = other->sk->sk_security;
+> 3930		struct sk_security_struct *sksec_new = newsk->sk_security;
+> 3931		struct common_audit_data ad;
+> 3932		int err;
+> 3933	
+> 
+> 
+> The system is a somewhat out of date Fedora 13 with
+> selinux-policy-3.7.19-73.fc13.noarch and
+> selinux-policy-targeted-3.7.19-73.fc13.noarch installed.
+> 
+> I'm not sure what at-spi-registry is or what it is trying to do here.
+> The crash seems non-deterministic; I rebooted the domain without any issues.
+> 
+> Thanks,
+>     J
 
-Right, the fact that noserverino works around this is really just due
-to an implementation detail of iunique(). That should probably be
-discouraged as a solution since it's not guaranteed to be a workaround
-in the future.
+Thanks for the report.
 
-If we did add such a switch, I'd suggest that we pattern it after what
-NFS did for this. They added an "enable_ino64" module parameter a
-couple of years ago that defaults to "true".
+Unfortunately I don't have any great ideas off the top of my head but it
+has been a couple of months since I've played with that code; I'll take
+a look and see if anything jumps out at me.
+
+For what it's worth, a quick Google makes me think that at-spi-registry
+is part of Gnome's assistive technology functionality.  That said, I
+have no idea what it does exactly, but evidently it does it over a UNIX
+domain socket ...
+
+If you're ever able to recreate the problem or if you can think of
+anything else that might be useful please let me know.
+
+Thanks.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+paul moore
+linux @ hp
+
+
