@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab0LIQDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:03:04 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:58524 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab0LIQDD (ORCPT
+	id S1753478Ab0LIQGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:06:24 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:39475 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab0LIQGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:03:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=AmOWgwF4HHjCSHTh5A0zsaY+U2SlGAAc5b0Dm9M2JtBV/5Du37mrNe6YaJe2BglBZs
-         jtKzMUv8QRRZQuV1W8Lu/GpcCacFLuoQXwyZT9U9Wf1lLQaRb9L9PCDCZu1fAixRugIc
-         Ls+YX69aWlQCx0oQWrsFch4iy4KYOznLRQaBk=
+	Thu, 9 Dec 2010 11:06:22 -0500
+Date: Thu, 9 Dec 2010 10:05:49 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: John Stoffel <john@stoffel.org>
+Cc: Eric Paris <eparis@redhat.com>, xfs-masters@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, cluster-devel@redhat.com,
+        linux-mtd@lists.infradead.org, jfs-discussion@lists.sourceforge.net,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-mm@kvack.org,
+        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
+        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
+        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
+        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
+        jeffm@suse.com, serue@us.ibm.com, paul.moore@hp.com,
+        penguin-kernel@I-love.SAKURA.ne.jp, casey@schaufler-ca.com,
+        kees.cook@canonical.com, dhowells@redhat.com
+Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on
+ inode creation
+Message-ID: <20101209160549.GA2315@peq>
+References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
+ <19712.61515.201226.938553@quad.stoffel.home>
 MIME-Version: 1.0
-In-Reply-To: <20101209155925.GD1740@barrios-desktop>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
-	<1291893500-12342-5-git-send-email-mel@csn.ul.ie>
-	<20101209155925.GD1740@barrios-desktop>
-Date: Fri, 10 Dec 2010 01:03:01 +0900
-Message-ID: <AANLkTimKVZjfVtZ_Rz0p0xKbE76Uoa1rDrYmN9EC4wLU@mail.gmail.com>
-Subject: Re: [PATCH 4/6] mm: kswapd: Reset kswapd_max_order and classzone_idx
- after reading
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19712.61515.201226.938553@quad.stoffel.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 12:59 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Thu, Dec 09, 2010 at 11:18:18AM +0000, Mel Gorman wrote:
->> When kswapd wakes up, it reads its order and classzone from pgdat and
->> calls balance_pgdat. While its awake, it potentially reclaimes at a high
->> order and a low classzone index. This might have been a once-off that
->> was not required by subsequent callers. However, because the pgdat
->> values were not reset, they remain artifically high while
->> balance_pgdat() is running and potentially kswapd enters a second
->> unnecessary reclaim cycle. Reset the pgdat order and classzone index
->> after reading.
->>
->> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Quoting John Stoffel (john@stoffel.org):
+> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+> 
+> Eric> SELinux would like to implement a new labeling behavior of newly
+> Eric> created inodes.  We currently label new inodes based on the
+> Eric> parent and the creating process.  This new behavior would also
+> Eric> take into account the name of the new object when deciding the
+> Eric> new label.  This is not the (supposed) full path, just the last
+> Eric> component of the path.
+> 
+> Eric> This is very useful because creating /etc/shadow is different
+> Eric> than creating /etc/passwd but the kernel hooks are unable to
+> Eric> differentiate these operations.  We currently require that
+> Eric> userspace realize it is doing some difficult operation like that
+> Eric> and than userspace jumps through SELinux hoops to get things set
+> Eric> up correctly.  This patch does not implement new behavior, that
+> Eric> is obviously contained in a seperate SELinux patch, but it does
+> Eric> pass the needed name down to the correct LSM hook.  If no such
+> Eric> name exists it is fine to pass NULL.
+> 
+> I've looked this patch over, and maybe I'm missing something, but how
+> does knowing the name of the file really tell you anything, esp when
+> you only get the filename, not the path?  What threat are you
+> addressing with this change?  
 
-Nitpick.
-Shouldn't this patch be merged with 1/6?
+Like you, I keep thinking back to this patch and going back and forth.
+But to answer your question:  in some cases, the name of the file
+(plus the context of the directory in which it is created) can tell
+you what assumptions userspace will make about it.  And userspace most
+definately is a part of the TCB, i.e. /bin/passwd and /bin/login.
 
->
-> --
-> Kind regards,
-> Minchan Kim
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+-serge
