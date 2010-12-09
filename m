@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab0LIVnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 16:43:32 -0500
-Received: from www.tglx.de ([62.245.132.106]:48748 "EHLO www.tglx.de"
+	id S1757406Ab0LIVn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:43:58 -0500
+Received: from cantor.suse.de ([195.135.220.2]:42279 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757311Ab0LIVnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:43:31 -0500
-Date: Thu, 9 Dec 2010 22:43:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org
-Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
- 32 and 64bit
-In-Reply-To: <1290871325-3055-14-git-send-email-tj@kernel.org>
-Message-ID: <alpine.LFD.2.00.1012092230010.2653@localhost6.localdomain6>
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-14-git-send-email-tj@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757311Ab0LIVn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 16:43:56 -0500
+Date: Thu, 9 Dec 2010 13:43:47 -0800
+From: Greg KH <gregkh@suse.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Mike Rapoport <mike.rapoport@gmail.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: brcm80211 hangs when disabling wireless
+Message-ID: <20101209214347.GA15172@suse.de>
+References: <1291930010.7960.30.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291930010.7960.30.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Nov 2010, Tejun Heo wrote:
+On Thu, Dec 09, 2010 at 01:26:50PM -0800, Dave Hansen wrote:
+> I've been getting hard hangs when I toggle the wireless on a Lenovo
+> S10-3.  It happens both with the physical switch and the Fn-F5 key
+> combo.  It's quite repeatable.  The system is quite stable when I'm not
+> trying to disable the wireless, though.
 
-> The mapping between cpu/apicid and node is done via apicid_to_node[]
-> on 64bit and apicid_2_node[] + apic->numa_cpu_node() on 32bit.  This
-> difference makes it difficult to further unify 32 and 64bit NUMA
-> hanlding.
-> 
-> This patch unifies it by replacing both apicid_to_node[] and
-> apicid_2_node[] with __apicid_to_node[] array, which is accessed by
-> two accessors - set_apicid_to_node() and numa_cpu_node().  On 64bit,
-> numa_cpu_node() always consults __apicid_to_node[] directly while
-> 32bit goes through apic->numa_cpu_node() method to allow apic
-> implementation to override it.
-> 
-> There are several places where using numa_cpu_node() is awkward and
-> the override doesn't matter.  In those places, __apicid_to_node[] are
-> used directly.
+What kernel version is this?
 
-Why is it awkward? Anything outside the accessor functions or
-specialized setup code using it is awkward, inconsistent and sloppy.
+Linus's latest tree has a known bug when the wireless is suspended and
+then resumed.  Broadcom is working on it but no patch is forthcoming
+yet.  Perhaps this is the same issue.
 
-Thanks,
+thanks,
 
-	tglx
+greg k-h
