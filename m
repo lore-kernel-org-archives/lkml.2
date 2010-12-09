@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab0LIXkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:40:23 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56550 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757461Ab0LIXkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:40:20 -0500
-Date: Thu, 9 Dec 2010 23:39:57 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, imunsie@au1.ibm.com, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, tglx@linutronix.de,
-        imunsie@au1.ibm.com, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session: Remove unneeded dump_printf calls
-Message-ID: <tip-ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b@git.kernel.org>
-Git-Commit-ID: ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757562Ab0LIXkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 18:40:36 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:33698 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757246Ab0LIXkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 18:40:32 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 5j5TBUkVM1nxnjrNPzh7YEbE8nGz3BiIZRR6DccakvFN5sE
+ CL9WyPFgX0.T6pH2unHjxfZLUvEHOlkZP1R6TFfKDvrMqOBtWPBR6f9rsHye
+ 5x_nibqmlJ5k3Q0B1HLAkBZB5qGp5kQMFoHMk6I60xuZOQH8LP0iu6KLtSc2
+ hvhoKp.iCT7W2bBiSc8m5mxtUzJ44LOJ4k4o5b7lONJ8qQkq_xCwS8Arv3Ov
+ F2DTnqAQsfSLi4MZ2m8bAwOHl.75YsvlBdQ1cH_TQHQKfKuKsG9TOn7MXyqC
+ LWU5df5JHH8RAp.qkvGmaN4nhSkLJhcPm9K2C1ljMlMPTGqE-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 9 Dec 2010 17:40:27 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [cpuops cmpxchg V1 2/4] x86: this_cpu_cmpxchg and this_cpu_xchg
+ operations
+In-Reply-To: <4D0076B3.9090106@zytor.com>
+Message-ID: <alpine.DEB.2.00.1012091739480.29367@router.home>
+References: <20101208175520.456864019@linux.com> <20101208175543.000201149@linux.com> <alpine.DEB.2.00.1012081207250.26943@router.home> <20101208181736.GC30693@Krystal> <4D0076B3.9090106@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 23:39:57 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b
-Gitweb:     http://git.kernel.org/tip/ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 9 Dec 2010 12:20:20 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 9 Dec 2010 12:20:20 -0200
+On Wed, 8 Dec 2010, H. Peter Anvin wrote:
 
-perf session: Remove unneeded dump_printf calls
+> On 12/08/2010 10:17 AM, Mathieu Desnoyers wrote:
+> >
+> > Hi Christoph,
+> >
+> > Can you show if this provides savings in terms of:
+> >
+> > - instruction cache footprint
+> > - cycles required to run
+> > - large-scale impact on the branch prediction buffers
+> >
+> > Given that this targets per-cpu data only, the additional impact on cache-line
+> > exchange traffic of using cmpxchg over xchg (cache-line not grabbed as exclusive
+> > by the initial read) should not really matter.
+> >
+> > I'm CCing Arjan and HPA, because they might have some interesting insight into
+> > the performance impact of lock-prefixed xchg vs using local cmpxchg in a loop.
+> >
+>
+> XCHG is always locked; it doesn't need the prefix.  Unfortunately,
+> unlike on the 8086 on modern processors locks have a real cost.
 
-Since we check at the beginning of the callers, no need to ask if
-dump_trace is set multiple times.
+So should we use xchg or a loop using prefixless cmpxchg instead when
+referring to per cpu data and requiring only per cpu atomicness?
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/session.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 69760cd..b59abf5 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -639,13 +639,10 @@ static int perf_session_queue_event(struct perf_session *s, event_t *event,
- 	return 0;
- }
- 
--static void callchain__dump(struct sample_data *sample)
-+static void callchain__printf(struct sample_data *sample)
- {
- 	unsigned int i;
- 
--	if (!dump_trace)
--		return;
--
- 	printf("... chain: nr:%Lu\n", sample->callchain->nr);
- 
- 	for (i = 0; i < sample->callchain->nr; i++)
-@@ -675,27 +672,29 @@ static void dump_event(struct perf_session *session, event_t *event,
- 	if (!dump_trace)
- 		return;
- 
--	dump_printf("\n%#Lx [%#x]: event: %d\n", file_offset,
--		    event->header.size, event->header.type);
-+	printf("\n%#Lx [%#x]: event: %d\n", file_offset, event->header.size,
-+	       event->header.type);
- 
- 	trace_event(event);
- 
- 	if (sample)
- 		perf_session__print_tstamp(session, event, sample);
- 
--	dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
--		    file_offset, event->header.size,
--		    event__get_event_name(event->header.type));
-+	printf("%#Lx [%#x]: PERF_RECORD_%s", file_offset, event->header.size,
-+	       event__get_event_name(event->header.type));
- }
- 
- static void dump_sample(struct perf_session *session, event_t *event,
- 			struct sample_data *sample)
- {
--	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
--		    sample->pid, sample->tid, sample->ip, sample->period);
-+	if (!dump_trace)
-+		return;
-+
-+	printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
-+	       sample->pid, sample->tid, sample->ip, sample->period);
- 
- 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
--		callchain__dump(sample);
-+		callchain__printf(sample);
- }
- 
- static int perf_session_deliver_event(struct perf_session *session,
