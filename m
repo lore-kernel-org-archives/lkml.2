@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757037Ab0LIVNx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 16:13:53 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37603 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753609Ab0LIVNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:13:52 -0500
-Date: Thu, 9 Dec 2010 13:13:37 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org, Ben Gardner <bgardner@wabtec.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] cs5535: deprecate older cs5535_gpio driver
-Message-Id: <20101209131337.be92caf6.akpm@linux-foundation.org>
-In-Reply-To: <20101209125737.065e91fd@queued.net>
-References: <20101209125737.065e91fd@queued.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757298Ab0LIVPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:15:39 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:44617 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753798Ab0LIVPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 16:15:38 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+jg0FzgrijLw0WvOeg1PNjVMmtMIgBdRyA36l1xE
+	PaOmtG/YB1blAr
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH v2] avr32: Fix build failure conflicting types for 'sys_execve'
+Date: Thu,  9 Dec 2010 22:15:28 +0100
+Message-Id: <1291929328-30551-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <20101209182132.GB24175@kroah.com>
+References: <20101209182132.GB24175@kroah.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Dec 2010 12:57:37 -0800
-Andres Salomon <dilinger@queued.net> wrote:
+This patch fixes a build failure[1] for the avr32 architecture which seems
+to be introduced by commit d7627467b7a8
+"Make do_execve() take a const filename pointer"
 
-> The newer drivers/gpio/cs5535-gpio.c replaces
-> drivers/misc/cs5535_gpio.c.  The new driver has been in the tree
-> for a little while, and has received some testing; it's time to mark
-> the old one as deprecated.  I'm thinking removal around 2.6.40 would
-> be good, provided we're not missing critical functionality in the
-> newer driver.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  Documentation/feature-removal-schedule.txt |   14 ++
->  drivers/char/Kconfig                       |    9 -
->  drivers/char/Makefile                      |    1 -
->  drivers/char/cs5535_gpio.c                 |  259 ----------------------------
->  drivers/staging/Kconfig                    |    2 +
->  drivers/staging/Makefile                   |    1 +
->  drivers/staging/cs5535_gpio/Kconfig        |   11 ++
->  drivers/staging/cs5535_gpio/Makefile       |    1 +
->  drivers/staging/cs5535_gpio/TODO           |    6 +
->  drivers/staging/cs5535_gpio/cs5535_gpio.c  |  259 ++++++++++++++++++++++++++++
->  10 files changed, 294 insertions(+), 269 deletions(-)
->  delete mode 100644 drivers/char/cs5535_gpio.c
->  create mode 100644 drivers/staging/cs5535_gpio/Kconfig
->  create mode 100644 drivers/staging/cs5535_gpio/Makefile
->  create mode 100644 drivers/staging/cs5535_gpio/TODO
->  create mode 100644 drivers/staging/cs5535_gpio/cs5535_gpio.c
+The commit changes the definition in arch/avr32/kernel/process.c but
+forgot to change it here.
 
-It seems logical (although not particularly useful) to use
-drivers/staging/ as the site for unstaging things as well, but is that
-something which we normally do?
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Cc: stable <stable@kernel.org>
+---
+KernelVersion: 20101209
+
+ arch/avr32/include/asm/syscalls.h |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/avr32/include/asm/syscalls.h b/arch/avr32/include/asm/syscalls.h
+index ab608b7..1440368 100644
+--- a/arch/avr32/include/asm/syscalls.h
++++ b/arch/avr32/include/asm/syscalls.h
+@@ -21,8 +21,10 @@ asmlinkage int sys_clone(unsigned long, unsigned long,
+ 			 unsigned long, unsigned long,
+ 			 struct pt_regs *);
+ asmlinkage int sys_vfork(struct pt_regs *);
+-asmlinkage int sys_execve(const char __user *, char __user *__user *,
+-			  char __user *__user *, struct pt_regs *);
++asmlinkage int sys_execve(const char __user *ufilename,
++			  const char __user *const __user *uargv,
++			  const char __user *const __user *uenvp,
++			  struct pt_regs *regs);
+ 
+ /* kernel/signal.c */
+ asmlinkage int sys_sigaltstack(const stack_t __user *, stack_t __user *,
+-- 
+1.7.2.2
 
