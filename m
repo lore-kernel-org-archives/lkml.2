@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab0LISBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:01:06 -0500
-Received: from imp01.mtu.ru ([62.5.255.10]:60580 "EHLO imp01.mtu.ru"
+	id S932094Ab0LISB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:01:29 -0500
+Received: from THUNK.ORG ([69.25.196.29]:57199 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756441Ab0LISA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:00:59 -0500
-Message-ID: <4D011913.7090501@pavlinux.ru>
-Date: Thu, 09 Dec 2010 20:59:47 +0300
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 PAVLINUX/7.7.7 0xDEADBEEF/7.7.7
+	id S1755814Ab0LISB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 13:01:26 -0500
+Date: Thu, 9 Dec 2010 13:01:11 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Mike Snitzer <snitzer@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101209180111.GF2921@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+	Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
+	Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	dm-devel <dm-devel@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	htd <htd@fancy-poultry.org>, htejun@gmail.com,
+	linux-ext4@vger.kernel.org
+References: <4CF6B3E8.2000406@redhat.com>
+ <20101201212310.GA15648@redhat.com>
+ <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com>
+ <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think>
+ <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+ <20101207182243.GB21112@redhat.com>
+ <20101207193514.GA2921@thunk.org>
+ <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Sysctl interface to UNIX_INFLIGHT_TRIGGER_GC v.2
-References: <4D004E42.7000807@pavlinux.ru>	<20101209041310.GA5101@cr0.nay.redhat.com>	<4D00BE59.4090109@pavlinux.ru> <20101209090428.6da9198c.randy.dunlap@oracle.com>
-In-Reply-To: <20101209090428.6da9198c.randy.dunlap@oracle.com>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=03742489
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Spam-Flag: NO
-X-Spam-Yversion: Spamooborona-3.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.12.2010 20:04, Randy Dunlap wrote:
-> On Thu, 09 Dec 2010 14:32:41 +0300 Pavel Vasilyev wrote:
->>>> Maybe something to add in Documentation/kernel-parameters.txt ?
->>> No, that is for boot parameters, you need to find something like
->>> Documentation/networking/ip-sysctl.txt.
->>
->> Thanks, added.
-> 
-> Now you need to send this to netdev@vger.kernel.org so that the netdev
-> people can review it.  Please.
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+On Tue, Dec 07, 2010 at 09:37:20PM -0600, Jon Nelson wrote:
+> One difference is the location of the transaction logs (pg_xlog). In
+> my case, /var/lib/pgsql/data *is* mountpoint for the test volume
+> (actually, it's a symlink to the mount point). In your case, that is
+> not so. Perhaps that makes a difference?  pgsql_tmp might also be on
+> two different volumes in your case (I can't be sure).
 
-http://www.spinics.net/lists/netdev/msg149397.html
+I just tried tried to run t.sql five times with /var/lib/postgres as a
+mountpoint for a 5400 rpm disk, and I still haven't been able to
+replicate it.
 
--- 
+If you can point out how to query pgsql_tmp (I'm using a completely
+default postgres install), that would be helpful, but I don't think it
+would be going anywhere else.
 
-                                                         Pavel.
+Still trying....
+
+						- Ted
