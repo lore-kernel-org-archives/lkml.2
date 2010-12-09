@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab0LISmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:42:49 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56875 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751872Ab0LISms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:42:48 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1890fpOf309FdYtRsJKMeH9KC9IVbssCdC7DKkMev
-	5cAjeVhcWQYbQ/
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [stable] [PATCH] avr32: Fix build failure conflicting types for 'sys_execve'
-Date: Thu, 9 Dec 2010 19:42:36 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.4.5; x86_64; ; )
-Cc: "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-References: <1291850373-6955-1-git-send-email-peterhuewe@gmx.de> <20101209182132.GB24175@kroah.com>
-In-Reply-To: <20101209182132.GB24175@kroah.com>
+	id S1755137Ab0LISsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:48:17 -0500
+Received: from mail-px0-f179.google.com ([209.85.212.179]:41373 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab0LISsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 13:48:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eomPuJx+rfnkQu+M5ntEjAa1ok/FBZP9siXSMfbJXeYxxkqx51kBrYGXDeEauyh6s1
+         0pTaBG5UpvfrCSQ5zzjdnwEqofZCnKaKjoiwe/aGilajmJOgKsm/a5UiCz1xczRP7tyM
+         +aSORLF0LbrgO0BSlCDuwJgIqhr6/uSD1AKyY=
+Date: Thu, 9 Dec 2010 10:48:08 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] input: mt updates for 2.6.38
+Message-ID: <20101209184807.GA23781@core.coreip.homeip.net>
+References: <4CFF49BC.8030202@euromail.se>
+ <20101209085814.GA8821@core.coreip.homeip.net>
+ <20101209090826.GB8821@core.coreip.homeip.net>
+ <4D011FA5.7000102@euromail.se>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012091942.36508.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D011FA5.7000102@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is _not_ how to get stuff into the stable kernel tree, sorry.
-Sorry about that - still learning ;) - thanks for your patience.
+On Thu, Dec 09, 2010 at 07:27:49PM +0100, Henrik Rydberg wrote:
+> > Input: include MT library as source for kerneldoc
+> 
+> > 
+> > From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > 
+> > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> > ---
+> 
+> 
+> Looks good. Namewise, it means we stick to the current names for a bit, then?
 
-> Please read Documentation/stable_kernel_rules.txt for how to do so.
- It states: "You must note the upstream commit ID in the changelog of your 
-submission." - where do I get the ID from?
+I'd prefer moving to input/mt.h before input-mt.h started spreading
+throughout the drivers. I could sit on the doc pluggin patch or you can
+take it through you tree (adjusting as apporpriate).
 
-> Care to resend?
-Will do.
-Or should I rather drop the patch and we wait on Hans-Christian's patch(es)?
-
-Thanks,
-Peter
-
+-- 
+Dmitry
