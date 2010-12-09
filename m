@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab0LIBir (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:38:47 -0500
-Received: from void.printf.net ([89.145.121.20]:46729 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755511Ab0LIBiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:38:46 -0500
-Date: Thu, 9 Dec 2010 01:38:43 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aries Lee <arieslee@jmicron.com>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2] mmc: Add support for JMicron 388 SD/MMC controller
-Message-ID: <20101209013843.GA19741@void.printf.net>
-References: <s5h7hfk3aap.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h7hfk3aap.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932101Ab0LIBnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:43:45 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53698 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab0LIBno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:43:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NhEYvh5t0O7QacyUOJ4BegzRO0AksHcCrWJqGjCy9FdPa+2+adVb5JwYvaFh7YUph3
+         5GQzEwW/Qqr8XgGNcrmO7VpOtF82s/TKC+q1uciGOK8QKaE3ohSNNyhupeHGQNSip8Wt
+         U3DF7WLjRIPPRN64J4CekByWa7u2InJmq8v84=
+Subject: Re: [tip:sched/core] printk: Use this_cpu_{read|write} api on
+ printk_pending
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1012081546170.28112@router.home>
+References: <1290788536.2855.237.camel@edumazet-laptop>
+	 <tip-40dc11ffb35e8c4e8fa71092048e0f8de9db758c@git.kernel.org>
+	 <alpine.DEB.2.00.1012081546170.28112@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Dec 2010 02:43:39 +0100
+Message-ID: <1291859019.2795.20.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
+Le mercredi 08 décembre 2010 à 15:47 -0600, Christoph Lameter a écrit :
+> On Wed, 8 Dec 2010, tip-bot for Eric Dumazet wrote:
+> 
+> > printk: Use this_cpu_{read|write} api on printk_pending
+> 
+> One of the patches in Tejun's percpu tree includes the same modifications.
+> 
+> 
 
-On Wed, Dec 08, 2010 at 10:04:30AM +0100, Takashi Iwai wrote:
-> JMicron 388 SD/MMC combo controller supports the 1.8V low-voltage for
-> SD, but MMC doesn't work with the low-voltage, resulting in an error
-> at probing.
-> 
-> This patch adds the support for multiple voltage mask per device type,
-> so that SD works with 1.8V while MMC forces 3.3V.  Here new ocr_avail_*
-> fields for each device are introduced, so that the actual OCR mask is
-> switched dynamically.
-> 
-> Also, the restriction of low-voltage in core/sd.c is removed when the
-> bit is allowed explicitly via ocr_avail_sd mask.
-> 
-> This patch was rewritten from scratch based on Aries' original code.
-> 
-> Signed-off-by: Aries Lee <arieslee@jmicron.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Its a bit strange, I sent mine a long time ago when reviewing Heiko
+Carstens patch. You even commented on it.
 
-Looks good, pushed to mmc-next for .38.  Thanks!
+https://patchwork.kernel.org/patch/359182/
 
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+What happened then, you included my patch on one of yours ?
+
+
+
