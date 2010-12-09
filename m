@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab0LIBpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:45:25 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:38732 "EHLO e2.ny.us.ibm.com"
+	id S1756700Ab0LIBsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:48:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53258 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab0LIBpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:45:24 -0500
-Date: Wed, 8 Dec 2010 17:45:19 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: blk-throttle: Correct the placement of smp_rmb()
-Message-ID: <20101209014519.GO2094@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101207160102.GB16363@redhat.com>
- <20101208184507.GA30071@redhat.com>
- <20101208190918.GI31703@redhat.com>
- <20101208191600.GA32753@redhat.com>
- <20101208193031.GJ31703@redhat.com>
- <20101208193308.GA1044@redhat.com>
- <20101208200750.GA2202@redhat.com>
- <20101208204624.GK31703@redhat.com>
- <20101208213331.GA4895@redhat.com>
- <20101208220640.GB4895@redhat.com>
+	id S1755043Ab0LIBsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:48:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,318,1288594800"; 
+   d="scan'208";a="581956399"
+Date: Thu, 9 Dec 2010 08:23:02 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Eric B Munson <emunson@mgebm.net>,
+        Shaohui Zheng <shaohui.zheng@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
+        dave@linux.vnet.ibm.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/7,v8] NUMA Hotplug Emulator: documentation
+Message-ID: <20101209002302.GB5798@shaohui>
+References: <20101207010033.280301752@intel.com>
+ <20101207010139.681125359@intel.com>
+ <20101207182420.GA2038@mgebm.net>
+ <20101207232000.GA5353@shaohui>
+ <20101208181644.GA2152@mgebm.net>
+ <alpine.DEB.2.00.1012081315040.15658@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101208220640.GB4895@redhat.com>
+In-Reply-To: <alpine.DEB.2.00.1012081315040.15658@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 11:06:40PM +0100, Oleg Nesterov wrote:
-> On 12/08, Oleg Nesterov wrote:
-> >
-> > Unfortunately, I can't prove this. You can ask
-> > Paul McKenney if you want the authoritative answer.
+On Wed, Dec 08, 2010 at 01:16:10PM -0800, David Rientjes wrote:
+> On Wed, 8 Dec 2010, Eric B Munson wrote:
 > 
-> Well. I think we should ask ;) This is interesting.
+> > Shaohui,
+> > 
+> > I was able to online a cpu to node 0 successfully.  My problem was that I did
+> > not take the cpu offline before I released it.  Everything looks to be working
+> > for me.
+> > 
 > 
-> Paul could you please shed a light?
-> 
-> Suppose we have 2 variables, A = 0 and B = 0.
-> 
-> 	CPU0 does:
-> 
-> 		A = 1;
-> 		wmb();
-> 		B = 1;
-> 
-> 	CPU1 does:
-> 
-> 		B = 0;
-> 		mb();
-> 		if (A)
-> 			A = 2;
-> 
-> My understanding is: after that we can safely assume that
-> 
-> 	B == 1 || A == 2
-> 
-> IOW. Either CPU1 notices that A was changed, or CPU0 "wins"
-> and sets B = 1 "after" CPU1. But, it is not possible that
-> CPU1 clears B "after" it was set by CPU0 _and_ sees A == 0.
-> 
-> Is it true? I think it should be true, but can't prove.
+> I think it should fail more gracefully than triggering WARN_ON()s because 
+> of duplicate sysfs dentries though, right?
 
-I was afraid that a question like this might be coming...  ;-)
+Yes, we should do more checking on the return value, the duplicate dentries can
+be avoided.  
 
-The question is whether you can rely on the modification order of the
-stores to B to deduce anything useful about the order in which the
-accesses to A occurred.  The answer currently is I believe you can
-for a simple example such as the one above, but I am checking with
-the hardware guys.  In addition, please note that I am not sure if
-all possible generalizations do what you want.  For example, imagine a
-1024-CPU system in which the first 1023 CPUs do:
+Another solution: force user to offline the cpu before we do cpu release.
 
-	A[smp_processor_id()] = 1;
-	wmb();
-	B = smp_processor_id();
+-- 
+Thanks & Regards,
+Shaohui
 
-where the elements of A are cache-line aligned and padded.  Suppose
-that the remaining CPU does:
-
-	i = random() % 1023;
-	B = -1;
-	mb();
-	if (A[i])
-		A[i] = 2;
-
-Are we guaranteed that B!=-1||A[i]==2?
-
-In this case, it could take all of the CPUs quite some time to come to
-agreement on the order of all 1024 assignments to B.  I am bugging some
-hardware guys about this.  It has been awhile, so they forgot to run
-away when they saw me coming.  ;-)
-
->                                                         This
-> reminds me the old (and long) discussion about STORE-MB-LOAD.
-> Iirc, finally it was decided that
-> 
-> 	CPU0:				CPU1:
-> 
-> 	A = 1;				B = 1;
-> 	mb();				mb();
-> 	if (B)				if (A)
-> 		printf("Yes");			printf("Yes");
-> 
-> should print "Yes" at least once. This looks very similar to
-> the the previous example.
-
->From a hardware point of view, this example is very different than the
-earlier one.  You are not using the order of independent CPUs' stores to a
-single variable here and in addition are using mb() everywhere instead of
-a combination of mb() and wmb().  So, yes, this one is guaranteed to work.
-
-But what the heck are you guys really trying to do, anyway?  ;-)
-
-							Thanx, Paul
