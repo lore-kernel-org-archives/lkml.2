@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab0LINxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 08:53:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33992 "EHLO mga09.intel.com"
+	id S1756876Ab0LINyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 08:54:54 -0500
+Received: from cantor.suse.de ([195.135.220.2]:54547 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab0LINxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 08:53:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
-   d="scan'208";a="582114011"
-Date: Thu, 9 Dec 2010 14:52:42 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        stable@kernel.org
-Subject: Re: [PATCH] mfd: Support additional parent IDs for wm831x
-Message-ID: <20101209135242.GJ8884@sortiz-mobl>
-References: <1291307143-8472-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1754165Ab0LINyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 08:54:52 -0500
+Date: Thu, 9 Dec 2010 14:54:50 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: Add and use hid_<level>: dev_<level> equivalents
+In-Reply-To: <1290549269.28824.43.camel@Joe-Laptop>
+Message-ID: <alpine.LNX.2.00.1012091454010.508@pobox.suse.cz>
+References: <1290497701.28824.6.camel@Joe-Laptop>  <alpine.LNX.2.00.1011231336420.18801@pobox.suse.cz> <1290549269.28824.43.camel@Joe-Laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291307143-8472-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Tue, 23 Nov 2010, Joe Perches wrote:
 
-On Thu, Dec 02, 2010 at 04:25:43PM +0000, Mark Brown wrote:
-> Some newer device revisions add a second parent ID. Support this in
-> the device validity checks done at startup.
-Patch applied to both my for-next and for-linus branches, thanks.
+> Neaten current uses of dev_<level> by adding and using
+> hid specific hid_<level> macros.
+> 
+> Convert existing uses of dev_<level> uses to hid_<level>.
+> Convert hid-pidff printk to use hid_<level>.
+> 
+> Remove err_hid and use hid_err instead.
+> 
+> Add missing newlines to logging messages where necessary.
+> Coalesce format strings.
+> 
+> Add and use pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> 
+> Other miscellaneous changes:
+> 
+> Convert vmalloc/memset to vzalloc
+> Remove unnecessary __inline_ from some static functions.
+> Add const struct hid_device * as argument to some functions
+> so hid_<level> can be used as appropriate.
+> Remove unnecessary multiplies in inner loops, use += instead.
 
-Cheers,
-Samuel.
+Hi Joe,
+
+even though these are purely cleanup changes, I'd like to have them 
+separated (or at least have more appropriate Subject: line for the 
+commit).
+
+Would you care to split that up?
+
+Thanks,
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jiri Kosina
+SUSE Labs, Novell Inc.
