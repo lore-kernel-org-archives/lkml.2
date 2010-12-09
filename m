@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab0LINPz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 08:15:55 -0500
+	id S932078Ab0LINQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 08:16:21 -0500
 Received: from mail-iw0-f172.google.com ([209.85.214.172]:50114 "EHLO
 	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab0LINPy convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755090Ab0LINQT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 08:15:54 -0500
+	Thu, 9 Dec 2010 08:16:19 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=T9VGpYYs3Vp/atIpOnSb6GWRSYcGq4qG6IacNOSDUlDN1SLSZHyP88C/Nq0UxFYTHa
-         UoqRZDbiFjFBU/U95eN86q+aPhJT+KOtY6qiCJVk6vavpLNgDhvIsyFIphZp6qSn6dj3
-         5DXaiJ7EnDHrS0wMFFWXzlBFsWSx43PV8ejyg=
+        b=iLA3wLDsVbCYXCm6eacVHaiqd1Qq7L5j1zJSsui1JWMsX2C4tO75qWL+aMrPbjOc2c
+         GO0X2qoNHO+igwLa5g3UrvkyqZVNW/Mna3yvoasa3FvbSibFTdsN36H5tCxpPM1vZj5k
+         7pL+omE6uBLRkbzNBRIErqjEawaVNOGuuWRgc=
 MIME-Version: 1.0
 In-Reply-To: <1291899510-19861-1-git-send-email-aaro.koskinen@nokia.com>
 References: <1291899510-19861-1-git-send-email-aaro.koskinen@nokia.com>
 From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 9 Dec 2010 21:15:33 +0800
-Message-ID: <AANLkTik6WjPqcZ=LBUfg8DRZVWu+=SsQRiB3PE=k+3aX@mail.gmail.com>
+Date: Thu, 9 Dec 2010 21:15:59 +0800
+Message-ID: <AANLkTikxfS6rHrUv7YxW-_+GxPVCh9h7BAV8Cm1APgNo@mail.gmail.com>
 Subject: Re: [PATCH] gpiolib: gpio_request_one(): add missing gpio_free()
 To: Aaro Koskinen <aaro.koskinen@nokia.com>
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
@@ -34,7 +34,7 @@ On Thu, Dec 9, 2010 at 8:58 PM, Aaro Koskinen <aaro.koskinen@nokia.com> wrote:
 >
 > Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
 
-Acked-by: Eric Miao <eric.miao@canonical.com>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
 
 > ---
 >  drivers/gpio/gpiolib.c |    3 +++
