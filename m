@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab0LIVXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 16:23:46 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:37696 "EHLO lunge.queued.net"
+	id S1757058Ab0LIV0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:26:54 -0500
+Received: from www.sr71.net ([198.145.64.142]:45668 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab0LIVXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:23:45 -0500
-Date: Thu, 9 Dec 2010 13:23:40 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org, Ben Gardner <bgardner@wabtec.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] cs5535: deprecate older cs5535_gpio driver
-Message-ID: <20101209132340.291b784b@queued.net>
-In-Reply-To: <20101209131337.be92caf6.akpm@linux-foundation.org>
-References: <20101209125737.065e91fd@queued.net>
-	<20101209131337.be92caf6.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752098Ab0LIV0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 16:26:53 -0500
+Subject: brcm80211 hangs when disabling wireless
+From: Dave Hansen <dave@sr71.net>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Brett Rudley <brudley@broadcom.com>,
+        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Mike Rapoport <mike.rapoport@gmail.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 09 Dec 2010 13:26:50 -0800
+Message-ID: <1291930010.7960.30.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Dec 2010 13:13:37 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+I've been getting hard hangs when I toggle the wireless on a Lenovo
+S10-3.  It happens both with the physical switch and the Fn-F5 key
+combo.  It's quite repeatable.  The system is quite stable when I'm not
+trying to disable the wireless, though.
 
-> On Thu, 9 Dec 2010 12:57:37 -0800
-> Andres Salomon <dilinger@queued.net> wrote:
-> 
-> > The newer drivers/gpio/cs5535-gpio.c replaces
-> > drivers/misc/cs5535_gpio.c.  The new driver has been in the tree
-> > for a little while, and has received some testing; it's time to mark
-> > the old one as deprecated.  I'm thinking removal around 2.6.40 would
-> > be good, provided we're not missing critical functionality in the
-> > newer driver.
-> > 
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
-> > ---
-> >  Documentation/feature-removal-schedule.txt |   14 ++
-> >  drivers/char/Kconfig                       |    9 -
-> >  drivers/char/Makefile                      |    1 -
-> >  drivers/char/cs5535_gpio.c                 |  259
-> > ----------------------------
-> > drivers/staging/Kconfig                    |    2 +
-> > drivers/staging/Makefile                   |    1 +
-> > drivers/staging/cs5535_gpio/Kconfig        |   11 ++
-> > drivers/staging/cs5535_gpio/Makefile       |    1 +
-> > drivers/staging/cs5535_gpio/TODO           |    6 +
-> > drivers/staging/cs5535_gpio/cs5535_gpio.c  |  259
-> > ++++++++++++++++++++++++++++ 10 files changed, 294 insertions(+),
-> > 269 deletions(-) delete mode 100644 drivers/char/cs5535_gpio.c
-> > create mode 100644 drivers/staging/cs5535_gpio/Kconfig create mode
-> > 100644 drivers/staging/cs5535_gpio/Makefile create mode 100644
-> > drivers/staging/cs5535_gpio/TODO create mode 100644
-> > drivers/staging/cs5535_gpio/cs5535_gpio.c
-> 
-> It seems logical (although not particularly useful) to use
-> drivers/staging/ as the site for unstaging things as well, but is that
-> something which we normally do?
-> 
+I've been able to get some screenshots, but the console messages don't
+make it out to the disk:
 
-FYI, I was using commits 7af97eff and 96322b80 as an example... Though
-I suppose I really should've chosen commits by two separate authors
-(oops).
+	http://picasaweb.google.com/hansendc/BrcmOops#
+
+netconsole also isn't working on this hardware.  Any other suggestions
+for getting an oops out of a serial-port-challenged netbook?
+
+It isn't completely clear to me where this bug actually is.  The stack
+dump looks almost completely confined to net/mac80211/ functions, but
+there are a few error printk's from brcm80211.
+
+The first printk's are from this code, but it's apparently trying to
+transmit in the mac80211 stack anyway:
+        
+        static int wl_ops_tx(struct ieee80211_hw *hw, struct sk_buff *skb)
+        {
+                int status;
+                wl_info_t *wl = hw->priv;
+                WL_LOCK(wl);
+                if (!wl->pub->up) {
+                        WL_ERROR(("ops->tx called while down\n"));
+                        status = -ENETDOWN;
+                        goto done;
+                }
+                status = wl_start(skb, wl);
+         done:
+                WL_UNLOCK(wl);
+                return status;
+        }
+
+I'm not completely sure that this is what is causing the hang that I'm
+seeing, but it's certainly the last thing I see on the console.  
+
+With the hardware driver in -staging, I don't expect anybody to jump out
+of their seats to fix this, I just figured someone might want to see the
+bug report.
+
+-- Dave
 
