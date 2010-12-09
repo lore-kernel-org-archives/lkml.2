@@ -1,40 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab0LIRWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:22:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20533 "EHLO mga14.intel.com"
+	id S1754877Ab0LIRXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:23:31 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25958 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751631Ab0LIRWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:22:43 -0500
+	id S1752057Ab0LIRXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:23:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
-   d="scan'208";a="359433849"
-Date: Thu, 9 Dec 2010 09:29:27 -0800 (PST)
-From: "Mark A. Allyn" <mark.a.allyn@intel.com>
-X-X-Sender: allyn@localhost.localdomain
+   d="scan'208";a="866414698"
+From: Mark Allyn <mark.a.allyn@intel.com>
 To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
         alan@linux.intel.com, dmitry.kasatkin@nokia.com
-Subject: [PATCH 0/11] Set of patches for sep driver
-Message-ID: <alpine.DEB.2.00.1012090927180.18243@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Subject: [PATCH 01/11] sep: remove virtual address being passed to user space application
+Date: Thu,  9 Dec 2010 09:30:03 -0800
+Message-Id: <1291915803-18316-1-git-send-email-mark.a.allyn@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are 11 patches for the sep driver:
+Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
+---
+ drivers/staging/sep/sep_driver.c     |   23 +++++------------------
+ drivers/staging/sep/sep_driver_api.h |   14 +-------------
+ 2 files changed, 6 insertions(+), 31 deletions(-)
 
-0001-sep-remove-virtual-address-being-passed-to-user-spac.patch
-0002-sep-remove-spaces-at-end-of-lines.patch
-0003-sep-sram_addr-is-32-bit-this-is-not-a-kernel-address.patch
-0004-sep-clean-up-error-checking-in-probe-function.patch
-0005-sep-initialize-driver-copy-of-send-and-receive-count.patch
-0006-sep-remove-code-for-Moorestown-device.patch
-0007-sep-remove-completed-items-in-TODO.patch
-0008-sep-limit-time-to-wait-for-reconfig-shared-area-comp.patch
-0009-sep-reduce-64-and-32-bit-compile-warnings.patch
-0010-sep-ensure-that-caller-id-buffer-is-little-endian.patch
-0011-sep-eliminate-kernel-crash-due-to-null-parameter-in-.patch
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index f2c216d..a5c0443 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -2541,12 +2541,9 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
+  *	This function sets the bus and virtual addresses of the static pool
+  *	and returns the virtual address
+  */
+-static int sep_get_static_pool_addr_handler(struct sep_device *sep,
+-	unsigned long arg)
++static int sep_get_static_pool_addr_handler(struct sep_device *sep)
+ {
+-	struct stat_pool_addr_struct command_args;
+ 	u32 *static_pool_addr = NULL;
+-	unsigned long addr_hold;
+ 
+ 	dev_dbg(&sep->pdev->dev, "sep_get_static_pool_addr_handler start\n");
+ 
+@@ -2554,21 +2551,11 @@ static int sep_get_static_pool_addr_handler(struct sep_device *sep,
+ 		SEP_DRIVER_SYSTEM_RAR_MEMORY_OFFSET_IN_BYTES);
+ 
+ 	static_pool_addr[0] = SEP_STATIC_POOL_VAL_TOKEN;
+-	static_pool_addr[1] = sep->shared_bus +
++	static_pool_addr[1] = (u32)sep->shared_bus +
+ 		SEP_DRIVER_STATIC_AREA_OFFSET_IN_BYTES;
+ 
+-	addr_hold = (unsigned long)
+-		(sep->shared_addr + SEP_DRIVER_STATIC_AREA_OFFSET_IN_BYTES);
+-	command_args.static_virt_address = (aligned_u64)addr_hold;
+-
+-	dev_dbg(&sep->pdev->dev, "static pool: physical %x virtual %x\n",
+-		(u32)static_pool_addr[1],
+-		(u32)command_args.static_virt_address);
+-
+-	/* Send the parameters to user application */
+-	if (copy_to_user((void __user *) arg, &command_args,
+-		sizeof(struct stat_pool_addr_struct)))
+-		return -EFAULT;
++	dev_dbg(&sep->pdev->dev, "static pool: physical %x\n",
++		(u32)static_pool_addr[1]);
+ 
+ 	dev_dbg(&sep->pdev->dev, "sep_get_static_pool_addr_handler end\n");
+ 
+@@ -3064,7 +3051,7 @@ static long sep_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case SEP_IOCGETSTATICPOOLADDR:
+ 		/* Get the physical and virtual addresses of the static pool */
+-		error = sep_get_static_pool_addr_handler(sep, arg);
++		error = sep_get_static_pool_addr_handler(sep);
+ 		break;
+ 	case SEP_IOCENDTRANSACTION:
+ 		error = sep_end_transaction_handler(sep);
+diff --git a/drivers/staging/sep/sep_driver_api.h b/drivers/staging/sep/sep_driver_api.h
+index 1207722..5508769 100644
+--- a/drivers/staging/sep/sep_driver_api.h
++++ b/drivers/staging/sep/sep_driver_api.h
+@@ -114,18 +114,6 @@ struct bld_syn_tab_struct {
+ 
+ };
+ 
+-/*
+- * command struct for static pool addresses
+- * Please note that this is a kernel virtual
+- * address; this will be removed at the next
+- * release of the Discretix middleware
+- */
+-struct stat_pool_addr_struct {
+-	/* virtual address of the static pool */
+-	aligned_u64 static_virt_address;
+-};
+-
+-
+ /* command struct for getting caller id value and address */
+ struct caller_id_struct {
+ 	/* pid of the process */
+@@ -275,7 +263,7 @@ struct sep_lli_entry {
+ 
+ /* get the static pool area addersses (physical and virtual) */
+ #define SEP_IOCGETSTATICPOOLADDR	\
+-	_IOR(SEP_IOC_MAGIC_NUMBER, 8, struct stat_pool_addr_struct)
++	_IO(SEP_IOC_MAGIC_NUMBER, 8)
+ 
+ /* start sep command */
+ #define SEP_IOCSEPSTART	 \
+-- 
+1.6.3.3
 
-Mark Allyn
