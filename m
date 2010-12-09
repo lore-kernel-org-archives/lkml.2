@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab0LIUfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:35:10 -0500
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:40685 "HELO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757216Ab0LIUfH (ORCPT
+	id S1757255Ab0LIUiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:38:25 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:52031 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab0LIUiX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:35:07 -0500
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant.likely@secretlab.ca>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Cc: linux-kernel@vger.kernel.org, Michael Buesch <mb@bu3sch.de>
-Subject: [RFC][PATCH v2 1/3] spi-gpio: implement spidelay() for platforms that configure SLOWER_SPI_GPIO
-Date: Thu,  9 Dec 2010 15:34:54 -0500
-Message-Id: <0e2c28d0e0d60b9655e7d80e79cc811206b725b9.1291925752.git.bengardiner@nanometrics.ca>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1291925752.git.bengardiner@nanometrics.ca>
-References: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca> <cover.1291925752.git.bengardiner@nanometrics.ca>
+	Thu, 9 Dec 2010 15:38:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101209201359.GG2921@thunk.org>
+References: <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+ <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
+ <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+ <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
+ <20101209201359.GG2921@thunk.org>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Thu, 9 Dec 2010 14:38:00 -0600
+Message-ID: <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: "Ted Ts'o" <tytso@mit.edu>, Jon Nelson <jnelson@jamponi.net>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
+        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a Kconfig option, SLOWER_SPI_GPIO, that enables a spidelay
-implementation of ndelay when defined.
+On Thu, Dec 9, 2010 at 2:13 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Thu, Dec 09, 2010 at 12:10:58PM -0600, Jon Nelson wrote:
+>>
+>> You should be OK, there. Are you using encryption or no?
+>> I had difficulty replicating the issue without encryption.
+>
+> Yes, I'm using encryption.  LUKS with aes-xts-plain-sha256, and then
+> LVM on top of LUKS.
 
-This is based off of the patch proposed by Michael Buesch [1]. Whereas that
-patch required slave's set their spi_device.max_speed_hz and
-spi_transfer.speed_hz to 0 to obtain 'as fast as we can transfers' this patch
-keeps the default of 'as fast as we can' for any GPIO SPI master unless the
-proposed Kconfig option is enabled.
+Hmm.
+The cipher is listed as:
+aes-cbc-essiv:sha256
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-Reviewed-by: Dan Sharon <dansharon@nanometrics.ca>
-Reviewed-by: Chris Cordahi <chriscordahi@nanometrics.ca>
-CC: Michael Buesch <mb@bu3sch.de>
+>> > If you can point out how to query pgsql_tmp (I'm using a completely
+>> > default postgres install), that would be helpful, but I don't think it
+>> > would be going anywhere else.
+>>
+>> Normally it's /var/lib/pgsql/data/pgsql_tmp (or
+>> /var/lib/postgres/data/pgsql_tmp in your case). By placing
+>> /var/lib/{postgresql,pgsql}/data on the LUKS + ext4 volume, on both
+>> openSUSE 11.3 and Kubuntu, I was able to replicate the problem easily,
+>> in VirtualBox. I can give qemu a try. In both cases I was using a
+>> 2.6.37x kernel.
+>
+> Ah, I'm not using virtualization.  I'm running on a X410 laptop, on
+> raw hardware.  Perhaps virtualization slows things down enough that it
+> triggers?  Or maybe you're running with a more constrained memory than
+> I?  How much memory do you have configured in your VM?
 
-[1] http://article.gmane.org/gmane.comp.embedded.openwrt.devel/2854
+512MB.
 
----
-changes since v1:
- * rebased to v2.6.37-rc5
+'free' reports 75MB, 419MB free.
 
- drivers/spi/Kconfig    |   17 +++++++++++++++++
- drivers/spi/spi_gpio.c |    5 +++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+I originally noticed the problem on really real hardware (thinkpad
+T61p), however.
 
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 78f9fd0..0570dcd 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -143,6 +143,23 @@ config SPI_GPIO
- 	  GPIO operations, you should be able to leverage that for better
- 	  speed with a custom version of this driver; see the source code.
- 
-+config SLOWER_SPI_GPIO
-+	bool "Enable delays in the GPIO-based bitbanging SPI Master"
-+	default n
-+	depends on SPI_GPIO
-+	help
-+	  The GPIO bitbanging SPI master driver will run without any delays if this
-+	  option is not set. This option will enable the use of delays in the
-+	  operation of the GPIO bitbanging SPI master implementation to honour the
-+	  maximum speed of very slow devices.
-+
-+	  To configure slow speed devices your board-specific setup logic must also
-+	  provide platform data assigning the speed for a device on a given chip
-+	  select of the GPIO bitbanging SPI master.
-+
-+	  If your platform requires SPI buses driven at slow speeds select yes. If
-+	  in doubt, select no.
-+
- config SPI_IMX_VER_IMX1
- 	def_bool y if SOC_IMX1
- 
-diff --git a/drivers/spi/spi_gpio.c b/drivers/spi/spi_gpio.c
-index 63e51b0..b31fddd 100644
---- a/drivers/spi/spi_gpio.c
-+++ b/drivers/spi/spi_gpio.c
-@@ -19,6 +19,7 @@
-  */
- #include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/delay.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- 
-@@ -119,6 +120,9 @@ static inline int getmiso(const struct spi_device *spi)
- 
- #undef pdata
- 
-+#if defined(CONFIG_SLOWER_SPI_GPIO)
-+#define spidelay(nsecs) ndelay(nsecs)
-+#else
- /*
-  * NOTE:  this clocks "as fast as we can".  It "should" be a function of the
-  * requested device clock.  Software overhead means we usually have trouble
-@@ -126,6 +130,7 @@ static inline int getmiso(const struct spi_device *spi)
-  * we'll just assume we never need additional per-bit slowdowns.
-  */
- #define spidelay(nsecs)	do {} while (0)
-+#endif
- 
- #include "spi_bitbang_txrx.h"
- 
 -- 
-1.7.0.4
-
+Jon
