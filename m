@@ -1,104 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab0LILC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 06:02:58 -0500
-Received: from mail.us.es ([193.147.175.20]:46008 "EHLO mail.us.es"
+	id S1754288Ab0LILSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 06:18:24 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47651 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796Ab0LILC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 06:02:57 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Dec 2010 06:02:57 EST
-Message-ID: <4D00B5CD.3050406@netfilter.org>
-Date: Thu, 09 Dec 2010 11:56:13 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
-MIME-Version: 1.0
-To: netfilter-devel <netfilter-devel@lists.netfilter.org>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>
-Subject: Re: ctnetlink loop
-References: <20101203133903.GG13225@mail.eitzenberger.org>
-In-Reply-To: <20101203133903.GG13225@mail.eitzenberger.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------000904020006080003040508"
+	id S1751105Ab0LILSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 06:18:22 -0500
+From: Mel Gorman <mel@csn.ul.ie>
+To: Simon Kirby <sim@hostway.ca>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order allocations until a percentage of the node is balanced
+Date: Thu,  9 Dec 2010 11:18:16 +0000
+Message-Id: <1291893500-12342-3-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
+References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000904020006080003040508
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+When reclaiming for high-orders, kswapd is responsible for balancing a
+node but it should not reclaim excessively. It avoids excessive reclaim by
+considering if any zone in a node is balanced then the node is balanced. In
+the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
+ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
+one small zone was balanced.
 
-Sorry, I finally found your email reporting this:
+This alters the sleep logic of kswapd slightly. It counts the number of pages
+that make up the balanced zones. If the total number of balanced pages is
+more than a quarter of the zone, kswapd will go back to sleep. This should
+keep a node balanced without reclaiming an excessive number of pages.
 
-> nfnetlink: avoid unbound loop on busy Netlink socket
-> 
-> I see a problem with how ctnetlink GET requests are being
-> processed in the kernel (2.6.32.24) under high load.
-> 
-> The sympton is Netlink looping around nfnetlink_rcv_msg(), which
-> is just because netlink_unicast() came back with EAGAIN when
-> trying to write the newly created Netlink skb to the SK receive
-> buffer in ctnetlink_get_conntrack().  In this case a (possibly)
-> infinit loop is entered.  Mostly infinit I think in case the
-> userland party trying to receive those messages may be stuck in
-> the sendmsg() call, being unable to read anything if being single
-> threaded.
-> 
-> I tried to reproduce several times, a few times the loop
-> disappeared and the box proceeded normally after some minutes.
-> I have no explanation for this.
-> 
-> The attached patch tries to solve it by simple not trying again
-> to netlink_unicast() the reply skb and just fail with -ENOBUFS.
-> The reasoning is that at the point a Netlink overrun is detected
-> it seems counter intuitive to insist on sending one more Netlink
-> message.
-
-We still need EAGAIN, and it doesn't necessarily means ENOBUFS for the
-general case in nfnetlink.
-
-The following patch covers the case that you're reporting.
-
---------------000904020006080003040508
-Content-Type: text/x-patch;
- name="f.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="f.patch"
-
-netfilter: ctnetlink: fix loop in ctnetlink_get_conntrack()
-
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-
-This patch fixes a loop in ctnetlink_get_conntrack() that can be
-triggered if you use the same socket to receive events and to
-perform a GET operation. Under heavy load, netlink_unicast()
-may return -EAGAIN, this error code is reserved in nfnetlink for
-the module load-on-demand. Instead, we return -ENOBUFS which is
-the appropriate error code that has to be propagated to
-user-space.
-
-Reported-by: Holger Eitzenberger <holger@eitzenberger.org>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- net/netfilter/nf_conntrack_netlink.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ mm/vmscan.c |   43 ++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
-index b729ace..a84fa6f 100644
---- a/net/netfilter/nf_conntrack_netlink.c
-+++ b/net/netfilter/nf_conntrack_netlink.c
-@@ -973,7 +973,8 @@ ctnetlink_get_conntrack(struct sock *ctnl, struct sk_buff *skb,
- free:
- 	kfree_skb(skb2);
- out:
--	return err;
-+	/* this avoids a loop in nfnetlink. */
-+	return err == -EAGAIN ? -ENOBUFS : err;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 25cb373..b4472a1 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2117,10 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ }
+ #endif
+ 
++/*
++ * pgdat_balanced is used when checking if a node is balanced for high-order
++ * allocations. Only zones that meet watermarks make up "balanced".
++ * The total of balanced pages must be at least 25% of the node for the
++ * node to be considered balanced. Forcing all zones to be balanced for high
++ * orders can cause excessive reclaim when there are imbalanced zones.
++ * Similarly, we do not want kswapd to go to sleep because ZONE_DMA happens
++ * to be balanced when ZONE_DMA32 is huge in comparison and unbalanced
++ */
++static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
++{
++	return balanced > pgdat->node_present_pages / 4;
++}
++
+ /* is kswapd sleeping prematurely? */
+ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ {
+ 	int i;
++	unsigned long balanced = 0;
++	bool all_zones_ok = true;
+ 
+ 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
+ 	if (remaining)
+@@ -2138,10 +2154,19 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ 
+ 		if (!zone_watermark_ok(zone, order, high_wmark_pages(zone),
+ 								0, 0))
+-			return 1;
++			all_zones_ok = false;
++		else
++			balanced += zone->present_pages;
+ 	}
+ 
+-	return 0;
++	/*
++	 * For high-order requests, any zone meeting the watermark allows
++	 * kswapd to sleep. For order-0, all zones must be balanced
++	 */
++	if (order)
++		return pgdat_balanced(pgdat, balanced);
++	else
++		return !all_zones_ok;
  }
  
- #ifdef CONFIG_NF_NAT_NEEDED
+ /*
+@@ -2169,7 +2194,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 							int classzone_idx)
+ {
+ 	int all_zones_ok;
+-	int any_zone_ok;
++	unsigned long balanced;
+ 	int priority;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+@@ -2203,7 +2228,7 @@ loop_again:
+ 			disable_swap_token();
+ 
+ 		all_zones_ok = 1;
+-		any_zone_ok = 0;
++		balanced = 0;
+ 
+ 		/*
+ 		 * Scan in the highmem->dma direction for the highest
+@@ -2314,11 +2339,11 @@ loop_again:
+ 				 */
+ 				zone_clear_flag(zone, ZONE_CONGESTED);
+ 				if (i <= classzone_idx)
+-					any_zone_ok = 1;
++					balanced += zone->present_pages;
+ 			}
+ 
+ 		}
+-		if (all_zones_ok || (order && any_zone_ok))
++		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))
+ 			break;		/* kswapd: all done */
+ 		/*
+ 		 * OK, kswapd is getting into trouble.  Take a nap, then take
+@@ -2344,10 +2369,10 @@ out:
+ 
+ 	/*
+ 	 * order-0: All zones must meet high watermark for a balanced node
+-	 * high-order: Any zone below pgdats classzone_idx must meet the high
+-	 *             watermark for a balanced node
++	 * high-order: Balanced zones must make up at least 25% of the node
++	 *             for the node to be balanced
+ 	 */
+-	if (!(all_zones_ok || (order && any_zone_ok))) {
++	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))) {
+ 		cond_resched();
+ 
+ 		try_to_freeze();
+-- 
+1.7.1
 
---------------000904020006080003040508--
