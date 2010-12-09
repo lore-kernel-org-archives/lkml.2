@@ -1,167 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab0LIB75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:59:57 -0500
-Received: from ozlabs.org ([203.10.76.45]:41065 "EHLO ozlabs.org"
+	id S1756801Ab0LICBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 21:01:00 -0500
+Received: from ozlabs.org ([203.10.76.45]:41076 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab0LIB7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:59:55 -0500
+	id S1753412Ab0LICA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 21:00:59 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: x86@kernel.org
-Subject: [PATCH RFC] x86: initialize initial_page_table before paravirt jumps
-Date: Thu, 9 Dec 2010 12:29:45 +1030
+Subject: [PATCH 1/2] lguest: fix crash lguest_time_init
+Date: Thu, 9 Dec 2010 12:30:53 +1030
 User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; i686; ; )
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, lguest <lguest@ozlabs.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012091229.46430.rusty@rustcorp.com.au>
+Message-Id: <201012091230.53907.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of v2.6.36-rc8-54-gb40827f, initial_page_table needs to be set up to boot.
-My initial fix for lguest was to cut & paste in the initialization code, but
-as it's simply byte-twiddling (which could be done at compile time if we
-were clever enough), it seems better to do it unconditionally.
-
-Jeremy, Ingo does this make sense to you?  Given it's rc5, I have an
-lguest-specific patch ready as an alternative...
-
-Thanks,
-Rusty.
-
-Subject: x86: initialize initial_page_table before paravirt jumps
-
-v2.6.36-rc8-54-gb40827f (x86-32, mm: Add an initial page table for
-core bootstrapping) made x86 boot using initial_page_table and broke
-lguest.
-
-Rather than cut & paste initialization code into lguest, let's just
-do that init before the paravirt jump (and remove the max_pfn_mapped
-setting in lguest, since this code does it).
+fe25c7fc2e "x86: lguest: Convert to new irq chip functions" converted
+enable_lguest_irq() to take a struct irq_data *, but didn't fix the one
+internal caller.
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+To: x86@kernel.org
 ---
- arch/x86/kernel/head_32.S |   73 +++++++++++++++++++++++-----------------------
- arch/x86/lguest/boot.c    |    3 -
- 2 files changed, 37 insertions(+), 39 deletions(-)
+ arch/x86/lguest/boot.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -137,39 +137,6 @@ 1:
- 	movl %eax, pa(olpc_ofw_pgd)
- #endif
- 
--#ifdef CONFIG_PARAVIRT
--	/* This is can only trip for a broken bootloader... */
--	cmpw $0x207, pa(boot_params + BP_version)
--	jb default_entry
--
--	/* Paravirt-compatible boot parameters.  Look to see what architecture
--		we're booting under. */
--	movl pa(boot_params + BP_hardware_subarch), %eax
--	cmpl $num_subarch_entries, %eax
--	jae bad_subarch
--
--	movl pa(subarch_entries)(,%eax,4), %eax
--	subl $__PAGE_OFFSET, %eax
--	jmp *%eax
--
--bad_subarch:
--WEAK(lguest_entry)
--WEAK(xen_entry)
--	/* Unknown implementation; there's really
--	   nothing we can do at this point. */
--	ud2a
--
--	__INITDATA
--
--subarch_entries:
--	.long default_entry		/* normal x86/PC */
--	.long lguest_entry		/* lguest hypervisor */
--	.long xen_entry			/* Xen hypervisor */
--	.long default_entry		/* Moorestown MID */
--num_subarch_entries = (. - subarch_entries) / 4
--.previous
--#endif /* CONFIG_PARAVIRT */
--
- /*
-  * Initialize page tables.  This creates a PDE and a set of page
-  * tables, which are located immediately beyond __brk_base.  The variable
-@@ -179,7 +146,6 @@ num_subarch_entries = (. - subarch_entri
-  *
-  * Note that the stack is not yet set up!
-  */
--default_entry:
- #ifdef CONFIG_X86_PAE
- 
- 	/*
-@@ -259,7 +225,42 @@ 11:
- 	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
- 	movl %eax,pa(initial_page_table+0xffc)
- #endif
--	jmp 3f
-+
-+#ifdef CONFIG_PARAVIRT
-+	/* This is can only trip for a broken bootloader... */
-+	cmpw $0x207, pa(boot_params + BP_version)
-+	jb default_entry
-+
-+	/* Paravirt-compatible boot parameters.  Look to see what architecture
-+		we're booting under. */
-+	movl pa(boot_params + BP_hardware_subarch), %eax
-+	cmpl $num_subarch_entries, %eax
-+	jae bad_subarch
-+
-+	movl pa(subarch_entries)(,%eax,4), %eax
-+	subl $__PAGE_OFFSET, %eax
-+	jmp *%eax
-+
-+bad_subarch:
-+WEAK(lguest_entry)
-+WEAK(xen_entry)
-+	/* Unknown implementation; there's really
-+	   nothing we can do at this point. */
-+	ud2a
-+
-+	__INITDATA
-+
-+subarch_entries:
-+	.long default_entry		/* normal x86/PC */
-+	.long lguest_entry		/* lguest hypervisor */
-+	.long xen_entry			/* Xen hypervisor */
-+	.long default_entry		/* Moorestown MID */
-+num_subarch_entries = (. - subarch_entries) / 4
-+.previous
-+#else
-+	jmp default_entry
-+#endif /* CONFIG_PARAVIRT */
-+
- /*
-  * Non-boot CPU entry point; entered from trampoline.S
-  * We can't lgdt here, because lgdt itself uses a data segment, but
-@@ -280,7 +281,7 @@ ENTRY(startup_32_smp)
- 	movl %eax,%fs
- 	movl %eax,%gs
- #endif /* CONFIG_SMP */
--3:
-+default_entry:
- 
- /*
-  *	New page tables may be in 4Mbyte page mode and may
 diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
 --- a/arch/x86/lguest/boot.c
 +++ b/arch/x86/lguest/boot.c
-@@ -1349,9 +1349,6 @@ __init void lguest_init(void)
- 	 */
- 	switch_to_new_gdt(0);
+@@ -1002,7 +1002,7 @@ static void lguest_time_init(void)
+ 	clockevents_register_device(&lguest_clockevent);
  
--	/* We actually boot with all memory mapped, but let's say 128MB. */
--	max_pfn_mapped = (128*1024*1024) >> PAGE_SHIFT;
--
- 	/*
- 	 * The Host<->Guest Switcher lives at the top of our address space, and
- 	 * the Host told us how big it is when we made LGUEST_INIT hypercall:
+ 	/* Finally, we unblock the timer interrupt. */
+-	enable_lguest_irq(0);
++	clear_bit(0, lguest_data.blocked_interrupts);
+ }
+ 
+ /*
