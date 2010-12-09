@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab0LIXQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:16:23 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44085 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab0LIXQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:16:21 -0500
-Date: Fri, 10 Dec 2010 00:16:16 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jon Nelson <jnelson@jamponi.net>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mike Snitzer <snitzer@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101209231616.GA12515@basil.fritz.box>
-References: <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think>
- <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com>
- <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
- <20101209180111.GF2921@thunk.org>
- <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
- <20101209201359.GG2921@thunk.org>
- <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
+	id S1755496Ab0LIXQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 18:16:32 -0500
+Received: from cantor.suse.de ([195.135.220.2]:44646 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755093Ab0LIXQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 18:16:30 -0500
+Date: Fri, 10 Dec 2010 00:16:28 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
+        linux-kernel@vger.kernel.org, "Peter J. Braam" <braam@maths.ox.ac.uk>,
+        Michael Callahan <callahan@maths.ox.ac.uk>,
+        Peter Braam <braam@cs.cmu.edu>
+Subject: Re: [PATCH] coda: kill redundant cast in coda_alloc_inode()
+In-Reply-To: <alpine.LNX.2.00.1012092322201.25880@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1012100016010.11700@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012092322201.25880@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 512MB.
-> 
-> 'free' reports 75MB, 419MB free.
-> 
-> I originally noticed the problem on really real hardware (thinkpad
-> T61p), however.
+On Thu, 9 Dec 2010, Jesper Juhl wrote:
 
-If you can easily reproduce it could you try a git bisect?
+> kmem_cache_alloc() returns a void pointer which there is no need to cast.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  inode.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/coda/inode.c b/fs/coda/inode.c
+> index 5ea57c8..1a49c17 100644
+> --- a/fs/coda/inode.c
+> +++ b/fs/coda/inode.c
+> @@ -45,7 +45,7 @@ static struct kmem_cache * coda_inode_cachep;
+>  static struct inode *coda_alloc_inode(struct super_block *sb)
+>  {
+>  	struct coda_inode_info *ei;
+> -	ei = (struct coda_inode_info *)kmem_cache_alloc(coda_inode_cachep, GFP_KERNEL);
+> +	ei = kmem_cache_alloc(coda_inode_cachep, GFP_KERNEL);
+>  	if (!ei)
+>  		return NULL;
+>  	memset(&ei->c_fid, 0, sizeof(struct CodaFid));
 
--Andi
+Applied, thanks Jesper.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Jiri Kosina
+SUSE Labs, Novell Inc.
