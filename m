@@ -1,135 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab0LIQWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:22:14 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:55342 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750972Ab0LIQWN (ORCPT
+	id S1753810Ab0LIQYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:24:22 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:26567 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab0LIQYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:22:13 -0500
-Date: Thu, 9 Dec 2010 11:22:11 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Cc: Li Zefan <lizf@cn.fujitsu.com>, William Cohen <wcohen@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jason Baron <jbaron@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Zhaolei <zhaolei@cn.fujitsu.com>,
-        Anton Blanchard <anton@samba.org>
-Subject: [RFC PATCH] ftrace trace event: introduce assignment macros
-Message-ID: <20101209162210.GB6769@Krystal>
+	Thu, 9 Dec 2010 11:24:21 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6191"; a="65950535"
+Message-ID: <4D0102B3.8010302@codeaurora.org>
+Date: Thu, 09 Dec 2010 11:24:19 -0500
+From: Stephen Caudle <scaudle@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11pre) Gecko/20100922 Shredder/3.1.5pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:16:43 up 15 days, 21:19,  5 users,  load average: 0.02, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        adharmap@codeaurora.org, linux-kernel@vger.kernel.org, miltonm@bga.com,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2] [ARM] gic: Unmask private interrupts on all cores
+ during IRQ enable
+References: <1288820762-16077-1-git-send-email-scaudle@codeaurora.org> <20101130180718.GB8521@n2100.arm.linux.org.uk> <4CF6797A.2010807@codeaurora.org> <20101201171425.GA29347@n2100.arm.linux.org.uk>
+In-Reply-To: <20101201171425.GA29347@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes encapsulation of the raw assignments within TP_fast_assign()
-by introducing tp_assign() and tp_memcpy() macros. This will allow us to:
+On 12/01/2010 12:14 PM, Russell King - ARM Linux wrote:
+> On Wed, Dec 01, 2010 at 11:36:10AM -0500, Stephen Caudle wrote:
+>> On 11/30/2010 01:07 PM, Russell King - ARM Linux wrote:
+>>> Sorry, missed this.
+>>>
+>>> If it's a private peripheral, it can only be accessed from its associated
+>>> CPU.  What that means is you don't want to enable the interrupt on other
+>>> CPUs as the peripheral may not be present or initialized on that CPU.
+>>
+>> Understood.  But the alternative is to require all code that requests a  
+>> PPI to have to enable the IRQ on the other cores.  This seems  
+>> unreasonable to me.
+> 
+> It is also unreasonable to have one core enabling the PPI on other
+> cores where the hardware behind the interrupt may not have been
+> initialized yet.  If it is a private interrupt for a private peripheral,
+> then only the associated CPU should be enabling that interrupt.
+> 
+> I guess this is something which genirq can't cope with, in which case
+> either genirq needs to be modified to cope with private CPU interrupts,
+> which are controlled individually by their associated CPU, or we need a
+> private interface to support this.
 
-- generically filter from input fields,
-- redefine the field write primitives.
+I see your point.  Our immediate need for this is to support a
+performance monitor interrupt that happens to be a PPI.  It is used by
+perf events (and subsequently, oprofile).
 
-The current macros map directly to the old code. I changed the documentation in
-tracepoint.txt to reflect these new primitives, but all TRACE_EVENT() users
-should gradually update their code to use these macro wrappers rather than raw
-"=" assignments or mempcy() calls.
+Since PPIs are so machine-specific, I started looking into patching
+perf_events.c by adding a machine specific function to handle the PMU
+IRQ request.  For mach-msm, we would call request_irq like normal, but
+also unmask the performance monitor interrupt on the other cores.  The
+downside to this is that a machine specific implementation would be
+needed anytime a PPI is requested, not just in perf_events.c.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Li Zefan <lizf@cn.fujitsu.com>
-CC: William Cohen <wcohen@redhat.com>
-CC: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-CC: Theodore Ts'o <tytso@mit.edu>
-CC: Jason Baron <jbaron@redhat.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
-CC: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>
-CC: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
-CC: Martin K. Petersen <martin.petersen@oracle.com>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Masami Hiramatsu <mhiramat@redhat.com>
-CC: Josh Stone <jistone@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Zhaolei <zhaolei@cn.fujitsu.com>
-CC: Anton Blanchard <anton@samba.org>
----
- include/linux/tracepoint.h |   12 ++++++------
- include/trace/ftrace.h     |    6 ++++++
- 2 files changed, 12 insertions(+), 6 deletions(-)
+Then, I saw Thomas' email regarding our local timer PPI:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2010-December/033840.html.
 
-Index: linux-2.6-lttng.git/include/trace/ftrace.h
-===================================================================
---- linux-2.6-lttng.git.orig/include/trace/ftrace.h
-+++ linux-2.6-lttng.git/include/trace/ftrace.h
-@@ -1,4 +1,10 @@
- /*
-+ * Macros mapping tp_assign() and tp_memcpy() to "=" and memcpy.
-+ */
-+#define tp_assign(dest, src)		__entry->dest = src
-+#define tp_memcpy(dest, src, len)	memcpy(__entry->dest, src, len)
-+
-+/*
-  * Stage 1 of the trace events.
-  *
-  * Override the macros in <trace/trace_events.h> to include the following:
-Index: linux-2.6-lttng.git/include/linux/tracepoint.h
-===================================================================
---- linux-2.6-lttng.git.orig/include/linux/tracepoint.h
-+++ linux-2.6-lttng.git/include/linux/tracepoint.h
-@@ -306,12 +306,12 @@ static inline void tracepoint_update_pro
-  *	*
-  *
-  *	TP_fast_assign(
-- *		memcpy(__entry->next_comm, next->comm, TASK_COMM_LEN);
-- *		__entry->prev_pid	= prev->pid;
-- *		__entry->prev_prio	= prev->prio;
-- *		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
-- *		__entry->next_pid	= next->pid;
-- *		__entry->next_prio	= next->prio;
-+ *		tp_memcpy(next_comm, next->comm, TASK_COMM_LEN);
-+ *		tp_assign(prev_pid, prev->pid);
-+ *		tp_assign(prev_prio, prev->prio);
-+ *		tp_memcpy(prev_comm, prev->comm, TASK_COMM_LEN);
-+ *		tp_assign(next_pid, next->pid);
-+ *		tp_assign(next_prio, next->prio);
-  *	)
-  *
-  *	*
+Russell, before I submit another patch, I would like to know if you
+prefer a more generic approach like Thomas suggests, or a
+machine-specific approach like I have described?
+
+Thanks,
+Stephen
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
