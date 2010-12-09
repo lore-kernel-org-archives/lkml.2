@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab0LIPAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:00:13 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38420 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab0LIPAL (ORCPT
+	id S1754534Ab0LIPG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:06:29 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:42409 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab0LIPG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:00:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mLHkN66XSDuNZIqJMUEEVw5pMBKJKHtkN0YD99gDrMfpxZKvytm66LLHkYCthT9CXT
-         oiIPzACRtNq88wVigWTTn+R4WjYJXkJAOrgDedTCWknd3kLFMUBZeRgRTnq8zLg0PXW6
-         2uysowhhi6/9ke17WP8nU8pS/wQcMjJIonHlk=
-Date: Thu, 9 Dec 2010 23:59:59 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] compaction: Remove mem_cgroup_del_lru
-Message-ID: <20101209145959.GA1740@barrios-desktop>
-References: <1291734086-1405-1-git-send-email-minchan.kim@gmail.com>
+	Thu, 9 Dec 2010 10:06:28 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291734086-1405-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Message-ID: <19712.61515.201226.938553@quad.stoffel.home>
+Date: Thu, 9 Dec 2010 10:05:47 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: xfs-masters@oss.sgi.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        cluster-devel@redhat.com, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org, xfs@oss.sgi.com, linux-mm@kvack.org,
+        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
+        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
+        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
+        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
+        jeffm@suse.com, serue@us.ibm.com, paul.moore@hp.com,
+        penguin-kernel@I-love.SAKURA.ne.jp, casey@schaufler-ca.com,
+        kees.cook@canonical.com, dhowells@redhat.com
+Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on inode
+ creation
+In-Reply-To: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
+References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 12:01:26AM +0900, Minchan Kim wrote:
-> del_page_from_lru_list alreay called mem_cgroup_del_lru.
-> So we need to call it again. It makes wrong stat of memcg and
-> even happen VM_BUG_ON hit.
-> 
-> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/compaction.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 50b0a90..b0fbfdf 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -302,7 +302,6 @@ static unsigned long isolate_migratepages(struct zone *zone,
->  		/* Successfully isolated */
->  		del_page_from_lru_list(zone, page, page_lru(page));
->  		list_add(&page->lru, migratelist);
-> -		mem_cgroup_del_lru(page);
->  		cc->nr_migratepages++;
->  		nr_isolated++;
->  
-> -- 
-> 1.7.0.4
-> 
+>>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
 
-Hi Andrew, 
-Please drop above(mm-compactionc-avoid-double-mem_cgroup_del_lru.patch)
-This is a new version with modified description and added Acked-by.
+Eric> SELinux would like to implement a new labeling behavior of newly
+Eric> created inodes.  We currently label new inodes based on the
+Eric> parent and the creating process.  This new behavior would also
+Eric> take into account the name of the new object when deciding the
+Eric> new label.  This is not the (supposed) full path, just the last
+Eric> component of the path.
 
->From 64b3a2c1205d3ffc55878ab8f00f4d450318bb91 Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan.kim@gmail.com>
-Date: Thu, 9 Dec 2010 23:49:27 +0900
-Subject: [PATCH] mm/compaction.c: avoid double mem_cgroup_del_lru()
+Eric> This is very useful because creating /etc/shadow is different
+Eric> than creating /etc/passwd but the kernel hooks are unable to
+Eric> differentiate these operations.  We currently require that
+Eric> userspace realize it is doing some difficult operation like that
+Eric> and than userspace jumps through SELinux hoops to get things set
+Eric> up correctly.  This patch does not implement new behavior, that
+Eric> is obviously contained in a seperate SELinux patch, but it does
+Eric> pass the needed name down to the correct LSM hook.  If no such
+Eric> name exists it is fine to pass NULL.
 
-del_page_from_lru_list() already called mem_cgroup_del_lru().  So we must
-not call it again. It adds unnecessary overhead.
+I've looked this patch over, and maybe I'm missing something, but how
+does knowing the name of the file really tell you anything, esp when
+you only get the filename, not the path?  What threat are you
+addressing with this change?  
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/compaction.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+So what happens when I create a file /home/john/shadow, does selinux
+(or LSM in general) then run extra checks because the filename is
+'shadow' in your model?  
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 50b0a90..b0fbfdf 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -302,7 +302,6 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 		/* Successfully isolated */
- 		del_page_from_lru_list(zone, page, page_lru(page));
- 		list_add(&page->lru, migratelist);
--		mem_cgroup_del_lru(page);
- 		cc->nr_migratepages++;
- 		nr_isolated++;
- 
--- 
-1.7.0.4
+I *think* the overhead shouldn't be there if SELINUX is disabled, but
+have you confirmed this?  How you run performance tests before/after
+this change when doing lots of creations of inodes to see what sort of
+performance changes might be there?
 
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+John
