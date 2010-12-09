@@ -1,121 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab0LIUfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:35:12 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:33712 "HELO
+	id S1757291Ab0LIUfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:35:22 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:33601 "HELO
 	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756388Ab0LIUfF (ORCPT
+	by vger.kernel.org with SMTP id S1756388Ab0LIUfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:35:05 -0500
+	Thu, 9 Dec 2010 15:35:18 -0500
 From: Ben Gardiner <bengardiner@nanometrics.ca>
 To: spi-devel-general@lists.sourceforge.net,
         Grant Likely <grant.likely@secretlab.ca>,
         David Brownell <dbrownell@users.sourceforge.net>
 Cc: linux-kernel@vger.kernel.org, Michael Buesch <mb@bu3sch.de>
-Subject: [RFC][PATCH v2 3/3] spi-gpio: use _cansleep when CONFIG_SLOWER_SPI_GPIO is defined
-Date: Thu,  9 Dec 2010 15:34:56 -0500
-Message-Id: <986eb10f4a662940f631235efa4b679acdcdab80.1291925752.git.bengardiner@nanometrics.ca>
+Subject: [RFC][PATCH v2 0/3] slower spi-gpio
+Date: Thu,  9 Dec 2010 15:34:53 -0500
+Message-Id: <cover.1291925752.git.bengardiner@nanometrics.ca>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1291925752.git.bengardiner@nanometrics.ca>
-References: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca> <cover.1291925752.git.bengardiner@nanometrics.ca>
+In-Reply-To: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca>
+References: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When users have elected to enable delays in the spi-gpio driver, use the
-_cansleep variant of gpio_set_value. This allows the use of GPIOs on an
-IO expander.
+This a continuation of the previous RFC [1]; we are interested in running a
+bitbanged SPI bus with a limited rate of transfer, including the delay between
+CS assertion and the beginning of data transfer. We also would like to do this 
+with the GPIOs on an IO expander.
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+The following three changes have been identified so far as being required to 
+achieve this. spidelay() must be implemented, the delay specified in
+controller_state should be honoured when a transfer begins and finally the 
+_cansleep gpio set functions should be used so that GPIOs on an expander can
+be used. 
+
+This is alot of compile-time functionality switching though. I wonder if this
+kind of patching of spi-gpio would be acceptable or not; given the recent
+events in polled gpio-keys I feel that maybe a new 'spi-gpio-limited' driver 
+might be preferred.
+
+[1] http://article.gmane.org/gmane.linux.kernel/1065748
+
+Ben Gardiner (3):
+  [RFC] spi-gpio: implement spidelay() for platforms that configure
+    SLOWER_SPI_GPIO
+  [RFC] spi_bitbang : get nsecs delay from cs during transfer
+  [RFC] spi-gpio: use _cansleep when CONFIG_SLOWER_SPI_GPIO is defined
+
+ drivers/spi/Kconfig       |   17 +++++++++++++++++
+ drivers/spi/spi_bitbang.c |   15 +++++++++------
+ drivers/spi/spi_gpio.c    |   18 +++++++++++++++---
+ 3 files changed, 41 insertions(+), 9 deletions(-)
 
 ---
 
-changes since v1:
- * none; new in v2
+Changes since v1:
+ * rebased to  2.6.37-rc5
+ * introduced patch 2/3 and 3/3
 
-I was testing the slowed-down spio-gpio driver on a I2C pca953x expander
-when I noticed the WARNs that the spio-gpio driver was calling into the
-I2C expander drivers gpio_set functions without using the _cansleep
-variant. This patch removes all the warnings except for one on startup
-when the spi-gpio instance is registered:
+This time around I tested the changes by registering a spi-gpio bus intance
+on the user DIP switches of the da850evm baseboard which are connected to a 
+pca953x-compatible I2C gpio expander. Then I did a few 
+'echo hello > /dev/spidev0.0' commands and checked the behaviour of the bus
+on a scope. I was unable to test the speed of this bus without the patchset
+this time since using the GPIOs on the expander requires patch 3/3. I found 
+that the SCLK speed was roughly 300Hz where 500Hz was requested.
 
-BUG: scheduling while atomic: swapper/1/0x00000002
-Modules linked in:
-[<c002f79c>] (unwind_backtrace+0x0/0xec) from [<c02859f8>] (schedule+0x74/0x408)
-[<c02859f8>] (schedule+0x74/0x408) from [<c028653c>] (schedule_timeout+0x1d4/0x214)
-[<c028653c>] (schedule_timeout+0x1d4/0x214) from [<c02861f4>] (wait_for_common+0xf0/0x1b8)
-[<c02861f4>] (wait_for_common+0xf0/0x1b8) from [<c01e8c50>] (i2c_davinci_xfer+0x1ec/0x304)
-[<c01e8c50>] (i2c_davinci_xfer+0x1ec/0x304) from [<c01e6e40>] (i2c_transfer+0xc4/0x120)
-[<c01e6e40>] (i2c_transfer+0xc4/0x120) from [<c01e72dc>] (i2c_smbus_xfer+0x3ac/0x4ec)
-[<c01e72dc>] (i2c_smbus_xfer+0x3ac/0x4ec) from [<c01e7610>] (i2c_smbus_write_word_data+0x38/0x40)
-[<c01e7610>] (i2c_smbus_write_word_data+0x38/0x40) from [<c018a8ec>] (pca953x_write_reg+0x38/0x64)
-[<c018a8ec>] (pca953x_write_reg+0x38/0x64) from [<c018a954>] (pca953x_gpio_set_value+0x3c/0x48)
-[<c018a954>] (pca953x_gpio_set_value+0x3c/0x48) from [<c0189868>] (gpio_set_value_cansleep+0x30/0x38)
-[<c0189868>] (gpio_set_value_cansleep+0x30/0x38) from [<c01d81d8>] (spi_bitbang_setup+0xb4/0x104)
-[<c01d81d8>] (spi_bitbang_setup+0xb4/0x104) from [<c01d88d4>] (spi_gpio_setup+0x6c/0xa0)
-[<c01d88d4>] (spi_gpio_setup+0x6c/0xa0) from [<c01d74d4>] (spi_setup+0x48/0x50)
-[<c01d74d4>] (spi_setup+0x48/0x50) from [<c01d7754>] (spi_add_device+0xa0/0x118)
-[<c01d7754>] (spi_add_device+0xa0/0x118) from [<c01d784c>] (spi_new_device+0x80/0xa4)
-[<c01d784c>] (spi_new_device+0x80/0xa4) from [<c01d7890>] (spi_match_master_to_boardinfo+0x20/0x40)
-[<c01d7890>] (spi_match_master_to_boardinfo+0x20/0x40) from [<c01d7974>] (spi_register_master+0xc4/0x10c)
-[<c01d7974>] (spi_register_master+0xc4/0x10c) from [<c01d7d54>] (spi_bitbang_start+0x11c/0x154)
-[<c01d7d54>] (spi_bitbang_start+0x11c/0x154) from [<c001b640>] (spi_gpio_probe+0x1ac/0x23c)
-[<c001b640>] (spi_gpio_probe+0x1ac/0x23c) from [<c01be7d8>] (platform_drv_probe+0x18/0x1c)
-[<c01be7d8>] (platform_drv_probe+0x18/0x1c) from [<c01bd950>] (driver_probe_device+0xb0/0x16c)
-[<c01bd950>] (driver_probe_device+0xb0/0x16c) from [<c01bda6c>] (__driver_attach+0x60/0x84)
-[<c01bda6c>] (__driver_attach+0x60/0x84) from [<c01bd194>] (bus_for_each_dev+0x44/0x74)
-[<c01bd194>] (bus_for_each_dev+0x44/0x74) from [<c01bcae4>] (bus_add_driver+0xa8/0x228)
-[<c01bcae4>] (bus_add_driver+0xa8/0x228) from [<c01bdd3c>] (driver_register+0xa8/0x134)
-[<c01bdd3c>] (driver_register+0xa8/0x134) from [<c01bea44>] (platform_driver_probe+0x18/0x98)
-[<c01bea44>] (platform_driver_probe+0x18/0x98) from [<c002a430>] (do_one_initcall+0xc8/0x1a4)
-[<c002a430>] (do_one_initcall+0xc8/0x1a4) from [<c00083cc>] (kernel_init+0x94/0x14c)
-[<c00083cc>] (kernel_init+0x94/0x14c) from [<c002b99c>] (kernel_thread_exit+0x0/0x8)
----
- drivers/spi/spi_gpio.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+Here is a snip of the board-setup code that registers the spi-gpio bus:
 
-diff --git a/drivers/spi/spi_gpio.c b/drivers/spi/spi_gpio.c
-index b31fddd..537ce13 100644
---- a/drivers/spi/spi_gpio.c
-+++ b/drivers/spi/spi_gpio.c
-@@ -78,6 +78,12 @@ struct spi_gpio {
- 
- #define GENERIC_BITBANG	/* vs tight inlines */
- 
-+#if defined(CONFIG_SLOWER_SPI_GPIO)
-+#define spi_gpio_gpio_set_value gpio_set_value_cansleep
-+#else
-+#define spi_gpio_gpio_set_value gpio_set_value
-+#endif
-+
- /* all functions referencing these symbols must define pdata */
- #define SPI_MISO_GPIO	((pdata)->miso)
- #define SPI_MOSI_GPIO	((pdata)->mosi)
-@@ -105,12 +111,12 @@ spi_to_pdata(const struct spi_device *spi)
- 
- static inline void setsck(const struct spi_device *spi, int is_on)
- {
--	gpio_set_value(SPI_SCK_GPIO, is_on);
-+	spi_gpio_gpio_set_value(SPI_SCK_GPIO, is_on);
- }
- 
- static inline void setmosi(const struct spi_device *spi, int is_on)
- {
--	gpio_set_value(SPI_MOSI_GPIO, is_on);
-+	spi_gpio_gpio_set_value(SPI_MOSI_GPIO, is_on);
- }
- 
- static inline int getmiso(const struct spi_device *spi)
-@@ -222,7 +228,8 @@ static void spi_gpio_chipselect(struct spi_device *spi, int is_active)
- 
- 	if (cs != SPI_GPIO_NO_CHIPSELECT) {
- 		/* SPI is normally active-low */
--		gpio_set_value(cs, (spi->mode & SPI_CS_HIGH) ? is_active : !is_active);
-+		spi_gpio_gpio_set_value(cs, (spi->mode & SPI_CS_HIGH) ?
-+							is_active : !is_active);
- 	}
- }
- 
--- 
-1.7.0.4
+static struct spi_gpio_platform_data bb_spi_gpio_pdata = {
+	.sck		= -1 /* assigned at runtime */,
+	.mosi		= -1 /* assigned at runtime */,
+	.miso		= -1 /* assigned at runtime */,
+	.num_chipselect = 1,
+};
 
+static struct platform_device bb_spi_gpio = {
+	.name		= "spi_gpio",
+	.id		= 0,
+	.dev		= {
+		.platform_data	= &bb_spi_gpio_pdata,
+	},
+};
+
+static struct spi_board_info bb_spi_devices[] = {
+	{
+		.modalias	= "spidev",
+		.max_speed_hz	= 500,
+		.bus_num	= 0,
+		.chip_select	= 0,
+		.mode		= SPI_MODE_0,
+		.controller_data = (void *) -1 /* assigned at runtime */,
+	},
+};
+
+static int bb_spi_gpio_init(unsigned gpio)
+{
+	int ret;
+
+	bb_spi_gpio_pdata.sck = gpio + DA850_EVM_BB_EXP_USER_SW1;
+	bb_spi_gpio_pdata.mosi = gpio + DA850_EVM_BB_EXP_USER_SW2;
+	bb_spi_gpio_pdata.miso = -1 /* nothing connected ATM */;
+
+	bb_spi_devices[0].controller_data = (void *) gpio +
+						DA850_EVM_BB_EXP_USER_SW3;
+
+	ret = spi_register_board_info(bb_spi_devices,
+					ARRAY_SIZE(bb_spi_devices));
+	if (ret) {
+		pr_warning("could not register spi devices");
+		goto spi_gpio_fail_devices;
+	}
+
+	ret = platform_device_register(&bb_spi_gpio);
+	if (ret) {
+		pr_warning("could not register spi-gpio driver instance");
+		goto spi_gpio_fail_bus;
+	}
+
+	return 0;
+spi_gpio_fail_bus:
+	/* no unregister board info function available*/
+spi_gpio_fail_devices:
+	return ret;
+}
+
+static int da850_evm_bb_expander_setup(struct i2c_client *client,
+						unsigned gpio, unsigned ngpio,
+						void *c)
+{
+	int ret;
+
+	/*
+	 * Register the switches and pushbutton on the baseboard as a gpio-keys
+	 * device.
+	 */
+	da850_evm_bb_keys_init(gpio);
+	ret = platform_device_register(&da850_evm_bb_keys_device);
+	if (ret) {
+		pr_warning("Could not register baseboard GPIO expander keys");
+		goto io_exp_setup_sw_fail;
+	}
+
+	da850_evm_bb_leds_init(gpio);
+	ret = platform_device_register(&da850_evm_bb_leds_device);
+	if (ret) {
+		pr_warning("Could not register baseboard GPIO expander LEDS");
+		goto io_exp_setup_leds_fail;
+	}
+
+	ret = bb_spi_gpio_init(gpio);
+	if (ret) {
+		pr_warning("Could not register spi-gpio bus");
+		goto io_exp_setup_spi_fail;
+	}
+
+	return 0;
+
+io_exp_setup_spi_fail:
+	platform_device_unregister(&da850_evm_bb_leds_device);
+io_exp_setup_leds_fail:
+	platform_device_unregister(&da850_evm_bb_keys_device);
+io_exp_setup_sw_fail:
+	return ret;
+}
