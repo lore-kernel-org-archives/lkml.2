@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab0LISkw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:40:52 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51904 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0LISkv (ORCPT
+	id S1754546Ab0LISls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:41:48 -0500
+Received: from mail.windriver.com ([147.11.1.11]:41199 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab0LISlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:40:51 -0500
-Date: Thu, 9 Dec 2010 10:38:53 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Tavis Ormandy <taviso@cmpxchg8b.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org,
-        kees@ubuntu.com, eugene@redhat.com
-Subject: Re: [PATCH] install_special_mapping skips security_file_mmap check.
-Message-Id: <20101209103853.89bd577b.randy.dunlap@oracle.com>
-In-Reply-To: <20101209142942.GB9267@cmpxchg8b.com>
-References: <20101209142942.GB9267@cmpxchg8b.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 9 Dec 2010 13:41:47 -0500
+Message-ID: <4D0122E2.6000109@windriver.com>
+Date: Thu, 09 Dec 2010 12:41:38 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Tal Lubko <tallubko@yahoo.com>
+CC: linux-kernel@vger.kernel.org,
+        KGDB Mailing List <kgdb-bugreport@lists.sourceforge.net>
+Subject: Re: kgdb issues in 2.6.26.5-rt9
+References: <270554.37369.qm@web53305.mail.re2.yahoo.com>
+In-Reply-To: <270554.37369.qm@web53305.mail.re2.yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Dec 2010 18:41:39.0402 (UTC) FILETIME=[B7464AA0:01CB97D0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Dec 2010 15:29:42 +0100 Tavis Ormandy wrote:
+On 12/05/2010 02:04 AM, Tal Lubko wrote:
+> Hello all,
+>
+> I am running a custom 2.6.26.5-rt9 kernel which is the 2.6.26.5 vanilla kernel 
+> with version 9 of the real time patch for that specific version. I am trying to 
+> debug a "hard" problem which means not a problem which is easily reproducibe, 
+> appears only on boot, only under certain conditions etc. In order to debug the 
+> problem I am using kgdb.
+>
+> Before anyone flames me, I am aware that kgdb is not the highway as far as 
+> kernel debugging is concerned, but due to certain external factors I am 
+> interested in making that approach work.
+>
+> My understanding of the kgdb status (please correct me if I am wrong on any of 
+> the following...):
+> - kgdb is supported in 2.6.26.5 vanilla and the important stuff works.
+> - the version of kgdb in 2.6.26.5 is the "light" version by Ingo, Thomas and 
+> Jason which means that some features are missing.
+> - I am not aware of any limitations of the host side gdb that I am supposed to 
+> use in order to debug the target (I tried using 6.6 and 6.8)
+>
+> The problems I have with kgdb:
+> - info threads shows most of the threads on the system but then hangs for a 
+> short time with various data errors. As a first stab this seems like a protocol 
+> issue between host and target.
+>   
 
-> Signed-off-by: Tavis Ormandy <taviso@google.com>
-> Acked-by: Kees Cook <kees@ubuntu.com>
-> Acked-by: Robert Swiecki <swiecki@google.com>
-> ---
-> 
->  fs/exec.c |    7 +++++++
->  mm/mmap.c |    5 +++++
->  2 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index d68c378..7e8c4b6 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -275,7 +275,14 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
->     vma->vm_flags = VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
->     vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
->     INIT_LIST_HEAD(&vma->anon_vma_chain);
-> +
-> +   err = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
-> +
-> +   if (err)
-> +       goto err;
-> +
->     err = insert_vm_struct(mm, vma);
-> +
->     if (err)
->         goto err;
->  
+It depends.  The only way to know for sure is to do something like
+following command before issuing your commands in gdb.
 
-Uh, something happened to the tabs at the beginning of each line...
-I.e., the original file content has been mucked up.
+set debug remote 1
 
+That will at least tell you were things started "hang".
 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index b179abb..1de3f4b 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2479,6 +2479,11 @@ int install_special_mapping(struct mm_struct *mm,
->     vma->vm_ops = &special_mapping_vmops;
->     vma->vm_private_data = pages;
->  
-> +   if (security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1)) {
-> +       kmem_cache_free(vm_area_cachep, vma);
-> +       return -EPERM;
-> +   }
-> +
->     if (unlikely(insert_vm_struct(mm, vma))) {
->         kmem_cache_free(vm_area_cachep, vma);
->         return -ENOMEM;
-> 
-> 
-> -- 
-> -------------------------------------
+> - thread [tid] does not work. It claims that the thread ids that I use do not 
+> exist although the info that I do manage to get out of "info threads" admits 
+> that they do. ps(1) on the target also confirms the thread id numbers.
+>   
 
+In gdb the thread command only works if you could obtain the thread
+list.  If you know the thread struct address of some process you are
+interested in, it may be easier to just reference it in the debugger.  
+The debugger is a tool that you can use as a helper and it is not good
+at "every scenario" under the sun especially if you are concerned at all
+about speed or determinism.   You would be better served to be looking
+at tracing tools if that is the case.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> - I haven't managed to set breakpoints. For instance: breaking on printk using 
+> "break printk" results in a segv of the debugger (huh?!?). This looks like a gdb 
+>
+>   
+
+Perhaps the documentation sheds some light in later releases of kgdb
+(and the kernel for that matter).   My guess is that you need to turn
+off the kernel option CONFIG_DEBUG_RODATA.  There was no safety check
+for this in 2.6.26.  A great number of other problems have been solved
+over time as well with HW breakpoints and SMP robustness.
+
+Best of luck debugging.  :-)
+
+Cheers,
+Jason.
