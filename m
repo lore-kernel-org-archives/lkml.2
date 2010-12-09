@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab0LIIH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 03:07:29 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47919 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169Ab0LIIH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 03:07:28 -0500
-Date: Thu, 9 Dec 2010 08:07:10 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1012090804470.22839@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754456Ab0LIINj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 03:13:39 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34506 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab0LIINh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 03:13:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EuER8gmLbawPH24N+7VzfoV5db3cVAmXmpj7nbosoQ31SYNy1S5mlU7TPJK7UcepD6
+         Bu2oZ2fZGNjkcQ35YNAGZQ+eb5AFR/AbbQRxJUg4N4V/doq4qsWtt+lj+bjo0EpaYcb7
+         pWVQgC34VhrcEWSneAk+f1RIk6KNPXjyCflmU=
+Date: Thu, 9 Dec 2010 00:13:30 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 4/7] ideapad: select INPUT_SPARSEKMAP
+Message-ID: <20101209081329.GC6233@core.coreip.homeip.net>
+References: <1291881376-4729-1-git-send-email-ike.pan@canonical.com>
+ <1291881440-4846-1-git-send-email-ike.pan@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291881440-4846-1-git-send-email-ike.pan@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 09, 2010 at 03:57:20PM +0800, Ike Panhc wrote:
+> Thanks for Dave Hansen report the problem. If CONFIG_INPUT_SPARSEKMAP is not
+> set, when building, you will have error message:
+> 
+>   ERROR: "sparse_keymap_setup" [drivers/platform/x86/ideapad-laptop.ko] undefined!
+>   ERROR: "sparse_keymap_free" [drivers/platform/x86/ideapad-laptop.ko] undefined!
+>   ERROR: "sparse_keymap_report_event" [drivers/platform/x86/ideapad-laptop.ko] undefined!
+> 
+> To select INPUT_SPARSEKMAP solve this issue.
+> 
+> Ref: http://lkml.org/lkml/2010/12/2/340
+>
 
-Hi Linus,
+I'd recommend folding this patch together with the patch that introduces
+sparse keymap usage. Leaving them separated served only to risk compile
+errors during bisecting.
 
-didn't see much point in queueing these up for a longer period of time, 
-they are all fairly small and make sense.
+Thanks.
 
-The use after free is from the vblank leak fixing, so since nobody noticed 
-we probably don't hit the error path so often, the AGP fix is 
-reported/tested in k.org, and the output renames has no userspace 
-effect in case anyone wonders.
-
-Dave.
-
-The following changes since commit 6313e3c21743cc88bb5bd8aa72948ee1e83937b6:
-
-  Merge branches 'x86-fixes-for-linus', 'perf-fixes-for-linus' and 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-12-08 06:40:59 -0800)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (2):
-      drm/kms: remove spaces from connector names (v2)
-      drm/radeon/kms: don't apply 7xx HDP flush workaround on AGP
-
-Dan Carpenter (1):
-      drm: use after free in drm_queue_vblank_event()
-
- drivers/gpu/drm/drm_crtc.c    |   10 +++++-----
- drivers/gpu/drm/drm_irq.c     |    4 ++--
- drivers/gpu/drm/radeon/r600.c |   11 ++++++++---
- 3 files changed, 15 insertions(+), 10 deletions(-)
+-- 
+Dmitry
