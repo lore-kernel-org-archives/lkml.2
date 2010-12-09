@@ -1,102 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab0LIJiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:38:12 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34830 "EHLO hera.kernel.org"
+	id S1755912Ab0LIJib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:38:31 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:53326 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754830Ab0LIJiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:38:09 -0500
-Message-ID: <4D00A345.6070100@kernel.org>
-Date: Thu, 09 Dec 2010 10:37:09 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755897Ab0LIJi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:38:28 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCHv1 008/211] unicore32: new file arch/unicore32/boot/compressed/misc.c
+Date: Thu, 9 Dec 2010 17:38:26 +0800
+Message-ID: <01da01cb9784$d44c0460$7ce40d20$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Shaohui Zheng <shaohui.zheng@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
-        dave@linux.vnet.ibm.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Len Brown <len.brown@intel.com>,
-        Yinghai Lu <Yinghai.Lu@sun.com>, Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [5/7,v8] NUMA Hotplug Emulator: Support cpu probe/release in
- x86_64
-References: <20101207010033.280301752@intel.com> <20101207010140.092555703@intel.com> <alpine.DEB.2.00.1012081334160.15658@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1012081334160.15658@chino.kir.corp.google.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 09:37:12 +0000 (UTC)
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcuXhNP0y/6QfpikR3uC1ifOkX3fyQ==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-On 12/08/2010 10:36 PM, David Rientjes wrote:
-> On Tue, 7 Dec 2010, shaohui.zheng@intel.com wrote:
-> 
->> From: Shaohui Zheng <shaohui.zheng@intel.com>
->>
->> CPU physical hot-add/hot-remove are supported on some hardwares, and it 
->> was already supported in current linux kernel. NUMA Hotplug Emulator provides
->> a mechanism to emulate the process with software method. It can be used for
->> testing or debuging purpose.
->>
->> CPU physical hotplug is different with logical CPU online/offline. Logical
->> online/offline is controled by interface /sys/device/cpu/cpuX/online. CPU
->> hotplug emulator uses probe/release interface. It becomes possible to do cpu
->> hotplug automation and stress
->>
->> Add cpu interface probe/release under sysfs for x86_64. User can use this
->> interface to emulate the cpu hot-add and hot-remove process.
->>
->> Directive:
->> *) Reserve CPU thru grub parameter like:
->> 	maxcpus=4
->>
->> the rest CPUs will not be initiliazed. 
->>
->> *) Probe CPU
->> we can use the probe interface to hot-add new CPUs:
->> 	echo nid > /sys/devices/system/cpu/probe
->>
->> *) Release a CPU
->> 	echo cpu > /sys/devices/system/cpu/release
->>
->> A reserved CPU will be hot-added to the specified node.
->> 1) nid == 0, the CPU will be added to the real node which the CPU
->> should be in
->> 2) nid != 0, add the CPU to node nid even through it is a fake node.
->>
-> 
-> This patch is undoubtedly going to conflict with Tejun's unification of 
-> the 32 and 64 bit NUMA boot paths, specifically the patch at 
-> http://marc.info/?l=linux-kernel&m=129087151912379.
+	decompress_kernel call wrapper in c function
 
-Oh yeah, it definitely looks like it will collide with the unification
-patch.  The problem is more fundamental than the actual patch
-collisions tho.  During x86_32/64 merge, some parts were left unmerged
-- some reflect actual differences between 32 and 64 but more were
-probably because it was too much work.
+Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+---
+ arch/unicore32/boot/compressed/misc.c |  143
++++++++++++++++++++++++++++++++++
+ 1 files changed, 143 insertions(+), 0 deletions(-)
 
-These subtle diversions make the code unnecessarily complicated,
-fragile and difficult to maintain, so, in general, I think we should
-be heading toward unifying 32 and 64 unless the difference is caused
-by actual hardware even when the feature or code might not be too
-useful for 32bit.
+diff --git a/arch/unicore32/boot/compressed/misc.c
+b/arch/unicore32/boot/compressed/misc.c
+new file mode 100644
+index 0000000..28dda37
+--- /dev/null
++++ b/arch/unicore32/boot/compressed/misc.c
+@@ -0,0 +1,143 @@
++/*
++ * linux/arch/unicore32/boot/compressed/misc.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <asm/unaligned.h>
++#include <asm/mach/uncompress.h>
++
++/*
++ * gzip delarations
++ */
++unsigned char *output_data;
++unsigned long output_ptr;
++
++unsigned int free_mem_ptr;
++unsigned int free_mem_end_ptr;
++
++#define STATIC static
++#define STATIC_RW_DATA	/* non-static please */
++
++/*
++ * arch-dependent implementations
++ */
++#ifndef ARCH_HAVE_DECOMP_ERROR
++#define arch_decomp_error(x)
++#endif
++
++#ifndef ARCH_HAVE_DECOMP_SETUP
++#define	arch_decomp_setup()
++#endif
++
++#ifndef ARCH_HAVE_DECOMP_PUTS
++#define arch_decomp_puts(p)
++#endif
++
++/* Diagnostic functions */
++#ifdef DEBUG
++#  define Assert(cond, msg)	{ if (!(cond)) error(msg); }
++#  define Trace(x)		fprintf x
++#  define Tracev(x)		{ if (verbose)			fprintf x; }
++#  define Tracevv(x)		{ if (verbose > 1)		fprintf x; }
++#  define Tracec(c, x)		{ if (verbose && (c))		fprintf x; }
++#  define Tracecv(c, x)		{ if ((verbose > 1) && (c))
+fprintf x; }
++#else
++#  define Assert(cond, msg)
++#  define Trace(x)
++#  define Tracev(x)
++#  define Tracevv(x)
++#  define Tracec(c, x)
++#  define Tracecv(c, x)
++#endif
++
++void *memcpy(void *__dest, __const void *__src, size_t __n)
++{
++	int i = 0;
++	unsigned char *d = (unsigned char *)__dest, *s = (unsigned char
+*)__src;
++
++	for (i = __n >> 3; i > 0; i--) {
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++	}
++
++	if (__n & 1 << 2) {
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++		*d++ = *s++;
++	}
++
++	if (__n & 1 << 1) {
++		*d++ = *s++;
++		*d++ = *s++;
++	}
++
++	if (__n & 1)
++		*d++ = *s++;
++
++	return __dest;
++}
++
++void error(char *x)
++{
++
++	arch_decomp_puts("\n\n");
++	arch_decomp_puts(x);
++	arch_decomp_puts("\n\n -- System halted");
++
++	arch_decomp_error(x);
++
++	do { } while (1); /* Halt */
++}
++
++/* Heap size should be adjusted for different decompress method */
++#ifdef CONFIG_KERNEL_GZIP
++#include "../../../../lib/decompress_inflate.c"
++#endif
++
++#ifdef CONFIG_KERNEL_BZIP2
++#include "../../../../lib/decompress_bunzip2.c"
++#endif
++
++#ifdef CONFIG_KERNEL_LZO
++#include "../../../../lib/decompress_unlzo.c"
++#endif
++
++#ifdef CONFIG_KERNEL_LZMA
++#include "../../../../lib/decompress_unlzma.c"
++#endif
++
++unsigned long
++decompress_kernel(unsigned long output_start, unsigned long free_mem_ptr_p,
++		unsigned long free_mem_ptr_end_p)
++{
++	unsigned char *tmp;
++
++	output_data		= (unsigned char *)output_start;
++	free_mem_ptr		= free_mem_ptr_p;
++	free_mem_end_ptr	= free_mem_ptr_end_p;
++
++	arch_decomp_setup();
++
++	tmp = (unsigned char *) (((unsigned long)input_data_end) - 4);
++	output_ptr = get_unaligned_le32(tmp);
++
++	arch_decomp_puts("Uncompressing Linux...");
++	decompress(input_data, input_data_end - input_data, NULL, NULL,
++			output_data, NULL, error);
++	arch_decomp_puts(" done, booting the kernel.\n");
++	return output_ptr;
++}
 
-So, the same thing holds for NUMA hotplug emulator.  32bit supports
-NUMA and there already is 64bit only NUMA emulator.  I think it would
-be much better if we take this chance to unify 32 and 64bit code paths
-on this area rather than going further toward the wrong direction.
-
-> Tejun, what's the status of that patchset posted on November 27?  Any 
-> comments about this change?
-
-I don't know.  I pinged Ingo yesterday.  Ingo?
-
-Thanks.
-
--- 
-tejun
