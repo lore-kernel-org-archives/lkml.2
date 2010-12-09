@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab0LIUOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:14:21 -0500
-Received: from thunk.org ([69.25.196.29]:59255 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757065Ab0LIUOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:14:19 -0500
-Date: Thu, 9 Dec 2010 15:13:59 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jon Nelson <jnelson@jamponi.net>
-Cc: Mike Snitzer <snitzer@redhat.com>, Chris Mason <chris.mason@oracle.com>,
-        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101209201359.GG2921@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
-	Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-	Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	dm-devel <dm-devel@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	htd <htd@fancy-poultry.org>, htejun@gmail.com,
-	linux-ext4@vger.kernel.org
-References: <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com>
- <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think>
- <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com>
- <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
- <20101209180111.GF2921@thunk.org>
- <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
+	id S1757193Ab0LIUPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:15:23 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:26635 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab0LIUPW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 15:15:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jBREcG8kwJ9FhE5jWCVSWqeZADOD+6AXRAmxrfdBGC0mAHbILRF3V9b4C0kCzElvg9
+         xorBeh6cyZ8E23IQChNw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1291922467.6803.44.camel@twins>
+References: <1291267223.2405.314.camel@minggr.sh.intel.com>
+	<1291922467.6803.44.camel@twins>
+Date: Thu, 9 Dec 2010 21:15:19 +0100
+Message-ID: <AANLkTi=GeCHZ23J5UDoUfbWnLHfVWCeA7f9Gh_sKYSqa@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 12:10:58PM -0600, Jon Nelson wrote:
-> 
-> You should be OK, there. Are you using encryption or no?
-> I had difficulty replicating the issue without encryption.
-
-Yes, I'm using encryption.  LUKS with aes-xts-plain-sha256, and then
-LVM on top of LUKS.
-
-> > If you can point out how to query pgsql_tmp (I'm using a completely
-> > default postgres install), that would be helpful, but I don't think it
-> > would be going anywhere else.
-> 
-> Normally it's /var/lib/pgsql/data/pgsql_tmp (or
-> /var/lib/postgres/data/pgsql_tmp in your case). By placing
-> /var/lib/{postgresql,pgsql}/data on the LUKS + ext4 volume, on both
-> openSUSE 11.3 and Kubuntu, I was able to replicate the problem easily,
-> in VirtualBox. I can give qemu a try. In both cases I was using a
-> 2.6.37x kernel.
-
-Ah, I'm not using virtualization.  I'm running on a X410 laptop, on
-raw hardware.  Perhaps virtualization slows things down enough that it
-triggers?  Or maybe you're running with a more constrained memory than
-I?  How much memory do you have configured in your VM?
-
-    	     	       	   		      - Ted
+On Thu, Dec 9, 2010 at 8:21 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2010-12-02 at 13:20 +0800, Lin Ming wrote:
+>> +       /* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
+>> +       family = boot_cpu_data.x86;
+>> +       model = boot_cpu_data.x86_model;
+>> +       if (family != 6 || (model != 0x1A && model != 0x1E && model != 0x1F))
+>> +               return;
+>
+> So that's 26, 30 and 31? Curiously
+> arch/x86/kernel/cpu/perf_event_intel.c does have 31.
+>
+It is also missing model 44 (0x2c).
