@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab0LISB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:01:29 -0500
-Received: from THUNK.ORG ([69.25.196.29]:57199 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755814Ab0LISB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:01:26 -0500
-Date: Thu, 9 Dec 2010 13:01:11 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jon Nelson <jnelson@jamponi.net>
-Cc: Mike Snitzer <snitzer@redhat.com>, Chris Mason <chris.mason@oracle.com>,
-        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101209180111.GF2921@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
-	Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-	Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	dm-devel <dm-devel@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	htd <htd@fancy-poultry.org>, htejun@gmail.com,
-	linux-ext4@vger.kernel.org
-References: <4CF6B3E8.2000406@redhat.com>
- <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com>
- <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think>
- <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com>
- <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+	id S932115Ab0LISBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:01:48 -0500
+Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:1969 "EHLO
+	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab0LISBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 13:01:47 -0500
+Message-ID: <4D011914.3000301@xs4all.nl>
+Date: Thu, 09 Dec 2010 18:59:48 +0100
+From: Jim Bos <jim876@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Florian Mickler <florian@mickler.org>,
+        Ingo Molnar <mingo@elte.hu>, Dave Chinner <david@fromorbit.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
+References: <20101103062609.GB31163@dastard> <1288768402.2467.665.camel@edumazet-laptop> <20101103103448.GA9169@dastard> <20101103112936.GB9169@dastard> <20101104002140.GA13830@dastard> <20101104054718.GC5210@cr0.nay.redhat.com> <20101208100245.01cf23c5@schatten.dmk.lab> <20101208134116.GA16923@redhat.com> <20101208134712.GB16923@redhat.com> <20101208140822.GA18681@redhat.com> <20101209164748.GA3218@hack>
+In-Reply-To: <20101209164748.GA3218@hack>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 09:37:20PM -0600, Jon Nelson wrote:
-> One difference is the location of the transaction logs (pg_xlog). In
-> my case, /var/lib/pgsql/data *is* mountpoint for the test volume
-> (actually, it's a symlink to the mount point). In your case, that is
-> not so. Perhaps that makes a difference?  pgsql_tmp might also be on
-> two different volumes in your case (I can't be sure).
+On 12/09/2010 05:47 PM, Américo Wang wrote:
+> On Wed, Dec 08, 2010 at 03:08:22PM +0100, Oleg Nesterov wrote:
+>> On 12/08, Oleg Nesterov wrote:
+>>>
+>>> On 12/08, Oleg Nesterov wrote:
+>>>>
+>>>> On 12/08, Florian Mickler wrote:
+>>>>>
+>>>>> [ ccing Ingo and Oleg ] as suggested
+>>>>
+>>>> Well. Of course I can't explain this bug. But, looking at this email
+>>>> I do not see amything strange in exit/schedule/etc.
+>>>>
+>>>>>>>>>>> This is resulting in the command 'ip link set tap0 up' hanging as a zombie:
+>>>>>>>>>>>
+>>>>>>>>>>> root      3005     1  0 16:53 pts/3    00:00:00 /bin/sh /vm-images/qemu-ifup tap0
+>>>>>>>>>>> root      3011  3005  0 16:53 pts/3    00:00:00 /usr/bin/sudo /sbin/ip link set tap0 up
+>>>>>>>>>>> root      3012  3011  0 16:53 pts/3    00:00:00 [ip] <defunct>
+>>>>
+>>>> That is. ip is a zombie.
+>>>
+>>> And. I do not know if this matters or not, but "the command 'ip link
+>>> set tap0 up' hanging as a zombie" does not look right.
+>>>
+>>> This was spawned by
+>>>
+>>>>>>>>> if [ -n "$1" ];then
+>>>>>>>>>         /usr/bin/sudo /sbin/ip link set $1 up
+>>>>>>>>>         sleep 0.5s
+>>>>>>>>>         /usr/bin/sudo /usr/sbin/brctl addif $switch $1
+>>>>>>>>>      exit 0
+>>>>>>>>> fi
+>>>
+>>> The command does not hang. But it forks the child with pid == 3012,
+>>> this child exits.
+>>
+>> Damn, sorry for noise, forgot to mention...
+>>
+>> The parent's trace (pid == 3011) can be more useful. Say, if it
+>> hangs in do_wait(), then the kernel is obviously wrong.
+>>
+> 
+> Yeah, there is no point that a zombie can trigger a BUG_ON in kenrel.
+> But it is still interesting to know why it becomes a zombie...
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I just tried tried to run t.sql five times with /var/lib/postgres as a
-mountpoint for a 5400 rpm disk, and I still haven't been able to
-replicate it.
+ip link tap0 up not working might be this issue:
 
-If you can point out how to query pgsql_tmp (I'm using a completely
-default postgres install), that would be helpful, but I don't think it
-would be going anywhere else.
+   http://marc.info/?l=linux-netdev&m=128783852132311&w=2
 
-Still trying....
+( Latest Virtualbox 3.2.12 works around this issue )
 
-						- Ted
+Jim
+
+
+
