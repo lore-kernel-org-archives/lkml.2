@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0LITRZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 14:17:25 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:52645 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625Ab0LITRX convert rfc822-to-8bit (ORCPT
+	id S1754591Ab0LITSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 14:18:08 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:50112 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab0LITSG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 14:17:23 -0500
-Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291702522.3678.138.camel@minggr.sh.intel.com>
-References: <1291267223.2405.314.camel@minggr.sh.intel.com>
-	 <1291702522.3678.138.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 9 Dec 2010 14:18:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=GqpI9MhURxrBqPfM31zXQImQM1Tz7J1sjB9S2prx1PvEWZHNheNs93Z+NsLl/7SL8L
+         UHjCkBJfrqvmkLj3AbVfjo1ytR44a+P6cMMr3aHWBgTBXwRWw4puKZ+Au69TiExL8EMb
+         gvkoSU3Gx3F9FTWN85l6Bx8tSjTisonNezCYQ=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "baoyb" <baoyb@avit.org.cn>
+Subject: Re: Kernel Oops at tty_buffer_request_room when using pppd program (2.6.37-rc4)
+Date: Thu, 9 Dec 2010 20:17:59 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc4; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, alan@linux.intel.com
+References: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
+In-Reply-To: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 09 Dec 2010 20:17:02 +0100
-Message-ID: <1291922222.6803.40.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Message-Id: <201012092018.00201.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-07 at 14:15 +0800, Lin Ming wrote:
-> On Thu, 2010-12-02 at 13:20 +0800, Lin Ming wrote:
-> > +
-> > +static int
-> > +uncore_perf_event_set_period(struct perf_event *event)
-> > +{
-> > +	struct hw_perf_event *hwc = &event->hw;
-> > +	s64 left = local64_read(&hwc->period_left);
-> > +	s64 period = hwc->sample_period;
-> > +	u64 max_period = (1ULL << UNCORE_CNTVAL_BITS) - 1;
-> > +	int ret = 0, idx = hwc->idx;
-> > +
-> > +	/*
-> > +	 * If we are way outside a reasonable range then just skip forward:
-> > +	 */
-> > +	if (unlikely(left <= -period)) {
-> > +		left = period;
-> > +		local64_set(&hwc->period_left, left);
-> > +		hwc->last_period = period;
-> > +		ret = 1;
-> > +	}
-> > +
-> > +	if (unlikely(left <= 0)) {
-> > +		left += period;
-> > +		local64_set(&hwc->period_left, left);
-> > +		hwc->last_period = period;
-> > +		ret = 1;
-> > +	}
-> > +
-> > +	if (left > max_period)
-> > +		left = max_period;
-> > +
-> > +	/*
-> > +	 * The hw event starts counting from this event offset,
-> > +	 * mark it to be able to extra future deltas:
-> > +	 */
-> > +	local64_set(&hwc->prev_count, (u64)-left);
+On środa, 8 grudnia 2010 o 14:55:09 baoyb wrote:
+> Hi All:
 > 
-> All uncore pmu interrupts from a socket are routed to one of the four
-> cores, so local64_set seems not correct here.
+> We are using a USB 3G card(HUAWEI e180) and wvdial+pppd(version 2.4.5)
+> program. Sometimes kernel will crash when pppd disconnect the link. Our cpu
+> platform is AMCC ppc405EX and kernel version is 2.6.37-rc4.
+> The following is log info when oops happened.
 > 
-> But hwc->prev_count is defined as local64_t, any idea how to set it
-> correctly?
-> 
-> Or is it OK if local64_set is always executed in the same cpu?
 
-Yes, the local_t bits work as expected when its always accessed by the
-same cpu.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=24582
+for your bug report, please add your address to the CC list in there, thanks!
+
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
