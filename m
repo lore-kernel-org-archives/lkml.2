@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab0LIK0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 05:26:00 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:57067 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990Ab0LIKYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 05:24:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=px76ee6uut9TbbZbzAA4fStK9ZpdM0dmir76T/5aWNlwkBq3+EmdfKBrg+BtncANbo
-         qOztFocmTbzHhYFqcgt3mH8XuXOrzzTh1V14l+EQbukLWcAbASQCSFoEjZyYPeWKTRcb
-         ZOUzirwHy0w/jtaaXkrz2fPuuxOm/JTSTe13Y=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 3/8] staging: ft1000: Remove unused pdevobj array.
-Date: Thu,  9 Dec 2010 11:26:48 +0100
-Message-Id: <1291890413-15255-4-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291890413-15255-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1291890413-15255-1-git-send-email-marek.belisko@open-nandra.com>
+	id S1756164Ab0LIK2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 05:28:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755932Ab0LIK2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 05:28:49 -0500
+Message-ID: <4D00AF3C.40603@redhat.com>
+Date: Thu, 09 Dec 2010 12:28:12 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144516.45a0385d@annuminas.surriel.com> <4CFB8BFA.4040100@redhat.com> <4D0008D5.1040102@redhat.com>
+In-Reply-To: <4D0008D5.1040102@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to store pointer to device in some local
-array because we always pass to debugfs correct device pointer.
-So remove it.
+On 12/09/2010 12:38 AM, Rik van Riel wrote:
+>
+>>> - /* Sleep for 100 us, and hope lock-holder got scheduled */
+>>> - expires = ktime_add_ns(ktime_get(), 100000UL);
+>>> - schedule_hrtimeout(&expires, HRTIMER_MODE_ABS);
+>>> + if (first_round&& last_boosted_vcpu == kvm->last_boosted_vcpu) {
+>>> + /* We have not found anyone yet. */
+>>> + first_round = 0;
+>>> + goto again;
+>>
+>> Need to guarantee termination.
+>
+> We do that by setting first_round to 0 :)
+>
+> We at most walk N+1 VCPUs in a VM with N VCPUs, with
+> this patch.
+>
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   23 ----------------------
- 1 files changed, 0 insertions(+), 23 deletions(-)
+Right.  May be clearer by using a for () loop instead of the goto.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-index 8b735e4..0871e43 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-@@ -51,10 +51,6 @@ static long ft1000_ChIoctl(struct file *File, unsigned int Command,
-                            unsigned long Argument);
- static int ft1000_ChRelease (struct inode *Inode, struct file *File);
- 
--// Global pointer to device object
--static struct ft1000_device *pdevobj[MAX_NUM_CARDS + 2];
--//static devfs_handle_t ft1000Handle[MAX_NUM_CARDS];
--
- // List to free receive command buffer pool
- struct list_head freercvpool;
- 
-@@ -165,11 +161,6 @@ int ft1000_CreateDevice(struct ft1000_device *dev)
-     DEBUG("ft1000_CreateDevice: number of instance = %d\n", ft1000_flarion_cnt);
-     DEBUG("DeviceCreated = %x\n", info->DeviceCreated);
- 
--    //save the device info to global array
--    pdevobj[info->CardNumber] = dev;
--
--    DEBUG("ft1000_CreateDevice: ******SAVED pdevobj[%d]=%p\n", info->CardNumber, pdevobj[info->CardNumber]);	//aelias [+] reason:up
--
-     if (info->DeviceCreated)
-     {
- 	DEBUG("ft1000_CreateDevice: \"%s\" already registered\n", info->DeviceName);
-@@ -327,8 +318,6 @@ void ft1000_DestroyDevice(struct net_device *dev)
- //        devfs_unregister(ft1000Handle[info->CardNumber]);
- 
- 		info->DeviceCreated = FALSE;
--
--		pdevobj[info->CardNumber] = NULL;
- 	}
- 
- 
-@@ -356,18 +345,6 @@ static int ft1000_ChOpen (struct inode *Inode, struct file *File)
- 
- 	info = File->private_data = netdev_priv(dev->net);
- 
--    for (i=0; i<5; i++)
--        DEBUG("pdevobj[%d]=%p\n", i, pdevobj[i]); //aelias [+] reason: down
--
--    if ( pdevobj[num] != NULL )
--        //info = (struct ft1000_info *)(pdevobj[num]->net->priv);
--		info = netdev_priv(pdevobj[num]->net);
--    else
--    {
--        DEBUG("ft1000_ChOpen: can not find device object %d\n", num);
--        return -1;
--    }
--
-     DEBUG("f_owner = %p number of application = %d\n", (&File->f_owner), info->appcnt );
- 
-     // Check if maximum number of application exceeded
 -- 
-1.7.1
+error compiling committee.c: too many arguments to function
 
