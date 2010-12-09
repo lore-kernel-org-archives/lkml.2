@@ -1,130 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab0LIKr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 05:47:56 -0500
-Received: from hera.kernel.org ([140.211.167.34]:48456 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756337Ab0LIKry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 05:47:54 -0500
-Message-ID: <4D00B3B9.7060702@kernel.org>
-Date: Thu, 09 Dec 2010 11:47:21 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1756798Ab0LIKvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 05:51:05 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:47226 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756650Ab0LIKvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 05:51:03 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D00B627.6040301@cam.ac.uk>
+Date: Thu, 09 Dec 2010 10:57:43 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101123 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
-        penberg@kernel.org
-Subject: [PATCH UPDATED#3 04/16] x86: setup_local_APIC() must always be called
- with preemption disabled
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org>
-In-Reply-To: <1290871325-3055-5-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.1.1
+To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Drivers <Drivers@analog.com>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Subject: Re: [RFC 1/3] IIO: Direct digital synthesis abi documentation
+References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com> <1291292489-32362-2-git-send-email-michael.hennerich@analog.com> <4CF8CED9.9060306@cam.ac.uk> <544AC56F16B56944AEC3BD4E3D591771312F0E1BB3@LIMKCMBX1.ad.analog.com> <4CFE0C03.3010405@cam.ac.uk> <544AC56F16B56944AEC3BD4E3D591771312F0E232B@LIMKCMBX1.ad.analog.com>
+In-Reply-To: <544AC56F16B56944AEC3BD4E3D591771312F0E232B@LIMKCMBX1.ad.analog.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 10:47:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-setup_local_APIC() is used to setup local APIC early during CPU
-initialization and already assumes that preemption is disabled on
-entry.  However, The function unnecessarily disables and enables
-preemption and uses smp_processor_id() multiple times in and out of
-the nested preemption disabled section.  This gives the wrong
-impression that the function might be able to handle being called with
-preemption enabled and/or migrated to another processor in the middle.
+On 12/09/10 05:48, Hennerich, Michael wrote:
+> Jonathan Cameron wrote on 2010-12-07:
+>> On 12/07/10 05:18, Hennerich, Michael wrote:
+>>>> Jonathan Cameron wrote on 2010-12-03:
+>>>> On 12/02/10 12:21, michael.hennerich@analog.com wrote:
+>>>>> From: Michael Hennerich <michael.hennerich@analog.com>
+>>>>>
+>>>>> Proposed ABI documentation
+>>>>>
+> 
+>>>>> What:              /sys/bus/iio/devices/device[n]/ddsX_freqY
+>>>> Here we deviate a little from what we did with input channels. In that
+>>>> case there was the existing interface (from hwmon) to match so we
+>>>> already had an _input designation to tell us that the number was in
+>>>> the relevant base units (here it would be Hz).  Hence we added a _raw
+>>>> label to say it wasn't and tell userspace to apply scale and offset.
+>>>> This is stretching a point somewhat, but looking at the hwmon docs,
+>>>> they have pwmX_freq as a value in Hz. That's obviously going to make
+>>>> consistency rather tricky to achieve!
+>>>>
+>>>> Do you think we should leave all _freq without modifier as being in Hz
+>>>> and have ddsX_freqY_raw. Or should we rely on userspace verifying if
+>>>> there are appropriate scale / offset parameters to be applied and
+>>>> hence working out for itself whether the value in ddsX_freqY is in Hz
+>>>> or not?
+>>>>
+>>>> I'm think I marginally favour leaving it as you have it here but
+>>>> others may have different opinions.
+>>>
+>>> Offset is not likely to be used here - but these devices actually
+>>> provide sub Hertz resolution. It's very likely to occur, that we
+>>> want to have scale being 1000 and the user writes frequency in mHz.
+>>> I might even consider using mHz for the sample driver as well.
+>> I guess it's a question of whether doing the fixed point arithmetic in
+>> kernel is cheap enough to use Hz but allow for a decimal point?  That
+>> would remove the need for the _scale parameter which would simplify
+>> the user interface slightly.
+>>
+>> Lets go with what you originally suggested. It works and with clear
+>> documentation the difference between it and some of our other
+>> 'frequency' elements shouldn't confuse anyone.
+> 
+> I prefer the _scale parameter.
+Fine with me.
+> Not aware of any other sysfs files, taking decimal points.
+Hmm.. There is at least on in IIO that takes decimal inputs (hmc5834),
+though I think only in the category where there is an _available attribute
+to list the possibilities. Output wise quite a few use decimals
+(your ad799x for starters!)  IIRC there are a few more cases in drivers
+Alan Cox has submitted recently (not sure what merge status is on those).
 
-Make it clear that the function is always called with preemption
-disabled, drop the confusing preemption disable block and call
-smp_processor_id() once at the beginning of the function.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>
----
-As this function is causing undue confusion, let's go one step further
-and make clear that it can't handle and was never meant to be called
-with preemption enabled or migrated to another CPU in the middle.
 
-The rest of series applies fine with this change and the git tree is
-updated accordingly.
+>>>>> +What:              /sys/bus/iio/devices/device[n]/ddsX_out_disable
+>>>>> +KernelVersion:     2.6.37
+>>>>> +Contact:   linux-iio@vger.kernel.org
+>>>>> +Description:
+>>>>> +           Disables any signal generation on all outputs.
+>>>> With the X in there you need to say for dds X. On everything else so
+>>>> far we have tended to go with enable attributes rather than this way
+>>>> around.  Why do it as disable here?
+>>>
+>>> We can change the logic. The sample driver enables the output once the
+>>> ddsX_outY_wavetype file is written.
+>> Is that a good idea? What if a device is dependant on having a very
+>> particular frequency fed to it and the user not knowing that wavetype
+>> turns things on might set that before the frequency? The semantics
+>> don't make it clear that one must set the wavetype last.  I would
+>> think separating the configuration from enable/disable might be more
+>> intuitive.
+> 
+> I agree.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_32-numa
+Looks like we've pinned this down so that we are both happy. No one else
+has picked up on it, so I guess no one else is currently interested in
+DDS support.
 
-Thanks.
+I'll be happy to do a final review of an updated patch set.
 
- arch/x86/kernel/apic/apic.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+Thanks,
 
-Index: work/arch/x86/kernel/apic/apic.c
-===================================================================
---- work.orig/arch/x86/kernel/apic/apic.c
-+++ work/arch/x86/kernel/apic/apic.c
-@@ -1195,12 +1195,15 @@ static void __cpuinit lapic_setup_esr(vo
- 			oldvalue, value);
- }
-
--
- /**
-  * setup_local_APIC - setup the local APIC
-+ *
-+ * Used to setup local APIC while initializing BSP or bringin up APs.
-+ * Always called with preemption disabled.
-  */
- void __cpuinit setup_local_APIC(void)
- {
-+	int cpu = smp_processor_id();
- 	unsigned int value, queued;
- 	int i, j, acked = 0;
- 	unsigned long long tsc = 0, ntsc;
-@@ -1225,8 +1228,6 @@ void __cpuinit setup_local_APIC(void)
- #endif
- 	perf_events_lapic_init();
-
--	preempt_disable();
--
- 	/*
- 	 * Double-check whether this APIC is really registered.
- 	 * This is meaningless in clustered apic mode, so we skip it.
-@@ -1342,21 +1343,19 @@ void __cpuinit setup_local_APIC(void)
- 	 * TODO: set up through-local-APIC from through-I/O-APIC? --macro
- 	 */
- 	value = apic_read(APIC_LVT0) & APIC_LVT_MASKED;
--	if (!smp_processor_id() && (pic_mode || !value)) {
-+	if (!cpu && (pic_mode || !value)) {
- 		value = APIC_DM_EXTINT;
--		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n",
--				smp_processor_id());
-+		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n", cpu);
- 	} else {
- 		value = APIC_DM_EXTINT | APIC_LVT_MASKED;
--		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n",
--				smp_processor_id());
-+		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n", cpu);
- 	}
- 	apic_write(APIC_LVT0, value);
-
- 	/*
- 	 * only the BP should see the LINT1 NMI signal, obviously.
- 	 */
--	if (!smp_processor_id())
-+	if (!cpu)
- 		value = APIC_DM_NMI;
- 	else
- 		value = APIC_DM_NMI | APIC_LVT_MASKED;
-@@ -1364,11 +1363,9 @@ void __cpuinit setup_local_APIC(void)
- 		value |= APIC_LVT_LEVEL_TRIGGER;
- 	apic_write(APIC_LVT1, value);
-
--	preempt_enable();
--
- #ifdef CONFIG_X86_MCE_INTEL
- 	/* Recheck CMCI information after local APIC is up on CPU #0 */
--	if (smp_processor_id() == 0)
-+	if (!cpu)
- 		cmci_recheck();
- #endif
- }
+Jonathan
