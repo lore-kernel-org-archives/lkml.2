@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab0LIClh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 21:41:37 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:33650 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227Ab0LICle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 21:41:34 -0500
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] e1000e: cleanup: simplify E1000_ALL_* defines
-Date: Thu,  9 Dec 2010 02:40:53 +0000
-Message-Id: <1291862457-16671-4-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
-References: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+	id S932273Ab0LICoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 21:44:07 -0500
+Received: from web37606.mail.mud.yahoo.com ([209.191.87.89]:28020 "HELO
+	web37606.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932208Ab0LICoF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 21:44:05 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=TpiacjMKiz3NZYi0X5Cx4G4tHJ9gtGddXXBtfeOrFV0+46MUgABfUtFM8ug7CWpbk2i+Lv11a6fXcfXTFE7Gbwscn38546aa0F1QJ1d+hO6W8eSc1K1fFw615avYc0LWyLPTL3rGtFHTtV7rljB4JjW49au8KYCAdzzAbRx7sVw=;
+Message-ID: <619119.14301.qm@web37606.mail.mud.yahoo.com>
+X-YMail-OSG: gUS1WwUVM1lhybD33APBZgtxiqatftF8zhRheQW51BMzloJ
+ OimhtyWknQ9TQIJ86jihLvvUMiza9oEbEDR.SgjB3Zox.oBTnea1vTia0T_t
+ k2gBsHwZXpxgGyuU4nJYQcT2ueQX0fgl3KdoFNlz8N_NiROEL3zx_hNwWYYl
+ Kra520AJsoAP8IVy34dC8cCYDtjjxgp30G96Z2ghxgjpNLTLtLhN0FcHnCW4
+ LrRXj3NomvdHUe4Mn19MxT8Hjgd.OTODzLxrtbS2bczlgWtn43kBWZHsUTIX
+ MLWujqMcID0W4A7VtwlTYxH1MeUUjl2Bt7e6zaK4Wk1mKvs4LJ8Mz_pmiZbW
+ NnOK0K7P_tGAfzZWp7xWq.7Ud2FWrbv7aJskuSHP3a0FloFMpx.IuxYBQoJw
+ aAta0lkjiYEyU
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Wed, 8 Dec 2010 18:44:04 -0800 (PST)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: MEMSTICK: Add my 2 drivers
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Takashi Iwai <tiwai@suse.de>
+In-Reply-To: <1291862363.7792.28.camel@maxim-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup E1000_ALL_* so that each of them can fit on one line,
-by reusing each other instead of solely using combinations of
-ADVERTISE_* as defined right above it.
+> 
+> Since I don't touch (and don't want anymore to) any code
+> written by
+> Alex, and I even added workarounds for bugs in his jmicron
+> driver to the
+> generic ms_block.c code (it tested and works on my both
+> card readers),
+> maybe even add these to 2.6.37?
 
-This fixes 2 checkpatch errors.
+This are worked around by the recent patches, are not they?
 
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
----
- drivers/net/e1000e/defines.h |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/e1000e/defines.h b/drivers/net/e1000e/defines.h
-index 2b969c8..10760be 100644
---- a/drivers/net/e1000e/defines.h
-+++ b/drivers/net/e1000e/defines.h
-@@ -263,14 +263,11 @@
- #define ADVERTISE_1000_FULL               0x0020
- 
- /* 1000/H is not supported, nor spec-compliant. */
--#define E1000_ALL_SPEED_DUPLEX ( ADVERTISE_10_HALF |   ADVERTISE_10_FULL | \
--				ADVERTISE_100_HALF |  ADVERTISE_100_FULL | \
--						     ADVERTISE_1000_FULL)
--#define E1000_ALL_NOT_GIG      ( ADVERTISE_10_HALF |   ADVERTISE_10_FULL | \
--				ADVERTISE_100_HALF |  ADVERTISE_100_FULL)
-+#define E1000_ALL_10_SPEED     (ADVERTISE_10_HALF  |   ADVERTISE_10_FULL)
- #define E1000_ALL_100_SPEED    (ADVERTISE_100_HALF |  ADVERTISE_100_FULL)
--#define E1000_ALL_10_SPEED      (ADVERTISE_10_HALF |   ADVERTISE_10_FULL)
--#define E1000_ALL_HALF_DUPLEX   (ADVERTISE_10_HALF |  ADVERTISE_100_HALF)
-+#define E1000_ALL_HALF_DUPLEX  (ADVERTISE_10_HALF  |  ADVERTISE_100_HALF)
-+#define E1000_ALL_NOT_GIG      (E1000_ALL_10_SPEED | E1000_ALL_100_SPEED)
-+#define E1000_ALL_SPEED_DUPLEX (E1000_ALL_NOT_GIG  | ADVERTISE_1000_FULL)
- 
- #define AUTONEG_ADVERTISE_SPEED_DEFAULT   E1000_ALL_SPEED_DUPLEX
- 
--- 
-1.7.2.3
 
+      
