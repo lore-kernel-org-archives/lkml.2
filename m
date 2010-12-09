@@ -1,143 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab0LIXfQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:35:16 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:27888 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755715Ab0LIXfO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:35:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cQz1CH1ICHvuebr3ctcE5xLA3AIjEOrXKKsn76OjvWoyE0zcWjmmY4C0/zZ3sFktoe
-         LFMRAtPgvEMozQfZO3JA==
+	id S1756738Ab0LIXhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 18:37:05 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56386 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755715Ab0LIXhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 18:37:03 -0500
+Date: Thu, 9 Dec 2010 23:36:45 GMT
+From: tip-bot for David Ahern <daahern@cisco.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, daahern@cisco.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, daahern@cisco.com
+In-Reply-To: <1291775986-16475-1-git-send-email-daahern@cisco.com>
+References: <1291775986-16475-1-git-send-email-daahern@cisco.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf report: Allow user to specify path to kallsyms file
+Message-ID: <tip-b226a5a72901bc9c73d639ea2e53e6c304bf3b74@git.kernel.org>
+Git-Commit-ID: b226a5a72901bc9c73d639ea2e53e6c304bf3b74
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1291936593.13513.3.camel@laptop>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	<1291851079-27061-1-git-send-email-venki@google.com>
-	<1291899120.29292.7.camel@twins>
-	<AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	<1291917330.6803.7.camel@twins>
-	<AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	<1291920939.6803.38.camel@twins>
-	<AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	<1291936593.13513.3.camel@laptop>
-Date: Thu, 9 Dec 2010 15:35:11 -0800
-Message-ID: <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 23:36:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 3:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-12-09 at 14:21 -0800, Venkatesh Pallipadi wrote:
->> This should mostly work. There would be a small window there on
->> rq->clock=sched_clock_cpu() and system_vtime doing sched_clock_cpu()
->> and also the overhead of doing this everytime when this going
->> backwards may happen rarely.
->
-> Right, so something like the below removes that tiny race by re-using
-> rq->clock as now. It also removes some overhead by removing the IRQ
-> fudging (we already know IRQs are disabled).
->
-> It does have a few extra branches (2 afaict) than your monotonicity path
-> had, but it seems to me this approach is slightly more accurate.
->
+Commit-ID:  b226a5a72901bc9c73d639ea2e53e6c304bf3b74
+Gitweb:     http://git.kernel.org/tip/b226a5a72901bc9c73d639ea2e53e6c304bf3b74
+Author:     David Ahern <daahern@cisco.com>
+AuthorDate: Tue, 7 Dec 2010 19:39:46 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 9 Dec 2010 11:07:07 -0200
 
-Looks fine.
+perf report: Allow user to specify path to kallsyms file
 
-Just to make sure, update_rq_clock() always gets called on current
-CPU. Right? The pending patches I have optimizes
-account_system_vtime() to use this_cpu_write and friends. Want to make
-sure this change will still keep that optimization relevant.
+This is useful for analyzing a perf data file on a different system than
+the one data was collected on and still include symbols from loaded
+kernel modules in the output.
 
+Commiter note: Updated the man page accordingly.
 
-> ---
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -1813,19 +1813,10 @@ void disable_sched_clock_irqtime(void)
->        sched_clock_irqtime = 0;
->  }
->
-> -void account_system_vtime(struct task_struct *curr)
-> +static void __account_system_vtime(int cpu, u64 now)
->  {
-> -       unsigned long flags;
-> -       int cpu;
-> -       u64 now, delta;
-> +       s64 delta;
->
-> -       if (!sched_clock_irqtime)
-> -               return;
-> -
-> -       local_irq_save(flags);
-> -
-> -       cpu = smp_processor_id();
-> -       now = sched_clock_cpu(cpu);
->        delta = now - per_cpu(irq_start_time, cpu);
->        per_cpu(irq_start_time, cpu) = now;
->        /*
-> @@ -1836,16 +1827,36 @@ void account_system_vtime(struct task_st
->         */
->        if (hardirq_count())
->                per_cpu(cpu_hardirq_time, cpu) += delta;
-> -       else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
-> +       else if (in_serving_softirq() && !(current->flags & PF_KSOFTIRQD))
->                per_cpu(cpu_softirq_time, cpu) += delta;
-> +}
-> +
-> +void account_system_vtime(struct task_struct *curr)
-> +{
-> +       unsigned long flags;
-> +       u64 now;
-> +       int cpu;
-> +
-> +       if (!sched_clock_irqtime)
-> +               return;
-> +
-> +       local_irq_save(flags);
-> +
-> +       cpu = smp_processor_id();
-> +       now = sched_clock_cpu(cpu);
-> +       __account_system_vtime(cpu, now);
->
->        local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(account_system_vtime);
->
-> -static u64 irq_time_cpu(int cpu)
-> +static u64 irq_time_cpu(struct rq *rq)
->  {
-> -       account_system_vtime(current);
-> +       int cpu = cpu_of(rq);
-> +
-> +       if (sched_clock_irqtime)
-> +               __account_system_vtime(cpu, rq->clock);
-> +
->        return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
->  }
->
-> @@ -1853,7 +1864,7 @@ static void update_rq_clock_task(struct
->  {
->        s64 irq_delta;
->
-> -       irq_delta = irq_time_cpu(cpu_of(rq)) - rq->prev_irq_time;
-> +       irq_delta = irq_time_cpu(rq) - rq->prev_irq_time;
->        rq->prev_irq_time += irq_delta;
->
->        delta -= irq_delta;
->
->
+LKML-Reference: <1291775986-16475-1-git-send-email-daahern@cisco.com>
+Signed-off-by: David Ahern <daahern@cisco.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-report.txt |    3 +++
+ tools/perf/builtin-report.c              |    2 ++
+ tools/perf/util/symbol.c                 |    9 +++++++--
+ tools/perf/util/symbol.h                 |    1 +
+ 4 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 59a1f57..fefea77 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -104,6 +104,9 @@ OPTIONS
+ --vmlinux=<file>::
+         vmlinux pathname
+ 
++--kallsyms=<file>::
++        kallsyms pathname
++
+ -m::
+ --modules::
+         Load module symbols. WARNING: This should only be used with -k and
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 904519f..b6a2a89 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -443,6 +443,8 @@ static const struct option options[] = {
+ 		    "dump raw trace in ASCII"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
++	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
++		   "file", "kallsyms pathname"),
+ 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
+ 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
+ 		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index a348906..f40c076 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1830,8 +1830,8 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+ 	const char *kallsyms_filename = NULL;
+ 	char *kallsyms_allocated_filename = NULL;
+ 	/*
+-	 * Step 1: if the user specified a vmlinux filename, use it and only
+-	 * it, reporting errors to the user if it cannot be used.
++	 * Step 1: if the user specified a kallsyms or vmlinux filename, use
++	 * it and only it, reporting errors to the user if it cannot be used.
+ 	 *
+ 	 * For instance, try to analyse an ARM perf.data file _without_ a
+ 	 * build-id, or if the user specifies the wrong path to the right
+@@ -1844,6 +1844,11 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+ 	 * validation in dso__load_vmlinux and will bail out if they don't
+ 	 * match.
+ 	 */
++	if (symbol_conf.kallsyms_name != NULL) {
++		kallsyms_filename = symbol_conf.kallsyms_name;
++		goto do_kallsyms;
++	}
++
+ 	if (symbol_conf.vmlinux_name != NULL) {
+ 		err = dso__load_vmlinux(self, map,
+ 					symbol_conf.vmlinux_name, filter);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 038f220..12defbe 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -72,6 +72,7 @@ struct symbol_conf {
+ 			show_cpu_utilization,
+ 			initialized;
+ 	const char	*vmlinux_name,
++			*kallsyms_name,
+ 			*source_prefix,
+ 			*field_sep;
+ 	const char	*default_guest_vmlinux_name,
