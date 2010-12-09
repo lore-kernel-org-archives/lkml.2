@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab0LIVMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 16:12:19 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54307 "EHLO
+	id S1757037Ab0LIVNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:13:53 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37603 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754786Ab0LIVMM (ORCPT
+	by vger.kernel.org with ESMTP id S1753609Ab0LIVNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:12:12 -0500
-Date: Thu, 9 Dec 2010 13:09:36 -0800
+	Thu, 9 Dec 2010 16:13:52 -0500
+Date: Thu, 9 Dec 2010 13:13:37 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Alex Dubov <oakad@yahoo.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 1/2] memstick: add support for legacy memorysticks
-Message-Id: <20101209130936.5c62ac10.akpm@linux-foundation.org>
-In-Reply-To: <1291862546-10064-1-git-send-email-maximlevitsky@gmail.com>
-References: <1291862363.7792.28.camel@maxim-laptop>
-	<1291862546-10064-1-git-send-email-maximlevitsky@gmail.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org, Ben Gardner <bgardner@wabtec.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] cs5535: deprecate older cs5535_gpio driver
+Message-Id: <20101209131337.be92caf6.akpm@linux-foundation.org>
+In-Reply-To: <20101209125737.065e91fd@queued.net>
+References: <20101209125737.065e91fd@queued.net>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,103 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Dec 2010 04:42:25 +0200
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Thu, 9 Dec 2010 12:57:37 -0800
+Andres Salomon <dilinger@queued.net> wrote:
 
-> +/*
-> + * Advance scatterlist by 'consumed' bytes
-> + * Returns new scatterlist, or NULL if can't advance that much
-> + */
-> +static struct scatterlist *sg_advance(struct scatterlist *sg, int consumed)
-> +{
-> +	while (consumed >= sg->length) {
-> +		consumed -= sg->length;
-> +
-> +		sg = sg_next(sg);
-> +		if (!sg)
-> +			break;
-> +	}
-> +
-> +	WARN_ON(!sg && consumed);
-> +
-> +	if (!sg)
-> +		return NULL;
-> +
-> +	sg->offset += consumed;
-> +	sg->length -= consumed;
-> +
-> +	if (sg->offset >= PAGE_SIZE) {
-> +		struct page *page =
-> +			nth_page(sg_page(sg), sg->offset / PAGE_SIZE);
-> +		sg_set_page(sg, page, sg->length, sg->offset % PAGE_SIZE);
-> +	}
-> +
-> +	return sg;
-> +}
-> +
-> +/* Calculate number of sg entries in sg list */
-> +static int sg_nents(struct scatterlist *sg)
-> +{
-> +	int nents = 0;
-> +	while (sg) {
-> +		nents++;
-> +		sg = sg_next(sg);
-> +	}
-> +
-> +	return nents;
-> +}
-> +
-> +/* Calculate total lenght of scatterlist */
+> The newer drivers/gpio/cs5535-gpio.c replaces
+> drivers/misc/cs5535_gpio.c.  The new driver has been in the tree
+> for a little while, and has received some testing; it's time to mark
+> the old one as deprecated.  I'm thinking removal around 2.6.40 would
+> be good, provided we're not missing critical functionality in the
+> newer driver.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  Documentation/feature-removal-schedule.txt |   14 ++
+>  drivers/char/Kconfig                       |    9 -
+>  drivers/char/Makefile                      |    1 -
+>  drivers/char/cs5535_gpio.c                 |  259 ----------------------------
+>  drivers/staging/Kconfig                    |    2 +
+>  drivers/staging/Makefile                   |    1 +
+>  drivers/staging/cs5535_gpio/Kconfig        |   11 ++
+>  drivers/staging/cs5535_gpio/Makefile       |    1 +
+>  drivers/staging/cs5535_gpio/TODO           |    6 +
+>  drivers/staging/cs5535_gpio/cs5535_gpio.c  |  259 ++++++++++++++++++++++++++++
+>  10 files changed, 294 insertions(+), 269 deletions(-)
+>  delete mode 100644 drivers/char/cs5535_gpio.c
+>  create mode 100644 drivers/staging/cs5535_gpio/Kconfig
+>  create mode 100644 drivers/staging/cs5535_gpio/Makefile
+>  create mode 100644 drivers/staging/cs5535_gpio/TODO
+>  create mode 100644 drivers/staging/cs5535_gpio/cs5535_gpio.c
 
-(typo)
-
-> +static int sg_total_len(struct scatterlist *sg)
-> +{
-> +	int len = 0;
-> +	while (sg) {
-> +		len += sg->length;
-> +		sg = sg_next(sg);
-> +	}
-> +	return len;
-> +}
-> +
-> +/* Compare contents of an sg to a buffer */
-> +static bool sg_compare_to_buffer(struct scatterlist *sg, u8 *buffer, size_t len)
-> +{
-> +	unsigned long flags;
-> +	int retval = 0;
-> +	struct sg_mapping_iter miter;
-> +
-> +	if (sg_total_len(sg) < len)
-> +		return 1;
-> +
-> +	local_irq_save(flags);
-> +	sg_miter_start(&miter, sg, sg_nents(sg),
-> +				SG_MITER_ATOMIC | SG_MITER_FROM_SG);
-> +
-> +	while (sg_miter_next(&miter) && len > 0) {
-> +
-> +		int cmplen = min(miter.length, len);
-> +		if (memcmp(miter.addr, buffer, cmplen)) {
-> +			retval = 1;
-> +			break;
-> +		}
-> +
-> +		buffer += cmplen;
-> +		len -= cmplen;
-> +	}
-> +
-> +	sg_miter_stop(&miter);
-> +	local_irq_restore(flags);
-> +	return retval;
-> +}
-
-I think I mentioned this before, but ...  it's really bad that the
-above functions appear in a particular device driver.  They are, to
-varying degrees, independent of that driver and should be provided by
-the sglist core code.
-
-Also, the local_irq_save/restore in sg_compare_to_buffer() is quite
-mysterious and should have a comment explaining why it is there.  Once
-that's done, I might understand why it isn't a bug on SMP machines ;)
+It seems logical (although not particularly useful) to use
+drivers/staging/ as the site for unstaging things as well, but is that
+something which we normally do?
 
