@@ -1,98 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0LHX60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 18:58:26 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:24115 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab0LHX6Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:58:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=g0zXV9blCUIniSbRi36kjiYTygm7JQJjDWogctQyOk28D2seWgoSc2n3TUq5l8ePku
-         yS0FenCyrHJbVLcLDKaw==
+	id S1755028Ab0LIAD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 19:03:58 -0500
+Received: from web31809.mail.mud.yahoo.com ([68.142.207.72]:48352 "HELO
+	web31809.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751725Ab0LIAD4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 19:03:56 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=eMFucT1iJ3T6v20kMytHfdt7yMEG5SmTMAJ4qLMX/9EtiSRs9y7HfcDr+j95hMSoCLyPC7hYVM3JjeD69GGWFZgSehg+VlrtT1K2PW+pT52N2mHg8JhcxAu+mLbtkVxsC0CqozmVVDvv55Bz2YfxEU6H8xNCaqoICUhWafJFrns=;
+Message-ID: <866237.28356.qm@web31809.mail.mud.yahoo.com>
+X-YMail-OSG: 7ZIezJUVM1nfsAcONmj5pX1xv_rMYsWfRGb5QyBb4pMqlWZ
+ ZNBCOnoTgUsl.34VM.4PqG4tnH5vgHbo..hsnk5955ihCBBlUstoI5SgDk7n
+ 3ZeoUfLAXi427FE4KYz0EmfgZxEcnyiGKGjUCFQFSOlGvIazB_8K8Vmbnclo
+ C019yj2FHRLsSQYZI1upXnabqkD_XECriCwiGjOdptMfAxDnMiKRWquqnuqi
+ _z5ayP2_f2rI4PiKUjF6xxnA1FeNpq_OIRDPFPJWjPW_g_aI2hcYYPHs7Zbp
+ evAupqdGJfvnsc1eEXXbFiY8AydXjbAAidb0XuLs3zhdy8ef6WK7_HGjdDY_
+ pxvFDAnh8RF4FFxYYE51cotWW9IyyRI8CGYgbsg6r5UFn081vTsK8n9HnWRU
+ g
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
+Date: Wed, 8 Dec 2010 16:03:54 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH preliminary] [BLOCK] Preliminary increasing tag sequence implementation
+To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, jaxboe@fusionio.com, tj@kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20101208152740.ac449c3d.akpm@linux-foundation.org>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
-	<1291335412-16231-2-git-send-email-walken@google.com>
-	<20101208152740.ac449c3d.akpm@linux-foundation.org>
-Date: Wed, 8 Dec 2010 15:58:21 -0800
-Message-ID: <AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
-Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
- faulting in pages
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 3:27 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> Currently mlock() holds mmap_sem in exclusive mode while the pages get
->> faulted in. In the case of a large mlock, this can potentially take a
->> very long time, during which various commands such as 'ps auxw' will
->> block. This makes sysadmins unhappy:
->>
->> real    14m36.232s
->> user    0m0.003s
->> sys     0m0.015s
->>(output from 'time ps auxw' while a 20GB file was being mlocked without
->> being previously preloaded into page cache)
->
-> The kernel holds down_write(mmap_sem) for 14m36s?
+--- On Mon, 12/6/10, Luben Tuikov <ltuikov@yahoo.com> wrote:
+> Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> ---
+>  * This is a preliminary patch. Feel free to apply it for
+>  inclusion and/or work/modify it to submit a more
+>  atomically-correct version.
+>  * Vendors: apply this to see an increasing sequence of
+> tags
+>  on the wire and at your device, so that error recovery
+> doesn't
+>  abort a task which isn't intended to be aborted especially
+> in
+>  full duplex protocols when the command status and TMF can
+>  cross on the wire. See this thread: http://marc.info/?l=linux-scsi&m=128902337522893&w=2 
+> 
+>  block/blk-tag.c       
+> |   15 +++++++++++++--
+>  include/linux/blkdev.h |    1 +
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/blk-tag.c b/block/blk-tag.c
+> index ece65fc..f792e98 100644
+> --- a/block/blk-tag.c
+> +++ b/block/blk-tag.c
+> @@ -130,6 +130,7 @@ init_tag_map(struct request_queue *q,
+> struct blk_queue_tag *tags, int depth)
+>      tags->max_depth = depth;
+>      tags->tag_index = tag_index;
+>      tags->tag_map = tag_map;
+> +    tags->last_tag = 0;
+>  
+>      return 0;
+>  fail:
+> @@ -222,7 +223,7 @@ int blk_queue_resize_tags(struct
+> request_queue *q, int new_depth)
+>      struct blk_queue_tag *bqt =
+> q->queue_tags;
+>      struct request **tag_index;
+>      unsigned long *tag_map;
+> -    int max_depth, nr_ulongs;
+> +    int max_depth, nr_ulongs, last_tag;
+>  
+>      if (!bqt)
+>          return -ENXIO;
+> @@ -251,6 +252,7 @@ int blk_queue_resize_tags(struct
+> request_queue *q, int new_depth)
+>      tag_index = bqt->tag_index;
+>      tag_map = bqt->tag_map;
+>      max_depth = bqt->real_max_depth;
+> +    last_tag = bqt->last_tag;
+>  
+>      if (init_tag_map(q, bqt, new_depth))
+>          return -ENOMEM;
+> @@ -258,6 +260,7 @@ int blk_queue_resize_tags(struct
+> request_queue *q, int new_depth)
+>      memcpy(bqt->tag_index, tag_index,
+> max_depth * sizeof(struct request *));
+>      nr_ulongs = ALIGN(max_depth,
+> BITS_PER_LONG) / BITS_PER_LONG;
+>      memcpy(bqt->tag_map, tag_map,
+> nr_ulongs * sizeof(unsigned long));
+> +    bqt->last_tag = last_tag;
+>  
+>      kfree(tag_index);
+>      kfree(tag_map);
+> @@ -364,12 +367,20 @@ int blk_queue_start_tag(struct
+> request_queue *q, struct request *rq)
+>             
+> return 1;
+>      }
+>  
+> +    if (bqt->last_tag ==
+> bqt->max_depth-1)
+> +        bqt->last_tag =
+> 0;
+> +
+>      do {
+> -        tag =
+> find_first_zero_bit(bqt->tag_map, max_depth);
+> +        tag =
+> find_next_zero_bit(bqt->tag_map,
+> +           
+>          max_depth,
+> +           
+>    
+>      bqt->last_tag+1);
+>          if (tag >=
+> max_depth)
+>             
+> return 1;
+>  
+>      } while (test_and_set_bit_lock(tag,
+> bqt->tag_map));
+> +
+> +    bqt->last_tag = tag;
+> +
+>      /*
+>       * We need lock ordering
+> semantics given by test_and_set_bit_lock.
+>       * See blk_queue_end_tag for
+> details.
+> diff --git a/include/linux/blkdev.h
+> b/include/linux/blkdev.h
+> index 5027a59..955222e 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -224,6 +224,7 @@ struct blk_queue_tag {
+>      int max_depth;   
+>         /* what we will send
+> to device */
+>      int real_max_depth;   
+>     /* what the array can hold */
+>      atomic_t refcnt;   
+>     /* map can be shared */
+> +    int last_tag;
+>  };
+>  
+>  #define BLK_SCSI_MAX_CMDS    (256)
+> -- 
+> 1.7.2.2.165.gbc382
 
-Yes...
+A lot of bugs were discovered and are being discovered since this patch was applied. I'm tracking the Linux based ones at the moment as time permits (or at least trying to track them). Some of what I'm seeing is the same tag being issued for the subsequent command after an aborted command, and lookup failures occasionally (these depend on a lot of factors, for example how many LUs the device reports, how many streams are supported, whether the device runs in SS or HS mode, etc).
 
-[... patch snipped off ...]
+The purpose of the posting of this patch was to get people to either apply it or come up with a more atomically correct implementation, submit and apply it, so that everyone can 1) have correct sequence of tags on the wire and 2) discover more bugs (if any ;-) ).
 
-> Am I correct in believing that we'll still hold down_read(mmap_sem) for
-> a quarter hour?
+Anyone?
 
-Yes, patch 1/6 changes the long hold time to be in read mode instead
-of write mode, which is only a band-aid. But, this prepares for patch
-5/6, which releases mmap_sem whenever there is contention on it or
-when blocking on disk reads.
+   Luben
 
-> We don't need to hold mmap_sem at all while faulting in those pages,
-> do we?  We could just do
->
->        for (addr = start, addr < end; addr += PAGE_SIZE)
->                get_user(x, addr);
->
-> and voila.  If the pages are in cache and the ptes are set up then that
-> will be *vastly* faster than the proposed code.  If the get_user()
-> takes a minor fault then it'll be slower.  If it's a major fault then
-> the difference probably doesn't matter much.
-
-get_user wouldn't suffice if the page is already mapped in, as we need
-to mark it as PageMlocked. Also, we need to skip IO and PFNMAP
-regions. I don't think you can make things much simpler than what I
-ended up with.
-
-> But whatever.  Is this patchset a half-fix, and should we rather be
-> looking for a full-fix?
-
-I think the series fully fixes the mlock() and mlockall() cases, which
-has been the more pressing use case for us.
-
-Even then, there are still cases where we could still observe long
-mmap_sem hold times - fundamentally, every place that calls
-get_user_pages (or do_mmap, in the mlockall MCL_FUTURE case) with a
-large page range may create such problems. From the looks of it, most
-of these places wouldn't actually care if the mmap_sem got dropped in
-the middle of the operation, but a general fix will have to involve
-looking at all the call sites to be sure.
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
