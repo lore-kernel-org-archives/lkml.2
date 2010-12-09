@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab0LILks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 06:40:48 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:47613 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab0LILkq (ORCPT
-	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
-	Thu, 9 Dec 2010 06:40:46 -0500
-Message-ID: <4D00C02C.4070006@suse.de>
-Date: Thu, 09 Dec 2010 17:10:28 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1754581Ab0LILp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 06:45:26 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:52028 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753779Ab0LILpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 06:45:24 -0500
+Date: Thu, 9 Dec 2010 11:45:06 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Simon Kirby <sim@hostway.ca>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
+	in response to high-order allocations V2
+Message-ID: <20101209114506.GA20133@csn.ul.ie>
+References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie> <20101209015530.GD3796@hostway.ca>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Bernhard Walle <bernhard@bwalle.de>, sfrench@samba.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: Add information about noserverino
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>	<20101206095725.78422138@tlielax.poochiereds.net>	<20101206101214.52a24415@tlielax.poochiereds.net>	<20101206163506.56232lqqhc5c3co4@webmail.df.eu> <20101206103836.0714369a@tlielax.poochiereds.net>
-In-Reply-To: <20101206103836.0714369a@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20101209015530.GD3796@hostway.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 09:08 PM, Jeff Layton wrote:
-> On Mon, 06 Dec 2010 16:35:06 +0100
-> Bernhard Walle <bernhard@bwalle.de> wrote:
+On Wed, Dec 08, 2010 at 05:55:30PM -0800, Simon Kirby wrote:
+> Hmm...
 > 
->>
->> Zitat von Jeff Layton <jlayton@redhat.com>:
->>
->>>
->>> I'm still not sure I like this patch however. It potentially means a
->>> lot of printk spam since these things have no ratelimiting. It also
->>> doesn't tell me anything about which server might be giving me grief.
->>>
->>> Maybe this should be turned into a cFYI?
->>
->> Well, if I see it in the kernel log, it doesn't matter if it's info or
->> something else.
->>
->>> The bottom line though is that running 32-bit applications that were
->>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
->>> idea. It would be nice to be able to alert users that things aren't
->>> working the way they expect, but I'm not sure this is the right place
->>> to do that.
->>
->> Well, but there *are* such application (in my case it was Softmaker Office
->> which is a proprietary word processor) and it's quite nice if you know
->> how you can workaround it when you encounter such a problem. That's all.
->>
-> 
-> Sure...but this problem is not limited to CIFS. Many modern filesystems
-> use 64-bit inodes. Running this application on XFS or NFS for instance
-> is likely to give you the same trouble. You just hit it on CIFS because
-> the server happened to give you a very large inode number.
-> 
-> If we're going to add printk's for this situation, it probably ought to
-> be in a more generic place.
+> Wouldn't it make more sense for the fast path page allocator to allocate
+> weighted-round-robin (by zone size) from each zone, rather than just
+> starting from the highest and working down?
 > 
 
-By generic place, did you mean at the VFS level? I think at VFS level,
-there is little information about the Server or underlying fs and this
-information doesn't seem too critical that VFS should warn/care much about.
+Unfortunately, that would cause other problems. Zones are about
+addressing limitations. The DMA zone is used by callers that cannot
+address above 16M. On the other extreme, the HighMem zone is used for
+addresses that cannot be directly mapped at all times due to a lack of
+virtual address space.
 
-May be sticking to a cFYI along with Server detail is a good idea?
+If we round-robined the zones, callers that could use HighMem or Normal
+may consume memory from DMA32 or DMA causing future allocation requests
+that require those zones to fail.
 
+> This would mean that each zone would get a proportional amount of
+> allocations and reclaiming a bit from each would likely throw out the
+> oldest allocations, rather than some of that and and some more recent
+> stuff that was allocated at the beginning of the lower zone.
+> 
+> For example, with the current approach, a time progression of allocations
+> looks like this (N=Normal, D=DMA32): 1N 2N 3N 4D 5D 6D 7D 8D 9D
+> 
+> ...once the watermark is hit, kswapd reclaims 1 and 4, since they're
+> oldest in each zone, but 2 and 3 were allocated earlier.
+> 
+> Versus a weighted-round-robin approach: 1N 2D 3D 4N 5D 6D 7N 8D 9D
+> 
+> ...kswapd reclaims 1 and 2, and they're oldest in time and maybe LRU.
+> 
+> Things probably eventually mix up enough once the system has reclaimed
+> and allocated more for a while with the current approach, but the
+> allocations are still chunky depending on how many extra things kswapd
+> reclaims to reach higher-order watermarks, and doesn't this always mess
+> with the LRU when the there are multiple usable zones?
+> 
+
+If addressing limitations were not a problem, we'd just have a single
+zone :/
+
+> Anyway, this approach might be horrible for some other reasons (page
+> allocations hoping to be sequential?  bigger cache footprint?), but it
+> might reduce the requirements for other other workarounds, and it would
+> make the LRU node-wide instead of zone-wide.
+> 
+
+Node-wide would be preferably from a page aging perspective but as zones
+are about addressing limitations, we need to be able to reclaim zones
+from a specific zone quickly and not have to scan looking for suitable
+pages.
 
 -- 
-Suresh Jayaraman
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
