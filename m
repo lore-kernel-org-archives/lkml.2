@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab0LIJk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:40:27 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:51995 "EHLO mprc.pku.edu.cn"
+	id S1755989Ab0LIJlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:41:12 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:51998 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755379Ab0LIJkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:40:24 -0500
+	id S1755379Ab0LIJlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:41:09 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: "Arnd Bergmann" <arnd@arndb.de>
 Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 010/211] unicore32: new file arch/unicore32/boot/compressed/vmlinux.lds.in
-Date: Thu, 9 Dec 2010 17:40:21 +0800
-Message-ID: <01de01cb9785$193cf160$4bb6d420$@mprc.pku.edu.cn>
+Subject: [PATCHv1 011/211] unicore32: new file arch/unicore32/configs/debug_defconfig
+Date: Thu, 9 Dec 2010 17:41:06 +0800
+Message-ID: <01e001cb9785$33bbeeb0$9b33cc10$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuXhRkJ4HClZZDQQievUhcLfKLgAw==
+Thread-Index: AcuXhTN7Ko8mNqA5S9epVC8W6OVwaA==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +25,230 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-	this file generate vmlinux.lds, a ld-script for vmlinux
+	default config file for debugger
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/boot/compressed/vmlinux.lds.in |   61
-+++++++++++++++++++++++++
- 1 files changed, 61 insertions(+), 0 deletions(-)
+ arch/unicore32/configs/debug_defconfig |  208
+++++++++++++++++++++++++++++++++
+ 1 files changed, 208 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/boot/compressed/vmlinux.lds.in
-b/arch/unicore32/boot/compressed/vmlinux.lds.in
+diff --git a/arch/unicore32/configs/debug_defconfig
+b/arch/unicore32/configs/debug_defconfig
 new file mode 100644
-index 0000000..d5a3ce2
+index 0000000..33e4959
 --- /dev/null
-+++ b/arch/unicore32/boot/compressed/vmlinux.lds.in
-@@ -0,0 +1,61 @@
-+/*
-+ * linux/arch/unicore/boot/compressed/vmlinux.lds.in
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+OUTPUT_ARCH(unicore32)
-+ENTRY(_start)
-+SECTIONS
-+{
-+  /DISCARD/ : {
-+    /*
-+     * Discard any r/w data - this produces a link error if we have any,
-+     * which is required for PIC decompression.  Local data generates
-+     * GOTOFF relocations, which prevents it being relocated independently
-+     * of the text/got segments.
-+     */
-+    *(.data)
-+  }
++++ b/arch/unicore32/configs/debug_defconfig
+@@ -0,0 +1,208 @@
++### General setup
++CONFIG_EXPERIMENTAL=y
++CONFIG_LOCALVERSION="-debug"
++CONFIG_SWAP=y
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_HOTPLUG=y
++#	Initial RAM filesystem and RAM disk (initramfs/initrd) support
++#CONFIG_BLK_DEV_INITRD=y
++#CONFIG_INITRAMFS_SOURCE="arch/unicore/ramfs/ramfs_config"
 +
-+  . = TEXT_START;
-+  _text = .;
++### Enable loadable module support
++CONFIG_MODULES=n
++CONFIG_MODULE_UNLOAD=y
 +
-+  .text : {
-+    _start = .;
-+    *(.start)
-+    *(.text)
-+    *(.text.*)
-+    *(.fixup)
-+    *(.gnu.warning)
-+    *(.rodata)
-+    *(.rodata.*)
-+    *(.piggydata)
-+    . = ALIGN(4);
-+  }
++### System Type
++CONFIG_ARCH_PUV3=y
++#	Board Selection
++CONFIG_PUV3_NB0916=y
++#	Processor Features
++CONFIG_CPU_DCACHE_LINE_DISABLE=y
++CONFIG_CPU_TLB_SINGLE_ENTRY_DISABLE=n
 +
-+  _etext = .;
++### Bus support
++CONFIG_PCI=y
++CONFIG_PCI_LEGACY=n
 +
-+  /* Assume size of decompressed image is 4x the compressed image */
-+  _image_size = (_etext - _text) * 4;
++### Boot options
++#	for debug, adding: earlyprintk=ocd,keep initcall_debug
++#	others support: test_suspend=mem root=/dev/sda
++#	hibernate support: resume=/dev/sda3
++CONFIG_CMDLINE="mem=512M earlyprintk=ocd,keep ignore_loglevel
+video=unifb:1024x600-16@75 root=/dev/nfs rw
+nfsroot=192.168.10.88:/home/udb/nfs/,rsize=1024,wsize=1024
+ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
++CONFIG_CMDLINE_FORCE=y
 +
-+  _got_start = .;
-+  .got			: { *(.got) }
-+  _got_end = .;
-+  .got.plt		: { *(.got.plt) }
-+  _edata = .;
++### Power management options
++CONFIG_PM=y
++CONFIG_HIBERNATION=y
++CONFIG_PM_STD_PARTITION="/dev/sda3"
++CONFIG_CPU_FREQ=n
++CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y
 +
-+  . = BSS_START;
-+  __bss_start = .;
-+  .bss			: { *(.bss) }
-+  _end = .;
++### Networking support
++CONFIG_NET=y
++#	Networking options
++CONFIG_PACKET=m
++CONFIG_UNIX=m
++#	TCP/IP networking
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_PNP=y
++CONFIG_IPV6=n
++#	Wireless
++CONFIG_WIRELESS=y
++CONFIG_WIRELESS_EXT=y
++CONFIG_MAC80211=m
 +
-+  .stack		: { *(.stack) }
-+  .comment 0		: { *(.comment) }
-+}
++### PKUnity SoC Features
++CONFIG_USB_WLAN_HED_AQ3=n
++CONFIG_USB_CMMB_INNOFIDEI=n
++CONFIG_I2C_BATTERY_BQ27200=n
++CONFIG_I2C_EEPROM_AT24=n
++CONFIG_LCD_BACKLIGHT=n
++
++CONFIG_PUV3_RTC=y
++CONFIG_PUV3_UMAL=y
++CONFIG_PUV3_UNIGFX=y
++CONFIG_PUV3_MUSB=n
++CONFIG_PUV3_AC97=n
++CONFIG_PUV3_NAND=n
++CONFIG_PUV3_MMC=n
++CONFIG_PUV3_UART=n
++
++### Device Drivers
++#	Memory Technology Device (MTD) support
++CONFIG_MTD=m
++CONFIG_MTD_UBI=m
++CONFIG_MTD_PARTITIONS=y
++CONFIG_MTD_CHAR=m
++CONFIG_MTD_BLKDEVS=m
++#	RAM/ROM/Flash chip drivers
++CONFIG_MTD_CFI=m
++CONFIG_MTD_JEDECPROBE=m
++CONFIG_MTD_CFI_AMDSTD=m
++#	Mapping drivers for chip access
++CONFIG_MTD_PHYSMAP=m
++
++#	Block devices
++CONFIG_BLK_DEV_LOOP=m
++
++#	SCSI device support
++CONFIG_SCSI=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_BLK_DEV_SR=m
++CONFIG_CHR_DEV_SG=m
++
++#	Serial ATA (prod) and Parallel ATA (experimental) drivers
++CONFIG_ATA=y
++CONFIG_SATA_VIA=y
++
++#	Network device support
++CONFIG_NETDEVICES=y
++CONFIG_NET_ETHERNET=y
++CONFIG_NETDEV_1000=y
++#	Wireless LAN
++CONFIG_WLAN_80211=n
++CONFIG_RT2X00=n
++CONFIG_RT73USB=n
++
++#	Input device support
++CONFIG_INPUT_EVDEV=m
++#	Keyboards
++CONFIG_KEYBOARD_GPIO=m
++
++#	Hardware Monitoring support
++#CONFIG_SENSORS_LM75=m
++#	Generic Thermal sysfs driver
++#CONFIG_THERMAL=m
++#CONFIG_THERMAL_HWMON=y
++
++#	Multimedia support
++CONFIG_MEDIA_SUPPORT=n
++CONFIG_VIDEO_DEV=n
++CONFIG_USB_VIDEO_CLASS=n
++
++#	Graphics support
++#	Console display driver support
++CONFIG_VGA_CONSOLE=n
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_FONTS=y
++CONFIG_FONT_8x8=y
++CONFIG_FONT_8x16=y
++#	Bootup logo
++CONFIG_LOGO=n
++
++#	Sound card support
++CONFIG_SOUND=m
++#	Advanced Linux Sound Architecture
++CONFIG_SND=m
++CONFIG_SND_MIXER_OSS=m
++CONFIG_SND_PCM_OSS=m
++
++#	USB support
++CONFIG_USB_ARCH_HAS_HCD=n
++CONFIG_USB=n
++CONFIG_USB_DEVICEFS=n
++CONFIG_USB_PRINTER=n
++CONFIG_USB_STORAGE=n
++#	Inventra Highspeed Dual Role Controller
++CONFIG_USB_MUSB_HDRC=n
++
++#	LED Support
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_GPIO=y
++#	LED Triggers
++CONFIG_LEDS_TRIGGERS=y
++CONFIG_LEDS_TRIGGER_TIMER=y
++CONFIG_LEDS_TRIGGER_IDE_DISK=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++
++#	Real Time Clock
++CONFIG_RTC_LIB=m
++CONFIG_RTC_CLASS=m
++
++### File systems
++CONFIG_EXT2_FS=m
++CONFIG_EXT3_FS=y
++CONFIG_EXT4_FS=y
++CONFIG_FUSE_FS=m
++#	CD-ROM/DVD Filesystems
++CONFIG_ISO9660_FS=m
++CONFIG_JOLIET=y
++CONFIG_UDF_FS=m
++#	DOS/FAT/NT Filesystems
++CONFIG_VFAT_FS=m
++#	Pseudo filesystems
++CONFIG_PROC_FS=y
++CONFIG_SYSFS=y
++CONFIG_TMPFS=y
++#	Miscellaneous filesystems
++CONFIG_MISC_FILESYSTEMS=y
++CONFIG_JFFS2_FS=m
++CONFIG_UBIFS_FS=m
++#	Network File Systems
++CONFIG_NETWORK_FILESYSTEMS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3=y
++CONFIG_ROOT_NFS=y
++#	Partition Types
++CONFIG_PARTITION_ADVANCED=y
++CONFIG_MSDOS_PARTITION=y
++#	Native language support
++CONFIG_NLS=y
++CONFIG_NLS_CODEPAGE_437=m
++CONFIG_NLS_CODEPAGE_936=m
++CONFIG_NLS_ISO8859_1=m
++CONFIG_NLS_UTF8=m
++
++### Kernel hacking
++CONFIG_FRAME_WARN=8096
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_PROVE_LOCKING=n
++CONFIG_DEBUG_BUGVERBOSE=y
++CONFIG_FRAME_POINTER=y
++CONFIG_DEBUG_USER=y
++CONFIG_DEBUG_LL=y
 +
 
