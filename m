@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0LIBsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:48:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53258 "EHLO mga02.intel.com"
+	id S1756749Ab0LIBvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:51:47 -0500
+Received: from kroah.org ([198.145.64.141]:33665 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755043Ab0LIBsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:48:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,318,1288594800"; 
-   d="scan'208";a="581956399"
-Date: Thu, 9 Dec 2010 08:23:02 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Eric B Munson <emunson@mgebm.net>,
-        Shaohui Zheng <shaohui.zheng@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
-        dave@linux.vnet.ibm.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [1/7,v8] NUMA Hotplug Emulator: documentation
-Message-ID: <20101209002302.GB5798@shaohui>
-References: <20101207010033.280301752@intel.com>
- <20101207010139.681125359@intel.com>
- <20101207182420.GA2038@mgebm.net>
- <20101207232000.GA5353@shaohui>
- <20101208181644.GA2152@mgebm.net>
- <alpine.DEB.2.00.1012081315040.15658@chino.kir.corp.google.com>
+	id S1756452Ab0LIBvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:51:46 -0500
+Date: Wed, 8 Dec 2010 17:52:04 -0800
+From: Greg KH <greg@kroah.com>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] [USB] UASP: USB Attached SCSI (UAS) protocol driver
+Message-ID: <20101209015204.GA8339@kroah.com>
+References: <233716.61101.qm@web31813.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1012081315040.15658@chino.kir.corp.google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <233716.61101.qm@web31813.mail.mud.yahoo.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 01:16:10PM -0800, David Rientjes wrote:
-> On Wed, 8 Dec 2010, Eric B Munson wrote:
+On Wed, Dec 08, 2010 at 04:16:06PM -0800, Luben Tuikov wrote:
+> --- On Mon, 12/6/10, Greg KH <greg@kroah.com> wrote:
+> >
+> > We already have this support in the kernel tree,
 > 
-> > Shaohui,
-> > 
-> > I was able to online a cpu to node 0 successfully.  My problem was that I did
-> > not take the cpu offline before I released it.  Everything looks to be working
-> > for me.
-> > 
+> Greg, this isn't an effort for "linux kernel code turf".  This is a
+> well-implemented driver according to the respective specifications
+> (SAM, SPC, USB 2/3). It reflects correct implementation, naming, etc.
+> It shows understanding of the abstraction layers and underlying
+> technology. It's what you'd want to have in /YOUR/ kernel.
+
+What I don't want in _anyones_ kernel is multiple drivers wanting to
+attach to the same device.
+
+> > why do you want and need another driver that does the same exact thing?
 > 
-> I think it should fail more gracefully than triggering WARN_ON()s because 
-> of duplicate sysfs dentries though, right?
+> Nothing can be further from the truth. The current uas.c driver
+> doesn't do the "exact same thing", far from it.
+> 
+> You responded 4 minutes after my post. Did you have to time to verify
+> that the driver I posted does "the exact same thing" as the one in the
+> kernel?
 
-Yes, we should do more checking on the return value, the duplicate dentries can
-be avoided.  
+By "same thing" I mean "binds to the same device."
 
-Another solution: force user to offline the cpu before we do cpu release.
+I have lived through the hell of this in the past and I will not let
+that happen again, sorry.
 
--- 
-Thanks & Regards,
-Shaohui
+> 
+> "The exact same thing", let's see:
 
+<snip>
+
+I'm not saying that the in-kernel driver is perfect at all, and it's
+author is getting annoying by refusing to answer my emails, but still,
+please work with him to get the in-kernel driver to work up to your
+needs.
+
+If you have problems with the maintainer, please let me know and I'll
+see what I can do.
+
+But again, this driver is not acceptable as-is, sorry.
+
+thanks,
+
+greg k-h
