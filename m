@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab0LIUc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:32:57 -0500
-Received: from mail.perches.com ([173.55.12.10]:2453 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713Ab0LIUcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:32:55 -0500
-Subject: Re: [trivial PATCH 00/15] remove duplicate unlikely from IS_ERR
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org, Tobias Klauser <tklauser@distanz.ch>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, rtc-linux@googlegroups.com,
-        linux-s390@vger.kernel.org, osd-dev@open-osd.org,
-        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-mm@kvack.org, Jiri Kosina <trivial@kernel.org>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org
-In-Reply-To: <cover.1291923888.git.joe@perches.com>
-References: <1291906801-1389-2-git-send-email-tklauser@distanz.ch>
-	 <cover.1291923888.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 12:32:53 -0800
-Message-ID: <1291926773.20677.26.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757202Ab0LIUfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:35:06 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:33679 "HELO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754698Ab0LIUfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 15:35:04 -0500
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: spi-devel-general@lists.sourceforge.net,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Cc: linux-kernel@vger.kernel.org, Michael Buesch <mb@bu3sch.de>
+Subject: [RFC][PATCH v2 2/3] spi_bitbang : get nsecs delay from cs during transfer
+Date: Thu,  9 Dec 2010 15:34:55 -0500
+Message-Id: <67270e44ec792d1a684d6052f7aebbc8c538a6c1.1291925752.git.bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1291925752.git.bengardiner@nanometrics.ca>
+References: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca> <cover.1291925752.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-09 at 12:03 -0800, Joe Perches wrote:
-> Tobias Klauser <tklauser@distanz.ch> sent a patch to remove
-> an unnecessary unlikely from drivers/misc/c2port/core.c,
-> https://lkml.org/lkml/2010/12/9/199
+When users have elected to enable delays in the spi-gpio driver, use the
+cs speed to govern the time between CS assertion and beginning of data
+transfer on the bus
 
-It seems that Tobias did send all the appropriate patches,
-not as a series, but as individual patches to kernel-janitor.
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+---
+changes since v1:
+ * none; new in v2
 
-c2port was the only one that went to lkml.
+ drivers/spi/spi_bitbang.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
-Please ignore this series and apply Tobias' patches.
-
+diff --git a/drivers/spi/spi_bitbang.c b/drivers/spi/spi_bitbang.c
+index 8b55724..8707133 100644
+--- a/drivers/spi/spi_bitbang.c
++++ b/drivers/spi/spi_bitbang.c
+@@ -269,6 +269,7 @@ static void bitbang_work(struct work_struct *work)
+ 	while (!list_empty(&bitbang->queue)) {
+ 		struct spi_message	*m;
+ 		struct spi_device	*spi;
++		struct spi_bitbang_cs	*cs;
+ 		unsigned		nsecs;
+ 		struct spi_transfer	*t = NULL;
+ 		unsigned		tmp;
+@@ -281,13 +282,15 @@ static void bitbang_work(struct work_struct *work)
+ 		list_del_init(&m->queue);
+ 		spin_unlock_irqrestore(&bitbang->lock, flags);
+ 
+-		/* FIXME this is made-up ... the correct value is known to
+-		 * word-at-a-time bitbang code, and presumably chipselect()
+-		 * should enforce these requirements too?
+-		 */
+-		nsecs = 100;
+-
+ 		spi = m->spi;
++		cs = spi->controller_state;
++		nsecs =
++#if defined(CONFIG_SLOWER_SPI_GPIO)
++				!cs->nsecs ? cs->nsecs : 100;
++#else
++		100;
++#endif
++
+ 		tmp = 0;
+ 		cs_change = 1;
+ 		status = 0;
+-- 
+1.7.0.4
 
