@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab0LIWRq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 17:17:46 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:42858 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab0LIWRp (ORCPT
+	id S1757441Ab0LIWUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 17:20:40 -0500
+Received: from mail-iw0-f172.google.com ([209.85.214.172]:54812 "EHLO
+	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab0LIWUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 17:17:45 -0500
+	Thu, 9 Dec 2010 17:20:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=RjN+l7kV4bqgBOgGv9m+LEmkTbPopWq+P+vBmAwmekIgBDoa5UFlz/QgBF3tqKLHIb
-         VzrXuaOwZCEcLpHFzkhIaHjr+7zOLn3Y9R43ymIa3pPjwSahNoLK653PWFKdfCly/yM2
-         a7vXGz2KHh7Nt9FMOXErl+6RGNODrylK+W5qk=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Subject: Re: [PATCH] leds/h1940: Use gpiolib for latch access / fix build failure
-Date: Fri, 10 Dec 2010 00:16:57 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3-anarsoul; KDE/4.5.4; i686; ; )
-Cc: Ben Dooks <ben-linux@fluff.org>, Vincent Sanders <support@simtec.co.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1291932292-16049-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1291932292-16049-1-git-send-email-peterhuewe@gmx.de>
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=etouoXKtX4os6ZbugOS0kikuCfKUTq2h8ffAyRHYxD8HCcI2AbgC2CEI/8+niEloJ+
+         moJccGxROGsbetWWwiq2sLxzCScpccSZKpqKaOOySPtZ3jhvA5XDDXtQmTp75F+sDIWM
+         OTMNoLr9DBw/iGhZGKr630CsojaqlkDfQPsuQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012100016.58130.anarsoul@gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Thu, 9 Dec 2010 14:20:17 -0800
+Message-ID: <AANLkTik4W+UxgyPjVyHDeEFTRCkXdDBQ9obgPkpnhzGW@mail.gmail.com>
+Subject: Start dropping PCMCIA from compat-wireless for 2.6.38+
+To: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 December 2010 00:04:52 Peter Huewe wrote:
-> This patch fixes a build failure by converting leds-h1940.c to use
-> gpiolib for latch access introduced by 14477095abc6
-> (ARM: h1940: Use gpiolib for latch access)
-> 
-> Unfortunately this driver was not converted back then.
+I'm going to start dropping PCMCIA stuff from compat-wireless as I
+don't think we have any users of it nor interest to keep backporting
+it. This entails dropping drivers like orinoco, b43 PCMCIA support,
+libertas, as well as bluetooth bluecard_cs, bluecard_cs, dtl1_cs,
+bt3c_cs and of course CONFIG_SSB_PCMCIAHOST. If you are a user please
+yell now.
 
-I sent similar patch (however, my patch does gpio_request/gpio_free) ~month 
-ago.
-
-Here's link:
-http://www.spinics.net/lists/arm-kernel/msg103429.html
-
-Regards
-Vasily
+ Luis
