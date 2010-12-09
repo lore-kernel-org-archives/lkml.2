@@ -1,297 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab0LICJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 21:09:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:32815 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0LICJQ (ORCPT
+	id S932158Ab0LICSm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 21:18:42 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:38543 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754837Ab0LICSk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 21:09:16 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=DyXz9hFaH-oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=t63dp1xpQgMtrfH4fMgA:9 a=IS8RrdH9ZuXYeP5cxAsA:7 a=6g-39YFtxGQ4QW4E35p0wTzY0bsA:4 a=PUjeQqilurYA:10 a=vvUW9-3F3DjkTySS:21 a=5ibCjSavRRZKE6Q_:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate
- from ntp_error
-From: Steven Rostedt <rostedt@goodmis.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1291848477.2909.152.camel@work-vm>
-References: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
-	 <1291838382.2909.17.camel@work-vm>
-	 <1291839317.5015.1139.camel@gandalf.stny.rr.com>
-	 <1291848477.2909.152.camel@work-vm>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 08 Dec 2010 21:09:13 -0500
-Message-ID: <1291860553.5015.1512.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Dec 2010 21:18:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mmLHv4jfmzBs5Qrdll2lszpVkW5pxm3msNu7SVwyNJOLJ5zZblMpjnTTtH2C3lq+LA
+         JanT+r0vUzsCaOtASu9ladSfXpCozFa2KG6xw2ExFFEBwfmrHAkH1y/a28owjpa1Q0bh
+         5TXofzWrtqF+ucw+gamEygMbVRTXqBzDsYcX4=
+MIME-Version: 1.0
+In-Reply-To: <s5h7hfk3aap.wl%tiwai@suse.de>
+References: <s5h7hfk3aap.wl%tiwai@suse.de>
+Date: Wed, 8 Dec 2010 21:18:38 -0500
+Message-ID: <AANLkTimhu9+42H1PYGjXih=J_x480g16SpWASUi+joUC@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: Add support for JMicron 388 SD/MMC controller
+From: zhangfei gao <zhangfei.gao@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aries Lee <arieslee@jmicron.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John,
+On Wed, Dec 8, 2010 at 4:04 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> JMicron 388 SD/MMC combo controller supports the 1.8V low-voltage for
+> SD, but MMC doesn't work with the low-voltage, resulting in an error
+> at probing.
+>
+> This patch adds the support for multiple voltage mask per device type,
+> so that SD works with 1.8V while MMC forces 3.3V.  Here new ocr_avail_*
+> fields for each device are introduced, so that the actual OCR mask is
+> switched dynamically.
 
-Thanks a lot for this explanation. It does explain things much better!
+It is great that you also have 1.8v requirement, could you help share some info?
+What's the card you are using, mmc or sd, if sd, does cmd11 is required?
+Which component will provide voltage in your platform, external pmic
+or controller?
+What's the init voltage, 3.3v? and then switch to 1.8v, does some time
+required to wait voltage to be stable?
 
+Thanks a lot.
 
-On Wed, 2010-12-08 at 14:47 -0800, john stultz wrote:
-> On Wed, 2010-12-08 at 15:15 -0500, Steven Rostedt wrote:
-> > On Wed, 2010-12-08 at 11:59 -0800, john stultz wrote:
-> > 
-> > > Hey Steven!
-> > > 
-> > > Thanks for the great analysis and tooling to help find these unexpected
-> > > behaviors! 
-> > > 
-> > > Sadly, I believe your proposed change can still cause minor nsec
-> > > inconsistencies from gettimeofday/vgettimeofday. In fact, the previous
-> > > implementation where the nsec inconsistency error was observed preserved
-> > > the sub-nanosecond remainder in xtime_nsec.
-> > 
-> > What inconsistencies exactly? Not to say they aren't any, but I really
-> > want to know exactly what is happening. Even the change log that Roman
-> > showed in that commit does not explain well what the issue was.
-> 
-> So, it has to do with the fact that X cycles doesn't exactly match Y ns,
-> and the way we do our accumulation with high precision.
-> 
-> There are two components to the gettimeofday calculation: the
-> accumulated base, stored in nanoseconds (this is xtime) and the current
-> cycle delta, converted to nanoseconds.
-> 
-> gtod: xtime + cyc2ns(delta)
-> 
-> 
-> During the tick, when we do our accumulation into xtime, we do it with
-> very high precision (clocksource shifted nanoseconds). For this
-> accumulation, there are three components: xtime, the cycle delta, and
-> the sub-ns remainder. The sub-ns remainder may take various forms. In
-> earlier code it was stored in xtime_nsec, with the current code we round
-> xtime up to the next nsec, and store -(1ns - remainder) into the
-> ntp_error, in your patch it is the new remainder value.
-> 
-> Now, when we accumulate the cycle delta, we do so in fixed chunks with
-> higher precision then we use for gettimeofday (again using shifted
-> nanoseconds). This may leave some unaccumulated cycles in delta.
-> 
-> accumulation:  (xtime + remainder) += high precision chunk of delta
-> 
-> The key here is that a gtod called right before and right after the
-> accumulation, if given the same cycle value should get the same number
-> (ie: imagine no time changed).
-> 
-> Now looking at Roman's commit message:
-> 
-> >     timekeeping: fix rounding problem during clock update
-> >     
-> >     Due to a rounding problem during a clock update it's possible for readers
-> >     to observe the clock jumping back by 1nsec.  The following simplified
-> >     example demonstrates the problem:
-> >     
-> >     cycle       xtime
-> >     0   0
-> >     1000        999999.6
-> >     2000        1999999.2
-> >     3000        2999998.8
-> 
-> The above shows the standard accumulation chunks. 
-> 1000 cycles = 999999.6 ns
-> 
-> >     ...
-> >     
-> >     1500 =      1499999.4
-> >     =   0.0 + 1499999.4
-> >     =   999999.6 + 499999.8
-> 
-> This is an illustration of if the accumulation triggers @1500 cycles.
-> 
-> It initially seems a little contrived, because the accumulation chunks
-> should match the accumulation period (aka: the tick period). But the
-> tick interrupt may not be exactly matched, due to the timer hardware
-> freq not being able to match HZ exactly, or some other slight difference
-> in the hardware speed. So for instance, the tick may always land just a
-> little early, so 999, then 1998, etc.. In that case the first tick we
-> won't accumulate anything, then the second we will accumulate 1000,
-> leaving 998 for the next time. Anyway, the net of it is, that the code
-> can't assume that the tick will land at a specific time. 
-> 
-> So again, assume the accumulation is late or whatever, and triggers at
-> 1500 cycles.
-> 
-> In this case, we accumulate a single chunk of 1000 cycles, leaving 500
-> cycles for the next tick/accumulation period.
-> 
-> Pre-accumulation: 
-> 	xtime = 0, rem = 0, delta = 1500
-> 	gtod:	0 + cyc2ns(1500)
-> 		0 + 1499999 (note cyc2ns truncated the 0.4 remainder)
-> 		1499999
-> 
-> Accumulation occurs.
-> 
-> Post-accumulation:
-> 	xtime = 999999, rem=0.6, delta = 500
-> 
-> 	gtod: 	999999 + cyc2ns(500)
-> 		999999 + 499999 (cyc2ns truncates the .8 remainder)
-> 		1499998
-> 
-> And there is the 1ns inconsistency!
-> 
-> 
-> With the current code, in accumulation we round xtime up and add the
-> remainder into the ntp_error.
-> 
-> Post accumulation:
-> 	xtime = 1000000, ntp_error=-0.4, delta = 500
-> 
-> 	gtod:	1000000 + cyc2ns(500)
-> 		1000000 + 499999 (cyc2ns truncates the .8 remainder)
-> 		1499999
-> 
-> Then in the adjustment step, we take the ntp_error into account and we
-> will slow the clocksource freq down a bit to make sure the long-term
-> accuracy is still correct (so we don't gain ~1ns per tick).
-
-OK, but have you looked at my patch carefully? It does not do what the
-old code does. It still keeps the "round up", but then it subtracts the
-remainder from the delta when we come in again. I don't think my way has
-the same issue.
-
-
-Post-accumulation:
- 	xtime = 1000000, rem=-0.4, delta = 500
- 
- 	gtod: 	999999 + cyc2ns(500)
- 		999999 + 499999 (cyc2ns truncates the .8 remainder)
- 		1499998
-
-The old code did:
-
-	xtime_nsec += xtime.tv_nsec << shift;
-
-	[ do stuff ]
-
-	xtime.tv_nsec = xtime_nsec >> shift;
-	xtime_nsec -= xtime.tv_nsec << shift;
-
-So the gtod calculations using xtime.tv_nsec leaves off the remainder.
-This causes issues as you shown.
-
-My code still rounds up, but the difference is that it now subtracts
-from the new start to get back to where it left off:
-
-	xtime_nsec += xtime.tv_nsec << shift;
-
-	[ do stuff ]
-
-	xtime.tv_nsec = (xtime_nsec >> shift) + 1;
-	xtime_nsec -= xtime.tv_nsec << shift;
-
-The result of xtime_nsec is now negative, because we added 1 and
-shifted.
-
-Heck, I think this is all Roland needed to do to fix the issue. Lets
-look at this again:
-
-Pre-accumulation: 
-	xtime = 0, rem = 0, delta = 1500
-	gtod:	0 + cyc2ns(1500)
-		0 + 1499999 (note cyc2ns truncated the 0.4 remainder)
-		1499999
-
-Accumulation occurs.
-
-Post-accumulation:
-	xtime = 1000000, rem=-0.4, delta = 500
-
-	gtod: 	1000000 + cyc2ns(500)
-		1000000 + 499999 (cyc2ns truncates the .8 remainder)
-		1499999
-
-Even if the subtraction moves the shift backward one, we are still ok,
-because when we calculate xtime.tv_nsec at the end, we do the "+1" again
-which returns us that missing ns!
-
-> 
-> 
-> Now, as I said, we could modify gtod, so it takes into account the
-> remainder value, as well as a modified cyc2ns that doesn't truncate the
-> sub-ns portion until after we've added everything together. But that
-> requires touching a lot more code (all the vsyscall gtods).
-
-I don't think this is needed.
-
-> 
-> In that case, post accumulation would look like:
-> 	xtime = 999999, rem=0.6, delta = 500
-> 	gtod:	999999.6 + cyc2shiftedns(500)
-> 		999999.6 + 499999.8
-> 		1499999.4
-> 		1499999 (finally truncing the value before returning)
-> 
-> 
-> Alternatively, we could modify the adjustment code to expect larger
-> errors each iteration due to the rounding up.
-> 
-> > > I suspect we may need to still round up and store the error, but tweak
-> > > the adjustment code to handle the larger error per-iteration then it was
-> > > originally designed for (note: the current code is still functioning
-> > > properly, its just not often hitting the expected trivial case).
-> > 
-> > I'm afraid that may also do damage. This code needs real documentation
-> > explaining in detail what the frick it's doing. Having someone that
-> > shows up once ever 10 years that understands it is not something I feel
-> > confident about.
-> 
-> Oh yea. I agree the adjustment code is very opaque. And there is risk in
-> modifying the code that has been "functioning" but just not in the ideal
-> environment. This stuff is terribly subtle. And there is a real
-> possibility that in fixing the issue you've found, we may cause bugs
-> that effect users in a much more negative way then the incorrect
-> likely() overhead.
-
-It's not the "likely()" I care about, its the fact that we are going
-into the slow path (timekeeping_bigadjust()) every time. This does a
-hell of a lot more work than the simple "adj=1" that is given.
-
-> 
-> 
-> > > The only alternative would be to integrate the sub-ns remainder into the
-> > > gettime caclculation (including reworking all the vsyscall
-> > > implementations to utilize it as well).
-> > > 
-> > 
-> > First lets talk about all the issues, and perhaps even start documenting
-> > what it currently does. The comments in the code are not enough for a
-> > reviewer to understand the logic. I've spent today reading some RFC's to
-> > understand more about NTP but, it still does not explain the magic
-> > constants that are used in the code.
-> 
-> Also, NTP RFCs probably won't help you much with the kernel's
-> timekeeping.c code and adjustments. Most of the NTP specific code that
-> maps to the RFC is actually in ntp.c. The timekeeping code consumes the
-> steering done there via the tick_length value and the error accounting. 
-
-I read it just to understand the general concepts more ;-)
-
--- Steve
-
-> 
-> But as to your point about better documentation, yes I think that's a
-> great idea. I do worry that Roman (who has been out of contact for
-> awhile) is the only person who really gets the adjustment code. I've
-> always let it be somewhat of a black box, understanding what it does in
-> concept, but some of the details still escape my grasp. It has
-> functioned well over the last few years, and in my long discussions with
-> him he tends to be correct about his approach, but it takes quite a bit
-> of time and frustration (at least for slow minded folks like me) to
-> understand why its right.
-> 
-> So more eyes connected to large brains could definitely help here. :)
-
-
+>
+> Also, the restriction of low-voltage in core/sd.c is removed when the
+> bit is allowed explicitly via ocr_avail_sd mask.
+>
+> This patch was rewritten from scratch based on Aries' original code.
+>
+> Signed-off-by: Aries Lee <arieslee@jmicron.com>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>
+> v1->v2
+>  - Rebased to the latest mmc-next branch of linux-mmc tree
+>
+>  drivers/mmc/core/mmc.c       |    2 +
+>  drivers/mmc/core/sd.c        |    5 +++-
+>  drivers/mmc/core/sdio.c      |    2 +
+>  drivers/mmc/host/sdhci-pci.c |   47 ++++++++++++++++++++++++++++++++++++-----
+>  drivers/mmc/host/sdhci.c     |   23 ++++++++++++++++----
+>  include/linux/mmc/host.h     |    3 ++
+>  include/linux/mmc/sdhci.h    |    4 +++
+>  include/linux/pci_ids.h      |    2 +
+>  8 files changed, 76 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 77f93c3..76bb621 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -745,6 +745,8 @@ int mmc_attach_mmc(struct mmc_host *host, u32 ocr)
+>        WARN_ON(!host->claimed);
+>
+>        mmc_attach_bus_ops(host);
+> +       if (host->ocr_avail_mmc)
+> +               host->ocr_avail = host->ocr_avail_mmc;
+>
+>        /*
+>         * We need to get OCR a different way for SPI.
+> diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
+> index 49da4df..de062eb 100644
+> --- a/drivers/mmc/core/sd.c
+> +++ b/drivers/mmc/core/sd.c
+> @@ -772,6 +772,8 @@ int mmc_attach_sd(struct mmc_host *host, u32 ocr)
+>        WARN_ON(!host->claimed);
+>
+>        mmc_sd_attach_bus_ops(host);
+> +       if (host->ocr_avail_sd)
+> +               host->ocr_avail = host->ocr_avail_sd;
+>
+>        /*
+>         * We need to get OCR a different way for SPI.
+> @@ -795,7 +797,8 @@ int mmc_attach_sd(struct mmc_host *host, u32 ocr)
+>                ocr &= ~0x7F;
+>        }
+>
+> -       if (ocr & MMC_VDD_165_195) {
+> +       if ((ocr & MMC_VDD_165_195) &&
+> +           !(host->ocr_avail_sd & MMC_VDD_165_195)) {
+>                printk(KERN_WARNING "%s: SD card claims to support the "
+>                       "incompletely defined 'low voltage range'. This "
+>                       "will be ignored.\n", mmc_hostname(host));
+> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> index efef5f9..c18810a 100644
+> --- a/drivers/mmc/core/sdio.c
+> +++ b/drivers/mmc/core/sdio.c
+> @@ -700,6 +700,8 @@ int mmc_attach_sdio(struct mmc_host *host, u32 ocr)
+>        WARN_ON(!host->claimed);
+>
+>        mmc_attach_bus(host, &mmc_sdio_ops);
+> +       if (host->ocr_avail_sdio)
+> +               host->ocr_avail = host->ocr_avail_sdio;
+>
+>        /*
+>         * Sanity check the voltages that the card claims to
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index 831cf91..d2638ff 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -272,6 +272,7 @@ static int jmicron_pmos(struct sdhci_pci_chip *chip, int on)
+>  static int jmicron_probe(struct sdhci_pci_chip *chip)
+>  {
+>        int ret;
+> +       u16 mmcdev = 0;
+>
+>        if (chip->pdev->revision == 0) {
+>                chip->quirks |= SDHCI_QUIRK_32BIT_DMA_ADDR |
+> @@ -293,12 +294,17 @@ static int jmicron_probe(struct sdhci_pci_chip *chip)
+>         * 2. The MMC interface has a lower subfunction number
+>         *    than the SD interface.
+>         */
+> -       if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_SD) {
+> +       if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_SD)
+> +               mmcdev = PCI_DEVICE_ID_JMICRON_JMB38X_MMC;
+> +       else if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_SD)
+> +               mmcdev = PCI_DEVICE_ID_JMICRON_JMB388_ESD;
+> +
+> +       if (mmcdev) {
+>                struct pci_dev *sd_dev;
+>
+>                sd_dev = NULL;
+>                while ((sd_dev = pci_get_device(PCI_VENDOR_ID_JMICRON,
+> -                       PCI_DEVICE_ID_JMICRON_JMB38X_MMC, sd_dev)) != NULL) {
+> +                                               mmcdev, sd_dev)) != NULL) {
+>                        if ((PCI_SLOT(chip->pdev->devfn) ==
+>                                PCI_SLOT(sd_dev->devfn)) &&
+>                                (chip->pdev->bus == sd_dev->bus))
+> @@ -358,11 +364,21 @@ static int jmicron_probe_slot(struct sdhci_pci_slot *slot)
+>                        slot->host->quirks |= SDHCI_QUIRK_BROKEN_ADMA;
+>        }
+>
+> +       /* JM388 MMC doesn't support 1.8V while SD supports it */
+> +       if (slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_ESD) {
+> +               slot->host->ocr_avail_sd = MMC_VDD_32_33 | MMC_VDD_33_34 |
+> +                       MMC_VDD_29_30 | MMC_VDD_30_31 |
+> +                       MMC_VDD_165_195; /* allow 1.8V */
+> +               slot->host->ocr_avail_mmc = MMC_VDD_32_33 | MMC_VDD_33_34 |
+> +                       MMC_VDD_29_30 | MMC_VDD_30_31; /* no 1.8V for MMC */
+> +       }
+> +
+>        /*
+>         * The secondary interface requires a bit set to get the
+>         * interrupts.
+>         */
+> -       if (slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC)
+> +       if (slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC ||
+> +           slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_ESD)
+>                jmicron_enable_mmc(slot->host, 1);
+>
+>        return 0;
+> @@ -373,7 +389,8 @@ static void jmicron_remove_slot(struct sdhci_pci_slot *slot, int dead)
+>        if (dead)
+>                return;
+>
+> -       if (slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC)
+> +       if (slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC ||
+> +           slot->chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_ESD)
+>                jmicron_enable_mmc(slot->host, 0);
+>  }
+>
+> @@ -381,7 +398,8 @@ static int jmicron_suspend(struct sdhci_pci_chip *chip, pm_message_t state)
+>  {
+>        int i;
+>
+> -       if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC) {
+> +       if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC ||
+> +           chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_ESD) {
+>                for (i = 0;i < chip->num_slots;i++)
+>                        jmicron_enable_mmc(chip->slots[i]->host, 0);
+>        }
+> @@ -393,7 +411,8 @@ static int jmicron_resume(struct sdhci_pci_chip *chip)
+>  {
+>        int ret, i;
+>
+> -       if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC) {
+> +       if (chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB38X_MMC ||
+> +           chip->pdev->device == PCI_DEVICE_ID_JMICRON_JMB388_ESD) {
+>                for (i = 0;i < chip->num_slots;i++)
+>                        jmicron_enable_mmc(chip->slots[i]->host, 1);
+>        }
+> @@ -582,6 +601,22 @@ static const struct pci_device_id pci_ids[] __devinitdata = {
+>        },
+>
+>        {
+> +               .vendor         = PCI_VENDOR_ID_JMICRON,
+> +               .device         = PCI_DEVICE_ID_JMICRON_JMB388_SD,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_jmicron,
+> +       },
+> +
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_JMICRON,
+> +               .device         = PCI_DEVICE_ID_JMICRON_JMB388_ESD,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_jmicron,
+> +       },
+> +
+> +       {
+>                .vendor         = PCI_VENDOR_ID_SYSKONNECT,
+>                .device         = 0x8000,
+>                .subvendor      = PCI_ANY_ID,
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 8a74fcb..508ea5a 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1739,7 +1739,7 @@ EXPORT_SYMBOL_GPL(sdhci_alloc_host);
+>  int sdhci_add_host(struct sdhci_host *host)
+>  {
+>        struct mmc_host *mmc;
+> -       unsigned int caps;
+> +       unsigned int caps, ocr_avail;
+>        int ret;
+>
+>        WARN_ON(host == NULL);
+> @@ -1893,13 +1893,26 @@ int sdhci_add_host(struct sdhci_host *host)
+>            mmc_card_is_removable(mmc))
+>                mmc->caps |= MMC_CAP_NEEDS_POLL;
+>
+> -       mmc->ocr_avail = 0;
+> +       ocr_avail = 0;
+>        if (caps & SDHCI_CAN_VDD_330)
+> -               mmc->ocr_avail |= MMC_VDD_32_33|MMC_VDD_33_34;
+> +               ocr_avail |= MMC_VDD_32_33 | MMC_VDD_33_34;
+>        if (caps & SDHCI_CAN_VDD_300)
+> -               mmc->ocr_avail |= MMC_VDD_29_30|MMC_VDD_30_31;
+> +               ocr_avail |= MMC_VDD_29_30 | MMC_VDD_30_31;
+>        if (caps & SDHCI_CAN_VDD_180)
+> -               mmc->ocr_avail |= MMC_VDD_165_195;
+> +               ocr_avail |= MMC_VDD_165_195;
+> +
+> +       mmc->ocr_avail = ocr_avail;
+> +       mmc->ocr_avail_sdio = ocr_avail;
+> +       if (host->ocr_avail_sdio)
+> +               mmc->ocr_avail_sdio &= host->ocr_avail_sdio;
+> +       mmc->ocr_avail_sd = ocr_avail;
+> +       if (host->ocr_avail_sd)
+> +               mmc->ocr_avail_sd &= host->ocr_avail_sd;
+> +       else /* normal SD controllers don't support 1.8V */
+> +               mmc->ocr_avail_sd &= ~MMC_VDD_165_195;
+> +       mmc->ocr_avail_mmc = ocr_avail;
+> +       if (host->ocr_avail_mmc)
+> +               mmc->ocr_avail_sd &= host->ocr_avail_mmc;
+>
+>        if (mmc->ocr_avail == 0) {
+>                printk(KERN_ERR "%s: Hardware doesn't report any "
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index 381c77f..4a9d9d25 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -131,6 +131,9 @@ struct mmc_host {
+>        unsigned int            f_max;
+>        unsigned int            f_init;
+>        u32                     ocr_avail;
+> +       u32                     ocr_avail_sdio; /* SDIO-specific OCR */
+> +       u32                     ocr_avail_sd;   /* SD-specific OCR */
+> +       u32                     ocr_avail_mmc;  /* MMC-specific OCR */
+>        struct notifier_block   pm_notify;
+>
+>  #define MMC_VDD_165_195                0x00000080      /* VDD voltage 1.65 - 1.95 */
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index 1fdc673..0d953f5 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -139,6 +139,10 @@ struct sdhci_host {
+>
+>        unsigned int caps;      /* Alternative capabilities */
+>
+> +       unsigned int            ocr_avail_sdio; /* OCR bit masks */
+> +       unsigned int            ocr_avail_sd;
+> +       unsigned int            ocr_avail_mmc;
+> +
+>        unsigned long private[0] ____cacheline_aligned;
+>  };
+>  #endif /* __SDHCI_H */
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 7a58875..2f17b4c 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2368,6 +2368,8 @@
+>  #define PCI_DEVICE_ID_JMICRON_JMB38X_SD        0x2381
+>  #define PCI_DEVICE_ID_JMICRON_JMB38X_MMC 0x2382
+>  #define PCI_DEVICE_ID_JMICRON_JMB38X_MS        0x2383
+> +#define PCI_DEVICE_ID_JMICRON_JMB388_SD        0x2391
+> +#define PCI_DEVICE_ID_JMICRON_JMB388_ESD 0x2392
+>
+>  #define PCI_VENDOR_ID_KORENIX          0x1982
+>  #define PCI_DEVICE_ID_KORENIX_JETCARDF0        0x1600
+> --
+> 1.7.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
