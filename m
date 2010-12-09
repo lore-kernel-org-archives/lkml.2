@@ -1,170 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab0LIFms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 00:42:48 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56136 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab0LIFmr convert rfc822-to-8bit (ORCPT
+	id S1753329Ab0LIFs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 00:48:29 -0500
+Received: from nwd2mail11.analog.com ([137.71.25.57]:22094 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab0LIFs2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 00:42:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,319,1288594800"; 
-   d="scan'208";a="582003766"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Kyungmin Park <kmpark@infradead.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+	Thu, 9 Dec 2010 00:48:28 -0500
+X-IronPort-AV: E=Sophos;i="4.59,319,1288584000"; 
+   d="scan'208";a="25875271"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Thu, 9 Dec 2010 13:40:45 +0800
-Subject: RE: [PATCH v4 1/4]enable HW reset capbility
-Thread-Topic: [PATCH v4 1/4]enable HW reset capbility
-Thread-Index: AcuXYVnhF89DvaYHRaO6ELIuvSrJNgAAhXDA
-Message-ID: <5D8008F58939784290FAB48F549751983263F995AB@shsmsx502.ccr.corp.intel.com>
-References: <20101201124900.GB5421@intel.com>
- <AANLkTimv5f43mgtubgps_rgiHXa3=NGRb4kNrps8ViJn@mail.gmail.com>
-In-Reply-To: <AANLkTimv5f43mgtubgps_rgiHXa3=NGRb4kNrps8ViJn@mail.gmail.com>
-Accept-Language: en-US
+        Drivers <Drivers@analog.com>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Date: Thu, 9 Dec 2010 05:48:20 +0000
+Subject: RE: [RFC 1/3] IIO: Direct digital synthesis abi documentation
+Thread-Topic: [RFC 1/3] IIO: Direct digital synthesis abi documentation
+Thread-Index: AcuV+GYVuRpteGrMQWKFwl1ZgPjPVwBa6YXg
+Message-ID: <544AC56F16B56944AEC3BD4E3D591771312F0E232B@LIMKCMBX1.ad.analog.com>
+References: <1291292489-32362-1-git-send-email-michael.hennerich@analog.com>
+ <1291292489-32362-2-git-send-email-michael.hennerich@analog.com>
+ <4CF8CED9.9060306@cam.ac.uk>
+ <544AC56F16B56944AEC3BD4E3D591771312F0E1BB3@LIMKCMBX1.ad.analog.com>
+ <4CFE0C03.3010405@cam.ac.uk>
+In-Reply-To: <4CFE0C03.3010405@cam.ac.uk>
+Accept-Language: de-DE, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jonathan Cameron wrote on 2010-12-07:
+> On 12/07/10 05:18, Hennerich, Michael wrote:
+>>> Jonathan Cameron wrote on 2010-12-03:
+>>> On 12/02/10 12:21, michael.hennerich@analog.com wrote:
+>>>> From: Michael Hennerich <michael.hennerich@analog.com>
+>>>>
+>>>> Proposed ABI documentation
+>>>>
 
+>>>>What:              /sys/bus/iio/devices/device[n]/ddsX_freqY
+>>> Here we deviate a little from what we did with input channels. In that
+>>> case there was the existing interface (from hwmon) to match so we
+>>> already had an _input designation to tell us that the number was in
+>>> the relevant base units (here it would be Hz).  Hence we added a _raw
+>>> label to say it wasn't and tell userspace to apply scale and offset.
+>>> This is stretching a point somewhat, but looking at the hwmon docs,
+>>> they have pwmX_freq as a value in Hz. That's obviously going to make
+>>> consistency rather tricky to achieve!
+>>>
+>>> Do you think we should leave all _freq without modifier as being in Hz
+>>> and have ddsX_freqY_raw. Or should we rely on userspace verifying if
+>>> there are appropriate scale / offset parameters to be applied and
+>>> hence working out for itself whether the value in ddsX_freqY is in Hz
+>>> or not?
+>>>
+>>> I'm think I marginally favour leaving it as you have it here but
+>>> others may have different opinions.
+>>
+>> Offset is not likely to be used here - but these devices actually
+>> provide sub Hertz resolution. It's very likely to occur, that we
+>> want to have scale being 1000 and the user writes frequency in mHz.
+>> I might even consider using mHz for the sample driver as well.
+> I guess it's a question of whether doing the fixed point arithmetic in
+> kernel is cheap enough to use Hz but allow for a decimal point?  That
+> would remove the need for the _scale parameter which would simplify
+> the user interface slightly.
+>
+> Lets go with what you originally suggested. It works and with clear
+> documentation the difference between it and some of our other
+> 'frequency' elements shouldn't confuse anyone.
 
-> -----Original Message-----
-> From: kyungmin78@gmail.com [mailto:kyungmin78@gmail.com] On Behalf Of
-> Kyungmin Park
-> Sent: Thursday, December 09, 2010 1:24 PM
-> To: Dong, Chuanxiao
-> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; cjb@laptop.org;
-> arjan@linux.intel.com; alan@linux.intel.com; akpm@linux-foundation.org
-> Subject: Re: [PATCH v4 1/4]enable HW reset capbility
-> 
-> On Wed, Dec 1, 2010 at 9:49 PM, Chuanxiao Dong <chuanxiao.dong@intel.com>
-> wrote:
-> > From d3be0b4fe8e8a40294830dfd8d0543d1e957fd29 Mon Sep 17 00:00:00 2001
-> > From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > Date: Wed, 1 Dec 2010 19:14:02 +0800
-> > Subject: [PATCH 1/4] enable HW reset caps of MMC card if card supports
-> >
-> > HW reset capbility enable bit is byte 162 in card EXT_CSD
-> > register, only version4.4 card or later can support to enable
-> > this feature.
-> >
-> > HW reset feature can be used to reset eMMC card when occures
-> > timeout errors during read/write/erase.
-> >
-> > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > ---
-> >  drivers/mmc/core/mmc.c   |   29 +++++++++++++++++++++++++++++
-> >  include/linux/mmc/card.h |    1 +
-> >  include/linux/mmc/mmc.h  |    1 +
-> >  3 files changed, 31 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> > index 77f93c3..85cc7f6 100644
-> > --- a/drivers/mmc/core/mmc.c
-> > +++ b/drivers/mmc/core/mmc.c
-> > @@ -310,6 +310,10 @@ static int mmc_read_ext_csd(struct mmc_card *card)
-> >                        ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
-> >                card->ext_csd.trim_timeout = 300 *
-> >                        ext_csd[EXT_CSD_TRIM_MULT];
-> > +               /*
-> > +                * check Hardware reset cap
-> Check hardware.
-> > +                */
-> > +               card->ext_csd.rst = ext_csd[EXT_CSD_RST];
-> >        }
-> >
-> >        if (ext_csd[EXT_CSD_ERASED_MEM_CONT])
-> > @@ -484,6 +488,31 @@ static int mmc_init_card(struct mmc_host *host, u32
-> ocr,
-> >        }
-> >
-> >        /*
-> > +        * eMMC4.4 version card has HW reset capbility.
-> capability.
-> > +        * Enable this feature here:
-> > +        * RST_N_FUNCTION register is W/R, one time programmable
-> Use RST_n_FUNCTION as spec.
-> > +        * or readable.
-> > +        * So need to enable this register only once after power on
-> > +        */
-> > +       if (card->csd.mmca_vsn >= CSD_SPEC_VER_4 &&
-> > +                       card->ext_csd.rev >= 4 &&
-> it should be card->ext_csd.rev >= 5 since 4 is obsolete.
-> 
-> Thank you,
-> Kyungmin Park
+I prefer the _scale parameter.
+Not aware of any other sysfs files, taking decimal points.
 
-Thanks, Park. I will fix this.
-And by the way, I noticed mmc_read_ext_csd function also used card->ext_csd.rev >=4. Is there some other reason for this kind of using? Or it is just because at that time the value 4 has not be obsolete yet....?
+>>>> +What:              /sys/bus/iio/devices/device[n]/ddsX_out_disable
+>>>> +KernelVersion:     2.6.37
+>>>> +Contact:   linux-iio@vger.kernel.org
+>>>> +Description:
+>>>> +           Disables any signal generation on all outputs.
+>>> With the X in there you need to say for dds X. On everything else so
+>>> far we have tended to go with enable attributes rather than this way
+>>> around.  Why do it as disable here?
+>>
+>> We can change the logic. The sample driver enables the output once the
+>> ddsX_outY_wavetype file is written.
+> Is that a good idea? What if a device is dependant on having a very
+> particular frequency fed to it and the user not knowing that wavetype
+> turns things on might set that before the frequency? The semantics
+> don't make it clear that one must set the wavetype last.  I would
+> think separating the configuration from enable/disable might be more
+> intuitive.
+
+I agree.
 
 Thanks.
-Chuanxiao
-> > +                       card->ext_csd.rst == 0) {
-> > +               err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> > +                               EXT_CSD_RST, 1);
-> > +
-> > +               if (err && err != -EBADMSG)
-> > +                       goto free_card;
-> > +
-> > +               if (err) {
-> > +                       printk(KERN_WARNING "%s: switch to rst enable
-> "
-> > +                                  "failed %d\n",
-> > +                                  mmc_hostname(card->host), err);
-> > +                       err = 0;
-> > +               } else
-> > +                       card->ext_csd.rst = 1;
-> > +       }
-> > +
-> > +       /*
-> >         * Activate high speed (if supported)
-> >         */
-> >        if ((card->ext_csd.hs_max_dtr != 0) &&
-> > diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> > index 8ce0827..ebee676 100644
-> > --- a/include/linux/mmc/card.h
-> > +++ b/include/linux/mmc/card.h
-> > @@ -54,6 +54,7 @@ struct mmc_ext_csd {
-> >        unsigned int            sec_trim_mult;  /* Secure trim
-> multiplier  */
-> >        unsigned int            sec_erase_mult; /* Secure erase multiplier
-> */
-> >        unsigned int            trim_timeout;           /* In
-> milliseconds */
-> > +       unsigned int            rst; /* hardware reset enable bit */
-> >  };
-> >
-> >  struct sd_scr {
-> > diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> > index 956fbd8..b7ab0da 100644
-> > --- a/include/linux/mmc/mmc.h
-> > +++ b/include/linux/mmc/mmc.h
-> > @@ -251,6 +251,7 @@ struct _mmc_csd {
-> >  * EXT_CSD fields
-> >  */
-> >
-> > +#define EXT_CSD_RST            162     /* onetime programmable R/W
-> */
-> >  #define EXT_CSD_ERASE_GROUP_DEF                175     /* R/W */
-> >  #define EXT_CSD_ERASED_MEM_CONT                181     /* RO */
-> >  #define EXT_CSD_BUS_WIDTH              183     /* R/W */
-> > --
-> > 1.6.6.1
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+
+Greetings,
+Michael
+
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
+
