@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab0LIPG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:06:29 -0500
-Received: from Mycroft.westnet.com ([216.187.52.7]:42409 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab0LIPG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:06:28 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19712.61515.201226.938553@quad.stoffel.home>
-Date: Thu, 9 Dec 2010 10:05:47 -0500
-From: "John Stoffel" <john@stoffel.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: xfs-masters@oss.sgi.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        cluster-devel@redhat.com, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org, xfs@oss.sgi.com, linux-mm@kvack.org,
-        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
-        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
-        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
-        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
-        jeffm@suse.com, serue@us.ibm.com, paul.moore@hp.com,
-        penguin-kernel@I-love.SAKURA.ne.jp, casey@schaufler-ca.com,
-        kees.cook@canonical.com, dhowells@redhat.com
-Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on inode
- creation
-In-Reply-To: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
-References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
+	id S1753552Ab0LIPIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:08:23 -0500
+Received: from mx1.zhaw.ch ([160.85.104.50]:64760 "EHLO mx1.zhaw.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab0LIPIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 10:08:21 -0500
+From: Tobias Klauser <tklauser@distanz.ch>
+To: giometti@linux.it
+Cc: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] c2port: Remove redundant unlikely()
+Date: Thu,  9 Dec 2010 16:00:01 +0100
+Message-Id: <1291906801-1389-2-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1291906801-1389-1-git-send-email-tklauser@distanz.ch>
+References: <1291906801-1389-1-git-send-email-tklauser@distanz.ch>
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.12.9.145115
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+IS_ERR() already implies unlikely(), so it can be omitted here.
 
-Eric> SELinux would like to implement a new labeling behavior of newly
-Eric> created inodes.  We currently label new inodes based on the
-Eric> parent and the creating process.  This new behavior would also
-Eric> take into account the name of the new object when deciding the
-Eric> new label.  This is not the (supposed) full path, just the last
-Eric> component of the path.
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ drivers/misc/c2port/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Eric> This is very useful because creating /etc/shadow is different
-Eric> than creating /etc/passwd but the kernel hooks are unable to
-Eric> differentiate these operations.  We currently require that
-Eric> userspace realize it is doing some difficult operation like that
-Eric> and than userspace jumps through SELinux hoops to get things set
-Eric> up correctly.  This patch does not implement new behavior, that
-Eric> is obviously contained in a seperate SELinux patch, but it does
-Eric> pass the needed name down to the correct LSM hook.  If no such
-Eric> name exists it is fine to pass NULL.
+diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
+index 19fc7c1..95a82de 100644
+--- a/drivers/misc/c2port/core.c
++++ b/drivers/misc/c2port/core.c
+@@ -913,7 +913,7 @@ struct c2port_device *c2port_device_register(char *name,
+ 
+ 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
+ 					"c2port%d", id);
+-	if (unlikely(IS_ERR(c2dev->dev))) {
++	if (IS_ERR(c2dev->dev)) {
+ 		ret = PTR_ERR(c2dev->dev);
+ 		goto error_device_create;
+ 	}
+-- 
+1.7.0.4
 
-I've looked this patch over, and maybe I'm missing something, but how
-does knowing the name of the file really tell you anything, esp when
-you only get the filename, not the path?  What threat are you
-addressing with this change?  
-
-So what happens when I create a file /home/john/shadow, does selinux
-(or LSM in general) then run extra checks because the filename is
-'shadow' in your model?  
-
-I *think* the overhead shouldn't be there if SELINUX is disabled, but
-have you confirmed this?  How you run performance tests before/after
-this change when doing lots of creations of inodes to see what sort of
-performance changes might be there?
-
-Thanks,
-John
