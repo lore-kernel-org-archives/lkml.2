@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab0LICli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 21:41:38 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:39503 "EHLO mail.asbjorn.biz"
+	id S932267Ab0LIClj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 21:41:39 -0500
+Received: from mail.asbjorn.biz ([217.195.185.3]:36647 "EHLO mail.asbjorn.biz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932223Ab0LIClc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 21:41:32 -0500
+	id S932229Ab0LICle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 21:41:34 -0500
 From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
 To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] e1000e: cleanup: fix bracket issues
-Date: Thu,  9 Dec 2010 02:40:52 +0000
-Message-Id: <1291862457-16671-3-git-send-email-asbjorn@asbjorn.biz>
+Subject: [PATCH 4/7] e1000e: cleanup: fix long lines
+Date: Thu,  9 Dec 2010 02:40:54 +0000
+Message-Id: <1291862457-16671-5-git-send-email-asbjorn@asbjorn.biz>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
 References: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
@@ -21,249 +21,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes bracket-related issues reported by checkpatch, such as
-unnecessary brackets around statements, brackets placed incorrectly,
-and missing brackets.
+This patch breaks long lines, so they do not exceed 80 characters.
 
-Fixes 7 errors and 10 warnings reported by checkpatch.
+Fixes 2 errors and 26 warnings reported by checkpatch.
 
 Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
 ---
- drivers/net/e1000e/es2lan.c  |    8 ++++----
- drivers/net/e1000e/ethtool.c |    4 ++--
- drivers/net/e1000e/hw.h      |    2 +-
- drivers/net/e1000e/ich8lan.c |    5 ++---
- drivers/net/e1000e/lib.c     |    6 ++----
- drivers/net/e1000e/netdev.c  |   21 ++++++++-------------
- drivers/net/e1000e/phy.c     |   28 +++++++++++++---------------
- 7 files changed, 32 insertions(+), 42 deletions(-)
+ drivers/net/e1000e/defines.h |   15 ++++++++++-----
+ drivers/net/e1000e/e1000.h   |   27 ++++++++++++++++++---------
+ drivers/net/e1000e/es2lan.c  |    3 ++-
+ drivers/net/e1000e/ethtool.c |    3 ++-
+ drivers/net/e1000e/lib.c     |   12 ++++++++----
+ drivers/net/e1000e/netdev.c  |   18 +++++++++++-------
+ drivers/net/e1000e/param.c   |    6 ++++--
+ 7 files changed, 55 insertions(+), 29 deletions(-)
 
+diff --git a/drivers/net/e1000e/defines.h b/drivers/net/e1000e/defines.h
+index 10760be..f1260fc 100644
+--- a/drivers/net/e1000e/defines.h
++++ b/drivers/net/e1000e/defines.h
+@@ -83,8 +83,10 @@
+ #define E1000_CTRL_EXT_LINK_MODE_PCIE_SERDES  0x00C00000
+ #define E1000_CTRL_EXT_EIAME          0x01000000
+ #define E1000_CTRL_EXT_DRV_LOAD       0x10000000 /* Driver loaded bit for FW */
+-#define E1000_CTRL_EXT_IAME           0x08000000 /* Interrupt acknowledge Auto-mask */
+-#define E1000_CTRL_EXT_INT_TIMER_CLR  0x20000000 /* Clear Interrupt timers after IMS clear */
++#define E1000_CTRL_EXT_IAME           0x08000000 /* Interrupt acknowledge
++						  * Auto-mask */
++#define E1000_CTRL_EXT_INT_TIMER_CLR  0x20000000 /* Clear Interrupt timers
++						  * after IMS clear */
+ #define E1000_CTRL_EXT_PBA_CLR        0x80000000 /* PBA Clear */
+ #define E1000_CTRL_EXT_PHYPDEN        0x00100000
+ 
+@@ -247,7 +249,8 @@
+ #define E1000_STATUS_SPEED_1000 0x00000080      /* Speed 1000Mb/s */
+ #define E1000_STATUS_LAN_INIT_DONE 0x00000200   /* Lan Init Completion by NVM */
+ #define E1000_STATUS_PHYRA      0x00000400      /* PHY Reset Asserted */
+-#define E1000_STATUS_GIO_MASTER_ENABLE 0x00080000 /* Status of Master requests. */
++#define E1000_STATUS_GIO_MASTER_ENABLE 0x00080000 /* Status of Master
++						   * requests. */
+ 
+ /* Constants used to interpret the masked PCI-X bus speed. */
+ 
+@@ -394,7 +397,8 @@
+ #define E1000_ICR_RXSEQ         0x00000008 /* Rx sequence error */
+ #define E1000_ICR_RXDMT0        0x00000010 /* Rx desc min. threshold (0) */
+ #define E1000_ICR_RXT0          0x00000080 /* Rx timer intr (ring 0) */
+-#define E1000_ICR_INT_ASSERTED  0x80000000 /* If this bit asserted, the driver should claim the interrupt */
++#define E1000_ICR_INT_ASSERTED  0x80000000 /* If this bit asserted, the driver
++					    * should claim the interrupt */
+ #define E1000_ICR_RXQ0          0x00100000 /* Rx Queue 0 Interrupt */
+ #define E1000_ICR_RXQ1          0x00200000 /* Rx Queue 1 Interrupt */
+ #define E1000_ICR_TXQ0          0x00400000 /* Tx Queue 0 Interrupt */
+@@ -612,7 +616,8 @@
+ #define E1000_EECD_SEC1VAL   0x00400000 /* Sector One Valid */
+ #define E1000_EECD_SEC1VAL_VALID_MASK (E1000_EECD_AUTO_RD | E1000_EECD_PRES)
+ 
+-#define E1000_NVM_RW_REG_DATA   16   /* Offset to data in NVM read/write registers */
++#define E1000_NVM_RW_REG_DATA   16   /* Offset to data in NVM
++				      * read/write registers */
+ #define E1000_NVM_RW_REG_DONE   2    /* Offset to READ/WRITE done bit */
+ #define E1000_NVM_RW_REG_START  1    /* Start operation */
+ #define E1000_NVM_RW_ADDR_SHIFT 2    /* Shift to the address bits */
+diff --git a/drivers/net/e1000e/e1000.h b/drivers/net/e1000e/e1000.h
+index 47eb0ba..97fa58a 100644
+--- a/drivers/net/e1000e/e1000.h
++++ b/drivers/net/e1000e/e1000.h
+@@ -542,8 +542,10 @@ extern s32 e1000e_led_off_generic(struct e1000_hw *hw);
+ extern s32 e1000e_get_bus_info_pcie(struct e1000_hw *hw);
+ extern void e1000_set_lan_id_multi_port_pcie(struct e1000_hw *hw);
+ extern void e1000_set_lan_id_single_port(struct e1000_hw *hw);
+-extern s32 e1000e_get_speed_and_duplex_copper(struct e1000_hw *hw, u16 *speed, u16 *duplex);
+-extern s32 e1000e_get_speed_and_duplex_fiber_serdes(struct e1000_hw *hw, u16 *speed, u16 *duplex);
++extern s32 e1000e_get_speed_and_duplex_copper(struct e1000_hw *hw,
++					      u16 *speed, u16 *duplex);
++extern s32 e1000e_get_speed_and_duplex_fiber_serdes(struct e1000_hw *hw,
++						    u16 *speed, u16 *duplex);
+ extern s32 e1000e_disable_pcie_master(struct e1000_hw *hw);
+ extern s32 e1000e_get_auto_rd_done(struct e1000_hw *hw);
+ extern s32 e1000e_id_led_init(struct e1000_hw *hw);
+@@ -566,7 +568,8 @@ extern void e1000e_config_collision_dist(struct e1000_hw *hw);
+ extern s32 e1000e_config_fc_after_link_up(struct e1000_hw *hw);
+ extern s32 e1000e_force_mac_fc(struct e1000_hw *hw);
+ extern s32 e1000e_blink_led(struct e1000_hw *hw);
+-extern void e1000_write_vfta_generic(struct e1000_hw *hw, u32 offset, u32 value);
++extern void e1000_write_vfta_generic(struct e1000_hw *hw, u32 offset,
++				     u32 value);
+ extern s32 e1000_check_alt_mac_addr_generic(struct e1000_hw *hw);
+ extern void e1000e_reset_adaptive(struct e1000_hw *hw);
+ extern void e1000e_update_adaptive(struct e1000_hw *hw);
+@@ -600,7 +603,8 @@ extern s32 e1000e_write_phy_reg_bm(struct e1000_hw *hw, u32 offset, u16 data);
+ extern s32 e1000e_read_phy_reg_bm(struct e1000_hw *hw, u32 offset, u16 *data);
+ extern s32 e1000e_read_phy_reg_bm2(struct e1000_hw *hw, u32 offset, u16 *data);
+ extern s32 e1000e_write_phy_reg_bm2(struct e1000_hw *hw, u32 offset, u16 data);
+-extern void e1000e_phy_force_speed_duplex_setup(struct e1000_hw *hw, u16 *phy_ctrl);
++extern void e1000e_phy_force_speed_duplex_setup(struct e1000_hw *hw,
++						u16 *phy_ctrl);
+ extern s32 e1000e_write_kmrn_reg(struct e1000_hw *hw, u32 offset, u16 data);
+ extern s32 e1000e_write_kmrn_reg_locked(struct e1000_hw *hw, u32 offset,
+ 					u16 data);
+@@ -661,10 +665,12 @@ static inline s32 e1000_get_cable_length(struct e1000_hw *hw)
+ }
+ 
+ extern s32 e1000e_acquire_nvm(struct e1000_hw *hw);
+-extern s32 e1000e_write_nvm_spi(struct e1000_hw *hw, u16 offset, u16 words, u16 *data);
++extern s32 e1000e_write_nvm_spi(struct e1000_hw *hw, u16 offset, u16 words,
++				u16 *data);
+ extern s32 e1000e_update_nvm_checksum_generic(struct e1000_hw *hw);
+ extern s32 e1000e_poll_eerd_eewr_done(struct e1000_hw *hw, int ee_reg);
+-extern s32 e1000e_read_nvm_eerd(struct e1000_hw *hw, u16 offset, u16 words, u16 *data);
++extern s32 e1000e_read_nvm_eerd(struct e1000_hw *hw, u16 offset, u16 words,
++				u16 *data);
+ extern s32 e1000e_validate_nvm_checksum_generic(struct e1000_hw *hw);
+ extern void e1000e_release_nvm(struct e1000_hw *hw);
+ extern void e1000e_reload_nvm(struct e1000_hw *hw);
+@@ -688,12 +694,14 @@ static inline s32 e1000e_update_nvm_checksum(struct e1000_hw *hw)
+ 	return hw->nvm.ops.update(hw);
+ }
+ 
+-static inline s32 e1000_read_nvm(struct e1000_hw *hw, u16 offset, u16 words, u16 *data)
++static inline s32 e1000_read_nvm(struct e1000_hw *hw, u16 offset, u16 words,
++				 u16 *data)
+ {
+ 	return hw->nvm.ops.read(hw, offset, words, data);
+ }
+ 
+-static inline s32 e1000_write_nvm(struct e1000_hw *hw, u16 offset, u16 words, u16 *data)
++static inline s32 e1000_write_nvm(struct e1000_hw *hw, u16 offset, u16 words,
++				  u16 *data)
+ {
+ 	return hw->nvm.ops.write(hw, offset, words, data);
+ }
+@@ -710,7 +718,8 @@ static inline s32 e1000e_check_mng_mode(struct e1000_hw *hw)
+ 
+ extern bool e1000e_check_mng_mode_generic(struct e1000_hw *hw);
+ extern bool e1000e_enable_tx_pkt_filtering(struct e1000_hw *hw);
+-extern s32 e1000e_mng_write_dhcp_info(struct e1000_hw *hw, u8 *buffer, u16 length);
++extern s32 e1000e_mng_write_dhcp_info(struct e1000_hw *hw, u8 *buffer,
++				      u16 length);
+ 
+ static inline u32 __er32(struct e1000_hw *hw, unsigned long reg)
+ {
 diff --git a/drivers/net/e1000e/es2lan.c b/drivers/net/e1000e/es2lan.c
-index afed60f..6069e9f 100644
+index 6069e9f..56a1321 100644
 --- a/drivers/net/e1000e/es2lan.c
 +++ b/drivers/net/e1000e/es2lan.c
-@@ -100,8 +100,8 @@
-  * with a lower bound at "index" and the upper bound at
-  * "index + 5".
-  */
--static const u16 e1000_gg82563_cable_length_table[] =
--	 { 0, 60, 115, 150, 150, 60, 115, 150, 180, 180, 0xFF };
-+static const u16 e1000_gg82563_cable_length_table[] = {
-+	0, 60, 115, 150, 150, 60, 115, 150, 180, 180, 0xFF };
- #define GG82563_CABLE_LENGTH_TABLE_SIZE \
- 		ARRAY_SIZE(e1000_gg82563_cable_length_table)
- 
-@@ -426,8 +426,8 @@ static void e1000_release_swfw_sync_80003es2lan(struct e1000_hw *hw, u16 mask)
- {
- 	u32 swfw_sync;
- 
--	while (e1000e_get_hw_semaphore(hw) != 0);
--	/* Empty */
-+	while (e1000e_get_hw_semaphore(hw) != 0)
-+		; /* Empty */
- 
- 	swfw_sync = er32(SW_FW_SYNC);
- 	swfw_sync &= ~mask;
+@@ -233,7 +233,8 @@ static s32 e1000_init_mac_params_80003es2lan(struct e1000_adapter *adapter)
+ 	/* check for link */
+ 	switch (hw->phy.media_type) {
+ 	case e1000_media_type_copper:
+-		func->setup_physical_interface = e1000_setup_copper_link_80003es2lan;
++		func->setup_physical_interface =
++					e1000_setup_copper_link_80003es2lan;
+ 		func->check_for_link = e1000e_check_for_copper_link;
+ 		break;
+ 	case e1000_media_type_fiber:
 diff --git a/drivers/net/e1000e/ethtool.c b/drivers/net/e1000e/ethtool.c
-index 8acfbca..8ff3a8a 100644
+index 8ff3a8a..4fee336 100644
 --- a/drivers/net/e1000e/ethtool.c
 +++ b/drivers/net/e1000e/ethtool.c
-@@ -763,8 +763,8 @@ static bool reg_pattern_test(struct e1000_adapter *adapter, u64 *data,
- 			     int reg, int offset, u32 mask, u32 write)
- {
- 	u32 pat, val;
--	static const u32 test[] =
--		{0x5A5A5A5A, 0xA5A5A5A5, 0x00000000, 0xFFFFFFFF};
-+	static const u32 test[] = {
-+		0x5A5A5A5A, 0xA5A5A5A5, 0x00000000, 0xFFFFFFFF};
- 	for (pat = 0; pat < ARRAY_SIZE(test); pat++) {
- 		E1000_WRITE_REG_ARRAY(&adapter->hw, reg, offset,
- 				      (test[pat] & write));
-diff --git a/drivers/net/e1000e/hw.h b/drivers/net/e1000e/hw.h
-index 0a319e1..f009dd5 100644
---- a/drivers/net/e1000e/hw.h
-+++ b/drivers/net/e1000e/hw.h
-@@ -469,7 +469,7 @@ enum e1000_1000t_rx_status {
- 	e1000_1000t_rx_status_undefined = 0xFF
- };
+@@ -567,7 +567,8 @@ static int e1000_set_eeprom(struct net_device *netdev,
+ 	if (eeprom->len == 0)
+ 		return -EOPNOTSUPP;
  
--enum e1000_rev_polarity{
-+enum e1000_rev_polarity {
- 	e1000_rev_polarity_normal = 0,
- 	e1000_rev_polarity_reversed,
- 	e1000_rev_polarity_undefined = 0xFF
-diff --git a/drivers/net/e1000e/ich8lan.c b/drivers/net/e1000e/ich8lan.c
-index 53edfd4..c5a7726 100644
---- a/drivers/net/e1000e/ich8lan.c
-+++ b/drivers/net/e1000e/ich8lan.c
-@@ -2303,11 +2303,10 @@ static s32 e1000_read_flash_data_ich8lan(struct e1000_hw *hw, u32 offset,
- 		 */
- 		if (ret_val == 0) {
- 			flash_data = er32flash(ICH_FLASH_FDATA0);
--			if (size == 1) {
-+			if (size == 1)
- 				*data = (u8)(flash_data & 0x000000FF);
--			} else if (size == 2) {
-+			else if (size == 2)
- 				*data = (u16)(flash_data & 0x0000FFFF);
--			}
- 			break;
- 		} else {
- 			/*
+-	if (eeprom->magic != (adapter->pdev->vendor | (adapter->pdev->device << 16)))
++	if (eeprom->magic != (adapter->pdev->vendor |
++			      (adapter->pdev->device << 16)))
+ 		return -EFAULT;
+ 
+ 	if (adapter->flags & FLAG_READ_ONLY_NVM)
 diff --git a/drivers/net/e1000e/lib.c b/drivers/net/e1000e/lib.c
-index 20870b2..513b4d1 100644
+index 513b4d1..b950db3 100644
 --- a/drivers/net/e1000e/lib.c
 +++ b/drivers/net/e1000e/lib.c
-@@ -493,9 +493,8 @@ s32 e1000e_check_for_copper_link(struct e1000_hw *hw)
- 	 * different link partner.
- 	 */
- 	ret_val = e1000e_config_fc_after_link_up(hw);
--	if (ret_val) {
-+	if (ret_val)
- 		e_dbg("Error configuring flow control\n");
--	}
+@@ -1135,7 +1135,8 @@ s32 e1000e_config_fc_after_link_up(struct e1000_hw *hw)
+ 		ret_val = e1e_rphy(hw, PHY_AUTONEG_ADV, &mii_nway_adv_reg);
+ 		if (ret_val)
+ 			return ret_val;
+-		ret_val = e1e_rphy(hw, PHY_LP_ABILITY, &mii_nway_lp_ability_reg);
++		ret_val = e1e_rphy(hw, PHY_LP_ABILITY,
++				   &mii_nway_lp_ability_reg);
+ 		if (ret_val)
+ 			return ret_val;
  
- 	return ret_val;
- }
-@@ -1496,9 +1495,8 @@ s32 e1000e_setup_led_generic(struct e1000_hw *hw)
+@@ -1266,7 +1267,8 @@ s32 e1000e_config_fc_after_link_up(struct e1000_hw *hw)
+  *  Read the status register for the current speed/duplex and store the current
+  *  speed and duplex for copper connections.
+  **/
+-s32 e1000e_get_speed_and_duplex_copper(struct e1000_hw *hw, u16 *speed, u16 *duplex)
++s32 e1000e_get_speed_and_duplex_copper(struct e1000_hw *hw, u16 *speed,
++				       u16 *duplex)
  {
- 	u32 ledctl;
+ 	u32 status;
  
--	if (hw->mac.ops.setup_led != e1000e_setup_led_generic) {
-+	if (hw->mac.ops.setup_led != e1000e_setup_led_generic)
- 		return -E1000_ERR_CONFIG;
--	}
- 
- 	if (hw->phy.media_type == e1000_media_type_fiber) {
- 		ledctl = er32(LEDCTL);
+@@ -1299,7 +1301,8 @@ s32 e1000e_get_speed_and_duplex_copper(struct e1000_hw *hw, u16 *speed, u16 *dup
+  *  Sets the speed and duplex to gigabit full duplex (the only possible option)
+  *  for fiber/serdes links.
+  **/
+-s32 e1000e_get_speed_and_duplex_fiber_serdes(struct e1000_hw *hw, u16 *speed, u16 *duplex)
++s32 e1000e_get_speed_and_duplex_fiber_serdes(struct e1000_hw *hw, u16 *speed,
++					     u16 *duplex)
+ {
+ 	*speed = SPEED_1000;
+ 	*duplex = FULL_DUPLEX;
+@@ -2359,7 +2362,8 @@ bool e1000e_enable_tx_pkt_filtering(struct e1000_hw *hw)
+ 	len    = E1000_MNG_DHCP_COOKIE_LENGTH >> 2;
+ 	offset = E1000_MNG_DHCP_COOKIE_OFFSET >> 2;
+ 	for (i = 0; i < len; i++)
+-		*(buffer + i) = E1000_READ_REG_ARRAY(hw, E1000_HOST_IF, offset + i);
++		*(buffer + i) = E1000_READ_REG_ARRAY(hw, E1000_HOST_IF,
++						     offset + i);
+ 	hdr_csum = hdr->checksum;
+ 	hdr->checksum = 0;
+ 	csum = e1000_calculate_checksum((u8 *)hdr,
 diff --git a/drivers/net/e1000e/netdev.c b/drivers/net/e1000e/netdev.c
-index 820ea48..d71854f 100644
+index d71854f..bb6a1f5 100644
 --- a/drivers/net/e1000e/netdev.c
 +++ b/drivers/net/e1000e/netdev.c
-@@ -1325,7 +1325,7 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
- 				goto next_desc;
- 		}
- 
--#define rxtop rx_ring->rx_skb_top
-+#define rxtop (rx_ring->rx_skb_top)
- 		if (!(status & E1000_RXD_STAT_EOP)) {
- 			/* this descriptor is only the beginning (or middle) */
- 			if (!rxtop) {
-@@ -1806,9 +1806,8 @@ void e1000e_set_interrupt_capability(struct e1000_adapter *adapter)
- 				err = pci_enable_msix(adapter->pdev,
- 						      adapter->msix_entries,
- 						      adapter->num_vectors);
--				if (err == 0) {
-+				if (err == 0)
- 					return;
--				}
+@@ -601,7 +601,8 @@ static void e1000_alloc_rx_buffers_ps(struct e1000_adapter *adapter,
+ 			ps_page = &buffer_info->ps_pages[j];
+ 			if (j >= adapter->rx_ps_pages) {
+ 				/* all unused desc entries get hw null ptr */
+-				rx_desc->read.buffer_addr[j+1] = ~cpu_to_le64(0);
++				rx_desc->read.buffer_addr[j+1] =
++								~cpu_to_le64(0);
+ 				continue;
  			}
- 			/* MSI-X failed, so fall through and try MSI */
- 			e_err("Failed to initialize MSI-X interrupts.  "
-@@ -2198,9 +2197,8 @@ void e1000e_free_rx_resources(struct e1000_adapter *adapter)
+ 			if (!ps_page->page) {
+@@ -871,7 +872,8 @@ static bool e1000_clean_rx_irq(struct e1000_adapter *adapter,
+ 				  ((u32)(rx_desc->errors) << 24),
+ 				  le16_to_cpu(rx_desc->csum), skb);
  
- 	e1000_clean_rx_ring(adapter);
+-		e1000_receive_skb(adapter, netdev, skb,status,rx_desc->special);
++		e1000_receive_skb(adapter, netdev, skb, status,
++				  rx_desc->special);
  
--	for (i = 0; i < rx_ring->count; i++) {
-+	for (i = 0; i < rx_ring->count; i++)
- 		kfree(rx_ring->buffer_info[i].ps_pages);
--	}
+ next_desc:
+ 		rx_desc->status = 0;
+@@ -2372,7 +2374,8 @@ err:
+  **/
+ static int e1000_clean(struct napi_struct *napi, int budget)
+ {
+-	struct e1000_adapter *adapter = container_of(napi, struct e1000_adapter, napi);
++	struct e1000_adapter *adapter = container_of(napi, struct e1000_adapter,
++						     napi);
+ 	struct e1000_hw *hw = &adapter->hw;
+ 	struct net_device *poll_dev = adapter->netdev;
+ 	int tx_cleaned = 1, work_done = 0;
+@@ -4664,9 +4667,9 @@ static int e1000_transfer_dhcp_info(struct e1000_adapter *adapter,
+ 	u16 length, offset;
  
- 	vfree(rx_ring->buffer_info);
- 	rx_ring->buffer_info = NULL;
-@@ -2240,20 +2238,18 @@ static unsigned int e1000_update_itr(struct e1000_adapter *adapter,
- 		/* handle TSO and jumbo frames */
- 		if (bytes/packets > 8000)
- 			retval = bulk_latency;
--		else if ((packets < 5) && (bytes > 512)) {
-+		else if ((packets < 5) && (bytes > 512))
- 			retval = low_latency;
--		}
- 		break;
- 	case low_latency:  /* 50 usec aka 20000 ints/s */
- 		if (bytes > 10000) {
- 			/* this if handles the TSO accounting */
--			if (bytes/packets > 8000) {
-+			if (bytes/packets > 8000)
- 				retval = bulk_latency;
--			} else if ((packets < 10) || ((bytes/packets) > 1200)) {
-+			else if ((packets < 10) || ((bytes/packets) > 1200))
- 				retval = bulk_latency;
--			} else if ((packets > 35)) {
-+			else if ((packets > 35))
- 				retval = lowest_latency;
--			}
- 		} else if (bytes/packets > 2000) {
- 			retval = bulk_latency;
- 		} else if (packets <= 2 && bytes < 512) {
-@@ -2262,9 +2258,8 @@ static unsigned int e1000_update_itr(struct e1000_adapter *adapter,
- 		break;
- 	case bulk_latency: /* 250 usec aka 4000 ints/s */
- 		if (bytes > 25000) {
--			if (packets > 35) {
-+			if (packets > 35)
- 				retval = low_latency;
--			}
- 		} else if (bytes < 6000) {
- 			retval = low_latency;
- 		}
-diff --git a/drivers/net/e1000e/phy.c b/drivers/net/e1000e/phy.c
-index a26c296..23b1e48 100644
---- a/drivers/net/e1000e/phy.c
-+++ b/drivers/net/e1000e/phy.c
-@@ -42,20 +42,20 @@ static s32 e1000_access_phy_debug_regs_hv(struct e1000_hw *hw, u32 offset,
- 					  u16 *data, bool read);
+ 	if (vlan_tx_tag_present(skb)) {
+-		if (!((vlan_tx_tag_get(skb) == adapter->hw.mng_cookie.vlan_id) &&
+-		    (adapter->hw.mng_cookie.status &
+-			E1000_MNG_DHCP_COOKIE_STATUS_VLAN)))
++		if (!((vlan_tx_tag_get(skb) == adapter->hw.mng_cookie.vlan_id)
++			&& (adapter->hw.mng_cookie.status &
++			    E1000_MNG_DHCP_COOKIE_STATUS_VLAN)))
+ 			return 0;
+ 	}
  
- /* Cable length tables */
--static const u16 e1000_m88_cable_length_table[] =
--	{ 0, 50, 80, 110, 140, 140, E1000_CABLE_LENGTH_UNDEFINED };
-+static const u16 e1000_m88_cable_length_table[] = {
-+	0, 50, 80, 110, 140, 140, E1000_CABLE_LENGTH_UNDEFINED };
- #define M88E1000_CABLE_LENGTH_TABLE_SIZE \
- 		ARRAY_SIZE(e1000_m88_cable_length_table)
+@@ -6079,7 +6082,8 @@ static DEFINE_PCI_DEVICE_TABLE(e1000_pci_tbl) = {
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_COPPER), board_82571 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_FIBER), board_82571 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_QUAD_COPPER), board_82571 },
+-	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_QUAD_COPPER_LP), board_82571 },
++	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_QUAD_COPPER_LP),
++	  board_82571 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_QUAD_FIBER), board_82571 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_SERDES), board_82571 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_82571EB_SERDES_DUAL), board_82571 },
+diff --git a/drivers/net/e1000e/param.c b/drivers/net/e1000e/param.c
+index 2687295..992be2b 100644
+--- a/drivers/net/e1000e/param.c
++++ b/drivers/net/e1000e/param.c
+@@ -147,7 +147,8 @@ E1000_PARAM(KumeranLockLoss, "Enable Kumeran lock loss workaround");
+  *
+  * Default Value: 1 (enabled)
+  */
+-E1000_PARAM(WriteProtectNVM, "Write-protect NVM [WARNING: disabling this can lead to corrupted NVM]");
++E1000_PARAM(WriteProtectNVM, "Write-protect NVM [WARNING: disabling "
++			     "this can lead to corrupted NVM]");
  
--static const u16 e1000_igp_2_cable_length_table[] =
--	{ 0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 8, 11, 13, 16, 18, 21, 0, 0, 0, 3,
--	  6, 10, 13, 16, 19, 23, 26, 29, 32, 35, 38, 41, 6, 10, 14, 18, 22,
--	  26, 30, 33, 37, 41, 44, 48, 51, 54, 58, 61, 21, 26, 31, 35, 40,
--	  44, 49, 53, 57, 61, 65, 68, 72, 75, 79, 82, 40, 45, 51, 56, 61,
--	  66, 70, 75, 79, 83, 87, 91, 94, 98, 101, 104, 60, 66, 72, 77, 82,
--	  87, 92, 96, 100, 104, 108, 111, 114, 117, 119, 121, 83, 89, 95,
--	  100, 105, 109, 113, 116, 119, 122, 124, 104, 109, 114, 118, 121,
--	  124};
-+static const u16 e1000_igp_2_cable_length_table[] = {
-+	0, 0, 0, 0, 0, 0, 0, 0, 3, 5, 8, 11, 13, 16, 18, 21, 0, 0, 0, 3,
-+	6, 10, 13, 16, 19, 23, 26, 29, 32, 35, 38, 41, 6, 10, 14, 18, 22,
-+	26, 30, 33, 37, 41, 44, 48, 51, 54, 58, 61, 21, 26, 31, 35, 40,
-+	44, 49, 53, 57, 61, 65, 68, 72, 75, 79, 82, 40, 45, 51, 56, 61,
-+	66, 70, 75, 79, 83, 87, 91, 94, 98, 101, 104, 60, 66, 72, 77, 82,
-+	87, 92, 96, 100, 104, 108, 111, 114, 117, 119, 121, 83, 89, 95,
-+	100, 105, 109, 113, 116, 119, 122, 124, 104, 109, 114, 118, 121,
-+	124 };
- #define IGP02E1000_CABLE_LENGTH_TABLE_SIZE \
- 		ARRAY_SIZE(e1000_igp_2_cable_length_table)
+ /*
+  * Enable CRC Stripping
+@@ -464,7 +465,8 @@ void __devinit e1000e_check_options(struct e1000_adapter *adapter)
  
-@@ -1043,9 +1043,8 @@ static s32 e1000_phy_setup_autoneg(struct e1000_hw *hw)
- 
- 	e_dbg("Auto-Neg Advertising %x\n", mii_autoneg_adv_reg);
- 
--	if (phy->autoneg_mask & ADVERTISE_1000_FULL) {
-+	if (phy->autoneg_mask & ADVERTISE_1000_FULL)
- 		ret_val = e1e_wphy(hw, PHY_1000T_CTRL, mii_1000t_ctrl_reg);
--	}
- 
- 	return ret_val;
- }
-@@ -1840,8 +1839,7 @@ s32 e1000e_get_cable_length_igp_2(struct e1000_hw *hw)
- 	u16 phy_data, i, agc_value = 0;
- 	u16 cur_agc_index, max_agc_index = 0;
- 	u16 min_agc_index = IGP02E1000_CABLE_LENGTH_TABLE_SIZE - 1;
--	u16 agc_reg_array[IGP02E1000_PHY_CHANNEL_NUM] =
--							 {IGP02E1000_PHY_AGC_A,
-+	u16 agc_reg_array[IGP02E1000_PHY_CHANNEL_NUM] = { IGP02E1000_PHY_AGC_A,
- 							  IGP02E1000_PHY_AGC_B,
- 							  IGP02E1000_PHY_AGC_C,
- 							  IGP02E1000_PHY_AGC_D};
+ 		if (adapter->flags & FLAG_IS_ICH) {
+ 			if (num_WriteProtectNVM > bd) {
+-				unsigned int write_protect_nvm = WriteProtectNVM[bd];
++				unsigned int write_protect_nvm =
++							WriteProtectNVM[bd];
+ 				e1000_validate_option(&write_protect_nvm, &opt,
+ 						      adapter);
+ 				if (write_protect_nvm)
 -- 
 1.7.2.3
 
