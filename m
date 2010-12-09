@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab0LISOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:14:03 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:58444 "EHLO
+	id S1756822Ab0LISOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:14:05 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:58443 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756691Ab0LISNH (ORCPT
+	with ESMTP id S1756689Ab0LISNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Dec 2010 13:13:07 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/10] perf session: Store file offset in sample_queue
-Date: Thu,  9 Dec 2010 16:12:52 -0200
-Message-Id: <1291918376-18261-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/10] perf session: Split out user event processing
+Date: Thu,  9 Dec 2010 16:12:56 -0200
+Message-Id: <1291918376-18261-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1291918376-18261-1-git-send-email-acme@infradead.org>
 References: <1291918376-18261-1-git-send-email-acme@infradead.org>
@@ -28,59 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-Preparatory patch for ordered output of perf report -D.
+Simplify further.
 
-Acked-by: Ian Munsie <imunsie@au1.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ian Munsie <imunsie@au1.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20101207124550.725128545@linutronix.de>
+LKML-Reference: <20101207124551.110956235@linutronix.de>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ tools/perf/util/session.c |   42 ++++++++++++++++++++++++------------------
+ 1 files changed, 24 insertions(+), 18 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 12761d5..a433954 100644
+index a765b27..69760cd 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -444,6 +444,7 @@ static event__swap_op event__swap_ops[] = {
+@@ -748,24 +748,10 @@ static int perf_session__preprocess_sample(struct perf_session *session,
+ 	return 0;
+ }
  
- struct sample_queue {
- 	u64			timestamp;
-+	u64			file_offset;
- 	event_t			*event;
- 	struct list_head	list;
- };
-@@ -596,7 +597,7 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- #define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct sample_queue))
- 
- static int perf_session_queue_event(struct perf_session *s, event_t *event,
--				    struct sample_data *data)
-+				    struct sample_data *data, u64 file_offset)
+-static int perf_session__process_event(struct perf_session *session,
+-				       event_t *event,
+-				       struct perf_event_ops *ops,
+-				       u64 file_offset)
++static int perf_session__process_user_event(struct perf_session *session, event_t *event,
++					    struct perf_event_ops *ops, u64 file_offset)
  {
- 	struct ordered_samples *os = &s->ordered_samples;
- 	struct list_head *sc = &os->sample_cache;
-@@ -628,6 +629,7 @@ static int perf_session_queue_event(struct perf_session *s, event_t *event,
- 	}
+-	struct sample_data sample;
+-	int ret;
+-
+-	if (session->header.needs_swap && event__swap_ops[event->header.type])
+-		event__swap_ops[event->header.type](event);
+-
+-	if (event->header.type >= PERF_RECORD_HEADER_MAX)
+-		return -EINVAL;
+-
+-	hists__inc_nr_events(&session->hists, event->header.type);
+-
+-	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
+-		dump_event(session, event, file_offset, NULL);
++	dump_event(session, event, file_offset, NULL);
  
- 	new->timestamp = timestamp;
-+	new->file_offset = file_offset;
- 	new->event = event;
- 
- 	__queue_event(new, s);
-@@ -780,7 +782,8 @@ static int perf_session__process_event(struct perf_session *session,
+ 	/* These events are processed right away */
+ 	switch (event->header.type) {
+@@ -782,8 +768,28 @@ static int perf_session__process_event(struct perf_session *session,
+ 	case PERF_RECORD_FINISHED_ROUND:
+ 		return ops->finished_round(event, session, ops);
+ 	default:
+-		break;
++		return -EINVAL;
  	}
++}
++
++static int perf_session__process_event(struct perf_session *session,
++				       event_t *event,
++				       struct perf_event_ops *ops,
++				       u64 file_offset)
++{
++	struct sample_data sample;
++	int ret;
++
++	if (session->header.needs_swap && event__swap_ops[event->header.type])
++		event__swap_ops[event->header.type](event);
++
++	if (event->header.type >= PERF_RECORD_HEADER_MAX)
++		return -EINVAL;
++
++	hists__inc_nr_events(&session->hists, event->header.type);
++
++	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
++		return perf_session__process_user_event(session, event, ops, file_offset);
  
- 	if (ops->ordered_samples) {
--		ret = perf_session_queue_event(session, event, &sample);
-+		ret = perf_session_queue_event(session, event, &sample,
-+					       file_offset);
- 		if (ret != -ETIME)
- 			return ret;
- 	}
+ 	/*
+ 	 * For all kernel events we get the sample data
 -- 
 1.6.2.5
 
