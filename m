@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab0LIKjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 05:39:09 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38910 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab0LIKjH (ORCPT
+	id S1756683Ab0LIKnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 05:43:50 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:34350 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756033Ab0LIKns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 05:39:07 -0500
-Date: Thu, 9 Dec 2010 10:38:35 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: skannan@codeaurora.org
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Nicolas Pitre <nico@marvell.com>, linux-kernel@vger.kernel.org,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to
-	early_initcall
-Message-ID: <20101209103835.GA31465@n2100.arm.linux.org.uk>
-References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org> <20101202221909.GK29347@n2100.arm.linux.org.uk> <4CF94DDD.8000409@codeaurora.org> <20101203203653.GB10245@n2100.arm.linux.org.uk> <4CFDD297.4020600@codeaurora.org> <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
+	Thu, 9 Dec 2010 05:43:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=DmWbZIM6vFAuC2mhVmzU4KeGmsSxKalW5QodgLxj5VxuZVv+U6qWvc6gH6DdeQ3mtk
+         jWYTT3SMX1iYa2eVeu/Rdi5Us1e1FKD3AUTmYBdJOzeRl27OXA6f9U0oPHKjJoZufETc
+         O4MZtY/kRTZH5t+D6JmcoD9yykE8DOGyq0aKE=
+Date: Thu, 9 Dec 2010 13:43:36 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] staging: ft1000: Convert char device to debugfs.
+Message-ID: <20101209104336.GT10623@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Marek Belisko <marek.belisko@open-nandra.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1291890413-15255-1-git-send-email-marek.belisko@open-nandra.com>
+ <1291890413-15255-2-git-send-email-marek.belisko@open-nandra.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1291890413-15255-2-git-send-email-marek.belisko@open-nandra.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 01:23:24AM -0800, skannan@codeaurora.org wrote:
-> Russell, Have you had a chance to look at this? Any comments? How do we
-> move ahead?
+> +	file = debugfs_create_file("device", S_IRUGO | S_IWUGO, dir,
+                                                       ^^^^^^^
+> +					NULL, &ft1000fops);
 
-I had connected the other thread with this one - it's pretty hard not
-to as it included this patch in that set as the first patch.
+Don't make this world writeable.
+
+regards,
+dan carpenter
+
