@@ -1,165 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab0LIUfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:35:22 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:33601 "HELO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756388Ab0LIUfS (ORCPT
+	id S1757264Ab0LIUfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:35:10 -0500
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:40685 "HELO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757216Ab0LIUfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:35:18 -0500
+	Thu, 9 Dec 2010 15:35:07 -0500
 From: Ben Gardiner <bengardiner@nanometrics.ca>
 To: spi-devel-general@lists.sourceforge.net,
         Grant Likely <grant.likely@secretlab.ca>,
         David Brownell <dbrownell@users.sourceforge.net>
 Cc: linux-kernel@vger.kernel.org, Michael Buesch <mb@bu3sch.de>
-Subject: [RFC][PATCH v2 0/3] slower spi-gpio
-Date: Thu,  9 Dec 2010 15:34:53 -0500
-Message-Id: <cover.1291925752.git.bengardiner@nanometrics.ca>
+Subject: [RFC][PATCH v2 1/3] spi-gpio: implement spidelay() for platforms that configure SLOWER_SPI_GPIO
+Date: Thu,  9 Dec 2010 15:34:54 -0500
+Message-Id: <0e2c28d0e0d60b9655e7d80e79cc811206b725b9.1291925752.git.bengardiner@nanometrics.ca>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca>
-References: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca>
+In-Reply-To: <cover.1291925752.git.bengardiner@nanometrics.ca>
+References: <1290205185-11956-1-git-send-email-bengardiner@nanometrics.ca> <cover.1291925752.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This a continuation of the previous RFC [1]; we are interested in running a
-bitbanged SPI bus with a limited rate of transfer, including the delay between
-CS assertion and the beginning of data transfer. We also would like to do this 
-with the GPIOs on an IO expander.
+Introduce a Kconfig option, SLOWER_SPI_GPIO, that enables a spidelay
+implementation of ndelay when defined.
 
-The following three changes have been identified so far as being required to 
-achieve this. spidelay() must be implemented, the delay specified in
-controller_state should be honoured when a transfer begins and finally the 
-_cansleep gpio set functions should be used so that GPIOs on an expander can
-be used. 
+This is based off of the patch proposed by Michael Buesch [1]. Whereas that
+patch required slave's set their spi_device.max_speed_hz and
+spi_transfer.speed_hz to 0 to obtain 'as fast as we can transfers' this patch
+keeps the default of 'as fast as we can' for any GPIO SPI master unless the
+proposed Kconfig option is enabled.
 
-This is alot of compile-time functionality switching though. I wonder if this
-kind of patching of spi-gpio would be acceptable or not; given the recent
-events in polled gpio-keys I feel that maybe a new 'spi-gpio-limited' driver 
-might be preferred.
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+Reviewed-by: Dan Sharon <dansharon@nanometrics.ca>
+Reviewed-by: Chris Cordahi <chriscordahi@nanometrics.ca>
+CC: Michael Buesch <mb@bu3sch.de>
 
-[1] http://article.gmane.org/gmane.linux.kernel/1065748
-
-Ben Gardiner (3):
-  [RFC] spi-gpio: implement spidelay() for platforms that configure
-    SLOWER_SPI_GPIO
-  [RFC] spi_bitbang : get nsecs delay from cs during transfer
-  [RFC] spi-gpio: use _cansleep when CONFIG_SLOWER_SPI_GPIO is defined
-
- drivers/spi/Kconfig       |   17 +++++++++++++++++
- drivers/spi/spi_bitbang.c |   15 +++++++++------
- drivers/spi/spi_gpio.c    |   18 +++++++++++++++---
- 3 files changed, 41 insertions(+), 9 deletions(-)
+[1] http://article.gmane.org/gmane.comp.embedded.openwrt.devel/2854
 
 ---
+changes since v1:
+ * rebased to v2.6.37-rc5
 
-Changes since v1:
- * rebased to  2.6.37-rc5
- * introduced patch 2/3 and 3/3
+ drivers/spi/Kconfig    |   17 +++++++++++++++++
+ drivers/spi/spi_gpio.c |    5 +++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-This time around I tested the changes by registering a spi-gpio bus intance
-on the user DIP switches of the da850evm baseboard which are connected to a 
-pca953x-compatible I2C gpio expander. Then I did a few 
-'echo hello > /dev/spidev0.0' commands and checked the behaviour of the bus
-on a scope. I was unable to test the speed of this bus without the patchset
-this time since using the GPIOs on the expander requires patch 3/3. I found 
-that the SCLK speed was roughly 300Hz where 500Hz was requested.
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 78f9fd0..0570dcd 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -143,6 +143,23 @@ config SPI_GPIO
+ 	  GPIO operations, you should be able to leverage that for better
+ 	  speed with a custom version of this driver; see the source code.
+ 
++config SLOWER_SPI_GPIO
++	bool "Enable delays in the GPIO-based bitbanging SPI Master"
++	default n
++	depends on SPI_GPIO
++	help
++	  The GPIO bitbanging SPI master driver will run without any delays if this
++	  option is not set. This option will enable the use of delays in the
++	  operation of the GPIO bitbanging SPI master implementation to honour the
++	  maximum speed of very slow devices.
++
++	  To configure slow speed devices your board-specific setup logic must also
++	  provide platform data assigning the speed for a device on a given chip
++	  select of the GPIO bitbanging SPI master.
++
++	  If your platform requires SPI buses driven at slow speeds select yes. If
++	  in doubt, select no.
++
+ config SPI_IMX_VER_IMX1
+ 	def_bool y if SOC_IMX1
+ 
+diff --git a/drivers/spi/spi_gpio.c b/drivers/spi/spi_gpio.c
+index 63e51b0..b31fddd 100644
+--- a/drivers/spi/spi_gpio.c
++++ b/drivers/spi/spi_gpio.c
+@@ -19,6 +19,7 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/init.h>
++#include <linux/delay.h>
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ 
+@@ -119,6 +120,9 @@ static inline int getmiso(const struct spi_device *spi)
+ 
+ #undef pdata
+ 
++#if defined(CONFIG_SLOWER_SPI_GPIO)
++#define spidelay(nsecs) ndelay(nsecs)
++#else
+ /*
+  * NOTE:  this clocks "as fast as we can".  It "should" be a function of the
+  * requested device clock.  Software overhead means we usually have trouble
+@@ -126,6 +130,7 @@ static inline int getmiso(const struct spi_device *spi)
+  * we'll just assume we never need additional per-bit slowdowns.
+  */
+ #define spidelay(nsecs)	do {} while (0)
++#endif
+ 
+ #include "spi_bitbang_txrx.h"
+ 
+-- 
+1.7.0.4
 
-Here is a snip of the board-setup code that registers the spi-gpio bus:
-
-static struct spi_gpio_platform_data bb_spi_gpio_pdata = {
-	.sck		= -1 /* assigned at runtime */,
-	.mosi		= -1 /* assigned at runtime */,
-	.miso		= -1 /* assigned at runtime */,
-	.num_chipselect = 1,
-};
-
-static struct platform_device bb_spi_gpio = {
-	.name		= "spi_gpio",
-	.id		= 0,
-	.dev		= {
-		.platform_data	= &bb_spi_gpio_pdata,
-	},
-};
-
-static struct spi_board_info bb_spi_devices[] = {
-	{
-		.modalias	= "spidev",
-		.max_speed_hz	= 500,
-		.bus_num	= 0,
-		.chip_select	= 0,
-		.mode		= SPI_MODE_0,
-		.controller_data = (void *) -1 /* assigned at runtime */,
-	},
-};
-
-static int bb_spi_gpio_init(unsigned gpio)
-{
-	int ret;
-
-	bb_spi_gpio_pdata.sck = gpio + DA850_EVM_BB_EXP_USER_SW1;
-	bb_spi_gpio_pdata.mosi = gpio + DA850_EVM_BB_EXP_USER_SW2;
-	bb_spi_gpio_pdata.miso = -1 /* nothing connected ATM */;
-
-	bb_spi_devices[0].controller_data = (void *) gpio +
-						DA850_EVM_BB_EXP_USER_SW3;
-
-	ret = spi_register_board_info(bb_spi_devices,
-					ARRAY_SIZE(bb_spi_devices));
-	if (ret) {
-		pr_warning("could not register spi devices");
-		goto spi_gpio_fail_devices;
-	}
-
-	ret = platform_device_register(&bb_spi_gpio);
-	if (ret) {
-		pr_warning("could not register spi-gpio driver instance");
-		goto spi_gpio_fail_bus;
-	}
-
-	return 0;
-spi_gpio_fail_bus:
-	/* no unregister board info function available*/
-spi_gpio_fail_devices:
-	return ret;
-}
-
-static int da850_evm_bb_expander_setup(struct i2c_client *client,
-						unsigned gpio, unsigned ngpio,
-						void *c)
-{
-	int ret;
-
-	/*
-	 * Register the switches and pushbutton on the baseboard as a gpio-keys
-	 * device.
-	 */
-	da850_evm_bb_keys_init(gpio);
-	ret = platform_device_register(&da850_evm_bb_keys_device);
-	if (ret) {
-		pr_warning("Could not register baseboard GPIO expander keys");
-		goto io_exp_setup_sw_fail;
-	}
-
-	da850_evm_bb_leds_init(gpio);
-	ret = platform_device_register(&da850_evm_bb_leds_device);
-	if (ret) {
-		pr_warning("Could not register baseboard GPIO expander LEDS");
-		goto io_exp_setup_leds_fail;
-	}
-
-	ret = bb_spi_gpio_init(gpio);
-	if (ret) {
-		pr_warning("Could not register spi-gpio bus");
-		goto io_exp_setup_spi_fail;
-	}
-
-	return 0;
-
-io_exp_setup_spi_fail:
-	platform_device_unregister(&da850_evm_bb_leds_device);
-io_exp_setup_leds_fail:
-	platform_device_unregister(&da850_evm_bb_keys_device);
-io_exp_setup_sw_fail:
-	return ret;
-}
