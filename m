@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab0LIQoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:44:15 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42718 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab0LIQoO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:44:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FxfWITi4SRePEIiqLR0waN264WlKd7OtcXebwO4aIIrN9n2hcpssFwSerBuCqjlymc
-         MFAZ5LPHVt3Vz1He8OMshaS2cUFB7Orfq9tMyxr6m7JKTDEb/KdMkTlRaQ0SzGlMyL40
-         nzDSE6tcim7RSv1/N2paz0z+273/iwKvtUfbU=
-Date: Fri, 10 Dec 2010 00:47:48 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Florian Mickler <florian@mickler.org>, Ingo Molnar <mingo@elte.hu>,
-        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
-Message-ID: <20101209164748.GA3218@hack>
-References: <20101103062609.GB31163@dastard> <1288768402.2467.665.camel@edumazet-laptop> <20101103103448.GA9169@dastard> <20101103112936.GB9169@dastard> <20101104002140.GA13830@dastard> <20101104054718.GC5210@cr0.nay.redhat.com> <20101208100245.01cf23c5@schatten.dmk.lab> <20101208134116.GA16923@redhat.com> <20101208134712.GB16923@redhat.com> <20101208140822.GA18681@redhat.com>
+	id S1754284Ab0LIQto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:49:44 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56390 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab0LIQtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 11:49:43 -0500
+Date: Thu, 9 Dec 2010 16:48:53 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <201010272107.o9RL7rse018212@imap1.linux-foundation.org>
+References: <201010272107.o9RL7rse018212@imap1.linux-foundation.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: io_apic: Avoid unused variable warning when CONFIG_GENERIC_PENDING_IRQ=n
+Message-ID: <tip-4720dd1b3858f0da2593188cb1e57eb0d3bc4af2@git.kernel.org>
+Git-Commit-ID: 4720dd1b3858f0da2593188cb1e57eb0d3bc4af2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20101208140822.GA18681@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 16:48:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 03:08:22PM +0100, Oleg Nesterov wrote:
->On 12/08, Oleg Nesterov wrote:
->>
->> On 12/08, Oleg Nesterov wrote:
->> >
->> > On 12/08, Florian Mickler wrote:
->> > >
->> > > [ ccing Ingo and Oleg ] as suggested
->> >
->> > Well. Of course I can't explain this bug. But, looking at this email
->> > I do not see amything strange in exit/schedule/etc.
->> >
->> > > > >> > > > This is resulting in the command 'ip link set tap0 up' hanging as a zombie:
->> > > > >> > > >
->> > > > >> > > > root      3005     1  0 16:53 pts/3    00:00:00 /bin/sh /vm-images/qemu-ifup tap0
->> > > > >> > > > root      3011  3005  0 16:53 pts/3    00:00:00 /usr/bin/sudo /sbin/ip link set tap0 up
->> > > > >> > > > root      3012  3011  0 16:53 pts/3    00:00:00 [ip] <defunct>
->> >
->> > That is. ip is a zombie.
->>
->> And. I do not know if this matters or not, but "the command 'ip link
->> set tap0 up' hanging as a zombie" does not look right.
->>
->> This was spawned by
->>
->> > >> > > > if [ -n "$1" ];then
->> > >> > > >         /usr/bin/sudo /sbin/ip link set $1 up
->> > >> > > >         sleep 0.5s
->> > >> > > >         /usr/bin/sudo /usr/sbin/brctl addif $switch $1
->> > >> > > >      exit 0
->> > >> > > > fi
->>
->> The command does not hang. But it forks the child with pid == 3012,
->> this child exits.
->
->Damn, sorry for noise, forgot to mention...
->
->The parent's trace (pid == 3011) can be more useful. Say, if it
->hangs in do_wait(), then the kernel is obviously wrong.
->
+Commit-ID:  4720dd1b3858f0da2593188cb1e57eb0d3bc4af2
+Gitweb:     http://git.kernel.org/tip/4720dd1b3858f0da2593188cb1e57eb0d3bc4af2
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 9 Dec 2010 17:43:21 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 9 Dec 2010 17:43:21 +0100
 
-Yeah, there is no point that a zombie can trigger a BUG_ON in kenrel.
-But it is still interesting to know why it becomes a zombie...
+x86: io_apic: Avoid unused variable warning when CONFIG_GENERIC_PENDING_IRQ=n
 
+arch/x86/kernel/apic/io_apic.c: In function 'ack_apic_level':
+arch/x86/kernel/apic/io_apic.c:2433: warning: unused variable 'desc'
+
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <201010272107.o9RL7rse018212@imap1.linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/io_apic.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7cc0a72..226060e 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2430,13 +2430,12 @@ static void ack_apic_level(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	int i, do_unmask_irq = 0, irq = data->irq;
+-	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long v;
+ 
+ 	irq_complete_move(cfg);
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+ 	/* If we are moving the irq we need to mask it */
+-	if (unlikely(desc->status & IRQ_MOVE_PENDING)) {
++	if (unlikely(irq_to_desc(irq)->status & IRQ_MOVE_PENDING)) {
+ 		do_unmask_irq = 1;
+ 		mask_ioapic(cfg);
+ 	}
