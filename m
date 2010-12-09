@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab0LIRIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:08:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52328 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab0LIRIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:08:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
-   d="scan'208";a="685551831"
-Date: Thu, 9 Dec 2010 18:08:52 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] MFD: ab8500-core chip version cut 2.0 support
-Message-ID: <20101209170851.GZ8884@sortiz-mobl>
-References: <1291717247-10280-1-git-send-email-mattias.wallin@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291717247-10280-1-git-send-email-mattias.wallin@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755498Ab0LIRJg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:09:36 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:39702 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab0LIRJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:09:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=TwOMSFVkUGGXSMN2qF/b37J1BA6aNaBUCkPEFDcLSlxu8iIlmmzf/Y0k/Uj8x9iixM
+         WkB7ipMG6mmBvH7ATaisecR7LAFwfrt4YvdPZt3NBsoqQLn1dIWyza8qVqlEBHYKHebp
+         Up0fP5pXGWvKudUKlycemQAGLd8xdFBA6Xkck=
+Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Florian Mickler <florian@mickler.org>,
+        Ingo Molnar <mingo@elte.hu>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <1291914474.4063.68.camel@edumazet-laptop>
+References: <20101103062609.GB31163@dastard>
+	 <1288768402.2467.665.camel@edumazet-laptop> <20101103103448.GA9169@dastard>
+	 <20101103112936.GB9169@dastard> <20101104002140.GA13830@dastard>
+	 <20101104054718.GC5210@cr0.nay.redhat.com>
+	 <20101208100245.01cf23c5@schatten.dmk.lab>
+	 <20101208134116.GA16923@redhat.com> <20101208134712.GB16923@redhat.com>
+	 <20101208140822.GA18681@redhat.com>  <20101209164748.GA3218@hack>
+	 <1291914474.4063.68.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Dec 2010 18:09:29 +0100
+Message-ID: <1291914569.4063.72.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mattias,
+Le jeudi 09 décembre 2010 à 18:07 +0100, Eric Dumazet a écrit :
+> Le vendredi 10 décembre 2010 à 00:47 +0800, Américo Wang a écrit :
+> 
+> > Yeah, there is no point that a zombie can trigger a BUG_ON in kenrel.
+> > But it is still interesting to know why it becomes a zombie...
+> > 
+> 
+> A zombie is very easy to get.
+> 
+> Technically speaking, all processes die and become zombies, unless
+> parent said : signal(SIGCLD, SIG_IGN) before fork()
+> 
+> The parent is buggy (sudo in this case ?) and doesnt call wait() to
+> 'free' one of its children.
+> 
+> 
 
-On Tue, Dec 07, 2010 at 11:20:47AM +0100, Mattias Wallin wrote:
-> This patch adds support for chip version 2.0 or cut 2.0.
-> One new interrupt latch register - latch 12 - is introduced.
-One question for you:
+Before you ask :)
 
-> diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
-> index 1848781..157f000 100644
-> --- a/include/linux/mfd/ab8500.h
-> +++ b/include/linux/mfd/ab8500.h
-> @@ -74,30 +74,37 @@
->  #define AB8500_INT_ACC_DETECT_21DB_F	37
->  #define AB8500_INT_ACC_DETECT_21DB_R	38
->  #define AB8500_INT_GP_SW_ADC_CONV_END	39
-> -#define AB8500_INT_BTEMP_LOW		72
-> -#define AB8500_INT_BTEMP_LOW_MEDIUM	73
-> -#define AB8500_INT_BTEMP_MEDIUM_HIGH	74
-> -#define AB8500_INT_BTEMP_HIGH		75
-> -#define AB8500_INT_USB_CHARGER_NOT_OK	81
-> -#define AB8500_INT_ID_WAKEUP_R		82
-> -#define AB8500_INT_ID_DET_R1R		84
-> -#define AB8500_INT_ID_DET_R2R		85
-> -#define AB8500_INT_ID_DET_R3R		86
-> -#define AB8500_INT_ID_DET_R4R		87
-> -#define AB8500_INT_ID_WAKEUP_F		88
-> -#define AB8500_INT_ID_DET_R1F		90
-> -#define AB8500_INT_ID_DET_R2F		91
-> -#define AB8500_INT_ID_DET_R3F		92
-> -#define AB8500_INT_ID_DET_R4F		93
-> -#define AB8500_INT_USB_CHG_DET_DONE	94
-> -#define AB8500_INT_USB_CH_TH_PROT_F	96
-> -#define AB8500_INT_USB_CH_TH_PROT_R	97
-> -#define AB8500_INT_MAIN_CH_TH_PROT_F	98
-> -#define AB8500_INT_MAIN_CH_TH_PROT_R	99
-> -#define AB8500_INT_USB_CHARGER_NOT_OKF	103
-> +#define AB8500_INT_ADP_SOURCE_ERROR	72
-> +#define AB8500_INT_ADP_SINK_ERROR	73
-> +#define AB8500_INT_ADP_PROBE_PLUG	74
-> +#define AB8500_INT_ADP_PROBE_UNPLUG	75
-> +#define AB8500_INT_ADP_SENSE_OFF	76
-> +#define AB8500_INT_USB_PHY_POWER_ERR	78
-> +#define AB8500_INT_USB_LINK_STATUS	79
-> +#define AB8500_INT_BTEMP_LOW		80
-> +#define AB8500_INT_BTEMP_LOW_MEDIUM	81
-> +#define AB8500_INT_BTEMP_MEDIUM_HIGH	82
-> +#define AB8500_INT_BTEMP_HIGH		83
-> +#define AB8500_INT_USB_CHARGER_NOT_OK	89
-> +#define AB8500_INT_ID_WAKEUP_R		90
-> +#define AB8500_INT_ID_DET_R1R		92
-> +#define AB8500_INT_ID_DET_R2R		93
-> +#define AB8500_INT_ID_DET_R3R		94
-> +#define AB8500_INT_ID_DET_R4R		95
-> +#define AB8500_INT_ID_WAKEUP_F		96
-> +#define AB8500_INT_ID_DET_R1F		98
-> +#define AB8500_INT_ID_DET_R2F		99
-> +#define AB8500_INT_ID_DET_R3F		100
-> +#define AB8500_INT_ID_DET_R4F		101
-> +#define AB8500_INT_USB_CHG_DET_DONE	102
-> +#define AB8500_INT_USB_CH_TH_PROT_F	104
-> +#define AB8500_INT_USB_CH_TH_PROT_R    105
-> +#define AB8500_INT_MAIN_CH_TH_PROT_F   106
-> +#define AB8500_INT_MAIN_CH_TH_PROT_R	107
-> +#define AB8500_INT_USB_CHARGER_NOT_OKF	111
-This new interrupt sources layout doesn't seem to be compatible with the
-current one. What's the story here ?
+If the parent dies before the child, task is re-parented to init.
 
-Cheers,
-Samuel.
+Then, with namespaces, I dont know what happens (is there one init per
+namespace ?)
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+
+
+
