@@ -1,41 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab0LIT7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 14:59:40 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37228
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756632Ab0LIT7j (ORCPT
+	id S1757016Ab0LIUAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:00:47 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:56017 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756985Ab0LIUAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 14:59:39 -0500
-Date: Thu, 09 Dec 2010 12:00:06 -0800 (PST)
-Message-Id: <20101209.120006.189701386.davem@davemloft.net>
-To: nicolas.ferre@atmel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] scatterlist: Initialize the dma_address field with
- invalid dma address
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1291900514-7290-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1291900514-7290-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Dec 2010 15:00:46 -0500
+Date: Thu, 9 Dec 2010 15:00:43 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
+        William Cohen <wcohen@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jason Baron <jbaron@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Zhaolei <zhaolei@cn.fujitsu.com>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [RFC PATCH] ftrace trace event: introduce assignment macros
+Message-ID: <20101209200043.GA8448@Krystal>
+References: <20101209162210.GB6769@Krystal> <20101209170027.GF1712@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101209170027.GF1712@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:58:04 up 16 days,  1:01,  4 users,  load average: 0.11, 0.03,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Date: Thu,  9 Dec 2010 14:15:14 +0100
-
-> Initialize the the dma_address field so that it will be possible to test
-> its value while using scatterlists. This field will be compatible with
-> testing by dma_mapping_error().
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Thu, Dec 09, 2010 at 11:22:11AM -0500, Mathieu Desnoyers wrote:
+> > This patch proposes encapsulation of the raw assignments within TP_fast_assign()
+> > by introducing tp_assign() and tp_memcpy() macros. This will allow us to:
+> > 
+> > - generically filter from input fields,
+> > - redefine the field write primitives.
+> > 
+> > The current macros map directly to the old code. I changed the documentation in
+> > tracepoint.txt to reflect these new primitives, but all TRACE_EVENT() users
+> > should gradually update their code to use these macro wrappers rather than raw
+> > "=" assignments or mempcy() calls.
+> > 
+[...]
+> > ---
+> >  include/linux/tracepoint.h |   12 ++++++------
+> >  include/trace/ftrace.h     |    6 ++++++
+> >  2 files changed, 12 insertions(+), 6 deletions(-)
+> > 
+> > Index: linux-2.6-lttng.git/include/trace/ftrace.h
+> > ===================================================================
+> > --- linux-2.6-lttng.git.orig/include/trace/ftrace.h
+> > +++ linux-2.6-lttng.git/include/trace/ftrace.h
+> > @@ -1,4 +1,10 @@
+> >  /*
+> > + * Macros mapping tp_assign() and tp_memcpy() to "=" and memcpy.
+> > + */
+> > +#define tp_assign(dest, src)		__entry->dest = src
+> > +#define tp_memcpy(dest, src, len)	memcpy(__entry->dest, src, len)
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Looks good.
 
-Please don't do this, it's unjustified and it's going to kill performance.
-Even if it were a good change, you should have used the invalid DMA
-address definition defined by various architectures instead of a constant.
+Great! Can I resend it without "RFC" with your Acked-by ?
 
-You should be aware of whether entries in a scatterlist have been setup
-by your code path.
+If there is wide-spread agreement on this change, I might soon start rolling out
+patches that migrate TRACE_EVENT users to these new primitives.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
