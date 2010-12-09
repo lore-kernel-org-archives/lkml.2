@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0LIQdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:33:11 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:34360 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab0LIQdK convert rfc822-to-8bit (ORCPT
+	id S1754242Ab0LIQk7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:40:59 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62175 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab0LIQk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:33:10 -0500
+	Thu, 9 Dec 2010 11:40:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=b8Fiqp1gV1xUFDbvPNdS69TklHPTHNnn2697QkKEM1Io6OBhYGzlRn0S9t15z8EB3p
-         9nAnoTYQ0/Auh5KztOE6PfdvyJYrglRSRqkfymdFPBpcxedhiISfIqOp0HE5Ng2gA9jv
-         gjNv40GOwMILAzSaYfDdTeqlqreA/ugZ/u30w=
-MIME-Version: 1.0
-Date: Thu, 9 Dec 2010 17:33:09 +0100
-Message-ID: <AANLkTiknV+dAGLNn3wWxmtXH-NAoYLsaxV-DNGOJsfaK@mail.gmail.com>
-Subject: 32bit process on a 64bit arch: ENOMEM on fork, what is the exact cause?
-From: Francis Galiegue <fgaliegue@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Xh14/40nF7yZapiF6peQqM5V9eGs3ZmReURbi3dzcZ3tIVl/9uqhP5lpJ7SIEBH1SV
+         xPLPBsxXNzkBeBqQrAQSwCga4BJbwcSH2fB7brFx9ZHzUUO80y8phb+U6wq3bDbQcZvE
+         5t0gzfooZg9cF5o0ywo/0TLO6zkibtNeS1RHQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] Staging: use DEFINE_PCI_DEVICE_TABLE when possible
+Date: Fri, 10 Dec 2010 01:40:24 +0900
+Message-Id: <1291912830-13151-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.3.400.g93cef
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Please Cc: me on replies, I am not on the list]
+Hi,
 
-Hello everyone,
+This patchset tries to convert open-coded struct pci_device_id tables
+to preferred form of DEFINE_PCI_DEVICE_TABLE. As a result it will make
+the tables const and marks as __devinitconst.
 
-This is the situation:
+Being conservative, I only convert the tables already declared as const
+but it could be applied to others too. I'll prepare another series for
+those if this looks good to you.
 
-* the machine is an RHEL 5.x, x86_64 with all updates applied;
-* one user, tomcat, runs, well, Tomcat, with a 32bit JVM (Sun 1.6.0.16
-FWIW) and it has to for now (a 32bit native Oracle driver has to be
-used);
-* this JVM has, as an argument -Xmx3072M:
-* the application uses Runtime.exec() to fork processes on a regular basis;
-* and this is the output of 'ulimit -a' for the user:
-----
-core file size          (blocks, -c) 0
-data seg size           (kbytes, -d) unlimited
-file size               (blocks, -f) unlimited
-pending signals                 (-i) 1024
-max locked memory       (kbytes, -l) 32
-max memory size         (kbytes, -m) unlimited
-open files                      (-n) 1024
-pipe size            (512 bytes, -p) 8
-POSIX message queues     (bytes, -q) 819200
-stack size              (kbytes, -s) 10240
-cpu time               (seconds, -t) unlimited
-max user processes              (-u) 30720
-virtual memory          (kbytes, -v) unlimited
-file locks                      (-x) unlimited
-----
+Thanks.
 
-In the logs, I sometimes see that it fails to execute an external
-program with errno=12, which means ENOMEM. In spite of that, when this
-error occurs, the machine still has 250 MB RAM free.
+---
+Only compile-tested!
 
-As all occurrences of such an error I could google out are RAM/swap
-exhaustion and this is clearly not the case here, I suspect this is
-due to the process being 32bit. But I cannot prove it. Am I at least
-right in suspecting that? If yes, what is the real cause? What memory
-region was exhausted? An SNMP JVM probe showed that an
-OutOfMemoryError was far, far away...
+Namhyung Kim (6):
+  Staging: sm7xx: use DEFINE_PCI_DEVICE_TABLE
+  Staging: cx25821: use DEFINE_PCI_DEVICE_TABLE
+  Staging: rtl8192e: use DEFINE_PCI_DEVICE_TABLE
+  Staging: phison: use DEFINE_PCI_DEVICE_TABLE
+  Staging: vme_tsi148: use DEFINE_PCI_DEVICE_TABLE
+  Staging: vme_ca91cx42: use DEFINE_PCI_DEVICE_TABLE
 
-Have fun,
+ drivers/staging/cx25821/cx25821-alsa.c     |    2 +-
+ drivers/staging/phison/phison.c            |    2 +-
+ drivers/staging/rtl8192e/r8192E_core.c     |    2 +-
+ drivers/staging/sm7xx/smtcfb.c             |    2 +-
+ drivers/staging/vme/bridges/vme_ca91cx42.c |    2 +-
+ drivers/staging/vme/bridges/vme_tsi148.c   |    2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
+
 -- 
-Francis Galiegue, fgaliegue@gmail.com
-"It seems obvious [...] that at least some 'business intelligence'
-tools invest so much intelligence on the business side that they have
-nothing left for generating SQL queries" (Stéphane Faroult, in "The
-Art of SQL", ISBN 0-596-00894-5)
+1.7.3.3.400.g93cef
+
