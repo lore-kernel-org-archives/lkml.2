@@ -1,47 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab0LIPIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:08:23 -0500
-Received: from mx1.zhaw.ch ([160.85.104.50]:64761 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab0LIPIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:08:21 -0500
-X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Dec 2010 10:08:20 EST
-From: Tobias Klauser <tklauser@distanz.ch>
-To: giometti@linux.it
-Cc: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] c2port: Remove redundant unlikely()
-Date: Thu,  9 Dec 2010 16:00:00 +0100
-Message-Id: <1291906801-1389-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 1.7.0.4
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.12.9.145115
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_700_799 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1752821Ab0LIPIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:08:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60076 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab0LIPIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 10:08:20 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=_hCqAiHmeU0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=0WPWU4OF-EoKZY-wUkQA:9 a=HxyebNC07qGsPvAkXEYA:7 a=UNjwh2x5k2V7kmx8ha-1J5iLvMYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
+ events.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        mrubin@google.com, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20101209145541.GC1712@nowhere>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
+	 <1291421609-14665-14-git-send-email-dhsharp@google.com>
+	 <1291427770.16223.15.camel@gandalf.stny.rr.com>
+	 <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com>
+	 <1291431252.16223.28.camel@gandalf.stny.rr.com>
+	 <20101209145541.GC1712@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 09 Dec 2010 10:08:17 -0500
+Message-ID: <1291907297.5015.1526.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IS_ERR() already implies unlikely(), so it can be omitted here.
+On Thu, 2010-12-09 at 15:55 +0100, Frederic Weisbecker wrote:
+> On Fri, Dec 03, 2010 at 09:54:12PM -0500, Steven Rostedt wrote:
+> > On Fri, 2010-12-03 at 18:33 -0800, David Sharp wrote:
+> > > I considered that, and I generally thing it's a good idea. However, I
+> > > also want to use this switch to shrink individual tracepoint event
+> > > structures.
+> > > 
+> > > eg: sched switch is a high frequency event and it is 68 bytes (60
+> > > after these patches)
+> > > 
+> > > Can you suggest a syntax for TRACE_EVENT, DECLARE_EVENT_CLASS, etc,
+> > > that could express the two versions and produce the right code?
+> > > 
+> > > I'm worried about adding even further complexity to the TRACE_EVENT
+> > > macros. I could add TRACE_EVENT_SMALL that takes two versions of
+> > > TP_STRUCT__entry, TP_fast_assign, and TP_printk each, but then this
+> > > will need to be permuted with your TP_CONDITIONAL patches as well.
+> > 
+> > I would not touch the TRACE_EVENT() structures. They are there as is and
+> > I would not think about changing them. Something like that would never
+> > make it into mainline.
+> > 
+> > Now what you can do, is to make your own events based off of the same
+> > tracepoints. For example, the TRACE_EVENT(sched_switch...) has in
+> > sched.c:
+> > 
+> > 	trace_sched_switch(prev, next);
+> > 
+> > 
+> > You could even write a module that does something like this:
+> > 
+> > 	register_trace_sched_switch(probe_sched_switch, mydata);
+> > 
+> > 
+> > 
+> > void probe_sched_switch(void *mydata,
+> > 		struct task_struct *prev,
+> > 		struct task_struct *next)
+> > {
+> > 	struct ring_buffer *buffer;
+> > 	struct ring_buffer_event *event;
+> > 	struct myentry *entry;
+> > 
+> > 	event = trace_current_buffer_lock_reserve(buffer,
+> > 			mytype, sizeof(*entry),
+> > 			0, 0);
+> > 
+> > 	if (!event)
+> > 		return;
+> > 
+> > 	entry = ring_buffer_event_data(event);
+> > 
+> > 	entry->myfield = prev->x;
+> > 	...
+> > 
+> > 	trace_nowake_buffer_unlock_commit(buffer, event,
+> > 					0, 0);
+> > }
+> > 
+> > You will need to do a register_ftrace_event() to register that 'mytype'
+> > and how to output it. Otherwise it would just be ignored in the "trace"
+> > file.
+> > 
+> > All of the above would work fine as a loadable module that you could
+> > easily maintain out of tree, and still uses the internals of the system.
+> > 
+> > -- Steve
+> > 
+> > 
+> 
+> 
+> But this would improve only google's tracing while this is a general
+> mainline tracing problem.
+> 
+> The first thing is that we need to get rid of the lock_depth field, the bkl
+> is dying.
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/misc/c2port/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yeah that needs to go :-)
 
-diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
-index 19fc7c1..95a82de 100644
---- a/drivers/misc/c2port/core.c
-+++ b/drivers/misc/c2port/core.c
-@@ -913,7 +913,7 @@ struct c2port_device *c2port_device_register(char *name,
- 
- 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
- 					"c2port%d", id);
--	if (unlikely(IS_ERR(c2dev->dev))) {
-+	if (IS_ERR(c2dev->dev)) {
- 		ret = PTR_ERR(c2dev->dev);
- 		goto error_device_create;
- 	}
--- 
-1.7.0.4
+> 
+> For the rest what about having a bitmap of the fields we want to ignore,
+> which can be setup from a trace file for ftrace and as an ioctl for perf.
+> 
+> So this bitmap is easy to implement on the common fields.
+> 
+> For the rest, one could choose between using TP_fast_assign()
+> and TP_cond_assign().
+> 
+> TP_fast_assign() stays as is and doesn't implement bitmap field
+> ignoring. Those who want conditional record will need
+> TP_cond_assign().
+> Well, unfortunately this probably requires us to play
+> the same trickery than SYSCALL_DEFINE() in that we'll probably
+> need TP_cond_assign1(), TP_cond_assign2(), TP_cond_assign3(), etc...
+> 
+> #define TP_cond_assignx(nr, assign)	\
+> 	if (call->bitmask & nr)	{	\
+> 		assign
+> 	}
+> 
+> #define TP_cond_assign2(nr, assign, ...)	\
+> 	TP_cond_assignx(nr, assign)		\
+> 	TP_cond_assign1(nr + 1, __VA_ARGS__)
+> 
+> #define TP_cond_assign3(nr, assign, ...)        \
+>         TP_cond_assignx(nr, assign)             \
+>         TP_cond_assign2(nr + 1, __VA_ARGS__)
+> 
+> That will also require a bit more trickery to dynamically
+> pre-compute the size of the trace entry.
+
+Mathieu is working on encapsulating the assignments in their own macros.
+
+Instead of doing:
+
+	__entry->foo = bar;
+
+We will have:
+
+	tp_assign(foo, bar);
+
+This way we could probably use this to dynamically figure out what to
+assign.
+
+-- Steve
+
 
