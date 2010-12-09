@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab0LIX0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:26:12 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:35099 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab0LIX0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:26:10 -0500
-Date: Thu, 9 Dec 2010 23:26:01 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ACPICA: Fix access width for reset vector
-Message-ID: <20101209232601.GA26343@srcf.ucam.org>
-References: <1291931204-5854-1-git-send-email-mjg@redhat.com> <1291931204-5854-2-git-send-email-mjg@redhat.com> <4D016241.5090503@zytor.com>
+	id S1756153Ab0LIX2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 18:28:14 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40772 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752665Ab0LIX2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 18:28:12 -0500
+Date: Thu, 9 Dec 2010 23:27:47 GMT
+From: tip-bot for Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, gorcunov@gmail.com, mingo@elte.hu,
+        dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, gorcunov@gmail.com, dzickus@redhat.com,
+        mingo@elte.hu
+In-Reply-To: <1291068437-5331-2-git-send-email-dzickus@redhat.com>
+References: <1291068437-5331-2-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] lockup detector: Compile fixes from removing the old x86 nmi watchdog
+Message-ID: <tip-96a84c20d635fb1e98ab92f9fc517c4441f5c424@git.kernel.org>
+Git-Commit-ID: 96a84c20d635fb1e98ab92f9fc517c4441f5c424
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4D016241.5090503@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 23:27:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 03:12:01PM -0800, H. Peter Anvin wrote:
-> On 12/09/2010 01:46 PM, Matthew Garrett wrote:
->> Section 4.7.3.6 of the ACPI specification requires that the register width
->> of the reset vector be 8 bits. Windows simply hardcodes the access to be
->> a byte and ignores the width provided in the FADT, so make sure that we
->> do the same.
->>
->> Signed-off-by: Matthew Garrett<mjg@redhat.com>
->
-> Does anyone have an acpidump from a machine with an ALi 1535 southbridge?
+Commit-ID:  96a84c20d635fb1e98ab92f9fc517c4441f5c424
+Gitweb:     http://git.kernel.org/tip/96a84c20d635fb1e98ab92f9fc517c4441f5c424
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Mon, 29 Nov 2010 17:07:16 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 10 Dec 2010 00:01:06 +0100
 
-I've got one from an HP nx9005. It's only a revision 1 FADT, so there's 
-no reset register defined.
+lockup detector: Compile fixes from removing the old x86 nmi watchdog
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+My patch that removed the old x86 nmi watchdog broke other
+arches.  This change reverts a piece of that patch and puts the
+change in the correct spot.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: fweisbec@gmail.com
+Cc: yinghai@kernel.org
+LKML-Reference: <1291068437-5331-2-git-send-email-dzickus@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apic/hw_nmi.c |    8 +++++++-
+ include/linux/nmi.h           |    4 +++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 057f1eb..2e94eb4 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -24,8 +24,14 @@ u64 hw_nmi_get_sample_period(void)
+ }
+ #endif
+ 
++#ifndef CONFIG_HARDLOCKUP_DETECTOR
++void touch_nmi_watchdog(void)
++{
++	touch_softlockup_watchdog();
++}
++EXPORT_SYMBOL(touch_nmi_watchdog);
++#endif
+ #ifdef arch_trigger_all_cpu_backtrace
+-
+ /* For reliability, we're prepared to waste bits here. */
+ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+ 
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index 1c451e6..17ccf44 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -16,7 +16,8 @@
+  */
+ #ifdef ARCH_HAS_NMI_WATCHDOG
+ #include <asm/nmi.h>
+-#endif
++extern void touch_nmi_watchdog(void);
++#else
+ #ifndef CONFIG_HARDLOCKUP_DETECTOR
+ static inline void touch_nmi_watchdog(void)
+ {
+@@ -25,6 +26,7 @@ static inline void touch_nmi_watchdog(void)
+ #else
+ extern void touch_nmi_watchdog(void);
+ #endif
++#endif
+ 
+ /*
+  * Create trigger_all_cpu_backtrace() out of the arch-provided
