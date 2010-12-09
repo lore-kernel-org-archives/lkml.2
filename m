@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab0LIRrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:47:01 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:47219 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab0LIRq7 convert rfc822-to-8bit (ORCPT
+	id S1756155Ab0LIRtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:49:08 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:46040 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab0LIRtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:46:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fCrNJ0iSIVQ3wh1WWwvwahxRH3KxY0a01tyqzrsRCdZUn8cHQfm7P5hk4wW/Bk+45U
-         2F+qUkI0dqzemJbdpDKxa7lCwxEaOQYCIQcX6sFU4ZdwpuC2BntrZ+hxXJbm3QmmdiNM
-         C1cRFvJpiQxS0izQlSFuhKj5sRrBYIvrscAzs=
+	Thu, 9 Dec 2010 12:49:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <20101209173525.GA29879@void.printf.net>
-References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com>
-	<20101208115510.GD10998@console-pimps.org>
-	<AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com>
-	<AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
-	<20101209064751.GA21128@void.printf.net>
-	<AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
-	<20101209160157.GA28586@void.printf.net>
-	<20101209173525.GA29879@void.printf.net>
-Date: Thu, 9 Dec 2010 17:46:20 +0000
-Message-ID: <AANLkTi=BXxfNcnhNb6Bd_N3gVpDUMWBCQtZ0d=m9p_sa@mail.gmail.com>
-Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
-From: Will Newton <will.newton@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19713.5738.653711.301814@quad.stoffel.home>
+Date: Thu, 9 Dec 2010 12:48:26 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: John Stoffel <john@stoffel.org>, xfs-masters@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, cluster-devel@redhat.com,
+        linux-mtd@lists.infradead.org, jfs-discussion@lists.sourceforge.net,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-mm@kvack.org,
+        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
+        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
+        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
+        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
+        jeffm@suse.com, paul.moore@hp.com, penguin-kernel@I-love.SAKURA.ne.jp,
+        casey@schaufler-ca.com, kees.cook@canonical.com, dhowells@redhat.com
+Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on
+ inode creation
+In-Reply-To: <1291909941.3072.70.camel@localhost.localdomain>
+References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
+	<19712.61515.201226.938553@quad.stoffel.home>
+	<1291909941.3072.70.camel@localhost.localdomain>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 5:35 PM, Chris Ball <cjb@laptop.org> wrote:
-> Hi Andrew,
->
-> On Thu, Dec 09, 2010 at 04:01:57PM +0000, Chris Ball wrote:
->> > > Is there something we could depend on that would stop this driver being
->> > > presented to everyone, without being far too specific?  At the moment
->> > > we'd be making x86 desktop users say whether they have this IP, which
->> > > isn't good.  Are the architectures that use this IP already upstream?
->> > > Are they all ARM architectures, for instance?
->> >
->> > I don't know of any architectures upstream that use this IP block. There is an
->> > SoC from NXP that uses this it but it is not upstream:
->> >
->> > http://ics.nxp.com/support/software/lpc313x.bsp.linux/
->> >
->> > The architecture we tested and debugged this driver on is not upstream either
->> > unfortunately. :-/
->>
->> Okay.  I think "depends on ARM" is appropriate for now, and we could
->> expand that later if the block appears in a MIPS SoC or something.
->> Does that work for you?
->
-> Oh, hey, rmk says that he seems to recall that akpm says that if the
-> driver builds on x86 (it does), we should just allow it to be built
-> there too so that it gets build coverage.  Andrew, does this still
-> represent your stance?
->
-> I've heard the distro maintainers complain about having to investigate
-> Kconfig entries for drivers that their users would never possibly use,
-> though, and this certainly falls into that case.  Is there something
-> better we can do here, to correctly hide this driver from non-ARM users
-> but also make it clear that it can be built if somebody wants to do a
-> mass driver build?
+>>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
 
-The driver does build on x86{_64} and it has been useful for me to do
-that in the past to test cosmetic changes. It might also be good to
-have it building on x86 to get more compile testing, as I suspect a
-lot more people doing randconfig builds are doing it on x86 rather
-than arm.
+Eric> On Thu, 2010-12-09 at 10:05 -0500, John Stoffel wrote:
+>> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
 
-But I'm fine with it either way.
+>> So what happens when I create a file /home/john/shadow, does selinux
+>> (or LSM in general) then run extra checks because the filename is
+>> 'shadow' in your model?  
+
+Eric> It's entirely a question of labeling and one that was discussed on the
+Eric> LSM list in some detail:
+
+Eric> http://marc.info/?t=129141308200002&r=1&w=2
+
+Thank you for pointing me at this discussion.  I'm working my way
+through it, but so far I'm not seeing any consensus that this is
+really the proper thing to do.  I personally feel this should be in
+userspace if at all possible.
+
+Eric> The basic synopsis is that when a new inode is created SELinux
+Eric> must apply some label.  It makes the decision for what label to
+Eric> apply based on 3 pieces of information.
+
+Eric> The label of the parent inode.
+Eric> The label of the process creating the new inode.
+Eric> The 'class' of the inode, S_ISREG, S_ISDIR, S_ISLNK, etc
+
+These seem to be ok, if you're using label based security.  But since
+I freely admit I'm not an expert or even a user, I'm just trying to
+understand and push back to make sure we do what's good.  And which
+doesn't impact non-SElinux users.  
+
+Eric> This patch adds a 4th piece of information, the name of the
+Eric> object being created.  An obvious situation where this will be
+Eric> useful is devtmpfs (although you'll find other examples in the
+Eric> above thread).  devtmpfs when it creates char/block devices is
+Eric> unable to distinguish between kmem and console and so they are
+Eric> created with a generic label.  hotplug/udev is then called which
+Eric> does some pathname like matching and relabels them to something
+Eric> more specific.  We've found that many people are able to race
+Eric> against this particular updating and get spurious denials in
+Eric> /dev.  With this patch devtmpfs will be able to get the labels
+Eric> correct to begin with.
+
+So your Label based access controls are *also* based on pathnames?
+Right?  
+
+Eric> I'm certainly willing to discuss the security implications of this
+Eric> patch, but that would probably be best done with a significantly
+Eric> shortened cc-list.  You'll see in the above mentioned thread that a
+Eric> number of 'security' people (even those who are staunchly anti-SELinux)
+Eric> recognize there is value in this and that it is certainly much better
+Eric> than we have today.
+
+>> I *think* the overhead shouldn't be there if SELINUX is disabled, but
+>> have you confirmed this?  How you run performance tests before/after
+>> this change when doing lots of creations of inodes to see what sort of
+>> performance changes might be there?
+
+Eric> I've actually recently done some perf testing on creating large
+Eric> numbers of inodes using bonnie++, since SELinux was a noticeable
+Eric> overhead in that operation.  Doing that same test with SELinux
+Eric> disabled (or enabled) I do not see a noticeable difference when
+Eric> this patch is applied or not.  It's just an extra argument to a
+Eric> function that goes unused.
+
+That answers alot of my concerns then.  Not having it impact users in
+a non-SELinux context is vitally important to me.
+
+Thanks,
+John
