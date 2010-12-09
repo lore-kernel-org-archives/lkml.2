@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0LITGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 14:06:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756362Ab0LITF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 14:05:58 -0500
-Date: Thu, 9 Dec 2010 20:04:07 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 55 of 66] select CONFIG_COMPACTION if
- TRANSPARENT_HUGEPAGE enabled
-Message-ID: <20101209190407.GJ19131@random.random>
-References: <patchbomb.1288798055@v2.random>
- <89a62752012298bb500c.1288798110@v2.random>
- <20101109151756.BC7B.A69D9226@jp.fujitsu.com>
- <20101109211145.GB6809@random.random>
- <20101118162245.GE8135@csn.ul.ie>
+	id S1756925Ab0LITG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 14:06:26 -0500
+Received: from mail-yw0-f66.google.com ([209.85.213.66]:63325 "EHLO
+	mail-yw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756579Ab0LITGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 14:06:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dp6zEbBFWV27sEm6YsZ8Jr/XTZHLjDjwjZyV5uU4xLzlYpBvBmVYG0yzrk6nzcRz6U
+         frawdQj1SVlS+4R4y2sIPpcmnV62RE9dmKLoiNobjobe5hCvjBe2y7LsQxvzL2i5TnhR
+         OVvs/+BVnHAef7fSR2UZm9/TG11+jVAKWn4kw=
+Date: Thu, 9 Dec 2010 10:49:41 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] input: mt updates for 2.6.38
+Message-ID: <20101209184940.GB23781@core.coreip.homeip.net>
+References: <4CFF49BC.8030202@euromail.se>
+ <20101209085814.GA8821@core.coreip.homeip.net>
+ <4D011EA3.2000905@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101118162245.GE8135@csn.ul.ie>
+In-Reply-To: <4D011EA3.2000905@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 04:22:45PM +0000, Mel Gorman wrote:
-> Just to confirm - by hang, you mean grinds to a slow pace as opposed to
-> coming to a complete stop and having to restart?
+On Thu, Dec 09, 2010 at 07:23:31PM +0100, Henrik Rydberg wrote:
+> On 12/09/2010 09:58 AM, Dmitry Torokhov wrote:
+> 
+> > On Wed, Dec 08, 2010 at 10:02:52AM +0100, Henrik Rydberg wrote:
+> >> Dmitry,
+> >>
+> >> Please pull from
+> >>
+> >>   git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
+> >>
+> >> to receive input-mt updates for 2.6.38.
+> >>
+> >> The tree contains core changes as well as dependent changes to hid drivers. You
+> >> also find the new hid-egalax driver in there, signed off by Jiri.
+> > 
+> > Pulled, thank you Henrik.
+> > 
+> > I wonder if we should move input-mt.h into input/mt.h (and if someone
+> > would bother to input-polldev.h there that would be great too).
+> 
+> 
+> Sure, I have been wondering about that too. Right away, or later?
 
-Hmm it's like if you're gigabytes in swap and apps hangs for a while
-and system is not really usable and it swaps for most new memory
-allocations despite there's plenty of memory free, but it's not a
-deadlock of course.
+Better sooner than later as you'll have less places to patch ;)
 
-BTW, alternatively I could:
+> 
+> > Also I try to sync with mainline once per release, at -rc1, unless I
+> > know that my changes will conflict with some other work. I'd recommend
+> > you do the same so that when I pull from you I am getting just your
+> > changes and not the rest of stuff from mainline.
+> 
+> 
+> No problem - I will see what sync point you end up using, and I will rebase to
+> the same point.
 
- unsigned long transparent_hugepage_flags __read_mostly =
-        (1<<TRANSPARENT_HUGEPAGE_FLAG)|
-+#ifdef CONFIG_COMPACTION
-+       (1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
-+#endif
-        (1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG);
+No, not rebase, pull please. Public branches should not be rebased, at
+least not when they have been pulled from.
 
-That would adds GFP_ATOMIC to THP allocation if compaction wasn't
-selected, but I think having compaction enabled diminish the risk of
-misconfigured kernels leading to unexpected measurements and behavior,
-so I feel much safer to keep the select COMPACTION in this patch.
+> 
+> > BTW, we need to document dev->trkid to avoid complaints from 'make
+> > htmldocs' and friends. I wonder if the patch below will do.
+> 
+> 
+> Looks good, thanks.
 
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
+OK. I take it as an acked-by then.
 
-Added.
-
-Thanks,
-Andrea
+-- 
+Dmitry
