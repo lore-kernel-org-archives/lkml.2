@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab0LIWhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 17:37:50 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14136 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab0LIWhs (ORCPT
+	id S1754770Ab0LIWi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 17:38:57 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:35354 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab0LIWi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 17:37:48 -0500
-Date: Thu, 9 Dec 2010 23:31:09 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Subject: Re: Start dropping PCMCIA from compat-wireless for 2.6.38+
-In-Reply-To: <AANLkTik4W+UxgyPjVyHDeEFTRCkXdDBQ9obgPkpnhzGW@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1012092329480.25880@swampdragon.chaosbits.net>
-References: <AANLkTik4W+UxgyPjVyHDeEFTRCkXdDBQ9obgPkpnhzGW@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 9 Dec 2010 17:38:56 -0500
+Date: Thu, 9 Dec 2010 22:38:47 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] X86: Revamp reboot behaviour to match Windows more
+	closely
+Message-ID: <20101209223847.GA24452@srcf.ucam.org>
+References: <1291931204-5854-1-git-send-email-mjg@redhat.com> <4D015741.7090500@zytor.com> <20101209223201.GA23894@srcf.ucam.org> <4D015914.1040009@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D015914.1040009@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Dec 2010, Luis R. Rodriguez wrote:
+On Thu, Dec 09, 2010 at 02:32:52PM -0800, H. Peter Anvin wrote:
+> On 12/09/2010 02:32 PM, Matthew Garrett wrote:
+>> On Thu, Dec 09, 2010 at 02:25:05PM -0800, H. Peter Anvin wrote:
+>>> When this was discussed before we agreed to use ACPI reboot by default
+>>> with an ACPI cutoff date; this doesn't have any such cutoff.
+>>
+>> Windows doesn't either. Older machines simply won't have the appropriate
+>> flag set in their FADT.
+>>
+>
+> Windows doesn't get validated on old hardware.
 
-> I'm going to start dropping PCMCIA stuff from compat-wireless as I
-> don't think we have any users of it nor interest to keep backporting
-> it. This entails dropping drivers like orinoco, b43 PCMCIA support,
-> libertas, as well as bluetooth bluecard_cs, bluecard_cs, dtl1_cs,
-> bt3c_cs and of course CONFIG_SSB_PCMCIAHOST. If you are a user please
-> yell now.
-> 
-Yelling.
-While I'm not personally a user, my mother is. She still has an old IBM 
-Thinkpad 600 laptop with a PCMCIA card in it that uses the orinoco driver.
+XP does this, and older hardware predates the version of the ACPI spec 
+that introduced this flag.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Matthew Garrett | mjg59@srcf.ucam.org
