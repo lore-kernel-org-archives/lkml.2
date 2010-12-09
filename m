@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab0LIOUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 09:20:36 -0500
-Received: from www.tglx.de ([62.245.132.106]:59308 "EHLO www.tglx.de"
+	id S1752855Ab0LIOYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 09:24:50 -0500
+Received: from vostochny.stro.at ([78.47.22.85]:40309 "EHLO vostochny.stro.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab0LIOUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 09:20:34 -0500
-Date: Thu, 9 Dec 2010 15:18:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv1 000/211] unicore32 architecture support
-In-Reply-To: <4D00E212.9080001@kernel.org>
-Message-ID: <alpine.LFD.2.00.1012091516240.2653@localhost6.localdomain6>
-References: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn> <4D00A672.9050906@kernel.org> <alpine.LFD.2.00.1012091443580.2653@localhost6.localdomain6> <4D00E212.9080001@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751222Ab0LIOYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 09:24:48 -0500
+Date: Thu, 9 Dec 2010 14:24:47 +0000
+From: maximilian attems <max@stro.at>
+To: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
+Subject: Re: [PATCH v2] kbuild, deb-pkg: support overriding userland
+	architecture
+Message-ID: <20101209142447.GA12350@vostochny.stro.at>
+References: <20101125143739.GC8192@sepie.suse.cz> <1291844150-4541-1-git-send-email-asbjorn@asbjorn.biz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291844150-4541-1-git-send-email-asbjorn@asbjorn.biz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Dec 2010, Tejun Heo wrote:
-
-> On 12/09/2010 02:49 PM, Thomas Gleixner wrote:
-> >> * Patches should be split according to logical steps of changes, not
-> >>   per-file.
-> >>
-> >> * Patches should be bisectable.  IOW, after applying upto any patch in
-> >>   the series, the tree should be buildable and working.
-> > 
-> > That does not work for a new architecture. There is nothing to bisect.
+On Wed, Dec 08, 2010 at 09:35:50PM +0000, Asbjoern Sloth Toennesen wrote:
+> Usefull if building for sparc64 userland, because the
+> sparc and sparc64 userlands use the same 64-bit kernel,
+> making it impossible to always select the correct userland
+> architecture for the resulting debian package.
 > 
-> Sure, but at least it shouldn't introduce build scripts first which
-> wouldn't work at all.
+> Might also be usefull, if you want a i386 userland with a amd64 kernel.
 > 
-> >> * When posting a patch series, especially one as large as 211, please
-> >>   make the mails for the actual patches replies to the head message.
-> >>   Don't post it as 212 separate messages or replies to the immediate
-> >>   previous patch.
-> >>
-> >> So, in short, if you're adding a whole new arch, just post it as a
-> >> single patch or a series of several patches if it requires changes
-> >> outside of the specific arch subtree.
-> > 
-> > Crap. a single patch is a major PITA for review. It's even worse than
-> > 211 per file patches.
-> 
-> Cut the crap.  A single patch may not be perfect for reviewing but
-> archs are often merged as a single giant patch as bisection is
-> meaningless anyway.
+> Example usage:
+> 	make DEBARCH=i386 deb-pkg
 
-It's not a question of merging. It's a question of reviewing and I've
-done quite a bunch of reviews on new archs, so I know what I'm talking
-about. Reviewing a single patch with everything and the world included
-is just not workable.
+hmm the conclusion was to prepend a KBUILD_ prefix for a kbuild variable?
+Any reason why that was overlooked?
 
-Thanks,
+I checked man devscripts and saw yet no definition of DEBARCH, but in order
+not to have any potential conflicts and to keep namespase sane I think
+it is very much preferred to use KBUILD_DEBARCH.
 
-	tglx
+thanks
+
+-- 
+maks
