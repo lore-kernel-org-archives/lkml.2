@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab0LIG3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 01:29:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35006 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab0LIG3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 01:29:34 -0500
-Message-ID: <4D0076B3.9090106@zytor.com>
-Date: Wed, 08 Dec 2010 22:26:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1754795Ab0LIGb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 01:31:29 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46756 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab0LIGb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 01:31:27 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] poll: fix a typo in comment
+Cc: kosaki.motohiro@jp.fujitsu.com, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291868401-32237-1-git-send-email-namhyung@gmail.com>
+References: <1291868401-32237-1-git-send-email-namhyung@gmail.com>
+Message-Id: <20101209152800.C7A0.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [cpuops cmpxchg V1 2/4] x86: this_cpu_cmpxchg and	this_cpu_xchg
- operations
-References: <20101208175520.456864019@linux.com> <20101208175543.000201149@linux.com> <alpine.DEB.2.00.1012081207250.26943@router.home> <20101208181736.GC30693@Krystal>
-In-Reply-To: <20101208181736.GC30693@Krystal>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  9 Dec 2010 15:31:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 10:17 AM, Mathieu Desnoyers wrote:
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  include/linux/poll.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Hi Christoph,
-> 
-> Can you show if this provides savings in terms of:
-> 
-> - instruction cache footprint
-> - cycles required to run
-> - large-scale impact on the branch prediction buffers
-> 
-> Given that this targets per-cpu data only, the additional impact on cache-line
-> exchange traffic of using cmpxchg over xchg (cache-line not grabbed as exclusive
-> by the initial read) should not really matter.
-> 
-> I'm CCing Arjan and HPA, because they might have some interesting insight into
-> the performance impact of lock-prefixed xchg vs using local cmpxchg in a loop.
-> 
+> diff --git a/include/linux/poll.h b/include/linux/poll.h
+> index 56e76af78102..afd3375e58ee 100644
+> --- a/include/linux/poll.h
+> +++ b/include/linux/poll.h
+> @@ -57,7 +57,7 @@ struct poll_table_entry {
+>  };
+>  
+>  /*
+> - * Structures and helpers for sys_poll/sys_poll
+> + * Structures and helpers for sys_select/sys_poll
+>   */
 
-XCHG is always locked; it doesn't need the prefix.  Unfortunately,
-unlike on the 8086 on modern processors locks have a real cost.
+Now we don't have sys_poll() and sys_poll() function. At least they
+are hidden by SYSCALL_DEFINEx() macro.
 
-	-hpa
+so probably, "for select/poll syscall" is better explanation?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+
+
+>  struct poll_wqueues {
+>  	poll_table pt;
+> -- 
+> 1.7.3.3.400.g93cef
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
