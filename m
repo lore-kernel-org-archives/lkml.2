@@ -1,111 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab0LIAQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 19:16:12 -0500
-Received: from web31813.mail.mud.yahoo.com ([68.142.207.76]:31243 "HELO
-	web31813.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753982Ab0LIAQI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 19:16:08 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=QDxl8gYYQAB6rs0qwQ9XP+8uaLBjY/5qQj20VYpkd1hlWCJnhmHbu7Yz9Sl1/bB4J7uldq0aZfBbfEbnni3wNptieQYPgUR/BElJzyqWgvif9GuzqpYONeEr3vcfdST6eJmE0gOxOe7yxB1nKg0NBBZQOx1tLfAFJSeJJJtTlp4=;
-Message-ID: <233716.61101.qm@web31813.mail.mud.yahoo.com>
-X-YMail-OSG: M3egIpkVM1ktiDRraqhah8h4e5C.xQVy2bgDdebchT889tW
- Q9c0UsPgihQZI2A1we0GmYdLaY_KnFjQJHeg71aVlEUp7Emh2aHMIfhmF7gw
- 9VslwbQPCiuJvDPauEKbN10AD9MhiE2hB.x1cyL2A.SK5oOUzUnWVxwwXkJ9
- 6aEZJMcu_AsTgWxd_a7og9Dnf1hhPTNNh2g3nJs1jEQgp0t1cQoxZPOLsDUP
- Dqe8gJBhZeTPUb3m1ntllFoaqo7xBwK9eGRTyZmUJo3UZmHT0r7MsbCwfteM
- wV3TsbVBqpGBfsrq8K9FxAU3hEQ7CG9zA7GW8z7W8avq_MB_UPHcaaBQoZ.S
- GYyhOK3BL3fesedCZ8g--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
-Date: Wed, 8 Dec 2010 16:16:06 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [USB] UASP: USB Attached SCSI (UAS) protocol driver
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+	id S1755191Ab0LIATs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 19:19:48 -0500
+Received: from mail-iw0-f172.google.com ([209.85.214.172]:55215 "EHLO
+	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab0LIATr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 19:19:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xp6EJuCGPjuxMenm3qa+GgQ4itr5AUVpx37/HrOccAHk8+cf4Conot2zrIWw0Kk5tC
+         teoxoPpNRJZ9bx/n4APKHYZHflJTMpsnIA8QrSmFj0Amw90Hc+6LKGDgfgbImN6OwDRk
+         Di6IQrLJHyGhfr4J2BbWPR1nU8AG4cyMTJbPc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <20101208065650.GP3158@balbir.in.ibm.com>
+References: <20101207144923.GB2356@cmpxchg.org>
+	<20101207150710.GA26613@barrios-desktop>
+	<20101207151939.GF2356@cmpxchg.org>
+	<20101207152625.GB608@barrios-desktop>
+	<20101207155645.GG2356@cmpxchg.org>
+	<AANLkTi=iNGT_p_VfW9GxdaKXLt2xBHM2jdwmCbF_u8uh@mail.gmail.com>
+	<20101208095642.8128ab33.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTimtkb7Nczhads4u3r21RJauZvviLFkXjaL1ErDb@mail.gmail.com>
+	<20101208105637.5103de75.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTim9to0Wa_iWyVA4FSV6sfT4tcR2bmV7t54HOQ1c@mail.gmail.com>
+	<20101208065650.GP3158@balbir.in.ibm.com>
+Date: Thu, 9 Dec 2010 09:19:46 +0900
+Message-ID: <AANLkTimhRdRV4QS6gtLfm5DL-ZaeZjpdNT0-Muj4ePKP@mail.gmail.com>
+Subject: Re: [PATCH v4 2/7] deactivate invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: balbir@linux.vnet.ibm.com
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 12/6/10, Greg KH <greg@kroah.com> wrote:
+On Wed, Dec 8, 2010 at 3:56 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> * MinChan Kim <minchan.kim@gmail.com> [2010-12-08 11:15:19]:
 >
-> We already have this support in the kernel tree,
+>> On Wed, Dec 8, 2010 at 10:56 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Wed, 8 Dec 2010 10:43:08 +0900
+>> > Minchan Kim <minchan.kim@gmail.com> wrote:
+>> >
+>> >> Hi Kame,
+>> >>
+>> > Hi,
+>> >
+>> >> > I wonder ...how about adding "victim" list for "Reclaim" pages ? Then, we don't need
+>> >> > extra LRU rotation.
+>> >>
+>> >> It can make the code clean.
+>> >> As far as I think, victim list does following as.
+>> >>
+>> >> 1. select victim pages by strong hint
+>> >> 2. move the page from LRU to victim
+>> >> 3. reclaimer always peeks victim list before diving into LRU list.
+>> >> 4-1. If the victim pages is used by others or dirty, it can be moved
+>> >> into LRU, again or remain the page in victim list.
+>> >> If the page is remained victim, when do we move it into LRU again if
+>> >> the reclaimer continues to fail the page?
+>> > When sometone touches it.
+>> >
+>> >> We have to put the new rule.
+>> >> 4-2. If the victim pages isn't used by others and clean, we can
+>> >> reclaim the page asap.
+>> >>
+>> >> AFAIK, strong hints are just two(invalidation, readahead max window heuristic).
+>> >> I am not sure it's valuable to add new hierarchy(ie, LRU, victim,
+>> >> unevictable) for cleaning the minor codes.
+>> >> In addition, we have to put the new rule so it would make the LRU code
+>> >> complicated.
+>> >> I remember how unevictable feature merge is hard.
+>> >>
+>> > yes, it was hard.
+>> >
+>> >> But I am not against if we have more usecases. In this case, it's
+>> >> valuable to implement it although it's not easy.
+>> >>
+>> >
+>> > I wonder "victim list" can be used for something like Cleancache, when
+>> > we have very-low-latency backend devices.
+>> > And we may able to have page-cache-limit, which Balbir proposed as.
+>>
+>> Yes, I thought that, too. I think it would be a good feature in embedded system.
+>>
+>> >
+>> >  - kvictimed? will move unmappedd page caches to victim list
+>> > This may work like a InactiveClean list which we had before and make
+>> > sizing easy.
+>> >
+>>
+>> Before further discuss, we need customer's confirm.
+>> We know very well it is very hard to merge if anyone doesn't use.
+>>
+>> Balbir, What do think about it?
+>>
+>
+> The idea seems interesting, I am in the process of refreshing my
+> patches for unmapped page cache control. I presume the process of
+> filling the victim list will be similar to what I have or unmapped
+> page cache isolation.
 
-Greg, this isn't an effort for "linux kernel code turf".  This is a well-implemented driver according to the respective specifications (SAM, SPC, USB 2/3). It reflects correct implementation, naming, etc. It shows understanding of the abstraction layers and underlying technology. It's what you'd want to have in /YOUR/ kernel.
+I saw your previous implementation. It doesn't have any benefit from
+victim list.
+It needs scanning pfns, select unmapped page and move it into victim list.
+I think we might need kvictimd as Kame said but I am not convinced.
+If I have a trouble with implementing my series, I might think it. But
+until now, I think it's not bad and rough test result isn't bad.
 
-> why do you want and need another driver that does the same exact thing?
+To be honest, I think victim list(or cleanlist) is to be another
+project. If it is completed, maybe we can make my patches simple.
+I approve page cache limit control POV but it should be another project.
+So I want to merge this series then if we need really victim list,
+let's consider at that time.
 
-Nothing can be further from the truth. The current uas.c driver doesn't do the "exact same thing", far from it.
+Anyway, I will see your next version to find needs of victim list.
 
-You responded 4 minutes after my post. Did you have to time to verify that the driver I posted does "the exact same thing" as the one in the kernel?
+>
+>>
+>> > Thanks,
+>> > -Kame
+>> >
+>> >
+>> >
+>> >
+>>
+>>
+>>
+>> --
+>> Kind regards,
+>> Minchan Kim
+>
+> --
+>        Three Cheers,
+>        Balbir
+>
 
-"The exact same thing", let's see:
-1) uasp.c doesn't assume the alternate setting of the interface and discovers its setting. uas.c assumes it's 1.
 
-2) uas.c doesn't do any error checking of the endpoints, and goes ahead
-and registers a scsi host first, and then "configures" the endpoints, while end point configuration/discovery may fail or be incorrect.
 
-3) uasp.c correctly parses the pipe usage endpoint descriptors and
-saves them in a target port abstraction. If any were not present, discovery of the device fails. 
-
-4) uasp.c discovers the maximum number of streams we can use of the streaming endpoints (their minimum) of the interface, uasp blindly requests 256.
-
-5) uasp.c fails discovery if no streaming is supported (bad configuration) for a SuperSpeed device. uas.c doesn't do any checking and doesn't discern between SS and HS (it relies on usb_alloc_streams() to fail, thus it cannot discover the correct/valid number of streams of the target interface).
-
-6) uasp.c correctly sets the number of commands the block/SCSI layer can enqueue, reserving tags for TMF and untagged commands. uas.c has no concept of TMFs and doesn't do this.
-
-7) uas.c incorrectly sets some members of shost. uasp.c does this correctly.
-
-8) uas.c is filled with incorrect comments showing the unfamiliarity of the author(s) with SAM, SPC, USB, etc. For example,
-
-SCSI:
-> .can_queue = 65536,    /* Is there a limit on the _host_ ? */
-
-Unfamiliarity with USB or SAM or both:
-> /* XXX: Can we reset just the one USB interface?
->  * Would calling usb_set_interface() have the right effect?
->  */
-and
-> /* XXX: Need to return 1 if it's not our device in error handling */
-
-Unfamiliarity with UAS/SS (scary commend follows, read at your own risk):
-> /*
->  * Why should I request the Status IU before sending the Command IU? Spec
->  * says to, but also says the device may receive them in any order.  Seems
-> * daft to me.
-> */
-
-Unfamiliarity with SAM, SCSI, etc: the driver trying to re-queue
-failed Execute Command procedure with the transport. The driver abusing SCSI_MLQUEUE_DEVICE_BUSY and its usage of a work queue to both requeue URBs and data (wrong in transport protocol driver).  These result in infinite loops in SCSI/block layer when the device goes out to lunch (I can test quite a few possibilities), or errors out, or errors out in the middle of a HighSpeed transaction requiring RRDY and WRDY.
-
-9) uasp.c provides correct (extensible) abstraction of underlying (represented) objects (Target port, LU and command, a la I_T_L_Q nexus). uas.c lacks this.
-
-10) uasp.c implements TMF for both SS and HS modes of operation (directly related to 9 above.) uas.c cannot do this as it has no representation of the I_T_L_Q nexus.
-
-11) uasp.c provides correct naming of structs, constants, etc. It is what you want in a protocol driver. uas.c lacks this.
-
-12) uasp.c does NOT implement packed structs to represent the information units, nor does it use be_to_cpu[p]() and cpu_to_be() to read/write values from said units. It is a portability nightmare (alignment, flexibility, etc). Instead uasp.c uses byte access, shift and or logical operations to extract values from the information units.  uas.c does implement packed structs, and does use be_to_cpu[p]() and cpu_to_be(), again a portability nightmare.
-
-13) uas.c uses infantile non-value comments like:
-> /* I hate forward declarations, but I actually have a loop */
-
-14) uasp.c correctly uses dev_dbg()/dev_err()/dev_info()/etc, to report interesting information at each level of debugging. Thus it supports dynamic debugging.
-
-15) uasp.c correctly implements the protocol and doesn't allow for non-conforming devices to be used (which are by default NON-UAS), such as devices that don't implement the required pipes, or early (out of protocol) information units. Such devices should never see the light of day, as they will cause interoperability problems. Dynamic ids are also supported by uasp.c.
-
-16) uasp.c implement a module parameter limiting the number of streams to request from XHCI HCD to allocate. This is due to the fact that some HC misreport the number of streams they support by a factor of two since they filled in the HCCPARAMS field MaxPSASize. That is, they solved 2^v = streams, instead of 2^(v+1) = streams. Of course when the device tries to send back status, the host says ACK(NumP=0) and the device goes into flow control... etc. This module parameter allows to limit the streams allocated.
-
-17) uasp.c implements correct tag assignment for TMFs such that should we get into 16 above, a TMF status _can_ be returned to the host. uas.c has no concept of TMFs to begin with.
-
-18) uasp.c correctly checks the device configuration and fails discovery as it correctly reports that to USB.
-
-There is perhaps more.
-
-   Luben
-
+-- 
+Kind regards,
+Minchan Kim
