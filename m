@@ -1,171 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab0LIP2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:28:16 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:59197 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab0LIP2P (ORCPT
+	id S1753617Ab0LIPat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:30:49 -0500
+Received: from lock.cmpxchg8b.com ([89.16.178.151]:35909 "EHLO
+	lock.cmpxchg8b.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab0LIPar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:28:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fXwwHJ5PyV0Wugz8HS+CBn/XUtRAoCUD0WbdqSl0f+jXGjk7WB5S1J2wTh+pxy28H5
-         ivQtIMgZIhXMCj3SniNGkJ/rk/unwkvKfi8rgGy1psVVbIY9CUom/DsefBP+DmghEgiO
-         iW2Dtz16+uy7HHOmY0xN05mdhL7ZlBPfbUesU=
-Date: Thu, 9 Dec 2010 16:28:10 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        mrubin@google.com, Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
- events.
-Message-ID: <20101209152805.GD1712@nowhere>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com>
- <1291421609-14665-14-git-send-email-dhsharp@google.com>
- <1291427770.16223.15.camel@gandalf.stny.rr.com>
- <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com>
- <1291431252.16223.28.camel@gandalf.stny.rr.com>
- <20101209145541.GC1712@nowhere>
- <1291907297.5015.1526.camel@gandalf.stny.rr.com>
+	Thu, 9 Dec 2010 10:30:47 -0500
+X-Greylist: delayed 1423 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Dec 2010 10:30:47 EST
+Date: Thu, 9 Dec 2010 15:29:42 +0100
+From: Tavis Ormandy <taviso@cmpxchg8b.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org,
+        kees@ubuntu.com, eugene@redhat.com
+Subject: [PATCH] install_special_mapping skips security_file_mmap check.
+Message-ID: <20101209142942.GB9267@cmpxchg8b.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291907297.5015.1526.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 10:08:17AM -0500, Steven Rostedt wrote:
-> On Thu, 2010-12-09 at 15:55 +0100, Frederic Weisbecker wrote:
-> > On Fri, Dec 03, 2010 at 09:54:12PM -0500, Steven Rostedt wrote:
-> > > On Fri, 2010-12-03 at 18:33 -0800, David Sharp wrote:
-> > > > I considered that, and I generally thing it's a good idea. However, I
-> > > > also want to use this switch to shrink individual tracepoint event
-> > > > structures.
-> > > > 
-> > > > eg: sched switch is a high frequency event and it is 68 bytes (60
-> > > > after these patches)
-> > > > 
-> > > > Can you suggest a syntax for TRACE_EVENT, DECLARE_EVENT_CLASS, etc,
-> > > > that could express the two versions and produce the right code?
-> > > > 
-> > > > I'm worried about adding even further complexity to the TRACE_EVENT
-> > > > macros. I could add TRACE_EVENT_SMALL that takes two versions of
-> > > > TP_STRUCT__entry, TP_fast_assign, and TP_printk each, but then this
-> > > > will need to be permuted with your TP_CONDITIONAL patches as well.
-> > > 
-> > > I would not touch the TRACE_EVENT() structures. They are there as is and
-> > > I would not think about changing them. Something like that would never
-> > > make it into mainline.
-> > > 
-> > > Now what you can do, is to make your own events based off of the same
-> > > tracepoints. For example, the TRACE_EVENT(sched_switch...) has in
-> > > sched.c:
-> > > 
-> > > 	trace_sched_switch(prev, next);
-> > > 
-> > > 
-> > > You could even write a module that does something like this:
-> > > 
-> > > 	register_trace_sched_switch(probe_sched_switch, mydata);
-> > > 
-> > > 
-> > > 
-> > > void probe_sched_switch(void *mydata,
-> > > 		struct task_struct *prev,
-> > > 		struct task_struct *next)
-> > > {
-> > > 	struct ring_buffer *buffer;
-> > > 	struct ring_buffer_event *event;
-> > > 	struct myentry *entry;
-> > > 
-> > > 	event = trace_current_buffer_lock_reserve(buffer,
-> > > 			mytype, sizeof(*entry),
-> > > 			0, 0);
-> > > 
-> > > 	if (!event)
-> > > 		return;
-> > > 
-> > > 	entry = ring_buffer_event_data(event);
-> > > 
-> > > 	entry->myfield = prev->x;
-> > > 	...
-> > > 
-> > > 	trace_nowake_buffer_unlock_commit(buffer, event,
-> > > 					0, 0);
-> > > }
-> > > 
-> > > You will need to do a register_ftrace_event() to register that 'mytype'
-> > > and how to output it. Otherwise it would just be ignored in the "trace"
-> > > file.
-> > > 
-> > > All of the above would work fine as a loadable module that you could
-> > > easily maintain out of tree, and still uses the internals of the system.
-> > > 
-> > > -- Steve
-> > > 
-> > > 
-> > 
-> > 
-> > But this would improve only google's tracing while this is a general
-> > mainline tracing problem.
-> > 
-> > The first thing is that we need to get rid of the lock_depth field, the bkl
-> > is dying.
-> 
-> Yeah that needs to go :-)
-> 
-> > 
-> > For the rest what about having a bitmap of the fields we want to ignore,
-> > which can be setup from a trace file for ftrace and as an ioctl for perf.
-> > 
-> > So this bitmap is easy to implement on the common fields.
-> > 
-> > For the rest, one could choose between using TP_fast_assign()
-> > and TP_cond_assign().
-> > 
-> > TP_fast_assign() stays as is and doesn't implement bitmap field
-> > ignoring. Those who want conditional record will need
-> > TP_cond_assign().
-> > Well, unfortunately this probably requires us to play
-> > the same trickery than SYSCALL_DEFINE() in that we'll probably
-> > need TP_cond_assign1(), TP_cond_assign2(), TP_cond_assign3(), etc...
-> > 
-> > #define TP_cond_assignx(nr, assign)	\
-> > 	if (call->bitmask & nr)	{	\
-> > 		assign
-> > 	}
-> > 
-> > #define TP_cond_assign2(nr, assign, ...)	\
-> > 	TP_cond_assignx(nr, assign)		\
-> > 	TP_cond_assign1(nr + 1, __VA_ARGS__)
-> > 
-> > #define TP_cond_assign3(nr, assign, ...)        \
-> >         TP_cond_assignx(nr, assign)             \
-> >         TP_cond_assign2(nr + 1, __VA_ARGS__)
-> > 
-> > That will also require a bit more trickery to dynamically
-> > pre-compute the size of the trace entry.
-> 
-> Mathieu is working on encapsulating the assignments in their own macros.
-> 
-> Instead of doing:
-> 
-> 	__entry->foo = bar;
-> 
-> We will have:
-> 
-> 	tp_assign(foo, bar);
-> 
-> This way we could probably use this to dynamically figure out what to
-> assign.
-> 
-> -- Steve
-> 
-> 
+The install_special_mapping routine (used, for example, to setup the vdso)
+skips the security check before insert_vm_struct, allowing a local attacker to
+bypass the mmap_min_addr security restriction by limiting the available pages
+for special mappings. bprm_mm_init() also skips the check, although I don't
+think this can be used to bypass any restrictions, I don't see any reason not
+to have the security check.
+
+$ uname -m
+x86_64
+$ cat /proc/sys/vm/mmap_min_addr
+65536
+$ cat install_special_mapping.s
+section .bss
+    resb BSS_SIZE
+section .text
+    global _start
+    _start:
+        mov     eax, __NR_pause
+        int     0x80
+$ nasm -D__NR_pause=29 -DBSS_SIZE=0xfffed000 -f elf -o install_special_mapping.o install_special_mapping.s
+$ ld -m elf_i386 -Ttext=0x10000 -Tbss=0x11000 -o install_special_mapping install_special_mapping.o
+$ ./install_special_mapping &
+[1] 14303
+$ cat /proc/14303/maps 
+0000f000-00010000 r-xp 00000000 00:00 0                                  [vdso]
+00010000-00011000 r-xp 00001000 00:19 2453665                            /home/taviso/install_special_mapping
+00011000-ffffe000 rwxp 00000000 00:00 0                                  [stack]
+
+It's worth noting that Red Hat are shipping with mmap_min_addr set to 4096.
+
+Signed-off-by: Tavis Ormandy <taviso@google.com>
+Acked-by: Kees Cook <kees@ubuntu.com>
+Acked-by: Robert Swiecki <swiecki@google.com>
+---
+
+ fs/exec.c |    7 +++++++
+ mm/mmap.c |    5 +++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index d68c378..7e8c4b6 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -275,7 +275,14 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
+    vma->vm_flags = VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
+    vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+    INIT_LIST_HEAD(&vma->anon_vma_chain);
++
++   err = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
++
++   if (err)
++       goto err;
++
+    err = insert_vm_struct(mm, vma);
++
+    if (err)
+        goto err;
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index b179abb..1de3f4b 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2479,6 +2479,11 @@ int install_special_mapping(struct mm_struct *mm,
+    vma->vm_ops = &special_mapping_vmops;
+    vma->vm_private_data = pages;
+ 
++   if (security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1)) {
++       kmem_cache_free(vm_area_cachep, vma);
++       return -EPERM;
++   }
++
+    if (unlikely(insert_vm_struct(mm, vma))) {
+        kmem_cache_free(vm_area_cachep, vma);
+        return -ENOMEM;
 
 
-Yep, it should also work that way.
+-- 
+-------------------------------------
+taviso@cmpxchg8b.com | pgp encrypted mail preferred
+-------------------------------------------------------
