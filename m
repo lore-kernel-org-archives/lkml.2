@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0LIGtC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 01:49:02 -0500
-Received: from mail-qy0-f177.google.com ([209.85.216.177]:64872 "EHLO
-	mail-qy0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891Ab0LIGtA convert rfc822-to-8bit (ORCPT
+	id S1755263Ab0LIHCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 02:02:09 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:38150 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab0LIHCH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 01:49:00 -0500
+	Thu, 9 Dec 2010 02:02:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=KT2gpSsLszhK2waqmBSFhjYyGfbLFYo51tdwZgqUHeBlm6jd+o7ayTR5fUBnd5sIEb
-         N0mM98R2dsPlecq1xbeHlOZh0C4fa9Wp6ywIR0OouR8uAk/c458obFtEhgMmrgls/I1O
-         r5WGmI4vKEfGTTm2pLoWOpOL0BGrQFtTdMxEU=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=MEwEU+RHpSOKePUovOdDVGdtLdM1YcK+8BPvdiGm1RxOJQZLejiWKip545wizuNkA1
+         8SsvhCjgXFKGEro6Oh1pk44Pc0hPVHicU31ihifRUKCxPCXy7+8kEwrJsb/OdaceT3nj
+         blVhB3sVVOTinzLDlqdIOOUABTXBm+MNlKLRY=
 MIME-Version: 1.0
-In-Reply-To: <20101209152800.C7A0.A69D9226@jp.fujitsu.com>
-References: <1291868401-32237-1-git-send-email-namhyung@gmail.com> <20101209152800.C7A0.A69D9226@jp.fujitsu.com>
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Thu, 9 Dec 2010 15:48:39 +0900
-Message-ID: <AANLkTimUJ0mOkNe+ATAxDze_zHbWU8R1cJinEfX98Azw@mail.gmail.com>
-Subject: Re: [PATCH] poll: fix a typo in comment
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4D007315.1090704@lougher.demon.co.uk>
+References: <4D007315.1090704@lougher.demon.co.uk>
+Date: Thu, 9 Dec 2010 08:02:04 +0100
+X-Google-Sender-Auth: O70sIv9bDicwLHWAT7mUKyHpUws
+Message-ID: <AANLkTimUYrb8EMomgmsW+v7ttbkUH0P57SBD5M4_AGmU@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Squashfs: Add XZ compression configuration option
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Embedded Maillist <linux-embedded@vger.kernel.org>,
+        Lasse Collin <lasse.collin@tukaani.org>,
+        Andy Whitcroft <apw@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 15:31, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
->> ---
->> �include/linux/poll.h | � �2 +-
->> �1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/poll.h b/include/linux/poll.h
->> index 56e76af78102..afd3375e58ee 100644
->> --- a/include/linux/poll.h
->> +++ b/include/linux/poll.h
->> @@ -57,7 +57,7 @@ struct poll_table_entry {
->> �};
->>
->> �/*
->> - * Structures and helpers for sys_poll/sys_poll
->> + * Structures and helpers for sys_select/sys_poll
->> � */
+On Thu, Dec 9, 2010 at 07:11, Phillip Lougher
+<phillip@lougher.demon.co.uk> wrote:
+> --- a/fs/squashfs/Kconfig
+> +++ b/fs/squashfs/Kconfig
+> @@ -53,6 +53,22 @@ config SQUASHFS_LZO
 >
-> Now we don't have sys_poll() and sys_poll() function. At least they
-> are hidden by SYSCALL_DEFINEx() macro.
+>          If unsure, say N.
 >
-> so probably, "for select/poll syscall" is better explanation?
->
+> +config SQUASHFS_XZ
+> +       bool "Include support for XZ compressed file systems"
+> +       depends on SQUASHFS
+> +       default n
 
-Good point. Will resend.
-Thanks.
+"default n" is the default, no reason to specify it.
 
+Do we need a checkpatch test for this?
 
--- 
-Regards,
-Namhyung Kim
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
