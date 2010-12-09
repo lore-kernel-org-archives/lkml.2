@@ -1,152 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab0LIDlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 22:41:49 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:31047 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab0LIDls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 22:41:48 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6191"; a="65880910"
-Message-ID: <4D004FFB.80100@codeaurora.org>
-Date: Wed, 08 Dec 2010 19:41:47 -0800
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 6/6] msm: add SMP support for msm
-References: <1291782501-3909-1-git-send-email-johlstei@codeaurora.org>	<1291782501-3909-7-git-send-email-johlstei@codeaurora.org> <20101208152142.GH9777@n2100.arm.linux.org.uk>
-In-Reply-To: <20101208152142.GH9777@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754157Ab0LIDoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 22:44:38 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:33093 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab0LIDoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 22:44:37 -0500
+Subject: Re: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate
+ from ntp_error
+From: john stultz <johnstul@us.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1291860553.5015.1512.camel@gandalf.stny.rr.com>
+References: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
+	 <1291838382.2909.17.camel@work-vm>
+	 <1291839317.5015.1139.camel@gandalf.stny.rr.com>
+	 <1291848477.2909.152.camel@work-vm>
+	 <1291860553.5015.1512.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Dec 2010 19:44:31 -0800
+Message-ID: <1291866271.2909.245.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> On Tue, Dec 07, 2010 at 08:28:21PM -0800, Jeff Ohlstein wrote:
->> +int get_core_count(void)
->> +{
->> +#ifdef CONFIG_NR_CPUS
->> +	return CONFIG_NR_CPUS;
->> +#else
->> +	return 1;
->> +#endif
->>     
->
-> When would CONFIG_NR_CPUS not be set when SMP is available?
->
-> Note that linux/threads.h defines this to 1 if it's not already defined
-> anyway.  Does this really need to be a separate function?
->
->   
-Removed.
->> +int boot_secondary(unsigned int cpu, struct task_struct *idle)
->> +{
->> +	static int cold_boot_done;
->> +	int cnt = 0;
->> +	printk(KERN_DEBUG "Starting secondary CPU %d\n", cpu);
->> +
->> +	if (cold_boot_done == false) {
->> +		prepare_cold_cpu(cpu);
->> +		cold_boot_done = true;
->> +	}
->> +
->> +	pen_release = cpu;
->> +	dmac_flush_range((void *)&pen_release,
->> +			 (void *)(&pen_release + sizeof(pen_release)));
->>     
->
-> Abuse of the DMA API.  See how other platforms deal with this.
->
->   
-Fixed to use __cpuc_flush_dcache_area and outer_clean_range.
->> +	__asm__("sev");
->> +	dsb();
->> +
->> +	/* Use smp_cross_call() to send a soft interrupt to wake up
->> +	 * the other core.
->> +	 */
->> +	smp_cross_call(cpumask_of(cpu));
->> +
->> +	while (pen_release != 0xFFFFFFFF) {
->>     
->
-> Why 0xFFFFFFFF rather than -1 like everyone else does?
->
->   
-Removed due to below.
->> +		smp_rmb();
->> +		msleep_interruptible(1);
->> +		if (cnt++ >= SECONDARY_CPU_WAIT_MS)
->> +			break;
->> +	}
->>     
->
-> And why not use the same loop as everyone else does?
->
->         timeout = jiffies + (1 * HZ);
->         while (time_before(jiffies, timeout)) {
->                 smp_rmb();
->                 if (pen_release == -1)
->                         break;
->
->                 udelay(10);
->         }
->
-> IOW, what's the point of being different when you're trying to do the
-> same task?
->
->   
-Done.
->> +
->> +	return 0;
->> +}
->> +
->> +/* Mask for edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
->> +#define GIC_PPI_EDGE_MASK 0xFFFFD7FF
->> +
->> +/* Initialization routine for secondary CPUs after they are brought out of
->> + * reset.
->> +*/
->> +void platform_secondary_init(unsigned int cpu)
->> +{
->> +	printk(KERN_DEBUG "%s: cpu:%d\n", __func__, cpu);
->> +
->> +	trace_hardirqs_off();
->>     
->
-> This has been moved into the generic SMP code.
->
->   
-I've rebased onto your gic patches and your smp series, and removed this.
->> +	if (!machine_is_msm8x60_sim())
->> +		writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
->>     
->
-> The gic secondary CPU initialization now takes care of this in my tree.
->
->   
-Removed.
->> +
->> +	/*
->> +	 * setup GIC (GIC number NOT CPU number and the base address of the
->> +	 * GIC CPU interface
->> +	 */
->> +	gic_cpu_init(0, MSM_QGIC_CPU_BASE);
->>     
->
-> This has been renamed to gic_secondary_init() for 2.6.38.
->
->   
-Done.
+On Wed, 2010-12-08 at 21:09 -0500, Steven Rostedt wrote:
+> On Wed, 2010-12-08 at 14:47 -0800, john stultz wrote:
+> > On Wed, 2010-12-08 at 15:15 -0500, Steven Rostedt wrote:
+> > > On Wed, 2010-12-08 at 11:59 -0800, john stultz wrote:
+> > > 
+> > > > Hey Steven!
+> > > > 
+> > > > Thanks for the great analysis and tooling to help find these unexpected
+> > > > behaviors! 
+> > > > 
+> > > > Sadly, I believe your proposed change can still cause minor nsec
+> > > > inconsistencies from gettimeofday/vgettimeofday. In fact, the previous
+> > > > implementation where the nsec inconsistency error was observed preserved
+> > > > the sub-nanosecond remainder in xtime_nsec.
+[snip]
+> OK, but have you looked at my patch carefully? It does not do what the
+> old code does. It still keeps the "round up", but then it subtracts the
+> remainder from the delta when we come in again. I don't think my way has
+> the same issue.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ah. I didn't read your patch correctly. It looked very close to what was
+there before, so I jumped the gun a bit. That said, the fact that your
+"remainder" holds the "negative amount we rounded up" shows how quickly
+this type of code can get subtle. :)
+
+
+> My code still rounds up, but the difference is that it now subtracts
+> from the new start to get back to where it left off:
+> 
+> 	xtime_nsec += xtime.tv_nsec << shift;
+> 
+> 	[ do stuff ]
+> 
+> 	xtime.tv_nsec = (xtime_nsec >> shift) + 1;
+> 	xtime_nsec -= xtime.tv_nsec << shift;
+> 
+> The result of xtime_nsec is now negative, because we added 1 and
+> shifted.
+> 
+> Heck, I think this is all Roland needed to do to fix the issue. Lets
+> look at this again:
+> 
+> Pre-accumulation: 
+> 	xtime = 0, rem = 0, delta = 1500
+> 	gtod:	0 + cyc2ns(1500)
+> 		0 + 1499999 (note cyc2ns truncated the 0.4 remainder)
+> 		1499999
+> 
+> Accumulation occurs.
+> 
+> Post-accumulation:
+> 	xtime = 1000000, rem=-0.4, delta = 500
+> 
+> 	gtod: 	1000000 + cyc2ns(500)
+> 		1000000 + 499999 (cyc2ns truncates the .8 remainder)
+> 		1499999
+> 
+> Even if the subtraction moves the shift backward one, we are still ok,
+> because when we calculate xtime.tv_nsec at the end, we do the "+1" again
+> which returns us that missing ns!
+
+So, yes, this does *seem* comforting. Keep the negative delta, and
+re-add it in. It sounds pretty good, but my gut felt like it was prone
+to the same issue as keeping the remainder. Took me awhile to find a
+case that broke, but I think the following 
+
+I've kept everything in ns to simplify the example.
+
+The accumulation interval is 1000.6ns, and with the exception of the
+first interval, we accumulate exactly on that boundary, leaving a
+1000.4ns delta around.
+
+
+gtod:		0 + 2001 			= 2001
+accumulate:	1000.6 + 1000.4			= 2001
+		1001 + -.4 + 1000.4		= 2001
+gtod: 		1001 + 1000			= 2001
+---------------
+gtod:		1001 + 2001			= 3002
+accumulate:	1001 + -.4 + 1000.6 + 1000.4	= 3001.6
+		2001.2 + 1000.4			= 3001.6
+		2002 + -.8 + 1000.4		= 3001.6
+gtod:		2002 + 1000			= 3002
+---------------
+gtod:		2002 + 2001			= 4003
+accumulate:	2002 + -.8 + 1000.6 + 1000.4	= 4002.2
+		3001.8 + 1000.4			= 4002.2
+		3002 + -2 + 1000.4		= 4002.2
+gtod:		3002 + 1000			= 4002
+
+
+So I believe your patch will still suffer from the same problem.
+
+Its getting to the end of my day, so I might have flubbed something, so
+let me know if you see anything wrong here.
+
+
+> > Oh yea. I agree the adjustment code is very opaque. And there is risk in
+> > modifying the code that has been "functioning" but just not in the ideal
+> > environment. This stuff is terribly subtle. And there is a real
+> > possibility that in fixing the issue you've found, we may cause bugs
+> > that effect users in a much more negative way then the incorrect
+> > likely() overhead.
+> 
+> It's not the "likely()" I care about, its the fact that we are going
+> into the slow path (timekeeping_bigadjust()) every time. This does a
+> hell of a lot more work than the simple "adj=1" that is given.
+
+True, we're taking the slow path every time. But the slow path does
+function correctly and we do keep our long term accuracy. Its just not
+optimal. The risk here is that is subtle code, so in working to make
+things more optimal, we risk actually hurting the sync behavior. 
+
+So caution is needed to ensure correct functionality isn't compromised
+as we work on improving performance.
+
+thanks
+-john
+
 
