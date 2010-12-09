@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab0LIRXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:23:31 -0500
+	id S1755501Ab0LIRXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:23:35 -0500
 Received: from mga11.intel.com ([192.55.52.93]:25958 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab0LIRXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:23:30 -0500
+	id S1755020Ab0LIRXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:23:33 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
-   d="scan'208";a="866414698"
+   d="scan'208";a="634782559"
 From: Mark Allyn <mark.a.allyn@intel.com>
 To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
         alan@linux.intel.com, dmitry.kasatkin@nokia.com
-Subject: [PATCH 01/11] sep: remove virtual address being passed to user space application
-Date: Thu,  9 Dec 2010 09:30:03 -0800
-Message-Id: <1291915803-18316-1-git-send-email-mark.a.allyn@intel.com>
+Subject: [PATCH 02/11] sep: remove spaces at end of lines
+Date: Thu,  9 Dec 2010 09:30:17 -0800
+Message-Id: <1291915817-18354-1-git-send-email-mark.a.allyn@intel.com>
 X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,94 +22,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
 ---
- drivers/staging/sep/sep_driver.c     |   23 +++++------------------
- drivers/staging/sep/sep_driver_api.h |   14 +-------------
- 2 files changed, 6 insertions(+), 31 deletions(-)
+ drivers/staging/sep/sep_driver.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index f2c216d..a5c0443 100644
+index a5c0443..241b1b1 100644
 --- a/drivers/staging/sep/sep_driver.c
 +++ b/drivers/staging/sep/sep_driver.c
-@@ -2541,12 +2541,9 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
-  *	This function sets the bus and virtual addresses of the static pool
-  *	and returns the virtual address
+@@ -275,7 +275,7 @@ end_function:
+  *	@filp: file handle to SEP device
+  *
+  *	Open method for the SEP device. Called when userspace opens
+- *	the SEP device node. 
++ *	the SEP device node.
+  *
+  *	Returns zero on success otherwise an error code.
   */
--static int sep_get_static_pool_addr_handler(struct sep_device *sep,
--	unsigned long arg)
-+static int sep_get_static_pool_addr_handler(struct sep_device *sep)
- {
--	struct stat_pool_addr_struct command_args;
- 	u32 *static_pool_addr = NULL;
--	unsigned long addr_hold;
+@@ -1811,7 +1811,7 @@ static int sep_prepare_input_dma_table(struct sep_device *sep,
+ 			info_entry_ptr->bus_address =
+ 				sep_shared_area_virt_to_bus(sep,
+ 							in_lli_table_ptr);
+-			info_entry_ptr->block_size = 
++			info_entry_ptr->block_size =
+ 				((num_entries_in_table) << 24) |
+ 				(table_data_size);
+ 		}
+@@ -2164,7 +2164,7 @@ static int sep_prepare_input_output_dma_table(struct sep_device *sep,
+ 		error = sep_lock_user_pages(sep, app_virt_in_addr,
+ 				data_size, &lli_in_array, SEP_DRIVER_IN_FLAG);
+ 		if (error) {
+-			dev_warn(&sep->pdev->dev, 
++			dev_warn(&sep->pdev->dev,
+ 				"sep_lock_user_pages for input virtual buffer failed\n");
+ 			goto end_function;
+ 		}
+@@ -2808,7 +2808,7 @@ static int sep_end_transaction_handler(struct sep_device *sep)
+ }
  
- 	dev_dbg(&sep->pdev->dev, "sep_get_static_pool_addr_handler start\n");
+ /**
+- *	sep_prepare_dcb_handler - prepare a control block 
++ *	sep_prepare_dcb_handler - prepare a control block
+  *	@sep: pointer to struct sep_device
+  *	@arg: pointer to user parameters
+  *
+@@ -2873,7 +2873,7 @@ static int sep_free_dcb_handler(struct sep_device *sep)
+ }
  
-@@ -2554,21 +2551,11 @@ static int sep_get_static_pool_addr_handler(struct sep_device *sep,
- 		SEP_DRIVER_SYSTEM_RAR_MEMORY_OFFSET_IN_BYTES);
+ /**
+- *	sep_rar_prepare_output_msg_handler - prepare an output message 
++ *	sep_rar_prepare_output_msg_handler - prepare an output message
+  *	@sep: pointer to struct sep_device
+  *	@arg: pointer to user parameters
+  *
+@@ -3557,7 +3557,7 @@ static int __devinit sep_probe(struct pci_dev *pdev,
+ 	if (error == 0)
+ 		/* Success */
+ 		return 0;
+-		
++
+ end_function_free_irq:
+ 	free_irq(pdev->irq, sep);
  
- 	static_pool_addr[0] = SEP_STATIC_POOL_VAL_TOKEN;
--	static_pool_addr[1] = sep->shared_bus +
-+	static_pool_addr[1] = (u32)sep->shared_bus +
- 		SEP_DRIVER_STATIC_AREA_OFFSET_IN_BYTES;
+@@ -3626,7 +3626,7 @@ static int __init sep_init(void)
  
--	addr_hold = (unsigned long)
--		(sep->shared_addr + SEP_DRIVER_STATIC_AREA_OFFSET_IN_BYTES);
--	command_args.static_virt_address = (aligned_u64)addr_hold;
--
--	dev_dbg(&sep->pdev->dev, "static pool: physical %x virtual %x\n",
--		(u32)static_pool_addr[1],
--		(u32)command_args.static_virt_address);
--
--	/* Send the parameters to user application */
--	if (copy_to_user((void __user *) arg, &command_args,
--		sizeof(struct stat_pool_addr_struct)))
--		return -EFAULT;
-+	dev_dbg(&sep->pdev->dev, "static pool: physical %x\n",
-+		(u32)static_pool_addr[1]);
  
- 	dev_dbg(&sep->pdev->dev, "sep_get_static_pool_addr_handler end\n");
- 
-@@ -3064,7 +3051,7 @@ static long sep_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		break;
- 	case SEP_IOCGETSTATICPOOLADDR:
- 		/* Get the physical and virtual addresses of the static pool */
--		error = sep_get_static_pool_addr_handler(sep, arg);
-+		error = sep_get_static_pool_addr_handler(sep);
- 		break;
- 	case SEP_IOCENDTRANSACTION:
- 		error = sep_end_transaction_handler(sep);
-diff --git a/drivers/staging/sep/sep_driver_api.h b/drivers/staging/sep/sep_driver_api.h
-index 1207722..5508769 100644
---- a/drivers/staging/sep/sep_driver_api.h
-+++ b/drivers/staging/sep/sep_driver_api.h
-@@ -114,18 +114,6 @@ struct bld_syn_tab_struct {
- 
- };
- 
--/*
-- * command struct for static pool addresses
-- * Please note that this is a kernel virtual
-- * address; this will be removed at the next
-- * release of the Discretix middleware
-- */
--struct stat_pool_addr_struct {
--	/* virtual address of the static pool */
--	aligned_u64 static_virt_address;
--};
--
--
- /* command struct for getting caller id value and address */
- struct caller_id_struct {
- 	/* pid of the process */
-@@ -275,7 +263,7 @@ struct sep_lli_entry {
- 
- /* get the static pool area addersses (physical and virtual) */
- #define SEP_IOCGETSTATICPOOLADDR	\
--	_IOR(SEP_IOC_MAGIC_NUMBER, 8, struct stat_pool_addr_struct)
-+	_IO(SEP_IOC_MAGIC_NUMBER, 8)
- 
- /* start sep command */
- #define SEP_IOCSEPSTART	 \
+ /**
+- *	sep_exit - called to unload driver 
++ *	sep_exit - called to unload driver
+  *
+  *	Drop the misc devices then remove and unmap the various resources
+  *	that are not released by the driver remove method.
 -- 
 1.6.3.3
 
