@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab0LIBze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:55:34 -0500
-Received: from netnation.com ([204.174.223.2]:48306 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab0LIBzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:55:33 -0500
-Date: Wed, 8 Dec 2010 17:55:30 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
-	in response to high-order allocations V2
-Message-ID: <20101209015530.GD3796@hostway.ca>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
+	id S1756657Ab0LIB6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:58:36 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34286 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754184Ab0LIB6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:58:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,318,1288594800"; 
+   d="scan'208";a="359119802"
+Date: Thu, 9 Dec 2010 08:33:29 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Shaohui Zheng <shaohui.zheng@linux.intel.com>,
+        Eric B Munson <emunson@mgebm.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
+        dave@linux.vnet.ibm.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/7,v8] NUMA Hotplug Emulator: documentation
+Message-ID: <20101209003328.GC5798@shaohui>
+References: <20101207010033.280301752@intel.com>
+ <20101207010139.681125359@intel.com>
+ <20101207182420.GA2038@mgebm.net>
+ <20101207232000.GA5353@shaohui>
+ <alpine.DEB.2.00.1012081316530.15658@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291376734-30202-1-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1012081316530.15658@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm...
+On Wed, Dec 08, 2010 at 01:18:02PM -0800, David Rientjes wrote:
+> On Wed, 8 Dec 2010, Shaohui Zheng wrote:
+> 
+> > Eric,
+> > 	the major change on the patchset is on the interface, for the v8 emulator,
+> > we accept David's per-node debugfs add_memory interface, we already included
+> > in the documentation patch. the change is very small, so it is not obvious.
+> > 
+> 
+> It's still stale as Eric mentioned: for instance, the reference to 
+> /sys/kernel/debug/node/add_node which is now under mem_hotplug.  There may 
+> be other examples as well.
 
-Wouldn't it make more sense for the fast path page allocator to allocate
-weighted-round-robin (by zone size) from each zone, rather than just
-starting from the highest and working down?
+I forget to udpate this part, my carelessness, thanks Eric and David.
 
-This would mean that each zone would get a proportional amount of
-allocations and reclaiming a bit from each would likely throw out the
-oldest allocations, rather than some of that and and some more recent
-stuff that was allocated at the beginning of the lower zone.
+-- 
+Thanks & Regards,
+Shaohui
 
-For example, with the current approach, a time progression of allocations
-looks like this (N=Normal, D=DMA32): 1N 2N 3N 4D 5D 6D 7D 8D 9D
-
-...once the watermark is hit, kswapd reclaims 1 and 4, since they're
-oldest in each zone, but 2 and 3 were allocated earlier.
-
-Versus a weighted-round-robin approach: 1N 2D 3D 4N 5D 6D 7N 8D 9D
-
-...kswapd reclaims 1 and 2, and they're oldest in time and maybe LRU.
-
-Things probably eventually mix up enough once the system has reclaimed
-and allocated more for a while with the current approach, but the
-allocations are still chunky depending on how many extra things kswapd
-reclaims to reach higher-order watermarks, and doesn't this always mess
-with the LRU when the there are multiple usable zones?
-
-Anyway, this approach might be horrible for some other reasons (page
-allocations hoping to be sequential?  bigger cache footprint?), but it
-might reduce the requirements for other other workarounds, and it would
-make the LRU node-wide instead of zone-wide.
-
-Simon-
