@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab0LINQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 08:16:21 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:50114 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab0LINQT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 08:16:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=iLA3wLDsVbCYXCm6eacVHaiqd1Qq7L5j1zJSsui1JWMsX2C4tO75qWL+aMrPbjOc2c
-         GO0X2qoNHO+igwLa5g3UrvkyqZVNW/Mna3yvoasa3FvbSibFTdsN36H5tCxpPM1vZj5k
-         7pL+omE6uBLRkbzNBRIErqjEawaVNOGuuWRgc=
-MIME-Version: 1.0
-In-Reply-To: <1291899510-19861-1-git-send-email-aaro.koskinen@nokia.com>
-References: <1291899510-19861-1-git-send-email-aaro.koskinen@nokia.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 9 Dec 2010 21:15:59 +0800
-Message-ID: <AANLkTikxfS6rHrUv7YxW-_+GxPVCh9h7BAV8Cm1APgNo@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: gpio_request_one(): add missing gpio_free()
-To: Aaro Koskinen <aaro.koskinen@nokia.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756848Ab0LINRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 08:17:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:24918 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755185Ab0LINRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 08:17:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,320,1288594800"; 
+   d="scan'208";a="582104696"
+Subject: Re: [RFC]block: change sort order of elv_dispatch_sort
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+In-Reply-To: <4CFF99E3.6020501@fusionio.com>
+References: <1291786922.12777.152.camel@sli10-conroe>
+	 <4CFF2C1A.1010100@fusionio.com> <1291794643.12777.161.camel@sli10-conroe>
+	 <4CFF3B5B.30305@fusionio.com> <1291819169.4150.6.camel@shli-laptop>
+	 <4CFF99E3.6020501@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Dec 2010 21:17:00 +0800
+Message-ID: <1291900620.2130.8.camel@shli-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 8:58 PM, Aaro Koskinen <aaro.koskinen@nokia.com> wrote:
-> If GPIO request succeeds, but configuration fails, it should be released.
->
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+On Wed, 2010-12-08 at 22:44 +0800, Jens Axboe wrote:
+> On 2010-12-08 22:39, Shaohua Li wrote:
+> > On Wed, 2010-12-08 at 16:01 +0800, Jens Axboe wrote:
+> >> On 2010-12-08 15:50, Shaohua Li wrote:
+> >>> On Wed, 2010-12-08 at 14:56 +0800, Jens Axboe wrote:
+> >>>> On 2010-12-08 13:42, Shaohua Li wrote:
+> >>>>> Change the sort order a little bit. Makes requests with sector above boundary
+> >>>>> in ascendant order, and requests with sector below boundary in descendant
+> >>>>> order. The goal is we have less disk spindle move.
+> >>>>> For example, boundary is 7, we add sector 8, 1, 9, 2, 3, 4, 10, 12, 5, 11, 6
+> >>>>> In the original sort, the sorted list is:
+> >>>>> 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6
+> >>>>> the spindle move is 8->12->1->6, total movement is 12*2 sectors
+> >>>>> with the new sort, the list is:
+> >>>>> 8, 9, 10, 11, 12, 6, 5, 4, 3, 2, 1
+> >>>>> the spindle move is 8->12->6->1, total movement is 12*1.5 sectors
+> >>>>
+> >>>> It was actually done this way on purpose, it's been a while since we
+> >>>> have done two way elevators even outside the dispatch list sorting
+> >>>> itself.
+> >>>>
+> >>>> Do you have any results to back this change up? I'd argue that
+> >>>> continuing to the end, sweeping back, and reading forwards again will be
+> >>>> faster then doing backwards reads usually.
+> >>> No, have no data, that is why this is a RFC patch. Part reason is I
+> >>> don't know when we dispatch several requests to the list. Appears driver
+> >>> only takes one request one time. What kind of test do you suggest?
+> >>
+> >> Yes that is usually the case, it's mainly meant as a holding point for
+> >> dispatch, or for requeue, or for request that don't give sort ordering.
+> >> Or on io scheduler switches, for instance.
+> >
+> > Have a test in a hacked way. I use modified noop iosched, and every time
+> > when noop tries to dispatch request, it dispatches all requests in its
+> > list. Test does random read. The result is actually quite stable. The
+> > changed order always gives slightly better throughput, but the
+> > improvement is quite small (<1%)
+> 
+> First of all I think 1% is too close to call, unless your results are
+> REALLY stable. Secondly, a truly random workload is not a good test
+> case as requests are going to be all over the map anyway. For something
+> more realistic (like your example, but of course not fully contig) it
+> would be interesting to see.
+Tried a random I/O read with block size range from 4k to 64k, I thought
+this is more realistic. The test result for the two different sort
+methods still shows slightly difference. I'll give up the patch unless
+there is better workload to try.
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Thanks,
+Shaohua
 
-> ---
->  drivers/gpio/gpiolib.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 21da9c1..649550e 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1281,6 +1281,9 @@ int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
->                err = gpio_direction_output(gpio,
->                                (flags & GPIOF_INIT_HIGH) ? 1 : 0);
->
-> +       if (err)
-> +               gpio_free(gpio);
-> +
->        return err;
->  }
->  EXPORT_SYMBOL_GPL(gpio_request_one);
-> --
-> 1.5.6.5
->
->
