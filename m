@@ -1,316 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab0LICdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 21:33:46 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:37157 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab0LICdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 21:33:44 -0500
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.59,318,1288569600"; 
-   d="scan'208";a="229865769"
-From: David Ahern <daahern@cisco.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <daahern@cisco.com>
-Subject: [PATCH-v2] perf tools: Add symfs option for off-box analysis using specified tree
-Date: Wed,  8 Dec 2010 19:33:40 -0700
-Message-Id: <1291862020-24540-1-git-send-email-daahern@cisco.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S932196Ab0LICiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 21:38:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756293Ab0LICiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 21:38:01 -0500
+Date: Wed, 8 Dec 2010 21:37:58 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: blk-throttle: Correct the placement of smp_rmb()
+Message-ID: <20101209023758.GA6423@redhat.com>
+References: <20101208184507.GA30071@redhat.com>
+ <20101208190918.GI31703@redhat.com>
+ <20101208191600.GA32753@redhat.com>
+ <20101208193031.GJ31703@redhat.com>
+ <20101208193308.GA1044@redhat.com>
+ <20101208200750.GA2202@redhat.com>
+ <20101208204624.GK31703@redhat.com>
+ <20101208213331.GA4895@redhat.com>
+ <20101208220640.GB4895@redhat.com>
+ <20101209014519.GO2094@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101209014519.GO2094@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symfs argument allows analysis of perf.data file using a locally
-accessible filesystem tree with debug symbols - e.g., tree created
-during image builds, sshfs mount, loop mounted KVM disk images,
-USB keys, initrds, etc. Anything with an OS tree can be analyzed from
-anywhere without the need to populate a local data store with
-build-ids.
+On Wed, Dec 08, 2010 at 05:45:19PM -0800, Paul E. McKenney wrote:
+> On Wed, Dec 08, 2010 at 11:06:40PM +0100, Oleg Nesterov wrote:
+> > On 12/08, Oleg Nesterov wrote:
+> > >
+> > > Unfortunately, I can't prove this. You can ask
+> > > Paul McKenney if you want the authoritative answer.
+> > 
+> > Well. I think we should ask ;) This is interesting.
+> > 
+> > Paul could you please shed a light?
+> > 
+> > Suppose we have 2 variables, A = 0 and B = 0.
+> > 
+> > 	CPU0 does:
+> > 
+> > 		A = 1;
+> > 		wmb();
+> > 		B = 1;
+> > 
+> > 	CPU1 does:
+> > 
+> > 		B = 0;
+> > 		mb();
+> > 		if (A)
+> > 			A = 2;
+> > 
+> > My understanding is: after that we can safely assume that
+> > 
+> > 	B == 1 || A == 2
+> > 
+> > IOW. Either CPU1 notices that A was changed, or CPU0 "wins"
+> > and sets B = 1 "after" CPU1. But, it is not possible that
+> > CPU1 clears B "after" it was set by CPU0 _and_ sees A == 0.
+> > 
+> > Is it true? I think it should be true, but can't prove.
+> 
+> I was afraid that a question like this might be coming...  ;-)
+> 
+> The question is whether you can rely on the modification order of the
+> stores to B to deduce anything useful about the order in which the
+> accesses to A occurred.  The answer currently is I believe you can
+> for a simple example such as the one above, but I am checking with
+> the hardware guys.  In addition, please note that I am not sure if
+> all possible generalizations do what you want.  For example, imagine a
+> 1024-CPU system in which the first 1023 CPUs do:
+> 
+> 	A[smp_processor_id()] = 1;
+> 	wmb();
+> 	B = smp_processor_id();
+> 
+> where the elements of A are cache-line aligned and padded.  Suppose
+> that the remaining CPU does:
+> 
+> 	i = random() % 1023;
+> 	B = -1;
+> 	mb();
+> 	if (A[i])
+> 		A[i] = 2;
+> 
+> Are we guaranteed that B!=-1||A[i]==2?
+> 
+> In this case, it could take all of the CPUs quite some time to come to
+> agreement on the order of all 1024 assignments to B.  I am bugging some
+> hardware guys about this.  It has been awhile, so they forgot to run
+> away when they saw me coming.  ;-)
+> 
+> >                                                         This
+> > reminds me the old (and long) discussion about STORE-MB-LOAD.
+> > Iirc, finally it was decided that
+> > 
+> > 	CPU0:				CPU1:
+> > 
+> > 	A = 1;				B = 1;
+> > 	mb();				mb();
+> > 	if (B)				if (A)
+> > 		printf("Yes");			printf("Yes");
+> > 
+> > should print "Yes" at least once. This looks very similar to
+> > the the previous example.
+> 
+> >From a hardware point of view, this example is very different than the
+> earlier one.  You are not using the order of independent CPUs' stores to a
+> single variable here and in addition are using mb() everywhere instead of
+> a combination of mb() and wmb().  So, yes, this one is guaranteed to work.
+> 
+> But what the heck are you guys really trying to do, anyway?  ;-)
 
-Signed-off-by: David Ahern <daahern@cisco.com>
+Hi Paul,
 
-v1 --> v2: removed symfs changes from builtin-annotate.c
-           fixed tab/space inconsistencies
-           changed new strlen() to symbol_conf.symfs[0]
-           added symfs option to Documentation files
----
- tools/perf/Documentation/perf-diff.txt      |    2 +
- tools/perf/Documentation/perf-report.txt    |    3 ++
- tools/perf/Documentation/perf-timechart.txt |    2 +
- tools/perf/builtin-diff.c                   |    2 +
- tools/perf/builtin-report.c                 |    2 +
- tools/perf/builtin-timechart.c              |    2 +
- tools/perf/util/hist.c                      |   14 ++++++--
- tools/perf/util/symbol.c                    |   50 +++++++++++++++++++--------
- tools/perf/util/symbol.h                    |    1 +
- 9 files changed, 60 insertions(+), 18 deletions(-)
+I pulled oleg into reviewing some block/blk-throttle.c code which I was
+not very sure about and that discussion led to above situation. Anyway,
+following is my requirement.
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 6a9ec2b..74d7481 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -66,6 +66,8 @@ OPTIONS
- --force::
-        Don't complain, do it.
- 
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 59a1f57..9ed6079 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -113,6 +113,9 @@ OPTIONS
- --force::
-         Don't complain, do it.
- 
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1]
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index 4b17883..d7b79e2 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -38,6 +38,8 @@ OPTIONS
- --process::
-         Select the processes to display, by name or PID
- 
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 5e1a043..71126a6 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -192,6 +192,8 @@ static const struct option options[] = {
- 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
- 		   "separator for columns, no spaces will be added between "
- 		   "columns '.' is reserved."),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 904519f..57b0f49 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -479,6 +479,8 @@ static const struct option options[] = {
- 		   "columns '.' is reserved."),
- 	OPT_BOOLEAN('U', "hide-unresolved", &hide_unresolved,
- 		    "Only display entries resolved to a symbol"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index d2fc461..965aa4e 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1021,6 +1021,8 @@ static const struct option options[] = {
- 	OPT_CALLBACK('p', "process", NULL, "process",
- 		      "process selector. Pass a pid or process name.",
- 		       parse_process),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		    "Look for files with symbols relative to this directory"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 2022e87..b6f9f3b 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1092,6 +1092,12 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
- 	FILE *file;
- 	int err = 0;
- 	u64 len;
-+	char symfs_filename[PATH_MAX];
-+
-+	if (filename) {
-+		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-+			 symbol_conf.symfs, filename);
-+	}
- 
- 	if (filename == NULL) {
- 		if (dso->has_build_id) {
-@@ -1100,9 +1106,9 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
- 			return -ENOMEM;
- 		}
- 		goto fallback;
--	} else if (readlink(filename, command, sizeof(command)) < 0 ||
-+	} else if (readlink(symfs_filename, command, sizeof(command)) < 0 ||
- 		   strstr(command, "[kernel.kallsyms]") ||
--		   access(filename, R_OK)) {
-+		   access(symfs_filename, R_OK)) {
- 		free(filename);
- fallback:
- 		/*
-@@ -1111,6 +1117,8 @@ fallback:
- 		 * DSO is the same as when 'perf record' ran.
- 		 */
- 		filename = dso->long_name;
-+		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-+			 symbol_conf.symfs, filename);
- 		free_filename = false;
- 	}
- 
-@@ -1137,7 +1145,7 @@ fallback:
- 		 "objdump --start-address=0x%016Lx --stop-address=0x%016Lx -dS -C %s|grep -v %s|expand",
- 		 map__rip_2objdump(map, sym->start),
- 		 map__rip_2objdump(map, sym->end),
--		 filename, filename);
-+		 symfs_filename, filename);
- 
- 	pr_debug("Executing: %s\n", command);
- 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index a348906..542038a 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -41,6 +41,7 @@ struct symbol_conf symbol_conf = {
- 	.exclude_other	  = true,
- 	.use_modules	  = true,
- 	.try_vmlinux_path = true,
-+	.symfs            = "",
- };
- 
- int dso__name_len(const struct dso *self)
-@@ -833,8 +834,11 @@ static int dso__synthesize_plt_symbols(struct  dso *self, struct map *map,
- 	char sympltname[1024];
- 	Elf *elf;
- 	int nr = 0, symidx, fd, err = 0;
-+	char name[PATH_MAX];
- 
--	fd = open(self->long_name, O_RDONLY);
-+	snprintf(name, sizeof(name), "%s%s",
-+		 symbol_conf.symfs, self->long_name);
-+	fd = open(name, O_RDONLY);
- 	if (fd < 0)
- 		goto out;
- 
-@@ -1446,16 +1450,19 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 	     self->origin++) {
- 		switch (self->origin) {
- 		case DSO__ORIG_BUILD_ID_CACHE:
--			if (dso__build_id_filename(self, name, size) == NULL)
-+			/* skip the locally configured cache if a symfs is given */
-+			if (symbol_conf.symfs[0] ||
-+			    (dso__build_id_filename(self, name, size) == NULL)) {
- 				continue;
-+			}
- 			break;
- 		case DSO__ORIG_FEDORA:
--			snprintf(name, size, "/usr/lib/debug%s.debug",
--				 self->long_name);
-+			snprintf(name, size, "%s/usr/lib/debug%s.debug",
-+				 symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_UBUNTU:
--			snprintf(name, size, "/usr/lib/debug%s",
--				 self->long_name);
-+			snprintf(name, size, "%s/usr/lib/debug%s",
-+				 symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_BUILDID: {
- 			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-@@ -1467,12 +1474,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 					  sizeof(self->build_id),
- 					  build_id_hex);
- 			snprintf(name, size,
--				 "/usr/lib/debug/.build-id/%.2s/%s.debug",
--				 build_id_hex, build_id_hex + 2);
-+				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
-+				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
- 			}
- 			break;
- 		case DSO__ORIG_DSO:
--			snprintf(name, size, "%s", self->long_name);
-+			snprintf(name, size, "%s%s",
-+			     symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_GUEST_KMODULE:
- 			if (map->groups && map->groups->machine)
-@@ -1778,17 +1786,20 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
- 			     const char *vmlinux, symbol_filter_t filter)
- {
- 	int err = -1, fd;
-+	char symfs_vmlinux[PATH_MAX];
- 
--	fd = open(vmlinux, O_RDONLY);
-+	snprintf(symfs_vmlinux, sizeof(symfs_vmlinux), "%s/%s",
-+		 symbol_conf.symfs, vmlinux);
-+	fd = open(symfs_vmlinux, O_RDONLY);
- 	if (fd < 0)
- 		return -1;
- 
- 	dso__set_loaded(self, map->type);
--	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
-+	err = dso__load_sym(self, map, symfs_vmlinux, fd, filter, 0, 0);
- 	close(fd);
- 
- 	if (err > 0)
--		pr_debug("Using %s for symbols\n", vmlinux);
-+		pr_debug("Using %s for symbols\n", symfs_vmlinux);
- 
- 	return err;
- }
-@@ -1861,6 +1872,10 @@ static int dso__load_kernel_sym(struct dso *self, struct map *map,
- 			goto out_fixup;
- 	}
- 
-+	/* do not try local files if a symfs was given */
-+	if (symbol_conf.symfs[0] != 0)
-+		return -1;
-+
- 	/*
- 	 * Say the kernel DSO was created when processing the build-id header table,
- 	 * we have a build-id, so check if it is the same as the running kernel,
-@@ -2210,9 +2225,6 @@ static int vmlinux_path__init(void)
- 	struct utsname uts;
- 	char bf[PATH_MAX];
- 
--	if (uname(&uts) < 0)
--		return -1;
--
- 	vmlinux_path = malloc(sizeof(char *) * 5);
- 	if (vmlinux_path == NULL)
- 		return -1;
-@@ -2225,6 +2237,14 @@ static int vmlinux_path__init(void)
- 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
- 		goto out_fail;
- 	++vmlinux_path__nr_entries;
-+
-+	/* only try running kernel version if no symfs was given */
-+	if (symbol_conf.symfs[0] != 0)
-+		return 0;
-+
-+	if (uname(&uts) < 0)
-+		return -1;
-+
- 	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
- 	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
- 	if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 038f220..bbe90d1 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -85,6 +85,7 @@ struct symbol_conf {
-        struct strlist	*dso_list,
- 			*comm_list,
- 			*sym_list;
-+	const char	*symfs;
- };
- 
- extern struct symbol_conf symbol_conf;
--- 
-1.7.2.3
+There is a hash list on which many throtl_groups (tg) are linked. Each
+throtl group has some read/write limits which can be updated with the
+help of cgroup files. If limit of any of the groups is updated, we
+need to detect and process the change. Looking at current code, oleg
+suggested that there is a simpler way to do that. Some thing like
+following. 
 
+limit change side (throtl_update_blkio_group_read_bps())
+-----------------
+tg->bps[READ] = X;
+smp_wmb();
+
+tg->limits_changed = true;
+smp_wmb();
+
+td->limits_changed = true;
+throtl_schedule_delayed_work();
+
+process limit change (throtl_process_limit_change())
+----------------------------------------------------
+
+if (!td->limits_changed)
+	return;
+
+td->limits_changed = false;
+smp_mb();
+
+hlist_for_each_entry_safe() {
+	if (!tg->limits_changed)
+		return;
+	tg->limits_changed = false
+	smp_mb();
+	process_group_limit_change();
+}
+
+And we were wondering if above is correct.
+
+Thanks
+Vivek
