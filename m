@@ -1,177 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab0LIQQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:16:44 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:51667 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751364Ab0LIQQn (ORCPT
+	id S1753717Ab0LIQRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:17:12 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:57428 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab0LIQRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:16:43 -0500
-Date: Thu, 9 Dec 2010 11:16:39 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, mrubin@google.com
-Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
-	events.
-Message-ID: <20101209161639.GA6769@Krystal>
-References: <1291421609-14665-1-git-send-email-dhsharp@google.com> <1291421609-14665-14-git-send-email-dhsharp@google.com> <1291427770.16223.15.camel@gandalf.stny.rr.com> <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com> <1291431252.16223.28.camel@gandalf.stny.rr.com> <20101209145541.GC1712@nowhere> <1291907297.5015.1526.camel@gandalf.stny.rr.com> <20101209152805.GD1712@nowhere>
+	Thu, 9 Dec 2010 11:17:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fCjyAVp+zz+37P3jvNKGviuLoQz7fBGCMamuanU1WZQc34Q/4JMRMYGScF+4aBmA6l
+         /qkwK2zp2GONzswJfF3a6D/UMlFN3KHTPG/N0NDo9sXIVJnuwh5icrr5Ci84pGulLhiz
+         yX0SVGqfg/Z0WEXN6l/goiSDDTozo6O8b8LsA=
+Date: Thu, 9 Dec 2010 19:17:03 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org, brgerst@gmail.com, penberg@kernel.org
+Subject: Re: [PATCH UPDATED#3 04/16] x86: setup_local_APIC() must always be
+	called with preemption disabled
+Message-ID: <20101209161703.GA13257@lenovo>
+References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org> <4D00B3B9.7060702@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101209152805.GD1712@nowhere>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:15:34 up 15 days, 21:18,  5 users,  load average: 0.08, 0.02,
-	0.01
+In-Reply-To: <4D00B3B9.7060702@kernel.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Thu, Dec 09, 2010 at 10:08:17AM -0500, Steven Rostedt wrote:
-> > On Thu, 2010-12-09 at 15:55 +0100, Frederic Weisbecker wrote:
-> > > On Fri, Dec 03, 2010 at 09:54:12PM -0500, Steven Rostedt wrote:
-> > > > On Fri, 2010-12-03 at 18:33 -0800, David Sharp wrote:
-> > > > > I considered that, and I generally thing it's a good idea. However, I
-> > > > > also want to use this switch to shrink individual tracepoint event
-> > > > > structures.
-> > > > > 
-> > > > > eg: sched switch is a high frequency event and it is 68 bytes (60
-> > > > > after these patches)
-> > > > > 
-> > > > > Can you suggest a syntax for TRACE_EVENT, DECLARE_EVENT_CLASS, etc,
-> > > > > that could express the two versions and produce the right code?
-> > > > > 
-> > > > > I'm worried about adding even further complexity to the TRACE_EVENT
-> > > > > macros. I could add TRACE_EVENT_SMALL that takes two versions of
-> > > > > TP_STRUCT__entry, TP_fast_assign, and TP_printk each, but then this
-> > > > > will need to be permuted with your TP_CONDITIONAL patches as well.
-> > > > 
-> > > > I would not touch the TRACE_EVENT() structures. They are there as is and
-> > > > I would not think about changing them. Something like that would never
-> > > > make it into mainline.
-> > > > 
-> > > > Now what you can do, is to make your own events based off of the same
-> > > > tracepoints. For example, the TRACE_EVENT(sched_switch...) has in
-> > > > sched.c:
-> > > > 
-> > > > 	trace_sched_switch(prev, next);
-> > > > 
-> > > > 
-> > > > You could even write a module that does something like this:
-> > > > 
-> > > > 	register_trace_sched_switch(probe_sched_switch, mydata);
-> > > > 
-> > > > 
-> > > > 
-> > > > void probe_sched_switch(void *mydata,
-> > > > 		struct task_struct *prev,
-> > > > 		struct task_struct *next)
-> > > > {
-> > > > 	struct ring_buffer *buffer;
-> > > > 	struct ring_buffer_event *event;
-> > > > 	struct myentry *entry;
-> > > > 
-> > > > 	event = trace_current_buffer_lock_reserve(buffer,
-> > > > 			mytype, sizeof(*entry),
-> > > > 			0, 0);
-> > > > 
-> > > > 	if (!event)
-> > > > 		return;
-> > > > 
-> > > > 	entry = ring_buffer_event_data(event);
-> > > > 
-> > > > 	entry->myfield = prev->x;
-> > > > 	...
-> > > > 
-> > > > 	trace_nowake_buffer_unlock_commit(buffer, event,
-> > > > 					0, 0);
-> > > > }
-> > > > 
-> > > > You will need to do a register_ftrace_event() to register that 'mytype'
-> > > > and how to output it. Otherwise it would just be ignored in the "trace"
-> > > > file.
-> > > > 
-> > > > All of the above would work fine as a loadable module that you could
-> > > > easily maintain out of tree, and still uses the internals of the system.
-> > > > 
-> > > > -- Steve
-> > > > 
-> > > > 
-> > > 
-> > > 
-> > > But this would improve only google's tracing while this is a general
-> > > mainline tracing problem.
-> > > 
-> > > The first thing is that we need to get rid of the lock_depth field, the bkl
-> > > is dying.
-> > 
-> > Yeah that needs to go :-)
-> > 
-> > > 
-> > > For the rest what about having a bitmap of the fields we want to ignore,
-> > > which can be setup from a trace file for ftrace and as an ioctl for perf.
-> > > 
-> > > So this bitmap is easy to implement on the common fields.
-> > > 
-> > > For the rest, one could choose between using TP_fast_assign()
-> > > and TP_cond_assign().
-> > > 
-> > > TP_fast_assign() stays as is and doesn't implement bitmap field
-> > > ignoring. Those who want conditional record will need
-> > > TP_cond_assign().
-> > > Well, unfortunately this probably requires us to play
-> > > the same trickery than SYSCALL_DEFINE() in that we'll probably
-> > > need TP_cond_assign1(), TP_cond_assign2(), TP_cond_assign3(), etc...
-> > > 
-> > > #define TP_cond_assignx(nr, assign)	\
-> > > 	if (call->bitmask & nr)	{	\
-> > > 		assign
-> > > 	}
-> > > 
-> > > #define TP_cond_assign2(nr, assign, ...)	\
-> > > 	TP_cond_assignx(nr, assign)		\
-> > > 	TP_cond_assign1(nr + 1, __VA_ARGS__)
-> > > 
-> > > #define TP_cond_assign3(nr, assign, ...)        \
-> > >         TP_cond_assignx(nr, assign)             \
-> > >         TP_cond_assign2(nr + 1, __VA_ARGS__)
-> > > 
-> > > That will also require a bit more trickery to dynamically
-> > > pre-compute the size of the trace entry.
-> > 
-> > Mathieu is working on encapsulating the assignments in their own macros.
-> > 
-> > Instead of doing:
-> > 
-> > 	__entry->foo = bar;
-> > 
-> > We will have:
-> > 
-> > 	tp_assign(foo, bar);
-> > 
-> > This way we could probably use this to dynamically figure out what to
-> > assign.
-> > 
-> > -- Steve
-> > 
-> > 
+On Thu, Dec 09, 2010 at 11:47:21AM +0100, Tejun Heo wrote:
+> setup_local_APIC() is used to setup local APIC early during CPU
+> initialization and already assumes that preemption is disabled on
+> entry.  However, The function unnecessarily disables and enables
+> preemption and uses smp_processor_id() multiple times in and out of
+> the nested preemption disabled section.  This gives the wrong
+> impression that the function might be able to handle being called with
+> preemption enabled and/or migrated to another processor in the middle.
 > 
-> Yep, it should also work that way.
+> Make it clear that the function is always called with preemption
+> disabled, drop the confusing preemption disable block and call
+> smp_processor_id() once at the beginning of the function.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> ---
 
-In an incredible exercise of good timing, I'm planning to post them just now :)
-
-Comments will be very welcome,
-
-Thanks!
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Thanks a lot, Tejun!
+FWIW
+Acked-by: Cyrill Gorcunov <gorcunov@gmail.com>
