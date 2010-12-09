@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab0LIBZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:25:39 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:43224 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab0LIBZi (ORCPT
+	id S1756004Ab0LIB01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:26:27 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:33106 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750928Ab0LIB00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:25:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=IT5on//IT43QNq2iqcbOEveTvSYZgJaFutkr0OoRCPXolAZ/YFwCuMfahgdmgtnDFe
-         ooI3vKiuGAq/UxyC49K4HzwPG9FhLwIWfuVbpvwWH+VcyOyn4HIi6GgG5Ti6nXxPbiX0
-         1znPzyCnzV4LXGET1DhkZh3HxTC+CjcNdqCJk=
-Subject: Re: [stable] [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when
- vid not used
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: David Miller <davem@davemloft.net>, lkml20101129@newton.leun.net,
-        netdev@vger.kernel.org, jesse@nicira.com, linux-kernel@vger.kernel.org,
-        greearb@candelatech.com, stable@kernel.org
-In-Reply-To: <20101208231624.GA8992@kroah.com>
-References: <1291108809.2904.3.camel@edumazet-laptop>
-	 <20101201111716.424fb771@xenia.leun.net>
-	 <1291200914.2856.546.camel@edumazet-laptop>
-	 <20101208.084731.189716071.davem@davemloft.net>
-	 <20101208231624.GA8992@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 02:25:33 +0100
-Message-ID: <1291857933.2795.7.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 8 Dec 2010 20:26:26 -0500
+Message-ID: <4D002FE5.2070609@euromail.se>
+Date: Thu, 09 Dec 2010 02:24:53 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Ping Cheng <pinglinux@gmail.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Add an envelope tool type
+References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <AANLkTikmomm2hd7AAJMTnY+=J2wPyVvodv2Ft0jFe7w2@mail.gmail.com> <20101208235805.GE15294@core.coreip.homeip.net> <4D002CE8.2060803@euromail.se> <20101209011752.GH15294@core.coreip.homeip.net>
+In-Reply-To: <20101209011752.GH15294@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.64
+X-Scan-Result: No virus found in message 1PQVFe-0008BG-9G.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PQVFe-0008BG-9G 2434a4171bd8249a84089273cbec4678
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 08 décembre 2010 à 15:16 -0800, Greg KH a écrit :
-> On Wed, Dec 08, 2010 at 08:47:31AM -0800, David Miller wrote:
-> > From: Eric Dumazet <eric.dumazet@gmail.com>
-> > Date: Wed, 01 Dec 2010 11:55:14 +0100
-> > 
-> > 
-> > Greg/-stable, please integrate this patch from Eric into 2.6.36 if you
-> > haven't already done so.
+On 12/09/2010 02:17 AM, Dmitry Torokhov wrote:
+
+> On Thu, Dec 09, 2010 at 02:12:08AM +0100, Henrik Rydberg wrote:
+>>>>>
+>>
+>>>>> Is it assumed that the envelop has only two touches comprising it? Or is
+>>>>> it any number of touches? If it's any number of touches, how does one
+>>>>> know how many touches it is?
+>>>>
+>>>> Those are good questions. Specifying how many touches are in the
+>>>> envelop makes sense. It also covers rectangle as a special case of
+>>>> envelop.
+>>>
+>>> I have a feeling that trying to accomodate non-rectangular, more than 2
+>>> point shapes without using native MT data is over-engineering the
+>>> problem... Do we have examples other than older generation Elantechs and
+>>> Synaptics that need envelope notion?
+>>>
+>>
+>>
+>> Those are the ones targeted so far. Maybe appletouch could be added to the list
+>> as well. I imagine all drivers will end up using zero, one and two envelope points.
 > 
-> I've updated the version in the .36-stable queue with this one, thanks.
+> Even ones that fully support independent finger tracking?
 > 
 
-Thanks.
 
-By the way, all credits given to Jesse, I only made a change to his
-patch, so I left him as the author.
-
-Ah I see I forgot the "From: Jesse Gross <jesse@nicira.com>" header when
-I sent it, my bad, sorry !
-
-
-
+No, sorry, that should read "all drivers in that list". The ones that can detect
+individual fingers in space are fine as they are.
