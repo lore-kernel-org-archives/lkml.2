@@ -1,209 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab0LIGIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 01:08:51 -0500
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:49939 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751321Ab0LIGIu (ORCPT
+	id S1753484Ab0LIGJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 01:09:19 -0500
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:35365 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754105Ab0LIGJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 01:08:50 -0500
-Message-ID: <4D00726D.3080503@lougher.demon.co.uk>
-Date: Thu, 09 Dec 2010 06:08:45 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Thu, 9 Dec 2010 01:09:17 -0500
+Date: Thu, 9 Dec 2010 17:09:11 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/46] fs: dcache scale hash
+Message-ID: <20101209060911.GB8259@dastard>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
 MIME-Version: 1.0
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Embedded Maillist <linux-embedded@vger.kernel.org>
-CC: Lasse Collin <lasse.collin@tukaani.org>
-Subject: [PATCH 1/2] Squashfs: add XZ compression support
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 27, 2010 at 08:44:41PM +1100, Nick Piggin wrote:
+> Add a new lock, dcache_hash_lock, to protect the dcache hash table from
+> concurrent modification. d_hash is also protected by d_lock.
+> 
+> Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+> ---
+>  fs/dcache.c            |   38 +++++++++++++++++++++++++++-----------
+>  include/linux/dcache.h |    3 +++
+>  2 files changed, 30 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 4f9ccbe..50c65c7 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -35,12 +35,27 @@
+>  #include <linux/hardirq.h>
+>  #include "internal.h"
+>  
+> +/*
+> + * Usage:
+> + * dcache_hash_lock protects dcache hash table
+> + *
+> + * Ordering:
+> + * dcache_lock
+> + *   dentry->d_lock
+> + *     dcache_hash_lock
+> + *
 
-Add XZ decompressor wrapper code.
+What locking is used to keep DCACHE_UNHASHED/d_unhashed() in check
+with the whether the dentry is on the hash list or not? It looks to
+me that to make any hash modification, you have to hold both the
+dentry->d_lock and the dcache_hash_lock to keep them in step. If
+this is correct, can you add this to the comments above?
 
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
----
-  fs/squashfs/squashfs_fs.h |    1 +
-  fs/squashfs/xz_wrapper.c  |  153 +++++++++++++++++++++++++++++++++++++++++++++
-  2 files changed, 154 insertions(+), 0 deletions(-)
-  create mode 100644 fs/squashfs/xz_wrapper.c
+> + * if (dentry1 < dentry2)
+> + *   dentry1->d_lock
+> + *     dentry2->d_lock
+> + */
 
-diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
-index c5137fc..39533fe 100644
---- a/fs/squashfs/squashfs_fs.h
-+++ b/fs/squashfs/squashfs_fs.h
-@@ -238,6 +238,7 @@ struct meta_index {
-  #define ZLIB_COMPRESSION	1
-  #define LZMA_COMPRESSION	2
-  #define LZO_COMPRESSION		3
-+#define XZ_COMPRESSION		4
+Perhaps the places where we need to lock two dentries should use a
+wrapper like we do for other objects. Such as:
 
-  struct squashfs_super_block {
-  	__le32			s_magic;
-diff --git a/fs/squashfs/xz_wrapper.c b/fs/squashfs/xz_wrapper.c
-new file mode 100644
-index 0000000..053fe35
---- /dev/null
-+++ b/fs/squashfs/xz_wrapper.c
-@@ -0,0 +1,153 @@
-+/*
-+ * Squashfs - a compressed read only filesystem for Linux
-+ *
-+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
-+ * Phillip Lougher <phillip@lougher.demon.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2,
-+ * or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * xz_wrapper.c
-+ */
-+
-+
-+#include <linux/mutex.h>
-+#include <linux/buffer_head.h>
-+#include <linux/slab.h>
-+#include <linux/xz.h>
-+
-+#include "squashfs_fs.h"
-+#include "squashfs_fs_sb.h"
-+#include "squashfs_fs_i.h"
-+#include "squashfs.h"
-+#include "decompressor.h"
-+
-+struct squashfs_xz {
-+	struct xz_dec *state;
-+	struct xz_buf buf;
-+};
-+
-+static void *squashfs_xz_init(struct squashfs_sb_info *msblk)
-+{
-+        int block_size = max_t(int, msblk->block_size, SQUASHFS_METADATA_SIZE);
-+
-+        struct squashfs_xz *stream = kmalloc(sizeof(*stream), GFP_KERNEL);
-+        if (stream == NULL)
-+                goto failed;
-+	stream->state = xz_dec_init(XZ_PREALLOC, block_size);
-+	if (stream->state == NULL)
-+		goto failed;
-+
-+	return stream;
-+
-+failed:
-+	ERROR("Failed to allocate xz workspace\n");
-+	kfree(stream);
-+	return NULL;
-+}
-+
-+
-+static void squashfs_xz_free(void *strm)
-+{
-+	struct squashfs_xz *stream = strm;
-+
-+	if (stream) {
-+		xz_dec_end(stream->state);
-+		kfree(stream);
-+	}
-+}
-+
-+
-+static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
-+	struct buffer_head **bh, int b, int offset, int length, int srclength,
-+	int pages)
-+{
-+	enum xz_ret xz_err;
-+	int avail, total = 0, k = 0, page = 0;
-+	struct squashfs_xz *stream = msblk->stream;
-+
-+	mutex_lock(&msblk->read_data_mutex);
-+
-+	xz_dec_reset(stream->state);
-+	stream->buf.in_pos = 0;
-+	stream->buf.in_size = 0;
-+	stream->buf.out_pos = 0;
-+	stream->buf.out_size = PAGE_CACHE_SIZE;
-+	stream->buf.out = buffer[page++];
-+
-+	do {
-+		if (stream->buf.in_pos == stream->buf.in_size && k < b) {
-+			avail = min(length, msblk->devblksize - offset);
-+			length -= avail;
-+			wait_on_buffer(bh[k]);
-+			if (!buffer_uptodate(bh[k]))
-+				goto release_mutex;
-+
-+			if (avail == 0) {
-+				offset = 0;
-+				put_bh(bh[k++]);
-+				continue;
-+			}
-+
-+			stream->buf.in = bh[k]->b_data + offset;
-+			stream->buf.in_size = avail;
-+			stream->buf.in_pos = 0;
-+			offset = 0;
-+		}
-+
-+		if (stream->buf.out_pos == stream->buf.out_size
-+							&& page < pages) {
-+			stream->buf.out = buffer[page++];
-+			stream->buf.out_pos = 0;
-+			total += PAGE_CACHE_SIZE;
-+		}
-+
-+		xz_err = xz_dec_run(stream->state, &stream->buf);
-+
-+		if (stream->buf.in_pos == stream->buf.in_size && k < b)
-+			put_bh(bh[k++]);
-+	} while (xz_err == XZ_OK);
-+
-+	if (xz_err != XZ_STREAM_END) {
-+		ERROR("xz_dec_run error, data probably corrupt\n");
-+		goto release_mutex;
-+	}
-+
-+	if (k < b) {
-+		ERROR("xz_uncompress error, input remaining\n");
-+		goto release_mutex;
-+	}
-+
-+	total += stream->buf.out_pos;
-+	mutex_unlock(&msblk->read_data_mutex);
-+	return total;
-+
-+release_mutex:
-+	mutex_unlock(&msblk->read_data_mutex);
-+
-+	for (; k < b; k++)
-+		put_bh(bh[k]);
-+
-+	return -EIO;
-+}
-+
-+const struct squashfs_decompressor squashfs_xz_comp_ops = {
-+	.init = squashfs_xz_init,
-+	.free = squashfs_xz_free,
-+	.decompress = squashfs_xz_uncompress,
-+	.id = XZ_COMPRESSION,
-+	.name = "xz",
-+	.supported = 1
-+};
-+
+void dentry_dlock_two(struct dentry *d1, struct dentry *d2)
+{
+	if (d1 < d2) {
+		spin_lock(&d1->d_lock);
+		spin_lock_nested(&d2->d_lock, DENTRY_D_LOCK_NESTED);
+	} else {
+		spin_lock(&d2->d_lock);
+		spin_lock_nested(&d1->d_lock, DENTRY_D_LOCK_NESTED);
+	}
+}
+
+> @@ -1581,7 +1598,9 @@ void d_rehash(struct dentry * entry)
+>  {
+>  	spin_lock(&dcache_lock);
+>  	spin_lock(&entry->d_lock);
+> +	spin_lock(&dcache_hash_lock);
+>  	_d_rehash(entry);
+> +	spin_unlock(&dcache_hash_lock);
+>  	spin_unlock(&entry->d_lock);
+>  	spin_unlock(&dcache_lock);
+>  }
+
+Shouldn't we really kill _d_rehash() by replacing all the callers
+with direct calls to __d_rehash() first? There doesn't seem to be much
+sense to keep both methods around....
+
+> @@ -1661,8 +1680,6 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
+>   */
+>  static void d_move_locked(struct dentry * dentry, struct dentry * target)
+>  {
+> -	struct hlist_head *list;
+> -
+>  	if (!dentry->d_inode)
+>  		printk(KERN_WARNING "VFS: moving negative dcache entry\n");
+>  
+> @@ -1679,14 +1696,11 @@ static void d_move_locked(struct dentry * dentry, struct dentry * target)
+>  	}
+>  
+>  	/* Move the dentry to the target hash queue, if on different bucket */
+> -	if (d_unhashed(dentry))
+> -		goto already_unhashed;
+> -
+> -	hlist_del_rcu(&dentry->d_hash);
+> -
+> -already_unhashed:
+> -	list = d_hash(target->d_parent, target->d_name.hash);
+> -	__d_rehash(dentry, list);
+> +	spin_lock(&dcache_hash_lock);
+> +	if (!d_unhashed(dentry))
+> +		hlist_del_rcu(&dentry->d_hash);
+> +	__d_rehash(dentry, d_hash(target->d_parent, target->d_name.hash));
+> +	spin_unlock(&dcache_hash_lock);
+>  
+>  	/* Unhash the target: dput() will then get rid of it */
+>  	__d_drop(target);
+> @@ -1883,7 +1897,9 @@ struct dentry *d_materialise_unique(struct dentry *dentry, struct inode *inode)
+>  found_lock:
+>  	spin_lock(&actual->d_lock);
+>  found:
+> +	spin_lock(&dcache_hash_lock);
+>  	_d_rehash(actual);
+> +	spin_unlock(&dcache_hash_lock);
+>  	spin_unlock(&actual->d_lock);
+>  	spin_unlock(&dcache_lock);
+>  out_nolock:
+> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+> index 6b5760b..7ce20f5 100644
+> --- a/include/linux/dcache.h
+> +++ b/include/linux/dcache.h
+> @@ -181,6 +181,7 @@ struct dentry_operations {
+>  
+>  #define DCACHE_CANT_MOUNT	0x0100
+>  
+> +extern spinlock_t dcache_hash_lock;
+>  extern spinlock_t dcache_lock;
+>  extern seqlock_t rename_lock;
+>  
+> @@ -204,7 +205,9 @@ static inline void __d_drop(struct dentry *dentry)
+>  {
+>  	if (!(dentry->d_flags & DCACHE_UNHASHED)) {
+>  		dentry->d_flags |= DCACHE_UNHASHED;
+> +		spin_lock(&dcache_hash_lock);
+>  		hlist_del_rcu(&dentry->d_hash);
+> +		spin_unlock(&dcache_hash_lock);
+>  	}
+>  }
+
+Un-inline __d_drop so you don't need to make the dcache_hash_lock
+visible outside of fs/dcache.c. That happens later in the series
+anyway, so may as well do it now...
+
+Cheers,
+
+Dave.
 -- 
-1.6.3.3
-
+Dave Chinner
+david@fromorbit.com
