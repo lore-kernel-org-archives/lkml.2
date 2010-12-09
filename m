@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab0LIUNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:13:46 -0500
-Received: from kroah.org ([198.145.64.141]:56090 "EHLO coco.kroah.org"
+	id S1757227Ab0LIUOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:14:21 -0500
+Received: from thunk.org ([69.25.196.29]:59255 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756935Ab0LIUNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:13:45 -0500
-Date: Thu, 9 Dec 2010 12:13:35 -0800
-From: Greg KH <greg@kroah.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, lkml20101129@newton.leun.net,
-        netdev@vger.kernel.org, jesse@nicira.com, linux-kernel@vger.kernel.org,
-        greearb@candelatech.com, stable@kernel.org
-Subject: Re: [stable] [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when
- vid not used
-Message-ID: <20101209201335.GB28159@kroah.com>
-References: <1291108809.2904.3.camel@edumazet-laptop>
- <20101201111716.424fb771@xenia.leun.net>
- <1291200914.2856.546.camel@edumazet-laptop>
- <20101208.084731.189716071.davem@davemloft.net>
- <20101208231624.GA8992@kroah.com>
- <1291857933.2795.7.camel@edumazet-laptop>
+	id S1757065Ab0LIUOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 15:14:19 -0500
+Date: Thu, 9 Dec 2010 15:13:59 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Mike Snitzer <snitzer@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun@gmail.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101209201359.GG2921@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+	Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
+	Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	dm-devel <dm-devel@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	htd <htd@fancy-poultry.org>, htejun@gmail.com,
+	linux-ext4@vger.kernel.org
+References: <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
+ <20101204193828.GB13871@redhat.com>
+ <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
+ <20101207142145.GA27861@think>
+ <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
+ <20101207182243.GB21112@redhat.com>
+ <20101207193514.GA2921@thunk.org>
+ <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+ <20101209180111.GF2921@thunk.org>
+ <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291857933.2795.7.camel@edumazet-laptop>
+In-Reply-To: <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 02:25:33AM +0100, Eric Dumazet wrote:
-> Le mercredi 08 décembre 2010 à 15:16 -0800, Greg KH a écrit :
-> > On Wed, Dec 08, 2010 at 08:47:31AM -0800, David Miller wrote:
-> > > From: Eric Dumazet <eric.dumazet@gmail.com>
-> > > Date: Wed, 01 Dec 2010 11:55:14 +0100
-> > > 
-> > > 
-> > > Greg/-stable, please integrate this patch from Eric into 2.6.36 if you
-> > > haven't already done so.
-> > 
-> > I've updated the version in the .36-stable queue with this one, thanks.
-> > 
+On Thu, Dec 09, 2010 at 12:10:58PM -0600, Jon Nelson wrote:
 > 
-> Thanks.
+> You should be OK, there. Are you using encryption or no?
+> I had difficulty replicating the issue without encryption.
+
+Yes, I'm using encryption.  LUKS with aes-xts-plain-sha256, and then
+LVM on top of LUKS.
+
+> > If you can point out how to query pgsql_tmp (I'm using a completely
+> > default postgres install), that would be helpful, but I don't think it
+> > would be going anywhere else.
 > 
-> By the way, all credits given to Jesse, I only made a change to his
-> patch, so I left him as the author.
-> 
-> Ah I see I forgot the "From: Jesse Gross <jesse@nicira.com>" header when
-> I sent it, my bad, sorry !
+> Normally it's /var/lib/pgsql/data/pgsql_tmp (or
+> /var/lib/postgres/data/pgsql_tmp in your case). By placing
+> /var/lib/{postgresql,pgsql}/data on the LUKS + ext4 volume, on both
+> openSUSE 11.3 and Kubuntu, I was able to replicate the problem easily,
+> in VirtualBox. I can give qemu a try. In both cases I was using a
+> 2.6.37x kernel.
 
-No problem, I have that in the patch header already :)
+Ah, I'm not using virtualization.  I'm running on a X410 laptop, on
+raw hardware.  Perhaps virtualization slows things down enough that it
+triggers?  Or maybe you're running with a more constrained memory than
+I?  How much memory do you have configured in your VM?
 
-thanks,
-
-greg k-h
+    	     	       	   		      - Ted
