@@ -1,246 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab0LIJho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:37:44 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:53324 "EHLO mprc.pku.edu.cn"
+	id S1755892Ab0LIJiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:38:12 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34830 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755800Ab0LIJhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:37:42 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 007/211] unicore32: new file arch/unicore32/boot/compressed/head.S
-Date: Thu, 9 Dec 2010 17:37:39 +0800
-Message-ID: <01d801cb9784$b8700f20$29502d60$@mprc.pku.edu.cn>
+	id S1754830Ab0LIJiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:38:09 -0500
+Message-ID: <4D00A345.6070100@kernel.org>
+Date: Thu, 09 Dec 2010 10:37:09 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: David Rientjes <rientjes@google.com>
+CC: Shaohui Zheng <shaohui.zheng@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
+        dave@linux.vnet.ibm.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Len Brown <len.brown@intel.com>,
+        Yinghai Lu <Yinghai.Lu@sun.com>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [5/7,v8] NUMA Hotplug Emulator: Support cpu probe/release in
+ x86_64
+References: <20101207010033.280301752@intel.com> <20101207010140.092555703@intel.com> <alpine.DEB.2.00.1012081334160.15658@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1012081334160.15658@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuXhLVCn2Vv+JCORE6lttG+LdiR4A==
-Content-Language: zh-cn
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 09:37:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Hello,
 
-	entry point before uncompressed in UniCore32 linux-kernel
+On 12/08/2010 10:36 PM, David Rientjes wrote:
+> On Tue, 7 Dec 2010, shaohui.zheng@intel.com wrote:
+> 
+>> From: Shaohui Zheng <shaohui.zheng@intel.com>
+>>
+>> CPU physical hot-add/hot-remove are supported on some hardwares, and it 
+>> was already supported in current linux kernel. NUMA Hotplug Emulator provides
+>> a mechanism to emulate the process with software method. It can be used for
+>> testing or debuging purpose.
+>>
+>> CPU physical hotplug is different with logical CPU online/offline. Logical
+>> online/offline is controled by interface /sys/device/cpu/cpuX/online. CPU
+>> hotplug emulator uses probe/release interface. It becomes possible to do cpu
+>> hotplug automation and stress
+>>
+>> Add cpu interface probe/release under sysfs for x86_64. User can use this
+>> interface to emulate the cpu hot-add and hot-remove process.
+>>
+>> Directive:
+>> *) Reserve CPU thru grub parameter like:
+>> 	maxcpus=4
+>>
+>> the rest CPUs will not be initiliazed. 
+>>
+>> *) Probe CPU
+>> we can use the probe interface to hot-add new CPUs:
+>> 	echo nid > /sys/devices/system/cpu/probe
+>>
+>> *) Release a CPU
+>> 	echo cpu > /sys/devices/system/cpu/release
+>>
+>> A reserved CPU will be hot-added to the specified node.
+>> 1) nid == 0, the CPU will be added to the real node which the CPU
+>> should be in
+>> 2) nid != 0, add the CPU to node nid even through it is a fake node.
+>>
+> 
+> This patch is undoubtedly going to conflict with Tejun's unification of 
+> the 32 and 64 bit NUMA boot paths, specifically the patch at 
+> http://marc.info/?l=linux-kernel&m=129087151912379.
 
-Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
----
- arch/unicore32/boot/compressed/head.S |  203
-+++++++++++++++++++++++++++++++++
- 1 files changed, 203 insertions(+), 0 deletions(-)
+Oh yeah, it definitely looks like it will collide with the unification
+patch.  The problem is more fundamental than the actual patch
+collisions tho.  During x86_32/64 merge, some parts were left unmerged
+- some reflect actual differences between 32 and 64 but more were
+probably because it was too much work.
 
-diff --git a/arch/unicore32/boot/compressed/head.S
-b/arch/unicore32/boot/compressed/head.S
-new file mode 100644
-index 0000000..ced47bd
---- /dev/null
-+++ b/arch/unicore32/boot/compressed/head.S
-@@ -0,0 +1,203 @@
-+/*
-+ * linux/arch/unicore32/boot/compressed/head.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/linkage.h>
-+
-+#define csub	cmpsub
-+#define cand	cmpand
-+#define nop8	nop; nop; nop; nop; nop; nop; nop; nop
-+
-+		.section ".start", #alloc, #execinstr
-+		.text
-+start:
-+		.type	start,#function
-+
-+		/* Initialize ASR, PRIV mode and INTR off */
-+		mov	r0, #0xD3
-+		mov.a	asr, r0
-+
-+		adr	r0, LC0
-+		ldm	(r1, r2, r3, r5, r6, r7, r8), [r0]+
-+		ldw	sp, [r0+], #28
-+		sub.a	r0, r0, r1		@ calculate the delta offset
-+
-+		/*
-+		 * if delta is zero, we are running at the address
-+		 * we were linked at.
-+		 */
-+		beq	not_relocated
-+
-+		/*
-+		 * We're running at a different address.  We need to fix
-+		 * up various pointers:
-+		 *   r5 - zImage base address (_start)
-+		 *   r7 - GOT start
-+		 *   r8 - GOT end
-+		 */
-+		add	r5, r5, r0
-+		add	r7, r7, r0
-+		add	r8, r8, r0
-+
-+		/*
-+		 * we need to fix up pointers into the BSS region.
-+		 *   r2 - BSS start
-+		 *   r3 - BSS end
-+		 *   sp - stack pointer
-+		 */
-+		add	r2, r2, r0
-+		add	r3, r3, r0
-+		add	sp, sp, r0
-+
-+		/*
-+		 * Relocate all entries in the GOT table.
-+		 * This fixes up the C references.
-+		 *   r7 - GOT start
-+		 *   r8 - GOT end
-+		 */
-+1001:		ldw	r1, [r7+], #0
-+		add	r1, r1, r0
-+		stw.w	r1, [r7]+, #4
-+		csub.a	r7, r8
-+		bub	1001b
-+
-+not_relocated:
-+		/*
-+		 * Clear BSS region.
-+		 *   r2 - BSS start
-+		 *   r3 - BSS end
-+		 */
-+		mov	r0, #0
-+1002:		stw.w	r0, [r2]+, #4
-+		csub.a	r2, r3
-+		bub	1002b
-+
-+		/*
-+		 * Turn on the cache.
-+		 */
-+                mov     r0, #0
-+                movc    p0.c5, r0, #28		@ cache invalidate all
-+                nop8
-+                movc    p0.c6, r0, #6		@ tlb invalidate all
-+                nop8
-+
-+                mov     r0, #0x1c		@ en icache and wb dcache
-+                movc    p0.c1, r0, #0
-+                nop8
-+
-+		/*
-+		 * Set up some pointers, for starting decompressing.
-+		 */
-+
-+		mov	r1, sp			@ malloc space above stack
-+		add	r2, sp, #0x10000	@ 64k max
-+
-+		/*
-+		 * Check to see if we will overwrite ourselves.
-+		 *   r4 = final kernel address
-+		 *   r5 = start of this image
-+		 *   r6 = size of decompressed image
-+		 *   r2 = end of malloc space (and therefore this image)
-+		 * We basically want:
-+		 *   r4 >= r2 -> OK
-+		 *   r4 + image length <= r5 -> OK
-+		 */
-+		ldw	r4, =zreladdr
-+		csub.a	r4, r2
-+		bea	wont_overwrite
-+		add	r0, r4, r6
-+		csub.a	r0, r5
-+		beb	wont_overwrite
-+
-+		/*
-+		 * If overwrite, just print error message
-+		 */
-+		b	__error_overwrite
-+
-+		/*
-+		 * We're not in danger of overwriting ourselves.
-+		 * Do this the simple way.
-+		 */
-+wont_overwrite:
-+		/*
-+		 * decompress_kernel:
-+		 *   r0: output_start
-+		 *   r1: free_mem_ptr_p
-+		 *   r2: free_mem_ptr_end_p
-+		 */
-+		mov	r0, r4
-+		b.l	decompress_kernel	@ C functions
-+
-+		/*
-+		 * Clean and flush the cache to maintain consistency.
-+		 */
-+		mov	r0, #0
-+                movc    p0.c5, r0, #14		@ flush dcache
-+		nop8
-+                movc    p0.c5, r0, #20		@ icache invalidate all
-+                nop8
-+
-+		/*
-+		 * Turn off the Cache and MMU.
-+		 */
-+		mov	r0, #0			@ disable i/d cache and MMU
-+		movc	p0.c1, r0, #0
-+                nop8
-+
-+		mov	r0, #0			@ must be zero
-+		ldw	r4, =zreladdr
-+		mov	pc, r4			@ call kernel
-+
-+
-+		.align	2
-+		.type	LC0, #object
-+LC0:		.word	LC0			@ r1
-+		.word	__bss_start		@ r2
-+		.word	_end			@ r3
-+		.word	_start			@ r5
-+		.word	_image_size		@ r6
-+		.word	_got_start		@ r7
-+		.word	_got_end		@ r8
-+		.word	decompress_stack_end	@ sp
-+		.size	LC0, . - LC0
-+
-+print_string:
-+#ifdef CONFIG_DEBUG_OCD
-+2001:		ldb.w	r1, [r0]+, #1
-+		csub.a	r1, #0
-+		bne	2002f
-+		mov	pc, lr
-+2002:
-+		movc	r2, p1.c0, #0
-+		cand.a	r2, #2
-+		bne	2002b
-+		movc	p1.c1, r1, #1
-+		csub.a	r1, #'\n'
-+		cmoveq	r1, #'\r'
-+		beq	2002b
-+		b	2001b
-+#else
-+		mov	pc, lr
-+#endif
-+
-+__error_overwrite:
-+		adr	r0, str_error
-+		b.l	print_string
-+2001:		nop8
-+		b	2001b
-+str_error:	.asciz	"\nError: Kernel address OVERWRITE\n"
-+		.align
-+
-+		.ltorg
-+
-+		.align	4
-+		.section ".stack", "aw", %nobits
-+decompress_stack:	.space	4096
-+decompress_stack_end:
+These subtle diversions make the code unnecessarily complicated,
+fragile and difficult to maintain, so, in general, I think we should
+be heading toward unifying 32 and 64 unless the difference is caused
+by actual hardware even when the feature or code might not be too
+useful for 32bit.
 
+So, the same thing holds for NUMA hotplug emulator.  32bit supports
+NUMA and there already is 64bit only NUMA emulator.  I think it would
+be much better if we take this chance to unify 32 and 64bit code paths
+on this area rather than going further toward the wrong direction.
+
+> Tejun, what's the status of that patchset posted on November 27?  Any 
+> comments about this change?
+
+I don't know.  I pinged Ingo yesterday.  Ingo?
+
+Thanks.
+
+-- 
+tejun
