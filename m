@@ -1,74 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab0LIQGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:06:24 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:39475 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab0LIQGW (ORCPT
+	id S1753215Ab0LIQQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:16:44 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:51667 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751364Ab0LIQQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:06:22 -0500
-Date: Thu, 9 Dec 2010 10:05:49 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: John Stoffel <john@stoffel.org>
-Cc: Eric Paris <eparis@redhat.com>, xfs-masters@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, cluster-devel@redhat.com,
-        linux-mtd@lists.infradead.org, jfs-discussion@lists.sourceforge.net,
-        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-mm@kvack.org,
-        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
-        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
-        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
-        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
-        jeffm@suse.com, serue@us.ibm.com, paul.moore@hp.com,
-        penguin-kernel@I-love.SAKURA.ne.jp, casey@schaufler-ca.com,
-        kees.cook@canonical.com, dhowells@redhat.com
-Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on
- inode creation
-Message-ID: <20101209160549.GA2315@peq>
-References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
- <19712.61515.201226.938553@quad.stoffel.home>
+	Thu, 9 Dec 2010 11:16:43 -0500
+Date: Thu, 9 Dec 2010 11:16:39 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, mrubin@google.com
+Subject: Re: [PATCH 13/15] small_traces: Add config option to shrink trace
+	events.
+Message-ID: <20101209161639.GA6769@Krystal>
+References: <1291421609-14665-1-git-send-email-dhsharp@google.com> <1291421609-14665-14-git-send-email-dhsharp@google.com> <1291427770.16223.15.camel@gandalf.stny.rr.com> <AANLkTimiMtdfXag6bukxDo21uSDzs0nj4YG-35M2ioiP@mail.gmail.com> <1291431252.16223.28.camel@gandalf.stny.rr.com> <20101209145541.GC1712@nowhere> <1291907297.5015.1526.camel@gandalf.stny.rr.com> <20101209152805.GD1712@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <19712.61515.201226.938553@quad.stoffel.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101209152805.GD1712@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:15:34 up 15 days, 21:18,  5 users,  load average: 0.08, 0.02,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting John Stoffel (john@stoffel.org):
-> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Thu, Dec 09, 2010 at 10:08:17AM -0500, Steven Rostedt wrote:
+> > On Thu, 2010-12-09 at 15:55 +0100, Frederic Weisbecker wrote:
+> > > On Fri, Dec 03, 2010 at 09:54:12PM -0500, Steven Rostedt wrote:
+> > > > On Fri, 2010-12-03 at 18:33 -0800, David Sharp wrote:
+> > > > > I considered that, and I generally thing it's a good idea. However, I
+> > > > > also want to use this switch to shrink individual tracepoint event
+> > > > > structures.
+> > > > > 
+> > > > > eg: sched switch is a high frequency event and it is 68 bytes (60
+> > > > > after these patches)
+> > > > > 
+> > > > > Can you suggest a syntax for TRACE_EVENT, DECLARE_EVENT_CLASS, etc,
+> > > > > that could express the two versions and produce the right code?
+> > > > > 
+> > > > > I'm worried about adding even further complexity to the TRACE_EVENT
+> > > > > macros. I could add TRACE_EVENT_SMALL that takes two versions of
+> > > > > TP_STRUCT__entry, TP_fast_assign, and TP_printk each, but then this
+> > > > > will need to be permuted with your TP_CONDITIONAL patches as well.
+> > > > 
+> > > > I would not touch the TRACE_EVENT() structures. They are there as is and
+> > > > I would not think about changing them. Something like that would never
+> > > > make it into mainline.
+> > > > 
+> > > > Now what you can do, is to make your own events based off of the same
+> > > > tracepoints. For example, the TRACE_EVENT(sched_switch...) has in
+> > > > sched.c:
+> > > > 
+> > > > 	trace_sched_switch(prev, next);
+> > > > 
+> > > > 
+> > > > You could even write a module that does something like this:
+> > > > 
+> > > > 	register_trace_sched_switch(probe_sched_switch, mydata);
+> > > > 
+> > > > 
+> > > > 
+> > > > void probe_sched_switch(void *mydata,
+> > > > 		struct task_struct *prev,
+> > > > 		struct task_struct *next)
+> > > > {
+> > > > 	struct ring_buffer *buffer;
+> > > > 	struct ring_buffer_event *event;
+> > > > 	struct myentry *entry;
+> > > > 
+> > > > 	event = trace_current_buffer_lock_reserve(buffer,
+> > > > 			mytype, sizeof(*entry),
+> > > > 			0, 0);
+> > > > 
+> > > > 	if (!event)
+> > > > 		return;
+> > > > 
+> > > > 	entry = ring_buffer_event_data(event);
+> > > > 
+> > > > 	entry->myfield = prev->x;
+> > > > 	...
+> > > > 
+> > > > 	trace_nowake_buffer_unlock_commit(buffer, event,
+> > > > 					0, 0);
+> > > > }
+> > > > 
+> > > > You will need to do a register_ftrace_event() to register that 'mytype'
+> > > > and how to output it. Otherwise it would just be ignored in the "trace"
+> > > > file.
+> > > > 
+> > > > All of the above would work fine as a loadable module that you could
+> > > > easily maintain out of tree, and still uses the internals of the system.
+> > > > 
+> > > > -- Steve
+> > > > 
+> > > > 
+> > > 
+> > > 
+> > > But this would improve only google's tracing while this is a general
+> > > mainline tracing problem.
+> > > 
+> > > The first thing is that we need to get rid of the lock_depth field, the bkl
+> > > is dying.
+> > 
+> > Yeah that needs to go :-)
+> > 
+> > > 
+> > > For the rest what about having a bitmap of the fields we want to ignore,
+> > > which can be setup from a trace file for ftrace and as an ioctl for perf.
+> > > 
+> > > So this bitmap is easy to implement on the common fields.
+> > > 
+> > > For the rest, one could choose between using TP_fast_assign()
+> > > and TP_cond_assign().
+> > > 
+> > > TP_fast_assign() stays as is and doesn't implement bitmap field
+> > > ignoring. Those who want conditional record will need
+> > > TP_cond_assign().
+> > > Well, unfortunately this probably requires us to play
+> > > the same trickery than SYSCALL_DEFINE() in that we'll probably
+> > > need TP_cond_assign1(), TP_cond_assign2(), TP_cond_assign3(), etc...
+> > > 
+> > > #define TP_cond_assignx(nr, assign)	\
+> > > 	if (call->bitmask & nr)	{	\
+> > > 		assign
+> > > 	}
+> > > 
+> > > #define TP_cond_assign2(nr, assign, ...)	\
+> > > 	TP_cond_assignx(nr, assign)		\
+> > > 	TP_cond_assign1(nr + 1, __VA_ARGS__)
+> > > 
+> > > #define TP_cond_assign3(nr, assign, ...)        \
+> > >         TP_cond_assignx(nr, assign)             \
+> > >         TP_cond_assign2(nr + 1, __VA_ARGS__)
+> > > 
+> > > That will also require a bit more trickery to dynamically
+> > > pre-compute the size of the trace entry.
+> > 
+> > Mathieu is working on encapsulating the assignments in their own macros.
+> > 
+> > Instead of doing:
+> > 
+> > 	__entry->foo = bar;
+> > 
+> > We will have:
+> > 
+> > 	tp_assign(foo, bar);
+> > 
+> > This way we could probably use this to dynamically figure out what to
+> > assign.
+> > 
+> > -- Steve
+> > 
+> > 
 > 
-> Eric> SELinux would like to implement a new labeling behavior of newly
-> Eric> created inodes.  We currently label new inodes based on the
-> Eric> parent and the creating process.  This new behavior would also
-> Eric> take into account the name of the new object when deciding the
-> Eric> new label.  This is not the (supposed) full path, just the last
-> Eric> component of the path.
-> 
-> Eric> This is very useful because creating /etc/shadow is different
-> Eric> than creating /etc/passwd but the kernel hooks are unable to
-> Eric> differentiate these operations.  We currently require that
-> Eric> userspace realize it is doing some difficult operation like that
-> Eric> and than userspace jumps through SELinux hoops to get things set
-> Eric> up correctly.  This patch does not implement new behavior, that
-> Eric> is obviously contained in a seperate SELinux patch, but it does
-> Eric> pass the needed name down to the correct LSM hook.  If no such
-> Eric> name exists it is fine to pass NULL.
-> 
-> I've looked this patch over, and maybe I'm missing something, but how
-> does knowing the name of the file really tell you anything, esp when
-> you only get the filename, not the path?  What threat are you
-> addressing with this change?  
+> Yep, it should also work that way.
 
-Like you, I keep thinking back to this patch and going back and forth.
-But to answer your question:  in some cases, the name of the file
-(plus the context of the directory in which it is created) can tell
-you what assumptions userspace will make about it.  And userspace most
-definately is a part of the TCB, i.e. /bin/passwd and /bin/login.
+In an incredible exercise of good timing, I'm planning to post them just now :)
 
--serge
+Comments will be very welcome,
+
+Thanks!
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
