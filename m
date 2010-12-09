@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab0LIOYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 09:24:50 -0500
-Received: from vostochny.stro.at ([78.47.22.85]:40309 "EHLO vostochny.stro.at"
+	id S1753408Ab0LIO1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 09:27:37 -0500
+Received: from hera.kernel.org ([140.211.167.34]:47870 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab0LIOYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 09:24:48 -0500
-Date: Thu, 9 Dec 2010 14:24:47 +0000
-From: maximilian attems <max@stro.at>
-To: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
-Subject: Re: [PATCH v2] kbuild, deb-pkg: support overriding userland
-	architecture
-Message-ID: <20101209142447.GA12350@vostochny.stro.at>
-References: <20101125143739.GC8192@sepie.suse.cz> <1291844150-4541-1-git-send-email-asbjorn@asbjorn.biz>
+	id S1752421Ab0LIO1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 09:27:35 -0500
+Message-ID: <4D00E74B.3030401@kernel.org>
+Date: Thu, 09 Dec 2010 15:27:23 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291844150-4541-1-git-send-email-asbjorn@asbjorn.biz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv1 000/211] unicore32 architecture support
+References: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn> <4D00A672.9050906@kernel.org> <alpine.LFD.2.00.1012091443580.2653@localhost6.localdomain6> <4D00E212.9080001@kernel.org> <alpine.LFD.2.00.1012091516240.2653@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1012091516240.2653@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 14:27:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 09:35:50PM +0000, Asbjoern Sloth Toennesen wrote:
-> Usefull if building for sparc64 userland, because the
-> sparc and sparc64 userlands use the same 64-bit kernel,
-> making it impossible to always select the correct userland
-> architecture for the resulting debian package.
-> 
-> Might also be usefull, if you want a i386 userland with a amd64 kernel.
-> 
-> Example usage:
-> 	make DEBARCH=i386 deb-pkg
+On 12/09/2010 03:18 PM, Thomas Gleixner wrote:
+> It's not a question of merging. It's a question of reviewing and I've
+> done quite a bunch of reviews on new archs, so I know what I'm talking
+> about. Reviewing a single patch with everything and the world included
+> is just not workable.
 
-hmm the conclusion was to prepend a KBUILD_ prefix for a kbuild variable?
-Any reason why that was overlooked?
+Sure, I agree the per-topic patch series would be much better for
+reviewing.  Then, just make _that_ point.  Don't go to the opposite
+extreme and claim unthreaded per-file 200+ patches in whatever order
+are better as that's painful for everyone on the mailing list.
 
-I checked man devscripts and saw yet no definition of DEBARCH, but in order
-not to have any potential conflicts and to keep namespase sane I think
-it is very much preferred to use KBUILD_DEBARCH.
-
-thanks
+Thanks.
 
 -- 
-maks
+tejun
