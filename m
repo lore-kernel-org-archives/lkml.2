@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0LIWkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 17:40:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59516 "EHLO mail.zytor.com"
+	id S1752940Ab0LIWlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 17:41:52 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:42097 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab0LIWkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 17:40:20 -0500
-Message-ID: <4D015ACF.1050105@zytor.com>
-Date: Thu, 09 Dec 2010 14:40:15 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: x86@kernel.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+	id S1750761Ab0LIWlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 17:41:51 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 2/3] ACPICA: Fix access width for reset vector
+Date: Thu, 9 Dec 2010 23:41:06 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: x86@kernel.org, hpa@zytor.com, linux-acpi@vger.kernel.org, lenb@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] X86: Revamp reboot behaviour to match Windows more
- closely
-References: <1291931204-5854-1-git-send-email-mjg@redhat.com> <4D015741.7090500@zytor.com> <20101209223201.GA23894@srcf.ucam.org> <4D015914.1040009@zytor.com> <20101209223847.GA24452@srcf.ucam.org>
-In-Reply-To: <20101209223847.GA24452@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <1291931204-5854-1-git-send-email-mjg@redhat.com> <1291931204-5854-2-git-send-email-mjg@redhat.com>
+In-Reply-To: <1291931204-5854-2-git-send-email-mjg@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012092341.06913.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 02:38 PM, Matthew Garrett wrote:
-> On Thu, Dec 09, 2010 at 02:32:52PM -0800, H. Peter Anvin wrote:
->> On 12/09/2010 02:32 PM, Matthew Garrett wrote:
->>> On Thu, Dec 09, 2010 at 02:25:05PM -0800, H. Peter Anvin wrote:
->>>> When this was discussed before we agreed to use ACPI reboot by default
->>>> with an ACPI cutoff date; this doesn't have any such cutoff.
->>>
->>> Windows doesn't either. Older machines simply won't have the appropriate
->>> flag set in their FADT.
->>>
->>
->> Windows doesn't get validated on old hardware.
->
-> XP does this, and older hardware predates the version of the ACPI spec
-> that introduced this flag.
->
+On Thursday, December 09, 2010, Matthew Garrett wrote:
+> Section 4.7.3.6 of the ACPI specification requires that the register width
+> of the reset vector be 8 bits. Windows simply hardcodes the access to be
+> a byte and ignores the width provided in the FADT, so make sure that we
+> do the same.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-ACPI is very buggy on early implementations, presumably because WHQL had 
-not yet been extended to include it.  That is exactly why we combine 
-these kinds of things with a date check.
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-	-hpa
+> ---
+>  drivers/acpi/acpica/hwxface.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+> index 50cc3be..c6a4e63 100644
+> --- a/drivers/acpi/acpica/hwxface.c
+> +++ b/drivers/acpi/acpica/hwxface.c
+> @@ -82,12 +82,11 @@ acpi_status acpi_reset(void)
+>  		/*
+>  		 * For I/O space, write directly to the OSL. This bypasses the port
+>  		 * validation mechanism, which may block a valid write to the reset
+> -		 * register.
+> +		 * register. Spec section 4.7.3.6 requires register width to be 8.
+>  		 */
+>  		status =
+>  		    acpi_os_write_port((acpi_io_address) reset_reg->address,
+> -				       acpi_gbl_FADT.reset_value,
+> -				       reset_reg->bit_width);
+> +				       acpi_gbl_FADT.reset_value, 8)
+>  	} else {
+>  		/* Write the reset value to the reset register */
+>  
+> 
 
