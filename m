@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab0LIBvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 20:51:52 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36249 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756452Ab0LIBvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 20:51:50 -0500
-Message-ID: <4D00361D.4000603@euromail.se>
-Date: Thu, 09 Dec 2010 02:51:25 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
-CC: Ping Cheng <pinglinux@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+	id S1756809Ab0LIBxI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 20:53:08 -0500
+Received: from void.printf.net ([89.145.121.20]:34883 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756452Ab0LIBxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 20:53:06 -0500
+Date: Thu, 9 Dec 2010 01:53:03 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Oliver Neukum <oneukum@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Add an envelope tool type
-References: <1291721340-22652-1-git-send-email-rydberg@euromail.se> <4CFFC3C2.1080905@canonical.com> <AANLkTikmomm2hd7AAJMTnY+=J2wPyVvodv2Ft0jFe7w2@mail.gmail.com> <20101208235805.GE15294@core.coreip.homeip.net> <AANLkTink9aX=dV-+n5=2BpPF34kSZGSQQ6x2tUNJ8eSM@mail.gmail.com> <AANLkTi=rjbzX9zzx-xvvhu7osKU8eUiPxi2=z=9H6YwJ@mail.gmail.com>
-In-Reply-To: <AANLkTi=rjbzX9zzx-xvvhu7osKU8eUiPxi2=z=9H6YwJ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.64
-X-Scan-Result: No virus found in message 1PQVfM-0005qR-CY.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQVfM-0005qR-CY fd423153aa3da9a3d01f8966f303f12b
+Subject: Re: [PATCH] mmc: Fix re-probing after hibernation
+Message-ID: <20101209015303.GB19741@void.printf.net>
+References: <1291821839-15088-1-git-send-email-tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291821839-15088-1-git-send-email-tiwai@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 02:38 AM, Mohamed Ikbel Boulabiar wrote:
+Hi Takashi,
 
-> On Thu, Dec 9, 2010 at 1:06 AM, Ping Cheng <pinglinux@gmail.com> wrote:
->> No, we are not talking about non-rectangular shape here. Envelop is
->> always a rectangle. By rectangle above, I meant 2 touches.
->>
->> An envelop that includes number of touches offers us more information
->> than a rectangle does
+On Wed, Dec 08, 2010 at 04:23:59PM +0100, Takashi Iwai wrote:
+> The commit 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e
+>   mmc: fix all hangs related to mmc/sd card insert/removal during
+>   suspend/resume
+> introduced a bug where the device probing no longer works after
+> hibernation.  This was because the pm notifier expects
+> PM_POST_HIBERNATION call while the system sends PM_POST_RESTORE
+> instead, thus disable_rescan is kept as 1.
 > 
-> Can we have more information that just a rect ? An ellipse for exemple.
-> Can we get this information at least from synaptics touchpads?
+> Cc: <stable@kernel.org>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  drivers/mmc/core/core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 31ae07a..30094f6 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -1772,7 +1772,7 @@ int mmc_pm_notify(struct notifier_block *notify_block,
+>  		break;
+>  
+>  	case PM_POST_SUSPEND:
+> -	case PM_POST_HIBERNATION:
+> +	case PM_POST_RESTORE:
+>  
+>  		spin_lock_irqsave(&host->lock, flags);
+>  		host->rescan_disable = 0;
 
+Thanks very much for tracking this down!  The code suggests that
+POST_RESTORE is only emitted on a *failed* hibernation restore --
+from include/linux/notifier.h:
 
-Unfortunately not. Chris Bagwell and myself have been experimenting with quite a
-few different approaches to extract touch information from the synaptics pads.
-The present approach, to extract the bounding rectangle, is the best we can do,
-I am afraid - at least with the information unveiled in Takashi's original
-patch. In particular, rotation information is not reliably extractable.
+/* Hibernation and suspend events */
+#define PM_POST_HIBERNATION     0x0002 /* Hibernation finished */
+#define PM_POST_SUSPEND         0x0004 /* Suspend finished */
+#define PM_POST_RESTORE         0x0006 /* Restore failed */
 
-Henrik
+So, this all suggests that we want to add the POST_RESTORE case but
+also want to keep the POST_HIBERNATION case.  Do you agree?  Was the 
+case you saw of failed probe after hibernation a failed restore from
+hibernation image?
+
+By the way, it looks like there are some other drivers which also
+test for POST_HIBERNATION but not POST_RESTORE:
+
+  drivers/media/video/tlg2300/pd-main.c
+  drivers/s390/char/vmwatchdog.c
+  drivers/s390/cio/css.c
+  drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
