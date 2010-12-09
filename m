@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab0LIREp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:04:45 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25106 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab0LIREn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:04:43 -0500
-Date: Thu, 9 Dec 2010 09:04:28 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: pavel@pavlinux.ru
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Sysctl interface to UNIX_INFLIGHT_TRIGGER_GC v.2
-Message-Id: <20101209090428.6da9198c.randy.dunlap@oracle.com>
-In-Reply-To: <4D00BE59.4090109@pavlinux.ru>
-References: <4D004E42.7000807@pavlinux.ru>
-	<20101209041310.GA5101@cr0.nay.redhat.com>
-	<4D00BE59.4090109@pavlinux.ru>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1755072Ab0LIRFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:05:30 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:53600 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754792Ab0LIRF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:05:28 -0500
+Subject: Re: [PATCH 1/7] ideapad: add platform driver for ideapad
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+In-Reply-To: <1291881410-4759-1-git-send-email-ike.pan@canonical.com>
+References: <1291881376-4729-1-git-send-email-ike.pan@canonical.com>
+	 <1291881410-4759-1-git-send-email-ike.pan@canonical.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 09 Dec 2010 09:04:37 -0800
+Message-ID: <1291914277.7960.0.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Dec 2010 14:32:41 +0300 Pavel Vasilyev wrote:
+On Thu, 2010-12-09 at 15:56 +0800, Ike Panhc wrote:
+> Create /sys/devices/platform/Ideapad for nodes of ideapad landing.
 
-> On 09.12.2010 07:13, Américo Wang wrote:
-> > On Thu, Dec 09, 2010 at 06:34:26AM +0300, Pavel Vasilyev wrote:
-> >> Maybe something to add in Documentation/kernel-parameters.txt ?
-> > 
-> > No, that is for boot parameters, you need to find something like
-> > Documentation/networking/ip-sysctl.txt.
-> > 
-> 
-> Thanks, added.
+Any chance you want to make that 'ideapad'?  It would be a bit more
+consistent with all the other stuff in that directory, and will surely
+save me some trips over to the shift key. :)
 
-Now you need to send this to netdev@vger.kernel.org so that the netdev
-people can review it.  Please.
+-- Dave
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
