@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab0LIW2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 17:28:16 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:47956 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab0LIW2O (ORCPT
+	id S1755397Ab0LIWbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 17:31:50 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:14002 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab0LIWbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 17:28:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=tzRypy/6hzfgqgKJDtNlBUI0V91XgWqjAFjdhkqwH8gpo7J2iSWnzeiBrO/+P/Z38s
-         HszumEiL5IRf8JkyPtYt1n8gL7zqCEMDyfKPbtXitutrwH+x38/YDq6OUTBOGdCSh3pb
-         JAeObcqDJeeWA1CYauccInX2YfHupUVtO5B7M=
+	Thu, 9 Dec 2010 17:31:49 -0500
+Date: Thu, 9 Dec 2010 23:25:09 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: coda@cs.cmu.edu
+cc: codalist@TELEMANN.coda.cs.cmu.edu, linux-kernel@vger.kernel.org,
+        "Peter J. Braam" <braam@maths.ox.ac.uk>,
+        Michael Callahan <callahan@maths.ox.ac.uk>,
+        Peter Braam <braam@cs.cmu.edu>, trivial@kernel.org
+Subject: [PATCH] coda: kill redundant cast in coda_alloc_inode()
+Message-ID: <alpine.LNX.2.00.1012092322201.25880@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik4W+UxgyPjVyHDeEFTRCkXdDBQ9obgPkpnhzGW@mail.gmail.com>
-References: <AANLkTik4W+UxgyPjVyHDeEFTRCkXdDBQ9obgPkpnhzGW@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Thu, 9 Dec 2010 14:27:53 -0800
-Message-ID: <AANLkTimUZxEpT_2a9FnTNBAR2aXqcTX5KOuyN5sTwkBq@mail.gmail.com>
-Subject: Re: Start dropping PCMCIA from compat-wireless for 2.6.38+
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 2:20 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
-> I'm going to start dropping PCMCIA stuff from compat-wireless as I
-> don't think we have any users of it nor interest to keep backporting
-> it. This entails dropping drivers like orinoco, b43 PCMCIA support,
-> libertas, as well as bluetooth bluecard_cs, bluecard_cs, dtl1_cs,
-> bt3c_cs and of course CONFIG_SSB_PCMCIAHOST. If you are a user please
-> yell now.
 
-Well Haukes just sent me a patch to update some stuff so PCMCIA is
-saved until further notice :)
+kmem_cache_alloc() returns a void pointer which there is no need to cast.
 
- Luis
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/coda/inode.c b/fs/coda/inode.c
+index 5ea57c8..1a49c17 100644
+--- a/fs/coda/inode.c
++++ b/fs/coda/inode.c
+@@ -45,7 +45,7 @@ static struct kmem_cache * coda_inode_cachep;
+ static struct inode *coda_alloc_inode(struct super_block *sb)
+ {
+ 	struct coda_inode_info *ei;
+-	ei = (struct coda_inode_info *)kmem_cache_alloc(coda_inode_cachep, GFP_KERNEL);
++	ei = kmem_cache_alloc(coda_inode_cachep, GFP_KERNEL);
+ 	if (!ei)
+ 		return NULL;
+ 	memset(&ei->c_fid, 0, sizeof(struct CodaFid));
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
