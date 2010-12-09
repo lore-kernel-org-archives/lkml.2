@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab0LITMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 14:12:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20522 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab0LITMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 14:12:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,321,1288594800"; 
-   d="scan'208";a="685593900"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
-        akpm@linux-foundation.org, ying.huang@intel.com,
-        "Borislav Petkov" <bp@alien8.de>, "David Miller" <davem@davemloft.net>,
-        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
-        "Jim Keniston" <jkenisto@linux.vnet.ibm.com>,
-        "Kyungmin Park" <kmpark@infradead.org>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>
-In-Reply-to: <AANLkTimWT8=fmqbEeb+qXbwsWOmaz5d2_Bsr-=DON7L1@mail.gmail.com>
-Subject: Re: [RFC] persistent store (version 3) (part 1 of 2)
-Date: Thu, 09 Dec 2010 11:12:02 -0800
-Message-Id: <4d012a025304b1f75@agluck-desktop.sc.intel.com>
+	id S1753962Ab0LITQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 14:16:59 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65060 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab0LITQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 14:16:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Fi0ouNbeS8pof5IZmAcOJgNeJLYnTFrxLhRbh6dzoFqJ7qdVgsbUHIsupmua/B/Wcu
+         ilTQh75wiqraDrY998HJXWvLHTUJxpgISzaawzoNfL1kuvgoPIsp/JmZo7SiTlloZ0Jh
+         K0Z0nw7er0v70fCF0500bjeIBDbPRXEasaBb4=
+Date: Thu, 9 Dec 2010 11:16:47 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Linux Input <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jarod Wilson <jarod@redhat.com>,
+        David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
+Subject: Re: [RFC] Input: define separate EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2
+Message-ID: <20101209191647.GC23781@core.coreip.homeip.net>
+References: <20101209093948.GD8821@core.coreip.homeip.net>
+ <4D012844.3020009@euromail.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D012844.3020009@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This upsets the traditional layout of having the error
-> recovery part of the function undo all the things that
-> we did leading up to the error. Pity, because your
-> version is easier to read.
+On Thu, Dec 09, 2010 at 08:04:36PM +0100, Henrik Rydberg wrote:
+> On 12/09/2010 10:39 AM, Dmitry Torokhov wrote:
+> 
+> > The desire to keep old names for the EVIOCGKEYCODE/EVIOCSKEYCODE while
+> > extending them to support large scancodes was a mistake. While we tried
+> > to keep ABI intact (and we succeeded in doing that, programs compiled
+> > on older kernels will work on newer ones) there is still a problem with
+> > recompiling existing software with newer kernel headers.
+> > 
+> > New kernel headers will supply updated ioctl numbers and kernel will
+> > expect that userspace will use struct input_keymap_entry to set and
+> > retrieve keymap data. But since the names of ioctls are still the same
+> > userspace will happily compile even if not adjusted to make use of the
+> > new structure and will start miraculously fail in the field.
+> > 
+> > To avoid this issue let's revert EVIOCGKEYCODE/EVIOCSKEYCODE definitions
+> > and add EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2 so that userspace can explicitly
+> > select the style of ioctls it wants to employ.
+> > 
+> > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> > ---
+> 
+> 
+> Would the header change suffice in itself?
 
-But most of your "move the error fixups to the tail, so the
-normal code path is easier to follow" bit do still hold and
-can be used.  How about this:
+We still need to change evdev to return -EINVAL on wrong sizes but yes,
+the amount of change there could be more limited. I just thought that
+splitting it up explicitly shows the differences in handling better. If
+people prefer the previos version we could leave it, I am 50/50 between
+them.
 
--Tony
+> Either way, also checked that the
+> bugfixes following the original patch is still in effect, so looks ok to me.
 
----
+Thanks.
 
-int pstore_mkfile(char *name, char *data, size_t size, struct timespec time,
-		  void *private)
-{
-	struct dentry	*root = pstore_sb->s_root;
-	struct dentry	*dentry;
-	struct inode	*inode;
-	int		rc;
-
-	rc = -ENOMEM;
-	inode = pstore_get_inode(pstore_sb, root->d_inode, S_IFREG | 0444, 0);
-	if (!inode)
-		goto fail;
-	inode->i_private = private;
-
-	mutex_lock(&root->d_inode->i_mutex);
-
-	rc = -ENOSPC;
-	dentry = d_alloc_name(root, name);
-	if (IS_ERR(dentry))
-		goto fail_alloc;
-	d_add(dentry, inode);
-
-	mutex_unlock(&root->d_inode->i_mutex);
-
-	if (!pstore_writefile(inode, dentry, data, size))
-		goto fail_write;
-
-	if (time.tv_sec)
-		inode->i_mtime = inode->i_ctime = time;
-
-	return 0;
-
-fail_write:
-	inode->i_nlink--;
-	mutex_lock(&root->d_inode->i_mutex);
-	d_delete(dentry);
-	dput(dentry);
-	mutex_unlock(&root->d_inode->i_mutex);
-	goto fail;
-
-fail_alloc:
-	mutex_unlock(&root->d_inode->i_mutex);
-	iput(inode);
-
-fail:
-	return rc;
-}
+-- 
+Dmitry
