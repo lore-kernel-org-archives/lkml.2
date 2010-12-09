@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab0LIQyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:54:40 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:44898 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab0LIQyi (ORCPT
+	id S1754659Ab0LIQ5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:57:36 -0500
+Received: from mail-px0-f179.google.com ([209.85.212.179]:57912 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab0LIQ5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:54:38 -0500
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below 4G
-Date: Thu, 9 Dec 2010 09:54:24 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Matthew Garrett <mjg@redhat.com>, Yinghai Lu <yinghai@kernel.org>
-References: <20101129183009.11256.33739.stgit@bob.kio> <AANLkTinJhVj7sY6wC1tFRA+rYW72j7GqKvxfRsyRC=Vs@mail.gmail.com> <201012030815.52203.bjorn.helgaas@hp.com>
-In-Reply-To: <201012030815.52203.bjorn.helgaas@hp.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012090954.24538.bjorn.helgaas@hp.com>
+	Thu, 9 Dec 2010 11:57:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=ThAybq4sxwvDZwAWKcDs2rAMMkyXKek7Anhw2ZA12D/jnkFSgAEz/g0i8bpy9GxH36
+         lTSDsgfn+Yj1bRH+BXRpw7jl16RXoFV/Ks0QACLEKs7YX5kG0gk/FjLi70opIugjY0y1
+         vBii4fIGzBBgeVN6vFSYqGOZj1fgfmEVefF1Q=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH UPDATED] poll: fix a typo in comment
+Date: Fri, 10 Dec 2010 01:57:07 +0900
+Message-Id: <1291913827-13558-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.3.400.g93cef
+In-Reply-To: <AANLkTimUJ0mOkNe+ATAxDze_zHbWU8R1cJinEfX98Azw@mail.gmail.com>
+References: <AANLkTimUJ0mOkNe+ATAxDze_zHbWU8R1cJinEfX98Azw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 03, 2010 08:15:48 am Bjorn Helgaas wrote:
-> On Thursday, December 02, 2010 06:19:20 pm Linus Torvalds wrote:
-> > On Mon, Nov 29, 2010 at 2:04 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> > >
-> > > I think we're talking about whether to reserve the top 1MB or top 2MB.
-> > > I freely admit I don't know the right answer.  My point is merely that
-> > > since we're using a heuristic anyway, copying Windows is a pretty good
-> > > starting point.  In my mind, doing something different requires a
-> > > stronger argument than "it might fix some machines where Windows is
-> > > broken."
-> > 
-> > What's the status of this? The original patch is pretty nasty, and I
-> > think that hack to put things in the bios_align_resource() function is
-> > just disgusting.
+Convert duplicated sys_poll to select. As Kosaki suggests, sys_poll() and
+sys_select() are now hidden by SYSCALL_DEFINEx() macros so it would be
+better to use plain select/poll syscall name.
 
-OK, let's drop this approach.  My next proposal is the
-"PCI, PNP, resources: effectively reserve ACPI device resources"
-thread I posted yesterday (with mangled cover letter) here:
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ include/linux/poll.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-    https://lkml.org/lkml/2010/12/8/352
+diff --git a/include/linux/poll.h b/include/linux/poll.h
+index 56e76af78102..afd3375e58ee 100644
+--- a/include/linux/poll.h
++++ b/include/linux/poll.h
+@@ -57,7 +57,7 @@ struct poll_table_entry {
+ };
+ 
+ /*
+- * Structures and helpers for sys_poll/sys_poll
++ * Structures and helpers for select/poll syscall
+  */
+ struct poll_wqueues {
+ 	poll_table pt;
+-- 
+1.7.3.3.400.g93cef
 
-Bjorn
