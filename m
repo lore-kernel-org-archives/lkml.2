@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab0LIANO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 19:13:14 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:55958 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab0LIANM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 19:13:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TGkhrjYVllNPQOYhGVWZOP0pAu7NJ4yMocSPdOKqIdP0DQE/yLGDVcEnq/2ojWdk+W
-         e3Idl8aoa9N1V/YB0O+h0dVCO2L1zPuo/CuEyyLZPtwY0gGoMtfVTtZDRHHlhgvHilgd
-         rYq/O2NRqh1j53CMb/i2R68zIXS9RV3VtaTOE=
-Date: Wed, 8 Dec 2010 16:13:04 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>
-Subject: Re: [PATCH] input: mt: Add hovering distance axis
-Message-ID: <20101209001304.GG15294@core.coreip.homeip.net>
-References: <1291710468-2022-1-git-send-email-rydberg@euromail.se>
- <4CFFC45C.2040107@canonical.com>
- <20101208180521.GA31522@core.coreip.homeip.net>
- <AANLkTinKVcc3KA3S_7-vwQWtDuUFZ2LSmjgrCrZXcRw5@mail.gmail.com>
- <4CFFD11D.4070107@euromail.se>
- <AANLkTinGhQC59jqdyJkVLs+mL9BydZp8gGi7c4XO_CL4@mail.gmail.com>
- <20101208235438.GD15294@core.coreip.homeip.net>
- <AANLkTikpLF-qCd83TczEk+46yp71EGBYVCnqRLVCyy10@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikpLF-qCd83TczEk+46yp71EGBYVCnqRLVCyy10@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755033Ab0LIAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 19:14:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751872Ab0LIAOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 19:14:06 -0500
+Subject: Re: Re-distributable 88w8335 Firmware?
+From: Dan Williams <dcbw@redhat.com>
+To: Julian Calaby <julian.calaby@gmail.com>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>, David.Woodhouse@intel.com,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Holger Schurig <holgerschurig@googlemail.com>,
+        Markus Becker <mab@comnets.uni-bremen.de>, andreamrl@tiscali.it,
+        Denis Kirjanov <kirjanov@gmail.com>, dwmw2@infradead.org
+Date: Wed, 08 Dec 2010 18:13:33 -0600
+In-Reply-To: <AANLkTiks65oAvVEu0Df4yeHNJm=cVnSfFeo=enxt-gpn@mail.gmail.com>
+References: <AANLkTim0=ds3EhQOEfHdrKt2dSnEqUgf5CLOPHNyW=jE@mail.gmail.com>
+	 <1290569516.3074.41.camel@dcbw.foobar.com>
+	 <AANLkTi=ioGgpAQ-rx_abCHcOmOezXwJFfbKWc7=tGAJ5@mail.gmail.com>
+	 <1290571986.3074.64.camel@dcbw.foobar.com>
+	 <AANLkTi=0ocvsR185Qib3VoT43ziTUa_3oRDnmU65pYjv@mail.gmail.com>
+	 <1290575460.18917.3.camel@dcbw.foobar.com>
+	 <AANLkTiks65oAvVEu0Df4yeHNJm=cVnSfFeo=enxt-gpn@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1291853616.16839.10.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 08, 2010 at 04:08:45PM -0800, Ping Cheng wrote:
-> On Wed, Dec 8, 2010 at 3:54 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Wed, Dec 08, 2010 at 03:31:12PM -0800, Ping Cheng wrote:
-> >> On Wed, Dec 8, 2010 at 10:40 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> >> > On 12/08/2010 07:20 PM, Ping Cheng wrote:
-> >> >>
-> >> >> ABS_DISTANCE is used in wacom driver as the distance between the tool
-> >> >> tip and the tablet.
-> >> >
-> >> >
-> >> > Thanks for the confirmation. While at it, what are the units for the distance,
-> >> > for instance for the Cintiq?
+On Wed, 2010-11-24 at 16:26 +1100, Julian Calaby wrote:
+> On Wed, Nov 24, 2010 at 16:10, Dan Williams <dcbw@redhat.com> wrote:
+> > On Wed, 2010-11-24 at 15:48 +1100, Julian Calaby wrote:
+> >> On Wed, Nov 24, 2010 at 15:13, Dan Williams <dcbw@redhat.com> wrote:
+> >> > Malo supports the PCMCIA/CF variant of the 8385; not a PCI variant
+> >> > AFAICT.  I know of no PCI variant for the 8385, just CF, SDIO, and GSPI.
+> >> > But I find it curious that malo supports 8335+8385, given that the
+> >> > firmware interface of the 8385 and the 8335 are so different.  Unless
+> >> > they have special firmware, the 8385 is a fullmac device, while the 8335
+> >> > is a softmac device.  Enough differences exist that I'd expect them to
+> >> > be driven by separate drivers, otherwise the code would be quite ugly.
+> >> > Which is why we didn't try to shoehorn the 8335 or TopDog stuff into
+> >> > libertas.
 > >>
-> >> mm? I am not so sure. It is a rough count of how far the tool is away
-> >> from the tablet.
+> >> You clearly know a hell of a lot more about the ins and outs of Marvel
+> >> chipsets that I do. =)
 > >
-> > Count in what units? Millimeters, light years, pumpkins? ;)
+> > Eh, *some* of the chipsets :)  Others (Lennert) know a lot more about
+> > later versions than I do.  But I never know everything or even enough of
+> > anything :)
 > 
-> I said mm (millimeters ;).
+> I know exactly how you feel. =)
 > 
+> >> I stand corrected.
+> >>
+> >> So, to amend my previous request: We're after firmware for the softmac
+> >> 88w8335 chipset *only*.
+> >>
+> >> Though it may be nicer if Marvell were to bless Malo's firmware
+> >> package (linked above) as this contains firmware for the PCI 88w8335,
+> >> USB 88w8338 and a file which claims to be for the PCMCIA/CF 88w8385.
+> >
+> > Yeah, though honestly I'd rather have the duplex firmware from MSSII for
+> > the 8335, since it can do AP mode too.  That does leave the 8338 (USB?)
+> 
+> Me too - and it'd mean that we don't have to do AP-mode firmware
+> loading tricks like in mw8k. But if we can't get that then some
+> firmware is better than none.
+> 
+> > of course but we can probably get clarification on that too.  As with
+> > the 8335, I only have access to a 8335 Windows driver, but if we had a
+> > firmware extractor tool, I believe the Marvell Extranet firmware license
+> > covers embedded firmware from Windows .sys files too.
+> 
+> I think I may have a simple firmware extractor at home that I pulled
+> from *somewhere* when I was working on this last time. We can see if
+> it does anything with those files. I believe I have at least two
+> different Windows drivers at home - IIRC, one of them is *just* the
+> files needed for this extractor.
 
-Ah, I took your "mm" as if you hummed. :P
+I've converted the cb35 duplex firmware to binary and uploaded it to
+linux-firmware after receiving permission from Marvell to do so.  Now
+lets get a driver :)
 
--- 
-Dmitry
+Dan
+
+
