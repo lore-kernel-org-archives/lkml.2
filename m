@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab0LIVJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 16:09:00 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56021 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab0LIVI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:08:59 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6192"; a="65990748"
-Date: Thu, 9 Dec 2010 13:08:57 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Joe Perches <joe@perches.com>
-Cc: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Jiri Kosina <trivial@kernel.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tobias Klauser <tklauser@distanz.ch>
-Subject: Re: [PATCH 06/15] serial: Remove duplicate unlikely from IS_ERR
-Message-ID: <20101209210857.GA11077@huya.qualcomm.com>
-References: <cover.1291923888.git.joe@perches.com>
- <102d208d9a7b0de018361a71875da14eab0df2ec.1291923889.git.joe@perches.com>
+	id S1756629Ab0LIVMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:12:12 -0500
+Received: from claw.goop.org ([74.207.240.146]:53945 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752243Ab0LIVML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 16:12:11 -0500
+Message-ID: <4D01462A.4010808@goop.org>
+Date: Thu, 09 Dec 2010 13:12:10 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <102d208d9a7b0de018361a71875da14eab0df2ec.1291923889.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH] Fix when booting Xen+Linux under QEMU.
+References: <1291928497-5599-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1291928497-5599-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 12:03:59PM -0800, Joe Perches wrote:
+On 12/09/2010 01:01 PM, Konrad Rzeszutek Wilk wrote:
+> Please take a look. The first patch just cleans up the find_unbound_irq
+> so it is easier to understand what it does.
+>
+> The second patch hardness the Xen IRQ (event channels) allocation finder
+> if you try to boot a minimalistic 32-bit Linux kernel along with a
+> Xen hypervisor under QEMU.
+>
+> We end up with a weird scenario where the nr_irq_gsi was greater than nr_irq
+> by 16. This code hardness it by pointing out the issue to the user and tries
+> to continue - BUT this might impact the PCI device allocation.
+>
+> Tested also on normal machine with no regressions found.
 
-> IS_ERR already uses unlikely, remove unlikely from the call sites.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/serial/msm_serial.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+I think I'd prefer to:
 
-Tobias Klauser <tklauser@distanz.ch> already posted a patch about
-this.  They are identical, so I'll grab the first one from Tobias.
+   1. move to using all dynamic irqs, and use the core kernel irq
+      allocator (ie, resurrect IanC's patches)
+   2. kill the ioapic dummy page hack (I'm assuming that would be
+      trivial - at least to make it all zero - because the kernel won't
+      care about the number of GSIs at that point)
 
-Thanks,
-David
+    J
