@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0LIRdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:33:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34804 "EHLO mx1.redhat.com"
+	id S1755910Ab0LIRf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:35:29 -0500
+Received: from void.printf.net ([89.145.121.20]:34589 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754739Ab0LIRdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:33:08 -0500
-Date: Thu, 9 Dec 2010 15:32:47 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patch 9/9] pref: session: Break event ordering when
-	timestamps are missing
-Message-ID: <20101209173247.GB15579@ghostprotocols.net>
-References: <20101207124527.868085529@linutronix.de> <20101207124551.209741779@linutronix.de> <1291865671-sup-8975@au1.ibm.com> <alpine.LFD.2.00.1012091455590.2653@localhost6.localdomain6>
+	id S1754739Ab0LIRf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 12:35:27 -0500
+Date: Thu, 9 Dec 2010 17:35:25 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Will Newton <will.newton@gmail.com>, Matt Fleming <matt@console-pimps.org>,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
+Message-ID: <20101209173525.GA29879@void.printf.net>
+References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com> <20101208115510.GD10998@console-pimps.org> <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com> <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com> <20101209064751.GA21128@void.printf.net> <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com> <20101209160157.GA28586@void.printf.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012091455590.2653@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101209160157.GA28586@void.printf.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 09, 2010 at 02:58:10PM +0100, Thomas Gleixner escreveu:
-> On Thu, 9 Dec 2010, Ian Munsie wrote:
-> > Excerpts from Thomas Gleixner's message of Tue Dec 07 12:49:04 UTC 2010:
-> > > Allow the session client to specify that event ordering should be
-> > > stopped when not all events have time stamps.
+Hi Andrew,
+
+On Thu, Dec 09, 2010 at 04:01:57PM +0000, Chris Ball wrote:
+> > > Is there something we could depend on that would stop this driver being
+> > > presented to everyone, without being far too specific?  At the moment
+> > > we'd be making x86 desktop users say whether they have this IP, which
+> > > isn't good.  Are the architectures that use this IP already upstream?
+> > > Are they all ARM architectures, for instance?
 > > 
-> > >  	/* These events are processed right away */
-> > >  	switch (event->header.type) {
-> > >  	case PERF_RECORD_HEADER_ATTR:
-> > > -		return ops->attr(event, session);
-> > > +		/* This updates session->sample_id_all */
-> > > +		ret = ops->attr(event, session);
-> > > +		/* Break ordering if sample_id_all is false */
-> > > +		if (ops->ordering_requires_timestamps &&
-> > > +		    ops->ordered_samples && !session->sample_id_all) {
-> > > +			session->ordered_samples.next_flush = ULLONG_MAX;
-> > > +			flush_sample_queue(session, ops);
-> > > +			ops->ordered_samples = false;
-> > > +		}
-> > > +		return ret;
-> > Since the fall back isn't triggered, not only are COMM and MMAP events
-> > processed first (from patch 2 in this series), but EXIT will as well,
-> > which causes no userspace events to be attributed.
+> > I don't know of any architectures upstream that use this IP block. There is an
+> > SoC from NXP that uses this it but it is not upstream:
+> > 
+> > http://ics.nxp.com/support/software/lpc313x.bsp.linux/
+> > 
+> > The architecture we tested and debugged this driver on is not upstream either
+> > unfortunately. :-/
 > 
-> So we need to check this in every event processing path? Or do we have
-> for this kind of processing some other method which allows us to
-> disable the ordered_samples bit once ?
+> Okay.  I think "depends on ARM" is appropriate for now, and we could
+> expand that later if the block appears in a MIPS SoC or something.
+> Does that work for you?
 
-FYI: I merged everything up to 8/9 and will push to Ingo soon, holler
-if you disagree.
+Oh, hey, rmk says that he seems to recall that akpm says that if the
+driver builds on x86 (it does), we should just allow it to be built
+there too so that it gets build coverage.  Andrew, does this still
+represent your stance?
 
-- Arnaldo
+I've heard the distro maintainers complain about having to investigate
+Kconfig entries for drivers that their users would never possibly use,
+though, and this certainly falls into that case.  Is there something
+better we can do here, to correctly hide this driver from non-ARM users
+but also make it clear that it can be built if somebody wants to do a
+mass driver build?
+
+Thanks,
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
