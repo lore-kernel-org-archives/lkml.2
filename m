@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab0LIQto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 11:49:44 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56390 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab0LIQtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 11:49:43 -0500
-Date: Thu, 9 Dec 2010 16:48:53 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <201010272107.o9RL7rse018212@imap1.linux-foundation.org>
-References: <201010272107.o9RL7rse018212@imap1.linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: io_apic: Avoid unused variable warning when CONFIG_GENERIC_PENDING_IRQ=n
-Message-ID: <tip-4720dd1b3858f0da2593188cb1e57eb0d3bc4af2@git.kernel.org>
-Git-Commit-ID: 4720dd1b3858f0da2593188cb1e57eb0d3bc4af2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754573Ab0LIQyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 11:54:40 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:44898 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917Ab0LIQyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 11:54:38 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] x86/PCI: never allocate PCI space from the last 1M below 4G
+Date: Thu, 9 Dec 2010 09:54:24 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Matthew Garrett <mjg@redhat.com>, Yinghai Lu <yinghai@kernel.org>
+References: <20101129183009.11256.33739.stgit@bob.kio> <AANLkTinJhVj7sY6wC1tFRA+rYW72j7GqKvxfRsyRC=Vs@mail.gmail.com> <201012030815.52203.bjorn.helgaas@hp.com>
+In-Reply-To: <201012030815.52203.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 16:48:54 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012090954.24538.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4720dd1b3858f0da2593188cb1e57eb0d3bc4af2
-Gitweb:     http://git.kernel.org/tip/4720dd1b3858f0da2593188cb1e57eb0d3bc4af2
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 9 Dec 2010 17:43:21 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Dec 2010 17:43:21 +0100
+On Friday, December 03, 2010 08:15:48 am Bjorn Helgaas wrote:
+> On Thursday, December 02, 2010 06:19:20 pm Linus Torvalds wrote:
+> > On Mon, Nov 29, 2010 at 2:04 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > >
+> > > I think we're talking about whether to reserve the top 1MB or top 2MB.
+> > > I freely admit I don't know the right answer.  My point is merely that
+> > > since we're using a heuristic anyway, copying Windows is a pretty good
+> > > starting point.  In my mind, doing something different requires a
+> > > stronger argument than "it might fix some machines where Windows is
+> > > broken."
+> > 
+> > What's the status of this? The original patch is pretty nasty, and I
+> > think that hack to put things in the bios_align_resource() function is
+> > just disgusting.
 
-x86: io_apic: Avoid unused variable warning when CONFIG_GENERIC_PENDING_IRQ=n
+OK, let's drop this approach.  My next proposal is the
+"PCI, PNP, resources: effectively reserve ACPI device resources"
+thread I posted yesterday (with mangled cover letter) here:
 
-arch/x86/kernel/apic/io_apic.c: In function 'ack_apic_level':
-arch/x86/kernel/apic/io_apic.c:2433: warning: unused variable 'desc'
+    https://lkml.org/lkml/2010/12/8/352
 
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <201010272107.o9RL7rse018212@imap1.linux-foundation.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/apic/io_apic.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 7cc0a72..226060e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2430,13 +2430,12 @@ static void ack_apic_level(struct irq_data *data)
- {
- 	struct irq_cfg *cfg = data->chip_data;
- 	int i, do_unmask_irq = 0, irq = data->irq;
--	struct irq_desc *desc = irq_to_desc(irq);
- 	unsigned long v;
- 
- 	irq_complete_move(cfg);
- #ifdef CONFIG_GENERIC_PENDING_IRQ
- 	/* If we are moving the irq we need to mask it */
--	if (unlikely(desc->status & IRQ_MOVE_PENDING)) {
-+	if (unlikely(irq_to_desc(irq)->status & IRQ_MOVE_PENDING)) {
- 		do_unmask_irq = 1;
- 		mask_ioapic(cfg);
- 	}
+Bjorn
