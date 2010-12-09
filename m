@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab0LILS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 06:18:27 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47696 "EHLO gir.skynet.ie"
+	id S1756081Ab0LILS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 06:18:58 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47636 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753859Ab0LILSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 06:18:24 -0500
+	id S1752185Ab0LILSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 06:18:22 -0500
 From: Mel Gorman <mel@csn.ul.ie>
 To: Simon Kirby <sim@hostway.ca>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
@@ -16,9 +16,9 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 6/6] mm: kswapd: Use the classzone idx that kswapd was using for sleeping_prematurely()
-Date: Thu,  9 Dec 2010 11:18:20 +0000
-Message-Id: <1291893500-12342-7-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 1/6] mm: kswapd: Stop high-order balancing when any suitable zone is balanced
+Date: Thu,  9 Dec 2010 11:18:15 +0000
+Message-Id: <1291893500-12342-2-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
 References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
@@ -26,118 +26,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When kswapd is woken up for a high-order allocation, it takes account of
-the highest usable zone by the caller (the classzone idx). During
-allocation, this index is used to select the lowmem_reserve[] that
-should be applied to the watermark calculation in zone_watermark_ok().
+When the allocator enters its slow path, kswapd is woken up to balance the
+node. It continues working until all zones within the node are balanced. For
+order-0 allocations, this makes perfect sense but for higher orders it can
+have unintended side-effects. If the zone sizes are imbalanced, kswapd may
+reclaim heavily within a smaller zone discarding an excessive number of
+pages. The user-visible behaviour is that kswapd is awake and reclaiming
+even though plenty of pages are free from a suitable zone.
 
-When balancing a node, kswapd considers the highest unbalanced zone to be the
-classzone index. This will always be at least be the callers classzone_idx
-and can be higher. However, sleeping_prematurely() always considers the
-lowest zone (e.g. ZONE_DMA) to be the classzone index. This means that
-sleeping_prematurely() can consider a zone to be balanced that is unusable
-by the allocation request that originally woke kswapd. This patch changes
-sleeping_prematurely() to use a classzone_idx matching the value it used
-in balance_pgdat().
+This patch alters the "balance" logic for high-order reclaim allowing kswapd
+to stop if any suitable zone becomes balanced to reduce the number of pages
+it reclaims from other zones. kswapd still tries to ensure that order-0
+watermarks for all zones are met before sleeping.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- mm/vmscan.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ include/linux/mmzone.h |    3 +-
+ mm/page_alloc.c        |    8 +++--
+ mm/vmscan.c            |   68 +++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 66 insertions(+), 13 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d7b0a3c..e25b3ac 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2132,7 +2132,8 @@ static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 39c24eb..7177f51 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -645,6 +645,7 @@ typedef struct pglist_data {
+ 	wait_queue_head_t kswapd_wait;
+ 	struct task_struct *kswapd;
+ 	int kswapd_max_order;
++	enum zone_type classzone_idx;
+ } pg_data_t;
+ 
+ #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
+@@ -660,7 +661,7 @@ typedef struct pglist_data {
+ 
+ extern struct mutex zonelists_mutex;
+ void build_all_zonelists(void *data);
+-void wakeup_kswapd(struct zone *zone, int order);
++void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
+ int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+ 		int classzone_idx, int alloc_flags);
+ enum memmap_context {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e409270..82e3499 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1915,13 +1915,14 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 
+ static inline
+ void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
+-						enum zone_type high_zoneidx)
++						enum zone_type high_zoneidx,
++						enum zone_type classzone_idx)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 
+ 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
+-		wakeup_kswapd(zone, order);
++		wakeup_kswapd(zone, order, classzone_idx);
  }
  
- /* is kswapd sleeping prematurely? */
--static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-+static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
-+					int classzone_idx)
- {
- 	int i;
- 	unsigned long balanced = 0;
-@@ -2140,7 +2141,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ static inline int
+@@ -1998,7 +1999,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 		goto nopage;
  
- 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
- 	if (remaining)
--		return 1;
-+		return true;
+ restart:
+-	wake_all_kswapd(order, zonelist, high_zoneidx);
++	wake_all_kswapd(order, zonelist, high_zoneidx,
++						zone_idx(preferred_zone));
  
- 	/* Check the watermark levels */
- 	for (i = 0; i < pgdat->nr_zones; i++) {
-@@ -2161,7 +2162,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
- 		}
- 
- 		if (!zone_watermark_ok(zone, order, high_wmark_pages(zone),
--								0, 0))
-+							classzone_idx, 0))
- 			all_zones_ok = false;
- 		else
- 			balanced += zone->present_pages;
-@@ -2199,7 +2200,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d31d7ce..25cb373 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2165,11 +2165,14 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+  * interoperates with the page allocator fallback scheme to ensure that aging
   * of pages is balanced across the zones.
   */
- static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
--							int classzone_idx)
-+							int *classzone_idx)
+-static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
++static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
++							int classzone_idx)
  {
  	int all_zones_ok;
- 	unsigned long balanced;
-@@ -2262,6 +2263,7 @@ loop_again:
- 			if (!zone_watermark_ok(zone, order,
- 					high_wmark_pages(zone), 0, 0)) {
- 				end_zone = i;
-+				*classzone_idx = i;
- 				break;
- 			}
- 		}
-@@ -2346,7 +2348,7 @@ loop_again:
++	int any_zone_ok;
+ 	int priority;
+ 	int i;
++	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+ 	unsigned long total_scanned;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct scan_control sc = {
+@@ -2192,7 +2195,6 @@ loop_again:
+ 	count_vm_event(PAGEOUTRUN);
+ 
+ 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+-		int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+ 		unsigned long lru_pages = 0;
+ 		int has_under_min_watermark_zone = 0;
+ 
+@@ -2201,6 +2203,7 @@ loop_again:
+ 			disable_swap_token();
+ 
+ 		all_zones_ok = 1;
++		any_zone_ok = 0;
+ 
+ 		/*
+ 		 * Scan in the highmem->dma direction for the highest
+@@ -2310,10 +2313,12 @@ loop_again:
  				 * spectulatively avoid congestion waits
  				 */
  				zone_clear_flag(zone, ZONE_CONGESTED);
--				if (i <= classzone_idx)
-+				if (i <= *classzone_idx)
- 					balanced += zone->present_pages;
++				if (i <= classzone_idx)
++					any_zone_ok = 1;
  			}
  
-@@ -2441,6 +2443,7 @@ out:
- 	 * if another caller entered the allocator slow path while kswapd
- 	 * was awake, order will remain at the higher level
- 	 */
-+	*classzone_idx = end_zone;
- 	return order;
+ 		}
+-		if (all_zones_ok)
++		if (all_zones_ok || (order && any_zone_ok))
+ 			break;		/* kswapd: all done */
+ 		/*
+ 		 * OK, kswapd is getting into trouble.  Take a nap, then take
+@@ -2336,7 +2341,13 @@ loop_again:
+ 			break;
+ 	}
+ out:
+-	if (!all_zones_ok) {
++
++	/*
++	 * order-0: All zones must meet high watermark for a balanced node
++	 * high-order: Any zone below pgdats classzone_idx must meet the high
++	 *             watermark for a balanced node
++	 */
++	if (!(all_zones_ok || (order && any_zone_ok))) {
+ 		cond_resched();
+ 
+ 		try_to_freeze();
+@@ -2361,6 +2372,36 @@ out:
+ 		goto loop_again;
+ 	}
+ 
++	/*
++	 * If kswapd was reclaiming at a higher order, it has the option of
++	 * sleeping without all zones being balanced. Before it does, it must
++	 * ensure that the watermarks for order-0 on *all* zones are met and
++	 * that the congestion flags are cleared. The congestion flag must
++	 * be cleared as kswapd is the only mechanism that clears the flag
++	 * and it is potentially going to sleep here.
++	 */
++	if (order) {
++		for (i = 0; i <= end_zone; i++) {
++			struct zone *zone = pgdat->node_zones + i;
++
++			if (!populated_zone(zone))
++				continue;
++
++			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
++				continue;
++
++			/* Confirm the zone is balanced for order-0 */
++			if (!zone_watermark_ok(zone, 0,
++					high_wmark_pages(zone), 0, 0)) {
++				order = sc.order = 0;
++				goto loop_again;
++			}
++
++			/* If balanced, clear the congested flag */
++			zone_clear_flag(zone, ZONE_CONGESTED);
++		}
++	}
++
+ 	return sc.nr_reclaimed;
  }
  
-@@ -2514,7 +2517,7 @@ static int kswapd(void *p)
- 				long remaining = 0;
+@@ -2380,6 +2421,7 @@ out:
+ static int kswapd(void *p)
+ {
+ 	unsigned long order;
++	int classzone_idx;
+ 	pg_data_t *pgdat = (pg_data_t*)p;
+ 	struct task_struct *tsk = current;
+ 	DEFINE_WAIT(wait);
+@@ -2410,19 +2452,24 @@ static int kswapd(void *p)
+ 	set_freezable();
  
- 				/* Try to sleep for a short interval */
--				if (!sleeping_prematurely(pgdat, order, remaining)) {
-+				if (!sleeping_prematurely(pgdat, order, remaining, classzone_idx)) {
- 					remaining = schedule_timeout(HZ/10);
- 					finish_wait(&pgdat->kswapd_wait, &wait);
- 					prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-@@ -2525,7 +2528,7 @@ static int kswapd(void *p)
- 				 * premature sleep. If not, then go fully
- 				 * to sleep until explicitly woken up
- 				 */
--				if (!sleeping_prematurely(pgdat, order, remaining)) {
-+				if (!sleeping_prematurely(pgdat, order, remaining, classzone_idx)) {
- 					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
- 					schedule();
- 				} else {
-@@ -2553,7 +2556,7 @@ static int kswapd(void *p)
+ 	order = 0;
++	classzone_idx = MAX_NR_ZONES - 1;
+ 	for ( ; ; ) {
+ 		unsigned long new_order;
++		int new_classzone_idx;
+ 		int ret;
+ 
+ 		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
+ 		new_order = pgdat->kswapd_max_order;
++		new_classzone_idx = pgdat->classzone_idx;
+ 		pgdat->kswapd_max_order = 0;
+-		if (order < new_order) {
++		pgdat->classzone_idx = MAX_NR_ZONES - 1;
++		if (order < new_order || classzone_idx > new_classzone_idx) {
+ 			/*
+ 			 * Don't sleep if someone wants a larger 'order'
+-			 * allocation
++			 * allocation or has tigher zone constraints
+ 			 */
+ 			order = new_order;
++			classzone_idx = new_classzone_idx;
+ 		} else {
+ 			if (!freezing(current) && !kthread_should_stop()) {
+ 				long remaining = 0;
+@@ -2451,6 +2498,7 @@ static int kswapd(void *p)
+ 			}
+ 
+ 			order = pgdat->kswapd_max_order;
++			classzone_idx = pgdat->classzone_idx;
+ 		}
+ 		finish_wait(&pgdat->kswapd_wait, &wait);
+ 
+@@ -2464,7 +2512,7 @@ static int kswapd(void *p)
  		 */
  		if (!ret) {
  			trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
--			order = balance_pgdat(pgdat, order, classzone_idx);
-+			order = balance_pgdat(pgdat, order, &classzone_idx);
+-			balance_pgdat(pgdat, order);
++			balance_pgdat(pgdat, order, classzone_idx);
  		}
  	}
  	return 0;
+@@ -2473,7 +2521,7 @@ static int kswapd(void *p)
+ /*
+  * A zone is low on free memory, so wake its kswapd task to service it.
+  */
+-void wakeup_kswapd(struct zone *zone, int order)
++void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+ {
+ 	pg_data_t *pgdat;
+ 
+@@ -2483,8 +2531,10 @@ void wakeup_kswapd(struct zone *zone, int order)
+ 	pgdat = zone->zone_pgdat;
+ 	if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0, 0))
+ 		return;
+-	if (pgdat->kswapd_max_order < order)
++	if (pgdat->kswapd_max_order < order) {
+ 		pgdat->kswapd_max_order = order;
++		pgdat->classzone_idx = min(pgdat->classzone_idx, classzone_idx);
++	}
+ 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
+ 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 		return;
 -- 
 1.7.1
 
