@@ -1,113 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab0LIRtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 12:49:08 -0500
-Received: from Mycroft.westnet.com ([216.187.52.7]:46040 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab0LIRtF (ORCPT
+	id S1756294Ab0LIRuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 12:50:44 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45051 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755701Ab0LIRum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 12:49:05 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 9 Dec 2010 12:50:42 -0500
+Subject: Re: [PATCHv1 000/211] unicore32 architecture support
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn>
+References: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Dec 2010 11:50:37 -0600
+Message-ID: <1291917037.3002.257.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Message-ID: <19713.5738.653711.301814@quad.stoffel.home>
-Date: Thu, 9 Dec 2010 12:48:26 -0500
-From: "John Stoffel" <john@stoffel.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: John Stoffel <john@stoffel.org>, xfs-masters@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, cluster-devel@redhat.com,
-        linux-mtd@lists.infradead.org, jfs-discussion@lists.sourceforge.net,
-        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-mm@kvack.org,
-        linux-security-module@vger.kernel.org, chris.mason@oracle.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, swhiteho@redhat.com, dwmw2@infradead.org,
-        shaggy@linux.vnet.ibm.com, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, hughd@google.com, jmorris@namei.org, sds@tycho.nsa.gov,
-        eparis@parisplace.org, hch@lst.de, dchinner@redhat.com,
-        viro@zeniv.linux.org.uk, tao.ma@oracle.com, shemminger@vyatta.com,
-        jeffm@suse.com, paul.moore@hp.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        casey@schaufler-ca.com, kees.cook@canonical.com, dhowells@redhat.com
-Subject: Re: [PATCH] fs/vfs/security: pass last path component to LSM on
- inode creation
-In-Reply-To: <1291909941.3072.70.camel@localhost.localdomain>
-References: <20101208194527.13537.77202.stgit@paris.rdu.redhat.com>
-	<19712.61515.201226.938553@quad.stoffel.home>
-	<1291909941.3072.70.camel@localhost.localdomain>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+On Thu, 2010-12-09 at 17:28 +0800, Guan Xuetao wrote:
+> From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> 
+> These patches add support for UniCore-32 ISA in linux kernel.
+> UniCore ISA is defined and developed by Micro-Processor R&D Center of
+> Peking University, and over the years, the CPUs and SoCs using UniCore ISA
+> have been successfully applied in a variety of products in China.
 
-Eric> On Thu, 2010-12-09 at 10:05 -0500, John Stoffel wrote:
->> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
-
->> So what happens when I create a file /home/john/shadow, does selinux
->> (or LSM in general) then run extra checks because the filename is
->> 'shadow' in your model?  
-
-Eric> It's entirely a question of labeling and one that was discussed on the
-Eric> LSM list in some detail:
-
-Eric> http://marc.info/?t=129141308200002&r=1&w=2
-
-Thank you for pointing me at this discussion.  I'm working my way
-through it, but so far I'm not seeing any consensus that this is
-really the proper thing to do.  I personally feel this should be in
-userspace if at all possible.
-
-Eric> The basic synopsis is that when a new inode is created SELinux
-Eric> must apply some label.  It makes the decision for what label to
-Eric> apply based on 3 pieces of information.
-
-Eric> The label of the parent inode.
-Eric> The label of the process creating the new inode.
-Eric> The 'class' of the inode, S_ISREG, S_ISDIR, S_ISLNK, etc
-
-These seem to be ok, if you're using label based security.  But since
-I freely admit I'm not an expert or even a user, I'm just trying to
-understand and push back to make sure we do what's good.  And which
-doesn't impact non-SElinux users.  
-
-Eric> This patch adds a 4th piece of information, the name of the
-Eric> object being created.  An obvious situation where this will be
-Eric> useful is devtmpfs (although you'll find other examples in the
-Eric> above thread).  devtmpfs when it creates char/block devices is
-Eric> unable to distinguish between kmem and console and so they are
-Eric> created with a generic label.  hotplug/udev is then called which
-Eric> does some pathname like matching and relabels them to something
-Eric> more specific.  We've found that many people are able to race
-Eric> against this particular updating and get spurious denials in
-Eric> /dev.  With this patch devtmpfs will be able to get the labels
-Eric> correct to begin with.
-
-So your Label based access controls are *also* based on pathnames?
-Right?  
-
-Eric> I'm certainly willing to discuss the security implications of this
-Eric> patch, but that would probably be best done with a significantly
-Eric> shortened cc-list.  You'll see in the above mentioned thread that a
-Eric> number of 'security' people (even those who are staunchly anti-SELinux)
-Eric> recognize there is value in this and that it is certainly much better
-Eric> than we have today.
-
->> I *think* the overhead shouldn't be there if SELINUX is disabled, but
->> have you confirmed this?  How you run performance tests before/after
->> this change when doing lots of creations of inodes to see what sort of
->> performance changes might be there?
-
-Eric> I've actually recently done some perf testing on creating large
-Eric> numbers of inodes using bonnie++, since SELinux was a noticeable
-Eric> overhead in that operation.  Doing that same test with SELinux
-Eric> disabled (or enabled) I do not see a noticeable difference when
-Eric> this patch is applied or not.  It's just an extra argument to a
-Eric> function that goes unused.
-
-That answers alot of my concerns then.  Not having it impact users in
-a non-SELinux context is vitally important to me.
+Could we at least have these 212 emails threaded at least below this
+email ... for those of us who may be tempted to skip a full review with
+a thread delete?
 
 Thanks,
-John
+
+James
+
