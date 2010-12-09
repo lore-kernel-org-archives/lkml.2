@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab0LIAgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 19:36:35 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54982 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab0LIAgd convert rfc822-to-8bit (ORCPT
+	id S1755134Ab0LIAoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 19:44:20 -0500
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:49303 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753429Ab0LIAoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 19:36:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=HfuE0EGdRMwN2fRcLxN1QdUF3UKsOW7Zbg7dhhVKS//IO94AOw4uJ4tTmBOZzSN5aT
-         80AdzErhV/k7PeHW4ndXt5RqUK7O1lHyjf8FINhJHeuTHb4/OlgE5+UVlO2VhQe4mOiq
-         4JiqYT2kBsfcJj5sFgKPmUG3mxzb2qlAEoYoc=
+	Wed, 8 Dec 2010 19:44:19 -0500
+Date: Thu, 9 Dec 2010 11:44:13 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Nick Piggin <npiggin@suse.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/46] Revert "fs: use RCU read side protection in
+ d_validate"
+Message-ID: <20101209004413.GB32766@dastard>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <2d1d8ffc4acea8b6c4e5b58bb1653b3f0e7071e2.1290852958.git.npiggin@kernel.dk>
+ <20101208011656.GD29333@dastard>
+ <20101208093824.GA3151@amd>
 MIME-Version: 1.0
-In-Reply-To: <1291853616.16839.10.camel@dcbw.foobar.com>
-References: <AANLkTim0=ds3EhQOEfHdrKt2dSnEqUgf5CLOPHNyW=jE@mail.gmail.com>
- <1290569516.3074.41.camel@dcbw.foobar.com> <AANLkTi=ioGgpAQ-rx_abCHcOmOezXwJFfbKWc7=tGAJ5@mail.gmail.com>
- <1290571986.3074.64.camel@dcbw.foobar.com> <AANLkTi=0ocvsR185Qib3VoT43ziTUa_3oRDnmU65pYjv@mail.gmail.com>
- <1290575460.18917.3.camel@dcbw.foobar.com> <AANLkTiks65oAvVEu0Df4yeHNJm=cVnSfFeo=enxt-gpn@mail.gmail.com>
- <1291853616.16839.10.camel@dcbw.foobar.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Thu, 9 Dec 2010 11:36:11 +1100
-Message-ID: <AANLkTin3w6bHJFZ2ujdp57MWarYcCGE8s+O-zuuevDU1@mail.gmail.com>
-Subject: Re: Re-distributable 88w8335 Firmware?
-To: Dan Williams <dcbw@redhat.com>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>, David.Woodhouse@intel.com,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Holger Schurig <holgerschurig@googlemail.com>,
-        Markus Becker <mab@comnets.uni-bremen.de>, andreamrl@tiscali.it,
-        Denis Kirjanov <kirjanov@gmail.com>, dwmw2@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101208093824.GA3151@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 11:13, Dan Williams <dcbw@redhat.com> wrote:
-> I've converted the cb35 duplex firmware to binary and uploaded it to
-> linux-firmware after receiving permission from Marvell to do so.  Now
-> lets get a driver :)
+On Wed, Dec 08, 2010 at 08:38:24PM +1100, Nick Piggin wrote:
+> On Wed, Dec 08, 2010 at 12:16:56PM +1100, Dave Chinner wrote:
+> > On Sat, Nov 27, 2010 at 08:56:03PM +1100, Nick Piggin wrote:
+> > > This reverts commit 3825bdb7ed920845961f32f364454bee5f469abb.
+> > > 
+> > > Patch is broken, you can't dget() without holding any locks!
+> > 
+> > I believe you can - for the same reasons we can take a reference to
+> > an inode without holding the inode_lock. That is, as long as the
+> > caller already holds an active reference to the dentry,
+> > dget() can be used to take another reference without needing the
+> > dcache_lock.
+> > 
+> > Such usage appears to be described in the comment above dget() and
+> > there's a BUG_ON() in dget() to catch callers that don't already
+> > have an active reference. An example of a valid unlocked dget():
+> > d_alloc() does an unlocked dget() to take a reference to the parent
+> > dentry whichn we already are guaranteed to have a reference to.
+> 
+> Of course you can dget if you already have a reference :)
 
-Yeah!
+Right, so the commit message is wrong. Can you update it to tell us why
+dget() can't be used there - the commit message from the second
+patch explained it far better....
 
-Well Done!
+> > As to d_validate() - it depends on the caller behaviour as to
+> > whether the unlocked dget() is valid or not.  From a cursory check
+> > of the NCP and SMB readdir caches, both appear to hold an active
+> > reference to the dentry it is passing to d_validate().
+> 
+> I don't see where? Can you point to where the refcount is taken?
+> AFAIKS it drops the reference 3 lines after it puts the pointer
+> into cache.
 
-Thanks for all your work on this!
+Yeah, you're right, I missed that one - I spent more tiem checking
+the validation part of the code than the initial insertion. Hence
+my request:
 
+> > If that is
+> > the case then there is nothing wrong with the way d_validate uses
+> > dget(). Can someone with more SMB/NCP expertise than me validate the
+> > use of cached dentries?
+> 
+> Then why would it have to use d_validate if it has a reference?
+> That is supposed to be for an "untrusted" pointer (which is why
+> it had all the crazy checks that it's in kmem and in the right
+> slab etc).
+
+Code changes. It may not be doing what it was originally
+needed/intended to be doing - I don't need to waste time on code
+archeology and second guessing when there are others around that can
+tell me this off the top oftheir head. ;)
+
+Cheers,
+
+Dave.
 -- 
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
+Dave Chinner
+david@fromorbit.com
