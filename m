@@ -1,49 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab0LIWoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 17:44:32 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:61815 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab0LIWoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 17:44:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=WZ1nPzU8pBU52ciVMSCxjjGh8QZCZbsxoNXnSEznchFJLtamxO4U0aMxOspZnzhe71
-         NAxt568qotmKtvI/wPKsLasno3AA0wMZV2w9u6W92H25hd415i8aUYdgFNdeOrNr4nmG
-         7nxpXKTp8qWS6QvfyINozNvERBKt+ZxKy5EOs=
+	id S1753985Ab0LIWsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 17:48:33 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:56895 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750796Ab0LIWsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 17:48:31 -0500
+Date: Thu, 9 Dec 2010 14:48:30 -0800
+From: Arthur Kepner <akepner@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH RESEND] x86/irq: assign vectors from numa_node
+Message-ID: <20101209224830.GH20481@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1012092329480.25880@swampdragon.chaosbits.net>
-References: <AANLkTik4W+UxgyPjVyHDeEFTRCkXdDBQ9obgPkpnhzGW@mail.gmail.com> <alpine.LNX.2.00.1012092329480.25880@swampdragon.chaosbits.net>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Thu, 9 Dec 2010 14:39:08 -0800
-Message-ID: <AANLkTikc_u4NhxdGzwQMjbEe12qYmhq481amazTK-JRc@mail.gmail.com>
-Subject: Re: Start dropping PCMCIA from compat-wireless for 2.6.38+
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 2:31 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Thu, 9 Dec 2010, Luis R. Rodriguez wrote:
->
->> I'm going to start dropping PCMCIA stuff from compat-wireless as I
->> don't think we have any users of it nor interest to keep backporting
->> it. This entails dropping drivers like orinoco, b43 PCMCIA support,
->> libertas, as well as bluetooth bluecard_cs, bluecard_cs, dtl1_cs,
->> bt3c_cs and of course CONFIG_SSB_PCMCIAHOST. If you are a user please
->> yell now.
->>
-> Yelling.
-> While I'm not personally a user, my mother is. She still has an old IBM
-> Thinkpad 600 laptop with a PCMCIA card in it that uses the orinoco driver.
 
-And you have your mother using compat-wireless?
+(Resending with expanded cc list.)
 
-  Luis
+Several drivers (e.g., mlx4_core) do something similar to:
+
+	err = pci_enable_msix(pdev, entries, num_possible_cpus());
+
+which takes us down this code path:
+
+	pci_enable_msix
+	native_setup_msi_irqs
+	create_irq_nr
+	__assign_irq_vector
+
+__assign_irq_vector() preferentially uses vectors from low-numbered 
+CPUs. On a system with a large number (>256) CPUs this can result in 
+a CPU running out of vectors, and subsequent attempts to assign an 
+interrupt to that CPU will fail.
+
+The following patch prefers vectors from the node associated with the 
+device (if the device is associated with a node). This should make it 
+far less likely that a single CPU's vectors will be exhausted.
+
+Signed-off-by: Arthur Kepner <akepner@sgi.com>
+---
+
+ io_apic.c |   81 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 77 insertions(+), 4 deletions(-)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7cc0a72..af5f9d8 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1117,6 +1117,49 @@ next:
+ 	return err;
+ }
+ 
++static int
++__assign_irq_vector_node(int irq, struct irq_cfg *cfg,
++			 const struct cpumask *mask, int node)
++{
++	int err = -EAGAIN;
++	int cpu, best_cpu = -1, min_vector_count = NR_VECTORS;
++
++	for_each_cpu_and(cpu, cpumask_of_node(node), mask) {
++		/* find the 'best' CPU to take this vector -
++		 * the one with the fewest assigned vectors is
++		 * considered 'best' */
++		int i, vector_count = 0;
++
++		if (!cpu_online(cpu))
++			continue;
++
++		for (i = FIRST_EXTERNAL_VECTOR + VECTOR_OFFSET_START;
++		     i < NR_VECTORS ; i++)
++			if (per_cpu(vector_irq, cpu)[i] != -1)
++				vector_count++;
++
++		if (vector_count < min_vector_count) {
++			min_vector_count = vector_count;
++			best_cpu = cpu;
++		}
++	}
++
++	if (best_cpu >= 0) {
++		cpumask_var_t tmp_mask;
++
++		if (!alloc_cpumask_var(&tmp_mask, GFP_ATOMIC))
++			return -ENOMEM;
++
++		cpumask_clear(tmp_mask);
++		cpumask_set_cpu(best_cpu, tmp_mask);
++		err = __assign_irq_vector(irq, cfg, tmp_mask);
++
++		free_cpumask_var(tmp_mask);
++	}
++
++	return err;
++}
++
+ int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ {
+ 	int err;
+@@ -1128,6 +1171,39 @@ int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	return err;
+ }
+ 
++static int
++assign_irq_vector_node(int irq, struct irq_cfg *cfg,
++		       const struct cpumask *mask, int node)
++{
++	int err;
++	unsigned long flags;
++
++	if (node == NUMA_NO_NODE)
++		return assign_irq_vector(irq, cfg, mask);
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	err = __assign_irq_vector_node(irq, cfg, mask, node);
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++
++	if (err != 0)
++		/* uh oh - try again w/o specifying a node */
++		return assign_irq_vector(irq, cfg, mask);
++	else {
++		/* and set the affinity mask so that only
++		 * CPUs on 'node' will be used */
++		struct irq_desc *desc = irq_to_desc(irq);
++		unsigned long flags;
++
++		raw_spin_lock_irqsave(&desc->lock, flags);
++		cpumask_and(desc->irq_data.affinity, cpu_online_mask,
++			    cpumask_of_node(node));
++		desc->status |= IRQ_AFFINITY_SET;
++		raw_spin_unlock_irqrestore(&desc->lock, flags);
++	}
++
++	return err;
++}
++
+ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ {
+ 	int cpu, vector;
+@@ -3057,7 +3133,6 @@ device_initcall(ioapic_init_sysfs);
+ unsigned int create_irq_nr(unsigned int from, int node)
+ {
+ 	struct irq_cfg *cfg;
+-	unsigned long flags;
+ 	unsigned int ret = 0;
+ 	int irq;
+ 
+@@ -3073,10 +3148,8 @@ unsigned int create_irq_nr(unsigned int from, int node)
+ 		return 0;
+ 	}
+ 
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	if (!__assign_irq_vector(irq, cfg, apic->target_cpus()))
++	if (!assign_irq_vector_node(irq, cfg, apic->target_cpus(), node))
+ 		ret = irq;
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
+ 
+ 	if (ret) {
+ 		set_irq_chip_data(irq, cfg);
