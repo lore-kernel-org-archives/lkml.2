@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab0LITZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 14:25:49 -0500
-Received: from kroah.org ([198.145.64.141]:44359 "EHLO coco.kroah.org"
+	id S1756222Ab0LITZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 14:25:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44851 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753920Ab0LITZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 14:25:47 -0500
-Date: Thu, 9 Dec 2010 11:13:56 -0800
-From: Greg KH <greg@kroah.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [stable] [PATCH] avr32: Fix build failure conflicting types
- for 'sys_execve'
-Message-ID: <20101209191356.GA26183@kroah.com>
-References: <1291850373-6955-1-git-send-email-peterhuewe@gmx.de>
- <20101209182132.GB24175@kroah.com>
- <201012091942.36508.PeterHuewe@gmx.de>
+	id S1755872Ab0LITZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 14:25:52 -0500
+Date: Thu, 9 Dec 2010 11:20:50 -0800
+From: Greg KH <gregkh@suse.de>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, tytso@mit.edu,
+        sandeen@redhat.com, adilger.kernel@dilger.ca, hch@infradead.org,
+        axboe@kernel.dk
+Subject: Re: [RFC PATCH 0/2 v1] Ioctl for reading block queue information
+Message-ID: <20101209192050.GA26457@suse.de>
+References: <1291908337-18805-1-git-send-email-lczerner@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201012091942.36508.PeterHuewe@gmx.de>
+In-Reply-To: <1291908337-18805-1-git-send-email-lczerner@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 07:42:36PM +0100, Peter Hüwe wrote:
-> > This is _not_ how to get stuff into the stable kernel tree, sorry.
-> Sorry about that - still learning ;) - thanks for your patience.
+On Thu, Dec 09, 2010 at 04:25:35PM +0100, Lukas Czerner wrote:
+> Hi all,
 > 
-> > Please read Documentation/stable_kernel_rules.txt for how to do so.
->  It states: "You must note the upstream commit ID in the changelog of your 
-> submission." - where do I get the ID from?
+> For a long time it has been pretty painful to retrieve informations from
+> /sys/block/*/queue for particular block device. Not only it is painful
+> to retrieve informations within C tool, parsing strings, etc, but one
+> have to run into problem even finding the proper path in sysfs.
 
-That would be if the patch was in Linus's tree already.  Read the next
-paragraph in the document:
+What's wrong with using libudev?  That should give you all of this
+information easily using a .c program without any need to change the
+kernel at all.
 
- - To have the patch automatically included in the stable tree, add the tag
-     Cc: stable@kernel.org
-   in the sign-off area. Once the patch is merged it will be applied to
-   the stable tree without anything else needing to be done by the author
-   or subsystem maintainer.
+> This patch set adds new block ioctl BLKGETQUEUEINFO, which is designed to
+> retrieve particular block queue attributes. I have tried to not to
+> create completely new interface, but since we already have those
+> information within block queue sysfs kobjects, rather retrieve it from
+> there.
 
-> > Care to resend?
-> Will do.
-> Or should I rather drop the patch and we wait on Hans-Christian's patch(es)?
+Ick, no, please just use the sysfs files, don't create a new ioctl, they
+are horrid.
 
-Whatever will end up in Linus's tree is the correct thing from a stable
-point of view.
 
-thanks,
+> 
+> So it binds enum blkq_info_type in include/linux/fs.h with
+> default_attrs[] definition within block/blk-sysfs.c for ordering
+> purposes, so the userspace has reliable way to address specific
+> block queue attribute.
+> 
+> In order to avoid string parsing (given that 99% of block queue sysfs
+> attributes are of unsigned long type) I have introduced new sysfs_ops
+> member *get which may be used to pass pointer to any type of data (unsigned
+> long in this case). Then this get method is used to withdraw information
+> through kobject->ktype->sysfs_ops.
+> 
+> Although there are some downsides of this approach I would like to discuss:
+> 
+>  1. In current state BLKGETQUEUEINFO and the whole infrastructure allow to
+>     retrieve only numeric values (no text), this means we are no able to
+>     retrieve schedule information.
+> 
+>  2. Adding new *get member into sysfs_ops. I see this as the most painful
+>     downside, however, when we have more subsystems adding ioctls like this,
+>     they can easily use this method, the same way I am using it now.
+
+Nope, don't do this, just use sysfs how it is supposed to be used, from
+userspace.
+
+sorry,
 
 greg k-h
