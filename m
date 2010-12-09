@@ -1,123 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab0LIXkH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:40:07 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56536 "EHLO hera.kernel.org"
+	id S1756771Ab0LIXkX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 18:40:23 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56550 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756650Ab0LIXkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:40:03 -0500
-Date: Thu, 9 Dec 2010 23:39:14 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org, imunsie@au1.ibm.com,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
-        tglx@linutronix.de, imunsie@au1.ibm.com, mingo@elte.hu
-In-Reply-To: <20101207124551.014649793@linutronix.de>
-References: <20101207124551.014649793@linutronix.de>
+	id S1757461Ab0LIXkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 18:40:20 -0500
+Date: Thu, 9 Dec 2010 23:39:57 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, imunsie@au1.ibm.com, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, tglx@linutronix.de,
+        imunsie@au1.ibm.com, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session: Split out sample preprocessing
-Message-ID: <tip-3dfc2c0aee789843d18f6e4675658e6879465a56@git.kernel.org>
-Git-Commit-ID: 3dfc2c0aee789843d18f6e4675658e6879465a56
+Subject: [tip:perf/core] perf session: Remove unneeded dump_printf calls
+Message-ID: <tip-ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b@git.kernel.org>
+Git-Commit-ID: ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 23:39:14 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 23:39:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3dfc2c0aee789843d18f6e4675658e6879465a56
-Gitweb:     http://git.kernel.org/tip/3dfc2c0aee789843d18f6e4675658e6879465a56
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 7 Dec 2010 12:48:58 +0000
+Commit-ID:  ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b
+Gitweb:     http://git.kernel.org/tip/ddbc24b72c2c3f3f0182bbc2cb70b31c52a6f45b
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 9 Dec 2010 12:20:20 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 9 Dec 2010 12:13:13 -0200
+CommitDate: Thu, 9 Dec 2010 12:20:20 -0200
 
-perf session: Split out sample preprocessing
+perf session: Remove unneeded dump_printf calls
 
-Simplify the code a bit.
+Since we check at the beginning of the callers, no need to ask if
+dump_trace is set multiple times.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ian Munsie <imunsie@au1.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20101207124551.014649793@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |   40 +++++++++++++++++++++++++---------------
- 1 files changed, 25 insertions(+), 15 deletions(-)
+ tools/perf/util/session.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
 
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7c5cc12..a765b27 100644
+index 69760cd..b59abf5 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -732,6 +732,22 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	}
+@@ -639,13 +639,10 @@ static int perf_session_queue_event(struct perf_session *s, event_t *event,
+ 	return 0;
  }
  
-+static int perf_session__preprocess_sample(struct perf_session *session,
-+					   event_t *event, struct sample_data *sample)
-+{
-+	if (event->header.type != PERF_RECORD_SAMPLE ||
-+	    !(session->sample_type & PERF_SAMPLE_CALLCHAIN))
-+		return 0;
-+
-+	if (!ip_callchain__valid(sample->callchain, event)) {
-+		pr_debug("call-chain problem with event, skipping it.\n");
-+		++session->hists.stats.nr_invalid_chains;
-+		session->hists.stats.total_invalid_chains += sample->period;
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
- static int perf_session__process_event(struct perf_session *session,
- 				       event_t *event,
- 				       struct perf_event_ops *ops,
-@@ -750,24 +766,9 @@ static int perf_session__process_event(struct perf_session *session,
+-static void callchain__dump(struct sample_data *sample)
++static void callchain__printf(struct sample_data *sample)
+ {
+ 	unsigned int i;
  
- 	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
- 		dump_event(session, event, file_offset, NULL);
--	else
--		event__parse_sample(event, session, &sample);
- 
- 	/* These events are processed right away */
- 	switch (event->header.type) {
--	case PERF_RECORD_SAMPLE:
--		if (session->sample_type & PERF_SAMPLE_CALLCHAIN) {
--			if (!ip_callchain__valid(sample.callchain, event)) {
--				pr_debug("call-chain problem with event, "
--					 "skipping it.\n");
--				++session->hists.stats.nr_invalid_chains;
--				session->hists.stats.total_invalid_chains +=
--					sample.period;
--				return 0;
--			}
--		}
--		break;
+-	if (!dump_trace)
+-		return;
 -
- 	case PERF_RECORD_HEADER_ATTR:
- 		return ops->attr(event, session);
- 	case PERF_RECORD_HEADER_EVENT_TYPE:
-@@ -784,6 +785,15 @@ static int perf_session__process_event(struct perf_session *session,
- 		break;
- 	}
+ 	printf("... chain: nr:%Lu\n", sample->callchain->nr);
  
-+	/*
-+	 * For all kernel events we get the sample data
-+	 */
-+	event__parse_sample(event, session, &sample);
+ 	for (i = 0; i < sample->callchain->nr; i++)
+@@ -675,27 +672,29 @@ static void dump_event(struct perf_session *session, event_t *event,
+ 	if (!dump_trace)
+ 		return;
+ 
+-	dump_printf("\n%#Lx [%#x]: event: %d\n", file_offset,
+-		    event->header.size, event->header.type);
++	printf("\n%#Lx [%#x]: event: %d\n", file_offset, event->header.size,
++	       event->header.type);
+ 
+ 	trace_event(event);
+ 
+ 	if (sample)
+ 		perf_session__print_tstamp(session, event, sample);
+ 
+-	dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
+-		    file_offset, event->header.size,
+-		    event__get_event_name(event->header.type));
++	printf("%#Lx [%#x]: PERF_RECORD_%s", file_offset, event->header.size,
++	       event__get_event_name(event->header.type));
+ }
+ 
+ static void dump_sample(struct perf_session *session, event_t *event,
+ 			struct sample_data *sample)
+ {
+-	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
+-		    sample->pid, sample->tid, sample->ip, sample->period);
++	if (!dump_trace)
++		return;
 +
-+	/* Preprocess sample records - precheck callchains */
-+	if (perf_session__preprocess_sample(session, event, &sample))
-+		return 0;
-+
- 	if (ops->ordered_samples) {
- 		ret = perf_session_queue_event(session, event, &sample,
- 					       file_offset);
++	printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
++	       sample->pid, sample->tid, sample->ip, sample->period);
+ 
+ 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
+-		callchain__dump(sample);
++		callchain__printf(sample);
+ }
+ 
+ static int perf_session_deliver_event(struct perf_session *session,
