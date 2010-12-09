@@ -1,51 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab0LIUT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:19:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54805 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab0LIUTZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:19:25 -0500
-Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=GeCHZ23J5UDoUfbWnLHfVWCeA7f9Gh_sKYSqa@mail.gmail.com>
-References: <1291267223.2405.314.camel@minggr.sh.intel.com>
-	 <1291922467.6803.44.camel@twins>
-	 <AANLkTi=GeCHZ23J5UDoUfbWnLHfVWCeA7f9Gh_sKYSqa@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 09 Dec 2010 21:19:03 +0100
-Message-ID: <1291925943.6803.50.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757088Ab0LIUTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:19:48 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45730
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753721Ab0LIUTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 15:19:46 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: hjanssen@microsoft.com, zbr@ioremap.net, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/1] Properly check return values of kmalloc and vmbus_recvpacket
+Date: Thu,  9 Dec 2010 12:23:29 -0800
+Message-Id: <1291926209-17120-1-git-send-email-hjanssen@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-09 at 21:15 +0100, Stephane Eranian wrote:
-> On Thu, Dec 9, 2010 at 8:21 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Thu, 2010-12-02 at 13:20 +0800, Lin Ming wrote:
-> >> +       /* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
-> >> +       family = boot_cpu_data.x86;
-> >> +       model = boot_cpu_data.x86_model;
-> >> +       if (family != 6 || (model != 0x1A && model != 0x1E && model != 0x1F))
-> >> +               return;
-> >
-> > So that's 26, 30 and 31? Curiously
-> > arch/x86/kernel/cpu/perf_event_intel.c does have 31.
+Correct ugly oversight, we need to check the return values of kmalloc
+and vmbus_recvpacket and return if they fail. I also tightened up the
+call to kmalloc. 
 
-That was clearly meant to say: doesn't.. Does Intel have an exhaustive
-model list somewhere?
+Thanks to Evgeniy Polyakov <zbr@ioremap.net>  for pointing this out.
 
-> It is also missing model 44 (0x2c).
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
-Right.. but if the westmere uncore is the same, then its also missing
-37.
+---
+ drivers/staging/hv/hv_utils.c |   48 ++++++++++++++++++++++++++++------------
+ 1 files changed, 33 insertions(+), 15 deletions(-)
 
-The -EX chips have a different uncore, right?
+diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
+index 53e1e29..ac68575 100644
+--- a/drivers/staging/hv/hv_utils.c
++++ b/drivers/staging/hv/hv_utils.c
+@@ -43,21 +43,27 @@ static void shutdown_onchannelcallback(void *context)
+ {
+ 	struct vmbus_channel *channel = context;
+ 	u8 *buf;
+-	u32 buflen, recvlen;
++	u32 recvlen;
+ 	u64 requestid;
+ 	u8  execute_shutdown = false;
++	int ret = 0;
+ 
+ 	struct shutdown_msg_data *shutdown_msg;
+ 
+ 	struct icmsg_hdr *icmsghdrp;
+ 	struct icmsg_negotiate *negop = NULL;
+ 
+-	buflen = PAGE_SIZE;
+-	buf = kmalloc(buflen, GFP_ATOMIC);
++	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+ 
+-	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
++	if (!buf) {
++		printk(KERN_INFO
++		       "Unable to allocate memory for shutdown_onchannelcallback");
++		return;
++	}
++
++	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
+ 
+-	if (recvlen > 0) {
++	if (ret == 0 && recvlen > 0) {
+ 		DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
+ 			   recvlen, requestid);
+ 
+@@ -151,17 +157,23 @@ static void timesync_onchannelcallback(void *context)
+ {
+ 	struct vmbus_channel *channel = context;
+ 	u8 *buf;
+-	u32 buflen, recvlen;
++	u32 recvlen;
+ 	u64 requestid;
+ 	struct icmsg_hdr *icmsghdrp;
+ 	struct ictimesync_data *timedatap;
++	int ret = 0;
+ 
+-	buflen = PAGE_SIZE;
+-	buf = kmalloc(buflen, GFP_ATOMIC);
++	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+ 
+-	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
++	if (!buf) {
++		printk(KERN_INFO
++		       "Unable to allocate memory for timesync_onchannelcallback");
++		return;
++	}
+ 
+-	if (recvlen > 0) {
++	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
++
++	if (ret == 0 && recvlen > 0) {
+ 		DPRINT_DBG(VMBUS, "timesync packet: recvlen=%d, requestid=%lld",
+ 			recvlen, requestid);
+ 
+@@ -197,17 +209,23 @@ static void heartbeat_onchannelcallback(void *context)
+ {
+ 	struct vmbus_channel *channel = context;
+ 	u8 *buf;
+-	u32 buflen, recvlen;
++	u32 recvlen;
+ 	u64 requestid;
+ 	struct icmsg_hdr *icmsghdrp;
+ 	struct heartbeat_msg_data *heartbeat_msg;
++	int ret = 0;
++
++	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+ 
+-	buflen = PAGE_SIZE;
+-	buf = kmalloc(buflen, GFP_ATOMIC);
++	if (!buf) {
++		printk(KERN_INFO
++		    "Unable to allocate memory for heartbeat_onchannelcallback");
++		return;
++	}
+ 
+-	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
++	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
+ 
+-	if (recvlen > 0) {
++	if (ret == 0 && recvlen > 0) {
+ 		DPRINT_DBG(VMBUS, "heartbeat packet: len=%d, requestid=%lld",
+ 			   recvlen, requestid);
+ 
+-- 
+1.6.0.2
+
