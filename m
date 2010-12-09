@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab0LIPb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:31:56 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:44750 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab0LIPbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:31:55 -0500
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Subject: [PATCH v3] kbuild, deb-pkg: support overriding userland architecture
-Date: Thu,  9 Dec 2010 15:24:14 +0000
-Message-Id: <1291908254-19468-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4D00F473.9090009@asbjorn.biz>
-References: <4D00F473.9090009@asbjorn.biz>
+	id S1753620Ab0LIPdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:33:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34961 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0LIPdH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 10:33:07 -0500
+Subject: Re: [tip:sched/urgent] Sched: fix skip_clock_update optimization
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        efault@gmx.de, bbb.lst@gmail.com, tglx@linutronix.de,
+        yong.zhang0@gmail.com, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-f26f9aff6aaf67e9a430d16c266f91b13a5bff64@git.kernel.org>
+References: <1291802742.1417.9.camel@marge.simson.net>
+	 <tip-f26f9aff6aaf67e9a430d16c266f91b13a5bff64@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 09 Dec 2010 16:32:53 +0100
+Message-ID: <1291908773.29292.16.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usefull if building for sparc64 userland, because the
-sparc and sparc64 userlands use the same 64-bit kernel,
-making it impossible to always select the correct userland
-architecture for the resulting debian package.
+On Wed, 2010-12-08 at 20:40 +0000, tip-bot for Mike Galbraith wrote:
+> @@ -4063,6 +4062,8 @@ need_resched_nonpreemptible:
+>  
+>         put_prev_task(rq, prev);
+>         next = pick_next_task(rq);
+> +       clear_tsk_need_resched(prev);
+> +       rq->skip_clock_update = 0;
+>  
+>         if (likely(prev != next)) {
+>                 sched_info_switch(prev, next);
+> @@ -4071,6 +4072,7 @@ need_resched_nonpreemptible:
+>                 rq->nr_switches++;
+>                 rq->curr = next;
+>                 ++*switch_count;
+> +               WARN_ON_ONCE(test_tsk_need_resched(next)); 
 
-Might also be usefull, if you want a i386 userland with a amd64 kernel.
-
-Example usage:
-	make KBUILD_DEBARCH=i386 deb-pkg
-
-LKML-reference: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Acked-by: maximilian attems <max@stro.at>
----
- Documentation/kbuild/kbuild.txt |    8 ++++++++
- scripts/package/builddeb        |    3 +++
- 2 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-index 634c625..9cf3bf0 100644
---- a/Documentation/kbuild/kbuild.txt
-+++ b/Documentation/kbuild/kbuild.txt
-@@ -60,6 +60,14 @@ But some architectures such as x86 and sparc have aliases.
- x86: i386 for 32 bit, x86_64 for 64 bit
- sparc: sparc for 32 bit, sparc64 for 64 bit
- 
-+KBUILD_DEBARCH
-+--------------------------------------------------
-+For the deb-pkg target, allows overriding the normal heuristics deployed by
-+deb-deb. Normally deb-pkg attempts to guess the right architecture based on
-+the UTS_MACHINE variable, and on some architectures also the kernel config.
-+The value of KBUILD_DEBARCH is assumed (not checked) to be a valid Debian
-+architecture.
-+
- CROSS_COMPILE
- --------------------------------------------------
- Specify an optional fixed part of the binutils filename.
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 5d6be3f..ffe2419 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -54,6 +54,9 @@ create_package() {
- 		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
- 		echo "" >&2
- 	esac
-+	if [ -n "$KBUILD_DEBARCH" ] ; then
-+		debarch="$KBUILD_DEBARCH"
-+	fi
- 	if [ -n "$debarch" ] ; then
- 		forcearch="-DArchitecture=$debarch"
- 	fi
--- 
-1.7.2.3
-
+I just managed to trigger this one.. will try and reproduce to find out
+wth happened.
