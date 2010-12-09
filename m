@@ -1,174 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab0LISOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:14:50 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:58436 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab0LISNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:13:06 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+	id S1756853Ab0LISPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:15:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756561Ab0LISP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 13:15:28 -0500
+Date: Thu, 9 Dec 2010 19:13:54 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/10] perf session: Consolidate the dump code
-Date: Thu,  9 Dec 2010 16:12:51 -0200
-Message-Id: <1291918376-18261-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1291918376-18261-1-git-send-email-acme@infradead.org>
-References: <1291918376-18261-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 44 of 66] skip transhuge pages in ksm for now
+Message-ID: <20101209181354.GF19131@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <91ac2384163d0f01633e.1288798099@v2.random>
+ <20101118160613.GZ8135@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118160613.GZ8135@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Thu, Nov 18, 2010 at 04:06:13PM +0000, Mel Gorman wrote:
+> On Wed, Nov 03, 2010 at 04:28:19PM +0100, Andrea Arcangeli wrote:
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Skip transhuge pages in ksm for now.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > Reviewed-by: Rik van Riel <riel@redhat.com>
+> 
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> 
+> This is an idle concern that I haven't looked into but is there any conflict
+> between khugepaged scanning the KSM scanning?
+> 
+> Specifically, I *think* the impact of this patch is that KSM will not
+> accidentally split a huge page. Is that right? If so, it could do with
+> being included in the changelog.
 
-The dump code used by perf report -D is scattered all over the place.
-Move it to separate functions.
+KSM wasn't aware about hugepages and in turn it'd never split them
+anyway. We want KSM to split hugepages only when if finds two equal
+subpages. That will happen later.
 
-Acked-by: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20101207124550.625434869@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/event.h   |    1 +
- tools/perf/util/session.c |   64 +++++++++++++++++++++++++++-----------------
- 2 files changed, 40 insertions(+), 25 deletions(-)
+Right now there is no collision of ksmd and khugepaged, regular pages,
+hugepages and ksm pages will co-exist fine in the same vma. The only
+problem is that the system has now to start swapping before KSM has a
+chance to find equal pages and we'll fix it in the future so KSM can
+scan inside hugepages too and split them and merge the subpages as
+needed before the memory pressure starts.
 
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 4716a8f..2b7e919 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -85,6 +85,7 @@ struct build_id_event {
- };
- 
- enum perf_user_event_type { /* above any possible kernel type */
-+	PERF_RECORD_USER_TYPE_START		= 64,
- 	PERF_RECORD_HEADER_ATTR			= 64,
- 	PERF_RECORD_HEADER_EVENT_TYPE		= 65,
- 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index e5d0ed9..12761d5 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -665,6 +665,35 @@ static void perf_session__print_tstamp(struct perf_session *session,
- 		printf("%Lu ", sample->time);
- }
- 
-+static void dump_event(struct perf_session *session, event_t *event,
-+		       u64 file_offset, struct sample_data *sample)
-+{
-+	if (!dump_trace)
-+		return;
-+
-+	dump_printf("\n%#Lx [%#x]: event: %d\n", file_offset,
-+		    event->header.size, event->header.type);
-+
-+	trace_event(event);
-+
-+	if (sample)
-+		perf_session__print_tstamp(session, event, sample);
-+
-+	dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
-+		    file_offset, event->header.size,
-+		    event__get_event_name(event->header.type));
-+}
-+
-+static void dump_sample(struct perf_session *session, event_t *event,
-+			struct sample_data *sample)
-+{
-+	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
-+		    sample->pid, sample->tid, sample->ip, sample->period);
-+
-+	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
-+		callchain__dump(sample);
-+}
-+
- static int perf_session_deliver_event(struct perf_session *session,
- 				      event_t *event,
- 				      struct sample_data *sample,
-@@ -703,32 +732,24 @@ static int perf_session__process_event(struct perf_session *session,
- 	struct sample_data sample;
- 	int ret;
- 
--	trace_event(event);
--
- 	if (session->header.needs_swap && event__swap_ops[event->header.type])
- 		event__swap_ops[event->header.type](event);
- 
--	if (event->header.type >= PERF_RECORD_MMAP &&
--	    event->header.type <= PERF_RECORD_SAMPLE) {
--		event__parse_sample(event, session, &sample);
--		if (dump_trace)
--			perf_session__print_tstamp(session, event, &sample);
--	}
-+	if (event->header.type >= PERF_RECORD_HEADER_MAX)
-+		return -EINVAL;
- 
--	if (event->header.type < PERF_RECORD_HEADER_MAX) {
--		dump_printf("%#Lx [%#x]: PERF_RECORD_%s",
--			    file_offset, event->header.size,
--			    event__get_event_name(event->header.type));
--		hists__inc_nr_events(&session->hists, event->header.type);
-+	hists__inc_nr_events(&session->hists, event->header.type);
-+
-+	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
-+		dump_event(session, event, file_offset, NULL);
-+	else {
-+		event__parse_sample(event, session, &sample);
-+		dump_event(session, event, file_offset, &sample);
- 	}
- 
- 	/* These events are processed right away */
- 	switch (event->header.type) {
- 	case PERF_RECORD_SAMPLE:
--		dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n",
--			    event->header.misc,
--			    sample.pid, sample.tid, sample.ip, sample.period);
--
- 		if (session->sample_type & PERF_SAMPLE_CALLCHAIN) {
- 			if (!ip_callchain__valid(sample.callchain, event)) {
- 				pr_debug("call-chain problem with event, "
-@@ -738,9 +759,8 @@ static int perf_session__process_event(struct perf_session *session,
- 					sample.period;
- 				return 0;
- 			}
--
--			callchain__dump(&sample);
- 		}
-+		dump_sample(session, event, &sample);
- 		break;
- 
- 	case PERF_RECORD_HEADER_ATTR:
-@@ -870,9 +890,6 @@ more:
- 
- 	head += size;
- 
--	dump_printf("\n%#Lx [%#x]: event: %d\n",
--		    head, event.header.size, event.header.type);
--
- 	if (skip > 0)
- 		head += skip;
- 
-@@ -961,9 +978,6 @@ more:
- 
- 	size = event->header.size;
- 
--	dump_printf("\n%#Lx [%#x]: event: %d\n",
--		    file_pos, event->header.size, event->header.type);
--
- 	if (size == 0 ||
- 	    perf_session__process_event(session, event, ops, file_pos) < 0) {
- 		dump_printf("%#Lx [%#x]: skipping unknown header type: %d\n",
--- 
-1.6.2.5
+> On the other hand, can khugepaged be prevented from promoting a hugepage
+> because of KSM?
 
+Sure, khugepaged won't promote if there's any ksm page in the
+range. That's not going to change. When KSM is started, the priority
+remains in saving memory. If people uses enabled=madvise and
+MADV_HUGEPAGE+MADV_MERGEABLE there is actually zero memory loss
+because of THP and there is a speed improvement for all pages that
+aren't equal. So it's an ideal setup even for embedded. Regular cloud
+setup would be enabled=always + MADV_MERGEABLE (with enabled=always
+MADV_HUGEPAGE becomes a noop).
+
+On a related note I'm also going to introduce a MADV_NO_HUGEPAGE, is
+that a good name for it? cloud management wants to be able to disable
+THP per-VM basis (when the VM are totally idle, and low priority, this
+currently also helps to maximize the power of KSM that would otherwise
+be activated only after initial sawpping, but the KSM part will be
+fixed). It could be achieved also with enabled=madvise and
+MADV_HUGEPAGE but we don't want to change the system wide default in
+order to disable THP on a per-VM basis: it's much nicer if the default
+behavior of the host remains the same in case it's not a pure
+hypervisor usage but there are other loads running in parallel to the
+virt load. In theory a prctl(PR_NO_HUGEPAGE) could also do it and it'd
+be possible to use from a wrapper (madvise can't be wrapped), but I
+think MADV_NO_HUGEPAGE is cleaner and it won't require brand new
+per-process info.
