@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab0LIJbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:31:55 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:53612 "EHLO mprc.pku.edu.cn"
+	id S1755782Ab0LIJcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:32:48 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:53615 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755015Ab0LIJbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:31:53 -0500
+	id S1755037Ab0LIJcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:32:46 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: "Arnd Bergmann" <arnd@arndb.de>
 Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 002/211] unicore32: new file arch/unicore32/Kconfig
-Date: Thu, 9 Dec 2010 17:31:48 +0800
-Message-ID: <01ce01cb9783$e77278e0$b6576aa0$@mprc.pku.edu.cn>
+Subject: [PATCHv1 003/211] unicore32: new file arch/unicore32/Kconfig.debug
+Date: Thu, 9 Dec 2010 17:32:42 +0800
+Message-ID: <01d001cb9784$07a80440$16f80cc0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuXg9On9FOgLcPDTU6V5ml3OYJ6DQ==
+Thread-Index: AcuXhAEse5745+s5QGeI2V6WOsq7kw==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,281 +25,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-	Global Kconfig file for UniCore32
+	Kconfig file for debugger
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/Kconfig |  260
-++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 260 insertions(+), 0 deletions(-)
+ arch/unicore32/Kconfig.debug |   86
+++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 86 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+diff --git a/arch/unicore32/Kconfig.debug b/arch/unicore32/Kconfig.debug
 new file mode 100644
-index 0000000..50ca508
+index 0000000..e59ab3c
 --- /dev/null
-+++ b/arch/unicore32/Kconfig
-@@ -0,0 +1,260 @@
-+config UNICORE32
-+	bool
-+	default y
-+	select HAVE_MEMBLOCK
-+	select HAVE_GENERIC_DMA_COHERENT
-+	select HAVE_KERNEL_GZIP
-+	select HAVE_KERNEL_BZIP2
-+	select HAVE_KERNEL_LZO
-+	select HAVE_KERNEL_LZMA
-+	select GENERIC_FIND_FIRST_BIT
++++ b/arch/unicore32/Kconfig.debug
+@@ -0,0 +1,86 @@
++menu "Kernel hacking"
++
++source "lib/Kconfig.debug"
++
++config STRICT_DEVMEM
++	bool "Filter access to /dev/mem"
++	depends on MMU
++	---help---
++	  If this option is disabled, you allow userspace (root) access to
+all
++	  of memory, including kernel and userspace memory. Accidental
++	  access to this is obviously disastrous, but specific access can
++	  be used by people debugging the kernel.
++
++	  If this option is switched on, the /dev/mem file only allows
++	  userspace access to memory mapped peripherals.
++
++          If in doubt, say Y.
++
++config EARLY_PRINTK
++	bool "Early printk"
++	default DEBUG_OCD
 +	help
-+	  UniCore-32 is 32-bit Instruction Set Architecture,
-+	  including a series of low-power-consumption RISC chip
-+	  designs licensed by PKUnity Ltd.
-+	  Please see web page at <http://www.pkunity.com/>.
++	  Write kernel log output directly into the ocd or to a serial port.
 +
-+config HAVE_PWM
-+	bool
++	  This is useful for kernel debugging when your machine crashes very
++	  early before the console code is initialized. For normal operation
++	  it is not recommended because it looks ugly and doesn't cooperate
++	  with klogd/syslogd or the X server. You should normally N here,
++	  unless you want to debug such a crash.
 +
-+config GENERIC_GPIO
-+	def_bool y
-+
-+config GENERIC_CLOCKEVENTS
-+	bool
-+
-+config NO_IOPORT
-+	bool
-+
-+config GENERIC_HARDIRQS
-+	bool
-+	default y
-+
-+config STACKTRACE_SUPPORT
-+	bool
-+	default y
-+
-+config HAVE_LATENCYTOP_SUPPORT
-+	bool
-+	default y
-+
-+config LOCKDEP_SUPPORT
-+	bool
-+	default y
-+
-+config TRACE_IRQFLAGS_SUPPORT
-+	bool
-+	default y
-+
-+config GENERIC_IRQ_PROBE
-+	bool
-+	default y
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	bool
-+	default y
-+
-+config RWSEM_XCHGADD_ALGORITHM
-+	bool
-+
-+config ARCH_HAS_ILOG2_U32
-+	bool
-+
-+config ARCH_HAS_ILOG2_U64
-+	bool
-+
-+config ARCH_HAS_CPUFREQ
-+	bool
-+
-+config GENERIC_HWEIGHT
-+	bool
-+	default y
-+
-+config GENERIC_CALIBRATE_DELAY
-+	bool
-+	default y
-+
-+config ARCH_MAY_HAVE_PC_FDC
-+	bool
-+
-+config NEED_DMA_MAP_STATE
-+       def_bool y
-+
-+config REALMODE
-+	bool
-+
-+config GENERIC_HARDIRQS_NO__DO_IRQ
-+	def_bool y
-+
-+source "init/Kconfig"
-+
-+source "kernel/Kconfig.freezer"
-+
-+menu "System Type"
-+
-+config MMU
-+	def_bool y
-+
-+config ARCH_FPGA
-+	bool
-+
-+choice
-+	prompt "PKUnity system type"
-+	default ARCH_PUV3
-+
-+	config ARCH_PUV3
-+	bool "PKUnity v3 (SuperK)"
-+	select CPU_UCV2
-+	select GENERIC_CLOCKEVENTS
-+	select HAVE_CLK
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARCH_HAS_CPUFREQ
-+
-+endchoice
-+
-+# CONFIGs for ARCH_PUV3
-+
-+if ARCH_PUV3
-+
-+choice
-+	prompt "Board Selection"
-+	default PUV3_DB0913
-+
-+config PUV3_FPGA_DLX200
-+	select ARCH_FPGA
-+	bool "FPGA board"
-+
-+config PUV3_DB0913
-+	bool "DEBUG board (0913)"
-+
-+config PUV3_NB0916
-+	bool "NetBook board (0916)"
-+	select HAVE_PWM
-+
-+config PUV3_SMW0919
-+	bool "Security Mini-Workstation board (0919)"
-+
-+endchoice
-+
-+config PUV3_PM
-+	bool
-+	depends on !ARCH_FPGA
-+	default y
-+
-+endif
-+
-+source "arch/unicore32/mm/Kconfig"
-+
-+comment "Floating poing support"
-+
-+config UNICORE_FPU_F64
-+	bool "UniCore-FPU (F64) support"
-+	depends on !ARCH_FPGA
-+	default y
-+
-+endmenu
-+
-+menu "Bus support"
-+
-+config PCI
-+	bool "PCI Support"
++config DEBUG_USER
++	bool "Verbose user fault messages"
 +	help
-+	  Find out whether you have a PCI motherboard. PCI is the name of a
-+	  bus system, i.e. the way the CPU talks to the other stuff inside
-+	  your box. Other bus systems are ISA, EISA, MicroChannel (MCA) or
-+	  VESA. If you have PCI, say Y, otherwise N.
++	  When a user program crashes due to an exception, the kernel can
++	  print a brief message explaining what the problem was. This is
++	  sometimes helpful for debugging but serves no purpose on a
++	  production system. Most people should say N here.
 +
-+source "drivers/pci/Kconfig"
++	  In addition, you need to pass user_debug=N on the kernel command
++	  line to enable this feature.  N consists of the sum of:
 +
-+source "drivers/pcmcia/Kconfig"
++	      1 - undefined instruction events
++	      2 - system calls
++	      4 - invalid data aborts
++	      8 - SIGSEGV faults
++	     16 - SIGBUS faults
 +
-+endmenu
++config DEBUG_STACK_USAGE
++	bool "Enable stack utilization instrumentation"
++	depends on DEBUG_KERNEL
++	help
++	  Enables the display of the minimum amount of free stack which each
++	  task has ever had available in the sysrq-T output.
 +
-+menu "Kernel Features"
++# These options are only for real kernel hackers who want to get their
+hands dirty.
++config DEBUG_LL
++	bool "Kernel low-level debugging functions"
++	depends on DEBUG_KERNEL
++	help
++	  Say Y here to include definitions of printascii, printch, printhex
++	  in the kernel.  This is helpful if you are debugging code that
++	  executes before the console is initialized.
 +
-+source "kernel/time/Kconfig"
-+
-+source "kernel/Kconfig.preempt"
-+
-+source "kernel/Kconfig.hz"
-+
-+source "mm/Kconfig"
-+
-+config LEDS
-+	bool "CPU heartbeat LEDs"
-+	depends on GENERIC_GPIO
-+	default y
-+
-+config ALIGNMENT_TRAP
-+	bool
++config DEBUG_OCD
++	bool "Kernel low-level debugging via On-Chip-Debugger"
++	depends on DEBUG_LL
 +	default y
 +	help
-+	  Unicore processors can not fetch/store information which is not
-+	  naturally aligned on the bus, i.e., a 4 byte fetch must start at
-an
-+	  address divisible by 4. On 32-bit Unicore processors, these
-non-aligned
-+	  fetch/store instructions will be emulated in software if you say
-+	  here, which has a severe performance impact. This is necessary for
-+	  correct operation of some network protocols. With an IP-only
-+	  configuration it is safe to say N, otherwise say Y.
++	  Say Y here if you want the debug print routines to direct their
++	  output to the UniCore On-Chip-Debugger channel using CP #1.
 +
-+endmenu
++config DEBUG_OCD_BREAKPOINT
++	bool "Breakpoint support via On-Chip-Debugger"
++	depends on DEBUG_OCD
 +
-+menu "Boot options"
-+
-+config CMDLINE
-+	string "Default kernel command string"
-+	default ""
-+
-+config CMDLINE_FORCE
-+	bool "Always use the default kernel command string"
-+	depends on CMDLINE != ""
++config DEBUG_UART
++	int "Kernel low-level debugging messages via serial port"
++	depends on DEBUG_LL
++	range 0 1
++	default "0"
 +	help
-+	  Always use the default kernel command string, even if the boot
-+	  loader passes other arguments to the kernel.
-+	  This is useful if you cannot or don't want to change the
-+	  command-line options your boot loader passes to the kernel.
-+
-+	  If unsure, say N.
++	  Choice for UART for kernel low-level using PKUnity UARTS,
++	  should be between zero and one. The port must have been
++	  initialised by the boot-loader before use.
 +
 +endmenu
-+
-+menu "Userspace binary formats"
-+
-+source "fs/Kconfig.binfmt"
-+
-+endmenu
-+
-+menu "Power management options"
-+
-+source "kernel/power/Kconfig"
-+
-+if ARCH_HAS_CPUFREQ
-+source "drivers/cpufreq/Kconfig"
-+endif
-+
-+config ARCH_SUSPEND_POSSIBLE
-+	def_bool y if !ARCH_FPGA
-+
-+config ARCH_HIBERNATION_POSSIBLE
-+	bool
-+	default y if !ARCH_FPGA
-+
-+endmenu
-+
-+source "net/Kconfig"
-+
-+if ARCH_PUV3
-+source "drivers/staging/puv3/Kconfig"
-+endif
-+
-+source "drivers/Kconfig"
-+
-+source "fs/Kconfig"
-+
-+source "arch/unicore32/Kconfig.debug"
-+
-+source "security/Kconfig"
-+
-+source "crypto/Kconfig"
-+
-+source "lib/Kconfig"
-
 
