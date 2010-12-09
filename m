@@ -1,118 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab0LIJfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:35:54 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:53319 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755410Ab0LIJfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:35:53 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 006/211] unicore32: new file arch/unicore32/boot/compressed/Makefile
-Date: Thu, 9 Dec 2010 17:35:44 +0800
-Message-ID: <01d601cb9784$741aecf0$5c50c6d0$@mprc.pku.edu.cn>
+	id S1755743Ab0LIJhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:37:05 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54916 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab0LIJhC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:37:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=OMALUoBSHaElcnTC2v0vin1syf8vznSjpzjF7jonVQatSmcaKqpFQib0RGGCvZ/iMV
+         ekvcgkUZCOR01WcM1sCIq7ydlgoClmWn5YcoMMN16QERGoqVvN1AuIHUB9efWoHpzJUy
+         thscaU8k0v3zez4HafqmcpLhBTn5WQiO+Hm1I=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuXhGmWmESiv1O6RYiTqZ3qBlZv1g==
-Content-Language: zh-cn
+In-Reply-To: <4CF53E61.1030307@kernel.org>
+References: <1290871325-3055-1-git-send-email-tj@kernel.org>
+	<1290871325-3055-5-git-send-email-tj@kernel.org>
+	<4CF53E61.1030307@kernel.org>
+Date: Thu, 9 Dec 2010 11:37:01 +0200
+X-Google-Sender-Auth: j_3556i5opoR3NFh7xEZF0XMMS8
+Message-ID: <AANLkTinGzmOzSD6DtF9XwJRA7HMrKxo-dm1WAHUeGBXS@mail.gmail.com>
+Subject: Re: [PATCH UPDATED#2 04/16] x86: Use local variable to cache
+ smp_processor_id() in setup_local_APIC()
+From: Pekka Enberg <penberg@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+On Tue, Nov 30, 2010 at 8:11 PM, Tejun Heo <tj@kernel.org> wrote:
+> This is a trivial clean up.
+>
+> * Move initialization of @cpu inside preemption disabled region as
+>  suggested by Cyrill Gorcunov.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
 
-	Makefile for uncompressed head, with autogenerate piggy.S and
-ld-script
-
-Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
----
- arch/unicore32/boot/compressed/Makefile |   71
-+++++++++++++++++++++++++++++++
- 1 files changed, 71 insertions(+), 0 deletions(-)
-
-diff --git a/arch/unicore32/boot/compressed/Makefile
-b/arch/unicore32/boot/compressed/Makefile
-new file mode 100644
-index 0000000..79f8889
---- /dev/null
-+++ b/arch/unicore32/boot/compressed/Makefile
-@@ -0,0 +1,71 @@
-+#
-+# linux/arch/unicore32/boot/compressed/Makefile
-+#
-+# create a compressed vmlinuz image from the original vmlinux
-+#
-+# This file is subject to the terms and conditions of the GNU General
-Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+# Copyright (C) 2001~2010 GUAN Xue-tao
-+#
-+
-+EXTRA_CFLAGS	:= -fpic -fno-builtin
-+EXTRA_AFLAGS	:= -Wa,-march=all
-+
-+AFLAGS_head.o	+= -DTEXT_OFFSET=$(TEXT_OFFSET)
-+OBJS		:= misc.o
-+
-+# font.c and font.o
-+CFLAGS_font.o	:= -Dstatic=
-+$(obj)/font.c: $(srctree)/drivers/video/console/font_8x8.c
-+	$(call cmd,shipped)
-+
-+# piggy.S and piggy.o
-+suffix_$(CONFIG_KERNEL_GZIP)	:= gzip
-+suffix_$(CONFIG_KERNEL_BZIP2)	:= bz2
-+suffix_$(CONFIG_KERNEL_LZO)	:= lzo
-+suffix_$(CONFIG_KERNEL_LZMA)	:= lzma
-+
-+$(obj)/piggy.$(suffix_y): $(obj)/../Image FORCE
-+	$(call if_changed,$(suffix_y))
-+
-+SEDFLAGS_piggy	= s/DECOMP_SUFFIX/$(suffix_y)/
-+$(obj)/piggy.S: $(obj)/piggy.S.in
-+	@sed "$(SEDFLAGS_piggy)" < $< > $@
-+
-+$(obj)/piggy.o:  $(obj)/piggy.$(suffix_y) $(obj)/piggy.S FORCE
-+
-+targets		:= vmlinux vmlinux.lds font.o font.c head.o misc.o \
-+			piggy.$(suffix_y) piggy.o piggy.S \
-+
-+# Make sure files are removed during clean
-+extra-y		+= piggy.gzip piggy.bz2 piggy.lzo piggy.lzma
-+
-+# Supply zreladdr to the decompressor via a linker symbol.
-+LDFLAGS_vmlinux := --defsym zreladdr=$(TEXT_OFFSET)
-+# ?
-+LDFLAGS_vmlinux += -p
-+# Report unresolved symbol references
-+LDFLAGS_vmlinux += --no-undefined
-+# Delete all temporary local symbols
-+LDFLAGS_vmlinux += -X
-+# Next argument is a linker script
-+LDFLAGS_vmlinux += -T
-+
-+# For uidivmod
-+$(obj)/vmlinux: $(obj)/vmlinux.lds $(obj)/head.o $(obj)/piggy.o \
-+		$(obj)/misc.o FORCE
-+	$(call if_changed,ld)
-+	@:
-+
-+# We now have a PIC decompressor implementation.  Decompressors running
-+# from RAM should not define ZTEXTADDR.  Decompressors running directly
-+# from ROM or Flash must define ZTEXTADDR (preferably via the config)
-+ZTEXTADDR	:= 0
-+ZBSSADDR	:= ALIGN(4)
-+
-+SEDFLAGS_lds	= s/TEXT_START/$(ZTEXTADDR)/;s/BSS_START/$(ZBSSADDR)/
-+$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/unicore32/boot/Makefile
-$(KCONFIG_CONFIG)
-+	@sed "$(SEDFLAGS_lds)" < $< > $@
-+
-
-
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
