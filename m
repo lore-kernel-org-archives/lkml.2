@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab0LIPKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 10:10:08 -0500
-Received: from hera.kernel.org ([140.211.167.34]:48859 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751631Ab0LIPKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 10:10:06 -0500
-Date: Thu, 9 Dec 2010 15:09:55 GMT
-From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        fweisbec@gmail.com, rakib.mullick@gmail.com, tglx@linutronix.de,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rakib.mullick@gmail.com, fweisbec@gmail.com, tglx@linutronix.de,
-        dzickus@redhat.com
-In-Reply-To: <AANLkTi=rcc38QzoKa6LFy4m++-p_9=Zt4_kDQE=GeKxf@mail.gmail.com>
-References: <AANLkTi=rcc38QzoKa6LFy4m++-p_9=Zt4_kDQE=GeKxf@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86: Address 'unused' warning in hw_nmi.c again
-Message-ID: <tip-2c6cb1053ad8b61ab9fb50b578d0ffea959f7583@git.kernel.org>
-Git-Commit-ID: 2c6cb1053ad8b61ab9fb50b578d0ffea959f7583
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 15:09:56 +0000 (UTC)
+	id S1754154Ab0LIPLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 10:11:30 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:36848 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab0LIPL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 10:11:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=wpcTZZB3P4G1vu8n4+FVfXsM/X86wqMwUG3Sf78M8LDiSpmalKzZsYdtmXTxpgnJVA
+         0zndj5Xy0Jz+grAAZOeg0nYwwmS+39dDaRPS7k3n+10t1ano7GqTbs4wLt3GzKjGt3cU
+         cgvVEU0CG+O7gBmtkLM8dyzV+a98vNidYaSr0=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH 1/8] staging: ft1000: Fix proc initialization handling.
+Date: Thu,  9 Dec 2010 16:13:47 +0100
+Message-Id: <1291907634-22437-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c6cb1053ad8b61ab9fb50b578d0ffea959f7583
-Gitweb:     http://git.kernel.org/tip/2c6cb1053ad8b61ab9fb50b578d0ffea959f7583
-Author:     Rakib Mullick <rakib.mullick@gmail.com>
-AuthorDate: Thu, 9 Dec 2010 14:47:34 +0600
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Dec 2010 16:06:52 +0100
+Cleaning proc entries when error occures was not handled correctly.
+So fix and also add proper cleaning.
 
-x86: Address 'unused' warning in hw_nmi.c again
-
-arch/x86/kernel/apic/hw_nmi.c:29: warning: backtrace_mask defined but not used
-
-commit 0e2af2a9(x86, hw_nmi: Move backtrace_mask declaration under
-ARCH_HAS_NMI_WATCHDOG) addressed this warning, but it was reintroduced
-by commit 5f2b0ba4(x86, nmi_watchdog: Remove the old nmi_watchdog).
-
-Move backtrace_mask into the #ifdef arch_trigger_all_cpu_backtrace
-section again.
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <AANLkTi=rcc38QzoKa6LFy4m++-p_9=Zt4_kDQE=GeKxf@mail.gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- arch/x86/kernel/apic/hw_nmi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_proc.c |   40 +++++++++++++++--------
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h  |    2 +-
+ 2 files changed, 27 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index a0e71cb..057f1eb 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -24,11 +24,11 @@ u64 hw_nmi_get_sample_period(void)
- }
- #endif
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c b/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
+index 105846d..dbd4a1c 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
+@@ -193,32 +193,44 @@ static struct notifier_block ft1000_netdev_notifier = {
+ };
  
-+#ifdef arch_trigger_all_cpu_backtrace
  
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
- 
--#ifdef arch_trigger_all_cpu_backtrace
- void arch_trigger_all_cpu_backtrace(void)
+-void
+-ft1000InitProc (struct net_device *dev)
++int ft1000InitProc(struct net_device *dev)
  {
- 	int i;
+ 	struct ft1000_info *info;
+   struct proc_dir_entry *ft1000_proc_file;
+-	info = netdev_priv(dev);
++	int ret = 0;
+ 
++	info = netdev_priv(dev);
+ 
+   info->ft1000_proc_dir = proc_mkdir (FT1000_PROC_DIR, FTNET_PROC);
+-  if (info->ft1000_proc_dir == NULL)
+-    {
+-      remove_proc_entry (FT1000_PROC_DIR, FTNET_PROC);
+-    }
+-
++	if (info->ft1000_proc_dir == NULL) {
++		printk(KERN_WARNING "Unable to create %s dir.\n",
++			FT1000_PROC_DIR);
++		ret = -EINVAL;
++		goto fail;
++	}
+ 
+   ft1000_proc_file =
+     create_proc_read_entry (dev->name, 0644, info->ft1000_proc_dir,
+ 			    ft1000ReadProc, dev);
+-  if (ft1000_proc_file == NULL)
+-    {
+-      remove_proc_entry (info->netdevname, info->ft1000_proc_dir);
+-    }
++	if (ft1000_proc_file == NULL) {
++		printk(KERN_WARNING "Unable to create /proc entry.\n");
++		ret = -EINVAL;
++		goto fail_entry;
++	}
+ 
+   snprintf (info->netdevname, IFNAMSIZ, "%s", dev->name);
+-  register_netdevice_notifier (&ft1000_netdev_notifier);
+-  return;
++	ret = register_netdevice_notifier(&ft1000_netdev_notifier);
++	if (ret)
++		goto fail_notif;
++
++	return 0;
++
++fail_notif:
++	remove_proc_entry(info->netdevname, info->ft1000_proc_dir);
++fail_entry:
++	remove_proc_entry(FT1000_PROC_DIR, FTNET_PROC);
++fail:
++	return ret;
+ }
+ 
+ void
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+index 045ef30..4a91469 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+@@ -594,7 +594,7 @@ struct usb_interface;
+ int reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *intf);
+ int ft1000_poll(void* dev_id);
+ 
+-void ft1000InitProc(struct net_device *dev);
++int ft1000InitProc(struct net_device *dev);
+ void ft1000CleanupProc(struct ft1000_info *info);
+ 
+ 
+-- 
+1.7.1
+
