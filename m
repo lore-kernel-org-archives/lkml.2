@@ -1,153 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab0LIDoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Dec 2010 22:44:38 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:33093 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab0LIDoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 22:44:37 -0500
-Subject: Re: [RFC][PATCH] timekeeping: Keep xtime_nsec remainder separate
- from ntp_error
-From: john stultz <johnstul@us.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
+	id S1753044Ab0LIDuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Dec 2010 22:50:23 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49305 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab0LIDuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Dec 2010 22:50:22 -0500
+Content-Type: text/plain; charset=UTF-8
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1291860553.5015.1512.camel@gandalf.stny.rr.com>
-References: <1291833054.5015.1133.camel@gandalf.stny.rr.com>
-	 <1291838382.2909.17.camel@work-vm>
-	 <1291839317.5015.1139.camel@gandalf.stny.rr.com>
-	 <1291848477.2909.152.camel@work-vm>
-	 <1291860553.5015.1512.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Dec 2010 19:44:31 -0800
-Message-ID: <1291866271.2909.245.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 9/9] pref: session: Break event ordering when timestamps are missing
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+In-reply-to: <20101207124551.209741779@linutronix.de>
+References: <20101207124527.868085529@linutronix.de> <20101207124551.209741779@linutronix.de>
+Date: Thu, 09 Dec 2010 14:50:14 +1100
+Message-Id: <1291865671-sup-8975@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-08 at 21:09 -0500, Steven Rostedt wrote:
-> On Wed, 2010-12-08 at 14:47 -0800, john stultz wrote:
-> > On Wed, 2010-12-08 at 15:15 -0500, Steven Rostedt wrote:
-> > > On Wed, 2010-12-08 at 11:59 -0800, john stultz wrote:
-> > > 
-> > > > Hey Steven!
-> > > > 
-> > > > Thanks for the great analysis and tooling to help find these unexpected
-> > > > behaviors! 
-> > > > 
-> > > > Sadly, I believe your proposed change can still cause minor nsec
-> > > > inconsistencies from gettimeofday/vgettimeofday. In fact, the previous
-> > > > implementation where the nsec inconsistency error was observed preserved
-> > > > the sub-nanosecond remainder in xtime_nsec.
-[snip]
-> OK, but have you looked at my patch carefully? It does not do what the
-> old code does. It still keeps the "round up", but then it subtracts the
-> remainder from the delta when we come in again. I don't think my way has
-> the same issue.
+Excerpts from Thomas Gleixner's message of Tue Dec 07 12:49:04 UTC 2010:
+> Allow the session client to specify that event ordering should be
+> stopped when not all events have time stamps.
 
-Ah. I didn't read your patch correctly. It looked very close to what was
-there before, so I jumped the gun a bit. That said, the fact that your
-"remainder" holds the "negative amount we rounded up" shows how quickly
-this type of code can get subtle. :)
+>  	/* These events are processed right away */
+>  	switch (event->header.type) {
+>  	case PERF_RECORD_HEADER_ATTR:
+> -		return ops->attr(event, session);
+> +		/* This updates session->sample_id_all */
+> +		ret = ops->attr(event, session);
+> +		/* Break ordering if sample_id_all is false */
+> +		if (ops->ordering_requires_timestamps &&
+> +		    ops->ordered_samples && !session->sample_id_all) {
+> +			session->ordered_samples.next_flush = ULLONG_MAX;
+> +			flush_sample_queue(session, ops);
+> +			ops->ordered_samples = false;
+> +		}
+> +		return ret;
 
+This fallback still relies on receiving a PERF_RECORD_HEADER_ATTR, which
+will only happen if the output is being piped:
 
-> My code still rounds up, but the difference is that it now subtracts
-> from the new start to get back to where it left off:
-> 
-> 	xtime_nsec += xtime.tv_nsec << shift;
-> 
-> 	[ do stuff ]
-> 
-> 	xtime.tv_nsec = (xtime_nsec >> shift) + 1;
-> 	xtime_nsec -= xtime.tv_nsec << shift;
-> 
-> The result of xtime_nsec is now negative, because we added 1 and
-> shifted.
-> 
-> Heck, I think this is all Roland needed to do to fix the issue. Lets
-> look at this again:
-> 
-> Pre-accumulation: 
-> 	xtime = 0, rem = 0, delta = 1500
-> 	gtod:	0 + cyc2ns(1500)
-> 		0 + 1499999 (note cyc2ns truncated the 0.4 remainder)
-> 		1499999
-> 
-> Accumulation occurs.
-> 
-> Post-accumulation:
-> 	xtime = 1000000, rem=-0.4, delta = 500
-> 
-> 	gtod: 	1000000 + cyc2ns(500)
-> 		1000000 + 499999 (cyc2ns truncates the .8 remainder)
-> 		1499999
-> 
-> Even if the subtraction moves the shift backward one, we are still ok,
-> because when we calculate xtime.tv_nsec at the end, we do the "+1" again
-> which returns us that missing ns!
+$ git grep event__synthesize_attr
+builtin-record.c:               err = event__synthesize_attrs(&session->header,
+util/header.c:int event__synthesize_attr(struct perf_event_attr *attr, u16 ids, u64 *id,
+util/header.c:int event__synthesize_attrs(struct perf_header *self, event__handler_t process,
+util/header.c:          err = event__synthesize_attr(&attr->attr, attr->ids, attr->id,
+util/header.h:int event__synthesize_attr(struct perf_event_attr *attr, u16 ids, u64 *id,
+util/header.h:int event__synthesize_attrs(struct perf_header *self,
 
-So, yes, this does *seem* comforting. Keep the negative delta, and
-re-add it in. It sounds pretty good, but my gut felt like it was prone
-to the same issue as keeping the remainder. Took me awhile to find a
-case that broke, but I think the following 
+$ less builtin-record.c
+<SNIP>
+	if (pipe_output) {
+		err = event__synthesize_attrs(&session->header,
+					      process_synthesized_event,
+					      session);
+<SNIP>
 
-I've kept everything in ns to simplify the example.
+So this will work in this situation (timestamps on samples, but this is
+an old kernel so not on other events):
 
-The accumulation interval is 1000.6ns, and with the exception of the
-first interval, we accumulate exactly on that boundary, leaving a
-1000.4ns delta around.
+delenn% ./perf record -T -o - ~/tests/cachetest | ./perf report -i -
+Initialising array...
+Trying approach 1: 0x18fff7eb26fd058
+Trying approach 2: 0x18fff7eb26fd058
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.081 MB - (~3549 samples) ]
+# Events: 1K cycles
+#
+# Overhead  Command      Shared Object                   Symbol
+# ........  .......  .................  .......................
+#
+    70.23%  cachetest  cachetest          [.] sumArrayNaive
+    28.54%  cachetest  cachetest          [.] sumArrayOptimal
+     0.43%  cachetest  [kernel.kallsyms]  [k] insert_work
+     0.39%  cachetest  [kernel.kallsyms]  [k] machine_kexec_prepare
+     0.35%  cachetest  libc-2.11.2.so     [.] __random
+     0.06%  cachetest  [kernel.kallsyms]  [k] print_cfs_rq
+     0.01%  cachetest  [kernel.kallsyms]  [k] __register_sysctl_paths
 
 
-gtod:		0 + 2001 			= 2001
-accumulate:	1000.6 + 1000.4			= 2001
-		1001 + -.4 + 1000.4		= 2001
-gtod: 		1001 + 1000			= 2001
----------------
-gtod:		1001 + 2001			= 3002
-accumulate:	1001 + -.4 + 1000.6 + 1000.4	= 3001.6
-		2001.2 + 1000.4			= 3001.6
-		2002 + -.8 + 1000.4		= 3001.6
-gtod:		2002 + 1000			= 3002
----------------
-gtod:		2002 + 2001			= 4003
-accumulate:	2002 + -.8 + 1000.6 + 1000.4	= 4002.2
-		3001.8 + 1000.4			= 4002.2
-		3002 + -2 + 1000.4		= 4002.2
-gtod:		3002 + 1000			= 4002
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
 
 
-So I believe your patch will still suffer from the same problem.
+But will fail in this case:
 
-Its getting to the end of my day, so I might have flubbed something, so
-let me know if you see anything wrong here.
+delenn% ./perf record -T ~/tests/cachetest                                       ~/linus/tools/perf
+Initialising array...
+Trying approach 1: 0x18fff7eb26fd058
+Trying approach 2: 0x18fff7eb26fd058
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.081 MB perf.data (~3543 samples) ]
 
-
-> > Oh yea. I agree the adjustment code is very opaque. And there is risk in
-> > modifying the code that has been "functioning" but just not in the ideal
-> > environment. This stuff is terribly subtle. And there is a real
-> > possibility that in fixing the issue you've found, we may cause bugs
-> > that effect users in a much more negative way then the incorrect
-> > likely() overhead.
-> 
-> It's not the "likely()" I care about, its the fact that we are going
-> into the slow path (timekeeping_bigadjust()) every time. This does a
-> hell of a lot more work than the simple "adj=1" that is given.
-
-True, we're taking the slow path every time. But the slow path does
-function correctly and we do keep our long term accuracy. Its just not
-optimal. The risk here is that is subtle code, so in working to make
-things more optimal, we risk actually hurting the sync behavior. 
-
-So caution is needed to ensure correct functionality isn't compromised
-as we work on improving performance.
-
-thanks
--john
+delenn% ./perf report|cat                                                        ~/linus/tools/perf
+# Events: 1K cycles
+#
+# Overhead  Command      Shared Object                   Symbol
+# ........  .......  .................  .......................
+#
+    99.47%    :5593  [unknown]          [.] 0xf770cff5
+     0.48%    :5593  [kernel.kallsyms]  [k] hpet_next_event
+     0.05%    :5593  [libahci]          [k] ahci_scr_read
+     0.01%    :5593  [kernel.kallsyms]  [k] flush_signal_handlers
+     0.00%    :5593  [kernel.kallsyms]  [k] native_write_msr_safe
 
 
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+
+Since the fall back isn't triggered, not only are COMM and MMAP events
+processed first (from patch 2 in this series), but EXIT will as well,
+which causes no userspace events to be attributed.
+
+Cheers,
+-Ian
