@@ -1,70 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab0LIU1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:27:31 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:18396 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756124Ab0LIU1a convert rfc822-to-8bit (ORCPT
+	id S1757221Ab0LIU22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:28:28 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57228 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755972Ab0LIU21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:27:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BrgFn7fPeeV2Le7oyY1ES8xhX1Iiwl+0ygS6IS/F20pU+Uvdaeyk/mk/K+1kIcxQNh
-         cSv4USCujUnUeIVtljMA==
-MIME-Version: 1.0
-In-Reply-To: <1291925943.6803.50.camel@twins>
-References: <1291267223.2405.314.camel@minggr.sh.intel.com>
-	<1291922467.6803.44.camel@twins>
-	<AANLkTi=GeCHZ23J5UDoUfbWnLHfVWCeA7f9Gh_sKYSqa@mail.gmail.com>
-	<1291925943.6803.50.camel@twins>
-Date: Thu, 9 Dec 2010 21:27:26 +0100
-Message-ID: <AANLkTikDxCRRo_NVngs3E0NW0dXsdJdNYSXehKpz2dgz@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 9 Dec 2010 15:28:27 -0500
+Date: Thu, 9 Dec 2010 12:28:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tavis Ormandy <taviso@cmpxchg8b.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, security@kernel.org,
+        kees@ubuntu.com, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, eugene@redhat.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@kernel.org
+Subject: Re: [Security] [PATCH] install_special_mapping skips
+ security_file_mmap check.
+Message-Id: <20101209122802.939938ca.akpm@linux-foundation.org>
+In-Reply-To: <20101209191637.GD9267@cmpxchg8b.com>
+References: <20101209142942.GB9267@cmpxchg8b.com>
+	<20101209103853.89bd577b.randy.dunlap@oracle.com>
+	<20101209191637.GD9267@cmpxchg8b.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 9:19 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2010-12-09 at 21:15 +0100, Stephane Eranian wrote:
->> On Thu, Dec 9, 2010 at 8:21 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > On Thu, 2010-12-02 at 13:20 +0800, Lin Ming wrote:
->> >> +       /* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
->> >> +       family = boot_cpu_data.x86;
->> >> +       model = boot_cpu_data.x86_model;
->> >> +       if (family != 6 || (model != 0x1A && model != 0x1E && model != 0x1F))
->> >> +               return;
->> >
->> > So that's 26, 30 and 31? Curiously
->> > arch/x86/kernel/cpu/perf_event_intel.c does have 31.
->
-> That was clearly meant to say: doesn't.. Does Intel have an exhaustive
-> model list somewhere?
->
->> It is also missing model 44 (0x2c).
->
-Uncore logic in the same on NHM and WSM.
-Events may be different but I have not see a
-public document that describes that.
+On Thu, 9 Dec 2010 20:16:37 +0100
+Tavis Ormandy <taviso@cmpxchg8b.com> wrote:
 
-> Right.. but if the westmere uncore is the same, then its also missing
-> 37.
+> On Thu, Dec 09, 2010 at 10:38:53AM -0800, Randy Dunlap wrote:
+> > 
+> > Uh, something happened to the tabs at the beginning of each line...
+> > I.e., the original file content has been mucked up.
+> > 
+> 
+> Gah. Apologies, second attempt...
+> 
+> The install_special_mapping routine (used, for example, to setup the vdso)
+> skips the security check before insert_vm_struct, allowing a local attacker to
+> bypass the mmap_min_addr security restriction by limiting the available pages
+> for special mappings. bprm_mm_init() also skips the check, although I don't
+> think this can be used to bypass any restrictions, I don't see any reason not
+> to have the security check.
+> 
+> $ uname -m
+> x86_64
+> $ cat /proc/sys/vm/mmap_min_addr
+> 65536
+> $ cat install_special_mapping.s
+> section .bss
+>     resb BSS_SIZE
+> section .text
+>     global _start
+>     _start:
+>         mov     eax, __NR_pause
+>         int     0x80
+> $ nasm -D__NR_pause=29 -DBSS_SIZE=0xfffed000 -f elf -o install_special_mapping.o install_special_mapping.s
+> $ ld -m elf_i386 -Ttext=0x10000 -Tbss=0x11000 -o install_special_mapping install_special_mapping.o
+> $ ./install_special_mapping &
+> [1] 14303
+> $ cat /proc/14303/maps 
+> 0000f000-00010000 r-xp 00000000 00:00 0                                  [vdso]
+> 00010000-00011000 r-xp 00001000 00:19 2453665                            /home/taviso/install_special_mapping
+> 00011000-ffffe000 rwxp 00000000 00:00 0                                  [stack]
+> 
+> It's worth noting that Red Hat are shipping with mmap_min_addr set to 4096.
+> 
+> ...
 >
-yes, 37 is also missing.
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2479,6 +2479,11 @@ int install_special_mapping(struct mm_struct *mm,
+>  	vma->vm_ops = &special_mapping_vmops;
+>  	vma->vm_private_data = pages;
+>  
+> +	if (security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1)) {
+> +		kmem_cache_free(vm_area_cachep, vma);
+> +		return -EPERM;
+> +	}
 
-> The -EX chips have a different uncore, right?
->
-True. I don't know if the programming is completely different
-but it would not surprise me.
-Documentation is at:
-http://www.intel.com/assets/en_US/pdf/designguide/323535.pdf
+This should return the security_file_mmap() errno rather than assuming
+EPERM.  Although it happens to be the case that EPERM is the only errno
+which security_file_mmap() presently returns, afacit.
+
+Ditto insert_vm_struct(), with s/EPERM/ENOMEM/
+
+Please review and test?
+
+
+--- a/mm/mmap.c~mm-install_special_mapping-skips-security_file_mmap-check-fix
++++ a/mm/mmap.c
+@@ -2463,6 +2463,7 @@ int install_special_mapping(struct mm_st
+ 			    unsigned long vm_flags, struct page **pages)
+ {
+ 	struct vm_area_struct *vma;
++	int ret;
+ 
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+ 	if (unlikely(vma == NULL))
+@@ -2479,21 +2480,21 @@ int install_special_mapping(struct mm_st
+ 	vma->vm_ops = &special_mapping_vmops;
+ 	vma->vm_private_data = pages;
+ 
+-	if (security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1)) {
+-		kmem_cache_free(vm_area_cachep, vma);
+-		return -EPERM;
+-	}
+-
+-	if (unlikely(insert_vm_struct(mm, vma))) {
+-		kmem_cache_free(vm_area_cachep, vma);
+-		return -ENOMEM;
+-	}
++	ret = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
++	if (ret < 0)
++		goto out;
++
++	ret = insert_vm_struct(mm, vma);
++	if (ret < 0)
++		goto out;
+ 
+ 	mm->total_vm += len >> PAGE_SHIFT;
+ 
+ 	perf_event_mmap(vma);
+-
+ 	return 0;
++out:
++	kmem_cache_free(vm_area_cachep, vma);
++	return ret;
+ }
+ 
+ static DEFINE_MUTEX(mm_all_locks_mutex);
+_
+
