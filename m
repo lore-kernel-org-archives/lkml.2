@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0LIJKj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:10:39 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53015 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab0LIJKg (ORCPT
+	id S1755601Ab0LIJKw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:10:52 -0500
+Received: from mailserver.crt.saude.sp.gov.br ([200.144.1.2]:51989 "HELO
+	homer.crt.saude.sp.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755525Ab0LIJKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:10:36 -0500
-Subject: Re: [PATCH 29/29] drivers/regulator: Update WARN uses
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <b0588ea464d551f9dbd80c0fee68a780d6279b50.1291670106.git.joe@perches.com>
-References: <cover.1291670104.git.joe@perches.com>
-	 <b0588ea464d551f9dbd80c0fee68a780d6279b50.1291670106.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 09:10:31 +0000
-Message-ID: <1291885831.3271.0.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 9 Dec 2010 04:10:48 -0500
+X-Greylist: delayed 1724 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Dec 2010 04:10:37 EST
+Message-ID: <20101209064259.zqql1b3r4wocgos8@webmail.crt.saude.sp.gov.br>
+Date: Thu, 09 Dec 2010 06:42:59 -0200
+From: Power-Horse Energy Drink Company <powerhorse@crt.saude.sp.gov.br>
+Reply-to: powerhorseclearingpaymenthouse@gmail.com
+To: undisclosed-recipients:;
+Subject: Confirm
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.0.4)
+X-WebMail-Company: Centro de Referencia e Treinamento DST/AIDS
+X-Originating-IP: 41.204.224.16
+X-Remote-Browser: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US;
+	rv:1.9.2.12) Gecko/20101026 Firefox/3.6.12 (.NET CLR 3.5.30729)
+X-Assp-Version: 1.8.1.3(1.0.00) on homer.crt.saude.sp.gov.br
+X-Assp-Intended-For-IP: 192.168.0.252
+X-Assp-Passing: acceptAllMail
+X-Assp-ID: homer.crt.saude.sp.gov.br 84180-00722
+X-Assp-Envelope-From: powerhorse@crt.saude.sp.gov.br
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-06 at 14:05 -0800, Joe Perches wrote:
-> Align arguments.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/regulator/core.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> index a1b1237..5d07e5d 100644
-> --- a/drivers/regulator/core.c
-> +++ b/drivers/regulator/core.c
-> @@ -1379,8 +1379,7 @@ static int _regulator_disable(struct regulator_dev *rdev,
->  	*supply_rdev_ptr = NULL;
->  
->  	if (WARN(rdev->use_count <= 0,
-> -			"unbalanced disables for %s\n",
-> -			rdev_get_name(rdev)))
-> +		 "unbalanced disables for %s\n", rdev_get_name(rdev)))
->  		return -EIO;
->  
->  	/* are we the last user and permitted to disable ? */
+Good Day.
+Power-Horse Energy Drink Company,this e-mail is to  inform you that, 
+your Email
+ID has won you the sum of $540,000.00 US  Dollars  on our online draws contact
+us via email: powerhorseclearingpaymenthouse@gmail.com
 
-Applied.
+----------------------------------------------------------------
+Centro de Referencia e Treinamento DST/AIDS.
+http://www.crt.saude.sp.gov.br
 
-Thanks
-
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
 
