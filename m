@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab0LIJIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:08:37 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:55039 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab0LIJId (ORCPT
+	id S1755482Ab0LIJJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:09:07 -0500
+Received: from mailfw02.zoner.fi ([84.34.147.249]:64603 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab0LIJJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:08:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vX3nhEDZPsQxczZbMkmZ/YL8IgDHBim4Kg5Mnisl3ywOzhp1Z66crDQ6XYsFM5y1yM
-         8knldhcd47NLQXsgJuAv2mB3ym9BvDbwHJRtGhEHbdAgX5fZeJnRK+Ssw9GhrokO5GtI
-         HLK59CjxK2gRW1EDvc0iTksRsWOdF4MR9tric=
-Date: Thu, 9 Dec 2010 01:08:26 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] input: mt updates for 2.6.38
-Message-ID: <20101209090826.GB8821@core.coreip.homeip.net>
-References: <4CFF49BC.8030202@euromail.se>
- <20101209085814.GA8821@core.coreip.homeip.net>
+	Thu, 9 Dec 2010 04:09:02 -0500
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Subject: Re: [PATCH 2/2] Squashfs: Add XZ compression configuration option
+Date: Thu, 9 Dec 2010 11:09:31 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-ARCH; KDE/4.5.4; x86_64; ; )
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Embedded Maillist <linux-embedded@vger.kernel.org>
+References: <4D007315.1090704@lougher.demon.co.uk>
+In-Reply-To: <4D007315.1090704@lougher.demon.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101209085814.GA8821@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012091109.32084.lasse.collin@tukaani.org>
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 12:58:14AM -0800, Dmitry Torokhov wrote:
-> On Wed, Dec 08, 2010 at 10:02:52AM +0100, Henrik Rydberg wrote:
-> > Dmitry,
-> > 
-> > Please pull from
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
-> > 
-> > to receive input-mt updates for 2.6.38.
-> > 
-> > The tree contains core changes as well as dependent changes to hid drivers. You
-> > also find the new hid-egalax driver in there, signed off by Jiri.
-> 
-> Pulled, thank you Henrik.
-> 
-> I wonder if we should move input-mt.h into input/mt.h (and if someone
-> would bother to input-polldev.h there that would be great too).
-> 
-> Also I try to sync with mainline once per release, at -rc1, unless I
-> know that my changes will conflict with some other work. I'd recommend
-> you do the same so that when I pull from you I am getting just your
-> changes and not the rest of stuff from mainline.
-> 
-> BTW, we need to document dev->trkid to avoid complaints from 'make
-> htmldocs' and friends. I wonder if the patch below will do.
-> 
-> Thanks.
-> 
+On 2010-12-09 Phillip Lougher wrote:
+> +config SQUASHFS_XZ
+> +       bool "Include support for XZ compressed file systems"
+> +       depends on SQUASHFS
+> +       default n
+> +       select XZ_DEC
 
-And I think we need this one as well:
+Should "select XZ_DEC" be replaced with "depends on XZ_DEC"? XZ_DEC 
+requires CRC32, so if "select XZ_DEC" is used, there needs to be also 
+"select CRC32".
 
-Input: include MT library as source for kerneldoc
-
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
- Documentation/DocBook/device-drivers.tmpl |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-
-diff --git a/Documentation/DocBook/device-drivers.tmpl b/Documentation/DocBook/device-drivers.tmpl
-index 22edcbb..467beee 100644
---- a/Documentation/DocBook/device-drivers.tmpl
-+++ b/Documentation/DocBook/device-drivers.tmpl
-@@ -304,6 +304,10 @@ X!Idrivers/video/console/fonts.c
- !Edrivers/input/ff-core.c
- !Edrivers/input/ff-memless.c
-      </sect1>
-+     <sect1><title>Multitouch Library</title>
-+!Iinclude/linux/input-mt.h
-+!Edrivers/input/input-mt.c
-+     </sect1>
-      <sect1><title>Polled input devices</title>
- !Iinclude/linux/input-polldev.h
- !Edrivers/input/input-polldev.c
+XZ_DEC may optionally use other XZ_DEC_* symbols, which the user will 
+want to choose when building for an embedded system. With "depends on 
+XZ_DEC" the user will see that there's more than a single option that 
+affects the details of the XZ support in Squashfs.
 
 -- 
-Dmitry
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
