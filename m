@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab0LIJoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:44:07 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:52009 "EHLO mprc.pku.edu.cn"
+	id S1755776Ab0LIJuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:50:52 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34161 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab0LIJoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:44:04 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 015/211] unicore32: new file arch/unicore32/include/asm/auxvec.h
-Date: Thu, 9 Dec 2010 17:44:02 +0800
-Message-ID: <01e801cb9785$9c7a81f0$d56f85d0$@mprc.pku.edu.cn>
+	id S1753412Ab0LIJuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:50:50 -0500
+Message-ID: <4D00A672.9050906@kernel.org>
+Date: Thu, 09 Dec 2010 10:50:42 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv1 000/211] unicore32 architecture support
+References: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn>
+In-Reply-To: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuXhZwhYx/XbCI0QeyaTcESCcYTYA==
-Content-Language: zh-cn
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 09:50:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Hello,
 
-	auxvec.h only for dependency
+On 12/09/2010 10:28 AM, Guan Xuetao wrote:
+> From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> 
+> These patches add support for UniCore-32 ISA in linux kernel.
+> UniCore ISA is defined and developed by Micro-Processor R&D Center of
+> Peking University, and over the years, the CPUs and SoCs using UniCore ISA
+> have been successfully applied in a variety of products in China.
 
-Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
----
- arch/unicore32/include/asm/auxvec.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+* Patches should be split according to logical steps of changes, not
+  per-file.
 
-diff --git a/arch/unicore32/include/asm/auxvec.h
-b/arch/unicore32/include/asm/auxvec.h
-new file mode 100644
-index 0000000..b1a883a
---- /dev/null
-+++ b/arch/unicore32/include/asm/auxvec.h
-@@ -0,0 +1,4 @@
-+#ifndef __UNICORE_AUXVEC_H__
-+#define __UNICORE_AUXVEC_H__
-+
-+#endif
+* Patches should be bisectable.  IOW, after applying upto any patch in
+  the series, the tree should be buildable and working.
 
+* When posting a patch series, especially one as large as 211, please
+  make the mails for the actual patches replies to the head message.
+  Don't post it as 212 separate messages or replies to the immediate
+  previous patch.
+
+So, in short, if you're adding a whole new arch, just post it as a
+single patch or a series of several patches if it requires changes
+outside of the specific arch subtree.
+
+Thanks.
+
+-- 
+tejun
