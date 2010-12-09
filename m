@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab0LIXnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:43:15 -0500
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:39121 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755248Ab0LIXnO (ORCPT
+	id S1757462Ab0LIXps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 18:45:48 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:42012 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444Ab0LIXpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:43:14 -0500
-Date: Fri, 10 Dec 2010 10:42:58 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/46] fs: dcache scale hash
-Message-ID: <20101209234258.GB9925@dastard>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
- <20101209060911.GB8259@dastard>
- <20101209062801.GA3749@amd>
- <20101209081756.GE8259@dastard>
- <AANLkTimF457VDRTxjjhu+J9E616LBKP_86UcNS-u+P3p@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimF457VDRTxjjhu+J9E616LBKP_86UcNS-u+P3p@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 9 Dec 2010 18:45:47 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6192"; a="66210587"
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, davidb@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Walker <dwalker@codeaurora.org>
+Subject: [PATCH] MAINTAINERS: update MSM git tree
+Date: Thu,  9 Dec 2010 15:45:27 -0800
+Message-Id: <1291938327-22243-1-git-send-email-dwalker@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 11:53:27PM +1100, Nick Piggin wrote:
-> >> Like I said, there are infinite cleanups or improvements you can make.
-> >> It does not particularly matter that they happen before or after the
-> >> scaling work, except if there are classes of APIs that the new locking
-> >> model can no longer support.
-> >
-> > We do plenty of cleanups when changing code when the result gives us
-> > simpler and easier to understand code. It's a trivial change that,
-> > IMO, makes the code more consistent and easier to follow.
-> 
-> Unrelated "cleanups" in the same patch as non trivial locking change
-> is stupid.
+The MSM main git tree has changed over to this new address.
 
-So put it in another prepartory patch. It makes the locking changes
-easier to understand...
+Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Necessary changes to prevent bad ugliness resulting, or preventing
-> repeated steps for the particular changes, etc. of course. Killing un
-> related functions no.
-
-Ok, I get the picture. You don't want a code review, you want a
-rubber stamp. Find someone else to get it from.
-
-Cheers,
-
-Dave.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1a1c27b..34d44ec 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -815,7 +815,7 @@ F:	drivers/mmc/host/msm_sdcc.c
+ F:	drivers/mmc/host/msm_sdcc.h
+ F:	drivers/serial/msm_serial.h
+ F:	drivers/serial/msm_serial.c
+-T:	git git://codeaurora.org/quic/kernel/dwalker/linux-msm.git
++T:	git git://codeaurora.org/quic/kernel/davidb/linux-msm.git
+ S:	Maintained
+ 
+ ARM/TOSA MACHINE SUPPORT
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.0.4
+
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
