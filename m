@@ -1,52 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab0LIVMM (ORCPT <rfc822;w@1wt.eu>);
+	id S1757102Ab0LIVMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 16:12:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54307 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754786Ab0LIVMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Dec 2010 16:12:12 -0500
-Received: from claw.goop.org ([74.207.240.146]:53945 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab0LIVML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 16:12:11 -0500
-Message-ID: <4D01462A.4010808@goop.org>
-Date: Thu, 09 Dec 2010 13:12:10 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH] Fix when booting Xen+Linux under QEMU.
-References: <1291928497-5599-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1291928497-5599-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-15
+Date: Thu, 9 Dec 2010 13:09:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Alex Dubov <oakad@yahoo.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 1/2] memstick: add support for legacy memorysticks
+Message-Id: <20101209130936.5c62ac10.akpm@linux-foundation.org>
+In-Reply-To: <1291862546-10064-1-git-send-email-maximlevitsky@gmail.com>
+References: <1291862363.7792.28.camel@maxim-laptop>
+	<1291862546-10064-1-git-send-email-maximlevitsky@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 01:01 PM, Konrad Rzeszutek Wilk wrote:
-> Please take a look. The first patch just cleans up the find_unbound_irq
-> so it is easier to understand what it does.
->
-> The second patch hardness the Xen IRQ (event channels) allocation finder
-> if you try to boot a minimalistic 32-bit Linux kernel along with a
-> Xen hypervisor under QEMU.
->
-> We end up with a weird scenario where the nr_irq_gsi was greater than nr_irq
-> by 16. This code hardness it by pointing out the issue to the user and tries
-> to continue - BUT this might impact the PCI device allocation.
->
-> Tested also on normal machine with no regressions found.
+On Thu,  9 Dec 2010 04:42:25 +0200
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
-I think I'd prefer to:
+> +/*
+> + * Advance scatterlist by 'consumed' bytes
+> + * Returns new scatterlist, or NULL if can't advance that much
+> + */
+> +static struct scatterlist *sg_advance(struct scatterlist *sg, int consumed)
+> +{
+> +	while (consumed >= sg->length) {
+> +		consumed -= sg->length;
+> +
+> +		sg = sg_next(sg);
+> +		if (!sg)
+> +			break;
+> +	}
+> +
+> +	WARN_ON(!sg && consumed);
+> +
+> +	if (!sg)
+> +		return NULL;
+> +
+> +	sg->offset += consumed;
+> +	sg->length -= consumed;
+> +
+> +	if (sg->offset >= PAGE_SIZE) {
+> +		struct page *page =
+> +			nth_page(sg_page(sg), sg->offset / PAGE_SIZE);
+> +		sg_set_page(sg, page, sg->length, sg->offset % PAGE_SIZE);
+> +	}
+> +
+> +	return sg;
+> +}
+> +
+> +/* Calculate number of sg entries in sg list */
+> +static int sg_nents(struct scatterlist *sg)
+> +{
+> +	int nents = 0;
+> +	while (sg) {
+> +		nents++;
+> +		sg = sg_next(sg);
+> +	}
+> +
+> +	return nents;
+> +}
+> +
+> +/* Calculate total lenght of scatterlist */
 
-   1. move to using all dynamic irqs, and use the core kernel irq
-      allocator (ie, resurrect IanC's patches)
-   2. kill the ioapic dummy page hack (I'm assuming that would be
-      trivial - at least to make it all zero - because the kernel won't
-      care about the number of GSIs at that point)
+(typo)
 
-    J
+> +static int sg_total_len(struct scatterlist *sg)
+> +{
+> +	int len = 0;
+> +	while (sg) {
+> +		len += sg->length;
+> +		sg = sg_next(sg);
+> +	}
+> +	return len;
+> +}
+> +
+> +/* Compare contents of an sg to a buffer */
+> +static bool sg_compare_to_buffer(struct scatterlist *sg, u8 *buffer, size_t len)
+> +{
+> +	unsigned long flags;
+> +	int retval = 0;
+> +	struct sg_mapping_iter miter;
+> +
+> +	if (sg_total_len(sg) < len)
+> +		return 1;
+> +
+> +	local_irq_save(flags);
+> +	sg_miter_start(&miter, sg, sg_nents(sg),
+> +				SG_MITER_ATOMIC | SG_MITER_FROM_SG);
+> +
+> +	while (sg_miter_next(&miter) && len > 0) {
+> +
+> +		int cmplen = min(miter.length, len);
+> +		if (memcmp(miter.addr, buffer, cmplen)) {
+> +			retval = 1;
+> +			break;
+> +		}
+> +
+> +		buffer += cmplen;
+> +		len -= cmplen;
+> +	}
+> +
+> +	sg_miter_stop(&miter);
+> +	local_irq_restore(flags);
+> +	return retval;
+> +}
+
+I think I mentioned this before, but ...  it's really bad that the
+above functions appear in a particular device driver.  They are, to
+varying degrees, independent of that driver and should be provided by
+the sglist core code.
+
+Also, the local_irq_save/restore in sg_compare_to_buffer() is quite
+mysterious and should have a comment explaining why it is there.  Once
+that's done, I might understand why it isn't a bug on SMP machines ;)
+
