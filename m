@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab0LISWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:22:20 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:40491 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab0LISWS (ORCPT
+	id S1754942Ab0LISXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:23:35 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49973 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab0LISXd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:22:18 -0500
-Message-ID: <4D011E05.5030205@ru.mvista.com>
-Date: Thu, 09 Dec 2010 21:20:53 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Thu, 9 Dec 2010 13:23:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=ecJazdOMJURDn820kzuydnlkPFkV2MWZE0sYF8OAvt4Vs3O17yKBwYDmumz2mai43l
+         pQBgmZqPSBcbXh39fZ4IoFnFx46y6kxJMHx1NPbaHj5Via1QzDJZAe7DgbnSlVVoRGy0
+         whoy9W9wM5GQR/KkWC3TA5Pmr93P69ulKy9hE=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: jeff@garzik.org, linux-ide@vger.kernel.org, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kay.sievers@vrfy.org, jack@suse.cz,
-        James.Bottomley@HansenPartnership.com
-Subject: Re: [PATCH 5/8] scsi: fix TUR error handling in sr_media_change()
-References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-6-git-send-email-tj@kernel.org>
-In-Reply-To: <1291838262-21274-6-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101209131452.GA2260@a1.tnic>
+References: <AANLkTin7xDWO8fU2WA7cxC55TNi2+kAb50ajCySCfg9G@mail.gmail.com>
+	<4d00164c296166b682@agluck-desktop.sc.intel.com>
+	<20101209131452.GA2260@a1.tnic>
+Date: Thu, 9 Dec 2010 10:23:32 -0800
+X-Google-Sender-Auth: WzVVpCkzVEv8YzOMpZwyxdGaZoU
+Message-ID: <AANLkTimWT8=fmqbEeb+qXbwsWOmaz5d2_Bsr-=DON7L1@mail.gmail.com>
+Subject: Re: [RFC] persistent store (version 3) (part 1 of 2)
+From: Tony Luck <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
+        akpm@linux-foundation.org, ying.huang@intel.com,
+        David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Dec 9, 2010 at 5:14 AM, Borislav Petkov <bp@alien8.de> wrote:
+>>       if (!pstore_writefile(inode, dentry, data, size)) {
+>>               inode->i_nlink--;
+>>               mutex_lock(&root->d_inode->i_mutex);
+>>               d_delete(dentry);
+>>               dput(dentry);
+>>               mutex_unlock(&root->d_inode->i_mutex);
+>>               rc = -ENOSPC;
+>>               goto fail;
+>>       }
+>
+> don't we have to iput() the inode here too if pstore_writefile() fails?
 
-Tejun Heo wrote:
+No. d_delete() called iput() for us (passing through
+dentry_iput along the way) - so we must not do it again.
+This upsets the traditional layout of having the error
+recovery part of the function undo all the things that
+we did leading up to the error. Pity, because your
+version is easier to read.
 
-> sr_test_unit_ready() returns 0 iff TUR succeeded - IOW, when media is
-> present and the device is actually ready, so the return value wouldn't
-> be zero when TUR ends with sense data. sr_media_change() incorrectly
-> tests (retval || (scsi_sense_valid(sshdr)...)) when it tries to test
-> whether TUR failed without sense data or with sense data indicating
-> media-not-present.
-
-> Fix the test using scsi_status_is_good() and update comments.
-
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-[...]
-
-> diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-> index d7b383c..deb24f0 100644
-> --- a/drivers/scsi/sr.c
-> +++ b/drivers/scsi/sr.c
-> @@ -214,13 +214,17 @@ static int sr_media_change(struct cdrom_device_info *cdi, int slot)
->  
->  	sshdr =  kzalloc(sizeof(*sshdr), GFP_KERNEL);
->  	retval = sr_test_unit_ready(cd->device, sshdr);
-> -	if (retval || (scsi_sense_valid(sshdr) &&
-> -		       /* 0x3a is medium not present */
-> -		       sshdr->asc == 0x3a)) {
-> -		/* Media not present or unable to test, unit probably not
-> -		 * ready. This usually means there is no disc in the drive.
-> -		 * Mark as changed, and we will figure it out later once
-> -		 * the drive is available again.
-> +	/*
-> +	 * Media is considered to be present if TUR succeeds or fails with
-> +	 * sense data indicating something other than media-not-present
-> +	 * (ASC 0x3a).
-> +	 */
-> +	if (!scsi_status_is_good(retval) &&
-> +	    (!scsi_sense_valid(sshdr) || sshdr->asc == 0x3a)) {
-> +		/*
-> +		 * Probably not media in the device.  Mark as changed, and
-
-    s/not/no/
-
-WBR, Sergei
-
+-Tony
