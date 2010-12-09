@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab0LISLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 13:11:22 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:37075 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab0LISLU convert rfc822-to-8bit (ORCPT
+	id S1756725Ab0LISLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 13:11:38 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:52386 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab0LISLh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 13:11:20 -0500
+	Thu, 9 Dec 2010 13:11:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TnCWE7caeUrBdF9ttb7LXD6k3u9GojDHxe5q1c4V9iRiWob/Ku+DbLEM5GEXXOvqjk
+         3ma7QeVTo3DTozM36Rtg==
 MIME-Version: 1.0
-In-Reply-To: <20101209180111.GF2921@thunk.org>
-References: <4CF6B3E8.2000406@redhat.com> <20101201212310.GA15648@redhat.com>
- <AANLkTimQtMvPVafWG_DffF-zXXpz1vBPXdCCwxRnzSGr@mail.gmail.com>
- <20101204193828.GB13871@redhat.com> <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com>
- <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com>
- <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com> <20101209180111.GF2921@thunk.org>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Thu, 9 Dec 2010 12:10:58 -0600
-Message-ID: <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Jon Nelson <jnelson@jamponi.net>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, Matt <jackdachef@gmail.com>,
-        Milan Broz <mbroz@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun@gmail.com,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1291917330.6803.7.camel@twins>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
+	<1291851079-27061-1-git-send-email-venki@google.com>
+	<1291899120.29292.7.camel@twins>
+	<AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
+	<1291917330.6803.7.camel@twins>
+Date: Thu, 9 Dec 2010 10:11:33 -0800
+Message-ID: <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 12:01 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Tue, Dec 07, 2010 at 09:37:20PM -0600, Jon Nelson wrote:
->> One difference is the location of the transaction logs (pg_xlog). In
->> my case, /var/lib/pgsql/data *is* mountpoint for the test volume
->> (actually, it's a symlink to the mount point). In your case, that is
->> not so. Perhaps that makes a difference? Â pgsql_tmp might also be on
->> two different volumes in your case (I can't be sure).
+On Thu, Dec 9, 2010 at 9:55 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-12-09 at 09:43 -0800, Venkatesh Pallipadi wrote:
+>>
+>> The same problem will be there with below code, with irq_delta >
+>> delta, clock_task can go backwards which is not good.
+>> +       delta -= irq_delta;
+>> +       rq->clock_task += delta;
+>>
+>> The reason for this is rq->clock and irqtime updates kind of happen
+>> independently and specifically, if a rq->clock update happens while we
+>> are in a softirq, we may have this case of going backwards on the next
+>> update.
 >
-> I just tried tried to run t.sql five times with /var/lib/postgres as a
-> mountpoint for a 5400 rpm disk, and I still haven't been able to
-> replicate it.
+> But how can irq_delta > delta?, we measure it using the same clock.
+>
 
-You should be OK, there. Are you using encryption or no?
-I had difficulty replicating the issue without encryption.
-
-> If you can point out how to query pgsql_tmp (I'm using a completely
-> default postgres install), that would be helpful, but I don't think it
-> would be going anywhere else.
-
-Normally it's /var/lib/pgsql/data/pgsql_tmp (or
-/var/lib/postgres/data/pgsql_tmp in your case). By placing
-/var/lib/{postgresql,pgsql}/data on the LUKS + ext4 volume, on both
-openSUSE 11.3 and Kubuntu, I was able to replicate the problem easily,
-in VirtualBox. I can give qemu a try. In both cases I was using a
-2.6.37x kernel.
-
--- 
-Jon
+This would be mostly a corner case like:
+- softirq start time t1
+- rq->clock updated at t2 and rq->clock_task updated at t2 without
+accounting for current softirq
+- softirq end time t3
+- cpu spends most time here in softirq or hardirq
+- next rq->clock update at t4 and rq->clock_task update, with delta =
+t4-t2 and irq_delta ~= t4 - t1
