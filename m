@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab0LIJlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 04:41:12 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:51998 "EHLO mprc.pku.edu.cn"
+	id S1755565Ab0LIJlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 04:41:47 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:52001 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755379Ab0LIJlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 04:41:09 -0500
+	id S1751428Ab0LIJlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 04:41:46 -0500
 From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
 To: "Arnd Bergmann" <arnd@arndb.de>
 Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv1 011/211] unicore32: new file arch/unicore32/configs/debug_defconfig
-Date: Thu, 9 Dec 2010 17:41:06 +0800
-Message-ID: <01e001cb9785$33bbeeb0$9b33cc10$@mprc.pku.edu.cn>
+Subject: [PATCHv1 012/211] unicore32: new file arch/unicore32/configs/nb0916_defconfig
+Date: Thu, 9 Dec 2010 17:41:44 +0800
+Message-ID: <01e201cb9785$4a6a34f0$df3e9ed0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuXhTN7Ko8mNqA5S9epVC8W6OVwaA==
+Thread-Index: AcuXhUnhg3Ciz41mQ8qRoG4QAf4UxA==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,24 +25,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-	default config file for debugger
+	default config file for netbook with uc32 isa and puv3 drivers
 
 Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/unicore32/configs/debug_defconfig |  208
-++++++++++++++++++++++++++++++++
- 1 files changed, 208 insertions(+), 0 deletions(-)
+ arch/unicore32/configs/nb0916_defconfig |  203
++++++++++++++++++++++++++++++++
+ 1 files changed, 203 insertions(+), 0 deletions(-)
 
-diff --git a/arch/unicore32/configs/debug_defconfig
-b/arch/unicore32/configs/debug_defconfig
+diff --git a/arch/unicore32/configs/nb0916_defconfig
+b/arch/unicore32/configs/nb0916_defconfig
 new file mode 100644
-index 0000000..33e4959
+index 0000000..9645b74
 --- /dev/null
-+++ b/arch/unicore32/configs/debug_defconfig
-@@ -0,0 +1,208 @@
++++ b/arch/unicore32/configs/nb0916_defconfig
+@@ -0,0 +1,203 @@
 +### General setup
 +CONFIG_EXPERIMENTAL=y
-+CONFIG_LOCALVERSION="-debug"
++CONFIG_LOCALVERSION="-nb0916"
 +CONFIG_SWAP=y
 +CONFIG_SYSVIPC=y
 +CONFIG_POSIX_MQUEUE=y
@@ -52,7 +52,7 @@ index 0000000..33e4959
 +#CONFIG_INITRAMFS_SOURCE="arch/unicore/ramfs/ramfs_config"
 +
 +### Enable loadable module support
-+CONFIG_MODULES=n
++CONFIG_MODULES=y
 +CONFIG_MODULE_UNLOAD=y
 +
 +### System Type
@@ -71,11 +71,10 @@ index 0000000..33e4959
 +#	for debug, adding: earlyprintk=ocd,keep initcall_debug
 +#	others support: test_suspend=mem root=/dev/sda
 +#	hibernate support: resume=/dev/sda3
-+CONFIG_CMDLINE="mem=512M earlyprintk=ocd,keep ignore_loglevel
-video=unifb:1024x600-16@75 root=/dev/nfs rw
-nfsroot=192.168.10.88:/home/udb/nfs/,rsize=1024,wsize=1024
-ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
-+CONFIG_CMDLINE_FORCE=y
++CONFIG_CMDLINE="mem=512M ignore_loglevel video=unifb:1024x600-16@75
+root=/dev/nfs rw nfsroot=/home/nfs/uc3,rsize=1024,wsize=1024
+ip=192.168.10.83:192.168.10.82:192.168.10.1:255.255.255.0::eth0:off"
++# CONFIG_CMDLINE_FORCE is not set
 +
 +### Power management options
 +CONFIG_PM=y
@@ -102,12 +101,12 @@ ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
 +### PKUnity SoC Features
 +CONFIG_USB_WLAN_HED_AQ3=n
 +CONFIG_USB_CMMB_INNOFIDEI=n
-+CONFIG_I2C_BATTERY_BQ27200=n
-+CONFIG_I2C_EEPROM_AT24=n
-+CONFIG_LCD_BACKLIGHT=n
++CONFIG_I2C_BATTERY_BQ27200=m
++CONFIG_I2C_EEPROM_AT24=m
++CONFIG_LCD_BACKLIGHT=m
 +
-+CONFIG_PUV3_RTC=y
-+CONFIG_PUV3_UMAL=y
++CONFIG_PUV3_RTC=m
++CONFIG_PUV3_UMAL=m
 +CONFIG_PUV3_UNIGFX=y
 +CONFIG_PUV3_MUSB=n
 +CONFIG_PUV3_AC97=n
@@ -147,8 +146,8 @@ ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
 +CONFIG_NET_ETHERNET=y
 +CONFIG_NETDEV_1000=y
 +#	Wireless LAN
-+CONFIG_WLAN_80211=n
-+CONFIG_RT2X00=n
++CONFIG_WLAN_80211=y
++CONFIG_RT2X00=m
 +CONFIG_RT73USB=n
 +
 +#	Input device support
@@ -163,9 +162,9 @@ ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
 +#CONFIG_THERMAL_HWMON=y
 +
 +#	Multimedia support
-+CONFIG_MEDIA_SUPPORT=n
-+CONFIG_VIDEO_DEV=n
-+CONFIG_USB_VIDEO_CLASS=n
++CONFIG_MEDIA_SUPPORT=m
++CONFIG_VIDEO_DEV=m
++CONFIG_USB_VIDEO_CLASS=m
 +
 +#	Graphics support
 +#	Console display driver support
@@ -185,13 +184,13 @@ ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
 +CONFIG_SND_PCM_OSS=m
 +
 +#	USB support
-+CONFIG_USB_ARCH_HAS_HCD=n
-+CONFIG_USB=n
-+CONFIG_USB_DEVICEFS=n
-+CONFIG_USB_PRINTER=n
-+CONFIG_USB_STORAGE=n
++CONFIG_USB_ARCH_HAS_HCD=y
++CONFIG_USB=y
++CONFIG_USB_DEVICEFS=y
++CONFIG_USB_PRINTER=m
++CONFIG_USB_STORAGE=m
 +#	Inventra Highspeed Dual Role Controller
-+CONFIG_USB_MUSB_HDRC=n
++CONFIG_USB_MUSB_HDRC=m
 +
 +#	LED Support
 +CONFIG_NEW_LEDS=y
@@ -229,7 +228,6 @@ ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
 +#	Network File Systems
 +CONFIG_NETWORK_FILESYSTEMS=y
 +CONFIG_NFS_FS=y
-+CONFIG_NFS_V3=y
 +CONFIG_ROOT_NFS=y
 +#	Partition Types
 +CONFIG_PARTITION_ADVANCED=y
@@ -244,11 +242,7 @@ ip=192.168.10.83:192.168.10.88:192.168.10.1:255.255.255.0::eth0:off"
 +### Kernel hacking
 +CONFIG_FRAME_WARN=8096
 +CONFIG_MAGIC_SYSRQ=y
-+CONFIG_DEBUG_KERNEL=y
-+CONFIG_PROVE_LOCKING=n
-+CONFIG_DEBUG_BUGVERBOSE=y
-+CONFIG_FRAME_POINTER=y
-+CONFIG_DEBUG_USER=y
-+CONFIG_DEBUG_LL=y
++CONFIG_DEBUG_KERNEL=n
++CONFIG_DEBUG_USER=n
 +
 
