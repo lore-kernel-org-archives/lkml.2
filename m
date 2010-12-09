@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab0LIU41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 15:56:27 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34978 "EHLO hera.kernel.org"
+	id S1757325Ab0LIU4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 15:56:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18067 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755020Ab0LIU4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 15:56:25 -0500
-Date: Thu, 9 Dec 2010 20:56:10 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        ebiederm@xmission.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        ebiederm@xmission.com
-In-Reply-To: <4CFDF69C.9070501@kernel.org>
-References: <4CFDF69C.9070501@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic-cleanups] x86, x2apic: Don't map lapic addr for preenabled x2apic systems
-Message-ID: <tip-0450193bffed6e4b6160c4a5ccb0df158eba7d2a@git.kernel.org>
-Git-Commit-ID: 0450193bffed6e4b6160c4a5ccb0df158eba7d2a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Dec 2010 20:56:10 +0000 (UTC)
+	id S1755598Ab0LIU4i convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 15:56:38 -0500
+Date: Thu, 9 Dec 2010 15:56:27 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: Suresh Jayaraman <sjayaraman@suse.de>, Bernhard Walle <bernhard@bwalle.de>,
+        sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: Add information about noserverino
+Message-ID: <20101209155627.16d524cd@tlielax.poochiereds.net>
+In-Reply-To: <AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
+References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
+	<20101206095725.78422138@tlielax.poochiereds.net>
+	<20101206101214.52a24415@tlielax.poochiereds.net>
+	<20101206163506.56232lqqhc5c3co4@webmail.df.eu>
+	<20101206103836.0714369a@tlielax.poochiereds.net>
+	<4D00C02C.4070006@suse.de>
+	<20101209070952.24793c23@barsoom.rdu.redhat.com>
+	<AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>
+	<20101209143448.5c479e50@barsoom.rdu.redhat.com>
+	<AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0450193bffed6e4b6160c4a5ccb0df158eba7d2a
-Gitweb:     http://git.kernel.org/tip/0450193bffed6e4b6160c4a5ccb0df158eba7d2a
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Tue, 7 Dec 2010 00:55:56 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 9 Dec 2010 21:52:05 +0100
+On Thu, 9 Dec 2010 14:44:27 -0600
+Steve French <smfrench@gmail.com> wrote:
 
-x86, x2apic: Don't map lapic addr for preenabled x2apic systems
+> On Thu, Dec 9, 2010 at 1:34 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > On Thu, 9 Dec 2010 12:26:39 -0600
+> > Steve French <smfrench@gmail.com> wrote:
+> >
+> >> On Thu, Dec 9, 2010 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> >> > On Thu, 09 Dec 2010 17:10:28 +0530
+> >> > Suresh Jayaraman <sjayaraman@suse.de> wrote:
+> >> >
+> >> >> On 12/06/2010 09:08 PM, Jeff Layton wrote:
+> >> >> > On Mon, 06 Dec 2010 16:35:06 +0100
+> >> >> > Bernhard Walle <bernhard@bwalle.de> wrote:
+> >> >> >
+> >> >> >>
+> >> >> >> Zitat von Jeff Layton <jlayton@redhat.com>:
+> >> >> >>
+> >> >> >>>
+> >> >> >>> I'm still not sure I like this patch however. It potentially means a
+> >> >> >>> lot of printk spam since these things have no ratelimiting. It also
+> >> >> >>> doesn't tell me anything about which server might be giving me grief.
+> >> >> >>>
+> >> >> >>> Maybe this should be turned into a cFYI?
+> >> >> >>
+> >> >> >> Well, if I see it in the kernel log, it doesn't matter if it's info or
+> >> >> >> something else.
+> >> >> >>
+> >> >> >>> The bottom line though is that running 32-bit applications that were
+> >> >> >>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
+> >> >> >>> idea. It would be nice to be able to alert users that things aren't
+> >> >> >>> working the way they expect, but I'm not sure this is the right place
+> >> >> >>> to do that.
+> >> >> >>
+> >> >> >> Well, but there *are* such application (in my case it was Softmaker Office
+> >> >> >> which is a proprietary word processor) and it's quite nice if you know
+> >> >> >> how you can workaround it when you encounter such a problem. That's all.
+> >> >> >>
+> >> >> >
+> >> >> > Sure...but this problem is not limited to CIFS. Many modern filesystems
+> >> >> > use 64-bit inodes. Running this application on XFS or NFS for instance
+> >> >> > is likely to give you the same trouble. You just hit it on CIFS because
+> >> >> > the server happened to give you a very large inode number.
+> >> >> >
+> >> >> > If we're going to add printk's for this situation, it probably ought to
+> >> >> > be in a more generic place.
+> >> >> >
+> >> >>
+> >> >> By generic place, did you mean at the VFS level? I think at VFS level,
+> >> >> there is little information about the Server or underlying fs and this
+> >> >> information doesn't seem too critical that VFS should warn/care much about.
+> >> >>
+> >> >> May be sticking to a cFYI along with Server detail is a good idea?
+> >> >>
+> >> > My poing was mainly that there's nothing special about CIFS in this
+> >> > regard, other than the fact that servers regularly send us inodes that
+> >> > are larger than 2^32. Why should we do this for cifs but not for nfs,
+> >> > xfs, ext4, etc?
+> >> >
+> >> > The filldir function gets a dentry as an argument, so it could
+> >> > reasonably generate a printk for this. I'm also not keen on
+> >> > the printk recommending noserverino for this. That has its own
+> >> > drawbacks.
+> >> >
+> >> > A cFYI for this sort of thing seems reasonable however.
+> >>
+> >> I agree that a cFYI is reasonable.  The next obvious question is: do
+> >> we need to add code to generate unique 32 bit inode numbers
+> >> that don't collide (as IIRC Samba does by xor the high and low 32
+> >> bits of the inode number) when the app can't support ino64
+> >> I would prefer not to go back to noserverino since that has worse
+> >> drawbacks.
+> >>
+> >
+> > Right, the fact that noserverino works around this is really just due
+> > to an implementation detail of iunique(). That should probably be
+> > discouraged as a solution since it's not guaranteed to be a workaround
+> > in the future.
+> >
+> > If we did add such a switch, I'd suggest that we pattern it after what
+> > NFS did for this. They added an "enable_ino64" module parameter a
+> > couple of years ago that defaults to "true".
+> 
+> makes me uncomfortable to break ino64 for all mounts - when we
+> may have one application on one mount that needs it (might be
+> better to make a mount related)
+> 
 
-If x2apic is preenabled and used by the kernel, we don't need to map
-the lapic address. That mapping will never be used.
+It's a workaround for broken applications. Some discomfort is
+reasonable, as long as the default is that ino64 is enabled.
 
-So just skip that in register_lapic_address()
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-LKML-Reference: <4CFDF69C.9070501@kernel.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
----
- arch/x86/kernel/apic/apic.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 9303364..8933936 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1681,9 +1681,11 @@ void __init register_lapic_address(unsigned long address)
- {
- 	mp_lapic_addr = address;
- 
--	set_fixmap_nocache(FIX_APIC_BASE, address);
--	apic_printk(APIC_VERBOSE, "mapped APIC to %16lx (%16lx)\n",
--		    APIC_BASE, mp_lapic_addr);
-+	if (!x2apic_mode) {
-+		set_fixmap_nocache(FIX_APIC_BASE, address);
-+		apic_printk(APIC_VERBOSE, "mapped APIC to %16lx (%16lx)\n",
-+			    APIC_BASE, mp_lapic_addr);
-+	}
- 	if (boot_cpu_physical_apicid == -1U) {
- 		boot_cpu_physical_apicid  = read_apic_id();
- 		apic_version[boot_cpu_physical_apicid] =
+-- 
+Jeff Layton <jlayton@redhat.com>
