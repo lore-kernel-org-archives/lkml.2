@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102Ab0LIFE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 00:04:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:54298 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab0LIFE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 00:04:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,319,1288594800"; 
-   d="scan'208";a="634599032"
-Subject: Re: [PATCH] ACPI: fix section mismatch warning
-From: Zhang Rui <rui.zhang@intel.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1291865712-31557-1-git-send-email-namhyung@gmail.com>
-References: <1291865712-31557-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 13:05:15 +0800
-Message-ID: <1291871115.1715.116.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751617Ab0LIFQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 00:16:25 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:58238 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750859Ab0LIFQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 00:16:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMPy/0x5LdBk/2dsb2JhbACjaHnAG4VJBJAL
+Date: Thu, 9 Dec 2010 16:16:17 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/46] Revert "fs: use RCU read side protection in
+   d_validate"
+Message-ID: <20101209051617.GA3436@amd>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <2d1d8ffc4acea8b6c4e5b58bb1653b3f0e7071e2.1290852958.git.npiggin@kernel.dk>
+ <20101208011656.GD29333@dastard>
+ <20101208093824.GA3151@amd>
+ <20101209004413.GB32766@dastard>
+ <20101209043842.GB3139@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101209043842.GB3139@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-09 at 11:35 +0800, Namhyung Kim wrote:
-> Annotate acpi_os_initialize1() as __init to fix following warning:
+On Thu, Dec 09, 2010 at 03:38:42PM +1100, Nick Piggin wrote:
+> > Code changes. It may not be doing what it was originally
+> > needed/intended to be doing - I don't need to waste time on code
+> > archeology and second guessing when there are others around that can
+> > tell me this off the top oftheir head. ;)
 > 
->   LD      vmlinux.o
->   MODPOST vmlinux.o
-> WARNING: vmlinux.o(.text+0x231587): Section mismatch in reference from the function
-> 	 acpi_os_initialize1() to the function .init.text:acpi_osi_setup_late()
-> The function acpi_os_initialize1() references
-> the function __init acpi_osi_setup_late().
-> This is often because acpi_os_initialize1 lacks a __init
-> annotation or the annotation of acpi_osi_setup_late is wrong.
+> Well the d_validate API is meant to provide that, so it's broken
+> whether or not its callers use it correctly. It's also exported
+> to external modules...
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Yes we should remove smbfs and rip the cache out of ncpfs and
+> remove d_validate entirely when possible (or, provide a more
 
-yes, this is the same patch as
-https://patchwork.kernel.org/patch/389432/
+The reason why I don't remove the caching crap entirely is because
+it is not a trivial change to properly remove it, and I don't have
+the time or inclination to do it properly and have it tested when
+it's easy to provide a correct, simple, and back compatible API.
 
-thanks,
-rui
+The patch Christoph posted for smbfs and ncpfs just hacks out where the
+dentry is used from the cache, but leaves a lot of cache infrastructure
+there to rot.
 
-> ---
->  drivers/acpi/osl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 966feddf6b1b..f7227e990b0f 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -1530,7 +1530,7 @@ acpi_status __init acpi_os_initialize(void)
->  	return AE_OK;
->  }
->  
-> -acpi_status acpi_os_initialize1(void)
-> +acpi_status __init acpi_os_initialize1(void)
->  {
->  	kacpid_wq = create_workqueue("kacpid");
->  	kacpi_notify_wq = create_workqueue("kacpi_notify");
 
+> reasonable API and caching library entirely in the dcache code
+> that a filesystem might use). But this is the right first step.
+
+For the record, if anyone cares, the sanest and simplest way to do this
+would be to store the dentry's hash along with its pointer, and have
+interfaces to allocate, destroy, insert, and delete from cache, and
+lookup based on a supplied compare function. (but obviously we shouldn't
+bother unless some good numbers turn up)
 
