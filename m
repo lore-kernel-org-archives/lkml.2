@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab0LILS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 06:18:56 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47678 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab0LILSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 06:18:23 -0500
-From: Mel Gorman <mel@csn.ul.ie>
-To: Simon Kirby <sim@hostway.ca>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 4/6] mm: kswapd: Reset kswapd_max_order and classzone_idx after reading
-Date: Thu,  9 Dec 2010 11:18:18 +0000
-Message-Id: <1291893500-12342-5-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
+	id S1754748Ab0LIL2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 06:28:38 -0500
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:62080 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab0LIL2f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 06:28:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=APON2z1dAU+lrDDdzWn2P6B1SetghDMKAP3lyfw21yBGk9LeAFp1TCOwnloQHxSVBw
+         QSF7DwAIAG9bXkkEcU90vvO4hlfMD6swUzVlgebFugazBS5OlfmVPxO7vrpLw49RBFPR
+         KJn6sPThu8AWU3KQs5rNvEzls2ejcpYgCiIHg=
+Date: Thu, 9 Dec 2010 14:28:21 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Tilman Sauerbeck <tilman@code-monkey.de>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] kgdb: strlen() doesn't count the terminator
+Message-ID: <20101209112821.GU10623@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	Paul Mundt <lethal@linux-sh.org>,
+	Geert Uytterhoeven <geert@linux-m68k.org>,
+	linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+	Tilman Sauerbeck <tilman@code-monkey.de>,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When kswapd wakes up, it reads its order and classzone from pgdat and
-calls balance_pgdat. While its awake, it potentially reclaimes at a high
-order and a low classzone index. This might have been a once-off that
-was not required by subsequent callers. However, because the pgdat
-values were not reset, they remain artifically high while
-balance_pgdat() is running and potentially kswapd enters a second
-unnecessary reclaim cycle. Reset the pgdat order and classzone index
-after reading.
+This is an off by one because strlen() doesn't count the null
+terminator.  We strcpy() these strings into an array of size
+MAX_CONFIG_LEN.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/vmscan.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 52e229e..bc233d8 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2530,6 +2530,8 @@ static int kswapd(void *p)
+diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
+index 59c118c..27dc463 100644
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -988,7 +988,7 @@ static void kgdbts_run_tests(void)
  
- 			order = pgdat->kswapd_max_order;
- 			classzone_idx = pgdat->classzone_idx;
-+			pgdat->kswapd_max_order = 0;
-+			pgdat->classzone_idx = MAX_NR_ZONES - 1;
- 		}
- 		finish_wait(&pgdat->kswapd_wait, &wait);
+ static int kgdbts_option_setup(char *opt)
+ {
+-	if (strlen(opt) > MAX_CONFIG_LEN) {
++	if (strlen(opt) >= MAX_CONFIG_LEN) {
+ 		printk(KERN_ERR "kgdbts: config string too long\n");
+ 		return -ENOSPC;
+ 	}
+diff --git a/drivers/serial/kgdboc.c b/drivers/serial/kgdboc.c
+index 3374618..ec1748b 100644
+--- a/drivers/serial/kgdboc.c
++++ b/drivers/serial/kgdboc.c
+@@ -130,7 +130,7 @@ static void kgdboc_unregister_kbd(void)
  
--- 
-1.7.1
-
+ static int kgdboc_option_setup(char *opt)
+ {
+-	if (strlen(opt) > MAX_CONFIG_LEN) {
++	if (strlen(opt) >= MAX_CONFIG_LEN) {
+ 		printk(KERN_ERR "kgdboc: config string too long\n");
+ 		return -ENOSPC;
+ 	}
