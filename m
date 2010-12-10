@@ -1,90 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab0LJBV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 20:21:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:64397 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757641Ab0LJBV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 20:21:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,322,1288594800"; 
-   d="scan'208";a="634918692"
-Date: Fri, 10 Dec 2010 07:57:05 +0800
-From: Shaohui Zheng <shaohui.zheng@linux.intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Shaohui Zheng <shaohui.zheng@intel.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        haicheng.li@linux.intel.com, lethal@linux-sh.org, ak@linux.intel.com,
-        gregkh@suse.de
-Subject: Re: [7/7,v8] NUMA Hotplug Emulator: Implement per-node add_memory
- debugfs interface
-Message-ID: <20101209235705.GA10674@shaohui>
-References: <A24AE1FFE7AEC5489F83450EE98351BF2A40FED20A@shsmsx502.ccr.corp.intel.com>
- <20101209012124.GD5798@shaohui>
- <alpine.DEB.2.00.1012091325530.13564@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1012091325530.13564@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757700Ab0LJBWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 20:22:35 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45428 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756306Ab0LJBWe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 20:22:34 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 10 Dec 2010 10:16:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order
+ allocations until a percentage of the node is balanced
+Message-Id: <20101210101649.824e35ed.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1291893500-12342-3-git-send-email-mel@csn.ul.ie>
+References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
+	<1291893500-12342-3-git-send-email-mel@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 01:29:28PM -0800, David Rientjes wrote:
-> On Thu, 9 Dec 2010, Shaohui Zheng wrote:
-> 
-> > > I don't think you should be using memparse() to support this type of 
-> > > interface, the standard way of writing memory locations is by writing 
-> > > address in hex as the first example does.  The idea is to not try to make 
-> > > things simpler by introducing multiple ways of doing the same thing but 
-> > > rather to standardize on a single interface.
-> > 
-> > Undoubtedly, A hex is the best way to represent a physical address. If we use
-> > memparse function, we can use the much simpler way to represent an address,
-> > it is not the offical way, but it takes many conveniences if we just want to 
-> > to some simple test.
-> > 
-> 
-> Testing code should be removed from the patch prior to proposal.
-> 
-> > When we reserce memory, we use mempasre to parse the mem=XXX parameter, we can
-> > avoid the complicated translation when we add memory thru the add_memory interface,
-> > how about still use the memparse here? but remove it from the document since it is
-> > just for some simple testing. 
-> > 
-> 
-> We really don't want a public interface to have undocumented behavior, so 
-> it would be much better to retain the documentation if you choose to keep 
-> the memparse().  I disagree that converting the mem= parameter to hex is 
-> "complicated," however, so I'd prefer that the interface is similar to 
-> that of add_node.
-> 
+On Thu,  9 Dec 2010 11:18:16 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Okay, I will keep interface to accept hex address which is simliar wiht add_node.
-
-> > > > +	printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-> > > > +	phys_addr = memparse(buf, NULL);
-> > > > +	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-> > > 
-> > > Does the add_memory() call handle memoryless nodes such that they 
-> > > appropriately transition to N_HIGH_MEMORY when memory is added?
-> > 
-> > For memoryless nodes, it will cause OOM issue on old kernel version, but now
-> > memoryless node is already supported, and the test result matches it well. The
-> > emulator is a tool to reproduce the OOM issue in eraly kernel.
-> > 
+> When reclaiming for high-orders, kswapd is responsible for balancing a
+> node but it should not reclaim excessively. It avoids excessive reclaim by
+> considering if any zone in a node is balanced then the node is balanced. In
+> the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
+> ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
+> one small zone was balanced.
 > 
-> That doesn't address the question.  My question is whether or not adding 
-> memory to a memoryless node in this way transitions its state to 
-> N_HIGH_MEMORY in the VM?
-I guess that you are talking about memory hotplug on x86_32, memory hotplug is
-NOT supported well for x86_32, and the function add_memory does not consider
-this situlation.
+> This alters the sleep logic of kswapd slightly. It counts the number of pages
+> that make up the balanced zones. If the total number of balanced pages is
+> more than a quarter of the zone, kswapd will go back to sleep. This should
+> keep a node balanced without reclaiming an excessive number of pages.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-For 64bit, N_HIGH_MEMORY == N_NORMAL_MEMORY, so we need not to do the transition.
+Hmm, does this work well in
 
--- 
-Thanks & Regards,
-Shaohui
+for example, x86-32,
+	DMA: 16MB
+	NORMAL: 700MB
+	HIGHMEM: 11G
+?
+
+At 1st look, it's balanced when HIGHMEM has enough free pages...
+This is not good for NICs which requests high-order allocations.
+
+Can't we take claszone_idx into account at checking rather than
+node->present_pages ?
+
+as
+	balanced > present_pages_below_classzone_idx(node, classzone_idx)/4
+
+?
+Thanks,
+-Kame
+
+> ---
+>  mm/vmscan.c |   43 ++++++++++++++++++++++++++++++++++---------
+>  1 files changed, 34 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 25cb373..b4472a1 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2117,10 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+>  }
+>  #endif
+>  
+> +/*
+> + * pgdat_balanced is used when checking if a node is balanced for high-order
+> + * allocations. Only zones that meet watermarks make up "balanced".
+> + * The total of balanced pages must be at least 25% of the node for the
+> + * node to be considered balanced. Forcing all zones to be balanced for high
+> + * orders can cause excessive reclaim when there are imbalanced zones.
+> + * Similarly, we do not want kswapd to go to sleep because ZONE_DMA happens
+> + * to be balanced when ZONE_DMA32 is huge in comparison and unbalanced
+> + */
+> +static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
+> +{
+> +	return balanced > pgdat->node_present_pages / 4;
+> +}
+> +
+>  /* is kswapd sleeping prematurely? */
+>  static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+>  {
+>  	int i;
+> +	unsigned long balanced = 0;
+> +	bool all_zones_ok = true;
+>  
+>  	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
+>  	if (remaining)
+> @@ -2138,10 +2154,19 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+>  
+>  		if (!zone_watermark_ok(zone, order, high_wmark_pages(zone),
+>  								0, 0))
+> -			return 1;
+> +			all_zones_ok = false;
+> +		else
+> +			balanced += zone->present_pages;
+>  	}
+>  
+> -	return 0;
+> +	/*
+> +	 * For high-order requests, any zone meeting the watermark allows
+> +	 * kswapd to sleep. For order-0, all zones must be balanced
+> +	 */
+> +	if (order)
+> +		return pgdat_balanced(pgdat, balanced);
+> +	else
+> +		return !all_zones_ok;
+>  }
+>  
+>  /*
+> @@ -2169,7 +2194,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  							int classzone_idx)
+>  {
+>  	int all_zones_ok;
+> -	int any_zone_ok;
+> +	unsigned long balanced;
+>  	int priority;
+>  	int i;
+>  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+> @@ -2203,7 +2228,7 @@ loop_again:
+>  			disable_swap_token();
+>  
+>  		all_zones_ok = 1;
+> -		any_zone_ok = 0;
+> +		balanced = 0;
+>  
+>  		/*
+>  		 * Scan in the highmem->dma direction for the highest
+> @@ -2314,11 +2339,11 @@ loop_again:
+>  				 */
+>  				zone_clear_flag(zone, ZONE_CONGESTED);
+>  				if (i <= classzone_idx)
+> -					any_zone_ok = 1;
+> +					balanced += zone->present_pages;
+>  			}
+>  
+>  		}
+> -		if (all_zones_ok || (order && any_zone_ok))
+> +		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))
+>  			break;		/* kswapd: all done */
+>  		/*
+>  		 * OK, kswapd is getting into trouble.  Take a nap, then take
+> @@ -2344,10 +2369,10 @@ out:
+>  
+>  	/*
+>  	 * order-0: All zones must meet high watermark for a balanced node
+> -	 * high-order: Any zone below pgdats classzone_idx must meet the high
+> -	 *             watermark for a balanced node
+> +	 * high-order: Balanced zones must make up at least 25% of the node
+> +	 *             for the node to be balanced
+>  	 */
+> -	if (!(all_zones_ok || (order && any_zone_ok))) {
+> +	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))) {
+>  		cond_resched();
+>  
+>  		try_to_freeze();
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
