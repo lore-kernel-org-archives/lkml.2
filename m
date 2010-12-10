@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750863Ab0LJFJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 00:09:13 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:40578 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab0LJFJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 00:09:11 -0500
-Date: Fri, 10 Dec 2010 14:07:55 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and fix build failure
-Message-ID: <20101210050755.GA21712@linux-sh.org>
-References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de> <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com> <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
+	id S1751133Ab0LJFUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 00:20:06 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42442 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab0LJFUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 00:20:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,322,1288594800"; 
+   d="asc'?scan'208";a="685746311"
+From: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
+To: "asbjorn@asbjorn.biz" <asbjorn@asbjorn.biz>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 9 Dec 2010 21:20:00 -0800
+Subject: Re: [PATCH 0/7] e1000e: cleanup
+Thread-Topic: [PATCH 0/7] e1000e: cleanup
+Thread-Index: AcuYKeTu4veayNOBQqmVc953RlvuKw==
+Message-ID: <A78C6259B11833419567082E2DC0C25601D877D519@orsmsx508.amr.corp.intel.com>
+References: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
+In-Reply-To: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
-User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 02:39:55AM +0100, Thomas Gleixner wrote:
-> On Fri, 10 Dec 2010, Mark Brown wrote:
-> > On 9 Dec 2010, at 23:34, Peter Huewe wrote:
-> > > This patch fixes a build failure[1] by converting the driver to use the
-> > > new irq_chip functions.
-> > 
-> > The driver has already been converted; if this is required we should
-> > just backport the relevant change (mfd: Convert WM831x to new irq_
-> > interrupt methods) in order to avoid merge issues with current code
-> > rather than reimplementing. However, at this stage in 2.6.37 I don't
-> > think that's a good idea.
-> 
-> I think it is.
-> 
-> # git grep GENERIC_HARDIRQS_NO_DEPRECATED arch/
-> arch/sh/Kconfig:        select GENERIC_HARDIRQS_NO_DEPRECATED
-> 
-> Though the question remains, whether this driver is actually used with
-> sh platforms. If yes, then pushing the already existing change to
-> Linus is the right way to go. If no, adding a "depends on !SH" is the
-> simple fix to prevent this allmodconfig fallout. Another option is to
-> ignore it :) I leave that up to Paul.
->  
-There are no current SH boards that are using this MFD, but there's
-certainly no technical reason for why there can't be. I'd rather avoid an
-artificial !SH dependency, but adding in something like
+--_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
-	depends on !GENERIC_HARDIRQS_NO_DEPRECATED
+T24gVGh1LCAyMDEwLTEyLTA5IGF0IDAyOjQwICswMDAwLCBBc2Jqb2VybiBTbG90aCBUb2VubmVz
+ZW4gd3JvdGU6Cj4gSGksCj4gCj4gVGhpcyBwYXRjaHNldCBmaXhlcyBtb3N0IGNoZWNrc3R5bGUg
+cHJvYmxlbXMgaW4gZTEwMDBlLgo+IAo+IENoZWNrcGF0Y2ggc3VtbWFyeToKPiBwcmU6CXRvdGFs
+OgkyMjEgZXJyb3JzLAkxMjkgd2FybmluZ3MsCTI0NTIwIGxpbmVzIGNoZWNrZWQKPiBwb3N0Ogl0
+b3RhbDoJMiBlcnJvcnMsCTM0IHdhcm5pbmdzLAkyNDUzMyBsaW5lcyBjaGVja2VkCj4gCj4gVGhl
+IHR3byByZW1haW5pbmcgZXJyb3JzIGFyZSBvZiB0aGUgdHlwZSAiTWFjcm9zIHdpdGggY29tcGxl
+eCB2YWx1ZXMKPiBzaG91bGQgYmUgZW5jbG9zZWQgaW4gcGFyZW50aGVzaXMiLCB3aXRoIG1hY3Jv
+cyBjb250YWluaW5nIDMgY29tbWEKPiBzZXBlcmF0ZWQgdmFsdWVzLgo+IAo+IFRoZSByZW1haW5p
+bmcgd2FybmluZ3MgYXJlIGFsbCBjYXVzZWQgYnkgPDIwbXMgbXNsZWVwIHVzYWdlLCB0aGF0IHNo
+b3VsZAo+IGJlIHJlcGxhY2VkIHdpdGggdXNsZWVwX3JhbmdlIGNhbGxzLgo+IAo+IFRoaXMgcGF0
+Y2hzZXQgaXMgYmFzZWQgb24gdG9wIG9mIGpraXJzaGVyL25ldC1uZXh0LTIuNi5naXQgKDY3ZDUy
+ODgpCj4gCj4gQXNiam9lcm4gU2xvdGggVG9lbm5lc2VuICg3KToKPiAgIGUxMDAwZTogY2xlYW51
+cDogZml4IHNwYWNpbmcgaXNzdWVzCj4gICBlMTAwMGU6IGNsZWFudXA6IGZpeCBicmFja2V0IGlz
+c3Vlcwo+ICAgZTEwMDBlOiBjbGVhbnVwOiBzaW1wbGlmeSBFMTAwMF9BTExfKiBkZWZpbmVzCj4g
+ICBlMTAwMGU6IGNsZWFudXA6IGZpeCBsb25nIGxpbmVzCj4gICBlMTAwMGU6IGNsZWFudXA6IGZp
+eCBzcGFjZSBpc3N1ZXMgaW4gaWNoOF8qIHN0cnVjdHMKPiAgIGUxMDAwZTogY2xlYW51cDogc3dh
+cCBhcmd1bWVudHMgdG8gYXZvaWQgY2hlY2twYXRjaCBlcnJvcnMKPiAgIGUxMDAwZTogY2xlYW51
+cDogZml4IGNvcHlyaWdodCBub3RpY2VzIHRvIHByZWZlcnJlZCBzdHlsZQo+IAo+ICBkcml2ZXJz
+L25ldC9lMTAwMGUvODI1NzEuYyAgIHwgICA3MCArKysrKysrLS0tLS0tLQo+ICBkcml2ZXJzL25l
+dC9lMTAwMGUvZGVmaW5lcy5oIHwgIDExMCArKysrKysrKysrKystLS0tLS0tLS0tLQo+ICBkcml2
+ZXJzL25ldC9lMTAwMGUvZTEwMDAuaCAgIHwgICA5MyArKysrKysrKysrKy0tLS0tLS0tLQo+ICBk
+cml2ZXJzL25ldC9lMTAwMGUvZXMybGFuLmMgIHwgIDEzNSArKysrKysrKysrKysrKy0tLS0tLS0t
+LS0tLS0tCj4gIGRyaXZlcnMvbmV0L2UxMDAwZS9ldGh0b29sLmMgfCAgIDc1ICsrKysrKysrLS0t
+LS0tLS0KPiAgZHJpdmVycy9uZXQvZTEwMDBlL2h3LmggICAgICB8ICAgNTYgKysrKysrLS0tLS0t
+Cj4gIGRyaXZlcnMvbmV0L2UxMDAwZS9pY2g4bGFuLmMgfCAgMTg1ICsrKysrKysrKysrKysrKysr
+KystLS0tLS0tLS0tLS0tLS0tLS0tCj4gIGRyaXZlcnMvbmV0L2UxMDAwZS9saWIuYyAgICAgfCAg
+IDc4ICsrKysrKysrLS0tLS0tLS0KPiAgZHJpdmVycy9uZXQvZTEwMDBlL25ldGRldi5jICB8ICAx
+NzEgKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0KPiAgZHJpdmVycy9uZXQvZTEw
+MDBlL3BhcmFtLmMgICB8ICAgNjAgKysrKysrKy0tLS0tLQo+ICBkcml2ZXJzL25ldC9lMTAwMGUv
+cGh5LmMgICAgIHwgIDIwNCArKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0t
+LS0KPiAgMTEgZmlsZXMgY2hhbmdlZCwgNjI1IGluc2VydGlvbnMoKyksIDYxMiBkZWxldGlvbnMo
+LSkKPiAKPiAtLSAKPiAxLjcuMi4zCj4gCgpXZSBhbHJlYWR5IGhhdmUgcGF0Y2hlcyBxdWV1ZWQg
+dXAgaW50ZXJuYWxseSBhbmQgYXJlIHVuZGVyIHZhbGlkYXRpb24KZm9yIHRoZSBjaGFuZ2VzIGlu
+IHBhdGNoZXMgMSB0aHJvdWdoIDUgYWxvbmcgYWxvbmcgd2l0aCBvdGhlciBwYXRjaGVzCmZvciBl
+MTAwMGUuICBUaGVzZSBwYXRjaGVzIHdpbGwgYmUgcG9zdGVkIHNob3J0bHkuCgpQYXRjaCA2IHNo
+b3VsZCBiZSBmaXhlZCBpbiBjaGVja3BhdGNoLnBsIGFuZCBmcm9tIEZsb3JpYW4ncyByZXNwb25z
+ZSwgaXQKc291bmRzIGxpa2UgdGhlIGZpeCBpcyBhbHJlYWR5IG91dCB0aGVyZS4KClBhdGNoIDcg
+ZG9lcyBub3QgcmVzb2x2ZSBhbnkgd2FybmluZ3MgaW4gY2hlY2twYXRjaC5wbCBhbmQgdGhlcmUg
+aXMgbm8KaW1wZW5kaW5nIG5lZWQgdG8gbWFrZSB0aGlzIGNoYW5nZS4KClNvIEkgd29uJ3QgYmUg
+YXBwbHlpbmcgdGhpcyBzZXJpZXMgb2YgcGF0Y2hlcy4KCkNoZWVycywKSmVmZgo=
 
-for .37 would be fine. We do build randconfigs and so on quite regularly,
-so it would obviously be nice not to have this break the build.
+--_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: signature.asc
+Content-Disposition: attachment; filename="signature.asc"; size=491;
+	creation-date="Thu, 09 Dec 2010 21:19:59 GMT";
+	modification-date="Thu, 09 Dec 2010 21:19:59 GMT"
+Content-Transfer-Encoding: base64
+
+LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogR251UEcgdjEuNC4xMSAoR05V
+L0xpbnV4KQoKaVFFY0JBQUJBZ0FHQlFKTkFiaCtBQW9KRUNUc0NBRHIvRVdVWUxFSC8weDV2WnJR
+MGRwWS9xUk12SlVvSmQ3UgpYVjJKUXFWNDBPNkQ3RlJzZ21YNGYyYUNhcHZmUmlJV2dnOCtUS3Ni
+M2grWW8rSGdmL08vZ2NlRk9EWmtZUWZ3CmgwN3hjcnVpazZwWlJ2L3cwL29lWFR5aERuOTFPNHJS
+Vk9lSVFXMWdQN3Y3cnBLM3Z2S293d3ZndHlXeU9SaHYKSEU2UU9DWUg0Vkt0YjhsWCtqU3hnMC8z
+SThMczVlQ05jdXdRN3EzWlZQdXJ3K0c1KzEzZmxpWGt5Ykh5cGRNZQpYVEVKc0ZTQXZQMm1mVm1y
+WXdSa3lrNklXWk5JUUxmcnVmMVE5amRHOTZpWE5zNHNicXJqVlFGTmFHMnR1UnhhClpaQkJXTXFT
+dElmc3dHc2xoYnlqcy9Bc1ZNelZwRGg0RG1La2g5bnhCdkkydE1uNHB1OUpNZHVkREZLYlUrST0K
+PUVJSmsKLS0tLS1FTkQgUEdQIFNJR05BVFVSRS0tLS0tCgo=
+
+--_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_--
