@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab0LJCc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 21:32:26 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:34530 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab0LJCcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 21:32:25 -0500
-Date: Fri, 10 Dec 2010 13:32:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the percpu tree with the tip tree
-Message-Id: <20101210133212.70844480.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2"
+	id S1753455Ab0LJCde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 21:33:34 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61547 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab0LJCdd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 21:33:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kUnCrdhLBQoZRNMWN/xbRrapsmPSdbyi52o/ZPOVpF6j3YbVBnB4+fNk+mBZ90xP04
+         zjp3+RJ8q2BpE45qUlrIPvE5u3gxxMPVschDp6yyCITkFMze7HLPLnArJYOkHKfbejyw
+         NMWXK2byLGAx3ziUVzIktHGRZvtXACkLzzvXo=
+MIME-Version: 1.0
+In-Reply-To: <1291908773.29292.16.camel@twins>
+References: <1291802742.1417.9.camel@marge.simson.net>
+	<tip-f26f9aff6aaf67e9a430d16c266f91b13a5bff64@git.kernel.org>
+	<1291908773.29292.16.camel@twins>
+Date: Fri, 10 Dec 2010 10:33:31 +0800
+Message-ID: <AANLkTi=z3kQJfRqpA5iw91CWyGKnuAC1+qWdao_mS5+4@mail.gmail.com>
+Subject: Re: [tip:sched/urgent] Sched: fix skip_clock_update optimization
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        efault@gmx.de, bbb.lst@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 9, 2010 at 11:32 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2010-12-08 at 20:40 +0000, tip-bot for Mike Galbraith wrote:
+>> @@ -4063,6 +4062,8 @@ need_resched_nonpreemptible:
+>>
+>>         put_prev_task(rq, prev);
+>>         next = pick_next_task(rq);
+>> +       clear_tsk_need_resched(prev);
+>> +       rq->skip_clock_update = 0;
+>>
+>>         if (likely(prev != next)) {
+>>                 sched_info_switch(prev, next);
+>> @@ -4071,6 +4072,7 @@ need_resched_nonpreemptible:
+>>                 rq->nr_switches++;
+>>                 rq->curr = next;
+>>                 ++*switch_count;
+>> +               WARN_ON_ONCE(test_tsk_need_resched(next));
+>
+> I just managed to trigger this one.. will try and reproduce to find out
+> wth happened.
+>
 
-Hi all,
+I don't see it on my side.
+Then just show some info(don't know if it's helpful):
+wake_up_idle_cpu() can set TIF_RESCHED locklessly.
 
-Today's linux-next merge of the percpu tree got a conflict in
-arch/x86/kernel/apic/nmi.c between commit
-5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a ("x86, nmi_watchdog: Remove the
-old nmi_watchdog") from the tip tree and commits
-aa0be2afeed15edd653830ca87a3f173f08c23e6 ("x86: Use this_cpu_ops to
-optimize code") and e5195e91d9b579ba9def00ea2e8b96189c0120f4 ("x86: Use
-this_cpu_inc_return for nmi counter") from the percpu tree.
+So does
+WARN_ON_ONCE(next != rq->idle && test_tsk_need_resched(next));
+help?
 
-I just ignored the percpu changes to this file and removed it as the tip
-tree did.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
+Yong
 
---Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNAZEsAAoJEDMEi1NhKgbsLhEH+wf+sdTAV189A1M3ZJCmhk4E
-jIrDGBNofKcHMRd2tCHgkTPtxLj9sV6F7PDSo/k5MuwPQl0ni4ARHUvywqFOP44A
-11A1I3cB6WoJo5Os2fe8T2X9pxQiIzmZvskp+sRx9yPMd5C1qj4pe923OZ9/sqYW
-aqd+bSxVBsjeXzuTphVIxVQ1EcNfWRtgG6IyZckGbDb6qS1rQvCh1tU6iSPmHC7B
-0OFsq3IdtiqDCZ1oNJZ65CljAUXC8DRipx6RalG1v/fR/aCv3CWnRsz02OkWU6bg
-/YaDnBTyeQKq7K8SxyxsgzW9hv9L0zQlldEMi3d/D4i9x9NMUD5Im8ZrMmHe5ZM=
-=3Xu3
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2--
+-- 
+Only stand for myself.
