@@ -1,125 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab0LJSAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 13:00:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28088 "EHLO mx1.redhat.com"
+	id S1756787Ab0LJSF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 13:05:56 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:23358 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533Ab0LJSAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 13:00:06 -0500
-Date: Fri, 10 Dec 2010 18:59:51 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: Greg KH <gregkh@suse.de>
-cc: Lukas Czerner <lczerner@redhat.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tytso@mit.edu, sandeen@redhat.com, hch@infradead.org, axboe@kernel.dk
-Subject: Re: [RFC PATCH 0/2 v1] Ioctl for reading block queue information
-In-Reply-To: <20101210173406.GA11936@suse.de>
-Message-ID: <alpine.LFD.2.00.1012101855070.2813@dhcp-lab-213.englab.brq.redhat.com>
-References: <1291908337-18805-1-git-send-email-lczerner@redhat.com> <20101209192050.GA26457@suse.de> <A9CA290C-6611-478D-B6DD-8DF443575FC4@dilger.ca> <alpine.LFD.2.00.1012101427270.2813@dhcp-lab-213.englab.brq.redhat.com> <20101210173406.GA11936@suse.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751617Ab0LJSFz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 13:05:55 -0500
+X-IronPort-AV: E=Sophos;i="4.59,325,1288594800"; 
+   d="scan'208";a="493419501"
+Subject: [GIT PULL] Please pull NFS client fixes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Fri, 10 Dec 2010 13:05:52 -0500
+Message-ID: <1292004352.4052.2.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 10 Dec 2010 18:05:54.0437 (UTC) FILETIME=[E3305B50:01CB9894]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010, Greg KH wrote:
+Resending pull request after appending Chuck's fix for the nfs_umount() panic.
 
-> On Fri, Dec 10, 2010 at 03:07:20PM +0100, Lukas Czerner wrote:
-> > On Thu, 9 Dec 2010, Andreas Dilger wrote:
-> > 
-> > > On 2010-12-09, at 12:20, Greg KH wrote:
-> > > > On Thu, Dec 09, 2010 at 04:25:35PM +0100, Lukas Czerner wrote:
-> > > >> For a long time it has been pretty painful to retrieve informations from
-> > > >> /sys/block/*/queue for particular block device. Not only it is painful
-> > > >> to retrieve informations within C tool, parsing strings, etc, but one
-> > > >> have to run into problem even finding the proper path in sysfs.
-> > > > 
-> > > > What's wrong with using libudev?  That should give you all of this
-> > > > information easily using a .c program without any need to change the
-> > > > kernel at all.
-> > 
-> > What's wrong with using libudev ? Well, fist of all I have never heard
-> > about it:), one can argue this is kind of my fault, and second of all
-> > the documentation is kind of non-existent (almost).
-> > 
-> > But, despite this I did gave libudev a quick try and I must say, it
-> > works, however it is not as simple as calling "ioctl(fd,
-> > BLKGETQUEUEINFO, &val)" as Andreas pointed out.
-> > 
-> > So, in my use-case, I have a path to the device provided by the user
-> > (strictly speaking it may not be device but for example symbolic link
-> > /dev/mapper/something) and I need to retrieve queue information like
-> > discard_granularity, discard_alignment etc... usually stored in place
-> > like /sys/block/sda/queue/*.
-> > 
-> > With libudev I need to:
-> > 
-> > 1. create the udev obejct:
-> > 
-> > 	udev = udev_new();
-> > 	if (!udev) {
-> > 		printf("Can't create udev\n");
-> > 		exit(1);
-> > 	}
-> > 
-> > 2. Check the path for the block device
-> > 
-> > 	stat(name, &buf);
-> > 	if (!S_ISBLK(buf.st_mode)) {
-> > 		printf("Not a block device\n");
-> > 		exit(1);
-> > 	}
-> > 
-> > 3. Get udev device object
-> > 
-> > 	dev = udev_device_new_from_devnum(udev, 'b', buf.st_rdev);
-> > 	if (!dev) {
-> > 		printf("Can not find the device\n");
-> > 		exit(1);
-> > 	}
-> > 
-> > 4. Construct path for sysfs attribute I need:
-> > 
-> > 	snprintf(path, PATH_MAX, "%s/queue/%s",
-> > 	                udev_device_get_syspath(dev),
-> > 			"discard_granularity");
-> 
-> Hm, what about just using the libudev functions for attributes instead?
-> That should save you this step, and the next one.
+-----------------------------------------------------------------------------
 
-I do not really see how, reference manual is not exactly helpful with
-this and I have got the impression that libudev functions are not able
-to retrieve queue information, but rather device properties, basically
-only from /sys/block/sda/* directory, not subdirectories.
+Hi Linus,
 
--Lukas
+Please pull from the "bugfixes" branch of the repository at
 
-> 
-> > 5. Open the sysfs file, get page-sized buffer and parse text :-/ (without
-> >    checks now):
-> > 
-> > 	read(fd, buffer, pagesize);
-> > 	sscanf(buffer, "%lu", &value);
-> > 	printf("max_hw_sector_size: %lu\n",value);
-> > 
-> > Which is opposed to BLKGETQUEUEINFO steps (define val, invoke ioctl,
-> > check result) a bit longer. But I can definitely see you point, it is
-> > feasible and since we have libudev we might want to use this in
-> > userspace. The fact is I would really want to stand up and defend my
-> > ioctl approach, but libudev just might provide what I need without
-> > proceeding the just-another-ioctl-madness on kernel lists :).
-> 
-> Please use libudev.  What happens next week when we add a new sysfs
-> attribute to block devices?  Then your ioctl just broke and you have to
-> create a new one.
-> 
-> No, use sysfs for what it was made for, from userspace, don't add custom
-> ioctls for this.
-> 
-> thanks,
-> 
-> greg k-h
-> 
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
+
+This will update the following files through the appended changesets.
+
+  Cheers,
+    Trond
+
+----
+ Documentation/filesystems/Locking |    7 +++-
+ Documentation/filesystems/vfs.txt |    7 +++
+ fs/nfs/dir.c                      |   76 +++++++++++++++++--------------------
+ fs/nfs/file.c                     |    2 +
+ fs/nfs/inode.c                    |    1 +
+ fs/nfs/mount_clnt.c               |    4 +-
+ fs/nfs/nfs4proc.c                 |    9 ++++
+ fs/nfs/pagelist.c                 |    4 +-
+ fs/nfs/read.c                     |    1 -
+ fs/nfs/super.c                    |    4 --
+ fs/nfs/write.c                    |    3 +-
+ include/linux/fs.h                |    1 +
+ include/linux/nfs_fs.h            |    1 +
+ include/linux/nfs_page.h          |    1 +
+ mm/filemap.c                      |    5 ++
+ mm/truncate.c                     |    4 ++
+ mm/vmscan.c                       |    7 +++
+ 17 files changed, 85 insertions(+), 52 deletions(-)
+
+commit 5b362ac3799ff4225c40935500f520cad4d7ed66
+Author: Chuck Lever <chuck.lever@oracle.com>
+Date:   Fri Dec 10 12:31:14 2010 -0500
+
+    NFS: Fix panic after nfs_umount()
+    
+    After a few unsuccessful NFS mount attempts in which the client and
+    server cannot agree on an authentication flavor both support, the
+    client panics.  nfs_umount() is invoked in the kernel in this case.
+    
+    Turns out nfs_umount()'s UMNT RPC invocation causes the RPC client to
+    write off the end of the rpc_clnt's iostat array.  This is because the
+    mount client's nrprocs field is initialized with the count of defined
+    procedures (two: MNT and UMNT), rather than the size of the client's
+    proc array (four).
+    
+    The fix is to use the same initialization technique used by most other
+    upper layer clients in the kernel.
+    
+    Introduced by commit 0b524123, which failed to update nrprocs when
+    support was added for UMNT in the kernel.
+    
+    BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=24302
+    BugLink: http://bugs.launchpad.net/bugs/683938
+    
+    Reported-by: Stefan Bader <stefan.bader@canonical.com>
+    Tested-by: Stefan Bader <stefan.bader@canonical.com>
+    Cc: stable@kernel.org # >= 2.6.32
+    Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 2df485a774ba59c3f43bfe84107672c1d9b731a0
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Dec 7 22:39:17 2010 -0500
+
+    nfs: remove extraneous and problematic calls to nfs_clear_request
+    
+    When a nfs_page is freed, nfs_free_request is called which also calls
+    nfs_clear_request to clean out the lock and open contexts and free the
+    pagecache page.
+    
+    However, a couple of places in the nfs code call nfs_clear_request
+    themselves. What happens here if the refcount on the request is still high?
+    We'll be releasing contexts and freeing pointers while the request is
+    possibly still in use.
+    
+    Remove those bare calls to nfs_clear_context. That should only be done when
+    the request is being freed.
+    
+    Note that when doing this, we need to watch out for tests of req->wb_page.
+    Previously, nfs_set_page_tag_locked() and nfs_clear_page_tag_locked()
+    would check the value of req->wb_page to figure out if the page is mapped
+    into the nfsi->nfs_page_tree. We now indicate the page is mapped using
+    the new bit PG_MAPPED in req->wb_flags .
+    
+    Reported-by: Jeff Layton <jlayton@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0de1b7e800188782973598158e0acbb9e08e6c99
+Author: Mi Jinlong <mijinlong@cn.fujitsu.com>
+Date:   Sat Oct 30 10:19:33 2010 +0800
+
+    nfs: kernel should return EPROTONOSUPPORT when not support NFSv4
+    
+      When nfs client(kernel) don't support NFSv4, maybe user build
+      kernel without NFSv4, there is a problem.
+    
+      Using command "mount SERVER-IP:/nfsv3 /mnt/" to mount NFSv3
+      filesystem, mount should should success, but fail and get error:
+    
+        "mount.nfs: an incorrect mount option was specified"
+    
+      System call mount "nfs"(not "nfs4") with "vers=4",
+      if CONFIG_NFS_V4 is not defined, the "vers=4" will be parsed
+      as invalid argument and kernel return EINVAL to nfs-utils.
+    
+      About that, we really want get EPROTONOSUPPORT rather than
+      EINVAL. This path make sure kernel parses argument success,
+      and return EPROTONOSUPPORT at nfs_validate_mount_data().
+    
+    Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 21ac19d484a8ffb66f64487846c8d53afef04d2b
+Author: Sergey Vlasov <vsu@altlinux.ru>
+Date:   Sun Nov 28 21:04:05 2010 +0000
+
+    NFS: Fix fcntl F_GETLK not reporting some conflicts
+    
+    The commit 129a84de2347002f09721cda3155ccfd19fade40 (locks: fix F_GETLK
+    regression (failure to find conflicts)) fixed the posix_test_lock()
+    function by itself, however, its usage in NFS changed by the commit
+    9d6a8c5c213e34c475e72b245a8eb709258e968c (locks: give posix_test_lock
+    same interface as ->lock) remained broken - subsequent NFS-specific
+    locking code received F_UNLCK instead of the user-specified lock type.
+    To fix the problem, fl->fl_type needs to be saved before the
+    posix_test_lock() call and restored if no local conflicts were reported.
+    
+    Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23892
+    Tested-by: Alexander Morozov <amorozov@etersoft.ru>
+    Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
+    Cc: <stable@kernel.org>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 08a22b392a141c201d7ed4d435de942aa853acd3
+Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Date:   Wed Dec 1 10:42:16 2010 +0000
+
+    nfs: Discard ACL cache on mode update
+    
+    An update of mode bits can result in ACL value being changed. We need
+    to mark the acl cache invalid when we update mode. Similarly we need
+    to update file attribute when we change ACL value
+    
+    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 47c716cbf638a16583441d78be3fc24345eab636
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Dec 7 12:44:56 2010 -0500
+
+    NFS: Readdir cleanups
+    
+    No functional changes, but clarify the code.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 18fb5fe40ce7f789b5cfc3aa81ff1e6175b0a5be
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Dec 7 12:41:58 2010 -0500
+
+    NFS: nfs_readdir_search_for_cookie() don't mark as eof if cookie not found
+    
+    If we're searching for a specific cookie, and it isn't found in the page
+    cache, we should try an uncached_readdir(). To do so, we return EBADCOOKIE,
+    but we don't set desc->eof.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 11de3b11e08cac26d59e88efaf4e316701883552
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Dec 1 14:17:06 2010 -0500
+
+    NFS: Fix a memory leak in nfs_readdir
+    
+    We need to ensure that the entries in the nfs_cache_array get cleared
+    when the page is removed from the page cache. To do so, we use the
+    freepage address_space operation.
+    
+    Change nfs_readdir_clear_array to use kmap_atomic(), so that the
+    function can be safely called from all contexts.
+    
+    Finally, modify the cache_page_release helper to call
+    nfs_readdir_clear_array directly, when dealing with an anonymous
+    page from 'uncached_readdir'.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 6072d13c429373c5d63b69dadbbef40a9b035552
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Wed Dec 1 13:35:19 2010 -0500
+
+    Call the filesystem back whenever a page is removed from the page cache
+    
+    NFS needs to be able to release objects that are stored in the page
+    cache once the page itself is no longer visible from the page cache.
+    
+    This patch adds a callback to the address space operations that allows
+    filesystems to perform page cleanups once the page has been removed
+    from the page cache.
+    
+    Original patch by: Linus Torvalds <torvalds@linux-foundation.org>
+    [trondmy: cover the cases of invalidate_inode_pages2() and
+              truncate_inode_pages()]
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0aded708d125a3ff7e5abaea9c2d9c6d7ebbfdcd
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Nov 30 21:56:32 2010 -0500
+
+    NFS: Ensure we use the correct cookie in nfs_readdir_xdr_filler
+    
+    We need to use the cookie from the previous array entry, not the
+    actual cookie that we are searching for (except for the case of
+    uncached_readdir).
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
