@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab0LJGje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 01:39:34 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:53193 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab0LJGjc (ORCPT
+	id S1752690Ab0LJGwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 01:52:24 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:48117 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab0LJGwX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 01:39:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=wGvb0Ltdw9CJWiKCwxXN9ZUpOcRgzMNJUBC/liq+0j9nROX5n0jLk8l0pIRqhHkUFX
-         seU8OMKM9Rvg2LmCMYjw==
+	Fri, 10 Dec 2010 01:52:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
-	<1291335412-16231-2-git-send-email-walken@google.com>
-	<20101208152740.ac449c3d.akpm@linux-foundation.org>
-	<AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
-	<AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
-Date: Thu, 9 Dec 2010 22:39:29 -0800
-Message-ID: <AANLkTikXx4MgdPYWYNVj8cMOSHTHJEUHqKZ_q-P4jFYp@mail.gmail.com>
-Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
- faulting in pages
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <20101210023852.GB3059@thunk.org>
+References: <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
+ <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+ <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
+ <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
+ <20101209231616.GA12515@basil.fritz.box> <1291945065-sup-1838@think>
+ <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com> <20101210023852.GB3059@thunk.org>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Fri, 10 Dec 2010 00:52:01 -0600
+Message-ID: <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: "Ted Ts'o" <tytso@mit.edu>, Matt <jackdachef@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
+        Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+        Milan Broz <mbroz@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 10:11 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wednesday, December 8, 2010, Michel Lespinasse <walken@google.com> wrote:
->> Yes, patch 1/6 changes the long hold time to be in read mode instead
->> of write mode, which is only a band-aid. But, this prepares for patch
->> 5/6, which releases mmap_sem whenever there is contention on it or
->> when blocking on disk reads.
+On Thu, Dec 9, 2010 at 8:38 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Fri, Dec 10, 2010 at 02:53:30AM +0100, Matt wrote:
+>>
+>> Try a kernel before 5a87b7a5da250c9be6d757758425dfeaf8ed3179
+>>
+>> from the tests I've done that one showed the least or no corruption if
+>> you count the empty /etc/env.d/03opengl as an artefact
 >
-> I have to say that I'm not a huge fan of that horribly kludgy
-> contention check case.
+> Yes, that's a good test.  Also try commit bd2d0210cf.  The patch
+> series that is most likely to be at fault if there is a regression in
+> between 5a87b7a5d and bd2d0210cf inclusive.
 >
-> The "move page-in to read-locked sequence" and the changes to
-> get_user_pages look fine, but the contention thing is just disgusting.
-> I'd really like to see some other approach if at all possible.
+> I did a lot of testing before submitting it, but that wa a tricky
+> rewrite.  If you can reproduce the problem reliably, it might be good
+> to try commit 16828088f9 (the commit before 5a87b7a5d) and commit
+> bd2d0210cf.  If it reliably reproduces on bd2d0210cf, but is clean on
+> 16828088f9, then it's my ext4 block i/o submission patches, and we'll
+> need to either figure out what's going on or back out that set of
+> changes.
+>
+> If that's the case, a bisect of those changes (it's only 6 commits, so
+> it shouldn't take long) would be most appreciated.
 
-Are you OK with the part of patch 5/6 that drops mmap_sem when
-blocking on disk ?
+I observed the behavior on bd2d0210cf in a qemu-kvm install of
+openSUSE 11.3 (x86_64) on *totally* different host - an AMD quad-core.
 
-This by itself brings mmap_sem hold time down to a few seconds. Plus,
-I could add something to limit the interval passed to
-__mlock_vma_pages_range to a thousand pages or so, so that the hold
-time would then be bounded by that constant.
+I did /not/ observe the behavior on 16828088f9 (yet). I'll run the
+test a few more times on 1682..
 
-I think rwsem_is_contended() actually sounds better than fiddling with
-constants, but OTOH maybe the mlock use case is not significant enough
-to justify introducing that new API.
+Additionally, I am building a bisected kernel now (
+cb20d5188366f04d96d2e07b1240cc92170ade40 ), but won't be able to get
+back at it for a while.
+
+I hope this helps.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Jon
