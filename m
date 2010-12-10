@@ -1,163 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab0LJN1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 08:27:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42279 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952Ab0LJN1c convert rfc822-to-8bit (ORCPT
+	id S1756275Ab0LJNgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 08:36:04 -0500
+Received: from mail.in-telegence.net ([83.125.45.125]:38496 "EHLO
+	amg.in-telegence.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755428Ab0LJNgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 08:27:32 -0500
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <1291987065.6803.151.camel@twins>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	 <1291851079-27061-1-git-send-email-venki@google.com>
-	 <1291899120.29292.7.camel@twins>
-	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	 <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Dec 2010 14:27:15 +0100
-Message-ID: <1291987635.6803.161.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 10 Dec 2010 08:36:01 -0500
+X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Dec 2010 08:36:01 EST
+Message-ID: <4D022A77.1080708@in-telegence.net>
+Date: Fri, 10 Dec 2010 14:26:15 +0100
+From: Dominik Klein <dk@in-telegence.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: aliguori@us.ibm.com
+Subject: Possible race condition in net_cls (found in a qemu-kvm environment)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 14:17 +0100, Peter Zijlstra wrote:
-> 
-> OK, so I ended up doing the same you did.. Still staring at that, 32bit
-> will go very funny in the head once every so often. One possible
-> solution would be to ignore the occasional abs(irq_delta) > 2 * delta.
-> 
-> That would however result in an accounting discrepancy such that:
->    clock_task + irq_time != clock
-> 
-> Thoughts? 
+Hi
 
-The brute force solution is a seqcount.. something like so:
+I may be seeing some sort of a race condition in net_cls. I am not a
+programmer, I do not know any kernel code and I cannot really show any
+logs proving what I am about to state. Actually, I don't even know
+whether the bug is in iproute2, qemu-kvm or the kernel itself. Still, it
+is happening. So if you want to read on: You have been warned. Thanks if
+do you read on.
 
----
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -1786,21 +1786,63 @@ static void deactivate_task(struct rq *r
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
- 
- /*
-- * There are no locks covering percpu hardirq/softirq time.
-- * They are only modified in account_system_vtime, on corresponding CPU
-- * with interrupts disabled. So, writes are safe.
-+ * There are no locks covering percpu hardirq/softirq time.  They are only
-+ * modified in account_system_vtime, on corresponding CPU with interrupts
-+ * disabled. So, writes are safe.
-+ *
-  * They are read and saved off onto struct rq in update_rq_clock().
-- * This may result in other CPU reading this CPU's irq time and can
-- * race with irq/account_system_vtime on this CPU. We would either get old
-- * or new value (or semi updated value on 32 bit) with a side effect of
-- * accounting a slice of irq time to wrong task when irq is in progress
-- * while we read rq->clock. That is a worthy compromise in place of having
-- * locks on each irq in account_system_time.
-+ *
-+ * This may result in other CPU reading this CPU's irq time and can race with
-+ * irq/account_system_vtime on this CPU. We would either get old or new value
-+ * with a side effect of accounting a slice of irq time to wrong task when irq
-+ * is in progress while we read rq->clock. That is a worthy compromise in place
-+ * of having locks on each irq in account_system_time.
-  */
- static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
--
- static DEFINE_PER_CPU(u64, irq_start_time);
-+
-+#ifndef CONFIG_64BIT
-+static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-+
-+static inline void irq_time_write_begin(int cpu)
-+{
-+	write_seqcount_begin(&per_cpu(irq_time_seq, cpu));
-+}
-+
-+static inline void irq_time_write_end(int cpu)
-+{
-+	write_seqcount_end(&per_cpu(irq_time_seq, cpu));
-+}
-+
-+static inline u64 irq_time_read(int cpu)
-+{
-+	u64 irq_time;
-+	unsigned seq;
-+
-+	do {
-+		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
-+		irq_time = per_cpu(cpu_softirq_time, cpu) + 
-+			   per_cpu(cpu_hardirq_time, cpu);
-+	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
-+
-+	return irq_time;
-+}
-+#else /* CONFIG_64BIT */
-+static inline void irq_time_write_begin(int cpu)
-+{
-+}
-+
-+static inline void irq_time_write_end(int cpu)
-+{
-+}
-+
-+static inline u64 irq_time_read(int cpu)
-+{
-+	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
-+}
-+#endif /* CONFIG_64BIT */
-+
- static int sched_clock_irqtime;
- 
- void enable_sched_clock_irqtime(void)
-@@ -1820,6 +1862,7 @@ static void __account_system_vtime(int c
- 	delta = now - per_cpu(irq_start_time, cpu);
- 	per_cpu(irq_start_time, cpu) = now;
- 
-+	irq_time_write_begin(cpu);
- 	if (hardirq_count())
- 		per_cpu(cpu_hardirq_time, cpu) += delta;
- 	/*
-@@ -1830,6 +1873,7 @@ static void __account_system_vtime(int c
- 	 */
- 	else if (in_serving_softirq() && !(current->flags & PF_KSOFTIRQD))
- 		per_cpu(cpu_softirq_time, cpu) += delta;
-+	irq_time_write_end(cpu);
- }
- 
- /*
-@@ -1859,14 +1903,11 @@ EXPORT_SYMBOL_GPL(account_system_vtime);
- 
- static u64 irq_time_cpu(struct rq *rq)
- {
--	int cpu = cpu_of(rq);
- 	/*
- 	 * See the comment in update_rq_clock_task(), ideally we'd update
- 	 * the *irq_time values using rq->clock here.
--	 *
--	 * As it stands, reading this from a remote cpu is buggy on 32bit.
- 	 */
--	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
-+	return irq_time_read(cpu_of(rq));
- }
- 
- static void update_rq_clock_task(struct rq *rq, s64 delta)
+My goal is to run qemu-kvm virtual machines and limit their bandwidth.
+The environment is as follows:
 
+opensuse 11.3 64bit
+vanilla kernel 2.6.36.1
+iproute2 2.6.35
+qemu-kvm 0.13.0
+
+A neat way to do achieve this goal seems to be the net_cls cgroups
+subsystem which one can put a PID into and have the processes' bandwidth
+be limited by tc.
+
+So I set up tc rules, mounted net_cls and put the qemu-kvm processes'
+pid into the tasks file. The vm however happily kept using more than the
+10MBit I assigned to it.
+
+I kept looking for documentation on this and also do the old trial and
+error thing but could not make it work. The vm is supposed to use a
+network bridge on the host system btw. I tried putting the tc rules to
+the tap device, to the physical device and to the bridge device, all at
+once and each on their own. Nothing worked, the VM happily used the
+entire bandwidth.
+
+So while testing, I started to automate steps and formed the qemu-kvm
+commandline into sth like
+
+qemu-kvm <machine-definition> & echo $! > tasks
+
+And all of a sudden, the machine was only using the bandwidth it was
+supposed to use.
+
+Here's the entire commands I use.
+
+# step 1 net_cls
+mkdir -p /dev/cgroup/network
+mount -t cgroup net_cls -o net_cls /dev/cgroup/network
+mkdir /dev/cgroup/network/A
+mkdir /dev/cgroup/network/B
+/bin/echo 0x00010001 > /dev/cgroup/network/A/net_cls.classid   # 1:1
+/bin/echo 0x00010002 > /dev/cgroup/network/B/net_cls.classid   # 1:2
+
+# step 2 start virtual machine (command is mostly taken from libvirt)
+/usr/bin/qemu-kvm -M pc-0.13 -enable-kvm -m 512 -smp
+1,sockets=1,cores=1,threads=1 -name cliff -uuid
+7608c418-d0a1-290a-f703-61ec0435991f -nodefconfig -nodefaults -chardev
+socket,id=monitor,path=/var/lib/libvirt/qemu/cliff.monitor,server,nowait
+-mon chardev=monitor,mode=readline -rtc base=utc -boot c -drive
+file=/opt/kvm/cliff.img,if=none,id=drive-virtio-disk0,boot=on,format=raw
+-device
+virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0
+-netdev tap,id=hostnet0 -device
+e1000,netdev=hostnet0,id=net0,mac=52:54:00:03:38:bb,bus=pci.0,addr=0x3
+-chardev pty,id=serial0 -device isa-serial,chardev=serial0 -vnc
+127.0.0.1:0 -vga cirrus -device
+virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5 &
+
+# step 3 tc
+dev=eth0
+tc qdisc del dev $dev root 2>/dev/null
+tc qdisc add dev $dev root handle 1: htb
+tc class add dev $dev parent 1: classid 1:1 htb rate 10mbit ceil 10mbit
+tc class add dev $dev parent 1: classid 1:2 htb rate 20mbit ceil 20mbit
+tc filter add dev $dev parent 1: protocol ip prio 1 handle 1: cgroup
+
+# step 4 pid > tasks
+pgrep qemu-kvm > /dev/cgroup/network/A/tasks
+
+At this point, the VM happily keeps using the entire bandwidth.
+
+So now my way to change things:
+
+# step 1 unchanged
+# step 2 start vm and directly afterwards echo its PID to tasks
+/usr/bin/qemu-kvm -M pc-0.13 -enable-kvm -m 512 -smp
+1,sockets=1,cores=1,threads=1 -name cliff -uuid
+7608c418-d0a1-290a-f703-61ec0435991f -nodefconfig -nodefaults -chardev
+socket,id=monitor,path=/var/lib/libvirt/qemu/cliff.monitor,server,nowait
+-mon chardev=monitor,mode=readline -rtc base=utc -boot c -drive
+file=/opt/kvm/cliff.img,if=none,id=drive-virtio-disk0,boot=on,format=raw
+-device
+virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0
+-netdev tap,id=hostnet0 -device
+e1000,netdev=hostnet0,id=net0,mac=52:54:00:03:38:bb,bus=pci.0,addr=0x3
+-chardev pty,id=serial0 -device isa-serial,chardev=serial0 -vnc
+127.0.0.1:0 -vga cirrus -device
+virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5 & /bin/echo $! >
+/dev/cgroup/network/A/tasks
+
+# step 3 unchanged
+# step 4 unchanged
+
+Now, the limit configured in tc applies and the virtual machine only
+uses 10 MBit.
+
+This is 100% reproducible here.
+
+On the other hand, echoing my current shell's pid into tasks and then
+using s.th. like "scp" shows the reduced bandwidth usually works.
+
+So I realize I may not be giving you a whole lot to actually work with,
+but I am willing to provide more helpful information if you let me know
+what would be helpful and how to extract that information.
+
+Thanks in advance,
+Dominik
