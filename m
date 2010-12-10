@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0LJVGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:06:54 -0500
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:49019 "HELO
+	id S1754230Ab0LJVHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:07:00 -0500
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:34505 "HELO
 	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752024Ab0LJVGx (ORCPT
+	by vger.kernel.org with SMTP id S1753056Ab0LJVG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:06:53 -0500
+	Fri, 10 Dec 2010 16:06:58 -0500
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=T9KQ+nsJpbyx/aI9FvNb/zUqCzC+3dD3JqfMIDpwFWWQGMCivuBH/945Y6ddiMC5Ue6L6To7P5chwzHlDqVIUI63ZFsMn8ct8K9V3O181RCEY97wQYUuEvI+XzmcqJky;
-Date: Fri, 10 Dec 2010 13:06:49 -0800
+	b=WAL1nJI4Iaj70Klkppl+Zzqfo9qGT6eC5JGbXh174D/ROfy1GezmXapc3O9Z9EXNoc6JsZDFFY6B7sbLZKmMFB5RupowOcRE5aVjqeeIZuop0tzNvaTPUO96VlDGDXy/;
+Date: Fri, 10 Dec 2010 13:06:56 -0800
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.37-rc2] irq: irq and pci_ids patch for Intel
- Patsburg
-Message-ID: <20101210130649.33a31b8a@jbarnes-desktop>
-In-Reply-To: <201011171112.08712.seth.heasley@intel.com>
-References: <201011171112.08712.seth.heasley@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pci: Skip id checking if no id is passed
+Message-ID: <20101210130656.6dc39b79@jbarnes-desktop>
+In-Reply-To: <4CE436C0.5050802@kernel.org>
+References: <4CE436C0.5050802@kernel.org>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,40 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 12:12:08 -0700
-Seth Heasley <seth.heasley@intel.com> wrote:
+On Wed, 17 Nov 2010 12:10:40 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-> This patch adds an additional LPC Controller DeviceID for the Intel Patsburg PCH.
 > 
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> Will get warning when pci stub driver is built-in kenel like:
+> pci-stub: invalid id string ""
 > 
-> --- linux-2.6.37-rc2/include/linux/pci_ids.h.orig	2010-11-17 10:00:31.000000000 -0800
-> +++ linux-2.6.37-rc2/include/linux/pci_ids.h	2010-11-17 10:01:49.000000000 -0800
-> @@ -2466,7 +2466,8 @@
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
-> -#define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
-> +#define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_0	0x1d40
-> +#define PCI_DEVICE_ID_INTEL_PATSBURG_LPC_1	0x1d41
->  #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
->  #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
->  #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
-> --- linux-2.6.37-rc2/arch/x86/pci/irq.c.orig	2010-11-17 10:01:13.000000000 -0800
-> +++ linux-2.6.37-rc2/arch/x86/pci/irq.c	2010-11-17 10:01:33.000000000 -0800
-> @@ -589,7 +589,8 @@
->  	case PCI_DEVICE_ID_INTEL_ICH10_1:
->  	case PCI_DEVICE_ID_INTEL_ICH10_2:
->  	case PCI_DEVICE_ID_INTEL_ICH10_3:
-> -	case PCI_DEVICE_ID_INTEL_PATSBURG_LPC:
-> +	case PCI_DEVICE_ID_INTEL_PATSBURG_LPC_0:
-> +	case PCI_DEVICE_ID_INTEL_PATSBURG_LPC_1:
->  		r->name = "PIIX/ICH";
->  		r->get = pirq_piix_get;
->  		r->set = pirq_piix_set;
+> So stop early if no id is passed.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/pci/pci-stub.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> Index: linux-2.6/drivers/pci/pci-stub.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci-stub.c
+> +++ linux-2.6/drivers/pci/pci-stub.c
+> @@ -47,6 +47,10 @@ static int __init pci_stub_init(void)
+>  	if (rc)
+>  		return rc;
+>  
+> +	/* no ids passed actually */
+> +	if (ids[0] == '\0')
+> +		return 0;
+> +
+>  	/* add ids specified in the module parameter */
+>  	p = ids;
+>  	while ((id = strsep(&p, ","))) {
 > 
 
-applied to my linux-next branch, thanks.
+Applied to linux-next, thanks.
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
