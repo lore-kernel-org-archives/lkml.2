@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab0LJWnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 17:43:55 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:44844 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab0LJWnx (ORCPT
+	id S1752796Ab0LJWsh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 17:48:37 -0500
+Received: from mailfw02.zoner.fi ([84.34.147.249]:32645 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab0LJWsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 17:43:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=skoHPKsStEa87oZoyQmf+gZ4HQRp6vITGupFrp2KFFzWV0Nu1aAsqgSdzZxFlArd2F
-         /B2SP5zcZSLICfUwJFjulmLh0nItGhRfH/qP9jBaC9pwNTax9hvvzLHKiCoerLfp2zo1
-         CFue67j1N3L3IHMXCRhRbjb8YEvfpg42c51v8=
+	Fri, 10 Dec 2010 17:48:35 -0500
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Subject: Re: [PATCH 1/2] Squashfs: add XZ compression support
+Date: Sat, 11 Dec 2010 00:49:18 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-ARCH; KDE/4.5.4; x86_64; ; )
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Embedded Maillist <linux-embedded@vger.kernel.org>
+References: <4D00726D.3080503@lougher.demon.co.uk>
+In-Reply-To: <4D00726D.3080503@lougher.demon.co.uk>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Fri, 10 Dec 2010 14:43:32 -0800
-Message-ID: <AANLkTikNgTObTt7nfxymn+3_B1+xDOB9X1wE2bgJRnA9@mail.gmail.com>
-Subject: compat-wireless-2.6.37-rc5-3-sn.tar.bz2 release
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012110049.18135.lasse.collin@tukaani.org>
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've sucked in all pending-stable patches from linux-next.git into a
-compat-wireless release based on upstream 2.6.37-rc5. A few patches
-required a manual backport. On top of that I've sucked in a few cherry
-picked patches:
+On 2010-12-09 Phillip Lougher wrote:
+> +	stream->state = xz_dec_init(XZ_PREALLOC, block_size);
 
-mcgrof@tux ~/tmp/compat-wireless-2.6.37-rc5-3-sn $ ls -1
-linux-next-cherry-picks/
-01-ath9k-OTP.patch
-02-ath9k-no-aggr-VO.patch
-03-mac80211-no-aggr-VO.patch
-04-ath9k_hw-fix-A-MPDU-key-search-issues-on-AR9003.patch
-05-Bluetooth-Add-new-PID-for-Atheros-3011.patch
-README
+This sets the preallocated LZMA2 dictionary size to Squashfs block size, 
+which allows the best compression ratio for the given block size (bigger 
+values would be waste of memory). XZ decompressor needs about 30 KiB of 
+memory plus the dictionary. So with 1 MiB Squashfs block size a little 
+over 1 MiB of memory is needed by the XZ decompressor.
 
-If you have a need for any other other patches please feel free to
-send over. This is closing in on the first formal release for a
-compat-wireless-2.6.37, please give this a good try and report any
-issues. These release are aimed at being very stable given that we are
-sucking all pending stable patches, and cherry picking a few patches
-we choose to support. Particularly you will see we have added the OTP
-stuff for AR9003. If you happen to have an AR9003 card your card may
-have either an EEPROM or OTP, and this release will support both
-cards. Both types of cards will be supported upstream as of 2.6.38.
+Would it be useful to support smaller dictionaries without reducing the 
+Squashfs block size? It would save RAM while increasing the Squashfs 
+image size less than if also the block size was reduced. Reasonable 
+dictionary sizes could be e.g. 75 %, 50 %, or 25 % of the Squashfs block 
+size. The size increase of the Squashfs image will vary a lot depending 
+on the files in it, but e.g. dict_size = block_size / 2 won't 
+necessarily increase the image size more than 1 %.
 
-Greg, if you have an issue with applying a stable patch on 2.6.37 you
-can find the respective backport in the pending-stable/backports/
-directory of the compat-wireless.git linux-2.6.37.y branch. I can
-refer you to this once gitweb has it up on the link:
+I don't know if this kind of RAM savings matter on embedded systems. I 
+hope someone else can comment. My point in this email is only to let 
+others know that reducing the RAM usage is possible without reducing the 
+Squashfs block size.
 
-http://wireless.kernel.org/en/developers/stable-pending
-
-I should note, I have backported *all* patches that failed to apply,
-but the last one, the orinoco one is not applicable to stable as it
-failed for other reasons (compat-wireless patches/ dir)
-
-The juicy link:
-
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-rc5-3-sn.tar.bz2
-
-  Luis
+-- 
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
