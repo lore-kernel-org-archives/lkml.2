@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab0LJWsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 17:48:37 -0500
-Received: from mailfw02.zoner.fi ([84.34.147.249]:32645 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab0LJWsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 17:48:35 -0500
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Subject: Re: [PATCH 1/2] Squashfs: add XZ compression support
-Date: Sat, 11 Dec 2010 00:49:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-ARCH; KDE/4.5.4; x86_64; ; )
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Embedded Maillist <linux-embedded@vger.kernel.org>
-References: <4D00726D.3080503@lougher.demon.co.uk>
-In-Reply-To: <4D00726D.3080503@lougher.demon.co.uk>
+	id S1753172Ab0LJW7A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 17:59:00 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55199 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab0LJW67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 17:58:59 -0500
+Date: Fri, 10 Dec 2010 14:58:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
+Subject: Re: [PATCH 1/2] rcu: Stop chasing QS if another CPU did it for us
+Message-ID: <20101210225855.GJ2125@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
+ <1292015471-19227-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012110049.18135.lasse.collin@tukaani.org>
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292015471-19227-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-09 Phillip Lougher wrote:
-> +	stream->state = xz_dec_init(XZ_PREALLOC, block_size);
+On Fri, Dec 10, 2010 at 10:11:10PM +0100, Frederic Weisbecker wrote:
+> When a CPU is idle and others CPUs handled its extended
+> quiescent state to complete grace periods on its behalf,
+> it will catch up with completed grace periods numbers
+> when it wakes up.
+> 
+> But at this point there might be no more grace period to
+> complete, but still the woken CPU always keeps its stale
+> qs_pending value and will then continue to chase quiescent
+> states even if its not needed anymore.
+> 
+> This results in clusters of spurious softirqs until a new
+> real grace period is started. Because if we continue to
+> chase quiescent states but we have completed every grace
+> periods, rcu_report_qs_rdp() is puzzled and makes that
+> state run into infinite loops.
+> 
+> As suggested by Lai Jiangshan, just reset qs_pending if
+> someone completed every grace periods on our behalf.
 
-This sets the preallocated LZMA2 dictionary size to Squashfs block size, 
-which allows the best compression ratio for the given block size (bigger 
-values would be waste of memory). XZ decompressor needs about 30 KiB of 
-memory plus the dictionary. So with 1 MiB Squashfs block size a little 
-over 1 MiB of memory is needed by the XZ decompressor.
+Nice!!!
 
-Would it be useful to support smaller dictionaries without reducing the 
-Squashfs block size? It would save RAM while increasing the Squashfs 
-image size less than if also the block size was reduced. Reasonable 
-dictionary sizes could be e.g. 75 %, 50 %, or 25 % of the Squashfs block 
-size. The size increase of the Squashfs image will vary a lot depending 
-on the files in it, but e.g. dict_size = block_size / 2 won't 
-necessarily increase the image size more than 1 %.
+I have queued this patch, and followed it up with a patch that changes
+the condition to "rnp->qsmask & rdp->grpmask", which indicates that RCU
+needs a quiescent state from the CPU, and is valid regardless of how
+messed up the CPU is about which grace period is which.
 
-I don't know if this kind of RAM savings matter on embedded systems. I 
-hope someone else can comment. My point in this email is only to let 
-others know that reducing the RAM usage is possible without reducing the 
-Squashfs block size.
+I am making a similar change to the check in __note_new_gpnum().
 
--- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+Seem reasonable?
+
+							Thanx, Paul
+
+> Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/rcutree.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index ccdc04c..8c4ed60 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -681,6 +681,14 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+> 
+>  		/* Remember that we saw this grace-period completion. */
+>  		rdp->completed = rnp->completed;
+> +
+> +		/*
+> +		 * If another CPU handled our extended quiescent states and
+> +		 * we have no more grace period to complete yet, then stop
+> +		 * chasing quiescent states.
+> +		 */
+> +		if (rdp->completed == rnp->gpnum)
+> +			rdp->qs_pending = 0;
+>  	}
+>  }
+> 
+> -- 
+> 1.7.3.2
+> 
