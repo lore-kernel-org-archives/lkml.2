@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092Ab0LJKgq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:36:46 -0500
-Received: from mailfw02.zoner.fi ([84.34.147.249]:13650 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab0LJKgo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:36:44 -0500
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Subject: Re: [PATCH 2/2] Squashfs: Add XZ compression configuration option
-Date: Fri, 10 Dec 2010 12:37:23 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-ARCH; KDE/4.5.4; x86_64; ; )
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Embedded Maillist <linux-embedded@vger.kernel.org>
-References: <4D007315.1090704@lougher.demon.co.uk> <201012091109.32084.lasse.collin@tukaani.org> <4D01D70A.5050508@lougher.demon.co.uk>
-In-Reply-To: <4D01D70A.5050508@lougher.demon.co.uk>
+	id S1755257Ab0LJKhC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:37:02 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:55170 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755228Ab0LJKhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 05:37:00 -0500
+Date: Fri, 10 Dec 2010 10:36:42 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] mm: kswapd: Use the order that kswapd was
+	reclaiming at for sleeping_prematurely()
+Message-ID: <20101210103642.GK20133@csn.ul.ie>
+References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie> <1291893500-12342-4-git-send-email-mel@csn.ul.ie> <AANLkTi=2LYh04DMagfEQ6dtsfrzzLtopPG--BW+SGtpy@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012101237.23379.lasse.collin@tukaani.org>
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=2LYh04DMagfEQ6dtsfrzzLtopPG--BW+SGtpy@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-10 Phillip Lougher wrote:
-> Lasse Collin wrote:
-> > On 2010-12-09 Phillip Lougher wrote:
-> >> +config SQUASHFS_XZ
-> >> +       bool "Include support for XZ compressed file systems"
-> >> +       depends on SQUASHFS
-> >> +       default n
-> >> +       select XZ_DEC
-> > 
-> > Should "select XZ_DEC" be replaced with "depends on XZ_DEC"? XZ_DEC
-> > requires CRC32, so if "select XZ_DEC" is used, there needs to be
-> > also "select CRC32".
+On Fri, Dec 10, 2010 at 10:16:19AM +0900, Minchan Kim wrote:
+> On Thu, Dec 9, 2010 at 8:18 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > Before kswapd goes to sleep, it uses sleeping_prematurely() to check if
+> > there was a race pushing a zone below its watermark. If the race
+> > happened, it stays awake. However, balance_pgdat() can decide to reclaim
+> > at a lower order if it decides that high-order reclaim is not working as
 > 
-> XZ_DEC selects CRC32, kbuild handles these nested selects quite
-> happily, so if something selects XZ_DEC it knows it has to also
-> select CRC32.
+> Could you specify "order-0" explicitly instead of "a lower order"?
+> It makes more clear to me.
+> 
 
-OK, I had misunderstood the notice about "select" and dependencies in 
-Documentation/kbuild/kconfig-language.txt.
+Done.
 
-> Depends on has quite different semantics to selects.  If SQUASHFS_XZ
-> was made to depend on XZ_DEC then the option simply won't appear
-> unless the user knew to select XZ_DEC first (as it's default n). 
-> This would prove extremely confusing, and probably lead to most
-> people thinking Squashfs didn't have XZ support, which is somewhat
-> undesirable.
+> > expected. This information is not passed back to sleeping_prematurely().
+> > The impact is that kswapd remains awake reclaiming pages long after it
+> > should have gone to sleep. This patch passes the adjusted order to
+> > sleeping_prematurely and uses the same logic as balance_pgdat to decide
+> > if it's ok to go to sleep.
+> >
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> 
+> A comment below.
+> 
+> > ---
+> >  mm/vmscan.c |   14 ++++++++++----
+> >  1 files changed, 10 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index b4472a1..52e229e 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2132,7 +2132,7 @@ static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
+> >  }
+> >
+> >  /* is kswapd sleeping prematurely? */
+> > -static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+> > +static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+> >  {
+> >        int i;
+> >        unsigned long balanced = 0;
+> > @@ -2142,7 +2142,7 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
+> >        if (remaining)
+> >                return 1;
+> >
+> > -       /* If after HZ/10, a zone is below the high mark, it's premature */
+> > +       /* Check the watermark levels */
+> >        for (i = 0; i < pgdat->nr_zones; i++) {
+> >                struct zone *zone = pgdat->node_zones + i;
+> >
+> > @@ -2427,7 +2427,13 @@ out:
+> >                }
+> >        }
+> >
+> > -       return sc.nr_reclaimed;
+> > +       /*
+> > +        * Return the order we were reclaiming at so sleeping_prematurely()
+> > +        * makes a decision on the order we were last reclaiming at. However,
+> > +        * if another caller entered the allocator slow path while kswapd
+> > +        * was awake, order will remain at the higher level
+> > +        */
+> > +       return order;
+> >  }
+> 
+> Please change return value description of balance_pgdat.
+> "Returns the number of pages which were actually freed"
+> 
 
-Good point. I always keep the inactive options visible in xconfig so I 
-missed this. I will need to update my XZ boot-time support patch to use 
-"select" instead of "depends on" too. Thanks!
+Oops, done. Thanks
 
 -- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
