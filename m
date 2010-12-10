@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab0LJVOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:14:50 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:60460 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0LJVOt (ORCPT
+	id S1754865Ab0LJVRg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:17:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48639 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab0LJVRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:14:49 -0500
+	Fri, 10 Dec 2010 16:17:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=D2Sv6ZX5Ad6R098sUkNp+6T5cIoTt2TyEjYuBzIjvEHZJ6bNyncDTlcDtcI7gYcYwJ
-         y+qcbWwZlReelxo7IXVV2jYPx0iioFR2IxAYJi2U2oyNDghy9EMaJ+7tANQG+jik8RI5
-         607N1U1xQTAxTbQSgvz7vmO/pz1pnN0GVtbSQ=
-Date: Fri, 10 Dec 2010 22:14:42 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 0/2 v2] rcu: Fix series of spurious RCU softirqs
-Message-ID: <20101210211439.GA1713@nowhere>
-References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=BdmpmvkC14Uxw1Z9WW03CqFV78ICQ7UndUMcMkjoSMpmfycnFSMS2oaAM74Jcw9Ihg
+         C8adjPe5U2vkGvTFlxltOpNuFxgqOfBS+9zHWCuKi+H8X8C4zqQYjvdUnQHYcvFa6ClF
+         H5i8uRteUOTbkLv18FZP8wGJ8+1naW/3nS9Rs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D02871E.6060204@euromail.se>
+References: <1291929732-5989-1-git-send-email-rydberg@euromail.se>
+	<AANLkTi=mqMY_VG=0RdN5O0fDh6wpTRb5Z59L6440hvX6@mail.gmail.com>
+	<4D026DB1.8070100@euromail.se>
+	<AANLkTinctPSxGt36HCdyoWYH7TBznzY0CejLP3uALkV3@mail.gmail.com>
+	<4D02871E.6060204@euromail.se>
+Date: Fri, 10 Dec 2010 13:17:32 -0800
+Message-ID: <AANLkTim0H6La=A5W37f5NpMrOHGYbX4k8KED2=Bw-Hvd@mail.gmail.com>
+Subject: Re: [PATCH] input: mt: Interface and MT_TOOL documentation updates
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Lai in Cc, I forgot my script doesn't handle Suggested-by: tags :)
+On Fri, Dec 10, 2010 at 12:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On 12/10/2010 08:00 PM, Ping Cheng wrote:
+>
+>> On Fri, Dec 10, 2010 at 10:13 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>>>
+>>>> Can we make MT_TOOL_ENVELOPE cover a bit more cases by:
+>>>>
+>>>> 1. Removing ", and is only used for legacy hardware";
+>>>> 2. Adding "Or the number of contacts inside the bounding rectangle is
+>>>> reported if hardware provides the number but not the real contact
+>>>> positions" to the end of the paragraph.
+>>>
+>>> You might disagree, but "old" is still somewhat apt in this situation.
+>>
+>> It's ok if we say the new type was inspired by legacy hardware. But
+>> saying that it "is only used for legacy hardware" closes the door for
+>> future development. That's not what we are trying to do, right?
+>
+>
+> Well, in a sense we are. I would agree that data aiming to provide gestures as a
+> 2D transformation matrix can be handled quite well with two tracked points and a
+> finger count. However, a multitouch interface where users manipulate different
+> objects on the screen simultaneously is a different story.
+>
+>>
+>>> How would you suggest we report the number of fingers?
+>>
+>> I guess if we want to make it generic, we could have something like
+>> ABS_MT_NUM_CONTACTS to go with MT_TOOL_ENVELOPE. Clients, such as
+>> synaptics touchpads, that only care about the number of contacts
+>> inside the envelope don't need to process the contact positions even
+>> when they are reported. This also resolve the potential that
+>> BTN_TOOL_QUADTAP is not enough to tell us how many contacts are on the
+>> surface.
+>
+>
+> I really would like to avoid adding a new way to solve an old problem, in
+> particular given the statement above. Adding something like BTN_TOOL_QUINTAP
+> would hurt a little bit, but not nearly as much.
 
-On Fri, Dec 10, 2010 at 10:11:09PM +0100, Frederic Weisbecker wrote:
-> Hi,
-> 
-> Following Lai's idea.
-> 
-> An example of such series of spurious softirqs:
-> 
-> http://tglx.de/~fweisbec/trace_rcu_softirq.txt
-> 
-> In that example, the rcu softirq is raised at every tick
-> during 20 secs (was perhaps more, but the trace snapshot happened
-> during 20 secs). It happens randomly.
-> 
-> Ah and it survived several hours of rcutorture (with rcu cpu stall
-> detection).
-> 
-> Thanks.
-> 
-> Frederic Weisbecker (2):
->   rcu: Stop chasing QS if another CPU did it for us
->   rcu: Keep gpnum and completed fields synchronized
-> 
->  kernel/rcutree.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> -- 
-> 1.7.3.2
-> 
+If we plan to add BTN_TOOL_QUINTAP, you can ignore my previous comments.
+
+>> Maybe we should also tell the clients whether they are going to get
+>> the contact positions or not.
+>
+>
+> I may not understand what you mean here, but if you are referring to an up-front
+> declaration of what MT_TOOL types are to be expected, we did discuss this
+> before, without any conclusion. Perhaps it is relevant to outline why this would
+> be important.
+
+With BTN_TOOL_QUINTAP, this question can be ignored too.
+
+Thank you.
+
+Ping
