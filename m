@@ -1,107 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab0LJAGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 19:06:38 -0500
-Received: from netnation.com ([204.174.223.2]:51875 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408Ab0LJAGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 19:06:37 -0500
-Date: Thu, 9 Dec 2010 16:06:32 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
-	in response to high-order allocations V2
-Message-ID: <20101210000632.GB18263@hostway.ca>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie> <20101209015530.GD3796@hostway.ca> <20101209114506.GA20133@csn.ul.ie>
+	id S1757556Ab0LJAL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 19:11:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12353 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab0LJAL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 19:11:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,322,1288594800"; 
+   d="scan'208";a="866553758"
+Date: Thu, 9 Dec 2010 16:11:55 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/4] [USB] UASP: Add MaxNumStreams module parameter
+Message-ID: <20101210001155.GB11803@xanatos>
+References: <20101209205820.GA6014@xanatos>
+ <463402.63193.qm@web31809.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101209114506.GA20133@csn.ul.ie>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <463402.63193.qm@web31809.mail.mud.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 11:45:06AM +0000, Mel Gorman wrote:
-
-> On Wed, Dec 08, 2010 at 05:55:30PM -0800, Simon Kirby wrote:
-> > Hmm...
+On Thu, Dec 09, 2010 at 02:54:19PM -0800, Luben Tuikov wrote:
+> --- On Thu, 12/9/10, Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+> > -0800, Luben Tuikov wrote:
+> > > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> > > ---
+> > >  The long story is that we see some host
+> > controllers misreport their
+> > >  PSA as they solved 2^v = streams, instead of
+> > 2^(v+1) = streams. Thus
+> > >  They report that they support 32 streams when in
+> > fact they support 16.
+> > >  When the device attempts to return status for
+> > stream > 15, the host
+> > >  says ACK(NumP=0), the device goes in flow
+> > control, blah, blah, this
+> > >  module parameter allows you to set a max cap on
+> > the number of streams
+> > >  the driver will ask XHCI HCD to allocate.
 > > 
-> > Wouldn't it make more sense for the fast path page allocator to allocate
-> > weighted-round-robin (by zone size) from each zone, rather than just
-> > starting from the highest and working down?
-> > 
+> > If this is an issue with a host then the work-around should
+> > be in the
+> > xHCI driver instead.  It should be based on the
+> > vendor/device ID of the
+> > offending host instead of being a module parameter in the
+> > UAS driver.
+> > The only people who benefit from this patch are the people
+> > "in the know"
+> > about which hosts are buggy, not normal Linux users.
 > 
-> Unfortunately, that would cause other problems. Zones are about
-> addressing limitations. The DMA zone is used by callers that cannot
-> address above 16M. On the other extreme, the HighMem zone is used for
-> addresses that cannot be directly mapped at all times due to a lack of
-> virtual address space.
+> The OS might want to limit the number of streams for reasons other
+> than a buggy HC. So this module parameter add flexibility other than
+> making a buggy HC work.
+
+Ok, that's fine, but my comments still stand about fixing this
+particular bug in the xHCI driver, rather than in the UAS driver.
+
+> (I didn't know you were reading my patches and yet to a "competing"
+> driver of a driver where you're listed as a co-author...)
+
+I always read emails that seem like they might be xHCI related.
+Especially when they're a patch.
+
+> > Streams could be used for things other than UAS in the future, so
+> > the fix should really be in the xHCI host controller driver.  And
+> > please put the information about the host bug in the commit message,
+> > so your private comments don't get lost in the bowels of the
+> > linux-usb mailing list.
 > 
-> If we round-robined the zones, callers that could use HighMem or Normal
-> may consume memory from DMA32 or DMA causing future allocation requests
-> that require those zones to fail.
+> I've an updated HC of this particular make sitting on my desk which
+> I've not had time to test... The HC this was found in is an early
+> version of that make.
 
-Yeah, I don't mean in all cases, I mean when no particular zone is
-requested; eg, __alloc_pages_nodemask() with a non-picky zone list, or 
-when multiple zones are allowed.  This is the case for most allocations.
+If the earlier version of the HC is already out in the market, then the
+fix needs to get into the xHCI driver, regardless of whether the new
+version works.  Otherwise some poor user is going to plug in their
+off-the-shelf UAS device into their off-the-shelf host controller and
+wonder why it doesn't work.
 
-As soon as my 757 MB Normal fills up, the allocations come from DMA32
-anyway.  (Nothing ever comes from DMA because of lowmem_reserve_pages.)
-
-> > This would mean that each zone would get a proportional amount of
-> > allocations and reclaiming a bit from each would likely throw out the
-> > oldest allocations, rather than some of that and and some more recent
-> > stuff that was allocated at the beginning of the lower zone.
-> > 
-> > For example, with the current approach, a time progression of allocations
-> > looks like this (N=Normal, D=DMA32): 1N 2N 3N 4D 5D 6D 7D 8D 9D
-> > 
-> > ...once the watermark is hit, kswapd reclaims 1 and 4, since they're
-> > oldest in each zone, but 2 and 3 were allocated earlier.
-> > 
-> > Versus a weighted-round-robin approach: 1N 2D 3D 4N 5D 6D 7N 8D 9D
-> > 
-> > ...kswapd reclaims 1 and 2, and they're oldest in time and maybe LRU.
-> > 
-> > Things probably eventually mix up enough once the system has reclaimed
-> > and allocated more for a while with the current approach, but the
-> > allocations are still chunky depending on how many extra things kswapd
-> > reclaims to reach higher-order watermarks, and doesn't this always mess
-> > with the LRU when the there are multiple usable zones?
+> > In the future, please Cc me on any patches that involve xHCI, or
+> > bulk streams in general.
 > 
-> If addressing limitations were not a problem, we'd just have a single
-> zone :/
+> In this case, you should probably not add 1 to the number of streams a
+> protocol driver requests, if that number is already a power of 2.
 
-Wouldn't that be nice. ;)
+Why?  What if the host and endpoints can handle 32 streams, but the
+driver requests 16?  Is there a reason the xHCI driver shouldn't
+allocate transfer rings for streams 1 through 16?  Something special to
+do with powers of two?
 
-> > Anyway, this approach might be horrible for some other reasons (page
-> > allocations hoping to be sequential?  bigger cache footprint?), but it
-> > might reduce the requirements for other other workarounds, and it would
-> > make the LRU node-wide instead of zone-wide.
-> > 
-> 
-> Node-wide would be preferably from a page aging perspective but as zones
-> are about addressing limitations, we need to be able to reclaim zones
-> from a specific zone quickly and not have to scan looking for suitable
-> pages.
+There's a deeper design decision here that I never really resolved.
+Say a driver asks for 16 streams.  Stream 0 is reserved, and can't be
+used after streams are enabled.  The xHCI host controller spec forbids
+allocating a transfer ring for stream 0.
 
-So, I'm not proposing abandoning zones, but simply changing
-get_page_from_freelist() to remember where it last walked zonelist, and
-try to make a (weighted) round robin out of it.  It can already allocate
-from any zone in this case anyway.  (The implementation would be a bit
-more complicated than this due to zonelist not being static, of course.)
+Now, what should the contract between the host controller and the driver
+be?  Should the xHCI driver allocate stream rings for stream IDs 1
+through 15, thereby guaranteeing 15 streams can be used?  Or should it
+allocate streams 1 through 16, giving the driver the 16 active streams
+it actually wanted?  I chose the latter, which is why I add 1 to the
+number of streams the driver requests.
 
-Even if the checking of other zones happens in a buffered or chunky way
-to reduce caching effects, it would still mean that all zones fill up at
-roughly the same time, rather than the DMA zone filling up last.  This
-way, the oldest pages would all be the ones that want to be reclaimed,
-rather than the a bunch of not-oldest pages being reclaimed simply
-because the allocator decided to start with a higher zone to avoid
-allocating from the DMA zone.
+> To extend this and make it foolproof, the XHCI should probably know if
+> the number of streams came from a descriptor or the driver made it up
+> (in which case you know more precisely what to do). Now, since you
+> return the number of streams the driver can use, implementing the
+> former is probably just enough.
 
-Simon-
+In either case, I look at the endpoint descriptors that the driver
+passes me, and never allocate more streams than those endpoints can
+handle.  The driver also never allocates more streams than the host
+controller can handle.  All that work is done in
+xhci_calculate_streams_and_bitmask().
+
+> Also please add a comment as to the return value therein, to the
+> effect that the range of streams the caller can use is [1, the value
+> returned], WLG.
+
+It's documented in Documentation/usb/bulk-streams.txt under the "Picking
+new Stream IDs to use" section.  But yes, it should probably be
+documented in the function comments above usb_alloc_streams().
+
+Sarah Sharp
