@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab0LJUHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:07:39 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:50390 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab0LJUHi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:07:38 -0500
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <alpine.DEB.2.00.1012101344570.13986@router.home>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	 <1291851079-27061-1-git-send-email-venki@google.com>
-	 <1291899120.29292.7.camel@twins>
-	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	 <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
-	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
-	 <1292001500.3580.268.camel@edumazet-laptop>
-	 <1292003346.13513.30.camel@laptop>
-	 <1292004859.3580.387.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1012101236300.13986@router.home>
-	 <1292006788.13513.43.camel@laptop>
-	 <alpine.DEB.2.00.1012101344570.13986@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Dec 2010 21:07:24 +0100
-Message-ID: <1292011644.13513.61.camel@laptop>
+	id S1756927Ab0LJUSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:18:18 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50223
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752853Ab0LJUSR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 15:18:17 -0500
+Date: Fri, 10 Dec 2010 12:18:45 -0800 (PST)
+Message-Id: <20101210.121845.70177370.davem@davemloft.net>
+To: nuclearcat@nuclearcat.com
+Cc: eric.dumazet@gmail.com, andrej@ota.si, linux-kernel@vger.kernel.org,
+        gvs@zemos.net, ramirose@gmail.com, netdev@vger.kernel.org
+Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201012102151.04983.nuclearcat@nuclearcat.com>
+References: <aa43945b38cee751a8231084866b074d@192.168.253.23>
+	<1291387595.2897.350.camel@edumazet-laptop>
+	<201012102151.04983.nuclearcat@nuclearcat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 13:51 -0600, Christoph Lameter wrote:
-> On Fri, 10 Dec 2010, Peter Zijlstra wrote:
-> 
-> > > > gcc wont be able to do this yet (%fs/%gs selectors)
-> > >
-> > > The kernel can do that using the __percpu annotation.
-> >
-> > That's not true:
-> >
-> > # define __percpu
-> >
-> > Its a complete NOP.
-> 
-> The annotation serves for sparse checking. .... If you do not care about
-> those checks then you can simply pass a percpu pointer in the same form as
-> a regular pointer.
+From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+Date: Fri, 10 Dec 2010 21:51:04 +0200
 
-Its not about passing per-cpu pointers, its about passing long pointers.
+> On Friday 03 December 2010 16:46:35 Eric Dumazet wrote:
+>> Le vendredi 03 décembre 2010 à 15:37 +0100, Andrej Ota a écrit :
+>> > >> Patch that works for me is below. Now I only hope I haven't
+>> > >> (re)introduced a memory leak...
+>> > > 
+>> > > Problem comes from commit 55c95e738da85 (fix return value of
+>> > > __pppoe_xmit() method)
+>> > > 
+>> > > I am not sure patch is OK
+>> > 
+>> > Me neither. That's why I wrote "works for me". All I dare say is that it
+>> > works better than current code and is probably no worse than it was
+>> > before above mentioned commit. Apart from that, there is no point in
+>> > having return value for __pppoe_xmit if return value isn't needed.
+>> > 
+>> > Easiest way of triggering this BUG is by terminating PPPoE on the server
+>> > side, which then hits "if (!dev) { goto abort; }". This in turn calls
+>> > "kfree_skb(skb); return 0;" which returns to pppoe_rcv_core which then
+>> > goto-s to "abort_put" which again calls "kfree_skb(skb)". Voila the bug.
+>> > 
+>> > I don't know how to trigger "if (skb_cow_head(skb, ..." to see if I have
+>> > just caused another BUG. However, if I read file comments at the top, I
+>> > see a comment from 19/07/01 stating that I have to delete original skb
+>> > if code succeeds and never delete it on failure. About the skb copy
+>> > mentioned in the same comment, I don't know. 2001 was many commits ago.
+>> 
+>> Well, all I wanted to say was that _I_ was not sure, but probably other
+>> network guys have a better diagnostic.
+>> 
+>> Rami, could you re-explain the rationale of your patch ?
+>> 
+>> Thanks
+>> 
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Is there any plans to queue any patch to stable?
+> pppoe is almost dead in 2.6.36.*
 
-When I write:
+I'll deal with it for -stable once I evaluate this patch for upstream,
+which I haven't even gotten to yet.
 
-void foo(u64 *bla)
-{
-	*bla++;
-}
+When people bark about -stable this and -stable that, it just takes
+more time away from me actually getting through all the patches.  If
+it causes a crash, I know it should go to stable and I'll take care of
+it.  So there is no need to make an explicit note or query about it.
 
-DEFINE_PER_CPU(u64, plop);
-
-void bar(void)
-{
-	foo(__this_cpu_ptr(plop));
-}
-
-I want gcc to emit the equivalent to:
-
-__this_cpu_inc(plop); /* incq %fs:(%0) */
-
-Now I guess the C type system will get in the way of this ever working,
-since a long pointer would have a distinct type from a regular
-pointer :/
-
-The idea is to use 'regular' functions with the per-cpu data in a
-transparent manner so as not to have to replicate all logic.
-
-> > > > But we can provide this_cpu_write_seqcount_{begin|end}()
-> > >
-> > > No we cannot do hat. this_cpu ops are for per cpu data and not for locking
-> > > values shared between processors. We have a mechanism for passing per cpu
-> > > pointers with a corresponding annotation.
-> >
-> > -enoparse, its not locking anything, is a per-cpu sequence count.
-> 
-> seqlocks are for synchronization of objects on different processors.
-> 
-> Seems that you do not have that use case in mind. So a seqlock restricted
-> to a single processor? If so then you wont need any of those smp write
-> barriers mentioned earlier. A simple compiler barrier() is sufficient.
-
-The seqcount is sometimes read by different CPUs, but I don't see why we
-couldn't do what Eric suggested.
+Thanks.
