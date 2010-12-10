@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0LJC1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 21:27:53 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47271 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab0LJC1v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 21:27:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kfCkNFz4yhaAgkgFGAXMnz/zccOu/6xrvGB0M+yAA//KJfaVzjvQ9Vv9EQE9JWLUEZ
-         pvA+NVz9xQjJJDRQdttW+naGitTHlqjUhvy/hnz0vv/g2V3JsOooU2cCWFLgmvC/ylij
-         8vqCnArcNceYimslnPNxNoCN793gUJk4eYeiI=
-MIME-Version: 1.0
-In-Reply-To: <1291915077.6803.1.camel@twins>
-References: <1291432752-2466-1-git-send-email-bookjovi@gmail.com>
-	<AANLkTimnSPSEx+B+wgxJaaAO8-HxcnLW+Nob4O3mjxBn@mail.gmail.com>
-	<AANLkTimFjH6JZjOhPBrHmfpRycs4gDJuCpa+koxEyNgY@mail.gmail.com>
-	<AANLkTi=HGdGs++FKY6=icEs3FTwSggXTu42JQ+1MCxBc@mail.gmail.com>
-	<4D010C9D.6020005@linux.vnet.ibm.com>
-	<1291915077.6803.1.camel@twins>
-Date: Fri, 10 Dec 2010 10:27:49 +0800
-Message-ID: <AANLkTinAd968gPUKHiLTxDwR=xXiPg3=ySBOnLqatGRb@mail.gmail.com>
-Subject: Re: [PATCH] perf_event: fix error handling path
-From: jovi zhang <bookjovi@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Thiago Farina <tfransosi@gmail.com>, paulus@samba.org, mingo@elte.hu,
-        acme@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753025Ab0LJCc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 21:32:26 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:34530 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab0LJCcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 21:32:25 -0500
+Date: Fri, 10 Dec 2010 13:32:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Don Zickus <dzickus@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the percpu tree with the tip tree
+Message-Id: <20101210133212.70844480.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 1:17 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2010-12-09 at 09:06 -0800, Corey Ashford wrote:
->> On 12/07/2010 05:51 PM, jovi zhang wrote:
->> > On Mon, Dec 6, 2010 at 9:59 AM, jovi zhang<bookjovi@gmail.com>  wrote:
->> >> On Sun, Dec 5, 2010 at 8:29 PM, Thiago Farina<tfransosi@gmail.com>  wrote:
->> >>>
->> >>> On Sat, Dec 4, 2010 at 1:19 AM,<bookjovi@gmail.com>  wrote:
->> >>>> fix error handling path
->> >>>>
->> >>>> Signed-off-by: Jovi Zhang<bookjovi@gmail.com>
->> >>>>   kernel/perf_event.c |    2 --
->> >>>>   1 files changed, 0 insertions(+), 2 deletions(-)
->> >>>>
->> >>>> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
->> >>>> index cb6c0d2..62f9e9d 100644
->> >>>> --- a/kernel/perf_event.c
->> >>>> +++ b/kernel/perf_event.c
->> >>>> @@ -1918,8 +1918,6 @@ static int get_callchain_buffers(void)
->> >>>>         }
->> >>>>
->> >>>>         err = alloc_callchain_buffers();
->> >>>> -       if (err)
->> >>>> -               release_callchain_buffers();
->> >>>
->> >>> Care to explain in the change log message? As I reader, is not clear
->> >>> to me what is wrong with this.
->> >>
->> >> Sorry, the description should be as:
->> >> fix error handling path. alloc_callchain_buffers() can return -ENOMEM,
->> >> in this time callchain_cpus_entries maybe is NULL, It will oops if
->> >> invoke release_callchain_buffers() when callchain_cpus_entries is
->> >> NULL.
->> >>
->> > I hope my understanding is right, is it?
->>
->> One possible problem here is what if it returns an error other than
->> -ENOMEM, and the buffers do need to be released?  Maybe you could change
->> the code to
->>
->> err = alloc_callchain_buffers();
->> if (err != -ENOMEM)
->>       release_callchain_buffers();
->>
+--Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for you suggestion. I also thought it, but I think it should
-release the buffers in alloc_callchain_buffers if there have some
-error(like many other part of kernel code).
+Hi all,
 
-It's not a good way to trace return error code outside of
-alloc_callchain_buffer, if there have many return error code in
-future, maybe need to write code like this:
-if(err && err != -ENOMEM && err != -EXXX ) ...
+Today's linux-next merge of the percpu tree got a conflict in
+arch/x86/kernel/apic/nmi.c between commit
+5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a ("x86, nmi_watchdog: Remove the
+old nmi_watchdog") from the tip tree and commits
+aa0be2afeed15edd653830ca87a3f173f08c23e6 ("x86: Use this_cpu_ops to
+optimize code") and e5195e91d9b579ba9def00ea2e8b96189c0120f4 ("x86: Use
+this_cpu_inc_return for nmi counter") from the percpu tree.
 
-It's very ugly. is right?
+I just ignored the percpu changes to this file and removed it as the tip
+tree did.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
->>
->> Currently, alloc_callchain_buffers cannot return any error code other
->> than -ENOMEM, but that might change in the future.
->
-> The kernel convention is to fully clean up after yourself if you return
-> an error. So in that sense the patch seems right.
->
-> Anyway, anybody care to post a new patch with slightly extended
-> changelog?
->
+--Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNAZEsAAoJEDMEi1NhKgbsLhEH+wf+sdTAV189A1M3ZJCmhk4E
+jIrDGBNofKcHMRd2tCHgkTPtxLj9sV6F7PDSo/k5MuwPQl0ni4ARHUvywqFOP44A
+11A1I3cB6WoJo5Os2fe8T2X9pxQiIzmZvskp+sRx9yPMd5C1qj4pe923OZ9/sqYW
+aqd+bSxVBsjeXzuTphVIxVQ1EcNfWRtgG6IyZckGbDb6qS1rQvCh1tU6iSPmHC7B
+0OFsq3IdtiqDCZ1oNJZ65CljAUXC8DRipx6RalG1v/fR/aCv3CWnRsz02OkWU6bg
+/YaDnBTyeQKq7K8SxyxsgzW9hv9L0zQlldEMi3d/D4i9x9NMUD5Im8ZrMmHe5ZM=
+=3Xu3
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Dec_2010_13_32_12_+1100_BTN0ABnOX/zD_Ra2--
