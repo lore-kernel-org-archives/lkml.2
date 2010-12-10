@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0LJSnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 13:43:14 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:51213 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752114Ab0LJSnM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 13:43:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101208234940.GA11587@kroah.com>
-References: <1291702146-17866-1-git-send-email-omar.ramirez@ti.com>
-	<20101208222642.GA31802@kroah.com>
-	<AANLkTikcuqWbV1xGhirL65YKRjVW=2JcdYw272a0AJSN@mail.gmail.com>
-	<20101208230802.GA8176@kroah.com>
-	<AANLkTinGsYVTPV-kQHkA7U20pGX86Z-t46AGBe3pEkO7@mail.gmail.com>
-	<20101208234940.GA11587@kroah.com>
-Date: Fri, 10 Dec 2010 12:43:11 -0600
-Message-ID: <AANLkTimttTM=OA=7zQ0H=j_YeM6JCTAKecvwoY4c6Fox@mail.gmail.com>
-Subject: Re: [PATCH] staging: tidspbridge: remove file handling functions for loader
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Nishanth Menon <nm@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Armando Uribe De Leon <x0095078@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Ernesto Ramos Falcon <ernesto@ti.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Rene Sapiens <rene.sapiens@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755049Ab0LJSnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 13:43:24 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:35622 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab0LJSnW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 13:43:22 -0500
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Venkatesh Pallipadi <venki@google.com>, Mikael Pettersson <mikpe@it.uu.se>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+In-Reply-To: <1292004654.13513.38.camel@laptop>
+References: <1291917330.6803.7.camel@twins>
+	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
+	 <1291920939.6803.38.camel@twins>
+	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
+	 <1291936593.13513.3.camel@laptop>
+	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+	 <1291975704.6803.59.camel@twins> <1291987065.6803.151.camel@twins>
+	 <1291987635.6803.161.camel@twins> <1291988866.6803.171.camel@twins>
+	 <20101210175645.GB28263@n2100.arm.linux.org.uk>
+	 <1292004654.13513.38.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Dec 2010 19:43:10 +0100
+Message-ID: <1292006590.13513.40.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 8, 2010 at 5:49 PM, Greg KH <greg@kroah.com> wrote:
->> BTW, I don't expect this pushed through staging yet, I need to include
->> it to my branch first and then I'll send a pull request with the pile
->> of patches. Sorry for the misunderstanding and thanks for the review.
->
-> Well, don't send me patches you don't want me to apply without a big "DO
-> NOT APPLY" in them, otherwise I might try to :)
+On Fri, 2010-12-10 at 19:10 +0100, Peter Zijlstra wrote:
+> There are lots of places in the scheduler that rely on u64 wrap, for now
+> the easiest thing for ARM would be to select HAVE_UNSTABLE_SCHED_CLOCK
+> for those platforms that implement a short sched_clock().
+> 
+> While that isn't ideal it is something that makes it work, we can work
+> on something more suitable for future kernels. 
 
-Will do.
+Either that, or the thing you proposed a while back in this thread.
 
-> Then mess with the firmware symlink in userspace, don't have the driver
-> have to worry about it.
-
-Ok, agree.
-
-> That would be good.  Again, you can put whatever firmware image you want
-> in that location if you wish to use different ones.  That is for
-> userspace to do, not have the kernel worry about.
-
-Agree.
-
-Regards,
-
-Omar
+Since ARM doesn't have NMIs something like that should work just fine.
