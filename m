@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0LJTlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 14:41:08 -0500
-Received: from kroah.org ([198.145.64.141]:39644 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756856Ab0LJTlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 14:41:06 -0500
-Date: Fri, 10 Dec 2010 11:36:37 -0800
-From: Greg KH <greg@kroah.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Vladislav Bolkhovitin <vvvvvst@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
-Message-ID: <20101210193637.GA23113@kroah.com>
-References: <20101115161620.GB5981@kroah.com>
- <4CE16B8E.1000300@panasas.com>
- <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
- <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
- <4CE2846C.6070501@vlnb.net>
- <4CE59482.3050002@gmail.com>
- <20101118214619.GA29097@kroah.com>
- <4CE6BB4A.5060606@gmail.com>
- <20101119211904.GB28606@kroah.com>
- <AANLkTimJo_ZtQ3uVEBv864pP9f9AZR3D_o0R7T-B3fWL@mail.gmail.com>
+	id S1756907Ab0LJTv1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 14:51:27 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47500 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756066Ab0LJTv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 14:51:26 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 7TzaYZ8VM1n9uQtdLlhTKYs0_xTsFk4kp3Q3reejTDZN0uk
+ mRCG9tGmxFKIrqGrCQA6J68t1IxrR4PF9OZVdcpLKjOvNuBQZh4D8C3psKSY
+ tjWIRGZ7_jQrJ7Jz9MuugZK6dyQ.IC1Acew.7u9iN88sO5wlt4yz7kabTZ5K
+ ZTzqZTHC8mBc7pO9bYcJPdD.X571ljJvnuVnOvfLVXeXQo3nm16tNCRavT8z
+ EkZtv2wEdxG2Q_OS4sYyUcbf4atcP_6FMrBMgv8FlYNAKOgtLspQHqMKnrbh
+ UmsibBs9SW33CgX5v7dpe8WW3t6PfhWIihAzADj28cm6JX4Y-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 10 Dec 2010 13:51:23 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+In-Reply-To: <1292006788.13513.43.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1012101344570.13986@router.home>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>  <1291851079-27061-1-git-send-email-venki@google.com>  <1291899120.29292.7.camel@twins>  <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>  <1291917330.6803.7.camel@twins> 
+ <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>  <1291920939.6803.38.camel@twins>  <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>  <1291936593.13513.3.camel@laptop>  <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+  <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>  <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>  <1292001500.3580.268.camel@edumazet-laptop>  <1292003346.13513.30.camel@laptop>  <1292004859.3580.387.camel@edumazet-laptop>
+  <alpine.DEB.2.00.1012101236300.13986@router.home> <1292006788.13513.43.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimJo_ZtQ3uVEBv864pP9f9AZR3D_o0R7T-B3fWL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 01:06:06PM +0100, Bart Van Assche wrote:
-> On Fri, Nov 19, 2010 at 10:19 PM, Greg KH <greg@kroah.com> wrote:
-> > [ ... ]
+On Fri, 10 Dec 2010, Peter Zijlstra wrote:
+
+> > > gcc wont be able to do this yet (%fs/%gs selectors)
 > >
-> > None.  Use 'struct device'
-> 
-> How about using 'struct device' as follows ?
-> * Move /sys/kernel/scst_tgt/targets to /sys/class/target_driver.
+> > The kernel can do that using the __percpu annotation.
+>
+> That's not true:
+>
+> # define __percpu
+>
+> Its a complete NOP.
 
-Please never create a new class, use 'struct bus_type' instead and
-create a bus and have drivers and devices on it.
+The annotation serves for sparse checking. .... If you do not care about
+those checks then you can simply pass a percpu pointer in the same form as
+a regular pointer.
 
-thanks,
+> > > But we can provide this_cpu_write_seqcount_{begin|end}()
+> >
+> > No we cannot do hat. this_cpu ops are for per cpu data and not for locking
+> > values shared between processors. We have a mechanism for passing per cpu
+> > pointers with a corresponding annotation.
+>
+> -enoparse, its not locking anything, is a per-cpu sequence count.
 
-greg k-h
+seqlocks are for synchronization of objects on different processors.
+
+Seems that you do not have that use case in mind. So a seqlock restricted
+to a single processor? If so then you wont need any of those smp write
+barriers mentioned earlier. A simple compiler barrier() is sufficient.
+
+
+
+
+
