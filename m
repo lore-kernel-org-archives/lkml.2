@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab0LJSqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 13:46:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43857 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab0LJSqh convert rfc822-to-8bit (ORCPT
+	id S1755882Ab0LJSuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 13:50:54 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:59950 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846Ab0LJSux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 13:46:37 -0500
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <alpine.DEB.2.00.1012101236300.13986@router.home>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	 <1291851079-27061-1-git-send-email-venki@google.com>
-	 <1291899120.29292.7.camel@twins>
-	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	 <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
-	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
-	 <1292001500.3580.268.camel@edumazet-laptop>
-	 <1292003346.13513.30.camel@laptop>
-	 <1292004859.3580.387.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1012101236300.13986@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Dec 2010 19:46:28 +0100
-Message-ID: <1292006788.13513.43.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 10 Dec 2010 13:50:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rmgYRPWGAZsCCeMlIEmgke5L+t/aG9kiRq6M0cPpIhaxxajzpauIDG/x11zhrMzEjM
+         3B/MKklvcfv6n0lPphYMgnKauRtknJ90lsBPFVua2qiPOst5W5xg+XrEb3UREdosoC/C
+         ZTfCaJTr0x8jU4p/uld79gE7UvHReEVRLXix8=
+Date: Fri, 10 Dec 2010 10:50:42 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Interface and MT_TOOL documentation updates
+Message-ID: <20101210185041.GC1630@core.coreip.homeip.net>
+References: <1291929732-5989-1-git-send-email-rydberg@euromail.se>
+ <AANLkTi=mqMY_VG=0RdN5O0fDh6wpTRb5Z59L6440hvX6@mail.gmail.com>
+ <20101210181306.GB1630@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101210181306.GB1630@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 12:39 -0600, Christoph Lameter wrote:
-> On Fri, 10 Dec 2010, Eric Dumazet wrote:
+On Fri, Dec 10, 2010 at 10:13:06AM -0800, Dmitry Torokhov wrote:
+> On Fri, Dec 10, 2010 at 09:55:12AM -0800, Ping Cheng wrote:
+> > On Thu, Dec 9, 2010 at 1:22 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> > > +
+> > > +- The MT_TOOL_ENVELOPE type is used to indicate that the contact position
+> > > +is not well-defined, and is only used for legacy hardware. The real contact
+> > > +positions are to be found within the bounding rectangle formed by the
+> > > +envelope contact positions.
+> > 
+> > Can we make MT_TOOL_ENVELOPE cover a bit more cases by:
+> > 
+> > 1. Removing ", and is only used for legacy hardware";
+> > 2. Adding "Or the number of contacts inside the bounding rectangle is
+> > reported if hardware provides the number but not the real contact
+> > positions" to the end of the paragraph.
 > 
-> > > Yeah, but that kinda defeats the purpose of having it implemented in
-> > > seqlock.h. Ideally we'd teach gcc about these long pointers and have
-> > > something like:
-> > >
-> > >   write_seqcount_begin(&this_cpu_read(irq_time_seq));
-> > >
-> > > do the right thing.
-> >
-> > gcc wont be able to do this yet (%fs/%gs selectors)
+> Are you saying that there is upcoming hardware models that do not report
+> individual contacts?
 > 
-> The kernel can do that using the __percpu annotation.
 
-That's not true:
+Anyway, if we plot the evolution of hardware:
 
-# define __percpu
+	ST -> ST + #fingers -> Envelope -> Full MT
 
-Its a complete NOP.
+I think we can rigthfully say that at this time all hardware that is not
+full MT is legacy technology...
 
-> > But we can provide this_cpu_write_seqcount_{begin|end}()
-> 
-> No we cannot do hat. this_cpu ops are for per cpu data and not for locking
-> values shared between processors. We have a mechanism for passing per cpu
-> pointers with a corresponding annotation.
-
--enoparse, its not locking anything, is a per-cpu sequence count.
-
-
+-- 
+Dmitry
