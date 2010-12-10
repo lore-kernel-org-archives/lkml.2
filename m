@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750790Ab0LJFDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 00:03:54 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37906 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab0LJFDx (ORCPT
+	id S1750863Ab0LJFJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 00:09:13 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:40578 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab0LJFJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 00:03:53 -0500
-Date: Fri, 10 Dec 2010 10:33:44 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
-Message-ID: <20101210050344.GR3158@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101202144129.4357fe00@annuminas.surriel.com>
+	Fri, 10 Dec 2010 00:09:11 -0500
+Date: Fri, 10 Dec 2010 14:07:55 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and fix build failure
+Message-ID: <20101210050755.GA21712@linux-sh.org>
+References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de> <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com> <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101202144129.4357fe00@annuminas.surriel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rik van Riel <riel@redhat.com> [2010-12-02 14:41:29]:
+On Fri, Dec 10, 2010 at 02:39:55AM +0100, Thomas Gleixner wrote:
+> On Fri, 10 Dec 2010, Mark Brown wrote:
+> > On 9 Dec 2010, at 23:34, Peter Huewe wrote:
+> > > This patch fixes a build failure[1] by converting the driver to use the
+> > > new irq_chip functions.
+> > 
+> > The driver has already been converted; if this is required we should
+> > just backport the relevant change (mfd: Convert WM831x to new irq_
+> > interrupt methods) in order to avoid merge issues with current code
+> > rather than reimplementing. However, at this stage in 2.6.37 I don't
+> > think that's a good idea.
+> 
+> I think it is.
+> 
+> # git grep GENERIC_HARDIRQS_NO_DEPRECATED arch/
+> arch/sh/Kconfig:        select GENERIC_HARDIRQS_NO_DEPRECATED
+> 
+> Though the question remains, whether this driver is actually used with
+> sh platforms. If yes, then pushing the already existing change to
+> Linus is the right way to go. If no, adding a "depends on !SH" is the
+> simple fix to prevent this allmodconfig fallout. Another option is to
+> ignore it :) I leave that up to Paul.
+>  
+There are no current SH boards that are using this MFD, but there's
+certainly no technical reason for why there can't be. I'd rather avoid an
+artificial !SH dependency, but adding in something like
 
-> When running SMP virtual machines, it is possible for one VCPU to be
-> spinning on a spinlock, while the VCPU that holds the spinlock is not
-> currently running, because the host scheduler preempted it to run
-> something else.
-> 
-> Both Intel and AMD CPUs have a feature that detects when a virtual
-> CPU is spinning on a lock and will trap to the host.
-> 
-> The current KVM code sleeps for a bit whenever that happens, which
-> results in eg. a 64 VCPU Windows guest taking forever and a bit to
-> boot up.  This is because the VCPU holding the lock is actually
-> running and not sleeping, so the pause is counter-productive.
-> 
-> In other workloads a pause can also be counter-productive, with
-> spinlock detection resulting in one guest giving up its CPU time
-> to the others.  Instead of spinning, it ends up simply not running
-> much at all.
-> 
-> This patch series aims to fix that, by having a VCPU that spins
-> give the remainder of its timeslice to another VCPU in the same
-> guest before yielding the CPU - one that is runnable but got 
-> preempted, hopefully the lock holder.
-> 
-> Scheduler people, please flame me with anything I may have done
-> wrong, so I can do it right for a next version :)
->
+	depends on !GENERIC_HARDIRQS_NO_DEPRECATED
 
-This is a good problem statement, there are other things to consider
-as well
-
-1. If a hard limit feature is enabled underneath, donating the
-timeslice would probably not make too much sense in that case
-2. The implict assumption is that spinning is bad, but for locks
-held for short durations, the assumption is not true. I presume
-by the problem statement above, the h/w does the detection of
-when to pause, but that is not always correct as you suggest above.
-3. With respect to donating timeslices, don't scheduler cgroups
-and job isolation address that problem today?
- 
--- 
-	Three Cheers,
-	Balbir
+for .37 would be fine. We do build randconfigs and so on quite regularly,
+so it would obviously be nice not to have this break the build.
