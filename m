@@ -1,132 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab0LJAL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 19:11:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12353 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408Ab0LJAL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 19:11:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,322,1288594800"; 
-   d="scan'208";a="866553758"
-Date: Thu, 9 Dec 2010 16:11:55 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Luben Tuikov <ltuikov@yahoo.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/4] [USB] UASP: Add MaxNumStreams module parameter
-Message-ID: <20101210001155.GB11803@xanatos>
-References: <20101209205820.GA6014@xanatos>
- <463402.63193.qm@web31809.mail.mud.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1757586Ab0LJANI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 19:13:08 -0500
+Received: from novprvoes0310.provo.novell.com ([137.65.248.74]:46008 "EHLO
+	novprvoes0310.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754288Ab0LJANG convert rfc822-to-8bit
+	(ORCPT <rfc822;groupwise-ksrinivasan@novell.com:6:1>);
+	Thu, 9 Dec 2010 19:13:06 -0500
+Message-Id: <4D013908.E57C.0030.1@novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Thu, 09 Dec 2010 17:13:01 -0700
+From: "Ky Srinivasan" <ksrinivasan@novell.com>
+To: <zbr@ioremap.net>, <devel@linuxdriverproject.org>,
+        <virtualization@lists.osdl.org>, <hjanssen@microsoft.com>,
+        <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+Cc: "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/1] Properly check return values of kmalloc and
+ vmbus_recvpacket
+References: <1291926209-17120-1-git-send-email-hjanssen@microsoft.com>
+In-Reply-To: <1291926209-17120-1-git-send-email-hjanssen@microsoft.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <463402.63193.qm@web31809.mail.mud.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 02:54:19PM -0800, Luben Tuikov wrote:
-> --- On Thu, 12/9/10, Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
-> > -0800, Luben Tuikov wrote:
-> > > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
-> > > ---
-> > >  The long story is that we see some host
-> > controllers misreport their
-> > >  PSA as they solved 2^v = streams, instead of
-> > 2^(v+1) = streams. Thus
-> > >  They report that they support 32 streams when in
-> > fact they support 16.
-> > >  When the device attempts to return status for
-> > stream > 15, the host
-> > >  says ACK(NumP=0), the device goes in flow
-> > control, blah, blah, this
-> > >  module parameter allows you to set a max cap on
-> > the number of streams
-> > >  the driver will ask XHCI HCD to allocate.
-> > 
-> > If this is an issue with a host then the work-around should
-> > be in the
-> > xHCI driver instead.  It should be based on the
-> > vendor/device ID of the
-> > offending host instead of being a module parameter in the
-> > UAS driver.
-> > The only people who benefit from this patch are the people
-> > "in the know"
-> > about which hosts are buggy, not normal Linux users.
+
+
+>>> On 12/9/2010 at  3:23 PM, in message
+<1291926209-17120-1-git-send-email-hjanssen@microsoft.com>, Hank Janssen
+<hjanssen@microsoft.com> wrote: 
+> Correct ugly oversight, we need to check the return values of kmalloc
+> and vmbus_recvpacket and return if they fail. I also tightened up the
+> call to kmalloc. 
 > 
-> The OS might want to limit the number of streams for reasons other
-> than a buggy HC. So this module parameter add flexibility other than
-> making a buggy HC work.
-
-Ok, that's fine, but my comments still stand about fixing this
-particular bug in the xHCI driver, rather than in the UAS driver.
-
-> (I didn't know you were reading my patches and yet to a "competing"
-> driver of a driver where you're listed as a co-author...)
-
-I always read emails that seem like they might be xHCI related.
-Especially when they're a patch.
-
-> > Streams could be used for things other than UAS in the future, so
-> > the fix should really be in the xHCI host controller driver.  And
-> > please put the information about the host bug in the commit message,
-> > so your private comments don't get lost in the bowels of the
-> > linux-usb mailing list.
+> Thanks to Evgeniy Polyakov <zbr@ioremap.net>  for pointing this out.
 > 
-> I've an updated HC of this particular make sitting on my desk which
-> I've not had time to test... The HC this was found in is an early
-> version of that make.
-
-If the earlier version of the HC is already out in the market, then the
-fix needs to get into the xHCI driver, regardless of whether the new
-version works.  Otherwise some poor user is going to plug in their
-off-the-shelf UAS device into their off-the-shelf host controller and
-wonder why it doesn't work.
-
-> > In the future, please Cc me on any patches that involve xHCI, or
-> > bulk streams in general.
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 > 
-> In this case, you should probably not add 1 to the number of streams a
-> protocol driver requests, if that number is already a power of 2.
+> ---
+>  drivers/staging/hv/hv_utils.c |   48 ++++++++++++++++++++++++++++------------
+>  1 files changed, 33 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
+> index 53e1e29..ac68575 100644
+> --- a/drivers/staging/hv/hv_utils.c
+> +++ b/drivers/staging/hv/hv_utils.c
+> @@ -43,21 +43,27 @@ static void shutdown_onchannelcallback(void *context)
+>  {
+>  	struct vmbus_channel *channel = context;
+>  	u8 *buf;
+> -	u32 buflen, recvlen;
+> +	u32 recvlen;
+>  	u64 requestid;
+>  	u8  execute_shutdown = false;
+> +	int ret = 0;
+>  
+>  	struct shutdown_msg_data *shutdown_msg;
+>  
+>  	struct icmsg_hdr *icmsghdrp;
+>  	struct icmsg_negotiate *negop = NULL;
+>  
+> -	buflen = PAGE_SIZE;
+> -	buf = kmalloc(buflen, GFP_ATOMIC);
+> +	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+>  
+> -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
+> +	if (!buf) {
+> +		printk(KERN_INFO
+> +		       "Unable to allocate memory for shutdown_onchannelcallback");
+> +		return;
+> +	}
+> +
+> +	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
+>  
+> -	if (recvlen > 0) {
+> +	if (ret == 0 && recvlen > 0) {
+>  		DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
+>  			   recvlen, requestid);
+>  
+> @@ -151,17 +157,23 @@ static void timesync_onchannelcallback(void *context)
+>  {
+>  	struct vmbus_channel *channel = context;
+>  	u8 *buf;
+> -	u32 buflen, recvlen;
+> +	u32 recvlen;
+>  	u64 requestid;
+>  	struct icmsg_hdr *icmsghdrp;
+>  	struct ictimesync_data *timedatap;
+> +	int ret = 0;
+>  
+> -	buflen = PAGE_SIZE;
+> -	buf = kmalloc(buflen, GFP_ATOMIC);
+> +	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+>  
+> -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
+> +	if (!buf) {
+> +		printk(KERN_INFO
+> +		       "Unable to allocate memory for timesync_onchannelcallback");
+> +		return;
+> +	}
+>  
+> -	if (recvlen > 0) {
+> +	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
+> +
+> +	if (ret == 0 && recvlen > 0) {
+>  		DPRINT_DBG(VMBUS, "timesync packet: recvlen=%d, requestid=%lld",
+>  			recvlen, requestid);
+>  
+> @@ -197,17 +209,23 @@ static void heartbeat_onchannelcallback(void *context)
+>  {
+>  	struct vmbus_channel *channel = context;
+>  	u8 *buf;
+> -	u32 buflen, recvlen;
+> +	u32 recvlen;
+>  	u64 requestid;
+>  	struct icmsg_hdr *icmsghdrp;
+>  	struct heartbeat_msg_data *heartbeat_msg;
+> +	int ret = 0;
+> +
+> +	buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+>  
+> -	buflen = PAGE_SIZE;
+> -	buf = kmalloc(buflen, GFP_ATOMIC);
+> +	if (!buf) {
+> +		printk(KERN_INFO
+> +		    "Unable to allocate memory for heartbeat_onchannelcallback");
+> +		return;
+> +	}
+>  
+> -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
+> +	ret = vmbus_recvpacket(channel, buf, PAGE_SIZE, &recvlen, &requestid);
+>  
+> -	if (recvlen > 0) {
+> +	if (ret == 0 && recvlen > 0) {
+>  		DPRINT_DBG(VMBUS, "heartbeat packet: len=%d, requestid=%lld",
+>  			   recvlen, requestid);
+>  
+I am wondering if it might be better to allocate a page during module startup for dealing with some of these services. Since the protocol guarantees that there cannot be more than one outstanding request from the host side, having a pre-allocated receive buffer would be a more robust solution - we don't have to allocate memory when we cannot afford to sleep and thereby don't have to deal with a class of failure conditions that are not easy to deal with. For instance not being able to shut the guest down because of low memory situation would be bad.
 
-Why?  What if the host and endpoints can handle 32 streams, but the
-driver requests 16?  Is there a reason the xHCI driver shouldn't
-allocate transfer rings for streams 1 through 16?  Something special to
-do with powers of two?
+Regards,
 
-There's a deeper design decision here that I never really resolved.
-Say a driver asks for 16 streams.  Stream 0 is reserved, and can't be
-used after streams are enabled.  The xHCI host controller spec forbids
-allocating a transfer ring for stream 0.
-
-Now, what should the contract between the host controller and the driver
-be?  Should the xHCI driver allocate stream rings for stream IDs 1
-through 15, thereby guaranteeing 15 streams can be used?  Or should it
-allocate streams 1 through 16, giving the driver the 16 active streams
-it actually wanted?  I chose the latter, which is why I add 1 to the
-number of streams the driver requests.
-
-> To extend this and make it foolproof, the XHCI should probably know if
-> the number of streams came from a descriptor or the driver made it up
-> (in which case you know more precisely what to do). Now, since you
-> return the number of streams the driver can use, implementing the
-> former is probably just enough.
-
-In either case, I look at the endpoint descriptors that the driver
-passes me, and never allocate more streams than those endpoints can
-handle.  The driver also never allocates more streams than the host
-controller can handle.  All that work is done in
-xhci_calculate_streams_and_bitmask().
-
-> Also please add a comment as to the return value therein, to the
-> effect that the range of streams the caller can use is [1, the value
-> returned], WLG.
-
-It's documented in Documentation/usb/bulk-streams.txt under the "Picking
-new Stream IDs to use" section.  But yes, it should probably be
-documented in the function comments above usb_alloc_streams().
-
-Sarah Sharp
+K. Y 
