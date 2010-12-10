@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab0LJEda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 23:33:30 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:40482 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752464Ab0LJEd3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 23:33:29 -0500
-From: Sundar R IYER <sundar.iyer@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 10 Dec 2010 05:32:46 +0100
-Subject: RE: [PATCH 13/20] mfd/tc3589x: add suspend/resume support
-Thread-Topic: [PATCH 13/20] mfd/tc3589x: add suspend/resume support
-Thread-Index: AcuXwxTO9Mk+S/bCT9mGnZBSTg0ScwAYAa3g
-Message-ID: <33A307AF30D7BF4F811B1568FE7A9B18047C7D4282@EXDCVYMBSTM006.EQ1STM.local>
-References: <1291388753-14662-1-git-send-email-sundar.iyer@stericsson.com>
- <1291388753-14662-14-git-send-email-sundar.iyer@stericsson.com>
- <20101209170356.GY8884@sortiz-mobl>
-In-Reply-To: <20101209170356.GY8884@sortiz-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756126Ab0LJEfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 23:35:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754801Ab0LJEfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 23:35:16 -0500
+Message-ID: <4D01ADE6.3010508@redhat.com>
+Date: Thu, 09 Dec 2010 23:34:46 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
+To: vatsa@linux.vnet.ibm.com
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 2/3] sched: add yield_to function
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144423.3ad1908d@annuminas.surriel.com> <1291382619.32004.2124.camel@laptop> <20101203133056.GF27994@linux.vnet.ibm.com> <1291385010.32004.2165.camel@laptop> <20101203140607.GA9800@linux.vnet.ibm.com>
+In-Reply-To: <20101203140607.GA9800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
-
->-----Original Message-----
+On 12/03/2010 09:06 AM, Srivatsa Vaddagiri wrote:
+> On Fri, Dec 03, 2010 at 03:03:30PM +0100, Peter Zijlstra wrote:
+>> No, because they do receive service (they spend some time spinning
+>> before being interrupted), so the respective vruntimes will increase, at
+>> some point they'll pass B0 and it'll get scheduled.
 >
->SIMPLE_DEV_PM_OPS or UNIVERSAL_DEV_PM_OPS may be useful and save
->one ifdef
->here.
+> Is that sufficient to ensure that B0 receives its fair share (1/3 cpu in this
+> case)?
 
-Sure, better.
+I have a rough idea for a simpler way to ensure
+fairness.
 
-And thanx for ack'ing all those patches; I will repost with your Acked-bys and rebased.
+At yield_to time, we could track in the runqueue
+structure that a task received CPU time (and on
+the other runqueue that a task donated CPU time).
 
-Cheers!
+The balancer can count time-given-to CPUs as
+busier, and donated-time CPUs as less busy,
+moving tasks away in the unlikely event that
+the same task gets keeping CPU time given to
+it.
 
+Conversely, it can move other tasks onto CPUs
+that have tasks on them that cannot make progress
+right now and are just donating their CPU time.
 
+Most of the time the time-given and time-received
+should balance out and there should be little to
+no influence on the load balancer. This code would
+just be there to deal with exceptional circumstances,
+to avoid the theoretical worst case people have
+described.
+
+-- 
+All rights reversed
