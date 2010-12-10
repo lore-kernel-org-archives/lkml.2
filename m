@@ -1,121 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab0LJDJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 22:09:39 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:35294 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab0LJDJh (ORCPT
-	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
-	Thu, 9 Dec 2010 22:09:37 -0500
-Message-ID: <4D0199E2.8030006@suse.de>
-Date: Fri, 10 Dec 2010 08:39:22 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Steve French <smfrench@gmail.com>, Bernhard Walle <bernhard@bwalle.de>,
-        sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cifs: Add information about noserverino
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>	<20101206095725.78422138@tlielax.poochiereds.net>	<20101206101214.52a24415@tlielax.poochiereds.net>	<20101206163506.56232lqqhc5c3co4@webmail.df.eu>	<20101206103836.0714369a@tlielax.poochiereds.net>	<4D00C02C.4070006@suse.de>	<20101209070952.24793c23@barsoom.rdu.redhat.com>	<AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>	<20101209143448.5c479e50@barsoom.rdu.redhat.com> <AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
-In-Reply-To: <AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754087Ab0LJDMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 22:12:21 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:40097 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab0LJDMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 22:12:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Ss8A6fJmHTZJbTE6ydsdAMcpQP50aNT85lf8EHyEry8dvPyP0ma0DlKwV2mEIXxBrg
+         zqkn5TShJRNiX158HznaOZhlPZ67dsryU6bO5FX9qr7AvCoF7ikrEn0AWODGNh7wsb2l
+         zgcZYfaKZkkOt8Aur6iNJLUNZrY5iBgXJM24k=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] anon_inodes: fix a typo in comment
+Date: Fri, 10 Dec 2010 12:11:50 +0900
+Message-Id: <1291950710-5331-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.3.400.g93cef
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2010 02:14 AM, Steve French wrote:
-> On Thu, Dec 9, 2010 at 1:34 PM, Jeff Layton <jlayton@redhat.com> wrote:
->> On Thu, 9 Dec 2010 12:26:39 -0600
->> Steve French <smfrench@gmail.com> wrote:
->>
->>> On Thu, Dec 9, 2010 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
->>>> On Thu, 09 Dec 2010 17:10:28 +0530
->>>> Suresh Jayaraman <sjayaraman@suse.de> wrote:
->>>>
->>>>> On 12/06/2010 09:08 PM, Jeff Layton wrote:
->>>>>> On Mon, 06 Dec 2010 16:35:06 +0100
->>>>>> Bernhard Walle <bernhard@bwalle.de> wrote:
->>>>>>
->>>>>>>
->>>>>>> Zitat von Jeff Layton <jlayton@redhat.com>:
->>>>>>>
->>>>>>>>
->>>>>>>> I'm still not sure I like this patch however. It potentially means a
->>>>>>>> lot of printk spam since these things have no ratelimiting. It also
->>>>>>>> doesn't tell me anything about which server might be giving me grief.
->>>>>>>>
->>>>>>>> Maybe this should be turned into a cFYI?
->>>>>>>
->>>>>>> Well, if I see it in the kernel log, it doesn't matter if it's info or
->>>>>>> something else.
->>>>>>>
->>>>>>>> The bottom line though is that running 32-bit applications that were
->>>>>>>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
->>>>>>>> idea. It would be nice to be able to alert users that things aren't
->>>>>>>> working the way they expect, but I'm not sure this is the right place
->>>>>>>> to do that.
->>>>>>>
->>>>>>> Well, but there *are* such application (in my case it was Softmaker Office
->>>>>>> which is a proprietary word processor) and it's quite nice if you know
->>>>>>> how you can workaround it when you encounter such a problem. That's all.
->>>>>>>
->>>>>>
->>>>>> Sure...but this problem is not limited to CIFS. Many modern filesystems
->>>>>> use 64-bit inodes. Running this application on XFS or NFS for instance
->>>>>> is likely to give you the same trouble. You just hit it on CIFS because
->>>>>> the server happened to give you a very large inode number.
->>>>>>
->>>>>> If we're going to add printk's for this situation, it probably ought to
->>>>>> be in a more generic place.
->>>>>>
->>>>>
->>>>> By generic place, did you mean at the VFS level? I think at VFS level,
->>>>> there is little information about the Server or underlying fs and this
->>>>> information doesn't seem too critical that VFS should warn/care much about.
->>>>>
->>>>> May be sticking to a cFYI along with Server detail is a good idea?
->>>>>
->>>> My poing was mainly that there's nothing special about CIFS in this
->>>> regard, other than the fact that servers regularly send us inodes that
->>>> are larger than 2^32. Why should we do this for cifs but not for nfs,
->>>> xfs, ext4, etc?
->>>>
->>>> The filldir function gets a dentry as an argument, so it could
->>>> reasonably generate a printk for this. I'm also not keen on
->>>> the printk recommending noserverino for this. That has its own
->>>> drawbacks.
->>>>
->>>> A cFYI for this sort of thing seems reasonable however.
->>>
->>> I agree that a cFYI is reasonable. �The next obvious question is: do
->>> we need to add code to generate unique 32 bit inode numbers
->>> that don't collide (as IIRC Samba does by xor the high and low 32
->>> bits of the inode number) when the app can't support ino64
->>> I would prefer not to go back to noserverino since that has worse
->>> drawbacks.
->>>
->>
->> Right, the fact that noserverino works around this is really just due
->> to an implementation detail of iunique(). That should probably be
->> discouraged as a solution since it's not guaranteed to be a workaround
->> in the future.
->>
->> If we did add such a switch, I'd suggest that we pattern it after what
->> NFS did for this. They added an "enable_ino64" module parameter a
->> couple of years ago that defaults to "true".
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/anon_inodes.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-What are the advantages we have by making it a module parameter as
-opposed to an mount option? XFS seems to have "inode64" mount option for
-quite sometime now, without much issues..
-
-> makes me uncomfortable to break ino64 for all mounts - when we
-> may have one application on one mount that needs it (might be
-> better to make a mount related)
-> 
-> 
-
-
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 57ce55b2564c..73097336ea2a 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -64,9 +64,9 @@ static const struct address_space_operations anon_aops = {
+ };
+ 
+ /**
+- * anon_inode_getfd - creates a new file instance by hooking it up to an
+- *                    anonymous inode, and a dentry that describe the "class"
+- *                    of the file
++ * anon_inode_getfile - creates a new file instance by hooking it up to an
++ *                      anonymous inode, and a dentry that describe the "class"
++ *                      of the file
+  *
+  * @name:    [in]    name of the "class" of the new file
+  * @fops:    [in]    file operations for the new file
 -- 
-Suresh Jayaraman
+1.7.3.3.400.g93cef
+
