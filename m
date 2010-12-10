@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab0LJQXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 11:23:03 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:32118 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756546Ab0LJQXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 11:23:01 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Z3cVZAwVM1mtXzQZ425wmrfJLMhuQhzKkT1ece46NOYcUPR
- T4JUYqGLo_L8OaygIyLV4rGI.FQR_qXbK2YO2pFy4hADjC_MGqtuEqhWb92M
- Tnjce4PeGyf876a8yw2K_BhOIk4sLmHM_nZW_611Sr2y15P7t2CV3warxiq7
- g_ZipId8sSOuqnnM3imUqcHlMO7.w0kPvvCRaLauFCUs0pjWwKIVOp6R9y9a
- _b5JEhrASnJYizbChZS4e9ljsjHf2phfuZP2xou9KANhaUxlAzOCmm90wS4j
- BKxZ8YWEBP6HXuvhkwJzVFuV70Ip6EtmKmP3MvxpVQO02ZvWR5FgABdIH2nP
- N
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 10 Dec 2010 10:22:57 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Add percpu allocator entry
-In-Reply-To: <4D024FD5.2090507@kernel.org>
-Message-ID: <alpine.DEB.2.00.1012101022380.13986@router.home>
-References: <4D024FD5.2090507@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756585Ab0LJQ0C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 11:26:02 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57295 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756546Ab0LJQ0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 11:26:00 -0500
+Subject: Re: [RFC PATCH V2 5/5] Add TX zero copy in macvtap
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>, mst@redhat.com,
+        xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291976864.3580.7.camel@edumazet-laptop>
+References: <1291976026.2167.49.camel@localhost.localdomain>
+	 <1291976864.3580.7.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 08:25:55 -0800
+Message-ID: <1291998355.2167.53.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-12-10 at 11:27 +0100, Eric Dumazet wrote:
+> You could make one atomic_add() outside of the loop, and factorize
+> many
+> things...
+> 
+> atomic_add(len, &skb->sk->sk_wmem_alloc);
+> skb->data_len += len;
+> skb->len += len;
+> skb->truesize += len;
+> while (len) {
+>         ...
+> } 
 
-On Fri, 10 Dec 2010, Tejun Heo wrote:
+Yep, thanks, will update it!
 
-> Add me and Christoph Lameter as maintainers for the percpu memory
-> allocator.
+Shirley
 
-Acked-by: Christoph Lameter <cl@linux-foundation.org>
