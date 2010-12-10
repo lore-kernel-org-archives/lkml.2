@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab0LJQyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 11:54:55 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:54100 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab0LJQyy convert rfc822-to-8bit (ORCPT
+	id S1756724Ab0LJQzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 11:55:20 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43040 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab0LJQzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 11:54:54 -0500
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Venkatesh Pallipadi <venki@google.com>, Mikael Pettersson <mikpe@it.uu.se>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <20101210165021.GA28263@n2100.arm.linux.org.uk>
-References: <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins> <1291987065.6803.151.camel@twins>
-	 <1291987635.6803.161.camel@twins> <1291988866.6803.171.camel@twins>
-	 <20101210165021.GA28263@n2100.arm.linux.org.uk>
+	Fri, 10 Dec 2010 11:55:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qHEkFDH0XVlrhYQBTcGkEGrRI4PFcVLi9WR6n/T86NJzAzW9bmEeh1nppcidTsq96V
+         l4GWFFEMNqQzMVC4kH8YvK/u98yIgNB3gh05ltIDi1K3oCkiAUfOPSF876ynWCBH7kFa
+         ssRih2P+k4Wbq3smeBYtGR2DuETNeqR7xxBEA=
+Subject: Re: [RFC PATCH V2 5/5] Add TX zero copy in macvtap
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>, mst@redhat.com,
+        xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291998355.2167.53.camel@localhost.localdomain>
+References: <1291976026.2167.49.camel@localhost.localdomain>
+	 <1291976864.3580.7.camel@edumazet-laptop>
+	 <1291998355.2167.53.camel@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Dec 2010 17:54:15 +0100
-Message-ID: <1292000055.13513.26.camel@laptop>
+Date: Fri, 10 Dec 2010 17:55:06 +0100
+Message-ID: <1292000106.3580.210.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 16:50 +0000, Russell King - ARM Linux wrote:
-> > Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Le vendredi 10 décembre 2010 à 08:25 -0800, Shirley Ma a écrit :
+> On Fri, 2010-12-10 at 11:27 +0100, Eric Dumazet wrote:
+> > You could make one atomic_add() outside of the loop, and factorize
+> > many
+> > things...
+> > 
+> > atomic_add(len, &skb->sk->sk_wmem_alloc);
+> > skb->data_len += len;
+> > skb->len += len;
+> > skb->truesize += len;
+> > while (len) {
+> >         ...
+> > } 
 > 
-> I think credit should go to Mikael Pettersson, who identified the
-> interactivity regression and problematical commit.  I only pointed
-> out the dubious nature of the code. 
+> Yep, thanks, will update it!
 
-Ah, thanks, missed that. Updated the patch.
+Also take a look at skb_fill_page_desc() helper, and maybe
+skb_add_rx_frag() too.
+
+The atomic op should be factorized for sure, but other adds might be
+done by helpers to keep code short.
+
+
+
