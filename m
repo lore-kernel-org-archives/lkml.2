@@ -1,134 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab0LJMtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 07:49:18 -0500
-Received: from hera.kernel.org ([140.211.167.34]:44511 "EHLO hera.kernel.org"
+	id S1756232Ab0LJM6U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 07:58:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10727 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755762Ab0LJMtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 07:49:16 -0500
-Date: Fri, 10 Dec 2010 12:48:55 GMT
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, penberg@kernel.org, gorcunov@gmail.com,
-        tj@kernel.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@kernel.org, tj@kernel.org,
-        tglx@linutronix.de, gorcunov@gmail.com
-In-Reply-To: <4D00B3B9.7060702@kernel.org>
-References: <4D00B3B9.7060702@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic-cleanups] x86: apic: Cleanup and simplify setup_local_APIC()
-Message-ID: <tip-0aa002fe602939370e9476e5ec32b562000a0425@git.kernel.org>
-Git-Commit-ID: 0aa002fe602939370e9476e5ec32b562000a0425
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Dec 2010 12:48:56 +0000 (UTC)
+	id S1756111Ab0LJM6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 07:58:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
+   d="scan'208";a="685841446"
+Subject: Re: BUG at perf_ctx_adjust_freq (kernel/perf_event.c:1582)
+From: Lin Ming <ming.m.lin@intel.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <AANLkTi=ZjBKkxJDDSCNzsZ_oma485xKafMEXWet8EOXd@mail.gmail.com>
+References: <c6d829$pqibha@fmsmga001.fm.intel.com>
+	 <AANLkTi=ZjBKkxJDDSCNzsZ_oma485xKafMEXWet8EOXd@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 20:58:43 +0800
+Message-Id: <1291985923.2538.4.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0aa002fe602939370e9476e5ec32b562000a0425
-Gitweb:     http://git.kernel.org/tip/0aa002fe602939370e9476e5ec32b562000a0425
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Thu, 9 Dec 2010 11:47:21 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 10 Dec 2010 13:46:26 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+> Strange OOPS, not sure what triggered it, but in case it helps:
 
-x86: apic: Cleanup and simplify setup_local_APIC()
+Hi,
 
-setup_local_APIC() is used to setup local APIC early during CPU
-initialization and already assumes that preemption is disabled on
-entry. However, The function unnecessarily disables and enables
-preemption and uses smp_processor_id() multiple times in and out of
-the nested preemption disabled section. This gives the wrong
-impression that the function might be able to handle being called with
-preemption enabled and/or migrated to another processor in the middle.
+Can you reproduce it?
 
-Make it clear that the function is always called with preemption
-disabled, drop the confusing preemption disable block and call
-smp_processor_id() once at the beginning of the function.
+Lin Ming
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Cyrill Gorcunov <gorcunov@gmail.com>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: brgerst@gmail.com
-LKML-Reference: <4D00B3B9.7060702@kernel.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/apic/apic.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
+> 
+> [57260.405026] BUG: unable to handle kernel paging request at 01000000
+> [57260.405098] IP: [<c04a1d3d>] perf_ctx_adjust_freq+0x110/0x132
+> [57260.405153] *pde = 00000000
+> [57260.405181] Oops: 0000 [#1] SMP
+> [57260.405216] last sysfs file: /sys/module/cpufreq_ondemand/refcnt
+> [57260.405265] Modules linked in: nfs lockd fscache nfs_acl auth_rpcgss
+> sunrpc sco bnep l2cap bluetooth fuse acpi_cpufreq mperf
+> snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_seq
+> snd_seq_device arc4 ecb snd_pcm thinkpad_acpi snd_timer snd iwlagn iwlcore
+> mac80211 r852 sm_common nand nand_ids nand_ecc uvcvideo mtd iTCO_wdt
+> joydev videodev i2c_i801 cfg80211 v4l1_compat ppdev iTCO_vendor_support
+> soundcore rfkill wmi pcspkr microcode parport_pc parport snd_page_alloc
+> uinput ipv6 sdhci_pci sdhci mmc_core firewire_ohci firewire_core
+> yenta_socket crc_itu_t i915 drm_kms_helper drm i2c_algo_bit i2c_core video
+> output [last unloaded: cpufreq_ondemand]
+> [57260.405938]
+> [57260.405955] Pid: 31699, comm: gdb Not tainted 2.6.37-rc4+ #3 7661BL5/7661BL5
+> [57260.406006] EIP: 0060:[<c04a1d3d>] EFLAGS: 00210012 CPU: 1
+> [57260.406006] EIP is at perf_ctx_adjust_freq+0x110/0x132
+> [57260.406006] EAX: 01000000 EBX: 000f41a8 ECX: 00000000 EDX: f1e441b0
+> [57260.406006] ESI: 00000000 EDI: 00fffff8 EBP: f3637ed0 ESP: f3637ea8
+> [57260.406006]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> [57260.406006] Process gdb (pid: 31699, ti=f3636000 task=f1c94b60
+> task.ti=f3636000)
+> [57260.406006] Stack:
+> [57260.406006]  00000000 f3723e00 f1e441b0 c042af08 00000000 f1e44180
+> 01000000 00000000
+> [57260.406006]  f4e06be4 f1e44180 f3637efc c04a1e3e 000f41a8 00000000
+> 00000001 f4e06c74
+> [57260.406006]  f4e06f10 f4e036e0 c07cdc34 f4e06300 00000001 f3637f14
+> c0435875 f1c94b60
+> [57260.406006] Call Trace:
+> [57260.406006]  [<c042af08>] ? update_curr+0xab/0x124
+> [57260.406006]  [<c04a1e3e>] ? perf_event_task_tick+0xdf/0x1ab
+> [57260.406006]  [<c0435875>] ? scheduler_tick+0xb0/0x1f0
+> [57260.406006]  [<c0444889>] ? update_process_times+0x51/0x5d
+> [57260.406006]  [<c045bcef>] ? tick_sched_timer+0x72/0xa0
+> [57260.406006]  [<c045287f>] ? __run_hrtimer+0xa1/0x116
+> [57260.406006]  [<c045bc7d>] ? tick_sched_timer+0x0/0xa0
+> [57260.406006]  [<c04531b2>] ? hrtimer_interrupt+0xde/0x1b3
+> [57260.406006]  [<c041aa59>] ? smp_apic_timer_interrupt+0x60/0x73
+> [57260.406006]  [<c07c0109>] ? apic_timer_interrupt+0x31/0x38
+> [57260.406006] Code: 00 00 7c 1b 7f 06 83 7d d8 00 76 13 ff 75 dc 89 da ff
+> 75 d8 89 f8 89 f1 e8 5a cc ff ff 58 5a 8b 47 08 89 45 f0 8b 7d f0 83 ef 08
+> <8b> 47 08 e8 e1 bf ff ff 8d 47 08 3b 45 e0 0f 85 0e ff ff ff 8b
+> [57260.406006] EIP: [<c04a1d3d>] perf_ctx_adjust_freq+0x110/0x132
+> SS:ESP 0068:f3637ea8
+> [57260.406006] CR2: 0000000001000000
+> [57260.406006] ---[ end trace 8b112fc89b85bbd4 ]---
+> 
+> --
+> Chris Wilson, Intel Open Source Technology Centre
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 8933936..c0f6426 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1195,12 +1195,15 @@ static void __cpuinit lapic_setup_esr(void)
- 			oldvalue, value);
- }
- 
--
- /**
-  * setup_local_APIC - setup the local APIC
-+ *
-+ * Used to setup local APIC while initializing BSP or bringin up APs.
-+ * Always called with preemption disabled.
-  */
- void __cpuinit setup_local_APIC(void)
- {
-+	int cpu = smp_processor_id();
- 	unsigned int value, queued;
- 	int i, j, acked = 0;
- 	unsigned long long tsc = 0, ntsc;
-@@ -1225,8 +1228,6 @@ void __cpuinit setup_local_APIC(void)
- #endif
- 	perf_events_lapic_init();
- 
--	preempt_disable();
--
- 	/*
- 	 * Double-check whether this APIC is really registered.
- 	 * This is meaningless in clustered apic mode, so we skip it.
-@@ -1342,21 +1343,19 @@ void __cpuinit setup_local_APIC(void)
- 	 * TODO: set up through-local-APIC from through-I/O-APIC? --macro
- 	 */
- 	value = apic_read(APIC_LVT0) & APIC_LVT_MASKED;
--	if (!smp_processor_id() && (pic_mode || !value)) {
-+	if (!cpu && (pic_mode || !value)) {
- 		value = APIC_DM_EXTINT;
--		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n",
--				smp_processor_id());
-+		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n", cpu);
- 	} else {
- 		value = APIC_DM_EXTINT | APIC_LVT_MASKED;
--		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n",
--				smp_processor_id());
-+		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n", cpu);
- 	}
- 	apic_write(APIC_LVT0, value);
- 
- 	/*
- 	 * only the BP should see the LINT1 NMI signal, obviously.
- 	 */
--	if (!smp_processor_id())
-+	if (!cpu)
- 		value = APIC_DM_NMI;
- 	else
- 		value = APIC_DM_NMI | APIC_LVT_MASKED;
-@@ -1364,11 +1363,9 @@ void __cpuinit setup_local_APIC(void)
- 		value |= APIC_LVT_LEVEL_TRIGGER;
- 	apic_write(APIC_LVT1, value);
- 
--	preempt_enable();
--
- #ifdef CONFIG_X86_MCE_INTEL
- 	/* Recheck CMCI information after local APIC is up on CPU #0 */
--	if (smp_processor_id() == 0)
-+	if (!cpu)
- 		cmci_recheck();
- #endif
- }
+
