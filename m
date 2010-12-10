@@ -1,74 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab0LJXne (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 18:43:34 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42009 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751916Ab0LJXnc (ORCPT
+	id S1756358Ab0LJXrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 18:47:20 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:46494 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab0LJXrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 18:43:32 -0500
-Date: Fri, 10 Dec 2010 23:42:53 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: ltuikov@yahoo.com
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] [USB] UASP: USB Attached SCSI (UAS) protocol driver
-Message-ID: <20101210234253.28c5e76e@lxorguk.ukuu.org.uk>
-In-Reply-To: <882104.74689.qm@web31813.mail.mud.yahoo.com>
-References: <882104.74689.qm@web31813.mail.mud.yahoo.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Dec 2010 18:47:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=amA8G0/UKjpTy4aLaCswgrYlgjBK3lHASC/D63bxNQX78m5obwdPMf6kRsr0OFUOgz
+         fkSXxTRcWMAnR4uAIAtExJ7pYkRQvRlPAaxhLs8ovPpNvwLdqBG1leS+TpJUpjZwysYM
+         AAIpfbR0cOrJdw6yxWRkBnDhazb7LI6xVAQSA=
+Date: Sat, 11 Dec 2010 00:47:11 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
+Subject: Re: [PATCH 2/2] rcu: Keep gpnum and completed fields synchronized
+Message-ID: <20101210234709.GC1713@nowhere>
+References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
+ <1292015471-19227-3-git-send-email-fweisbec@gmail.com>
+ <20101210230200.GK2125@linux.vnet.ibm.com>
+ <20101210233920.GA22777@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101210233920.GA22777@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think people need to know.
+On Fri, Dec 10, 2010 at 03:39:20PM -0800, Paul E. McKenney wrote:
+> On Fri, Dec 10, 2010 at 03:02:00PM -0800, Paul E. McKenney wrote:
+> > On Fri, Dec 10, 2010 at 10:11:11PM +0100, Frederic Weisbecker wrote:
+> > > When a CPU that was in an extended quiescent state wakes
+> > > up and catches up with grace periods that remote CPUs
+> > > completed on its behalf, we update the completed field
+> > > but not the gpnum that keeps a stale value of a backward
+> > > grace period ID.
+> > > 
+> > > Later, note_new_gpnum() will interpret the shift between
+> > > the local CPU and the node grace period ID as some new grace
+> > > period to handle and will then start to hunt quiescent state.
+> > > 
+> > > But if every grace periods have already been completed, this
+> > > interpretation becomes broken. And we'll be stuck in clusters
+> > > of spurious softirqs because rcu_report_qs_rdp() will make
+> > > this broken state run into infinite loop.
+> > > 
+> > > The solution, as suggested by Lai Jiangshan, is to ensure that
+> > > the gpnum and completed fields are well synchronized when we catch
+> > > up with completed grace periods on their behalf by other cpus.
+> > > This way we won't start noting spurious new grace periods.
+> > 
+> > Also good, queued!
+> > 
+> > One issue -- this approach is vulnerable to overflow.  I therefore
+> > followed up with a patch that changes the condition to
+> > 
+> > 	if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
+> 
+> And here is the follow-up patch, FWIW.
+> 
+> 							Thanx, Paul
 
-I think they will judge themselves from the full discussion. I'm not sure
-they'll vote in your favour however.
+Hmm, it doesn't apply on top of my two patches. It seems you have
+kept my two previous patches, which makes it fail as it lacks them
+as a base.
 
-"So to expose the obvious, hypothetically, one of the resident "linux
-kernel engineers/maintainers" could've submitted AN EMPTY DRIVER that
-"binds to" the UAS id, and from then on, any other improvements would
-have to go through them"
+Did you intend to keep them? I hope they are quite useless now, otherwise
+it means there is other cases I forgot.
 
-Strangely that doesn't work because the community isn't full of idiots,
-in fact we actively select against them because anyone who is maintaining
-a driver needs to be able to deal with other people (at least other
-people who wish to be constructive).
+Thanks.
 
-"Do you not see HOW DIFFERENT the two drivers are? Do you not see the
-difference in quality, presentation, etc, etc."
-
-I find the presentation *very* different. I'm rather worried about the
-manner in which it is being presented. Your driver may be the best on the
-planet - who knows - but if your response to needing to work with people
-is to accuse them of being part of some giant conspiracy or make offensive
-comments then that's rapidly going to outweight the quality of the code
-and you'll simply run out of people to talk to.
-
-It's actually pretty hard to get in GregKH's kill file, and I suspect by
-now you are in a few others as well. So perhaps you can find someone
-working with you who has people skills and can sit between you and Greg
-and other maintainers and make progress ? It won't be the first time a
-user interface problem has been fixed that way in the Linux world.
-
-But basically it's really simple. When we have an existing driver we work
-from it - step by step from where we are, to where we want to be. That
-series of steps should tell a story so anyone reading the patch series can
-understand how it unfolded.
-
-We also have a process for dealing with people not responding, and
-irritating them enough they killfile you and refuse to deal with you
-isn't that process, especially when you then get yourself killfiled by
-the next maintainer up as well.
-
-When you come along late and say "I've got this great other driver", then
-sorry you missed the party - you could have submitted yours earlier and
-the question becomes "how do I make the existing driver at least as cool
-as the one that was too late" not "how do I replace it"
-
-Alan
+> 
+> ------------------------------------------------------------------------
+> 
+> commit d864b245030645e3465b3bd7e253b7ccf76e9d35
+> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Date:   Fri Dec 10 15:02:47 2010 -0800
+> 
+>     rcu: fine-tune grace-period begin/end checks
+>     
+>     Use the CPU's bit in rnp->qsmask to determine whether or not the CPU
+>     should try to report a quiescent state.  Handle overflow in the check
+>     for rdp->gpnum having fallen behind.
+>     
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index f8e4ee7..6103017 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -618,20 +618,16 @@ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct
+>  {
+>  	if (rdp->gpnum != rnp->gpnum) {
+>  		/*
+> -		 * Because RCU checks for the prior grace period ending
+> -		 * before checking for a new grace period starting, it
+> -		 * is possible for rdp->gpnum to be set to the old grace
+> -		 * period and rdp->completed to be set to the new grace
+> -		 * period.  So don't bother checking for a quiescent state
+> -		 * for the rnp->gpnum grace period unless it really is
+> -		 * waiting for this CPU.
+> +		 * If the current grace period is waiting for this CPU,
+> +		 * set up to detect a quiescent state, otherwise don't
+> +		 * go looking for one.
+>  		 */
+> -		if (rdp->completed != rnp->gpnum) {
+> +		rdp->gpnum = rnp->gpnum;
+> +		if (rnp->qsmask & rdp->grpmask) {
+>  			rdp->qs_pending = 1;
+>  			rdp->passed_quiesc = 0;
+> -		}
+> -
+> -		rdp->gpnum = rnp->gpnum;
+> +		} else
+> +			rdp->qs_pending = 0;
+>  	}
+>  }
+>  
+> @@ -693,19 +689,20 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+>  
+>  		/*
+>  		 * If we were in an extended quiescent state, we may have
+> -		 * missed some grace periods that others CPUs took care on
+> +		 * missed some grace periods that others CPUs handled on
+>  		 * our behalf. Catch up with this state to avoid noting
+> -		 * spurious new grace periods.
+> +		 * spurious new grace periods.  If another grace period
+> +		 * has started, then rnp->gpnum will have advanced, so
+> +		 * we will detect this later on.
+>  		 */
+> -		if (rdp->completed > rdp->gpnum)
+> +		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
+>  			rdp->gpnum = rdp->completed;
+>  
+>  		/*
+> -		 * If another CPU handled our extended quiescent states and
+> -		 * we have no more grace period to complete yet, then stop
+> -		 * chasing quiescent states.
+> +		 * If RCU does not need a quiescent state from this CPU,
+> +		 * then make sure that this CPU doesn't go looking for one.
+>  		 */
+> -		if (rdp->completed == rnp->gpnum)
+> +		if (rnp->qsmask & rdp->grpmask)
+>  			rdp->qs_pending = 0;
+>  	}
+>  }
