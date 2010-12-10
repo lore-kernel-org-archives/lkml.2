@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0LJCi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 21:38:26 -0500
-Received: from mail-iw0-f172.google.com ([209.85.214.172]:38159 "EHLO
-	mail-iw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab0LJCiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 21:38:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=VTdaUnkBmH+C+Jw0TwBXfqWQDjNRIUnirBihvNc2lEaqgOyqrK3L6SNM9SxMr83ljP
-         bw96QQIF5HFA+K3WXltSbDdCDyXckt12YeYcFUVeIVfIYid8ZO8NBZPbpaMUDjKo7W0D
-         kM+go3Pu39YS+C4kWAbnP5HiDXyrnoynhgcCc=
+	id S1754558Ab0LJCjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 21:39:07 -0500
+Received: from thunk.org ([69.25.196.29]:39476 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753344Ab0LJCjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 21:39:05 -0500
+Date: Thu, 9 Dec 2010 21:38:52 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Matt <jackdachef@gmail.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
+        Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+        Milan Broz <mbroz@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101210023852.GB3059@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Matt <jackdachef@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Andi Kleen <andi@firstfloor.org>, Jon Nelson <jnelson@jamponi.net>,
+	Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	dm-devel <dm-devel@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+	linux-ext4 <linux-ext4@vger.kernel.org>
+References: <20101207182243.GB21112@redhat.com>
+ <20101207193514.GA2921@thunk.org>
+ <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+ <20101209180111.GF2921@thunk.org>
+ <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
+ <20101209201359.GG2921@thunk.org>
+ <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
+ <20101209231616.GA12515@basil.fritz.box>
+ <1291945065-sup-1838@think>
+ <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1291893500-12342-7-git-send-email-mel@csn.ul.ie>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
-	<1291893500-12342-7-git-send-email-mel@csn.ul.ie>
-Date: Fri, 10 Dec 2010 11:38:23 +0900
-Message-ID: <AANLkTi=4sGZjUqWm4RKs6mgQVma26FeAGUK2zOPVL2oV@mail.gmail.com>
-Subject: Re: [PATCH 6/6] mm: kswapd: Use the classzone idx that kswapd was
- using for sleeping_prematurely()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 8:18 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> When kswapd is woken up for a high-order allocation, it takes account of
-> the highest usable zone by the caller (the classzone idx). During
-> allocation, this index is used to select the lowmem_reserve[] that
-> should be applied to the watermark calculation in zone_watermark_ok().
->
-> When balancing a node, kswapd considers the highest unbalanced zone to be the
-> classzone index. This will always be at least be the callers classzone_idx
-> and can be higher. However, sleeping_prematurely() always considers the
-> lowest zone (e.g. ZONE_DMA) to be the classzone index. This means that
-> sleeping_prematurely() can consider a zone to be balanced that is unusable
-> by the allocation request that originally woke kswapd. This patch changes
-> sleeping_prematurely() to use a classzone_idx matching the value it used
-> in balance_pgdat().
->
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Fri, Dec 10, 2010 at 02:53:30AM +0100, Matt wrote:
+> 
+> Try a kernel before 5a87b7a5da250c9be6d757758425dfeaf8ed3179
+> 
+> from the tests I've done that one showed the least or no corruption if
+> you count the empty /etc/env.d/03opengl as an artefact
 
-Nice catch! and it does make sense to me.
+Yes, that's a good test.  Also try commit bd2d0210cf.  The patch
+series that is most likely to be at fault if there is a regression in
+between 5a87b7a5d and bd2d0210cf inclusive.
 
--- 
-Kind regards,
-Minchan Kim
+I did a lot of testing before submitting it, but that wa a tricky
+rewrite.  If you can reproduce the problem reliably, it might be good
+to try commit 16828088f9 (the commit before 5a87b7a5d) and commit
+bd2d0210cf.  If it reliably reproduces on bd2d0210cf, but is clean on
+16828088f9, then it's my ext4 block i/o submission patches, and we'll
+need to either figure out what's going on or back out that set of
+changes.
+
+If that's the case, a bisect of those changes (it's only 6 commits, so
+it shouldn't take long) would be most appreciated.
+
+Regards,
+
+						- Ted
