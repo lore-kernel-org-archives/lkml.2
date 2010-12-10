@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab0LJXS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 18:18:27 -0500
-Received: from kroah.org ([198.145.64.141]:57710 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857Ab0LJXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 18:18:26 -0500
-Date: Fri, 10 Dec 2010 15:16:08 -0800
-From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: gregkh@suse.de, Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for December 6 (pch_uart)
-Message-ID: <20101210231608.GA12155@kroah.com>
-References: <20101206140055.34289498.sfr@canb.auug.org.au>
- <AANLkTi=iCZ=XQk3zXwK-BPnK4=9SU5W-arf+rom9dx8V@mail.gmail.com>
- <20101206081422.0608c50d.randy.dunlap@oracle.com>
- <20101210092010.dbff7834.randy.dunlap@oracle.com>
+	id S1755440Ab0LJXTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 18:19:09 -0500
+Received: from web31810.mail.mud.yahoo.com ([68.142.207.73]:31169 "HELO
+	web31810.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753230Ab0LJXTH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 18:19:07 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=0jdHv4gzF++SKu7LO9oFUASM2ztvGwtXDTP0B+bj+Zi4Rxcok4ZzaKZVoLRaQ4FTp3lMVAFJ/mBaDdAs0xniZSW6sSRyAdbkUI24pO22AIatqpJD2QZrDklXq4qwLxdl+6lgHhAzafVrXAFnqp6yVC47KLUSlF3iYe0xuvtAPPo=;
+Message-ID: <503376.27356.qm@web31810.mail.mud.yahoo.com>
+X-YMail-OSG: IzO3ej4VM1nleE7.Tf5TLnybrdWeWvQLvYvqsoD.M3L94Cg
+ 8lqAjf6K_ECPkDULSU2ahpNERMWCSbQmWwzNmvMBrJ.kH6TGzd4MSHawX5ut
+ vuhiPdgyjxHAl7s3ez2vxwjPrAbmIhhs7Vh7kPLWquGhuB5AqfZh0CIkMAm1
+ VQ1P3AB6AHQp2pNdWSXFZuGfsUjyTs2UKsxqLNL9NyplQMOfYpCHPutJDYxj
+ blFsOgnW0T2rQ9pFdsTth2RRRZWpllgoH_uvT6qHIUvmkX3y3b2WvnuH25cL
+ b5UKzL5KAAVPews.R..TbeLH1P9gawzIqdwKin6MhTRCOIZz5BGEhZ3Uh6kU
+ O7TNjHvo5SZBqPsDvZt7iHUvmvQiaG933GmCA7UgcdKQ.rphNF4ocNP2.Q5j
+ IRMUUBdaJBcox
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
+Date: Fri, 10 Dec 2010 15:19:05 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH 2/4] [USB] UASP: Add MaxNumStreams module parameter
+To: Greg KH <greg@kroah.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+In-Reply-To: <20101210231451.GA9956@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101210092010.dbff7834.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 09:20:10AM -0800, Randy Dunlap wrote:
-> On Mon, 6 Dec 2010 08:14:22 -0800 Randy Dunlap wrote:
+--- On Fri, 12/10/10, Greg KH <greg@kroah.com> wrote:
 > 
-> > On Mon, 6 Dec 2010 16:09:33 +0100 Zimny Lech wrote:
-> > 
-> > > Ave,
-> > > 
-> > > 2010/12/6 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > > > Hi all,
-> > > >
-> > > > [The mirroring on kernel.org is currently being slow, so this release may
-> > > > not be available yet.]
-> > > >
-> > > > Changes since 20101203:
-> > > >
-> > > 
-> > > Nothing new here, only known issues
-> > > 
-> > > Kernel: arch/x86/boot/bzImage is ready  (#5)
-> > >   Building modules, stage 2.
-> > >   MODPOST 314 modules
-> > > ERROR: "dma_release_channel" [drivers/serial/pch_uart.ko] undefined!
-> > > ERROR: "__dma_request_channel" [drivers/serial/pch_uart.ko] undefined!
-> > > WARNING: modpost: Found 4 section mismatch(es).
-> > > To see full details build your kernel with:
-> > > 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-> > > make[2]: *** [__modpost] Error 1
-> > > make[1]: *** [modules] Error 2
-> > > make: *** [sub-make] Error 2
-> > 
-> > Greg, are you going to merge the patch that I posted for this one?
-> > 
+> That's just plain rude and obnoxious.
 > 
-> ping.  Still happening in linux-next 20101210.
+> You just earned a place in my kill-file.
+> 
+> *plonk*
 
-Now applied.
+But, Greg, it's what I would've done. If there is a better solution out there, let it be, instead of leading on this charade of your protecting someone else's interests.
+
+
