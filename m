@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab0LJGeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 01:34:24 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46754 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752585Ab0LJGeX (ORCPT
+	id S1753379Ab0LJGje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 01:39:34 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:53193 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab0LJGjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 01:34:23 -0500
-Date: Thu, 9 Dec 2010 22:32:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [PATCH v2 3/4] kthread: NUMA aware kthread_create_on_cpu()
-Message-Id: <20101209223210.acd540de.akpm@linux-foundation.org>
-In-Reply-To: <1291960798.2803.18.camel@edumazet-laptop>
-References: <1290972833.29196.90.camel@edumazet-laptop>
-	<20101128224024.GA12300@basil.fritz.box>
-	<1290984712.29196.100.camel@edumazet-laptop>
-	<20101128230146.GB12300@basil.fritz.box>
-	<1290987424.29196.128.camel@edumazet-laptop>
-	<20101129090510.GA15763@basil.fritz.box>
-	<1291023532.3435.29.camel@edumazet-laptop>
-	<1291043695.3435.980.camel@edumazet-laptop>
-	<20101209164438.fae1ba4c.akpm@linux-foundation.org>
-	<1291960798.2803.18.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Dec 2010 01:39:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wGvb0Ltdw9CJWiKCwxXN9ZUpOcRgzMNJUBC/liq+0j9nROX5n0jLk8l0pIRqhHkUFX
+         seU8OMKM9Rvg2LmCMYjw==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
+References: <1291335412-16231-1-git-send-email-walken@google.com>
+	<1291335412-16231-2-git-send-email-walken@google.com>
+	<20101208152740.ac449c3d.akpm@linux-foundation.org>
+	<AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
+	<AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
+Date: Thu, 9 Dec 2010 22:39:29 -0800
+Message-ID: <AANLkTikXx4MgdPYWYNVj8cMOSHTHJEUHqKZ_q-P4jFYp@mail.gmail.com>
+Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
+ faulting in pages
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 06:59:58 +0100 Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Thu, Dec 9, 2010 at 10:11 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wednesday, December 8, 2010, Michel Lespinasse <walken@google.com> wrote:
+>> Yes, patch 1/6 changes the long hold time to be in read mode instead
+>> of write mode, which is only a band-aid. But, this prepares for patch
+>> 5/6, which releases mmap_sem whenever there is contention on it or
+>> when blocking on disk reads.
+>
+> I have to say that I'm not a huge fan of that horribly kludgy
+> contention check case.
+>
+> The "move page-in to read-locked sequence" and the changes to
+> get_user_pages look fine, but the contention thing is just disgusting.
+> I'd really like to see some other approach if at all possible.
 
-> Le jeudi 09 d__cembre 2010 __ 16:44 -0800, Andrew Morton a __crit :
-> 
-> > The name "kthread_create_on_cpu" is pretty misleading.
-> > 
-> > One would expect such a function to create a kthread which is bound to
-> > that CPU.  But what it in fact does is to create a kthread which is
-> > bound to all CPUs and whose stack, task_struct and thread_info were
-> > allocated from the node which contains `cpu'.
-> > 
-> > Also, a saner interface would be one which takes the numa_node_id, not
-> > the cpu number.
-> > 
-> 
-> 
-> > >
-> > > ...
-> > >
-> > >  /**
-> > > - * kthread_create - create a kthread.
-> > > + * kthread_create_on_cpu - create a kthread.
-> > >   * @threadfn: the function to run until signal_pending(current).
-> > >   * @data: data ptr for @threadfn.
-> > > + * @cpu: cpu number.
-> > >   * @namefmt: printf-style name for the thread.
-> > >   *
-> > >   * Description: This helper function creates and names a kernel
-> > >   * thread.  The thread will be stopped: use wake_up_process() to start
-> > >   * it.  See also kthread_run().
-> > >   *
-> > > + * If thread is going to be bound on a particular cpu, give its number
-> > > + * in @cpu, to get NUMA affinity for kthread stack, or else give -1.
-> > 
-> > This is a bit presumptuous.  The caller might wish to later bind this
-> > thread to some or all of the CPUs on the node, rather than to a single
-> > CPU (eg, kswapd()).
-> > 
-> > 
-> > So what to do?  Maybe add a new kthread_create_node() which prepares a
-> > kthread whose memory is bound to that node, then add a
-> > kthread_create_cpu() convenience wrapper around that?
-> > 
-> 
-> We probably can add the "bind to cpu" as a fifth patch, to avoid one 
-> kthread_bind(p, cpu);  done by these callers.
-> 
-> My reasoning not including this kthread_bind(p, cpu) in initial patch
-> series that I was focusing on NUMA properties first, not on scheduling
-> (this part already runs correctly as far as I know)
-> 
-> Thanks for taking the patch series, I was about to resubmit it today :)
-> 
+Are you OK with the part of patch 5/6 that drops mmap_sem when
+blocking on disk ?
 
-but but but.  The name "kthread_create_on_cpu" sucks.  It's plain wrong.
+This by itself brings mmap_sem hold time down to a few seconds. Plus,
+I could add something to limit the interval passed to
+__mlock_vma_pages_range to a thousand pages or so, so that the hold
+time would then be bounded by that constant.
+
+I think rwsem_is_contended() actually sounds better than fiddling with
+constants, but OTOH maybe the mlock use case is not significant enough
+to justify introducing that new API.
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
