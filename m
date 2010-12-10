@@ -1,154 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab0LJUhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:37:20 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57882 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab0LJUhS (ORCPT
+	id S1757191Ab0LJUjB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:39:01 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38205 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab0LJUjA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:37:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=ZSIyuy3096soHWECbqSut+cJb2RB7RkRMb3hT/Bea/3qBC1HgZbOjzQaFNxHI+DK6G
-         VN8RTTGBl9Zx3DDqsAZZhBAAFq3EZ/it56hf1e8sks46Ubp1Ngo7YcaeLrcbDcOYkXYI
-         pTVgNVBAjHf2FHHjJI/WrYqZ0XEm0Bg6RDV1Q=
-From: Edward Shishkin <edward.shishkin@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] fs: relax count limitation in rw_verify_area, TAKE 2
-Date: Fri, 10 Dec 2010 21:36:18 +0100
-User-Agent: KMail/1.12.3 (Linux/2.6.27.41-170.2.117.fc10.i686; KDE/4.3.3; i686; ; )
-Cc: esandeen@redhat.com, viro@zeniv.linux.org.uk, lmcilroy@redhat.com,
-        hch@infradead.org, rring@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012102136.18572.edward.shishkin@gmail.com>
+	Fri, 10 Dec 2010 15:39:00 -0500
+Subject: [PATCH] sched: Fix the irqtime code to deal with u64 wraps
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Dec 2010 21:38:26 +0100
+Message-ID: <1292013506.13513.78.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relax synthetic limitation introduced by rw_verify_area().
+OK, so here's the latest version, using fancy __this_cpu thingies.
 
-We limit @count to something that fits in ssize_t instead of
-int, so that the kernel now permits single reads and writes of
-up to 2^63 bytes on 64-bit systems (whereas it was previously
-limited to 2^31), because:
+I started a new thread since the old one was quite unwieldy.
 
-1. This is more conformable to man pages, where @count
-   should be of size_t (but not more than SSIZE_MAX for
-   predictable results).
+Now, admittedly this patch is a tad large, esp for -rc5. So either we
+need lots of Reviewed-by and such or I need to shrink this patch
+somehow.
 
-2. Old limitation restricts size of atomic writes that
-   can be performed by a local file system: 2G can be
-   not enough in the near future.
 
-3. Some applications of our users don't work with the
-   old limitation (and it is really hard to fix them).
-
-The following subsystems were tested with this patch applied:
-
-direct-io,
-ntfs,
-squashfs,
-cifs,
-ecryptfs,
-ext[2,3,4]
-hfs,
-hfsplus,
-reiserfs,
-xfs,
-jfs,
-nfs,
-gfs2,
-btrfs,
-isofs
-
-Everything works fine. While testing the new relaxed
-limitation there were found and fixed truncation bugs
-in direct-io and ecryptfs. The fixups are in upstream
-already.
-
-Signed-off-by: Edward Shishkin <edward.shishkin@gmail.com>
 ---
- fs/read_write.c    |   16 ++++++----------
- fs/splice.c        |    4 ++--
- include/linux/fs.h |    4 ++--
- 3 files changed, 10 insertions(+), 14 deletions(-)
+Subject: sched: Fix the irqtime code to deal with u64 wraps
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu Dec 09 14:15:34 CET 2010
 
---- linux-2.6.37-rc4.orig/fs/read_write.c
-+++ linux-2.6.37-rc4/fs/read_write.c
-@@ -236,21 +236,19 @@ bad:
- }
- #endif
+ARM systems have a 32bit sched_clock() [ which needs to be fixed ],
+but this exposed a bug in the irq_time code as well, it doesn't deal
+with wraps at all.
+
+Fix the irq_time code to deal with u64 wraps by re-writing the code to
+only use delta increments, which avoids the whole issue.
+
+Furthermore, solve the problem of 32bit arches reading partial updates
+of the u64 time values.
+
+Cc: Venkatesh Pallipadi <venki@google.com>
+Reported-by: Mikael Pettersson <mikpe@it.uu.se>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched.c |  176 +++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 121 insertions(+), 55 deletions(-)
+
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -636,22 +636,16 @@ static inline struct task_group *task_gr
  
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
+-static u64 irq_time_cpu(int cpu);
+-static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
 -
- /*
-- * rw_verify_area doesn't like huge counts. We limit
-- * them to something that fits in "int" so that others
-- * won't have to do range checks all the time.
-+ * We limit huge counts to something that fits in "ssize_t"
-  */
--int rw_verify_area(int read_write, struct file *file, loff_t *ppos, size_t count)
-+ssize_t rw_verify_area(int read_write, struct file *file, loff_t *ppos,
-+		       size_t count)
+-inline void update_rq_clock(struct rq *rq)
++static void update_rq_clock(struct rq *rq)
  {
- 	struct inode *inode;
- 	loff_t pos;
- 	int retval = -EINVAL;
+-	if (!rq->skip_clock_update) {
+-		int cpu = cpu_of(rq);
+-		u64 irq_time;
++	s64 delta;
  
- 	inode = file->f_path.dentry->d_inode;
--	if (unlikely((ssize_t) count < 0))
--		return retval;
-+	if (unlikely(count > MAX_RW_COUNT))
-+		count = MAX_RW_COUNT;
- 	pos = *ppos;
- 	if (unlikely((pos < 0) || (loff_t) (pos + count) < 0)) {
- 		retval = __negative_fpos_check(file, pos, count);
-@@ -267,9 +265,7 @@ int rw_verify_area(int read_write, struc
- 	}
- 	retval = security_file_permission(file,
- 				read_write == READ ? MAY_READ : MAY_WRITE);
--	if (retval)
--		return retval;
--	return count > MAX_RW_COUNT ? MAX_RW_COUNT : count;
-+	return retval ? retval : count;
+-		rq->clock = sched_clock_cpu(cpu);
+-		irq_time = irq_time_cpu(cpu);
+-		if (rq->clock - irq_time > rq->clock_task)
+-			rq->clock_task = rq->clock - irq_time;
++	if (rq->skip_clock_update)
++		return;
+ 
+-		sched_irq_time_avg_update(rq, irq_time);
+-	}
++	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
++	rq->clock += delta;
++	update_rq_clock_task(rq, delta);
  }
  
- static void wait_on_retry_sync_kiocb(struct kiocb *iocb)
---- linux-2.6.37-rc4.orig/fs/splice.c
-+++ linux-2.6.37-rc4/fs/splice.c
-@@ -1097,7 +1097,7 @@ static long do_splice_from(struct pipe_i
+ /*
+@@ -1918,90 +1912,162 @@ static void deactivate_task(struct rq *r
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ 
+ /*
+- * There are no locks covering percpu hardirq/softirq time.
+- * They are only modified in account_system_vtime, on corresponding CPU
+- * with interrupts disabled. So, writes are safe.
++ * There are no locks covering percpu hardirq/softirq time. They are only
++ * modified in account_system_vtime, on corresponding CPU with interrupts
++ * disabled. So, writes are safe.
++ *
+  * They are read and saved off onto struct rq in update_rq_clock().
+- * This may result in other CPU reading this CPU's irq time and can
+- * race with irq/account_system_vtime on this CPU. We would either get old
+- * or new value (or semi updated value on 32 bit) with a side effect of
+- * accounting a slice of irq time to wrong task when irq is in progress
+- * while we read rq->clock. That is a worthy compromise in place of having
+- * locks on each irq in account_system_time.
++ *
++ * This may result in other CPU reading this CPU's irq time and can race with
++ * irq/account_system_vtime on this CPU. We would either get old or new value
++ * with a side effect of accounting a slice of irq time to wrong task when irq
++ * is in progress while we read rq->clock. That is a worthy compromise in place
++ * of having locks on each irq in account_system_time.
+  */
+ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+ static DEFINE_PER_CPU(u64, cpu_softirq_time);
+-
+ static DEFINE_PER_CPU(u64, irq_start_time);
+-static int sched_clock_irqtime;
+ 
+-void enable_sched_clock_irqtime(void)
++#ifndef CONFIG_64BIT
++static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
++
++static inline void irq_time_write_begin(void)
  {
- 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *,
- 				loff_t *, size_t, unsigned int);
--	int ret;
-+	ssize_t ret;
+-	sched_clock_irqtime = 1;
++	__this_cpu_inc(irq_time_seq.sequence);
++	smp_wmb();
+ }
  
- 	if (unlikely(!(out->f_mode & FMODE_WRITE)))
- 		return -EBADF;
-@@ -1126,7 +1126,7 @@ static long do_splice_to(struct file *in
+-void disable_sched_clock_irqtime(void)
++static inline void irq_time_write_end(void)
  {
- 	ssize_t (*splice_read)(struct file *, loff_t *,
- 			       struct pipe_inode_info *, size_t, unsigned int);
--	int ret;
-+	ssize_t ret;
+-	sched_clock_irqtime = 0;
++	smp_wmb();
++	__this_cpu_inc(irq_time_seq.sequence);
+ }
  
- 	if (unlikely(!(in->f_mode & FMODE_READ)))
- 		return -EBADF;
---- linux-2.6.37-rc4.orig/include/linux/fs.h
-+++ linux-2.6.37-rc4/include/linux/fs.h
-@@ -1866,8 +1866,8 @@ extern int current_umask(void);
- /* /sys/fs */
- extern struct kobject *fs_kobj;
+-static u64 irq_time_cpu(int cpu)
++static inline u64 irq_time_read(int cpu)
+ {
+-	if (!sched_clock_irqtime)
+-		return 0;
++	u64 irq_time;
++	unsigned seq;
++
++	do {
++		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
++		irq_time = per_cpu(cpu_softirq_time, cpu) +
++			   per_cpu(cpu_hardirq_time, cpu);
++	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
++
++	return irq_time;
++}
++#else /* CONFIG_64BIT */
++static inline void irq_time_write_begin(void)
++{
++}
  
--#define MAX_RW_COUNT (INT_MAX & PAGE_CACHE_MASK)
--extern int rw_verify_area(int, struct file *, loff_t *, size_t);
-+#define MAX_RW_COUNT ((~(size_t)0) >> 1 & PAGE_CACHE_MASK)
-+extern ssize_t rw_verify_area(int, struct file *, loff_t *, size_t);
++static inline void irq_time_write_end(void)
++{
++}
++
++static inline u64 irq_time_read(int cpu)
++{
+ 	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
+ }
++#endif /* CONFIG_64BIT */
++
++static int sched_clock_irqtime;
++
++void enable_sched_clock_irqtime(void)
++{
++	sched_clock_irqtime = 1;
++}
++
++void disable_sched_clock_irqtime(void)
++{
++	sched_clock_irqtime = 0;
++}
  
- #define FLOCK_VERIFY_READ  1
- #define FLOCK_VERIFY_WRITE 2
++/*
++ * Called before incrementing preempt_count on {soft,}irq_enter
++ * and before decrementing preempt_count on {soft,}irq_exit.
++ */
+ void account_system_vtime(struct task_struct *curr)
+ {
+ 	unsigned long flags;
++	s64 delta;
+ 	int cpu;
+-	u64 now, delta;
+ 
+ 	if (!sched_clock_irqtime)
+ 		return;
+ 
+ 	local_irq_save(flags);
+-
+ 	cpu = smp_processor_id();
+-	now = sched_clock_cpu(cpu);
+-	delta = now - per_cpu(irq_start_time, cpu);
+-	per_cpu(irq_start_time, cpu) = now;
++	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
++	__this_cpu_add(irq_start_time, delta);
++
++	irq_time_write_begin();
++
++	if (hardirq_count())
++		__this_cpu_add(cpu_hardirq_time, delta);
+ 	/*
+-	 * We do not account for softirq time from ksoftirqd here.
+-	 * We want to continue accounting softirq time to ksoftirqd thread
+-	 * in that case, so as not to confuse scheduler with a special task
+-	 * that do not consume any time, but still wants to run.
++	 * We do not account for softirq time from ksoftirqd here. We want to
++	 * continue accounting softirq time to ksoftirqd thread in that case,
++	 * so as not to confuse scheduler with a special task that do not
++	 * consume any time, but still wants to run.
+ 	 */
+-	if (hardirq_count())
+-		per_cpu(cpu_hardirq_time, cpu) += delta;
+ 	else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
+-		per_cpu(cpu_softirq_time, cpu) += delta;
++		__this_cpu_add(cpu_softirq_time, delta);
+ 
++	irq_time_write_end();
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(account_system_vtime);
+ 
+-static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
++static u64 irq_time_cpu(struct rq *rq)
+ {
+-	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
+-		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
+-		rq->prev_irq_time = curr_irq_time;
+-		sched_rt_avg_update(rq, delta_irq);
+-	}
++	/*
++	 * See the comment in update_rq_clock_task(), ideally we'd update
++	 * the *irq_time values using rq->clock here.
++	 */
++	return irq_time_read(cpu_of(rq));
+ }
+ 
+-#else
+-
+-static u64 irq_time_cpu(int cpu)
++static void update_rq_clock_task(struct rq *rq, s64 delta)
+ {
+-	return 0;
++	s64 irq_delta;
++
++	irq_delta = irq_time_cpu(rq) - rq->prev_irq_time;
++
++	/*
++	 * Since irq_time is only updated on {soft,}irq_exit, we might run into
++	 * this case when a previous update_rq_clock() happened inside a
++	 * {soft,}irq region.
++	 *
++	 * When this happens, we stop ->clock_task and only update the
++	 * prev_irq_time stamp to account for the part that fit, so that a next
++	 * update will consume the rest. This ensures ->clock_task is
++	 * monotonic.
++	 *
++	 * It does however cause some slight miss-attribution of {soft,}irq
++	 * time, a more accurate solution would be to update the irq_time using
++	 * the current rq->clock timestamp, except that would require using
++	 * atomic ops.
++	 */
++	if (irq_delta > delta)
++		irq_delta = delta;
++
++	rq->prev_irq_time += irq_delta;
++	delta -= irq_delta;
++	rq->clock_task += delta;
++
++	if (irq_delta && sched_feat(NONIRQ_POWER))
++		sched_rt_avg_update(rq, irq_delta);
+ }
+ 
+-static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
++#else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+-#endif
++static void update_rq_clock_task(struct rq *rq, s64 delta)
++{
++	rq->clock_task += delta;
++}
++
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ #include "sched_idletask.c"
+ #include "sched_fair.c"
+
