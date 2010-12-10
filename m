@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0LJVtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:49:17 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:52726 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab0LJVtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:49:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gQfFswSJZJ+VjDhzgPakCtbQtInoq+LFiecuCycYIUXeYM58drZhGkqnbPBnXRsyiG
-         IihA7cmqd92rxUyY8gp5YqtoF2auo2T/9ucVR37m6S7AT/lVb5ihyzNKleXDTeLvOYyG
-         BReI2tdL1/D/u6Sszs1AWjh42QtlhqKgoWA2k=
-Date: Fri, 10 Dec 2010 13:49:06 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kgdboc,input: Fix regression with keyboard release key
- and early debugging
-Message-ID: <20101210214906.GF1630@core.coreip.homeip.net>
-References: <1292013643-699-1-git-send-email-jason.wessel@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292013643-699-1-git-send-email-jason.wessel@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755549Ab0LJVx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:53:26 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:42426 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114Ab0LJVxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 16:53:24 -0500
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
+        Micha Nelissen <micha@neli.hopto.org>
+Subject: [PATCH] RapidIO: Add new IDT sRIO switches
+Date: Fri, 10 Dec 2010 16:52:52 -0500
+Message-Id: <1292017972-6261-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 02:40:43PM -0600, Jason Wessel wrote:
-> === NOTES excluded from the real commit ===
-> 
-> Dmitry, I added this commit into kgdb-next and I will send a pull
-> request to Linus Monday, unless someone comes up with an objection or
-> a different implementation.
+Add new sRIO switch device IDs and enable a basic support for them.
 
-Yes, I think it makes sense. Such an early oopses are unlikely to have
-input devices fully bound anyway so they'll get "reset" natually.
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Thomas Moll <thomas.moll@sysgo.com>
+Cc: Micha Nelissen <micha@neli.hopto.org>
+---
+ drivers/rapidio/switches/idt_gen2.c |    2 ++
+ include/linux/rio_ids.h             |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/rapidio/switches/idt_gen2.c b/drivers/rapidio/switches/idt_gen2.c
+index dd4b2b7..095016a 100644
+--- a/drivers/rapidio/switches/idt_gen2.c
++++ b/drivers/rapidio/switches/idt_gen2.c
+@@ -416,3 +416,5 @@ static int idtg2_switch_init(struct rio_dev *rdev, int do_enum)
+ 
+ DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTCPS1848, idtg2_switch_init);
+ DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTCPS1616, idtg2_switch_init);
++DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTVPS1616, idtg2_switch_init);
++DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTSPS1616, idtg2_switch_init);
+diff --git a/include/linux/rio_ids.h b/include/linux/rio_ids.h
+index ee7b6ad..7410d33 100644
+--- a/include/linux/rio_ids.h
++++ b/include/linux/rio_ids.h
+@@ -36,5 +36,7 @@
+ #define RIO_DID_IDTCPS10Q		0x035e
+ #define RIO_DID_IDTCPS1848		0x0374
+ #define RIO_DID_IDTCPS1616		0x0379
++#define RIO_DID_IDTVPS1616		0x0377
++#define RIO_DID_IDTSPS1616		0x0378
+ 
+ #endif				/* LINUX_RIO_IDS_H */
 -- 
-Dmitry
+1.7.3.1
+
