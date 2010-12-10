@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab0LJVJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:09:14 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:23786 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750893Ab0LJVJN (ORCPT
+	id S1756750Ab0LJVLz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:11:55 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:63594 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab0LJVLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:09:13 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: VKAbWsUVM1lsv22N0.BdaeAkl_bN6.UxuNI1a09bmXVVifI
- P9ws8CZPbtDcKh.Jv2Yve4eKcXp4fwNrB5JITZBoQpzudm9Bht5TY76A3I5D
- OuBOUJeYqqXN4BXi9_or5XZnmgKBNlq62UfKFLxjk.osnKdFTPhIZS9G3WVk
- UNftkb5MdG9ZfHpAlc1EYROdCOuD6Grx5vjH7TEoYcyqAxZjVOF53sA64yDA
- LaFpaYYVLmjHePF7VhczXJRb4i3GYSG_5kc8IWTMV5rjELOT0tJdA1zPRApc
- gCoXquqHCcP0_KSzC5JwxtQwctkXDEA5TrgtHXdrvXxa4lxs-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 10 Dec 2010 15:09:08 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-In-Reply-To: <1292014165.2746.9.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1012101505250.13986@router.home>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>  <1291851079-27061-1-git-send-email-venki@google.com>  <1291899120.29292.7.camel@twins>  <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>  <1291917330.6803.7.camel@twins> 
- <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>  <1291920939.6803.38.camel@twins>  <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>  <1291936593.13513.3.camel@laptop>  <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-  <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>  <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>  <1292001500.3580.268.camel@edumazet-laptop>  <1292003346.13513.30.camel@laptop>  <1292004859.3580.387.camel@edumazet-laptop>
-  <alpine.DEB.2.00.1012101236300.13986@router.home>  <1292006788.13513.43.camel@laptop>  <alpine.DEB.2.00.1012101344570.13986@router.home>  <1292011644.13513.61.camel@laptop>  <alpine.DEB.2.00.1012101410571.13986@router.home>  <1292013590.2746.2.camel@edumazet-laptop>
- <1292014165.2746.9.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 10 Dec 2010 16:11:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=esTPuzLJbno7qD+RK30JJu0SQRBmTZjcMRMRFkOyNrrtavW7ybKPyeya2NZKfnSrRd
+         vVs3n1A9WVIU7HunyZLtF5V9mILQBZ6lPkNzTmUbshUVhcQjB5orSXn/4osxI9xHBn68
+         1zCo+EPnbn4emUlH5Bsxsxoppaqw1BW1vokr0=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 0/2 v2] rcu: Fix series of spurious RCU softirqs
+Date: Fri, 10 Dec 2010 22:11:09 +0100
+Message-Id: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010, Eric Dumazet wrote:
+Hi,
 
->
-> By the way, we need smp_wmb(), not barrier(), even only the "owner cpu"
-> can write into its 'percpu' seqcount.
->
-> There is nothing special about a seqcount being percpu or a 'global'
-> one. We must have same memory barrier semantics.
+Following Lai's idea.
 
-There is certainly a major difference in that execution of a stream of
-instructions on the same cpu is guaranteed to have a coherent view of
-the data. That is not affected by interrupts etc.
+An example of such series of spurious softirqs:
 
->
-> 	this_cpu_write_seqcount_begin(&myseqcount);
-> 	this_cpu_add(mydata1, add1);
-> 	this_cpu_add(mydata2, add2);
-> 	this_cpu_inc(mydata3);
-> 	this_cpu_write_seqcount_end(&myseqcount);
->
-> We protect the data[1,2,3] set with a seqcount, so need smp_wmb() in
-> both _begin() and _end()
+http://tglx.de/~fweisbec/trace_rcu_softirq.txt
 
-There is nothing to protect there since processing is on the same cpu. The
-data coherency guarantees of the processor will not allow anything out of
-sequence to affect execution. An interrupt f.e. will not cause updates to
-mydata1 to get lost.
+In that example, the rcu softirq is raised at every tick
+during 20 secs (was perhaps more, but the trace snapshot happened
+during 20 secs). It happens randomly.
+
+Ah and it survived several hours of rcutorture (with rcu cpu stall
+detection).
+
+Thanks.
+
+Frederic Weisbecker (2):
+  rcu: Stop chasing QS if another CPU did it for us
+  rcu: Keep gpnum and completed fields synchronized
+
+ kernel/rcutree.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
+
+-- 
+1.7.3.2
 
