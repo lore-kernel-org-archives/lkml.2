@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab0LJITE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 03:19:04 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:47589 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753927Ab0LJITC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 03:19:02 -0500
-Message-ID: <4D01E26F.3090802@stericsson.com>
-Date: Fri, 10 Dec 2010 09:18:55 +0100
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] MFD: ab8500-core interrupt ffs bit bug
-References: <1291298809-3275-1-git-send-email-mattias.wallin@stericsson.com> <20101209121317.GE8884@sortiz-mobl>
-In-Reply-To: <20101209121317.GE8884@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754622Ab0LJIYO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 03:24:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18100 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754401Ab0LJIYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 03:24:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
+   d="scan'208";a="866670209"
+Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1291922467.6803.44.camel@twins>
+References: <1291267223.2405.314.camel@minggr.sh.intel.com>
+	 <1291922467.6803.44.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 16:28:03 +0800
+Message-ID: <1291969683.10384.51.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-12-10 at 03:21 +0800, Peter Zijlstra wrote:
+> On Thu, 2010-12-02 at 13:20 +0800, Lin Ming wrote:
+> > +       /* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
+> > +       family = boot_cpu_data.x86;
+> > +       model = boot_cpu_data.x86_model;
+> > +       if (family != 6 || (model != 0x1A && model != 0x1E && model != 0x1F))
+> > +               return; 
+> 
+> So that's 26, 30 and 31? Curiously
+> arch/x86/kernel/cpu/perf_event_intel.c does have 31.
+> 
+> Also, could you match the style from perf_event_intel.c?
+
+OK.
 
 
-On 12/09/2010 01:13 PM, Samuel Ortiz wrote:
-> Hi Mattias,
-> 
-> On Thu, Dec 02, 2010 at 03:06:49PM +0100, Mattias Wallin wrote:
->> This patch fixes a bug in ab8500 interrupt handling
-> Patch applied. This also looks like a good candidate for 2.6.37.
-I agree, AB8500 interrupts gets lost without this patch so the error is bad.
-Do you want me to do anything for this to happen?
-> 
-> Cheers,
-> Samuel.
-> 
