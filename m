@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab0LJJE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 04:04:58 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58634 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab0LJJEx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 04:04:53 -0500
-Date: Fri, 10 Dec 2010 10:03:24 +0100
-From: Christian Glindkamp <christian.glindkamp@taskit.de>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>, linux@arm.linux.org.uk,
-        costa.antonior@gmail.com, Igor Plyatov <plyatov@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux@maxim.org.za, linux-arm-kernel@lists.infradead.org,
-        pgsellmann@portner-elektronik.at
-Subject: Re: [PATCH] at91: Refactor Stamp9G20 and PControl G20 board file
-Message-ID: <20101210090324.GB24295@taskit.de>
-References: <4CFFE5A9.4040407@bluewatersys.com>
- <1291889759-12281-1-git-send-email-christian.glindkamp@taskit.de>
- <20101210033850.GC19897@game.jcrosoft.org>
+	id S1755201Ab0LJJmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 04:42:19 -0500
+Received: from mga03.intel.com ([143.182.124.21]:13608 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754841Ab0LJJmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 04:42:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
+   d="scan'208";a="359804335"
+Date: Fri, 10 Dec 2010 10:42:15 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] MFD: ab8500-core interrupt ffs bit bug
+Message-ID: <20101210094215.GB17051@sortiz-mobl>
+References: <1291298809-3275-1-git-send-email-mattias.wallin@stericsson.com>
+ <20101209121317.GE8884@sortiz-mobl>
+ <4D01E26F.3090802@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101210033850.GC19897@game.jcrosoft.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:36llS7m5Q5A7oRmf1ASlUMJwlSll4CTZrYYNA5PDHMj
- ho5YWyvbVQONCEVeDACDdwAfLGwjY1nZOy+GUiv0s65C0M/Qiq
- PumLRIc4homGFDTaR236oRAhn4IkZcqmZcuxDKIJRC+exlEqMI
- PkBL3gwbzbi2uR9iMzFzFgvX/4XhxMqz33fsSt/T/h3WFJ+kSO
- nq9TH6v9KsPVqhBPvuVdw==
+In-Reply-To: <4D01E26F.3090802@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-10 04:38, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> HI,
+On Fri, Dec 10, 2010 at 09:18:55AM +0100, Mattias Wallin wrote:
 > 
-> 	If the hardware are so near I do need to the need to create a new
-> 	machine use system_rev to auto detect it will be better
 > 
-> 	but we need to have only one defconfig as done on rm9200
-> 	it's really reduce the maintainance and allow to be sure when we
-> 	compile the at91sam9g20_defconfig that we do not brake any board
-> 
-> 	if a board have incompatible option please the system_rev to specify
-> 	them or a specific entry in the Kconfig for this board it will allow
-> 	also to known this information for the maintainance
-
-Just because it is near does not mean it is a revision of the other
-board. Just compare
-http://www.taskit.de/en/products/portuxg20/index.htm
-http://www.taskit.de/en/products/stamp9g20/starterkit.htm
-
-Apart from that, both boards are correctly identifiable via the machine
-id for a year, respectively one and a half year for the Stamp9G20 EVB.
-Why change it for sake of change?
-
-They both have there own machine id to make it clear that these are
-really different boards. I could have also submitted two board files
-and maybe nobody would have noticed that share a lot, but I thought code
-reuse is better so there are in the same file.
-
-And for different carrier boards, system_rev does not make sense at all.
-
-> 
-> Best Regards,
-> J.
-> On 11:15 Thu 09 Dec     , Christian Glindkamp wrote:
-> > As PControl G20 is a carrier board for the Stamp9G20 SoM, some code can
-> > be shared. Therefore board-stamp9g20.c is refactored to allow reusing the
-> > SoM initialization and board-pcontrol-g20.c is modified to use it.
+> On 12/09/2010 01:13 PM, Samuel Ortiz wrote:
+> > Hi Mattias,
 > > 
-> > Signed-off-by: Christian Glindkamp <christian.glindkamp@taskit.de>
-> > ---
+> > On Thu, Dec 02, 2010 at 03:06:49PM +0100, Mattias Wallin wrote:
+> >> This patch fixes a bug in ab8500 interrupt handling
+> > Patch applied. This also looks like a good candidate for 2.6.37.
+> I agree, AB8500 interrupts gets lost without this patch so the error is bad.
+> Do you want me to do anything for this to happen?
+No, the patch is already in my for-linus branch.
+
+Cheers,
+Samuel.
+
+
 > > 
-> > How about this approach? Compile tested for PControl G20 and run time tested
-> > for Stamp9G20 EVB and PortuxG20.
+> > Cheers,
+> > Samuel.
 > > 
-> > Just a side note: PortuxG20 is not a carrier board for the Stamp9G20. It just
-> > shares so much with the evaluation board, that it makes sense to put them both
-> > into the same file. And there is no intention to put other boards into this
-> > file.
-> > 
-> >  arch/arm/mach-at91/Makefile                 |    2 +-
-> >  arch/arm/mach-at91/board-pcontrol-g20.c     |   98 +--------------------------
-> >  arch/arm/mach-at91/board-stamp9g20.c        |   82 ++++++++++++-----------
-> >  arch/arm/mach-at91/include/mach/stamp9g20.h |    7 ++
-> >  4 files changed, 54 insertions(+), 135 deletions(-)
-> >  create mode 100644 arch/arm/mach-at91/include/mach/stamp9g20.h
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
