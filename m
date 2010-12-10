@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab0LJAZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 19:25:38 -0500
-Received: from smtp.microsoft.com ([131.107.115.214]:14756 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757246Ab0LJAZh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 19:25:37 -0500
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Dec 2010 19:25:37 EST
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Jesper Juhl <jj@chaosbits.net>, Ky Srinivasan <ksrinivasan@novell.com>
-CC: "zbr@ioremap.net" <zbr@ioremap.net>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Properly check return values of kmalloc and
- vmbus_recvpacket
-Thread-Topic: [PATCH 1/1] Properly check return values of kmalloc and
- vmbus_recvpacket
-Thread-Index: AQHLl96ti20EqnxIX0iVeprq3GaEp5OZVGKA////UAD//3w0wA==
-Date: Fri, 10 Dec 2010 00:20:28 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C5622C0B9ED3@TK5EX14MBXC116.redmond.corp.microsoft.com>
-References: <1291926209-17120-1-git-send-email-hjanssen@microsoft.com>
- <4D013908.E57C.0030.1@novell.com>
- <alpine.LNX.2.00.1012100108030.25880@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1012100108030.25880@swampdragon.chaosbits.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757588Ab0LJA3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 19:29:06 -0500
+Received: from kroah.org ([198.145.64.141]:57479 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756298Ab0LJA3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 19:29:05 -0500
+Date: Thu, 9 Dec 2010 16:25:05 -0800
+From: Greg KH <greg@kroah.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Luben Tuikov <ltuikov@yahoo.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/4] [USB] UASP: Add MaxNumStreams module parameter
+Message-ID: <20101210002505.GA16352@kroah.com>
+References: <20101209205820.GA6014@xanatos>
+ <463402.63193.qm@web31809.mail.mud.yahoo.com>
+ <20101210001155.GB11803@xanatos>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101210001155.GB11803@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Jesper Juhl [mailto:jj@chaosbits.net]
-> Sent: Thursday, December 09, 2010 4:11 PM
-> On Thu, 9 Dec 2010, Ky Srinivasan wrote:
-> > I am wondering if it might be better to allocate a page during module
-> > startup for dealing with some of these services. Since the protocol
-> > guarantees that there cannot be more than one outstanding request from
-> > the host side, having a pre-allocated receive buffer would be a more
-> > robust solution - we don't have to allocate memory when we cannot
-> > afford to sleep and thereby don't have to deal with a class of failure
-> > conditions that are not easy to deal with. For instance not being able
-> > to shut the guest down because of low memory situation would be bad.
-> >
+On Thu, Dec 09, 2010 at 04:11:55PM -0800, Sarah Sharp wrote:
+> On Thu, Dec 09, 2010 at 02:54:19PM -0800, Luben Tuikov wrote:
+> > --- On Thu, 12/9/10, Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+> > > -0800, Luben Tuikov wrote:
+> > > > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> > > > ---
+> > > >  The long story is that we see some host
+> > > controllers misreport their
+> > > >  PSA as they solved 2^v = streams, instead of
+> > > 2^(v+1) = streams. Thus
+> > > >  They report that they support 32 streams when in
+> > > fact they support 16.
+> > > >  When the device attempts to return status for
+> > > stream > 15, the host
+> > > >  says ACK(NumP=0), the device goes in flow
+> > > control, blah, blah, this
+> > > >  module parameter allows you to set a max cap on
+> > > the number of streams
+> > > >  the driver will ask XHCI HCD to allocate.
+> > > 
+> > > If this is an issue with a host then the work-around should
+> > > be in the
+> > > xHCI driver instead.  It should be based on the
+> > > vendor/device ID of the
+> > > offending host instead of being a module parameter in the
+> > > UAS driver.
+> > > The only people who benefit from this patch are the people
+> > > "in the know"
+> > > about which hosts are buggy, not normal Linux users.
+> > 
+> > The OS might want to limit the number of streams for reasons other
+> > than a buggy HC. So this module parameter add flexibility other than
+> > making a buggy HC work.
 > 
-> IMVHO; nicer to have a module fail at load time with ENOMEM than having
-> failures later. If memory requirement is known at load time (and is fairly low),
-> just allocate what's needed then and then there's no unexpected failure
-> later.
+> Ok, that's fine, but my comments still stand about fixing this
+> particular bug in the xHCI driver, rather than in the UAS driver.
 
-Agreed, That is a way neater implementation. I will correct and resubmit.
+I agree.
 
-Thanks,
+Also, a module parameter will not work when your driver is connecting to
+different xHCI devices in the same system.  Please never add module
+parameters anymore, there is usually never a need for them at all.
 
-Hank.
+thanks,
 
-
+greg k-h
