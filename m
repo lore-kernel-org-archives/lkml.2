@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0LJD3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 22:29:32 -0500
-Received: from mail.perches.com ([173.55.12.10]:2471 "EHLO mail.perches.com"
+	id S1755479Ab0LJD3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 22:29:33 -0500
+Received: from mail.perches.com ([173.55.12.10]:2469 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab0LJD3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754682Ab0LJD3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Dec 2010 22:29:23 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <jkosina@suse.cz>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] hid: Hoist assigns from ifs
-Date: Thu,  9 Dec 2010 19:29:07 -0800
-Message-Id: <6e8e73e7da66fe797ae11e6ff0a91541decddb27.1291951482.git.joe@perches.com>
+Subject: [PATCH 4/6] hid: Remove unnecessary multiplies from loops
+Date: Thu,  9 Dec 2010 19:29:06 -0800
+Message-Id: <67316ae8b002a45449b518f5414d3d6133fa8640.1291951482.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.464.gf80b6
 In-Reply-To: <alpine.LNX.2.00.1012091454010.508@pobox.suse.cz>
 References: <alpine.LNX.2.00.1012091454010.508@pobox.suse.cz>
@@ -21,69 +21,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use += instead of multiply.
+Use correct indentation.
+Move logical tests continuations to the more commonly used
+end of previous line.
+
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/hid/hid-core.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/hid/hid-core.c |   40 ++++++++++++++++++++++++----------------
+ 1 files changed, 24 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 932266a..796012e 100644
+index d6dffcc..932266a 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -61,7 +61,8 @@ struct hid_report *hid_register_report(struct hid_device *device, unsigned type,
- 	if (report_enum->report_id_hash[id])
- 		return report_enum->report_id_hash[id];
+@@ -897,33 +897,41 @@ static void hid_input_field(struct hid_device *hid, struct hid_field *field,
+ 	for (n = 0; n < count; n++) {
  
--	if (!(report = kzalloc(sizeof(struct hid_report), GFP_KERNEL)))
-+	report = kzalloc(sizeof(struct hid_report), GFP_KERNEL);
-+	if (!report)
- 		return NULL;
+ 		value[n] = min < 0 ?
+-			snto32(extract(hid, data, offset + n * size, size),
+-			       size) :
+-			extract(hid, data, offset + n * size, size);
++			snto32(extract(hid, data, offset, size), size) :
++			extract(hid, data, offset, size);
  
- 	if (id != 0)
-@@ -92,8 +93,11 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
- 		return NULL;
+ 		/* Ignore report if ErrorRollOver */
+ 		if (!(field->flags & HID_MAIN_ITEM_VARIABLE) &&
+ 		    value[n] >= min && value[n] <= max &&
+ 		    field->usage[value[n] - min].hid == HID_UP_KEYBOARD + 1)
+ 			goto exit;
++
++		offset += size;
  	}
- 
--	if (!(field = kzalloc(sizeof(struct hid_field) + usages * sizeof(struct hid_usage)
--		+ values * sizeof(unsigned), GFP_KERNEL))) return NULL;
-+	field = kzalloc((sizeof(struct hid_field) +
-+			 usages * sizeof(struct hid_usage) +
-+			 values * sizeof(unsigned)), GFP_KERNEL);
-+	if (!field)
-+		return NULL;
- 
- 	field->index = report->maxfield++;
- 	report->field[field->index] = field;
-@@ -211,7 +215,8 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
- 	unsigned offset;
- 	int i;
- 
--	if (!(report = hid_register_report(parser->device, report_type, parser->global.report_id))) {
-+	report = hid_register_report(parser->device, report_type, parser->global.report_id);
-+	if (!report) {
- 		dbg_hid("hid_register_report failed\n");
- 		return -1;
- 	}
-@@ -229,7 +234,8 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
- 
- 	usages = max_t(int, parser->local.usage_index, parser->global.report_count);
- 
--	if ((field = hid_register_field(report, usages, parser->global.report_count)) == NULL)
-+	field = hid_register_field(report, usages, parser->global.report_count);
-+	if (!field)
- 		return 0;
- 
- 	field->physical = hid_lookup_collection(parser, HID_COLLECTION_PHYSICAL);
-@@ -891,7 +897,8 @@ static void hid_input_field(struct hid_device *hid, struct hid_field *field,
- 	__s32 max = field->logical_maximum;
- 	__s32 *value;
- 
--	if (!(value = kmalloc(sizeof(__s32) * count, GFP_ATOMIC)))
-+	value = kmalloc(sizeof(__s32) * count, GFP_ATOMIC);
-+	if (!value)
- 		return;
  
  	for (n = 0; n < count; n++) {
+ 
+ 		if (HID_MAIN_ITEM_VARIABLE & field->flags) {
+-			hid_process_event(hid, field, &field->usage[n], value[n], interrupt);
++			hid_process_event(hid, field, &field->usage[n],
++					  value[n], interrupt);
+ 			continue;
+ 		}
+ 
+-		if (field->value[n] >= min && field->value[n] <= max
+-			&& field->usage[field->value[n] - min].hid
+-			&& search(value, field->value[n], count))
+-				hid_process_event(hid, field, &field->usage[field->value[n] - min], 0, interrupt);
+-
+-		if (value[n] >= min && value[n] <= max
+-			&& field->usage[value[n] - min].hid
+-			&& search(field->value, value[n], count))
+-				hid_process_event(hid, field, &field->usage[value[n] - min], 1, interrupt);
++		if (field->value[n] >= min &&
++		    field->value[n] <= max &&
++		    field->usage[field->value[n] - min].hid &&
++		    search(value, field->value[n], count))
++			hid_process_event(hid, field,
++					  &field->usage[field->value[n] - min],
++					  0, interrupt);
++
++		if (value[n] >= min &&
++		    value[n] <= max &&
++		    field->usage[value[n] - min].hid &&
++		    search(field->value, value[n], count))
++			hid_process_event(hid, field,
++					  &field->usage[value[n] - min],
++					  1, interrupt);
+ 	}
+ 
+ 	memcpy(field->value, value, count * sizeof(__s32));
+@@ -945,11 +953,11 @@ static void hid_output_field(const struct hid_device *hid,
+ 
+ 	for (n = 0; n < count; n++) {
+ 		if (field->logical_minimum < 0)	/* signed values */
+-			implement(hid, data, offset + n * size, size,
++			implement(hid, data, offset, size,
+ 				  s32ton(field->value[n], size));
+ 		else				/* unsigned values */
+-			implement(hid, data, offset + n * size, size,
+-				  field->value[n]);
++			implement(hid, data, offset, size, field->value[n]);
++		offset += size;
+ 	}
+ }
+ 
 -- 
 1.7.3.3.464.gf80b6
 
