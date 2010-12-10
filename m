@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0LJHGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 02:06:35 -0500
-Received: from mail.perches.com ([173.55.12.10]:2480 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab0LJHGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 02:06:34 -0500
-Subject: Re: [RFC][PATCH 02/10] mm: Remove likely() from
- mapping_unevictable()
-From: Joe Perches <joe@perches.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-In-Reply-To: <20101210160115.C7C4.A69D9226@jp.fujitsu.com>
-References: <20101207021328.569328536@goodmis.org>
-	 <1291688533.16223.119.camel@gandalf.stny.rr.com>
-	 <20101210160115.C7C4.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Dec 2010 23:06:32 -0800
-Message-ID: <1291964792.24978.3.camel@Joe-Laptop>
+	id S1753421Ab0LJHLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 02:11:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45034 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752063Ab0LJHLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 02:11:45 -0500
+Date: Thu, 9 Dec 2010 23:09:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH v2 3/4] kthread: NUMA aware kthread_create_on_cpu()
+Message-Id: <20101209230937.073fab54.akpm@linux-foundation.org>
+In-Reply-To: <1291964561.2803.25.camel@edumazet-laptop>
+References: <1290972833.29196.90.camel@edumazet-laptop>
+	<20101128224024.GA12300@basil.fritz.box>
+	<1290984712.29196.100.camel@edumazet-laptop>
+	<20101128230146.GB12300@basil.fritz.box>
+	<1290987424.29196.128.camel@edumazet-laptop>
+	<20101129090510.GA15763@basil.fritz.box>
+	<1291023532.3435.29.camel@edumazet-laptop>
+	<1291043695.3435.980.camel@edumazet-laptop>
+	<20101209164438.fae1ba4c.akpm@linux-foundation.org>
+	<1291960798.2803.18.camel@edumazet-laptop>
+	<20101209223210.acd540de.akpm@linux-foundation.org>
+	<1291964561.2803.25.camel@edumazet-laptop>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 16:00 +0900, KOSAKI Motohiro wrote:
-> > [ Resending to Nick's real email ]
-> > 
-> > 
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > 
-> > The mapping_unevictable() has a likely() around the mapping parameter.
-> > diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-[]
-> >  static inline int mapping_unevictable(struct address_space *mapping)
-> >  {
-> > -	if (likely(mapping))
-> > +	if (mapping)
-> >  		return test_bit(AS_UNEVICTABLE, &mapping->flags);
-> >  	return !!mapping;
-> >  }
-> I think you are right.
-> 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Fri, 10 Dec 2010 08:02:41 +0100 Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-It'd be better to use
+> Le jeudi 09 d__cembre 2010 __ 22:32 -0800, Andrew Morton a __crit :
+> 
+> > but but but.  The name "kthread_create_on_cpu" sucks.  It's plain wrong.
+> 
+> Okay you are right Andrew ;) I dont have better idea for the moment.
 
-	if (!mapping)
-		return 0;
-	return test_bit(AS_UNEVICTABLE, &mapping->flags);
+Dunno.  kthread_create_with_memory_on_node() :)
 
-to avoid the unnecessary !!
+How's about kthread_create_for_node()?  That's sufficiently vague to
+not mislead readers into thinking that it schedules the thread on that
+CPU and leaves room in the namespace for a real kthread_create_on_cpu()
+(which we could well end up creating).
+
+kthread_create_node_mem()?
+
+> Note that all callers I converted really create one kthread per cpu, not
+> per node. They didnt care of node affinity, only me :)
+> 
+> kthread_create_on_node() seems misleading to me (some cpus run on
+> memoryless nodes)
+
+True, but what we're doing here is specifying on which node the
+kthread's memory resources should reside - we need to do that even for
+CPUs which live on memoryless nodes.
 
