@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab0LJRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:49:26 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42054 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab0LJRtZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 12:49:25 -0500
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <1292001500.3580.268.camel@edumazet-laptop>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	 <1291851079-27061-1-git-send-email-venki@google.com>
-	 <1291899120.29292.7.camel@twins>
-	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	 <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
-	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
-	 <1292001500.3580.268.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Dec 2010 18:49:06 +0100
-Message-ID: <1292003346.13513.30.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755790Ab0LJRtv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:49:51 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:45322 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752499Ab0LJRtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 12:49:50 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1+PEwoDS+qPw4Lkd15gIkXXBI307nBM4kuy44leaJ
+	tH0AE/SiTD7ntr
+Date: Fri, 10 Dec 2010 18:47:33 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 2/2] fanotify: remove obsolete check for overflow event in
+	create_fd()
+Message-ID: <20101210174733.GC32555@lsanfilippo.unix.rd.tt.avira.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 18:18 +0100, Eric Dumazet wrote:
-> Le vendredi 10 décembre 2010 à 14:47 +0100, Peter Zijlstra a écrit :
 
-> Also irq_time_write_begin() and irq_time_write_end() could be faster
-> (called for current cpu)
-> 
-> static inline void irq_time_write_begin(void)
-> {
-> 	__this_cpu_inc(irq_time_seq.sequence);
-> 	smp_wmb();
-> }
->  
-> static inline void irq_time_write_end(void)
-> {
-> 	smp_wmb();
-> 	__this_cpu_inc(irq_time_seq.sequence);
-> }
+In create_fd() we check if mount and dentry of the passed event are NULL.
+This cant happen any more since we dont call this function for the overflow
+event any longer. So we can remove this check.
 
-Yeah, but that kinda defeats the purpose of having it implemented in
-seqlock.h. Ideally we'd teach gcc about these long pointers and have
-something like: 
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+---
+ fs/notify/fanotify/fanotify_user.c |   35 +++++++++++++++--------------------
+ 1 files changed, 15 insertions(+), 20 deletions(-)
 
-  write_seqcount_begin(&this_cpu_read(irq_time_seq));
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index e108960..0dce0d4 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -82,28 +82,23 @@ static int create_fd(struct fsnotify_group *group, struct fsnotify_event *event)
+ 	 */
+ 	dentry = dget(event->path.dentry);
+ 	mnt = mntget(event->path.mnt);
+-	/* it's possible this event was an overflow event.  in that case dentry and mnt
+-	 * are NULL;  That's fine, just don't call dentry open */
+-	if (dentry && mnt) {
+-		flags = group->fanotify_data.f_flags;
++
++	flags = group->fanotify_data.f_flags;
++	new_file = dentry_open(dentry, mnt, flags, current_cred());
++	/*
++	 * Attempt fallback to read-only access if writable was not possible
++	 * in order to at least provide something to the listener.
++	 */
++	if (IS_ERR(new_file) && group->fanotify_data.readonly_fallback) {
++		/* dentry_open() put our refs, so get them again... */
++		dentry = dget(event->path.dentry);
++		mnt = mntget(event->path.mnt);
++
++		flags &= ~O_ACCMODE;
++		flags |= O_RDONLY;
+ 		new_file = dentry_open(dentry, mnt, flags, current_cred());
+-		/*
+-		 * Attempt fallback to read-only access if writable was not possible
+-		 * in order to at least provide something to the listener.
+-		 */
+-		if (IS_ERR(new_file) && group->fanotify_data.readonly_fallback) {
+-			/* dentry_open() put our refs, so get them again... */
+-			dentry = dget(event->path.dentry);
+-			mnt = mntget(event->path.mnt);
+-
+-			flags &= ~O_ACCMODE;
+-			flags |= O_RDONLY;
+-			new_file = dentry_open(dentry, mnt, flags,
+-					       current_cred());
+-		}
+-	} else {
+-		new_file = ERR_PTR(-EOVERFLOW);
+ 	}
++
+ 	if (IS_ERR(new_file)) {
+ 		/*
+ 		 * we still send an event even if we can't open the file.  this
+-- 
+1.5.6.5
 
-do the right thing.
