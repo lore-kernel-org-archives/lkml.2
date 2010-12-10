@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab0LJETB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 23:19:01 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35734
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755561Ab0LJETA (ORCPT
+	id S1755882Ab0LJE2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 23:28:01 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:34216 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754127Ab0LJE17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 23:19:00 -0500
-Date: Thu, 09 Dec 2010 20:19:26 -0800 (PST)
-Message-Id: <20101209.201926.104055585.davem@davemloft.net>
-To: rusty@rustcorp.com.au
-Cc: kadlec@blackhole.kfki.hu, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        torvalds@osdl.org
-Subject: Re: [PATCH 0/2] New jhash function
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201012090753.46050.rusty@rustcorp.com.au>
-References: <1291379941-31565-1-git-send-email-kadlec@blackhole.kfki.hu>
-	<20101208.090954.115924303.davem@davemloft.net>
-	<201012090753.46050.rusty@rustcorp.com.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Dec 2010 23:27:59 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPI5AU15Lcht/2dsb2JhbACjf3m/aoVKBA
+Date: Fri, 10 Dec 2010 15:27:52 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+Message-ID: <20101210042752.GA3144@amd>
+References: <20101209070938.GA3949@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101209070938.GA3949@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Thu, 9 Dec 2010 07:53:45 +1030
+On Thu, Dec 09, 2010 at 06:09:38PM +1100, Nick Piggin wrote:
+> So replace it with an open-coded byte comparison. This increases code
+> size by 24 bytes in the critical __d_lookup_rcu function, but the
 
-> On Thu, 9 Dec 2010 03:39:54 am David Miller wrote:
->> From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
->> Date: Fri,  3 Dec 2010 13:38:59 +0100
->> 
->> > The current jhash.h implements the lookup2() hash function by Bob Jenkins. 
->> > However, lookup2() is outdated as Bob wrote a new hash function called 
->> > lookup3(). There is a longer comparison of those two and other hash
->> > functions at http://burtleburtle.net/bob/hash/doobs.html.
->> > 
->> > Please consider applying the following patches.
->> 
->> Patch #1 is already in the net-next-2.6 tree, and as long as there are
->> no major objections to the general crowd (including Rusty et al.) I am
->> happy to put patch #2 into my tree as well.
->> 
->> Rusty, does the current version of patch #2 look good to you?
-> 
-> Yes, 2/2 good.  Thanks Jozsef!
-> 
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Actually, if the loop assumes len is non zero (which is the case for
+dentry compare), then the bloat is only 8 bytes, so not a problem.
 
-Applied, thanks everyone.
+Also got numbers versus vanilla kernel, out of interest.
+
+> speedup is huge, averaging 10 runs of each:
+> 
+> git diff st   user   sys   elapsed  CPU
+  vanilla       1.19   3.21  4.47      98.0
+> before        1.15   2.57  3.82      97.1
+> after         1.14   2.35  3.61      96.8
+> 
+> git diff mt   user   sys   elapsed  CPU
+  vanilla       1.57  45.75  3.60    1312
+> before        1.27   3.85  1.46     349
+> after         1.26   3.54  1.43     333
+> 
+
+Single thread elapsed time improvment vanilla vs vfs 19.23%. Not quite
+as big as the AMD fam10h speedup, that's probably because Westmere does
+atomics so damn quickly.
+
+Multi thread numbers are no surprise.
+
