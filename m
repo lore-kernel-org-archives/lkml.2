@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab0LJCde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 21:33:34 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61547 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab0LJCdd convert rfc822-to-8bit (ORCPT
+	id S1753615Ab0LJCf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 21:35:27 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:5004 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751289Ab0LJCf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 21:33:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kUnCrdhLBQoZRNMWN/xbRrapsmPSdbyi52o/ZPOVpF6j3YbVBnB4+fNk+mBZ90xP04
-         zjp3+RJ8q2BpE45qUlrIPvE5u3gxxMPVschDp6yyCITkFMze7HLPLnArJYOkHKfbejyw
-         NMWXK2byLGAx3ziUVzIktHGRZvtXACkLzzvXo=
+	Thu, 9 Dec 2010 21:35:26 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMMeAU15LdBk/2dsb2JhbACjfnnADIVKBA
+Date: Fri, 10 Dec 2010 13:35:20 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/46] fs: dcache scale hash
+Message-ID: <20101210023520.GC3331@amd>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
+ <20101209060911.GB8259@dastard>
+ <20101209062801.GA3749@amd>
+ <20101209081756.GE8259@dastard>
+ <AANLkTimF457VDRTxjjhu+J9E616LBKP_86UcNS-u+P3p@mail.gmail.com>
+ <20101209234258.GB9925@dastard>
 MIME-Version: 1.0
-In-Reply-To: <1291908773.29292.16.camel@twins>
-References: <1291802742.1417.9.camel@marge.simson.net>
-	<tip-f26f9aff6aaf67e9a430d16c266f91b13a5bff64@git.kernel.org>
-	<1291908773.29292.16.camel@twins>
-Date: Fri, 10 Dec 2010 10:33:31 +0800
-Message-ID: <AANLkTi=z3kQJfRqpA5iw91CWyGKnuAC1+qWdao_mS5+4@mail.gmail.com>
-Subject: Re: [tip:sched/urgent] Sched: fix skip_clock_update optimization
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        efault@gmx.de, bbb.lst@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101209234258.GB9925@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 11:32 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2010-12-08 at 20:40 +0000, tip-bot for Mike Galbraith wrote:
->> @@ -4063,6 +4062,8 @@ need_resched_nonpreemptible:
->>
->>         put_prev_task(rq, prev);
->>         next = pick_next_task(rq);
->> +       clear_tsk_need_resched(prev);
->> +       rq->skip_clock_update = 0;
->>
->>         if (likely(prev != next)) {
->>                 sched_info_switch(prev, next);
->> @@ -4071,6 +4072,7 @@ need_resched_nonpreemptible:
->>                 rq->nr_switches++;
->>                 rq->curr = next;
->>                 ++*switch_count;
->> +               WARN_ON_ONCE(test_tsk_need_resched(next));
->
-> I just managed to trigger this one.. will try and reproduce to find out
-> wth happened.
->
+On Fri, Dec 10, 2010 at 10:42:58AM +1100, Dave Chinner wrote:
+> On Thu, Dec 09, 2010 at 11:53:27PM +1100, Nick Piggin wrote:
+> > >> Like I said, there are infinite cleanups or improvements you can make.
+> > >> It does not particularly matter that they happen before or after the
+> > >> scaling work, except if there are classes of APIs that the new locking
+> > >> model can no longer support.
+> > >
+> > > We do plenty of cleanups when changing code when the result gives us
+> > > simpler and easier to understand code. It's a trivial change that,
+> > > IMO, makes the code more consistent and easier to follow.
+> > 
+> > Unrelated "cleanups" in the same patch as non trivial locking change
+> > is stupid.
+> 
+> So put it in another prepartory patch. It makes the locking changes
+> easier to understand...
 
-I don't see it on my side.
-Then just show some info(don't know if it's helpful):
-wake_up_idle_cpu() can set TIF_RESCHED locklessly.
+I didn't change that, though, the ordering of locking unrelated
+dentries and the code is already in rename code and is not touched
+during this patch set.
 
-So does
-WARN_ON_ONCE(next != rq->idle && test_tsk_need_resched(next));
-help?
+
+> > Necessary changes to prevent bad ugliness resulting, or preventing
+> > repeated steps for the particular changes, etc. of course. Killing un
+> > related functions no.
+> 
+> Ok, I get the picture. You don't want a code review, you want a
+> rubber stamp. Find someone else to get it from.
+
+Of course I want code review. I am not going to just do everything
+you say that I don't agree with, but I will explain why every time
+(as I have done to all your points).
+
+I would prefer more in-depth review than from someone who doesn't know
+d_lock protects d_flags, but any and all help is welcome. Even minor
+nitpicking or cleanups are welcome if they are relevant to the patches.
 
 Thanks,
-Yong
+Nick
 
+PS. don't accuse me of not wanting a code review, because you're just
+projecting. To paraphrase you:
 
--- 
-Only stand for myself.
+ I don't have to justify myself to you, nick, only the maintainers, so
+ I'm not answering.
+
+In response to my questions.
+
