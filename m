@@ -1,85 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab0LJQzu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 11:55:50 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:40522 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab0LJQzs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 11:55:48 -0500
+	id S1756793Ab0LJQ4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 11:56:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35700 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756546Ab0LJQ4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 11:56:00 -0500
+Date: Fri, 10 Dec 2010 11:55:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Don't merge different partition's IOs
+Message-ID: <20101210165553.GE31737@redhat.com>
+References: <4CFCB08F.4010509@jp.fujitsu.com>
+ <AANLkTimzkN9iCDY6S9Pajh+BqTouggOxs56fBdwyoxHY@mail.gmail.com>
+ <4CFDDFC3.2070107@jp.fujitsu.com>
+ <4CFF34E7.2030401@fusionio.com>
+ <4CFF3AD6.6010904@jp.fujitsu.com>
+ <4CFF3C86.2070504@fusionio.com>
+ <4CFF3DA4.5060705@jp.fujitsu.com>
+ <4CFF9A2C.1070401@fusionio.com>
+ <4D025154.8030400@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
-References: <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
- <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
- <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
- <20101209231616.GA12515@basil.fritz.box> <1291945065-sup-1838@think>
- <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
- <20101210023852.GB3059@thunk.org> <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
- <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Fri, 10 Dec 2010 10:54:40 -0600
-Message-ID: <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Matt <jackdachef@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-        Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D025154.8030400@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 8:58 AM, Jon Nelson <jnelson@jamponi.net> wrote:
-> On Fri, Dec 10, 2010 at 12:52 AM, Jon Nelson <jnelson@jamponi.net> wrote:
->> On Thu, Dec 9, 2010 at 8:38 PM, Ted Ts'o <tytso@mit.edu> wrote:
->>> On Fri, Dec 10, 2010 at 02:53:30AM +0100, Matt wrote:
->>>>
->>>> Try a kernel before 5a87b7a5da250c9be6d757758425dfeaf8ed3179
->>>>
->>>> from the tests I've done that one showed the least or no corruption if
->>>> you count the empty /etc/env.d/03opengl as an artefact
->>>
->>> Yes, that's a good test.  Also try commit bd2d0210cf.  The patch
->>> series that is most likely to be at fault if there is a regression in
->>> between 5a87b7a5d and bd2d0210cf inclusive.
->>>
->>> I did a lot of testing before submitting it, but that wa a tricky
->>> rewrite.  If you can reproduce the problem reliably, it might be good
->>> to try commit 16828088f9 (the commit before 5a87b7a5d) and commit
->>> bd2d0210cf.  If it reliably reproduces on bd2d0210cf, but is clean on
->>> 16828088f9, then it's my ext4 block i/o submission patches, and we'll
->>> need to either figure out what's going on or back out that set of
->>> changes.
->>>
->>> If that's the case, a bisect of those changes (it's only 6 commits, so
->>> it shouldn't take long) would be most appreciated.
->>
->> I observed the behavior on bd2d0210cf in a qemu-kvm install of
->> openSUSE 11.3 (x86_64) on *totally* different host - an AMD quad-core.
->>
->> I did /not/ observe the behavior on 16828088f9 (yet). I'll run the
->> test a few more times on 1682..
->>
->> Additionally, I am building a bisected kernel now (
->> cb20d5188366f04d96d2e07b1240cc92170ade40 ), but won't be able to get
->> back at it for a while.
->
-> cb20d5188366f04d96d2e07b1240cc92170ade40 seems OK so far. I'm going to
-> try 1de3e3df917459422cb2aecac440febc8879d410 soon.
+On Fri, Dec 10, 2010 at 05:12:04PM +0100, Jerome Marchand wrote:
+> On 12/08/2010 03:46 PM, Jens Axboe wrote:
+> > 
+> > No, that's not it at all. What I mean (and what was reverted) was
+> > caching the partition lookup, and using that for the stats. The problem
+> > with that approach turned out to be the elevator queiscing logic not
+> > being fully correct. One easier way to fix that would be to reference
+> > count the part stats, instead of having to drain the queue.
+> > 
+> 
+> The partition is already deleted in a rcu callback function. If I
+> understand RCU correctly, we just need to use rcu_dereference() each time
+> we use rq->part. Something like the following *untested* patch.
 
-Barring false negatives, bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
-appears to be the culprit (according to git bisect).
-I will test bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc again, confirm
-the behavior, and work backwards to try to reduce the possibility of
-false negatives.
+Jerome,
 
--- 
-Jon
+I don't think that rcu_dereference() is going to solve the problem. The
+partition table will be freed as soon as one rcu period is over. So to
+make sure partition table is not freed one has to be holding
+rcu_read_lock(). It is not a good idea to keep rcu period going till
+request finishes so a better idea will to to reference count it.
+
+Thanks
+Vivek
+
+> 
+> Jerome
+> 
+> ---
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 4ce953f..70d23f9 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -64,13 +64,15 @@ static void drive_stat_acct(struct request *rq, int new_io)
+>  		return;
+>  
+>  	cpu = part_stat_lock();
+> -	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>  
+> -	if (!new_io)
+> +	if (!new_io) {
+> +		part = blk_rq_get_part(rq);
+>  		part_stat_inc(cpu, part, merges[rw]);
+> -	else {
+> +	} else {
+> +		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>  		part_round_stats(cpu, part);
+>  		part_inc_in_flight(part, rw);
+> +		rq->part = part;
+>  	}
+>  
+>  	part_stat_unlock();
+> @@ -128,6 +130,7 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
+>  	rq->ref_count = 1;
+>  	rq->start_time = jiffies;
+>  	set_start_time_ns(rq);
+> +	rq->part = NULL;
+>  }
+>  EXPORT_SYMBOL(blk_rq_init);
+>  
+> @@ -1776,7 +1784,7 @@ static void blk_account_io_completion(struct request *req, unsigned int bytes)
+>  		int cpu;
+>  
+>  		cpu = part_stat_lock();
+> -		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> +		part = blk_rq_get_part(req);
+>  		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
+>  		part_stat_unlock();
+>  	}
+> @@ -1796,7 +1804,7 @@ static void blk_account_io_done(struct request *req)
+>  		int cpu;
+>  
+>  		cpu = part_stat_lock();
+> -		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> +		part = blk_rq_get_part(req);
+>  
+>  		part_stat_inc(cpu, part, ios[rw]);
+>  		part_stat_add(cpu, part, ticks[rw], duration);
+> diff --git a/block/blk-merge.c b/block/blk-merge.c
+> index 77b7c26..0ea5416 100644
+> --- a/block/blk-merge.c
+> +++ b/block/blk-merge.c
+> @@ -351,7 +351,7 @@ static void blk_account_io_merge(struct request *req)
+>  		int cpu;
+>  
+>  		cpu = part_stat_lock();
+> -		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> +		part = blk_rq_get_part(req);
+>  
+>  		part_round_stats(cpu, part);
+>  		part_dec_in_flight(part, rq_data_dir(req));
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index aae86fd..00a3b93 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -115,6 +115,7 @@ struct request {
+>  	void *elevator_private3;
+>  
+>  	struct gendisk *rq_disk;
+> +	struct hd_struct __rcu *part;
+>  	unsigned long start_time;
+>  #ifdef CONFIG_BLK_CGROUP
+>  	unsigned long long start_time_ns;
+> @@ -752,6 +753,12 @@ static inline unsigned int blk_rq_cur_sectors(const struct request *rq)
+>  	return blk_rq_cur_bytes(rq) >> 9;
+>  }
+>  
+> +static inline struct hd_struct *blk_rq_get_part(const struct request *rq)
+> +{
+> +	struct hd_struct *part = rcu_dereference(rq->part);
+> +	return part;
+> +}
+> +
+>  /*
+>   * Request issue related functions.
+>   */
