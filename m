@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab0LJPLQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 10:11:16 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:50449 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab0LJPLO (ORCPT
+	id S1756005Ab0LJPLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 10:11:43 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:55660 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab0LJPLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 10:11:14 -0500
+	Fri, 10 Dec 2010 10:11:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=d7RRfNeCSzZg/3HV68Z8205cvSXPSnDLTVUKvt6Y4Kpvn3ODUpfWzMaWIKeW3Nai4v
+         G/OTNGHIBuXuvoVCeB9yrDQ5Sef4HbF57S56p9H4PLbcEXjmgB5Z6PBHouAZ/6SKms3c
+         qBrBviJJRlIdqCh6NVjXYVj5iQknmM2U3EZTA=
+Date: Fri, 10 Dec 2010 18:11:35 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
+Message-ID: <20101210151135.GA7695@lenovo>
+References: <1291267223.2405.314.camel@minggr.sh.intel.com> <1291922467.6803.44.camel@twins> <AANLkTinanAQYQvwtowTzJ0bpLRUvp-5sqF6M9PoMSJR-@mail.gmail.com> <1291978036.6803.95.camel@twins> <1291978335.6803.97.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <4D01D6AF.6010202@euromail.se>
-References: <1291936745-4973-1-git-send-email-rydberg@euromail.se>
-	<20101209234920.GA14810@core.coreip.homeip.net>
-	<4D01D6AF.6010202@euromail.se>
-Date: Fri, 10 Dec 2010 09:11:13 -0600
-Message-ID: <AANLkTin+b_04qcOcFmP+0tYHCibvHHearfFXZJAb4R5R@mail.gmail.com>
-Subject: Re: [PATCH] input: mt: Identify pointer emulation contact
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1291978335.6803.97.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 1:28 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->>
->
->> So how do you propose userspace will use it? Obviously it will not help
->> old dumb (ST) applications and new smart applications should understand
->> MT protocol and thus do not need to pay much attention to ST events
->> anyway. Apparently you have some new dumb userspace in mind here?
->
->
-> You are right, it is a dumb idea. Consider this one dropped.
+On Fri, Dec 10, 2010 at 11:52:15AM +0100, Peter Zijlstra wrote:
+> On Fri, 2010-12-10 at 11:47 +0100, Peter Zijlstra wrote:
+> > On Fri, 2010-12-10 at 00:46 +0100, Stephane Eranian wrote:
+> > > Hi,
+> > > 
+> > > So I have tested this patch a bit on WSM and as I expected there
+> > > are issues with sampling.
+> > > 
+> > > When HT is on, both siblings CPUs get the interrupt. The HW does not
+> > > allow you to only point interrupts to a single HT thread (CPU).
+> > 
+> > Egads, how ugly :/
+> >
 
-If anyone is working on clickpad support, they may want to keep this
-idea in mind.  I guess I mean working on clickpads and with simple ST
-apps.
+crap...
+...
+ 
+> 
+> That would of course need to also grow some smarts to detect if there is
+> only 1 sibling online.
+> 
+> CC'ed Cyrill as P4 might have something similar.
+> 
 
-If user clicks with one finger, I think currently that user expects
-dragging that one finger will move cursor still (click-and-drag).  I'd
-think its more usable though to click with one finger and drag with
-the other.  During this use case we need to switch pointer tracking
-from one finger to the other.
+Yes, Don was testing p4 stuff for me and have reported this issue as well.
+I'll check what I can do. Thanks for CC'ing me.
 
-Sending a new tracking ID is an easy way to inform apps about expected
-jump in values during switch.  I thought of things like
-BTN_TOOL_FINGER=0; sync; BTN_TOOL_FINGER=1 but that looks like tapping
-is occurring.
-
-Anyways, as you suggestion, this can be solved by forcing apps to
-process MT events so not to big a deal long term.
-
-Chris
+  Cyrill
