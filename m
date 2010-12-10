@@ -1,148 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab0LJE6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 23:58:23 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:46543 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab0LJE6W convert rfc822-to-8bit (ORCPT
+	id S1750790Ab0LJFDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 00:03:54 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:37906 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab0LJFDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 23:58:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HnamwpEZLOfi+ejpO/tP0q05rdLdrli/foFJHRw6tre7zv1OCeNo/mFFs0rR1Sa+Rh
-         Nd1+jN3N/V2gztFgS0DAeEsPQXhdF96aV65ObXtaokDIfZJgq4qwHKyRH8FU9TwgnmFf
-         TwnIfAIgj3NCAUJ3Cg5IObXQy04vtyIBbkkyE=
+	Fri, 10 Dec 2010 00:03:53 -0500
+Date: Fri, 10 Dec 2010 10:33:44 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
+Message-ID: <20101210050344.GR3158@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101202144129.4357fe00@annuminas.surriel.com>
 MIME-Version: 1.0
-In-Reply-To: <4D0199E2.8030006@suse.de>
-References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
-	<20101206095725.78422138@tlielax.poochiereds.net>
-	<20101206101214.52a24415@tlielax.poochiereds.net>
-	<20101206163506.56232lqqhc5c3co4@webmail.df.eu>
-	<20101206103836.0714369a@tlielax.poochiereds.net>
-	<4D00C02C.4070006@suse.de>
-	<20101209070952.24793c23@barsoom.rdu.redhat.com>
-	<AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>
-	<20101209143448.5c479e50@barsoom.rdu.redhat.com>
-	<AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
-	<4D0199E2.8030006@suse.de>
-Date: Thu, 9 Dec 2010 22:58:20 -0600
-Message-ID: <AANLkTi=KJa4w3bwDJgsfjPAH0Vi=oJb+psBB2731jnNG@mail.gmail.com>
-Subject: Re: [PATCH] cifs: Add information about noserverino
-From: Steve French <smfrench@gmail.com>
-To: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: Jeff Layton <jlayton@redhat.com>, Bernhard Walle <bernhard@bwalle.de>,
-        sfrench@samba.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101202144129.4357fe00@annuminas.surriel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 9, 2010 at 9:09 PM, Suresh Jayaraman <sjayaraman@suse.de> wrote:
-> On 12/10/2010 02:14 AM, Steve French wrote:
->> On Thu, Dec 9, 2010 at 1:34 PM, Jeff Layton <jlayton@redhat.com> wrote:
->>> On Thu, 9 Dec 2010 12:26:39 -0600
->>> Steve French <smfrench@gmail.com> wrote:
->>>
->>>> On Thu, Dec 9, 2010 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
->>>>> On Thu, 09 Dec 2010 17:10:28 +0530
->>>>> Suresh Jayaraman <sjayaraman@suse.de> wrote:
->>>>>
->>>>>> On 12/06/2010 09:08 PM, Jeff Layton wrote:
->>>>>>> On Mon, 06 Dec 2010 16:35:06 +0100
->>>>>>> Bernhard Walle <bernhard@bwalle.de> wrote:
->>>>>>>
->>>>>>>>
->>>>>>>> Zitat von Jeff Layton <jlayton@redhat.com>:
->>>>>>>>
->>>>>>>>>
->>>>>>>>> I'm still not sure I like this patch however. It potentially means a
->>>>>>>>> lot of printk spam since these things have no ratelimiting. It also
->>>>>>>>> doesn't tell me anything about which server might be giving me grief.
->>>>>>>>>
->>>>>>>>> Maybe this should be turned into a cFYI?
->>>>>>>>
->>>>>>>> Well, if I see it in the kernel log, it doesn't matter if it's info or
->>>>>>>> something else.
->>>>>>>>
->>>>>>>>> The bottom line though is that running 32-bit applications that were
->>>>>>>>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
->>>>>>>>> idea. It would be nice to be able to alert users that things aren't
->>>>>>>>> working the way they expect, but I'm not sure this is the right place
->>>>>>>>> to do that.
->>>>>>>>
->>>>>>>> Well, but there *are* such application (in my case it was Softmaker Office
->>>>>>>> which is a proprietary word processor) and it's quite nice if you know
->>>>>>>> how you can workaround it when you encounter such a problem. That's all.
->>>>>>>>
->>>>>>>
->>>>>>> Sure...but this problem is not limited to CIFS. Many modern filesystems
->>>>>>> use 64-bit inodes. Running this application on XFS or NFS for instance
->>>>>>> is likely to give you the same trouble. You just hit it on CIFS because
->>>>>>> the server happened to give you a very large inode number.
->>>>>>>
->>>>>>> If we're going to add printk's for this situation, it probably ought to
->>>>>>> be in a more generic place.
->>>>>>>
->>>>>>
->>>>>> By generic place, did you mean at the VFS level? I think at VFS level,
->>>>>> there is little information about the Server or underlying fs and this
->>>>>> information doesn't seem too critical that VFS should warn/care much about.
->>>>>>
->>>>>> May be sticking to a cFYI along with Server detail is a good idea?
->>>>>>
->>>>> My poing was mainly that there's nothing special about CIFS in this
->>>>> regard, other than the fact that servers regularly send us inodes that
->>>>> are larger than 2^32. Why should we do this for cifs but not for nfs,
->>>>> xfs, ext4, etc?
->>>>>
->>>>> The filldir function gets a dentry as an argument, so it could
->>>>> reasonably generate a printk for this. I'm also not keen on
->>>>> the printk recommending noserverino for this. That has its own
->>>>> drawbacks.
->>>>>
->>>>> A cFYI for this sort of thing seems reasonable however.
->>>>
->>>> I agree that a cFYI is reasonable. �The next obvious question is: do
->>>> we need to add code to generate unique 32 bit inode numbers
->>>> that don't collide (as IIRC Samba does by xor the high and low 32
->>>> bits of the inode number) when the app can't support ino64
->>>> I would prefer not to go back to noserverino since that has worse
->>>> drawbacks.
->>>>
->>>
->>> Right, the fact that noserverino works around this is really just due
->>> to an implementation detail of iunique(). That should probably be
->>> discouraged as a solution since it's not guaranteed to be a workaround
->>> in the future.
->>>
->>> If we did add such a switch, I'd suggest that we pattern it after what
->>> NFS did for this. They added an "enable_ino64" module parameter a
->>> couple of years ago that defaults to "true".
->
-> What are the advantages we have by making it a module parameter as
-> opposed to an mount option? XFS seems to have "inode64" mount option for
-> quite sometime now, without much issues..
+* Rik van Riel <riel@redhat.com> [2010-12-02 14:41:29]:
 
-I prefer mount option, but with the default to support 64 bit inode numbers.
-
->> makes me uncomfortable to break ino64 for all mounts - when we
->> may have one application on one mount that needs it (might be
->> better to make a mount related)
->>
->>
->
->
-> --
-> Suresh Jayaraman
+> When running SMP virtual machines, it is possible for one VCPU to be
+> spinning on a spinlock, while the VCPU that holds the spinlock is not
+> currently running, because the host scheduler preempted it to run
+> something else.
+> 
+> Both Intel and AMD CPUs have a feature that detects when a virtual
+> CPU is spinning on a lock and will trap to the host.
+> 
+> The current KVM code sleeps for a bit whenever that happens, which
+> results in eg. a 64 VCPU Windows guest taking forever and a bit to
+> boot up.  This is because the VCPU holding the lock is actually
+> running and not sleeping, so the pause is counter-productive.
+> 
+> In other workloads a pause can also be counter-productive, with
+> spinlock detection resulting in one guest giving up its CPU time
+> to the others.  Instead of spinning, it ends up simply not running
+> much at all.
+> 
+> This patch series aims to fix that, by having a VCPU that spins
+> give the remainder of its timeslice to another VCPU in the same
+> guest before yielding the CPU - one that is runnable but got 
+> preempted, hopefully the lock holder.
+> 
+> Scheduler people, please flame me with anything I may have done
+> wrong, so I can do it right for a next version :)
 >
 
+This is a good problem statement, there are other things to consider
+as well
 
-
+1. If a hard limit feature is enabled underneath, donating the
+timeslice would probably not make too much sense in that case
+2. The implict assumption is that spinning is bad, but for locks
+held for short durations, the assumption is not true. I presume
+by the problem statement above, the h/w does the detection of
+when to pause, but that is not always correct as you suggest above.
+3. With respect to donating timeslices, don't scheduler cgroups
+and job isolation address that problem today?
+ 
 -- 
-Thanks,
-
-Steve
+	Three Cheers,
+	Balbir
