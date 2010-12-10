@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab0LJRqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:46:49 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:40671 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754795Ab0LJRqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 12:46:48 -0500
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX1+uIeE26ASu6bhrpwnSTsWyZfmCZFs+BaUyU5n0N1
-	E0Gf39wzjZR+1D
-Date: Fri, 10 Dec 2010 18:44:29 +0100
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: tvrtko.ursulin@sophos.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/2] fanotify: fix broken ref count in create_fd()
-Message-ID: <20101210174429.GB32555@lsanfilippo.unix.rd.tt.avira.com>
+	id S1755222Ab0LJRsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:48:10 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:47490 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754391Ab0LJRsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 12:48:09 -0500
+Message-ID: <4D0267A6.5020603@euromail.se>
+Date: Fri, 10 Dec 2010 18:47:18 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+To: Ping Cheng <pinglinux@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
+References: <1292001842-5000-1-git-send-email-rydberg@euromail.se>	<20101210173611.GA1630@core.coreip.homeip.net>	<4D026634.4000602@euromail.se> <AANLkTimnJpmRJCFhOvZndTmL3r21KEdqXr2Bd9ZT3kUb@mail.gmail.com>
+In-Reply-To: <AANLkTimnJpmRJCFhOvZndTmL3r21KEdqXr2Bd9ZT3kUb@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PR73v-0008NR-B3.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PR73v-0008NR-B3 a5e898d1434c07fc2a3ad9a95569d08a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> Legacy to me implies we can upgrade, but this is hardware limitation.
 
-In create_fd(), before we fallback to open a file read-only we should grab dentry
-and mount refs again, since they have been put by the former failed call to dentry_open().
+>>> Can we say "rectangle corner - used by older hardware"?
+>>>
+>> How about "- older hw only", to stay within a single line?
+> 
+> Why do we suggest it will only be used by older hardware?
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
----
- fs/notify/fanotify/fanotify_user.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
 
- Please apply this against commit 26552d4aa4117cd3ea8cbe13ebf317da652e6bfd of
- branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
+To limit its use - we really do not want to use anything but good contact data
+anywhere, but we do not want to leave abundant (= old) hardware out, either.
+Why, is there some case where it would be useful, you think?
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 2d4925b..e108960 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -92,6 +92,10 @@ static int create_fd(struct fsnotify_group *group, struct fsnotify_event *event)
- 		 * in order to at least provide something to the listener.
- 		 */
- 		if (IS_ERR(new_file) && group->fanotify_data.readonly_fallback) {
-+			/* dentry_open() put our refs, so get them again... */
-+			dentry = dget(event->path.dentry);
-+			mnt = mntget(event->path.mnt);
-+
- 			flags &= ~O_ACCMODE;
- 			flags |= O_RDONLY;
- 			new_file = dentry_open(dentry, mnt, flags,
--- 
-1.5.6.5
-
+Henrik
