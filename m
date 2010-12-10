@@ -1,63 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab0LJUqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:46:06 -0500
-Received: from hera.kernel.org ([140.211.167.34]:47816 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757229Ab0LJUqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757303Ab0LJUqE (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 10 Dec 2010 15:46:04 -0500
-Message-ID: <4D029162.1040205@kernel.org>
-Date: Fri, 10 Dec 2010 21:45:22 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org
-Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
- 32 and 64bit
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-14-git-send-email-tj@kernel.org> <alpine.LFD.2.00.1012092230010.2653@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012092230010.2653@localhost6.localdomain6>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Dec 2010 20:45:25 +0000 (UTC)
+Received: from mxout1.idt.com ([157.165.5.25]:39667 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757229Ab0LJUp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 15:45:59 -0500
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Dec 2010 15:45:44 EST
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
+        Micha Nelissen <micha@neli.hopto.org>
+Subject: [PATCH -mm 4/4] RapidIO: Add new sysfs attributes
+Date: Fri, 10 Dec 2010 15:38:18 -0500
+Message-Id: <1292013498-31406-5-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
+References: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
+Add new sysfs attributes.
 
-On 12/09/2010 10:43 PM, Thomas Gleixner wrote:
->> There are several places where using numa_cpu_node() is awkward and
->> the override doesn't matter.  In those places, __apicid_to_node[] are
->> used directly.
-> 
-> Why is it awkward? Anything outside the accessor functions or
-> specialized setup code using it is awkward, inconsistent and sloppy.
+1. Routing information required to to reach the RIO device:
+destid - device destination ID (real for for endpoint, route for switch)
+hopcount - hopcount for maintenance requests (switches only)
 
-There are two places which index the mapping by apicid instead of cpu.
-One is acpi_fake_nodes() - this sets up the table, so it doesn't
-constitute violation of accessors.
+2. device linking information:
+lprev - name of device that precedes the given device in the enumeration
+        or discovery order (displayed along with of the port to which it
+        is attached).
+lnext - names of devices (with corresponding port numbers) that are
+        attached to the given device as next in the enumeration or
+        discovery order (switches only)
 
-The problematic one is the nearby detection workaround in
-kernel/cpu/amd.c.  This is rather hacky and looks like added to deal
-with early AMD NUMAs which had broken BIOS.  The intel counterpart
-omits this workaround and simply ignore NUMA configuration in those
-cases.
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Thomas Moll <thomas.moll@sysgo.com>
+Cc: Micha Nelissen <micha@neli.hopto.org>
+---
+ drivers/rapidio/rio-sysfs.c |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 38 insertions(+), 1 deletions(-)
 
-I can change srat_detect_node() and nearby_node() to index by cpu but
-as I have no idea what kind of broken configurations this is supposed
-to deal with, I'm concerned that this may lead to different outcome by
-walking the table in a different order.  I can implement an apicid ->
-numa node mapping function for this but this is something which is
-inherently ugly, so maybe it's best to leave it ugly.
-
-For now, how about adding a big fat comment explaining the ugliness in
-amd.c?
-
-Thanks.
-
+diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
+index 76b4185..b8d9eaf 100644
+--- a/drivers/rapidio/rio-sysfs.c
++++ b/drivers/rapidio/rio-sysfs.c
+@@ -33,6 +33,8 @@ rio_config_attr(device_rev, "0x%08x\n");
+ rio_config_attr(asm_did, "0x%04x\n");
+ rio_config_attr(asm_vid, "0x%04x\n");
+ rio_config_attr(asm_rev, "0x%04x\n");
++rio_config_attr(destid, "0x%04x\n");
++rio_config_attr(hopcount, "0x%02x\n");
+ 
+ static ssize_t routes_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+@@ -52,6 +54,33 @@ static ssize_t routes_show(struct device *dev, struct device_attribute *attr, ch
+ 	return (str - buf);
+ }
+ 
++static ssize_t lprev_show(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct rio_dev *rdev = to_rio_dev(dev);
++
++	return sprintf(buf, "%02d %s\n", RIO_GET_PORT_NUM(rdev->swpinfo),
++		       (rdev->prev) ? rio_name(rdev->prev) : "host");
++}
++
++static ssize_t lnext_show(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct rio_dev *rdev = to_rio_dev(dev);
++	char *str = buf;
++	int i;
++
++	if (rdev->pef & RIO_PEF_SWITCH) {
++		for (i = 0; i < RIO_GET_TOTAL_PORTS(rdev->swpinfo); i++) {
++			if (rdev->rswitch->nextdev[i])
++				str += sprintf(str, "%02d %s\n", i,
++					rio_name(rdev->rswitch->nextdev[i]));
++		}
++	}
++
++	return str - buf;
++}
++
+ struct device_attribute rio_dev_attrs[] = {
+ 	__ATTR_RO(did),
+ 	__ATTR_RO(vid),
+@@ -59,10 +88,14 @@ struct device_attribute rio_dev_attrs[] = {
+ 	__ATTR_RO(asm_did),
+ 	__ATTR_RO(asm_vid),
+ 	__ATTR_RO(asm_rev),
++	__ATTR_RO(lprev),
++	__ATTR_RO(destid),
+ 	__ATTR_NULL,
+ };
+ 
+ static DEVICE_ATTR(routes, S_IRUGO, routes_show, NULL);
++static DEVICE_ATTR(lnext, S_IRUGO, lnext_show, NULL);
++static DEVICE_ATTR(hopcount, S_IRUGO, hopcount_show, NULL);
+ 
+ static ssize_t
+ rio_read_config(struct file *filp, struct kobject *kobj,
+@@ -218,7 +251,9 @@ int rio_create_sysfs_dev_files(struct rio_dev *rdev)
+ 	err = device_create_bin_file(&rdev->dev, &rio_config_attr);
+ 
+ 	if (!err && (rdev->pef & RIO_PEF_SWITCH)) {
+-		err = device_create_file(&rdev->dev, &dev_attr_routes);
++		err |= device_create_file(&rdev->dev, &dev_attr_routes);
++		err |= device_create_file(&rdev->dev, &dev_attr_lnext);
++		err |= device_create_file(&rdev->dev, &dev_attr_hopcount);
+ 		if (!err && rdev->rswitch->sw_sysfs)
+ 			err = rdev->rswitch->sw_sysfs(rdev, RIO_SW_SYSFS_CREATE);
+ 	}
+@@ -241,6 +276,8 @@ void rio_remove_sysfs_dev_files(struct rio_dev *rdev)
+ 	device_remove_bin_file(&rdev->dev, &rio_config_attr);
+ 	if (rdev->pef & RIO_PEF_SWITCH) {
+ 		device_remove_file(&rdev->dev, &dev_attr_routes);
++		device_remove_file(&rdev->dev, &dev_attr_lnext);
++		device_remove_file(&rdev->dev, &dev_attr_hopcount);
+ 		if (rdev->rswitch->sw_sysfs)
+ 			rdev->rswitch->sw_sysfs(rdev, RIO_SW_SYSFS_REMOVE);
+ 	}
 -- 
-tejun
+1.7.3.1
+
