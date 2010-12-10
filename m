@@ -1,316 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab0LJC5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 21:57:54 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:45241 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab0LJC5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 21:57:52 -0500
-Date: Fri, 10 Dec 2010 13:57:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for December 10
-Message-Id: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__10_Dec_2010_13_57_46_+1100_RaOP4ujZnQftROgE"
+	id S1753953Ab0LJDJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 22:09:39 -0500
+Received: from victor.provo.novell.com ([137.65.250.26]:35294 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab0LJDJh (ORCPT
+	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
+	Thu, 9 Dec 2010 22:09:37 -0500
+Message-ID: <4D0199E2.8030006@suse.de>
+Date: Fri, 10 Dec 2010 08:39:22 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: Steve French <smfrench@gmail.com>, Bernhard Walle <bernhard@bwalle.de>,
+        sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: Add information about noserverino
+References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>	<20101206095725.78422138@tlielax.poochiereds.net>	<20101206101214.52a24415@tlielax.poochiereds.net>	<20101206163506.56232lqqhc5c3co4@webmail.df.eu>	<20101206103836.0714369a@tlielax.poochiereds.net>	<4D00C02C.4070006@suse.de>	<20101209070952.24793c23@barsoom.rdu.redhat.com>	<AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>	<20101209143448.5c479e50@barsoom.rdu.redhat.com> <AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
+In-Reply-To: <AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Dec_2010_13_57_46_+1100_RaOP4ujZnQftROgE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/10/2010 02:14 AM, Steve French wrote:
+> On Thu, Dec 9, 2010 at 1:34 PM, Jeff Layton <jlayton@redhat.com> wrote:
+>> On Thu, 9 Dec 2010 12:26:39 -0600
+>> Steve French <smfrench@gmail.com> wrote:
+>>
+>>> On Thu, Dec 9, 2010 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
+>>>> On Thu, 09 Dec 2010 17:10:28 +0530
+>>>> Suresh Jayaraman <sjayaraman@suse.de> wrote:
+>>>>
+>>>>> On 12/06/2010 09:08 PM, Jeff Layton wrote:
+>>>>>> On Mon, 06 Dec 2010 16:35:06 +0100
+>>>>>> Bernhard Walle <bernhard@bwalle.de> wrote:
+>>>>>>
+>>>>>>>
+>>>>>>> Zitat von Jeff Layton <jlayton@redhat.com>:
+>>>>>>>
+>>>>>>>>
+>>>>>>>> I'm still not sure I like this patch however. It potentially means a
+>>>>>>>> lot of printk spam since these things have no ratelimiting. It also
+>>>>>>>> doesn't tell me anything about which server might be giving me grief.
+>>>>>>>>
+>>>>>>>> Maybe this should be turned into a cFYI?
+>>>>>>>
+>>>>>>> Well, if I see it in the kernel log, it doesn't matter if it's info or
+>>>>>>> something else.
+>>>>>>>
+>>>>>>>> The bottom line though is that running 32-bit applications that were
+>>>>>>>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
+>>>>>>>> idea. It would be nice to be able to alert users that things aren't
+>>>>>>>> working the way they expect, but I'm not sure this is the right place
+>>>>>>>> to do that.
+>>>>>>>
+>>>>>>> Well, but there *are* such application (in my case it was Softmaker Office
+>>>>>>> which is a proprietary word processor) and it's quite nice if you know
+>>>>>>> how you can workaround it when you encounter such a problem. That's all.
+>>>>>>>
+>>>>>>
+>>>>>> Sure...but this problem is not limited to CIFS. Many modern filesystems
+>>>>>> use 64-bit inodes. Running this application on XFS or NFS for instance
+>>>>>> is likely to give you the same trouble. You just hit it on CIFS because
+>>>>>> the server happened to give you a very large inode number.
+>>>>>>
+>>>>>> If we're going to add printk's for this situation, it probably ought to
+>>>>>> be in a more generic place.
+>>>>>>
+>>>>>
+>>>>> By generic place, did you mean at the VFS level? I think at VFS level,
+>>>>> there is little information about the Server or underlying fs and this
+>>>>> information doesn't seem too critical that VFS should warn/care much about.
+>>>>>
+>>>>> May be sticking to a cFYI along with Server detail is a good idea?
+>>>>>
+>>>> My poing was mainly that there's nothing special about CIFS in this
+>>>> regard, other than the fact that servers regularly send us inodes that
+>>>> are larger than 2^32. Why should we do this for cifs but not for nfs,
+>>>> xfs, ext4, etc?
+>>>>
+>>>> The filldir function gets a dentry as an argument, so it could
+>>>> reasonably generate a printk for this. I'm also not keen on
+>>>> the printk recommending noserverino for this. That has its own
+>>>> drawbacks.
+>>>>
+>>>> A cFYI for this sort of thing seems reasonable however.
+>>>
+>>> I agree that a cFYI is reasonable. �The next obvious question is: do
+>>> we need to add code to generate unique 32 bit inode numbers
+>>> that don't collide (as IIRC Samba does by xor the high and low 32
+>>> bits of the inode number) when the app can't support ino64
+>>> I would prefer not to go back to noserverino since that has worse
+>>> drawbacks.
+>>>
+>>
+>> Right, the fact that noserverino works around this is really just due
+>> to an implementation detail of iunique(). That should probably be
+>> discouraged as a solution since it's not guaranteed to be a workaround
+>> in the future.
+>>
+>> If we did add such a switch, I'd suggest that we pattern it after what
+>> NFS did for this. They added an "enable_ino64" module parameter a
+>> couple of years ago that defaults to "true".
 
-Hi all,
+What are the advantages we have by making it a module parameter as
+opposed to an mount option? XFS seems to have "inode64" mount option for
+quite sometime now, without much issues..
 
-Changes since 20101209:
+> makes me uncomfortable to break ino64 for all mounts - when we
+> may have one application on one mount that needs it (might be
+> better to make a mount related)
+> 
+> 
 
-The v4l-dvb tree still has its build failure for which I applied a patch.
 
-The acpi tree still has its build failure so I used the version from
-next-20101201.
-
-The net tree lost its build failure.
-
-The tip tree lost its build failures.
-
-The percpu tree gained a conflict against the tip tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 181 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
-Applying: rmobile: merge fixup for clkdev changes
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Applying: media: const and __devinitdata do not mix
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-$ git reset --hard HEAD^
-Merging refs/next/20101201/acpi
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging wireless/master
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ath9k/ar9003=
-_eeprom.c
-Merging bluetooth/master
-CONFLICT (content): Merge conflict in net/bluetooth/Makefile
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-CONFLICT (content): Merge conflict in sound/soc/sh/fsi.c
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-CONFLICT (content): Merge conflict in drivers/regulator/core.c
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in MAINTAINERS
-CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-Merging swiotlb-xen/master
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (delete/modify): arch/x86/kernel/apic/nmi.c deleted in HEAD and mo=
-dified in percpu/for-next. Version percpu/for-next of arch/x86/kernel/apic/=
-nmi.c left in tree.
-$ git rm -f arch/x86/kernel/apic/nmi.c
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/sh/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/musb/blackfin.c
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Fri__10_Dec_2010_13_57_46_+1100_RaOP4ujZnQftROgE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNAZcqAAoJEDMEi1NhKgbsZNIH/R9P3/6MRcCaq1/RoUG4GBhh
-RJ0LvoaQpRJSTIRcnWqlPP5MjqNOk6LDuBfGuYJQZxK/5C0/9titAQi7cBUk+a8o
-8Y80HMyGcYJ4m5bh4p0AjEGM+vg+/8LIHoge/6nf1NxCXBszJGD3DnU6hSisJ17Q
-mY9RfjDb6Q/nyLtlByn2I8tLPx4R6tkZMF+V7+eQE/dpMZyuifbi7u4uRfRAOeQp
-UnElz6BjxlB89aNkEO/qC137Y0B2MeFfGUEsqK03aGwjAzdOe3eB3yiCouL2TNyg
-PC65B3gtW43mcOxDtIk+Tsgq1WsmwmOBqyFGzlDkDywzDw09GlaVfj8uoM8x7D4=
-=f798
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Dec_2010_13_57_46_+1100_RaOP4ujZnQftROgE--
+-- 
+Suresh Jayaraman
