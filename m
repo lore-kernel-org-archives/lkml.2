@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab0LJKZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:25:51 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:60559 "EHLO gir.skynet.ie"
+	id S1754943Ab0LJK0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:26:10 -0500
+Received: from smtpeu1.atmel.com ([195.65.72.27]:50890 "EHLO bagnes.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754712Ab0LJKZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:25:50 -0500
-Date: Fri, 10 Dec 2010 10:25:32 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order
-	allocations until a percentage of the node is balanced
-Message-ID: <20101210102532.GJ20133@csn.ul.ie>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie> <1291893500-12342-3-git-send-email-mel@csn.ul.ie> <20101210101649.824e35ed.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101210101649.824e35ed.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753524Ab0LJK0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 05:26:08 -0500
+Subject: Re: [PATCH v2] avr32: Fix build failure conflicting types for
+ 'sys_execve'
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+In-Reply-To: <1291929328-30551-1-git-send-email-peterhuewe@gmx.de>
+References: <20101209182132.GB24175@kroah.com>
+	 <1291929328-30551-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Fri, 10 Dec 2010 11:25:41 +0100
+Message-ID: <1291976741.18008.37.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Dec 2010 10:25:43.0772 (UTC) FILETIME=[99F339C0:01CB9854]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 10:16:49AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu,  9 Dec 2010 11:18:16 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Thu, 2010-12-09 at 22:15 +0100, Peter Huewe wrote: 
+> This patch fixes a build failure[1] for the avr32 architecture which seems
+> to be introduced by commit d7627467b7a8
+> "Make do_execve() take a const filename pointer"
 > 
-> > When reclaiming for high-orders, kswapd is responsible for balancing a
-> > node but it should not reclaim excessively. It avoids excessive reclaim by
-> > considering if any zone in a node is balanced then the node is balanced. In
-> > the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
-> > ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
-> > one small zone was balanced.
-> > 
-> > This alters the sleep logic of kswapd slightly. It counts the number of pages
-> > that make up the balanced zones. If the total number of balanced pages is
-> > more than a quarter of the zone, kswapd will go back to sleep. This should
-> > keep a node balanced without reclaiming an excessive number of pages.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> The commit changes the definition in arch/avr32/kernel/process.c but
+> forgot to change it here.
 > 
-> Hmm, does this work well in
-> 
-> for example, x86-32,
-> 	DMA: 16MB
-> 	NORMAL: 700MB
-> 	HIGHMEM: 11G
-> ?
-> 
-> At 1st look, it's balanced when HIGHMEM has enough free pages...
-> This is not good for NICs which requests high-order allocations.
-> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> Cc: stable <stable@kernel.org>
 
-Good question.
+Nack, I've piped up a patch in
+http://git.kernel.org/?p=linux/kernel/git/egtvedt/avr32-2.6.git;a=shortlog;h=refs/heads/next that does this and more. The syscalls.h header file needs a bit more cleanup.
 
-In this case, the classzone_idx for the NICs high-order allocation will
-be the Normal zone. In balance_pgdat(), this check is made
-
-                                if (i <= classzone_idx)
-                                        balanced += zone->present_pages;
-
-Highmem will be too high and so the pages will not be counted and the node
-will not be balanced.
-
-> Can't we take claszone_idx into account at checking rather than
-> node->present_pages ?
-> 
-> as
-> 	balanced > present_pages_below_classzone_idx(node, classzone_idx)/4
-> 
-> ?
-
-We can, but not for the reasons you list above. When a heavily
-imbalanced highmem zone like this, the node might never be considered
-balanced as the sum of DMA and Normal is less than 25% of the node.
+I'll also notify stable to get it backported. Do you have an idea how
+far back it should go?
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Hans-Christian Egtvedt
+
