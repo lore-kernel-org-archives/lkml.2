@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab0LJKzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:55:53 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:37425 "EHLO gir.skynet.ie"
+	id S1755024Ab0LJLCF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 06:02:05 -0500
+Received: from www.tglx.de ([62.245.132.106]:35943 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab0LJKzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:55:51 -0500
-Date: Fri, 10 Dec 2010 10:55:32 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] mm: kswapd: Treat zone->all_unreclaimable in
-	sleeping_prematurely similar to balance_pgdat()
-Message-ID: <20101210105532.GM20133@csn.ul.ie>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie> <1291893500-12342-6-git-send-email-mel@csn.ul.ie> <20101210102337.8ff1fad2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752376Ab0LJLCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 06:02:03 -0500
+Date: Fri, 10 Dec 2010 12:01:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+cc: "'Tejun Heo'" <tj@kernel.org>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: RE: [PATCHv1 000/211] unicore32 architecture support
+In-Reply-To: <026901cb9848$17e71ac0$47b55040$@mprc.pku.edu.cn>
+Message-ID: <alpine.LFD.2.00.1012101156230.2653@localhost6.localdomain6>
+References: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn> <4D00A672.9050906@kernel.org> <alpine.LFD.2.00.1012091443580.2653@localhost6.localdomain6> <026901cb9848$17e71ac0$47b55040$@mprc.pku.edu.cn>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101210102337.8ff1fad2.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 10:23:37AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu,  9 Dec 2010 11:18:19 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Fri, 10 Dec 2010, Guan Xuetao wrote:
 > 
-> > After DEF_PRIORITY, balance_pgdat() considers all_unreclaimable zones to
-> > be balanced but sleeping_prematurely does not. This can force kswapd to
-> > stay awake longer than it should. This patch fixes it.
+> > -----Original Message-----
+> > From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-
+> > owner@vger.kernel.org] On Behalf Of Thomas Gleixner
+> > Sent: Thursday, December 09, 2010 9:50 PM
+> > To: Tejun Heo
+> > Cc: Guan Xuetao; Arnd Bergmann; linux-arch@vger.kernel.org; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [PATCHv1 000/211] unicore32 architecture support
+
+Please fix your mail client to do proper citations. A single line 
+
+On Thu, 9 Dec 2010, Thomas Gleixner wrote:
+
+or whatever your preferred cite line is, is sufficient. We all have
+the mail header already.
+ 
+> > It's ok to have several patches ordered by topics
 > > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> Hmm, maybe the logic works well but I don't like very much.
-> 
-> How about adding below instead of pgdat->node_present_pages ?
-> 
-> static unsigned long required_balanced_pages(pgdat, classzone_idx)
-> {
-> 	unsigned long present = 0;
-> 
-> 	for_each_zone_in_node(zone, pgdat) {
-> 		if (zone->all_unreclaimable) /* Ignore unreclaimable zone at checking balance */
-> 			continue;
-> 		if (zone_idx(zone) > classzone_idx)
-> 			continue;
-> 		present = zone->present_pages;
-> 	}
-> 	return present;
-> }
-> 
+> >   - generic header stuff
+> >   - processor and system headers
+> >   - low level entry and setup code
+> >   - process/thread related code
+> >   - mm related code
+> >   - timers
+> >   - interrupts
+> >   - ptrace
+> >   - signals
+> >   - fault handling
+> >   - misc
+> >   - build system, main makefile, Kconfig
+> > 
+> > That makes it actually feasible to review.
+> Thanks,
+> I will rearrange my patches.
 
-I'm afraid I do not really understand. After your earlier comments,
-pgdat_balanced() now looks like
+And please mail them to yourself before you post them and make sure
+they apply and resemble exaclty what you wanted to send. I just
+noticed, that your mailer line-wrapped the patches:
 
-static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
-                                                int classzone_idx)
-{
-        unsigned long present_pages = 0;
-        int i;
++       /*
++        * actually the registers should be pushed and pop'd conditionally,
+but
++        * after bl the flags are certainly clobbered
++        */
 
-        for (i = 0; i <= classzone_idx; i++)
-                present_pages += pgdat->node_zones[i].present_pages;
+Thanks,
 
-        return balanced_pages > (present_pages >> 2);
-}
-
-so the classzone is being taken into account. I'm not sure what you're
-asking for it to be changed to. Maybe it'll be clearer after V4 comes
-out rebased on top of mmotm.
-
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	tglx
