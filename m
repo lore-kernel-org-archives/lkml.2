@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab0LJSkD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 13:40:03 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:52955 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab0LJSkB (ORCPT
+	id S1754762Ab0LJSkw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 13:40:52 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:29858 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754055Ab0LJSkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 13:40:01 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lukas Czerner <lczerner@redhat.com>
-Subject: Re: [PATCH 2/2] Add BLKGETQUEUEINFO for reading block queue attributes
-Date: Fri, 10 Dec 2010 19:39:20 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, tytso@mit.edu,
-        sandeen@redhat.com, adilger.kernel@dilger.ca, gregkh@suse.de,
-        hch@infradead.org, axboe@kernel.dk
-References: <1291908337-18805-1-git-send-email-lczerner@redhat.com> <1291908337-18805-3-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1291908337-18805-3-git-send-email-lczerner@redhat.com>
+	Fri, 10 Dec 2010 13:40:51 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: x4EtqaIVM1kg.7D4_SLuSDahu8TCi5niCvq48YxXiuE2Tkc
+ xDpimqXCp6Os.KJRLLwSeYvmlxLUmze4ICZtBSvNURS_eAti7pzNW3VpvyZ3
+ jTlO3PBXtVqsXnJviNKu_9v4dReazzvcZxPH.KU53nwW7RBpyLaWjjTAgy.6
+ qDSV.ivsRqKg2FrvokkvDCCbmoDr6jaz7lGQTC21aJvV439pan_Bb.9hrk2c
+ fQvADVHudHiVWae5JzcC1swF7IuNyzvNZzven_NGNrfpYGTCWvykoiqz0UlT
+ XP.PAq7Fw3F5pWfrVGG5CFTK0FrKgdnpFS4n7DruVM6zzF0Y-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 10 Dec 2010 12:39:39 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+In-Reply-To: <1292004859.3580.387.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1012101236300.13986@router.home>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>  <1291851079-27061-1-git-send-email-venki@google.com>  <1291899120.29292.7.camel@twins>  <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>  <1291917330.6803.7.camel@twins> 
+ <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>  <1291920939.6803.38.camel@twins>  <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>  <1291936593.13513.3.camel@laptop>  <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+  <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>  <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>  <1292001500.3580.268.camel@edumazet-laptop>  <1292003346.13513.30.camel@laptop>
+ <1292004859.3580.387.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012101939.20984.arnd@arndb.de>
-X-Provags-ID: V02:K0:exr72XLOomJtKe7/DOlr8DVNkWSsHLKZ7EMUWgPaoJQ
- vMpeVb6uiaHGimfTbAUnLCmaTfIUtXPDHZnpHTWNnpALq1XFWN
- Nrn5wwAMV+75IDO51vDAvov8HqViFAzI/c85roFpEU0zyalZGx
- Wbtm0oZGZ194uNKEhzbjwe2P0UFV/f0kL4EeiRdZ0i+iaD3s5o
- WfraRuSNH4swHJVh68p5A==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 December 2010 16:25:37 Lukas Czerner wrote:
-> +enum blkq_info_type {
-> +       BLKQ_REQUESTS = 0,
-> +       BLKQ_RA,
-> +       BLKQ_MAX_HW_SECTORS,
-> +       BLKQ_MAX_SECTORS,
-> +       BLKQ_MAX_SEGMENTS,
-> +       BLKQ_MAX_INTEGRITY_SEGMENTS,
-> +       BLKQ_MAX_SEGMENT_SIZE,
-> +       BLKQ_IOSCHED,
-> +       BLKQ_HW_SECTOR_SIZE,
-> +       BLKQ_LOGICAL_BLOCK_SIZE,
-> +       BLKQ_PHYSICAL_BLOCK_SIZE,
-> +       BLKQ_IO_MIN,
-> +       BLKQ_IO_OPT,
-> +       BLKQ_DISCARD_GRANULARITY,
-> +       BLKQ_DISCARD_MAX,
-> +       BLKQ_DISCARD_ZEROES_DATA,
-> +       BLKQ_NONROT,
-> +       BLKQ_NOMERGES,
-> +       BLKQ_RQ_AFFINITY,
-> +       BLKQ_IOSTATS,
-> +       BLKQ_RANDOM,
-> +       BLKQ_END,               /* Last item = quantity of items */
-> +};
-> +
-> +struct blk_queue_info {
-> +       enum blkq_info_type type;
-> +       unsigned long data;
-> +};
+On Fri, 10 Dec 2010, Eric Dumazet wrote:
 
-You are adding another indirection to an indirect system call
-here. Besides the problems that Greg mentioned, this is
-also really ugly. If it turns out that we want an ioctl interface
-for this after all, better make it either one command per value,
-or one data structure that contains all the values (plus some
-reserved fields for future extensions).
+> > Yeah, but that kinda defeats the purpose of having it implemented in
+> > seqlock.h. Ideally we'd teach gcc about these long pointers and have
+> > something like:
+> >
+> >   write_seqcount_begin(&this_cpu_read(irq_time_seq));
+> >
+> > do the right thing.
+>
+> gcc wont be able to do this yet (%fs/%gs selectors)
 
-Furthermore, you should use neither enum nor long data types
-in a data structure that is used as an ABI. Use either __u32
-or __u64 here, and make sure you have no padding in the middle
-or at the end if you mix the two.
+The kernel can do that using the __percpu annotation.
 
-> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-> index 30b8815..71bd06c 100644
-> --- a/include/linux/sysfs.h
-> +++ b/include/linux/sysfs.h
-> @@ -112,6 +112,7 @@ struct bin_attribute {
->  struct sysfs_ops {
->         ssize_t (*show)(struct kobject *, struct attribute *,char *);
->         ssize_t (*store)(struct kobject *,struct attribute *,const char *, size_t);
-> +       ssize_t (*get)(struct kobject *, struct attribute *, void *);
->  };
->  
+> But we can provide this_cpu_write_seqcount_{begin|end}()
 
-This looks like it can significantly add to the .data size of the kernel.
+No we cannot do hat. this_cpu ops are for per cpu data and not for locking
+values shared between processors. We have a mechanism for passing per cpu
+pointers with a corresponding annotation.
 
-	Arnd
+> static inline void this_cpu_write_seqcount_begin(seqcount_t *s)
+				^^^ Would have to be seqcount_t __percpu *s
+
+> {
+> 	__this_cpu_inc(s->sequence);
+> 	smp_wmb();
+> }
+
+
