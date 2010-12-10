@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab0LJFlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 00:41:23 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56717 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab0LJFlW (ORCPT
+	id S1751365Ab0LJGAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 01:00:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59821 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab0LJGAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 00:41:22 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH UPDATED] poll: fix a typo in comment
-Cc: kosaki.motohiro@jp.fujitsu.com, Jiri Kosina <trivial@kernel.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1291913827-13558-1-git-send-email-namhyung@gmail.com>
-References: <AANLkTimUJ0mOkNe+ATAxDze_zHbWU8R1cJinEfX98Azw@mail.gmail.com> <1291913827-13558-1-git-send-email-namhyung@gmail.com>
-Message-Id: <20101210144111.C7B6.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 10 Dec 2010 14:41:16 +0900 (JST)
+	Fri, 10 Dec 2010 01:00:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=BJ8LveQ46t++iG+au2cG62oganrdWFUsPtSJakRShEuYKvkjy8IUdWJkP/FZjwXuI4
+         dcXE+opxPjUpHzM6gjYrsdJGRR2xLnUajTm8/x0Bgf/+tKJZXA7g63brtet2KDGhBSO3
+         8MATXXZ+5EU+gzQ/yzvqf4FQy40JehHY2ihBA=
+Subject: Re: [PATCH v2 3/4] kthread: NUMA aware kthread_create_on_cpu()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+In-Reply-To: <20101209164438.fae1ba4c.akpm@linux-foundation.org>
+References: <1290972833.29196.90.camel@edumazet-laptop>
+	 <20101128224024.GA12300@basil.fritz.box>
+	 <1290984712.29196.100.camel@edumazet-laptop>
+	 <20101128230146.GB12300@basil.fritz.box>
+	 <1290987424.29196.128.camel@edumazet-laptop>
+	 <20101129090510.GA15763@basil.fritz.box>
+	 <1291023532.3435.29.camel@edumazet-laptop>
+	 <1291043695.3435.980.camel@edumazet-laptop>
+	 <20101209164438.fae1ba4c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 06:59:58 +0100
+Message-ID: <1291960798.2803.18.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Convert duplicated sys_poll to select. As Kosaki suggests, sys_poll() and
-> sys_select() are now hidden by SYSCALL_DEFINEx() macros so it would be
-> better to use plain select/poll syscall name.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Le jeudi 09 décembre 2010 à 16:44 -0800, Andrew Morton a écrit :
 
-Thank you.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> The name "kthread_create_on_cpu" is pretty misleading.
+> 
+> One would expect such a function to create a kthread which is bound to
+> that CPU.  But what it in fact does is to create a kthread which is
+> bound to all CPUs and whose stack, task_struct and thread_info were
+> allocated from the node which contains `cpu'.
+> 
+> Also, a saner interface would be one which takes the numa_node_id, not
+> the cpu number.
+> 
 
-> ---
->  include/linux/poll.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+
+> >
+> > ...
+> >
+> >  /**
+> > - * kthread_create - create a kthread.
+> > + * kthread_create_on_cpu - create a kthread.
+> >   * @threadfn: the function to run until signal_pending(current).
+> >   * @data: data ptr for @threadfn.
+> > + * @cpu: cpu number.
+> >   * @namefmt: printf-style name for the thread.
+> >   *
+> >   * Description: This helper function creates and names a kernel
+> >   * thread.  The thread will be stopped: use wake_up_process() to start
+> >   * it.  See also kthread_run().
+> >   *
+> > + * If thread is going to be bound on a particular cpu, give its number
+> > + * in @cpu, to get NUMA affinity for kthread stack, or else give -1.
 > 
-> diff --git a/include/linux/poll.h b/include/linux/poll.h
-> index 56e76af78102..afd3375e58ee 100644
-> --- a/include/linux/poll.h
-> +++ b/include/linux/poll.h
-> @@ -57,7 +57,7 @@ struct poll_table_entry {
->  };
->  
->  /*
-> - * Structures and helpers for sys_poll/sys_poll
-> + * Structures and helpers for select/poll syscall
->   */
->  struct poll_wqueues {
->  	poll_table pt;
-> -- 
-> 1.7.3.3.400.g93cef
+> This is a bit presumptuous.  The caller might wish to later bind this
+> thread to some or all of the CPUs on the node, rather than to a single
+> CPU (eg, kswapd()).
 > 
+> 
+> So what to do?  Maybe add a new kthread_create_node() which prepares a
+> kthread whose memory is bound to that node, then add a
+> kthread_create_cpu() convenience wrapper around that?
+> 
+
+We probably can add the "bind to cpu" as a fifth patch, to avoid one 
+kthread_bind(p, cpu);  done by these callers.
+
+My reasoning not including this kthread_bind(p, cpu) in initial patch
+series that I was focusing on NUMA properties first, not on scheduling
+(this part already runs correctly as far as I know)
+
+Thanks for taking the patch series, I was about to resubmit it today :)
 
 
 
