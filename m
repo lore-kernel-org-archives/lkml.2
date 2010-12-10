@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab0LJWMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 17:12:18 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19762 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab0LJWMR (ORCPT
+	id S1753346Ab0LJWNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 17:13:54 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56507 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab0LJWNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 17:12:17 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6193"; a="66346967"
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: davidb@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH] msm: iommu: Use the correct memory allocation flag
-Date: Fri, 10 Dec 2010 14:12:03 -0800
-Message-Id: <1292019123-6044-1-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.2
+	Fri, 10 Dec 2010 17:13:53 -0500
+Subject: Re: [PATCH 1/3] regulator: Use _regulator_get_voltage()
+ consistently
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1292002088-9644-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1292002088-9644-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 22:13:47 +0000
+Message-ID: <1292019227.3422.14.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change msm_iommu_map to use GFP_ATOMIC instead of
-GFP_KERNEL due to the fact that the call occurs within
-a spinlock-protected region.
+On Fri, 2010-12-10 at 17:28 +0000, Mark Brown wrote:
+> Rather than referencing the get_voltage() operation directly in the
+> ops struct use the internal _regulator_get_voltage() API call to do
+> so, facilitating refactoring.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Change-Id: I7e9345a9a58811c421f9e7fae0c1ec5a759c6178
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
- arch/arm/mach-msm/iommu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+All Applied.
 
-diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
-index f651017..e2d58e4 100644
---- a/arch/arm/mach-msm/iommu.c
-+++ b/arch/arm/mach-msm/iommu.c
-@@ -386,7 +386,7 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
- 	/* Need a 2nd level table */
- 	if ((len == SZ_4K || len == SZ_64K) && (*fl_pte) == 0) {
- 		unsigned long *sl;
--		sl = (unsigned long *) __get_free_pages(GFP_KERNEL,
-+		sl = (unsigned long *) __get_free_pages(GFP_ATOMIC,
- 							get_order(SZ_4K));
+Thanks
 
- 		if (!sl) {
---
-1.7.0.2
- Sent by an employee of the Qualcomm Innovation Center, Inc.
- The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
