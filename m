@@ -1,189 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab0LJJB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 04:01:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:32316 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab0LJJBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 04:01:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
-   d="scan'208";a="582403578"
-X-Mailbox-Line: From shaohui.zheng@intel.com Fri Dec 10 15:32:42 2010
-Message-Id: <20101210073242.876873390@intel.com>
-References: <20101210073119.156388875@intel.com>
-User-Agent: quilt/0.46-1
-Date: Fri, 10 Dec 2010 15:31:26 +0800
-From: shaohui.zheng@intel.com
-To: akpm@linux-foundation.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>,
-        Shaohui Zheng <shaohui.zheng@intel.com>
-Subject: [7/7, v9] NUMA Hotplug Emulator: Implement per-node add_memory debugfs interface
-Content-Disposition: inline; filename=007-hotplug-emulator-add-memory-debugfs-interface.patch
+	id S1755473Ab0LJJBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 04:01:35 -0500
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:56476 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755419Ab0LJJBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 04:01:33 -0500
+Date: Fri, 10 Dec 2010 20:01:26 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Nick Piggin <npiggin@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/46] fs: dcache scale hash
+Message-ID: <20101210090126.GH8259@dastard>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+ <3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
+ <20101209060911.GB8259@dastard>
+ <20101209062801.GA3749@amd>
+ <20101209081756.GE8259@dastard>
+ <AANLkTimF457VDRTxjjhu+J9E616LBKP_86UcNS-u+P3p@mail.gmail.com>
+ <20101209234258.GB9925@dastard>
+ <20101210023520.GC3331@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101210023520.GC3331@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:  Shaohui Zheng <shaohui.zheng@intel.com>
+On Fri, Dec 10, 2010 at 01:35:20PM +1100, Nick Piggin wrote:
+> On Fri, Dec 10, 2010 at 10:42:58AM +1100, Dave Chinner wrote:
+> > On Thu, Dec 09, 2010 at 11:53:27PM +1100, Nick Piggin wrote:
+> > > Necessary changes to prevent bad ugliness resulting, or preventing
+> > > repeated steps for the particular changes, etc. of course. Killing un
+> > > related functions no.
+> > 
+> > Ok, I get the picture. You don't want a code review, you want a
+> > rubber stamp. Find someone else to get it from.
+> 
+> Of course I want code review. I am not going to just do everything
+> you say that I don't agree with, but I will explain why every time
+> (as I have done to all your points).
 
-Add add_memory interface to support to memory hotplug emulation for each online
-node under debugfs. The reserved memory can be added into desired node with
-this interface.
+Which generally comes down to "I disagree with you". That's hard to
+argue against because you aren't willing to compromise.
 
-The layout on debugfs:
-	mem_hotplug/node0/add_memory
-	mem_hotplug/node1/add_memory
-	mem_hotplug/node2/add_memory
-	...
+So, to address your next comment, I'll restate what I was proposing.
+That is, to ensure all the d_flags accesses protected by d_lock as
+an initial patch rather than cleaning it up in an ad-hoc fashion
+later on, such as this later patch in your series:
 
-Add a memory section(128M) to node 3(boots with mem=1024m)
+[PATCH 14/46] fs: dcache scale d_unhashed
 
-	echo 0x40000000 > mem_hotplug/node3/add_memory
+which has the description:
 
-CC: David Rientjes <rientjes@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
----
-Index: linux-hpe4/mm/memory_hotplug.c
-===================================================================
---- linux-hpe4.orig/mm/memory_hotplug.c	2010-12-10 13:22:44.753331000 +0800
-+++ linux-hpe4/mm/memory_hotplug.c	2010-12-10 13:41:48.803331000 +0800
-@@ -933,6 +933,81 @@
- 
- static struct dentry *memhp_debug_root;
- 
-+#ifdef CONFIG_ARCH_MEMORY_PROBE
-+
-+static ssize_t add_memory_store(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	u64 phys_addr = 0;
-+	int nid = file->private_data - NULL;
-+	int ret;
-+
-+	printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-+	phys_addr = simple_strtoull(buf, NULL, 0);
-+
-+	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+	if (ret)
-+		count = ret;
-+
-+	return count;
-+}
-+
-+static int add_memory_open(struct inode *inode, struct file *file)
-+{
-+	file->private_data = inode->i_private;
-+	return 0;
-+}
-+
-+static const struct file_operations add_memory_file_ops = {
-+	.open		= add_memory_open,
-+	.write		= add_memory_store,
-+	.llseek		= generic_file_llseek,
-+};
-+
-+/*
-+ * Create add_memory debugfs entry under specified node
-+ */
-+static int debugfs_create_add_memory_entry(int nid)
-+{
-+	char buf[32];
-+	static struct dentry *node_debug_root;
-+
-+	snprintf(buf, sizeof(buf), "node%d", nid);
-+	node_debug_root = debugfs_create_dir(buf, memhp_debug_root);
-+	if (!node_debug_root)
-+		return -ENOMEM;
-+
-+	/* the nid information was represented by the offset of pointer(NULL+nid) */
-+	if (!debugfs_create_file("add_memory", S_IWUSR, node_debug_root,
-+			NULL + nid, &add_memory_file_ops))
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static int __init memory_debug_init(void)
-+{
-+	int nid;
-+
-+	if (!memhp_debug_root)
-+		memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
-+	if (!memhp_debug_root)
-+		return -ENOMEM;
-+
-+	for_each_online_node(nid)
-+		 debugfs_create_add_memory_entry(nid);
-+
-+	return 0;
-+}
-+
-+module_init(memory_debug_init);
-+#else
-+static debugfs_create_add_memory_entry(int nid)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_ARCH_MEMORY_PROBE */
-+
- static ssize_t add_node_store(struct file *file, const char __user *buf,
- 				size_t count, loff_t *ppos)
- {
-@@ -963,6 +1038,8 @@
- 		return -ENOMEM;
- 
- 	ret = add_memory(nid, start, size);
-+
-+	debugfs_create_add_memory_entry(nid);
- 	return ret ? ret : count;
- }
- 
-Index: linux-hpe4/Documentation/memory-hotplug.txt
-===================================================================
---- linux-hpe4.orig/Documentation/memory-hotplug.txt	2010-12-10 13:22:44.733331000 +0800
-+++ linux-hpe4/Documentation/memory-hotplug.txt	2010-12-10 13:42:12.783331002 +0800
-@@ -19,6 +19,7 @@
-   4.1 Hardware(Firmware) Support
-   4.2 Notify memory hot-add event by hand
-   4.3 Node hotplug emulation
-+  4.4 Memory hotplug emulation
- 5. Logical Memory hot-add phase
-   5.1. State of memory
-   5.2. How to online memory
-@@ -239,6 +240,25 @@
- Once the new node has been added, it is possible to online the memory by
- toggling the "state" of its memory section(s) as described in section 5.1.
- 
-+4.4 Memory hotplug emulation
-+------------
-+With debugfs, it is possible to test memory hotplug with software method, we
-+can add memory section to desired node with add_memory interface. It is a much
-+more powerful interface than "probe" described in section 4.2.
-+
-+There is an add_memory interface for each online node at the debugfs mount
-+point.
-+	mem_hotplug/node0/add_memory
-+	mem_hotplug/node1/add_memory
-+	mem_hotplug/node2/add_memory
-+	...
-+
-+Add a memory section(128M) to node 3(boots with mem=1024m)
-+
-+	echo 0x40000000 > mem_hotplug/node3/add_memory
-+
-+Once the new memory section has been added, it is possible to online the memory
-+by toggling the "state" described in section 5.1.
- 
- ------------------------------
- 5. Logical Memory hot-add phase
+	Protect d_unhashed(dentry) condition with d_lock.
 
+which illustrates my point that not all accesses to d_flags are
+currently protected by d_lock as you are asserting. Hence:
+
+> I would prefer more in-depth review than from someone who doesn't know
+> d_lock protects d_flags,
+
+Your implication about my competence is incorrect and entirely
+inappropriate.  Ad hominen attacks don't improve your argument or
+encourage other people to review your code.
+
+> but any and all help is welcome. Even minor
+> nitpicking or cleanups are welcome if they are relevant to the patches.
+
+If _you_ decide they are relevant.
+
+Nick, in the past couple of months you've burnt everyone who has
+tried to review your changes in any meaningful way. Nobody wants to
+engage with you because you've aggressively disagreed with every
+significant change that has been requested. You have shown no desire
+to compromise, instead you argue that you are right until you've had
+the last word, and you have frequently resorted to condesending and
+disrespectful attacks on reviewers. You would do well to keep that
+in mind next time you wonder why nobody is stepping up to review
+your code.
+
+Cheers,
+
+Dave.
 -- 
-Thanks & Regards,
-Shaohui
-
-
+Dave Chinner
+david@fromorbit.com
