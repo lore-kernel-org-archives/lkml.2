@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab0LJKKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:10:51 -0500
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:47622 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754050Ab0LJKKt (ORCPT
+	id S1754877Ab0LJKLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:11:17 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:50697 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754271Ab0LJKLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:10:49 -0500
+	Fri, 10 Dec 2010 05:11:10 -0500
 From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 To: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: [PATCH 9/9] mach-ux500: Updated and connected ab8500 regulator board configuration
-Date: Fri, 10 Dec 2010 11:08:48 +0100
-Message-ID: <1291975728-12525-10-git-send-email-bengt.g.jonsson@stericsson.com>
+Subject: [PATCH 8/9] regulators: Removed macros for initialization of ab8500 regulators
+Date: Fri, 10 Dec 2010 11:08:47 +0100
+Message-ID: <1291975728-12525-9-git-send-email-bengt.g.jonsson@stericsson.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
 References: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
@@ -25,244 +25,287 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ab8500 regulator board configuration is updated and put in an
-array which can easily be used in the MFD board configuration. The
-regulator board configuration is also added to the MFD
-configuration in this patch.
+This patch removes the macros for initializing the regulators.
+The purpose is to remove one layer of abstraction and make the
+code easier to read.
 
 Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |  153 ++++++++++++-------------
- arch/arm/mach-ux500/board-mop500-regulators.h |   19 +++
- arch/arm/mach-ux500/board-mop500.c            |    3 +
- 3 files changed, 96 insertions(+), 79 deletions(-)
- create mode 100644 arch/arm/mach-ux500/board-mop500-regulators.h
+ drivers/regulator/ab8500.c |  241 ++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 179 insertions(+), 62 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 1187f1f..533967c 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -3,99 +3,94 @@
-  *
-  * License Terms: GNU General Public License v2
-  *
-- * Author: Sundar Iyer <sundar.iyer@stericsson.com>
-+ * Authors: Sundar Iyer <sundar.iyer@stericsson.com>
-+ *          Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-  *
-  * MOP500 board specific initialization for regulators
-  */
- #include <linux/kernel.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/ab8500.h>
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 7d372b8..d9a052c 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -311,7 +311,7 @@ static int ab8500_fixed_get_voltage(struct regulator_dev *rdev)
+ 	return info->fixed_uV;
+ }
  
--/* supplies to the display/camera */
--static struct regulator_init_data ab8500_vaux1_regulator = {
--	.constraints = {
--		.name = "V-DISPLAY",
--		.min_uV = 2500000,
--		.max_uV = 2900000,
--		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
--					REGULATOR_CHANGE_STATUS,
-+/* AB8500 regulators */
-+struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
-+	/* supplies to the display/camera */
+-static struct regulator_ops ab8500_ldo_fixed_ops = {
++static struct regulator_ops ab8500_regulator_fixed_ops = {
+ 	.enable		= ab8500_regulator_enable,
+ 	.disable	= ab8500_regulator_disable,
+ 	.is_enabled	= ab8500_regulator_is_enabled,
+@@ -319,79 +319,196 @@ static struct regulator_ops ab8500_ldo_fixed_ops = {
+ 	.list_voltage	= ab8500_list_voltage,
+ };
+ 
+-#define AB8500_LDO(_id, _min_mV, _max_mV,			\
+-	_u_bank, _u_reg, _u_mask, _u_val_enable,		\
+-	_v_bank, _v_reg, _v_mask, _v_table, _v_table_len)	\
+-[AB8500_LDO_##_id] = {						\
+-	.desc	= {						\
+-		.name		= "LDO-" #_id,			\
+-		.ops		= &ab8500_regulator_ops,	\
+-		.type		= REGULATOR_VOLTAGE,		\
+-		.id		= AB8500_LDO_##_id,		\
+-		.owner		= THIS_MODULE,			\
+-	},							\
+-	.min_uV			= (_min_mV) * 1000,		\
+-	.max_uV			= (_max_mV) * 1000,		\
+-	.update_bank		= _u_bank,			\
+-	.update_reg		= _u_reg,			\
+-	.update_mask		= _u_mask,			\
+-	.update_val_enable	= _u_val_enable,		\
+-	.voltage_bank		= _v_bank,			\
+-	.voltage_reg		= _v_reg,			\
+-	.voltage_mask		= _v_mask,			\
+-	.voltages		= _v_table,			\
+-	.voltages_len		= _v_table_len,			\
+-	.fixed_uV		= 0,				\
+-}
+-
+-#define AB8500_FIXED_LDO(_id, _fixed_mV,			\
+-	_u_bank, _u_reg, _u_mask, _u_val_enable)		\
+-[AB8500_LDO_##_id] = {						\
+-	.desc	= {						\
+-		.name		= "LDO-" #_id,			\
+-		.ops		= &ab8500_ldo_fixed_ops,	\
+-		.type		= REGULATOR_VOLTAGE,		\
+-		.id		= AB8500_LDO_##_id,		\
+-		.owner		= THIS_MODULE,			\
+-	},							\
+-	.fixed_uV		= (_fixed_mV) * 1000,		\
+-	.update_bank		= _u_bank,			\
+-	.update_reg		= _u_reg,			\
+-	.update_mask		= _u_mask,			\
+-	.update_val_enable	= _u_val_enable,		\
+-}
+-
+-static struct ab8500_regulator_info ab8500_regulator_info[] = {
++static struct ab8500_regulator_info
++		ab8500_regulator_info[AB8500_NUM_REGULATORS] = {
+ 	/*
+ 	 * Variable Voltage Regulators
+ 	 *   name, min mV, max mV,
+ 	 *   update bank, reg, mask, enable val
+ 	 *   volt bank, reg, mask, table, table length
+ 	 */
+-	AB8500_LDO(AUX1, 1100, 3300,
+-		0x04, 0x09, 0x03, 0x01, 0x04, 0x1f, 0x0f,
+-		ldo_vauxn_voltages, ARRAY_SIZE(ldo_vauxn_voltages)),
+-	AB8500_LDO(AUX2, 1100, 3300,
+-		0x04, 0x09, 0x0c, 0x04, 0x04, 0x20, 0x0f,
+-		ldo_vauxn_voltages, ARRAY_SIZE(ldo_vauxn_voltages)),
+-	AB8500_LDO(AUX3, 1100, 3300,
+-		0x04, 0x0a, 0x03, 0x01, 0x04, 0x21, 0x07,
+-		ldo_vaux3_voltages, ARRAY_SIZE(ldo_vaux3_voltages)),
+-	AB8500_LDO(INTCORE, 1100, 3300,
+-		0x03, 0x80, 0x44, 0x04, 0x03, 0x80, 0x38,
+-		ldo_vintcore_voltages, ARRAY_SIZE(ldo_vintcore_voltages)),
 +	[AB8500_LDO_AUX1] = {
-+		.constraints = {
-+			.name = "V-DISPLAY",
-+			.min_uV = 2500000,
-+			.max_uV = 2900000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS,
++		.desc = {
++			.name		= "LDO-AUX1",
++			.ops		= &ab8500_regulator_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_AUX1,
++			.owner		= THIS_MODULE,
++			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
 +		},
- 	},
--};
--
--/* supplies to the on-board eMMC */
--static struct regulator_init_data ab8500_vaux2_regulator = {
--	.constraints = {
--		.name = "V-eMMC1",
--		.min_uV = 1100000,
--		.max_uV = 3300000,
--		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
--					REGULATOR_CHANGE_STATUS,
-+	/* supplies to the on-board eMMC */
++		.min_uV			= 1100000,
++		.max_uV			= 3300000,
++		.update_bank		= 0x04,
++		.update_reg		= 0x09,
++		.update_mask		= 0x03,
++		.update_val_enable	= 0x01,
++		.voltage_bank		= 0x04,
++		.voltage_reg		= 0x1f,
++		.voltage_mask		= 0x0f,
++		.voltages		= ldo_vauxn_voltages,
++		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
++	},
 +	[AB8500_LDO_AUX2] = {
-+		.constraints = {
-+			.name = "V-eMMC1",
-+			.min_uV = 1100000,
-+			.max_uV = 3300000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS,
++		.desc = {
++			.name		= "LDO-AUX2",
++			.ops		= &ab8500_regulator_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_AUX2,
++			.owner		= THIS_MODULE,
++			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
 +		},
- 	},
--};
--
--/* supply for VAUX3, supplies to SDcard slots */
--static struct regulator_init_data ab8500_vaux3_regulator = {
--	.constraints = {
--		.name = "V-MMC-SD",
--		.min_uV = 1100000,
--		.max_uV = 3300000,
--		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
--					REGULATOR_CHANGE_STATUS,
-+	/* supply for VAUX3, supplies to SDcard slots */
++		.min_uV			= 1100000,
++		.max_uV			= 3300000,
++		.update_bank		= 0x04,
++		.update_reg		= 0x09,
++		.update_mask		= 0x0c,
++		.update_val_enable	= 0x04,
++		.voltage_bank		= 0x04,
++		.voltage_reg		= 0x20,
++		.voltage_mask		= 0x0f,
++		.voltages		= ldo_vauxn_voltages,
++		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
++	},
 +	[AB8500_LDO_AUX3] = {
-+		.constraints = {
-+			.name = "V-MMC-SD",
-+			.min_uV = 1100000,
-+			.max_uV = 3300000,
-+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-+					  REGULATOR_CHANGE_STATUS,
++		.desc = {
++			.name		= "LDO-AUX3",
++			.ops		= &ab8500_regulator_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_AUX3,
++			.owner		= THIS_MODULE,
++			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
 +		},
- 	},
--};
--
--/* supply for tvout, gpadc, TVOUT LDO */
--static struct regulator_init_data ab8500_vtvout_init = {
--	.constraints = {
--		.name = "V-TVOUT",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for tvout, gpadc, TVOUT LDO */
-+	[AB8500_LDO_TVOUT] = {
-+		.constraints = {
-+			.name = "V-TVOUT",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for ab8500-vaudio, VAUDIO LDO */
--static struct regulator_init_data ab8500_vaudio_init = {
--	.constraints = {
--		.name = "V-AUD",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for ab8500-vaudio, VAUDIO LDO */
-+	[AB8500_LDO_AUDIO] = {
-+		.constraints = {
-+			.name = "V-AUD",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-anamic1 VAMic1-LDO */
--static struct regulator_init_data ab8500_vamic1_init = {
--	.constraints = {
--		.name = "V-AMIC1",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-anamic1 VAMic1-LDO */
-+	[AB8500_LDO_ANAMIC1] = {
-+		.constraints = {
-+			.name = "V-AMIC1",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-amic2, VAMIC2 LDO, reuse constants for AMIC1 */
--static struct regulator_init_data ab8500_vamic2_init = {
--	.constraints = {
--		.name = "V-AMIC2",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-amic2, VAMIC2 LDO, reuse constants for AMIC1 */
-+	[AB8500_LDO_ANAMIC2] = {
-+		.constraints = {
-+			.name = "V-AMIC2",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-dmic, VDMIC LDO */
--static struct regulator_init_data ab8500_vdmic_init = {
--	.constraints = {
--		.name = "V-DMIC",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-dmic, VDMIC LDO */
-+	[AB8500_LDO_DMIC] = {
-+		.constraints = {
-+			.name = "V-DMIC",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+		},
- 	},
--};
--
--/* supply for v-intcore12, VINTCORE12 LDO */
--static struct regulator_init_data ab8500_vintcore_init = {
--	.constraints = {
--		.name = "V-INTCORE",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for v-intcore12, VINTCORE12 LDO */
++		.min_uV			= 1100000,
++		.max_uV			= 3300000,
++		.update_bank		= 0x04,
++		.update_reg		= 0x0a,
++		.update_mask		= 0x03,
++		.update_val_enable	= 0x01,
++		.voltage_bank		= 0x04,
++		.voltage_reg		= 0x21,
++		.voltage_mask		= 0x07,
++		.voltages		= ldo_vaux3_voltages,
++		.voltages_len		= ARRAY_SIZE(ldo_vaux3_voltages),
++	},
 +	[AB8500_LDO_INTCORE] = {
-+		.constraints = {
-+			.name = "V-INTCORE",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		.desc = {
++			.name		= "LDO-INTCORE",
++			.ops		= &ab8500_regulator_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_INTCORE,
++			.owner		= THIS_MODULE,
++			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
 +		},
- 	},
--};
--
--/* supply for U8500 CSI/DSI, VANA LDO */
--static struct regulator_init_data ab8500_vana_init = {
--	.constraints = {
--		.name = "V-CSI/DSI",
--		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-+	/* supply for U8500 CSI/DSI, VANA LDO */
++		.min_uV			= 1100000,
++		.max_uV			= 3300000,
++		.update_bank		= 0x03,
++		.update_reg		= 0x80,
++		.update_mask		= 0x44,
++		.update_val_enable	= 0x04,
++		.voltage_bank		= 0x03,
++		.voltage_reg		= 0x80,
++		.voltage_mask		= 0x38,
++		.voltages		= ldo_vintcore_voltages,
++		.voltages_len		= ARRAY_SIZE(ldo_vintcore_voltages),
++	},
+ 
+ 	/*
+ 	 * Fixed Voltage Regulators
+ 	 *   name, fixed mV,
+ 	 *   update bank, reg, mask, enable val
+ 	 */
+-	AB8500_FIXED_LDO(TVOUT,	  2000, 0x03, 0x80, 0x82, 0x02),
+-	AB8500_FIXED_LDO(AUDIO,   2000, 0x03, 0x83, 0x02, 0x02),
+-	AB8500_FIXED_LDO(ANAMIC1, 2050, 0x03, 0x83, 0x08, 0x08),
+-	AB8500_FIXED_LDO(ANAMIC2, 2050, 0x03, 0x83, 0x10, 0x10),
+-	AB8500_FIXED_LDO(DMIC,    1800, 0x03, 0x83, 0x04, 0x04),
+-	AB8500_FIXED_LDO(ANA,     1200, 0x04, 0x06, 0x0c, 0x04),
++	[AB8500_LDO_TVOUT] = {
++		.desc = {
++			.name		= "LDO-TVOUT",
++			.ops		= &ab8500_regulator_fixed_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_TVOUT,
++			.owner		= THIS_MODULE,
++			.n_voltages	= 1,
++		},
++		.fixed_uV		= 2000000,
++		.update_bank		= 0x03,
++		.update_reg		= 0x80,
++		.update_mask		= 0x82,
++		.update_val_enable	= 0x02,
++	},
++	[AB8500_LDO_AUDIO] = {
++		.desc = {
++			.name		= "LDO-AUDIO",
++			.ops		= &ab8500_regulator_fixed_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_AUDIO,
++			.owner		= THIS_MODULE,
++			.n_voltages	= 1,
++		},
++		.fixed_uV		= 2000000,
++		.update_bank		= 0x03,
++		.update_reg		= 0x83,
++		.update_mask		= 0x02,
++		.update_val_enable	= 0x02,
++	},
++	[AB8500_LDO_ANAMIC1] = {
++		.desc = {
++			.name		= "LDO-ANAMIC1",
++			.ops		= &ab8500_regulator_fixed_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_ANAMIC1,
++			.owner		= THIS_MODULE,
++			.n_voltages	= 1,
++		},
++		.fixed_uV		= 2050000,
++		.update_bank		= 0x03,
++		.update_reg		= 0x83,
++		.update_mask		= 0x08,
++		.update_val_enable	= 0x08,
++	},
++	[AB8500_LDO_ANAMIC2] = {
++		.desc = {
++			.name		= "LDO-ANAMIC2",
++			.ops		= &ab8500_regulator_fixed_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_ANAMIC2,
++			.owner		= THIS_MODULE,
++			.n_voltages	= 1,
++		},
++		.fixed_uV		= 2050000,
++		.update_bank		= 0x03,
++		.update_reg		= 0x83,
++		.update_mask		= 0x10,
++		.update_val_enable	= 0x10,
++	},
++	[AB8500_LDO_DMIC] = {
++		.desc = {
++			.name		= "LDO-DMIC",
++			.ops		= &ab8500_regulator_fixed_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_DMIC,
++			.owner		= THIS_MODULE,
++			.n_voltages	= 1,
++		},
++		.fixed_uV		= 1800000,
++		.update_bank		= 0x03,
++		.update_reg		= 0x83,
++		.update_mask		= 0x04,
++		.update_val_enable	= 0x04,
++	},
 +	[AB8500_LDO_ANA] = {
-+		.constraints = {
-+			.name = "V-CSI/DSI",
-+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++		.desc = {
++			.name		= "LDO-ANA",
++			.ops		= &ab8500_regulator_fixed_ops,
++			.type		= REGULATOR_VOLTAGE,
++			.id		= AB8500_LDO_ANA,
++			.owner		= THIS_MODULE,
++			.n_voltages	= 1,
 +		},
- 	},
- };
--
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-new file mode 100644
-index 0000000..2675fae
---- /dev/null
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-@@ -0,0 +1,19 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License Terms: GNU General Public License v2
-+ *
-+ * Author: Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
-+ *
-+ * MOP500 board specific initialization for regulators
-+ */
++		.fixed_uV		= 1200000,
++		.update_bank		= 0x04,
++		.update_reg		= 0x06,
++		.update_mask		= 0x0c,
++		.update_val_enable	= 0x04,
++	},
 +
-+#ifndef __BOARD_MOP500_REGULATORS_H
-+#define __BOARD_MOP500_REGULATORS_H
 +
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/ab8500.h>
-+
-+extern struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS];
-+
-+#endif
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index cac83a6..41285ad 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -34,6 +34,7 @@
- 
- #include "pins-db8500.h"
- #include "board-mop500.h"
-+#include "board-mop500-regulators.h"
- 
- static pin_cfg_t mop500_pins[] = {
- 	/* SSP0 */
-@@ -89,6 +90,8 @@ struct pl022_config_chip ab4500_chip_info = {
- 
- static struct ab8500_platform_data ab8500_platdata = {
- 	.irq_base	= MOP500_AB8500_IRQ_BASE,
-+	.regulator	= ab8500_regulators,
-+	.num_regulator	= ARRAY_SIZE(ab8500_regulators),
  };
  
- static struct resource ab8500_resources[] = {
+ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 -- 
 1.7.2.2
 
