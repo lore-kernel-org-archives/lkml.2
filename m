@@ -1,214 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab0LJKT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:19:56 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:58027 "EHLO gir.skynet.ie"
+	id S1754566Ab0LJKVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:21:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab0LJKTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:19:54 -0500
-Date: Fri, 10 Dec 2010 10:19:36 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order
-	allocations until a percentage of the node is balanced
-Message-ID: <20101210101935.GI20133@csn.ul.ie>
-References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie> <1291893500-12342-3-git-send-email-mel@csn.ul.ie> <20101209154258.GC1740@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101209154258.GC1740@barrios-desktop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753530Ab0LJKVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 05:21:23 -0500
+Subject: [GIT PATCH] Updated email contact details for ads7828 driver
+From: Steven Hardy <shardy@redhat.com>
+To: khali@linux-fr.org, lm-sensors@lm-sensors.org
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 10:20:16 +0000
+Message-ID: <1291976416.3237.29.camel@shardy.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 12:42:58AM +0900, Minchan Kim wrote:
-> On Thu, Dec 09, 2010 at 11:18:16AM +0000, Mel Gorman wrote:
-> > When reclaiming for high-orders, kswapd is responsible for balancing a
-> > node but it should not reclaim excessively. It avoids excessive reclaim by
-> > considering if any zone in a node is balanced then the node is balanced. In
-> > the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
-> > ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
-> > one small zone was balanced.
-> > 
-> > This alters the sleep logic of kswapd slightly. It counts the number of pages
-> > that make up the balanced zones. If the total number of balanced pages is
-> > more than a quarter of the zone, kswapd will go back to sleep. This should
-> > keep a node balanced without reclaiming an excessive number of pages.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> 
-> Just below trivials.
-> 
-> > ---
-> >  mm/vmscan.c |   43 ++++++++++++++++++++++++++++++++++---------
-> >  1 files changed, 34 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 25cb373..b4472a1 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2117,10 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> >  }
-> >  #endif
-> >  
-> > +/*
-> > + * pgdat_balanced is used when checking if a node is balanced for high-order
-> > + * allocations. Only zones that meet watermarks make up "balanced".
-> > + * The total of balanced pages must be at least 25% of the node for the
-> 
-> Could you write down why you select 25% in description?
-> It could help someone who try to change that watermark in future.
-> 
+Hi, 
 
-Sure, how about;
+Trivial patch updating my email contact details due to change of
+employer, and because I no longer have access to the previously used
+domain.
 
-+/*
-+ * pgdat_balanced is used when checking if a node is balanced for high-order
-+ * allocations. Only zones that meet watermarks make up "balanced".
-+ * The total of balanced pages must be at least 25% of the node for the
-+ * node to be considered balanced. Forcing all zones to be balanced for high
-+ * orders can cause excessive reclaim when there are imbalanced zones.
-+ * The choice of 25% is due to
-+ *   o a 16M DMA zone that is balanced will not balance a zone on any
-+ *     reasonable sized machine
-+ *   o On all other machines, the top zone must be at least a reasonable
-+ *     precentage of the middle zones. For example, on 32-bit x86, highmem
-+ *     would need to be at least 256M for it to be balance a whole node.
-+ *     Similarly, on x86-64 the Normal zone would need to be at least 1G
-+ *     to balance a node on its own. These seemed like reasonable ratios.
-+ */
-+static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
-+{
-+       return balanced > pgdat->node_present_pages / 4;
-+}
+Unfortunately I also no longer have access to any ads7828 hardware, but
+am happy to support/maintain the driver if others are able to test
+changes.
 
-?
+Thanks, 
 
-> > + * node to be considered balanced. Forcing all zones to be balanced for high
-> > + * orders can cause excessive reclaim when there are imbalanced zones.
-> > + * Similarly, we do not want kswapd to go to sleep because ZONE_DMA happens
-> > + * to be balanced when ZONE_DMA32 is huge in comparison and unbalanced
-> > + */
-> > +static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
-> 
-> I think balanced_pages is more clear.
-> But it's a preference.
-> 
+Steve
 
-Updated.
+Signed-off-by: Steve Hardy <shardy@redhat.com>
 
-> > +{
-> > +	return balanced > pgdat->node_present_pages / 4;
-> > +}
-> > +
-> >  /* is kswapd sleeping prematurely? */
-> >  static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> >  {
-> >  	int i;
-> > +	unsigned long balanced = 0;
-> > +	bool all_zones_ok = true;
-> >  
-> >  	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
-> >  	if (remaining)
-> > @@ -2138,10 +2154,19 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
-> >  
-> >  		if (!zone_watermark_ok(zone, order, high_wmark_pages(zone),
-> >  								0, 0))
-> > -			return 1;
-> > +			all_zones_ok = false;
-> > +		else
-> > +			balanced += zone->present_pages;
-> >  	}
-> >  
-> > -	return 0;
-> > +	/*
-> > +	 * For high-order requests, any zone meeting the watermark allows
-> > +	 * kswapd to sleep. For order-0, all zones must be balanced
-> 
-> The comment isn't exact.
-> could allow?
-> 
+>From 3c72783100922347afe4abf2de244997b4e54c16 Mon Sep 17 00:00:00 2001
+From: Steve Hardy <shardy@redhat.com>
+Date: Fri, 10 Dec 2010 09:38:06 +0000
+Subject: [PATCH] Updated email contact details for ads7828 driver
 
-Correct;
+---
+ Documentation/hwmon/ads7828 |    2 +-
+ drivers/hwmon/ads7828.c     |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-+       /*
-+        * For high-order requests, the balanced zones must contain at least
-+        * 25% of the nodes pages for kswapd to sleep. For order-0, all zones
-+        * must be balanced
-+        */
-+       if (order)
-+               return pgdat_balanced(pgdat, balanced);
-+       else
-+               return !all_zones_ok;
-
-Thanks
-
-> > +	 */
-> > +	if (order)
-> > +		return pgdat_balanced(pgdat, balanced);
-> > +	else
-> > +		return !all_zones_ok;
-> >  }
-> >  
-> >  /*
-> > @@ -2169,7 +2194,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
-> >  							int classzone_idx)
-> >  {
-> >  	int all_zones_ok;
-> > -	int any_zone_ok;
-> > +	unsigned long balanced;
-> >  	int priority;
-> >  	int i;
-> >  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> > @@ -2203,7 +2228,7 @@ loop_again:
-> >  			disable_swap_token();
-> >  
-> >  		all_zones_ok = 1;
-> > -		any_zone_ok = 0;
-> > +		balanced = 0;
-> >  
-> >  		/*
-> >  		 * Scan in the highmem->dma direction for the highest
-> > @@ -2314,11 +2339,11 @@ loop_again:
-> >  				 */
-> >  				zone_clear_flag(zone, ZONE_CONGESTED);
-> >  				if (i <= classzone_idx)
-> > -					any_zone_ok = 1;
-> > +					balanced += zone->present_pages;
-> >  			}
-> >  
-> >  		}
-> > -		if (all_zones_ok || (order && any_zone_ok))
-> > +		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))
-> >  			break;		/* kswapd: all done */
-> >  		/*
-> >  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> > @@ -2344,10 +2369,10 @@ out:
-> >  
-> >  	/*
-> >  	 * order-0: All zones must meet high watermark for a balanced node
-> > -	 * high-order: Any zone below pgdats classzone_idx must meet the high
-> > -	 *             watermark for a balanced node
-> > +	 * high-order: Balanced zones must make up at least 25% of the node
-> > +	 *             for the node to be balanced
-> >  	 */
-> > -	if (!(all_zones_ok || (order && any_zone_ok))) {
-> > +	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))) {
-> >  		cond_resched();
-> >  
-> >  		try_to_freeze();
-
+diff --git a/Documentation/hwmon/ads7828 b/Documentation/hwmon/ads7828
+index 75bc4be..2bbebe6 100644
+--- a/Documentation/hwmon/ads7828
++++ b/Documentation/hwmon/ads7828
+@@ -9,7 +9,7 @@ Supported chips:
+                http://focus.ti.com/lit/ds/symlink/ads7828.pdf
+ 
+ Authors:
+-        Steve Hardy <steve@linuxrealtime.co.uk>
++        Steve Hardy <shardy@redhat.com>
+ 
+ Module Parameters
+ -----------------
+diff --git a/drivers/hwmon/ads7828.c b/drivers/hwmon/ads7828.c
+index aac85f3..c42c5a6 100644
+--- a/drivers/hwmon/ads7828.c
++++ b/drivers/hwmon/ads7828.c
+@@ -4,7 +4,7 @@
+ 
+ 	This driver is based on the lm75 and other lm_sensors/hwmon drivers
+ 
+-	Written by Steve Hardy <steve@linuxrealtime.co.uk>
++	Written by Steve Hardy <shardy@redhat.com>
+ 
+ 	Datasheet available at: http://focus.ti.com/lit/ds/symlink/ads7828.pdf
+ 
+@@ -271,7 +271,7 @@ static void __exit sensors_ads7828_exit(void)
+ 	i2c_del_driver(&ads7828_driver);
+ }
+ 
+-MODULE_AUTHOR("Steve Hardy <steve@linuxrealtime.co.uk>");
++MODULE_AUTHOR("Steve Hardy <shardy@redhat.com>");
+ MODULE_DESCRIPTION("ADS7828 driver");
+ MODULE_LICENSE("GPL");
+ 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.1
+
+
+
