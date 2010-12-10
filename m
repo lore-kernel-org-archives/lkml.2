@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab0LJNXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 08:23:55 -0500
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:14431 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754324Ab0LJNXx (ORCPT
+	id S1756278Ab0LJN0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 08:26:25 -0500
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:42739 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756129Ab0LJN0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 08:23:53 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJK3AU1R8iIQ/2dsb2JhbACDXKAkea5GkFoNgRSDNXQEkBNs
-Date: Fri, 10 Dec 2010 14:23:51 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] [WATCHDOG] fix compiler warning on alim7101_pci_tbl
-Message-ID: <20101210132351.GC3783@infomag.iguana.be>
-References: <1291739256-16380-1-git-send-email-namhyung@gmail.com> <1291739256-16380-2-git-send-email-namhyung@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1291739256-16380-2-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 10 Dec 2010 08:26:24 -0500
+Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
+ taskstats
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20101208202308.GA1804@redhat.com>
+References: <20101129164237.522034198@linux.vnet.ibm.com>
+	 <20101129164435.903722027@linux.vnet.ibm.com>
+	 <20101201185128.GA7656@redhat.com>
+	 <1291307641.1928.125.camel@holzheu-laptop>
+	 <20101208202308.GA1804@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Fri, 10 Dec 2010 14:26:20 +0100
+Message-ID: <1291987580.1933.10.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
+Hello Oleg,
 
-> Annotate alim7101_pci_tbl as '__used' to fix following warning:
+On Wed, 2010-12-08 at 21:23 +0100, Oleg Nesterov wrote:
+> Oh, sorry for the delay. Again ;)
+
+No problem, I know this can be exhausting ;-)
+
+> On 12/02, Michael Holzheu wrote:
+> > When the last thread exits and the process/thread group dies,
+> > taskstats_exit() sends an additional taskstats struct to userspace that
+> > aggregates the thread accounting data. Currently only the delay
+> > accounting data is aggregated (see
+> > taskstats_exit->fill_tgid_exit->delayacct_add_tsk). Not sure, why the
+> > other information is not aggregated. We perhaps also should include
+> > ac_cXtime in the aggregated taskstats.
 > 
->   CC      drivers/watchdog/alim7101_wdt.o
-> drivers/watchdog/alim7101_wdt.c:433: warning: ‘alim7101_pci_tbl’ defined but not used
+> Not sure I understand... Do you mean
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> 	if (is_thread_group)
+> 		fill_tgid_exit(tsk);
+> 
+> ? Afaics, this is not "When the last thread exits", this is
+> "this program is multithreaded, it has (or had) other threads".
 
-Will be added to linux-2.6-watchdog-next.
+fill_tgid_exit() adds the data of the dying thread to the thread group
+data (tsk->signal->stats). Currently only for delay accounting.
 
-Kind regards,
-Wim.
+But the accumulated data is sent to userspace only after the last thread
+has died:
+
+        if (!is_thread_group || >>>!group_dead<<<)
+                goto send;
+
+        stats = mk_reply(rep_skb, TASKSTATS_TYPE_TGID, tsk->tgid);
+        if (!stats)
+                goto err;
+
+Michael
 
