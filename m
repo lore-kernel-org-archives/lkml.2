@@ -1,182 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab0LJXfS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 18:35:18 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51877 "EHLO e1.ny.us.ibm.com"
+	id S1756247Ab0LJXj0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 18:39:26 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58344 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab0LJXfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 18:35:16 -0500
-Date: Fri, 10 Dec 2010 15:35:12 -0800
+	id S1755819Ab0LJXjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 18:39:25 -0500
+Date: Fri, 10 Dec 2010 15:39:20 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: blk-throttle: Correct the placement of smp_rmb()
-Message-ID: <20101210233512.GM2125@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
+Subject: Re: [PATCH 2/2] rcu: Keep gpnum and completed fields synchronized
+Message-ID: <20101210233920.GA22777@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101208193031.GJ31703@redhat.com>
- <20101208193308.GA1044@redhat.com>
- <20101208200750.GA2202@redhat.com>
- <20101208204624.GK31703@redhat.com>
- <20101208213331.GA4895@redhat.com>
- <20101208220640.GB4895@redhat.com>
- <20101209014519.GO2094@linux.vnet.ibm.com>
- <20101209092659.GA2569@redhat.com>
- <20101209194704.GN2239@linux.vnet.ibm.com>
- <20101210164645.GA4247@redhat.com>
+References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
+ <1292015471-19227-3-git-send-email-fweisbec@gmail.com>
+ <20101210230200.GK2125@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101210164645.GA4247@redhat.com>
+In-Reply-To: <20101210230200.GK2125@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 05:46:45PM +0100, Oleg Nesterov wrote:
-> On 12/09, Paul E. McKenney wrote:
-> >
-> > On Thu, Dec 09, 2010 at 10:26:59AM +0100, Oleg Nesterov wrote:
-> > >
-> > > 	update_object(obj)
-> > > 	{
-> > > 		modify_obj(obj);
-> > >
-> > > 		wmb();
-> > >
-> > > 		obj->was_changed = true;
-> > > 	}
-> > >
-> > > It can be called many times. Sooner or later, we will call
-> > >
-> > > 	process_object(obj)
-> > > 	{
-> > > 		if (!obj->was_changed)
-> > > 			return;
-> >
-> > Ah, and if you have a huge number of CPUs executing update_object()
-> > at just this point, we have the scenario you showed my in your initial
-> > email.
+On Fri, Dec 10, 2010 at 03:02:00PM -0800, Paul E. McKenney wrote:
+> On Fri, Dec 10, 2010 at 10:11:11PM +0100, Frederic Weisbecker wrote:
+> > When a CPU that was in an extended quiescent state wakes
+> > up and catches up with grace periods that remote CPUs
+> > completed on its behalf, we update the completed field
+> > but not the gpnum that keeps a stale value of a backward
+> > grace period ID.
+> > 
+> > Later, note_new_gpnum() will interpret the shift between
+> > the local CPU and the node grace period ID as some new grace
+> > period to handle and will then start to hunt quiescent state.
+> > 
+> > But if every grace periods have already been completed, this
+> > interpretation becomes broken. And we'll be stuck in clusters
+> > of spurious softirqs because rcu_report_qs_rdp() will make
+> > this broken state run into infinite loop.
+> > 
+> > The solution, as suggested by Lai Jiangshan, is to ensure that
+> > the gpnum and completed fields are well synchronized when we catch
+> > up with completed grace periods on their behalf by other cpus.
+> > This way we won't start noting spurious new grace periods.
 > 
-> Yes.
+> Also good, queued!
 > 
-> > 	update_object(obj)
-> > 	{
-> > 		modify_obj(obj);
-> >
-> > 		wmb();
-> >
-> > 		atomic_set(&obj->was_changed, true);
-> > 	}
-> >
-> > 	process_object(obj)
-> > 	{
-> > 		if (!atomic_read(&obj->was_changed))
-> > 			return;
-> >
-> > 		if (!atomic_xchg(&obj->was_changed, false))
-> > 			return;
-> >
-> > 		/* mb(); implied by atomic_xchg(), so no longer needed. */
-> >
-> > 		do_process_object(obj);
-> > 	}
+> One issue -- this approach is vulnerable to overflow.  I therefore
+> followed up with a patch that changes the condition to
 > 
-> This is what we were going to do initially. Except, I think the
-> plain bool/xchg can be used instead of atomic_t/atomic_xchg ?
-> 
-> But then we decided to discuss the alternatives. Partly because
-> this looked like the interesting question, but mostly to keep
-> you busy ;)
+> 	if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
 
-As long as it uses the relevant atomic instructions on all architectures,
-should be fine.  Sigh.  Might need ACCESS_ONCE() on the reads and writes.
-
-> > One caution:  The wmb() in update_object() means that modify_object()
-> > might read some variable and get a -newer- value for that variable than
-> > would a subsequent read from that same variable in do_process_object().
-> > If this would cause a problem, the wmb() should instead be an mb().
-> 
-> Yes. And in this case I even _seem_ to understand why we need
-> s/wmb/mb/ change.
-> 
-> But the original code (I mean, the code we are trying to fix/change)
-> doesn't have the load-load dependency, so I think wmb() is enough.
-
-If you don't need transitivity, wmb() will be OK.
-
-> > The reason that I say that this should not take much additional
-> > overhead is that all of the writes were taking cache-miss latencies,
-> > and you had lots of memory barriers that make it difficult for the
-> > CPUs' store buffers to hide that latency.  The only added overhead
-> > is from the atomic instruction, but given that you already had a
-> > cache miss from the original write and a memory barrier, I would not
-> > expect it to be noticeable.
-> >
-> > But enough time on my soapbox...  Would this do what you need it to?
-> > If so, hopefully it really does what I think it does.  ;-)
-> 
-> OK, thanks Paul.
-> 
-> So I guess it would be safer to return to initial plan and use xchg().
-
-I believe so, but it will take the hardware guys a few more days to
-chase their stuff down.
-
-> > (See http://paulmck.livejournal.com/20312.html for explanation.)
-> 
-> Oh. Very interesting. Transitive memory barriers.
-> 
-> You know, I always wanted to understand this aspect. May be you can
-> look at
-> 
-> 	http://marc.info/?l=linux-kernel&m=118944341320665
-> 
-> starting from "To simplify the example above". This pseudo-code tries
-> to resemble the real-life code we discussed, that is why it uses the
-> pointers (dereference lack read_barrier_depends(), please ignore).
-
-Yes, your example at the above URL looks to me to depend on transitivity,
-which wmb() and rmb() will not provide.  To be safe, both should be mb().
-
-> And no, I can't understand why foo_1() needs the full barrier :/
-> Or may be I can? Suppose that CPU 0 and CPU 1 share the store-buffer
-> (no, no, I do not pretend I _really_ understand what this actually
->  means;). In this case, perhaps we can forget abou CPU 0 and rewrite
-> this code as
-> 
-> 	void foo_1(void)
-> 	{
-> 		X = 1;	/* it was actually written by CPU 0 */
-> 
-> 		r1 = x;
-> 		smp_rmb();  /* The only change. */
-> 		r2 = y;
-> 	}
-> 
-> 	void foo_2(void)
-> 	{
-> 		y = 1;
-> 		smp_mb();
-> 		r3 = x;
-> 	}
-> 
-> In this case smp_rmb() obviously can't help. Does it make any sense?
-
-Yes, there are a number of architectures where that transformation is
-exactly the right analysis tool -- If a CPU loads something just before
-a memory barrier, it is as if that same CPU did the store.
-
-Very good!!!  ;-)
-
-> But, when I look at the link I sent you again, I feel I am totatlly
-> confused. Nothing new, I always knew that memory barriers were specially
-> designed to drive me crazy.
-
-Only if you are too sane for code without barriers to drive you crazy.  ;-)
-
-But yes, this is why it is best to bury barriers behind other APIs.  They
-are very subtle and difficult to get right.  The bit about them being
-the union of all architectures can be especially painful!
+And here is the follow-up patch, FWIW.
 
 							Thanx, Paul
+
+------------------------------------------------------------------------
+
+commit d864b245030645e3465b3bd7e253b7ccf76e9d35
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Fri Dec 10 15:02:47 2010 -0800
+
+    rcu: fine-tune grace-period begin/end checks
+    
+    Use the CPU's bit in rnp->qsmask to determine whether or not the CPU
+    should try to report a quiescent state.  Handle overflow in the check
+    for rdp->gpnum having fallen behind.
+    
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index f8e4ee7..6103017 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -618,20 +618,16 @@ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct
+ {
+ 	if (rdp->gpnum != rnp->gpnum) {
+ 		/*
+-		 * Because RCU checks for the prior grace period ending
+-		 * before checking for a new grace period starting, it
+-		 * is possible for rdp->gpnum to be set to the old grace
+-		 * period and rdp->completed to be set to the new grace
+-		 * period.  So don't bother checking for a quiescent state
+-		 * for the rnp->gpnum grace period unless it really is
+-		 * waiting for this CPU.
++		 * If the current grace period is waiting for this CPU,
++		 * set up to detect a quiescent state, otherwise don't
++		 * go looking for one.
+ 		 */
+-		if (rdp->completed != rnp->gpnum) {
++		rdp->gpnum = rnp->gpnum;
++		if (rnp->qsmask & rdp->grpmask) {
+ 			rdp->qs_pending = 1;
+ 			rdp->passed_quiesc = 0;
+-		}
+-
+-		rdp->gpnum = rnp->gpnum;
++		} else
++			rdp->qs_pending = 0;
+ 	}
+ }
+ 
+@@ -693,19 +689,20 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+ 
+ 		/*
+ 		 * If we were in an extended quiescent state, we may have
+-		 * missed some grace periods that others CPUs took care on
++		 * missed some grace periods that others CPUs handled on
+ 		 * our behalf. Catch up with this state to avoid noting
+-		 * spurious new grace periods.
++		 * spurious new grace periods.  If another grace period
++		 * has started, then rnp->gpnum will have advanced, so
++		 * we will detect this later on.
+ 		 */
+-		if (rdp->completed > rdp->gpnum)
++		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
+ 			rdp->gpnum = rdp->completed;
+ 
+ 		/*
+-		 * If another CPU handled our extended quiescent states and
+-		 * we have no more grace period to complete yet, then stop
+-		 * chasing quiescent states.
++		 * If RCU does not need a quiescent state from this CPU,
++		 * then make sure that this CPU doesn't go looking for one.
+ 		 */
+-		if (rdp->completed == rnp->gpnum)
++		if (rnp->qsmask & rdp->grpmask)
+ 			rdp->qs_pending = 0;
+ 	}
+ }
