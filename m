@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab0LJLMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 06:12:49 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38796 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753455Ab0LJLMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 06:12:48 -0500
-Message-ID: <4D020B44.1040600@kernel.org>
-Date: Fri, 10 Dec 2010 12:13:08 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org
-Subject: Re: [PATCH 14/16] x86: Unify CPU -> NUMA node mapping between 32
- and 64bit
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-15-git-send-email-tj@kernel.org> <alpine.LFD.2.00.1012092244520.2653@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012092244520.2653@localhost6.localdomain6>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Dec 2010 11:12:30 +0000 (UTC)
+	id S1755357Ab0LJLNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 06:13:16 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59247 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672Ab0LJLNP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 06:13:15 -0500
+Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
+ faulting in pages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTikXx4MgdPYWYNVj8cMOSHTHJEUHqKZ_q-P4jFYp@mail.gmail.com>
+References: <1291335412-16231-1-git-send-email-walken@google.com>
+	 <1291335412-16231-2-git-send-email-walken@google.com>
+	 <20101208152740.ac449c3d.akpm@linux-foundation.org>
+	 <AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
+	 <AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
+	 <AANLkTikXx4MgdPYWYNVj8cMOSHTHJEUHqKZ_q-P4jFYp@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Dec 2010 12:12:49 +0100
+Message-ID: <1291979569.6803.114.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 10:49 PM, Thomas Gleixner wrote:
-> On Sat, 27 Nov 2010, Tejun Heo wrote:
-> 
->> Unlike 64bit, 32bit has been using its own cpu_to_node_map[] for CPU
->> -> NUMA node mapping.  Replace it with early_percpu variable
->> x86_cpu_to_node_map and share the mapping code with 64bit.
->>
->> * USE_PERCPU_NUMA_NODE_ID is now enabled for 32bit too.
->>
->> * x86_cpu_to_node_map and numa_set/clear_node() are moved from numa_64
->>   to numa.  For now, x86_cpu_to_node_map is initialized with 0 instead
->>   of NUMA_NO_NODE.  This is to avoid introducing unexpected behavior
-> 
-> That's true for 32bit only, right? I actually had to dig into the code
-> to verify this. Please make this clear for the casual reader.
+On Thu, 2010-12-09 at 22:39 -0800, Michel Lespinasse wrote:
+> I think rwsem_is_contended() actually sounds better than fiddling with
+> constants, but OTOH maybe the mlock use case is not significant enough
+> to justify introducing that new API. 
 
-Will do so.
+Right, so I don't see the problem with _is_contended() either. In fact,
+I introduce mutex_is_contended() in the mmu_preempt series to convert
+existing (spin) lock break tests.
 
-Thanks.
+If you want to do lock-breaks like cond_resched_lock() all you really
+have is *_is_contended(), sleeping locks will schedule unconditional.
 
--- 
-tejun
+int cond_break_mutex(struct mutex *mutex)
+{
+	int ret = 0;
+	if (mutex_is_contended(mutex)) {
+		mutex_unlock(mutex);
+		ret = 1;
+		mutex_lock(mutex);
+	}
+	return 1;
+}
+
+Or more exotic lock breaks, like the mmu-gather stuff, which falls out
+of its nested page-table loops and restarts the whole affair.
