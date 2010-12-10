@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab0LIXta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 18:49:30 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:34565 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238Ab0LIXt2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 18:49:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qL5uENxQ3/T4ms1E57VH1Vs30ZadzlMFYkTrXCVXdTggbLA0NOJ7M+NLYQ6Eje6uvP
-         hxwO8mLg792o4gIaSS0sJNihj1om637o1cLn6N9bR0/pMQppgThx/5WIR8zsCxSBYIVn
-         OMParNNI1zJS+KurYAc5HufDNcULAsjzdz5Xw=
-Date: Thu, 9 Dec 2010 15:49:21 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Identify pointer emulation contact
-Message-ID: <20101209234920.GA14810@core.coreip.homeip.net>
-References: <1291936745-4973-1-git-send-email-rydberg@euromail.se>
+	id S1757535Ab0LJAGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 19:06:38 -0500
+Received: from netnation.com ([204.174.223.2]:51875 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab0LJAGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 19:06:37 -0500
+Date: Thu, 9 Dec 2010 16:06:32 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
+	in response to high-order allocations V2
+Message-ID: <20101210000632.GB18263@hostway.ca>
+References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie> <20101209015530.GD3796@hostway.ca> <20101209114506.GA20133@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291936745-4973-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101209114506.GA20133@csn.ul.ie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 12:19:05AM +0100, Henrik Rydberg wrote:
-> For MT applications, the tracking id provides a robust way to know
-> when a touch is new; essential information to determine when _not_ to
-> emit motion events, for instance.  Currently, ST applications do not
-> have the equivalent information, but instead rely on global properties
-> such as a change in number of fingers. Moreover, some MT applications
-> need to know which contact correponds to the pointer. This patch adds
-> the ABS_TRACKING_ID axis and emits it in
-> input_mt_report_pointer_emulation(), provided the proper absbit is
-> setup by the driver.
+On Thu, Dec 09, 2010 at 11:45:06AM +0000, Mel Gorman wrote:
+
+> On Wed, Dec 08, 2010 at 05:55:30PM -0800, Simon Kirby wrote:
+> > Hmm...
+> > 
+> > Wouldn't it make more sense for the fast path page allocator to allocate
+> > weighted-round-robin (by zone size) from each zone, rather than just
+> > starting from the highest and working down?
+> > 
 > 
+> Unfortunately, that would cause other problems. Zones are about
+> addressing limitations. The DMA zone is used by callers that cannot
+> address above 16M. On the other extreme, the HighMem zone is used for
+> addresses that cannot be directly mapped at all times due to a lack of
+> virtual address space.
+> 
+> If we round-robined the zones, callers that could use HighMem or Normal
+> may consume memory from DMA32 or DMA causing future allocation requests
+> that require those zones to fail.
 
-So how do you propose userspace will use it? Obviously it will not help
-old dumb (ST) applications and new smart applications should understand
-MT protocol and thus do not need to pay much attention to ST events
-anyway. Apparently you have some new dumb userspace in mind here?
+Yeah, I don't mean in all cases, I mean when no particular zone is
+requested; eg, __alloc_pages_nodemask() with a non-picky zone list, or 
+when multiple zones are allowed.  This is the case for most allocations.
 
-Thanks.
+As soon as my 757 MB Normal fills up, the allocations come from DMA32
+anyway.  (Nothing ever comes from DMA because of lowmem_reserve_pages.)
 
--- 
-Dmitry
+> > This would mean that each zone would get a proportional amount of
+> > allocations and reclaiming a bit from each would likely throw out the
+> > oldest allocations, rather than some of that and and some more recent
+> > stuff that was allocated at the beginning of the lower zone.
+> > 
+> > For example, with the current approach, a time progression of allocations
+> > looks like this (N=Normal, D=DMA32): 1N 2N 3N 4D 5D 6D 7D 8D 9D
+> > 
+> > ...once the watermark is hit, kswapd reclaims 1 and 4, since they're
+> > oldest in each zone, but 2 and 3 were allocated earlier.
+> > 
+> > Versus a weighted-round-robin approach: 1N 2D 3D 4N 5D 6D 7N 8D 9D
+> > 
+> > ...kswapd reclaims 1 and 2, and they're oldest in time and maybe LRU.
+> > 
+> > Things probably eventually mix up enough once the system has reclaimed
+> > and allocated more for a while with the current approach, but the
+> > allocations are still chunky depending on how many extra things kswapd
+> > reclaims to reach higher-order watermarks, and doesn't this always mess
+> > with the LRU when the there are multiple usable zones?
+> 
+> If addressing limitations were not a problem, we'd just have a single
+> zone :/
+
+Wouldn't that be nice. ;)
+
+> > Anyway, this approach might be horrible for some other reasons (page
+> > allocations hoping to be sequential?  bigger cache footprint?), but it
+> > might reduce the requirements for other other workarounds, and it would
+> > make the LRU node-wide instead of zone-wide.
+> > 
+> 
+> Node-wide would be preferably from a page aging perspective but as zones
+> are about addressing limitations, we need to be able to reclaim zones
+> from a specific zone quickly and not have to scan looking for suitable
+> pages.
+
+So, I'm not proposing abandoning zones, but simply changing
+get_page_from_freelist() to remember where it last walked zonelist, and
+try to make a (weighted) round robin out of it.  It can already allocate
+from any zone in this case anyway.  (The implementation would be a bit
+more complicated than this due to zonelist not being static, of course.)
+
+Even if the checking of other zones happens in a buffered or chunky way
+to reduce caching effects, it would still mean that all zones fill up at
+roughly the same time, rather than the DMA zone filling up last.  This
+way, the oldest pages would all be the ones that want to be reclaimed,
+rather than the a bunch of not-oldest pages being reclaimed simply
+because the allocator decided to start with a higher zone to avoid
+allocating from the DMA zone.
+
+Simon-
