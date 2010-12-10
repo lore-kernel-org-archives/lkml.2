@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab0LJJmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 04:42:19 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13608 "EHLO mga03.intel.com"
+	id S1752165Ab0LJJpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 04:45:40 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:51538 "EHLO atmel-es2.atmel.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab0LJJmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 04:42:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
-   d="scan'208";a="359804335"
-Date: Fri, 10 Dec 2010 10:42:15 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] MFD: ab8500-core interrupt ffs bit bug
-Message-ID: <20101210094215.GB17051@sortiz-mobl>
-References: <1291298809-3275-1-git-send-email-mattias.wallin@stericsson.com>
- <20101209121317.GE8884@sortiz-mobl>
- <4D01E26F.3090802@stericsson.com>
+	id S1750747Ab0LJJpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 04:45:38 -0500
+Message-ID: <4D01F6BC.1070401@atmel.com>
+Date: Fri, 10 Dec 2010 10:45:32 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D01E26F.3090802@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christian Glindkamp <christian.glindkamp@taskit.de>
+CC: Igor Plyatov <plyatov@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>,
+        linux@arm.linux.org.uk, costa.antonior@gmail.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        pgsellmann@portner-elektronik.at, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] at91: Refactor Stamp9G20 and PControl G20 board file
+References: <4CFFE5A9.4040407@bluewatersys.com> <1291889759-12281-1-git-send-email-christian.glindkamp@taskit.de> <1291909193.6251.32.camel@homepc> <20101210084400.GA24295@taskit.de>
+In-Reply-To: <20101210084400.GA24295@taskit.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 09:18:55AM +0100, Mattias Wallin wrote:
+Le 10/12/2010 09:44, Christian Glindkamp :
+> On 2010-12-09 18:39, Igor Plyatov wrote:
+>> Dear Christian,
+>>
+>>> As PControl G20 is a carrier board for the Stamp9G20 SoM, some code can
+>>> be shared. Therefore board-stamp9g20.c is refactored to allow reusing the
+>>> SoM initialization and board-pcontrol-g20.c is modified to use it.
+>>>
+>>> Signed-off-by: Christian Glindkamp <christian.glindkamp@taskit.de>
+>>> ---
+>>>
+>>> How about this approach? Compile tested for PControl G20 and run time tested
+>>> for Stamp9G20 EVB and PortuxG20.
+>>>
+>>> Just a side note: PortuxG20 is not a carrier board for the Stamp9G20. It just
+>>> shares so much with the evaluation board, that it makes sense to put them both
+>>> into the same file. And there is no intention to put other boards into this
+>>> file.
+>>
+>> The idea from this patch is clean.
+
+Seems clean to me also.
+
+>> Yours patch does not apply to the kernel from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git,
+>> but I apply its content by hands and kernels compiled successfully with
+>> stamp9g20_defconfig and pcontrol_g20_defconfig.
 > 
+> I used exactly this repository. Revision 6313e3c21743cc88bb5bd8aa72948ee1e83937b6
+> to be precise. Maybe your mailer corrupted the patch.
 > 
-> On 12/09/2010 01:13 PM, Samuel Ortiz wrote:
-> > Hi Mattias,
-> > 
-> > On Thu, Dec 02, 2010 at 03:06:49PM +0100, Mattias Wallin wrote:
-> >> This patch fixes a bug in ab8500 interrupt handling
-> > Patch applied. This also looks like a good candidate for 2.6.37.
-> I agree, AB8500 interrupts gets lost without this patch so the error is bad.
-> Do you want me to do anything for this to happen?
-No, the patch is already in my for-linus branch.
+>> Please run ./scripts/checkpatch.pl with you patch and correct all errors
+>> and warnings reported. 
+> 
+> I only get some "line over 80 characters" warnings, which can imho be
+> ignored.
+> 
+>>
+>> If you will correct this patch, to be applicable, then I will vote to
+>> include it into mainline.
+>>
+>> Which kernel repository and branch should I use for the AT91 ARM?
+>> I just want to know - whereto send my next patch to support gms machine?
 
-Cheers,
-Samuel.
+You can build your "gms" patch on top of Linus' + Christian's patches.
 
+Then, I will:
+- send the patch series to mailing-list for final review (maybe with one
+or two additional patches)
+- prepare a pull-request for inclusion in mainline (.37-final may be ok
+as it is just board additions)
 
-> > 
-> > Cheers,
-> > Samuel.
-> > 
-
+Bye,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Nicolas Ferre
