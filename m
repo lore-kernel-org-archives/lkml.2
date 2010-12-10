@@ -1,50 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab0LJA6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 19:58:48 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64321 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab0LJA6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 19:58:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6192"; a="66018434"
-Message-ID: <4D017B45.4000805@codeaurora.org>
-Date: Thu, 09 Dec 2010 16:58:45 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Nicolas Pitre <nico@marvell.com>, linux-kernel@vger.kernel.org,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to	early_initcall
-References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org> <20101202221909.GK29347@n2100.arm.linux.org.uk> <4CF94DDD.8000409@codeaurora.org> <20101203203653.GB10245@n2100.arm.linux.org.uk> <4CFDD297.4020600@codeaurora.org> <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org> <20101209103835.GA31465@n2100.arm.linux.org.uk>
-In-Reply-To: <20101209103835.GA31465@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757634Ab0LJBHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 20:07:34 -0500
+Received: from mga03.intel.com ([143.182.124.21]:5875 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757455Ab0LJBHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 20:07:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,322,1288594800"; 
+   d="scan'208";a="359656467"
+From: Mark Allyn <mark.a.allyn@intel.com>
+To: linux-kernel@vger.kernel.org, greg@kroah.com, mark.a.allyn@intel.com,
+        alan@linux.intel.com, dmitry.kasatkin@nokia.com
+Subject: [PATCH 01/11] sep: remove virtual address being passed to user space application
+Date: Thu,  9 Dec 2010 17:14:15 -0800
+Message-Id: <1291943655-26558-1-git-send-email-mark.a.allyn@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> On Thu, Dec 09, 2010 at 01:23:24AM -0800, skannan@codeaurora.org wrote:
->> Russell, Have you had a chance to look at this? Any comments? How do we
->> move ahead?
-> 
-> I had connected the other thread with this one - it's pretty hard not
-> to as it included this patch in that set as the first patch.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
+---
+ drivers/staging/sep/sep_driver.c     |   23 +++++------------------
+ drivers/staging/sep/sep_driver_api.h |   14 +-------------
+ 2 files changed, 6 insertions(+), 31 deletions(-)
 
-Ok. So what's your take on handling the cache coherency with secure 
-domain? Do we get to add cache invalidate APIs outside of DMA APIs?
-
--Saravana
-
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index f2c216d..a5c0443 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -2541,12 +2541,9 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
+  *	This function sets the bus and virtual addresses of the static pool
+  *	and returns the virtual address
+  */
+-static int sep_get_static_pool_addr_handler(struct sep_device *sep,
+-	unsigned long arg)
++static int sep_get_static_pool_addr_handler(struct sep_device *sep)
+ {
+-	struct stat_pool_addr_struct command_args;
+ 	u32 *static_pool_addr = NULL;
+-	unsigned long addr_hold;
+ 
+ 	dev_dbg(&sep->pdev->dev, "sep_get_static_pool_addr_handler start\n");
+ 
+@@ -2554,21 +2551,11 @@ static int sep_get_static_pool_addr_handler(struct sep_device *sep,
+ 		SEP_DRIVER_SYSTEM_RAR_MEMORY_OFFSET_IN_BYTES);
+ 
+ 	static_pool_addr[0] = SEP_STATIC_POOL_VAL_TOKEN;
+-	static_pool_addr[1] = sep->shared_bus +
++	static_pool_addr[1] = (u32)sep->shared_bus +
+ 		SEP_DRIVER_STATIC_AREA_OFFSET_IN_BYTES;
+ 
+-	addr_hold = (unsigned long)
+-		(sep->shared_addr + SEP_DRIVER_STATIC_AREA_OFFSET_IN_BYTES);
+-	command_args.static_virt_address = (aligned_u64)addr_hold;
+-
+-	dev_dbg(&sep->pdev->dev, "static pool: physical %x virtual %x\n",
+-		(u32)static_pool_addr[1],
+-		(u32)command_args.static_virt_address);
+-
+-	/* Send the parameters to user application */
+-	if (copy_to_user((void __user *) arg, &command_args,
+-		sizeof(struct stat_pool_addr_struct)))
+-		return -EFAULT;
++	dev_dbg(&sep->pdev->dev, "static pool: physical %x\n",
++		(u32)static_pool_addr[1]);
+ 
+ 	dev_dbg(&sep->pdev->dev, "sep_get_static_pool_addr_handler end\n");
+ 
+@@ -3064,7 +3051,7 @@ static long sep_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	case SEP_IOCGETSTATICPOOLADDR:
+ 		/* Get the physical and virtual addresses of the static pool */
+-		error = sep_get_static_pool_addr_handler(sep, arg);
++		error = sep_get_static_pool_addr_handler(sep);
+ 		break;
+ 	case SEP_IOCENDTRANSACTION:
+ 		error = sep_end_transaction_handler(sep);
+diff --git a/drivers/staging/sep/sep_driver_api.h b/drivers/staging/sep/sep_driver_api.h
+index 1207722..5508769 100644
+--- a/drivers/staging/sep/sep_driver_api.h
++++ b/drivers/staging/sep/sep_driver_api.h
+@@ -114,18 +114,6 @@ struct bld_syn_tab_struct {
+ 
+ };
+ 
+-/*
+- * command struct for static pool addresses
+- * Please note that this is a kernel virtual
+- * address; this will be removed at the next
+- * release of the Discretix middleware
+- */
+-struct stat_pool_addr_struct {
+-	/* virtual address of the static pool */
+-	aligned_u64 static_virt_address;
+-};
+-
+-
+ /* command struct for getting caller id value and address */
+ struct caller_id_struct {
+ 	/* pid of the process */
+@@ -275,7 +263,7 @@ struct sep_lli_entry {
+ 
+ /* set the static pool area address and give to SEP (internal to driver) */
+ #define SEP_IOCGETSTATICPOOLADDR	\
+-	_IOR(SEP_IOC_MAGIC_NUMBER, 8, struct stat_pool_addr_struct)
++	_IO(SEP_IOC_MAGIC_NUMBER, 8)
+ 
+ /* start sep command */
+ #define SEP_IOCSEPSTART	 \
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.6.3.3
+
