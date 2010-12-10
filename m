@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab0LJUqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:46:04 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:39667 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757229Ab0LJUp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:45:59 -0500
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Dec 2010 15:45:44 EST
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Micha Nelissen <micha@neli.hopto.org>
-Subject: [PATCH -mm 4/4] RapidIO: Add new sysfs attributes
-Date: Fri, 10 Dec 2010 15:38:18 -0500
-Message-Id: <1292013498-31406-5-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
-References: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
+	id S1757157Ab0LJUtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:49:31 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49074 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756851Ab0LJUta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 15:49:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OH0jL1sRVucYkJm4dOYEHSSWmmSCvRTSubJZMAyx/pz8izUx0gn4egsWKi6xl5mNRd
+         e25J9cwgVVzO/Kf+N056V625C6zsuJtvJtwr3MoS4cNc5vXP2u0b66+EzTsIGl5/8gH+
+         XaYcaVPcn5abv3qPXOM19bDFoD7UivePDCrCE=
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>
+In-Reply-To: <1292013590.2746.2.camel@edumazet-laptop>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
+	 <1291851079-27061-1-git-send-email-venki@google.com>
+	 <1291899120.29292.7.camel@twins>
+	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
+	 <1291917330.6803.7.camel@twins>
+	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
+	 <1291920939.6803.38.camel@twins>
+	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
+	 <1291936593.13513.3.camel@laptop>
+	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
+	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
+	 <1292001500.3580.268.camel@edumazet-laptop>
+	 <1292003346.13513.30.camel@laptop>
+	 <1292004859.3580.387.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1012101236300.13986@router.home>
+	 <1292006788.13513.43.camel@laptop>
+	 <alpine.DEB.2.00.1012101344570.13986@router.home>
+	 <1292011644.13513.61.camel@laptop>
+	 <alpine.DEB.2.00.1012101410571.13986@router.home>
+	 <1292013590.2746.2.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 21:49:25 +0100
+Message-ID: <1292014165.2746.9.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new sysfs attributes.
+Le vendredi 10 décembre 2010 à 21:39 +0100, Eric Dumazet a écrit :
 
-1. Routing information required to to reach the RIO device:
-destid - device destination ID (real for for endpoint, route for switch)
-hopcount - hopcount for maintenance requests (switches only)
+> This was exactly my suggestion Christoph.
+> 
+> I am glad you understand it now.
+> 
+> 
 
-2. device linking information:
-lprev - name of device that precedes the given device in the enumeration
-        or discovery order (displayed along with of the port to which it
-        is attached).
-lnext - names of devices (with corresponding port numbers) that are
-        attached to the given device as next in the enumeration or
-        discovery order (switches only)
+By the way, we need smp_wmb(), not barrier(), even only the "owner cpu"
+can write into its 'percpu' seqcount.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
-Cc: Micha Nelissen <micha@neli.hopto.org>
----
- drivers/rapidio/rio-sysfs.c |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 38 insertions(+), 1 deletions(-)
+There is nothing special about a seqcount being percpu or a 'global'
+one. We must have same memory barrier semantics.
 
-diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
-index 76b4185..b8d9eaf 100644
---- a/drivers/rapidio/rio-sysfs.c
-+++ b/drivers/rapidio/rio-sysfs.c
-@@ -33,6 +33,8 @@ rio_config_attr(device_rev, "0x%08x\n");
- rio_config_attr(asm_did, "0x%04x\n");
- rio_config_attr(asm_vid, "0x%04x\n");
- rio_config_attr(asm_rev, "0x%04x\n");
-+rio_config_attr(destid, "0x%04x\n");
-+rio_config_attr(hopcount, "0x%02x\n");
- 
- static ssize_t routes_show(struct device *dev, struct device_attribute *attr, char *buf)
- {
-@@ -52,6 +54,33 @@ static ssize_t routes_show(struct device *dev, struct device_attribute *attr, ch
- 	return (str - buf);
- }
- 
-+static ssize_t lprev_show(struct device *dev,
-+			  struct device_attribute *attr, char *buf)
-+{
-+	struct rio_dev *rdev = to_rio_dev(dev);
-+
-+	return sprintf(buf, "%02d %s\n", RIO_GET_PORT_NUM(rdev->swpinfo),
-+		       (rdev->prev) ? rio_name(rdev->prev) : "host");
-+}
-+
-+static ssize_t lnext_show(struct device *dev,
-+			  struct device_attribute *attr, char *buf)
-+{
-+	struct rio_dev *rdev = to_rio_dev(dev);
-+	char *str = buf;
-+	int i;
-+
-+	if (rdev->pef & RIO_PEF_SWITCH) {
-+		for (i = 0; i < RIO_GET_TOTAL_PORTS(rdev->swpinfo); i++) {
-+			if (rdev->rswitch->nextdev[i])
-+				str += sprintf(str, "%02d %s\n", i,
-+					rio_name(rdev->rswitch->nextdev[i]));
-+		}
-+	}
-+
-+	return str - buf;
-+}
-+
- struct device_attribute rio_dev_attrs[] = {
- 	__ATTR_RO(did),
- 	__ATTR_RO(vid),
-@@ -59,10 +88,14 @@ struct device_attribute rio_dev_attrs[] = {
- 	__ATTR_RO(asm_did),
- 	__ATTR_RO(asm_vid),
- 	__ATTR_RO(asm_rev),
-+	__ATTR_RO(lprev),
-+	__ATTR_RO(destid),
- 	__ATTR_NULL,
- };
- 
- static DEVICE_ATTR(routes, S_IRUGO, routes_show, NULL);
-+static DEVICE_ATTR(lnext, S_IRUGO, lnext_show, NULL);
-+static DEVICE_ATTR(hopcount, S_IRUGO, hopcount_show, NULL);
- 
- static ssize_t
- rio_read_config(struct file *filp, struct kobject *kobj,
-@@ -218,7 +251,9 @@ int rio_create_sysfs_dev_files(struct rio_dev *rdev)
- 	err = device_create_bin_file(&rdev->dev, &rio_config_attr);
- 
- 	if (!err && (rdev->pef & RIO_PEF_SWITCH)) {
--		err = device_create_file(&rdev->dev, &dev_attr_routes);
-+		err |= device_create_file(&rdev->dev, &dev_attr_routes);
-+		err |= device_create_file(&rdev->dev, &dev_attr_lnext);
-+		err |= device_create_file(&rdev->dev, &dev_attr_hopcount);
- 		if (!err && rdev->rswitch->sw_sysfs)
- 			err = rdev->rswitch->sw_sysfs(rdev, RIO_SW_SYSFS_CREATE);
- 	}
-@@ -241,6 +276,8 @@ void rio_remove_sysfs_dev_files(struct rio_dev *rdev)
- 	device_remove_bin_file(&rdev->dev, &rio_config_attr);
- 	if (rdev->pef & RIO_PEF_SWITCH) {
- 		device_remove_file(&rdev->dev, &dev_attr_routes);
-+		device_remove_file(&rdev->dev, &dev_attr_lnext);
-+		device_remove_file(&rdev->dev, &dev_attr_hopcount);
- 		if (rdev->rswitch->sw_sysfs)
- 			rdev->rswitch->sw_sysfs(rdev, RIO_SW_SYSFS_REMOVE);
- 	}
--- 
-1.7.3.1
+	this_cpu_write_seqcount_begin(&myseqcount);
+	this_cpu_add(mydata1, add1);
+	this_cpu_add(mydata2, add2);
+	this_cpu_inc(mydata3);
+	this_cpu_write_seqcount_end(&myseqcount);
+
+We protect the data[1,2,3] set with a seqcount, so need smp_wmb() in
+both _begin() and _end()
+
+
 
