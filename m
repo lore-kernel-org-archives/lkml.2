@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab0LJW7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 17:59:00 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55199 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab0LJW67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 17:58:59 -0500
-Date: Fri, 10 Dec 2010 14:58:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
-Subject: Re: [PATCH 1/2] rcu: Stop chasing QS if another CPU did it for us
-Message-ID: <20101210225855.GJ2125@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
- <1292015471-19227-2-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292015471-19227-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1754413Ab0LJXA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 18:00:59 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48529 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab0LJXA6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 18:00:58 -0500
+Subject: Re: [PATCH 0/9] regulators: Update ab8500 regulator driver
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@stericsson.com>
+In-Reply-To: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
+References: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 23:00:54 +0000
+Message-ID: <1292022054.3422.23.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 10:11:10PM +0100, Frederic Weisbecker wrote:
-> When a CPU is idle and others CPUs handled its extended
-> quiescent state to complete grace periods on its behalf,
-> it will catch up with completed grace periods numbers
-> when it wakes up.
+On Fri, 2010-12-10 at 11:08 +0100, Bengt Jonsson wrote:
+> This patchset updates the ab8500 regulator driver:
+> * The first patch modifies the ab8500 platform configuration structure.
+> * Patches two through eight updates the ab8500 regulator driver.
+> * The ninth patch modifies the ab8500 regulator configuration.
 > 
-> But at this point there might be no more grace period to
-> complete, but still the woken CPU always keeps its stale
-> qs_pending value and will then continue to chase quiescent
-> states even if its not needed anymore.
+> The eighth patch is optional as discussed before.
 > 
-> This results in clusters of spurious softirqs until a new
-> real grace period is started. Because if we continue to
-> chase quiescent states but we have completed every grace
-> periods, rcu_report_qs_rdp() is puzzled and makes that
-> state run into infinite loops.
+> Bengt Jonsson (9):
+>   regulators: Moved define for number of regulators in ab8500
+>   regulators: Fixed errors in ab8500 register mapping
+>   regulators: Clean out unused code in ab8500 regulators
+>   regulators: Added ab8500 v2 support
+>   regulators: Updated ab8500 variable names, macro names and comments
+>   regulators: Modified ab8500 error handling
+>   regulators: Added verbose debug messages to ab8500 regulators
+>   regulators: Removed macros for initialization of ab8500 regulators
+>   mach-ux500: Updated and connected ab8500 regulator board
+>     configuration
 > 
-> As suggested by Lai Jiangshan, just reset qs_pending if
-> someone completed every grace periods on our behalf.
+>  arch/arm/mach-ux500/board-mop500-regulators.c |  153 ++++-----
+>  arch/arm/mach-ux500/board-mop500-regulators.h |   19 +
+>  arch/arm/mach-ux500/board-mop500.c            |    3 +
+>  drivers/regulator/ab8500.c                    |  448 +++++++++++++++++--------
+>  include/linux/mfd/ab8500.h                    |    5 +-
+>  include/linux/regulator/ab8500.h              |   24 +-
+>  6 files changed, 426 insertions(+), 226 deletions(-)
+>  create mode 100644 arch/arm/mach-ux500/board-mop500-regulators.h
+> 
 
-Nice!!!
+All applied.
 
-I have queued this patch, and followed it up with a patch that changes
-the condition to "rnp->qsmask & rdp->grpmask", which indicates that RCU
-needs a quiescent state from the CPU, and is valid regardless of how
-messed up the CPU is about which grace period is which.
+Thanks
 
-I am making a similar change to the check in __note_new_gpnum().
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-Seem reasonable?
-
-							Thanx, Paul
-
-> Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/rcutree.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index ccdc04c..8c4ed60 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -681,6 +681,14 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
-> 
->  		/* Remember that we saw this grace-period completion. */
->  		rdp->completed = rnp->completed;
-> +
-> +		/*
-> +		 * If another CPU handled our extended quiescent states and
-> +		 * we have no more grace period to complete yet, then stop
-> +		 * chasing quiescent states.
-> +		 */
-> +		if (rdp->completed == rnp->gpnum)
-> +			rdp->qs_pending = 0;
->  	}
->  }
-> 
-> -- 
-> 1.7.3.2
-> 
