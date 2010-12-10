@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab0LJXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 18:22:59 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59678 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751404Ab0LJXW5 (ORCPT
+	id S1756061Ab0LJXaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 18:30:52 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:61209 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab0LJXav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 18:22:57 -0500
-Date: Fri, 10 Dec 2010 15:22:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Micha Nelissen <micha@neli.hopto.org>
-Subject: Re: [PATCH -mm 4/4] RapidIO: Add new sysfs attributes
-Message-Id: <20101210152233.3786b432.akpm@linux-foundation.org>
-In-Reply-To: <1292013498-31406-5-git-send-email-alexandre.bounine@idt.com>
-References: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
-	<1292013498-31406-5-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Dec 2010 18:30:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=sHNcyBThtjTEM6Toa15V2c2pI2PMONz/Kezf/xoNk9Gl12gYLFCo4VwwFOmxKiDKqs
+         SiX/CJk+9Li1qPeP0mUQ==
+Date: Fri, 10 Dec 2010 15:30:38 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [7/7,v8] NUMA Hotplug Emulator: Implement per-node add_memory
+ debugfs interface
+In-Reply-To: <20101209235705.GA10674@shaohui>
+Message-ID: <alpine.DEB.2.00.1012101529190.30039@chino.kir.corp.google.com>
+References: <A24AE1FFE7AEC5489F83450EE98351BF2A40FED20A@shsmsx502.ccr.corp.intel.com> <20101209012124.GD5798@shaohui> <alpine.DEB.2.00.1012091325530.13564@chino.kir.corp.google.com> <20101209235705.GA10674@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 15:38:18 -0500
-Alexandre Bounine <alexandre.bounine@idt.com> wrote:
+On Fri, 10 Dec 2010, Shaohui Zheng wrote:
 
-> Add new sysfs attributes.
+> > That doesn't address the question.  My question is whether or not adding 
+> > memory to a memoryless node in this way transitions its state to 
+> > N_HIGH_MEMORY in the VM?
+> I guess that you are talking about memory hotplug on x86_32, memory hotplug is
+> NOT supported well for x86_32, and the function add_memory does not consider
+> this situlation.
+> 
+> For 64bit, N_HIGH_MEMORY == N_NORMAL_MEMORY, so we need not to do the transition.
+> 
 
-One would like to see documentation updates along with sysfs API
-updates.  But one fears that this entire interface wasn't documented
-anyway :(
-
-Please at least fully describe the proposed interface in the changelog
-so others can review the proposal.
-
-The proposed new sysfs files appear to break the
-one-value-per-sysfs-file rule.
-
+One more time :)  Memoryless nodes do not have their bit set in 
+N_HIGH_MEMORY.  When memory is added to a memoryless node with this new 
+interface, does the bit get set?
