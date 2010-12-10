@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751133Ab0LJFUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 00:20:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42442 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab0LJFUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 00:20:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,322,1288594800"; 
-   d="asc'?scan'208";a="685746311"
-From: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-To: "asbjorn@asbjorn.biz" <asbjorn@asbjorn.biz>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 9 Dec 2010 21:20:00 -0800
-Subject: Re: [PATCH 0/7] e1000e: cleanup
-Thread-Topic: [PATCH 0/7] e1000e: cleanup
-Thread-Index: AcuYKeTu4veayNOBQqmVc953RlvuKw==
-Message-ID: <A78C6259B11833419567082E2DC0C25601D877D519@orsmsx508.amr.corp.intel.com>
-References: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
-In-Reply-To: <1291862457-16671-1-git-send-email-asbjorn@asbjorn.biz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_"
+	id S1751340Ab0LJFlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 00:41:23 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56717 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab0LJFlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 00:41:22 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH UPDATED] poll: fix a typo in comment
+Cc: kosaki.motohiro@jp.fujitsu.com, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291913827-13558-1-git-send-email-namhyung@gmail.com>
+References: <AANLkTimUJ0mOkNe+ATAxDze_zHbWU8R1cJinEfX98Azw@mail.gmail.com> <1291913827-13558-1-git-send-email-namhyung@gmail.com>
+Message-Id: <20101210144111.C7B6.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 10 Dec 2010 14:41:16 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+> Convert duplicated sys_poll to select. As Kosaki suggests, sys_poll() and
+> sys_select() are now hidden by SYSCALL_DEFINEx() macros so it would be
+> better to use plain select/poll syscall name.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-T24gVGh1LCAyMDEwLTEyLTA5IGF0IDAyOjQwICswMDAwLCBBc2Jqb2VybiBTbG90aCBUb2VubmVz
-ZW4gd3JvdGU6Cj4gSGksCj4gCj4gVGhpcyBwYXRjaHNldCBmaXhlcyBtb3N0IGNoZWNrc3R5bGUg
-cHJvYmxlbXMgaW4gZTEwMDBlLgo+IAo+IENoZWNrcGF0Y2ggc3VtbWFyeToKPiBwcmU6CXRvdGFs
-OgkyMjEgZXJyb3JzLAkxMjkgd2FybmluZ3MsCTI0NTIwIGxpbmVzIGNoZWNrZWQKPiBwb3N0Ogl0
-b3RhbDoJMiBlcnJvcnMsCTM0IHdhcm5pbmdzLAkyNDUzMyBsaW5lcyBjaGVja2VkCj4gCj4gVGhl
-IHR3byByZW1haW5pbmcgZXJyb3JzIGFyZSBvZiB0aGUgdHlwZSAiTWFjcm9zIHdpdGggY29tcGxl
-eCB2YWx1ZXMKPiBzaG91bGQgYmUgZW5jbG9zZWQgaW4gcGFyZW50aGVzaXMiLCB3aXRoIG1hY3Jv
-cyBjb250YWluaW5nIDMgY29tbWEKPiBzZXBlcmF0ZWQgdmFsdWVzLgo+IAo+IFRoZSByZW1haW5p
-bmcgd2FybmluZ3MgYXJlIGFsbCBjYXVzZWQgYnkgPDIwbXMgbXNsZWVwIHVzYWdlLCB0aGF0IHNo
-b3VsZAo+IGJlIHJlcGxhY2VkIHdpdGggdXNsZWVwX3JhbmdlIGNhbGxzLgo+IAo+IFRoaXMgcGF0
-Y2hzZXQgaXMgYmFzZWQgb24gdG9wIG9mIGpraXJzaGVyL25ldC1uZXh0LTIuNi5naXQgKDY3ZDUy
-ODgpCj4gCj4gQXNiam9lcm4gU2xvdGggVG9lbm5lc2VuICg3KToKPiAgIGUxMDAwZTogY2xlYW51
-cDogZml4IHNwYWNpbmcgaXNzdWVzCj4gICBlMTAwMGU6IGNsZWFudXA6IGZpeCBicmFja2V0IGlz
-c3Vlcwo+ICAgZTEwMDBlOiBjbGVhbnVwOiBzaW1wbGlmeSBFMTAwMF9BTExfKiBkZWZpbmVzCj4g
-ICBlMTAwMGU6IGNsZWFudXA6IGZpeCBsb25nIGxpbmVzCj4gICBlMTAwMGU6IGNsZWFudXA6IGZp
-eCBzcGFjZSBpc3N1ZXMgaW4gaWNoOF8qIHN0cnVjdHMKPiAgIGUxMDAwZTogY2xlYW51cDogc3dh
-cCBhcmd1bWVudHMgdG8gYXZvaWQgY2hlY2twYXRjaCBlcnJvcnMKPiAgIGUxMDAwZTogY2xlYW51
-cDogZml4IGNvcHlyaWdodCBub3RpY2VzIHRvIHByZWZlcnJlZCBzdHlsZQo+IAo+ICBkcml2ZXJz
-L25ldC9lMTAwMGUvODI1NzEuYyAgIHwgICA3MCArKysrKysrLS0tLS0tLQo+ICBkcml2ZXJzL25l
-dC9lMTAwMGUvZGVmaW5lcy5oIHwgIDExMCArKysrKysrKysrKystLS0tLS0tLS0tLQo+ICBkcml2
-ZXJzL25ldC9lMTAwMGUvZTEwMDAuaCAgIHwgICA5MyArKysrKysrKysrKy0tLS0tLS0tLQo+ICBk
-cml2ZXJzL25ldC9lMTAwMGUvZXMybGFuLmMgIHwgIDEzNSArKysrKysrKysrKysrKy0tLS0tLS0t
-LS0tLS0tCj4gIGRyaXZlcnMvbmV0L2UxMDAwZS9ldGh0b29sLmMgfCAgIDc1ICsrKysrKysrLS0t
-LS0tLS0KPiAgZHJpdmVycy9uZXQvZTEwMDBlL2h3LmggICAgICB8ICAgNTYgKysrKysrLS0tLS0t
-Cj4gIGRyaXZlcnMvbmV0L2UxMDAwZS9pY2g4bGFuLmMgfCAgMTg1ICsrKysrKysrKysrKysrKysr
-KystLS0tLS0tLS0tLS0tLS0tLS0tCj4gIGRyaXZlcnMvbmV0L2UxMDAwZS9saWIuYyAgICAgfCAg
-IDc4ICsrKysrKysrLS0tLS0tLS0KPiAgZHJpdmVycy9uZXQvZTEwMDBlL25ldGRldi5jICB8ICAx
-NzEgKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0KPiAgZHJpdmVycy9uZXQvZTEw
-MDBlL3BhcmFtLmMgICB8ICAgNjAgKysrKysrKy0tLS0tLQo+ICBkcml2ZXJzL25ldC9lMTAwMGUv
-cGh5LmMgICAgIHwgIDIwNCArKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0t
-LS0KPiAgMTEgZmlsZXMgY2hhbmdlZCwgNjI1IGluc2VydGlvbnMoKyksIDYxMiBkZWxldGlvbnMo
-LSkKPiAKPiAtLSAKPiAxLjcuMi4zCj4gCgpXZSBhbHJlYWR5IGhhdmUgcGF0Y2hlcyBxdWV1ZWQg
-dXAgaW50ZXJuYWxseSBhbmQgYXJlIHVuZGVyIHZhbGlkYXRpb24KZm9yIHRoZSBjaGFuZ2VzIGlu
-IHBhdGNoZXMgMSB0aHJvdWdoIDUgYWxvbmcgYWxvbmcgd2l0aCBvdGhlciBwYXRjaGVzCmZvciBl
-MTAwMGUuICBUaGVzZSBwYXRjaGVzIHdpbGwgYmUgcG9zdGVkIHNob3J0bHkuCgpQYXRjaCA2IHNo
-b3VsZCBiZSBmaXhlZCBpbiBjaGVja3BhdGNoLnBsIGFuZCBmcm9tIEZsb3JpYW4ncyByZXNwb25z
-ZSwgaXQKc291bmRzIGxpa2UgdGhlIGZpeCBpcyBhbHJlYWR5IG91dCB0aGVyZS4KClBhdGNoIDcg
-ZG9lcyBub3QgcmVzb2x2ZSBhbnkgd2FybmluZ3MgaW4gY2hlY2twYXRjaC5wbCBhbmQgdGhlcmUg
-aXMgbm8KaW1wZW5kaW5nIG5lZWQgdG8gbWFrZSB0aGlzIGNoYW5nZS4KClNvIEkgd29uJ3QgYmUg
-YXBwbHlpbmcgdGhpcyBzZXJpZXMgb2YgcGF0Y2hlcy4KCkNoZWVycywKSmVmZgo=
+Thank you.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
---_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: signature.asc
-Content-Disposition: attachment; filename="signature.asc"; size=491;
-	creation-date="Thu, 09 Dec 2010 21:19:59 GMT";
-	modification-date="Thu, 09 Dec 2010 21:19:59 GMT"
-Content-Transfer-Encoding: base64
+> ---
+>  include/linux/poll.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/poll.h b/include/linux/poll.h
+> index 56e76af78102..afd3375e58ee 100644
+> --- a/include/linux/poll.h
+> +++ b/include/linux/poll.h
+> @@ -57,7 +57,7 @@ struct poll_table_entry {
+>  };
+>  
+>  /*
+> - * Structures and helpers for sys_poll/sys_poll
+> + * Structures and helpers for select/poll syscall
+>   */
+>  struct poll_wqueues {
+>  	poll_table pt;
+> -- 
+> 1.7.3.3.400.g93cef
+> 
 
-LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogR251UEcgdjEuNC4xMSAoR05V
-L0xpbnV4KQoKaVFFY0JBQUJBZ0FHQlFKTkFiaCtBQW9KRUNUc0NBRHIvRVdVWUxFSC8weDV2WnJR
-MGRwWS9xUk12SlVvSmQ3UgpYVjJKUXFWNDBPNkQ3RlJzZ21YNGYyYUNhcHZmUmlJV2dnOCtUS3Ni
-M2grWW8rSGdmL08vZ2NlRk9EWmtZUWZ3CmgwN3hjcnVpazZwWlJ2L3cwL29lWFR5aERuOTFPNHJS
-Vk9lSVFXMWdQN3Y3cnBLM3Z2S293d3ZndHlXeU9SaHYKSEU2UU9DWUg0Vkt0YjhsWCtqU3hnMC8z
-SThMczVlQ05jdXdRN3EzWlZQdXJ3K0c1KzEzZmxpWGt5Ykh5cGRNZQpYVEVKc0ZTQXZQMm1mVm1y
-WXdSa3lrNklXWk5JUUxmcnVmMVE5amRHOTZpWE5zNHNicXJqVlFGTmFHMnR1UnhhClpaQkJXTXFT
-dElmc3dHc2xoYnlqcy9Bc1ZNelZwRGg0RG1La2g5bnhCdkkydE1uNHB1OUpNZHVkREZLYlUrST0K
-PUVJSmsKLS0tLS1FTkQgUEdQIFNJR05BVFVSRS0tLS0tCgo=
 
---_002_A78C6259B11833419567082E2DC0C25601D877D519orsmsx508amrc_--
+
