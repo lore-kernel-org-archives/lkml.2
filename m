@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab0LJLuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 06:50:35 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:9713
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755520Ab0LJLue (ORCPT
+	id S1755649Ab0LJLur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 06:50:47 -0500
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:37589
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755558Ab0LJLuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 06:50:34 -0500
-X-SpamScore: -3
-X-BigFish: VPS-3(zz4015Lzz1202hzzz32i668h61h)
+	Fri, 10 Dec 2010 06:50:35 -0500
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h61h)
 X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LD7NK1-01-2JO-02
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LD7NK3-02-2UE-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Ingo Molnar <mingo@elte.hu>
 CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>
-Subject: [PATCH 0/2] oprofile, x86: updates for AMD family 15h systems
-Date: Fri, 10 Dec 2010 12:49:04 +0100
-Message-ID: <1291981746-22114-1-git-send-email-robert.richter@amd.com>
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 1/2] oprofile, x86: Add support for AMD family 15h
+Date: Fri, 10 Dec 2010 12:49:05 +0100
+Message-ID: <1291981746-22114-2-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1291981746-22114-1-git-send-email-robert.richter@amd.com>
+References: <1291981746-22114-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -28,20 +31,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resending due to mail corruption)
+This patch adds support for AMD family 15h (Interlagos/Valencia/
+Zambezi) cpus.
 
-This patch set adds support for AMD family 15h systems. It adds cpu
-detection code for family 15h and implements support for 6 counters.
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/oprofile/nmi_int.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Suravee already sent updates for the oprofile userland to the oprofile
-mailing list.
-
-Please review. If the patches are fine I will apply them to the
-oprofile git repostitory on kernel.org.
-
-Thanks,
-
--Robert
-
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 4e8baad..358c8b9 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -732,6 +732,9 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 		case 0x14:
+ 			cpu_type = "x86-64/family14h";
+ 			break;
++		case 0x15:
++			cpu_type = "x86-64/family15h";
++			break;
+ 		default:
+ 			return -ENODEV;
+ 		}
+-- 
+1.7.3.2
 
 
