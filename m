@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab0LKHbn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 02:31:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60708 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab0LKHbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 02:31:41 -0500
-Message-ID: <4D0328CC.1020809@redhat.com>
-Date: Sat, 11 Dec 2010 09:31:24 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: balbir@linux.vnet.ibm.com
-CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
-References: <20101202144129.4357fe00@annuminas.surriel.com> <20101210050344.GR3158@balbir.in.ibm.com>
-In-Reply-To: <20101210050344.GR3158@balbir.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752653Ab0LKIGk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 03:06:40 -0500
+Received: from cx90.justhost.com ([184.154.1.186]:34401 "EHLO
+	cx90.justhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab0LKIGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 03:06:39 -0500
+X-Greylist: delayed 40883 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Dec 2010 03:06:39 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=leadnetpro411.com;
+	h=Received:To:Subject:From:Reply-To:MIME-Version:X-Priority:X-Sender:X-Originating-IP:X-Originating-Email:X-Mailer:X-MimeOLE:X-MSMail-Priority:Message-ID:Content-Type:Content-Transfer-Encoding:Date;
+	b=LQT/Arf/CMSp244CKn8UjU3EbgsMAe44r/Cb3fsdpXdSzhBnTZ1oFjpW3okoxHNkxVsu9oiKatCHwpvWdgwlfqaTFKyaJTZWbFAYc/zh+fqkrTLUN2e3J35+XzUCF8gV;
+To: linux-kernel@vger.kernel.org
+Subject: A quick question about the BFS Network
+From: Jon Farnham <jon@leadnetpro411.com>
+Reply-To: Jon Farnham <jon@leadnetpro411.com>
+MIME-Version: 1.0 
+X-Priority: 3 
+X-Originating-IP: [184.154.1.186] 
+X-Originating-Email: [bounce@leadnetpro411.com] 
+X-Mailer: Microsoft Outlook Express 6.00.2900.3028 
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028 
+X-MSMail-Priority: Normal 
+X-Source: leadnetpro411.com 
+X-Source-Args: HTML 
+X-Source-Dir: leadnetpro411.com 
+Message-ID: <9fdcc31c279aeee85cc213685015c38d@leadnetpro411.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Date: Fri, 10 Dec 2010 14:45:15 -0600
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cx90.justhost.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [1068 32003] / [47 12]
+X-AntiAbuse: Sender Address Domain - leadnetpro411.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2010 07:03 AM, Balbir Singh wrote:
-> >
-> >  Scheduler people, please flame me with anything I may have done
-> >  wrong, so I can do it right for a next version :)
-> >
->
-> This is a good problem statement, there are other things to consider
-> as well
->
-> 1. If a hard limit feature is enabled underneath, donating the
-> timeslice would probably not make too much sense in that case
+Hello, I was just surfing the web looking at business opportunities when I came across your information.  By any chance are you still involved with The BFS Network?   If so, I was just wondering how your business is doing?   It would be great if we could chat about it.  Talk to you soon.   Thanks.
 
-What's the alternative?
+Sincerely,
+Jon Farnham
 
-Consider a two vcpu guest with a 50% hard cap.  Suppose the workload 
-involves ping-ponging within the guest.  If the scheduler decides to 
-schedule the vcpus without any overlap, then the throughput will be 
-dictated by the time slice.  If we allow donation, throughput is limited 
-by context switch latency.
-
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
 
