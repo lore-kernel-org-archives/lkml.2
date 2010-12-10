@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab0LJBjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 20:39:17 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61993 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124Ab0LJBjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 20:39:15 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jon Nelson <jnelson@jamponi.net>, "Ted Ts'o" <tytso@mit.edu>,
-        Mike Snitzer <snitzer@redhat.com>, Matt <jackdachef@gmail.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier support is effective)
-In-reply-to: <20101209231616.GA12515@basil.fritz.box>
-References: <AANLkTin3A_ySn_sZQPqZMn-NORnteQZwTVVSiW_=r3sO@mail.gmail.com> <20101207142145.GA27861@think> <AANLkTikJt-ZOmzj68Jw92rjGHzu0EP-uCVD+eNSO=vGd@mail.gmail.com> <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org> <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com> <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com> <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com> <20101209231616.GA12515@basil.fritz.box>
-Date: Thu, 09 Dec 2010 20:38:36 -0500
-Message-Id: <1291945065-sup-1838@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	id S1757747Ab0LJBkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 20:40:12 -0500
+Received: from www.tglx.de ([62.245.132.106]:45072 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757558Ab0LJBkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Dec 2010 20:40:10 -0500
+Date: Fri, 10 Dec 2010 02:39:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Peter Huewe <peterhuewe@gmx.de>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and
+ fix build failure
+In-Reply-To: <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com>
+Message-ID: <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
+References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de> (sfid-20101209_233452_977189_2E13469D) <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Andi Kleen's message of 2010-12-09 18:16:16 -0500:
-> > 512MB.
-> > 
-> > 'free' reports 75MB, 419MB free.
-> > 
-> > I originally noticed the problem on really real hardware (thinkpad
-> > T61p), however.
+On Fri, 10 Dec 2010, Mark Brown wrote:
+
+> On 9 Dec 2010, at 23:34, Peter Huewe wrote:
 > 
-> If you can easily reproduce it could you try a git bisect?
+> > This patch fixes a build failure[1] by converting the driver to use the
+> > new irq_chip functions.
+> 
+> The driver has already been converted; if this is required we should
+> just backport the relevant change (mfd: Convert WM831x to new irq_
+> interrupt methods) in order to avoid merge issues with current code
+> rather than reimplementing. However, at this stage in 2.6.37 I don't
+> think that's a good idea.
 
-Do we have a known good kernel?  I looked back through the thread and
-didn't see any reports where the postgres test on ext4 passed in this
-config.
+I think it is.
 
--chris
+# git grep GENERIC_HARDIRQS_NO_DEPRECATED arch/
+arch/sh/Kconfig:        select GENERIC_HARDIRQS_NO_DEPRECATED
+
+Though the question remains, whether this driver is actually used with
+sh platforms. If yes, then pushing the already existing change to
+Linus is the right way to go. If no, adding a "depends on !SH" is the
+simple fix to prevent this allmodconfig fallout. Another option is to
+ignore it :) I leave that up to Paul.
+ 
+> > The old functions are deprecated and masked by GENERIC_HARDIRQS_NO__DO_IRQ
+> 
+> 
+> Are you sure it's that option and not GENERIC_HARDIRQS_NO_DEPRECATED? 
+
+Right that changelog sucks. :)
+
+> > Cc: Stable <stable@kernel.org>
+> 
+> Why are you CCing to stable? This API was only introduced in 2.6.37 which is still
+> in -rc and attempting to backport to stable releases would cause those releases to
+> fail to build.
+
+Right, thats useless.
+
+Thanks,
+
+	tglx
