@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0LJLKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 06:10:46 -0500
-Received: from www.tglx.de ([62.245.132.106]:38172 "EHLO www.tglx.de"
+	id S1755218Ab0LJLM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 06:12:27 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38776 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab0LJLKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 06:10:45 -0500
-Date: Fri, 10 Dec 2010 12:10:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+	id S1752041Ab0LJLMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 06:12:25 -0500
+Message-ID: <4D020B22.1030701@kernel.org>
+Date: Fri, 10 Dec 2010 12:12:34 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
         x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org
-Subject: Re: [PATCH UPDATED#3 04/16] x86: setup_local_APIC() must always be
- called with preemption disabled
-In-Reply-To: <4D020A53.8020500@kernel.org>
-Message-ID: <alpine.LFD.2.00.1012101209580.2653@localhost6.localdomain6>
-References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-5-git-send-email-tj@kernel.org> <4D00B3B9.7060702@kernel.org> <alpine.LFD.2.00.1012092253530.2653@localhost6.localdomain6> <4D020A53.8020500@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [PATCH 07/16] x86: Remove custom apic->cpu_to_logical_apicid()
+ implementations
+References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-8-git-send-email-tj@kernel.org> <alpine.LFD.2.00.1012092217000.2653@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1012092217000.2653@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Dec 2010 11:11:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010, Tejun Heo wrote:
+Hello, Thomas.
 
-> On 12/09/2010 10:56 PM, Thomas Gleixner wrote:
-> > On Thu, 9 Dec 2010, Tejun Heo wrote:
-> > 
-> >> setup_local_APIC() is used to setup local APIC early during CPU
-> >> initialization and already assumes that preemption is disabled on
-> >> entry.  However, The function unnecessarily disables and enables
-> >> preemption and uses smp_processor_id() multiple times in and out of
-> >> the nested preemption disabled section.  This gives the wrong
-> >> impression that the function might be able to handle being called with
-> >> preemption enabled and/or migrated to another processor in the middle.
-> >>
-> >> Make it clear that the function is always called with preemption
-> >> disabled, drop the confusing preemption disable block and call
-> >> smp_processor_id() once at the beginning of the function.
-> > 
-> > AFAICT, this one is completely unrelated to that NUMA cleanup, right ?
-> > 
-> > So this can be applied independent and should never have been part of
-> > that NUMA series in the first place.
+On 12/09/2010 10:28 PM, Thomas Gleixner wrote:
+>> After the previous patch, apic->cpu_to_logical_apicid() is no longer
+>> used.  The callback will be repurposed.  Remove all the custom
 > 
-> Originally, it was a trivial prep patch.  Anyways, I'll push it
-> to the top of the series so that it can be taken separately.
+> That's a very bad idea. You remove the callbacks from the esoteric
+> platforms, but you keep the other implementation in the tree.
+>
+> It's not longer used now, so remove all incarnations and get rid of
+> all those useless = NULL initializations at the same time. Then
+> implement a new callback with a different name.
 
-I pick it up from mail.
+Yeah, that would be cleaner.  I wasn't very sure about clearing
+unimplemented apic ops.  Currently the rule seems to be always setting
+them to NULL and I didn't want to re-do that with a new callback.
 
-Thanks,
+> It's slightly more work and code churn, but it makes the change
+> entirely clear. It'd be also nice to annotate in the function name
+> that this is 32bit only or even make it 32bit dependent if it's not
+> too much ifdeffery
 
-	tglx
+Yeah, sure, if the silly NULL assignments aren't necessary, I don't
+think it would be much more churn anyway.
+
+Thanks.
+
+-- 
+tejun
