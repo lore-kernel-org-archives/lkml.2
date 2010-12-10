@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab0LJBWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Dec 2010 20:22:35 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45428 "EHLO
+	id S1757706Ab0LJBXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 20:23:47 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45528 "EHLO
 	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756306Ab0LJBWe (ORCPT
+	with ESMTP id S1757246Ab0LJBXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 20:22:34 -0500
+	Thu, 9 Dec 2010 20:23:45 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 10 Dec 2010 10:16:49 +0900
+Date: Fri, 10 Dec 2010 10:18:02 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Mel Gorman <mel@csn.ul.ie>
 Cc: Simon Kirby <sim@hostway.ca>,
@@ -19,12 +19,12 @@ Cc: Simon Kirby <sim@hostway.ca>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order
- allocations until a percentage of the node is balanced
-Message-Id: <20101210101649.824e35ed.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1291893500-12342-3-git-send-email-mel@csn.ul.ie>
+Subject: Re: [PATCH 3/6] mm: kswapd: Use the order that kswapd was
+ reclaiming at for sleeping_prematurely()
+Message-Id: <20101210101802.81b04765.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1291893500-12342-4-git-send-email-mel@csn.ul.ie>
 References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
-	<1291893500-12342-3-git-send-email-mel@csn.ul.ie>
+	<1291893500-12342-4-git-send-email-mel@csn.ul.ie>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -34,154 +34,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Dec 2010 11:18:16 +0000
+On Thu,  9 Dec 2010 11:18:17 +0000
 Mel Gorman <mel@csn.ul.ie> wrote:
 
-> When reclaiming for high-orders, kswapd is responsible for balancing a
-> node but it should not reclaim excessively. It avoids excessive reclaim by
-> considering if any zone in a node is balanced then the node is balanced. In
-> the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
-> ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
-> one small zone was balanced.
-> 
-> This alters the sleep logic of kswapd slightly. It counts the number of pages
-> that make up the balanced zones. If the total number of balanced pages is
-> more than a quarter of the zone, kswapd will go back to sleep. This should
-> keep a node balanced without reclaiming an excessive number of pages.
+> Before kswapd goes to sleep, it uses sleeping_prematurely() to check if
+> there was a race pushing a zone below its watermark. If the race
+> happened, it stays awake. However, balance_pgdat() can decide to reclaim
+> at a lower order if it decides that high-order reclaim is not working as
+> expected. This information is not passed back to sleeping_prematurely().
+> The impact is that kswapd remains awake reclaiming pages long after it
+> should have gone to sleep. This patch passes the adjusted order to
+> sleeping_prematurely and uses the same logic as balance_pgdat to decide
+> if it's ok to go to sleep.
 > 
 > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-
-Hmm, does this work well in
-
-for example, x86-32,
-	DMA: 16MB
-	NORMAL: 700MB
-	HIGHMEM: 11G
-?
-
-At 1st look, it's balanced when HIGHMEM has enough free pages...
-This is not good for NICs which requests high-order allocations.
-
-Can't we take claszone_idx into account at checking rather than
-node->present_pages ?
-
-as
-	balanced > present_pages_below_classzone_idx(node, classzone_idx)/4
-
-?
-Thanks,
--Kame
-
-> ---
->  mm/vmscan.c |   43 ++++++++++++++++++++++++++++++++++---------
->  1 files changed, 34 insertions(+), 9 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 25cb373..b4472a1 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2117,10 +2117,26 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
->  }
->  #endif
->  
-> +/*
-> + * pgdat_balanced is used when checking if a node is balanced for high-order
-> + * allocations. Only zones that meet watermarks make up "balanced".
-> + * The total of balanced pages must be at least 25% of the node for the
-> + * node to be considered balanced. Forcing all zones to be balanced for high
-> + * orders can cause excessive reclaim when there are imbalanced zones.
-> + * Similarly, we do not want kswapd to go to sleep because ZONE_DMA happens
-> + * to be balanced when ZONE_DMA32 is huge in comparison and unbalanced
-> + */
-> +static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced)
-> +{
-> +	return balanced > pgdat->node_present_pages / 4;
-> +}
-> +
->  /* is kswapd sleeping prematurely? */
->  static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
->  {
->  	int i;
-> +	unsigned long balanced = 0;
-> +	bool all_zones_ok = true;
->  
->  	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
->  	if (remaining)
-> @@ -2138,10 +2154,19 @@ static int sleeping_prematurely(pg_data_t *pgdat, int order, long remaining)
->  
->  		if (!zone_watermark_ok(zone, order, high_wmark_pages(zone),
->  								0, 0))
-> -			return 1;
-> +			all_zones_ok = false;
-> +		else
-> +			balanced += zone->present_pages;
->  	}
->  
-> -	return 0;
-> +	/*
-> +	 * For high-order requests, any zone meeting the watermark allows
-> +	 * kswapd to sleep. For order-0, all zones must be balanced
-> +	 */
-> +	if (order)
-> +		return pgdat_balanced(pgdat, balanced);
-> +	else
-> +		return !all_zones_ok;
->  }
->  
->  /*
-> @@ -2169,7 +2194,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  							int classzone_idx)
->  {
->  	int all_zones_ok;
-> -	int any_zone_ok;
-> +	unsigned long balanced;
->  	int priority;
->  	int i;
->  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> @@ -2203,7 +2228,7 @@ loop_again:
->  			disable_swap_token();
->  
->  		all_zones_ok = 1;
-> -		any_zone_ok = 0;
-> +		balanced = 0;
->  
->  		/*
->  		 * Scan in the highmem->dma direction for the highest
-> @@ -2314,11 +2339,11 @@ loop_again:
->  				 */
->  				zone_clear_flag(zone, ZONE_CONGESTED);
->  				if (i <= classzone_idx)
-> -					any_zone_ok = 1;
-> +					balanced += zone->present_pages;
->  			}
->  
->  		}
-> -		if (all_zones_ok || (order && any_zone_ok))
-> +		if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))
->  			break;		/* kswapd: all done */
->  		/*
->  		 * OK, kswapd is getting into trouble.  Take a nap, then take
-> @@ -2344,10 +2369,10 @@ out:
->  
->  	/*
->  	 * order-0: All zones must meet high watermark for a balanced node
-> -	 * high-order: Any zone below pgdats classzone_idx must meet the high
-> -	 *             watermark for a balanced node
-> +	 * high-order: Balanced zones must make up at least 25% of the node
-> +	 *             for the node to be balanced
->  	 */
-> -	if (!(all_zones_ok || (order && any_zone_ok))) {
-> +	if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced)))) {
->  		cond_resched();
->  
->  		try_to_freeze();
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
