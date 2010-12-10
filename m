@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab0LJHRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 02:17:09 -0500
-Received: from mail.perches.com ([173.55.12.10]:2489 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753274Ab0LJHQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 02:16:59 -0500
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH 2/2] x86: smp: Remove unlikely from cpu_is_offline
-Date: Thu,  9 Dec 2010 23:16:56 -0800
-Message-Id: <95f481d7db923f367bd9cf2d4e0932e344280a3f.1291965374.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
-In-Reply-To: <c9efab4f338b1c630072c4b8aa5715dfdbb13533.1291965374.git.joe@perches.com>
-References: <c9efab4f338b1c630072c4b8aa5715dfdbb13533.1291965374.git.joe@perches.com>
+	id S1753564Ab0LJH3F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 02:29:05 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:58153 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750966Ab0LJH3C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 02:29:02 -0500
+Message-ID: <4D01D6AF.6010202@euromail.se>
+Date: Fri, 10 Dec 2010 08:28:47 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: mt: Identify pointer emulation contact
+References: <1291936745-4973-1-git-send-email-rydberg@euromail.se> <20101209234920.GA14810@core.coreip.homeip.net>
+In-Reply-To: <20101209234920.GA14810@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PQxPN-0001cI-AF.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PQxPN-0001cI-AF a2ce283b79b25a4afd12b4960e09fa3d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu_is_offline already uses unlikely internally.
+>
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/x86/kernel/smp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> So how do you propose userspace will use it? Obviously it will not help
+> old dumb (ST) applications and new smart applications should understand
+> MT protocol and thus do not need to pay much attention to ST events
+> anyway. Apparently you have some new dumb userspace in mind here?
 
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 513deac..02e53f1 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -114,7 +114,7 @@
-  */
- static void native_smp_send_reschedule(int cpu)
- {
--	if (unlikely(cpu_is_offline(cpu))) {
-+	if (cpu_is_offline(cpu)) {
- 		WARN_ON(1);
- 		return;
- 	}
--- 
-1.7.3.3.398.g0b0cd.dirty
 
+You are right, it is a dumb idea. Consider this one dropped.
+
+Thanks,
+Henrik
