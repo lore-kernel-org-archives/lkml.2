@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab0LJR2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:28:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55349 "EHLO
+	id S1755143Ab0LJR2a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:28:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55348 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752665Ab0LJR2M (ORCPT
+	by vger.kernel.org with ESMTP id S1752566Ab0LJR2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Dec 2010 12:28:12 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3] regulator: Convert WM831x drivers to use get_voltage_sel()
-Date: Fri, 10 Dec 2010 17:28:08 +0000
-Message-Id: <1292002088-9644-3-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/3] regulator: Allow drivers to report voltages as selectors
+Date: Fri, 10 Dec 2010 17:28:07 +0000
+Message-Id: <1292002088-9644-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292002088-9644-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <1292002088-9644-1-git-send-email-broonie@opensource.wolfsonmicro.com>
@@ -21,152 +21,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since drivers already have to provide an API for translating selectors
+into voltages they may as well just report the selector values directly
+to the core API rather than implement the lookup themselves. The old
+interface is left in place for now, but may be removed in future.
+
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/wm831x-dcdc.c |   14 +++++++-------
- drivers/regulator/wm831x-ldo.c  |   18 +++++++++---------
- 2 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/regulator/core.c         |   25 ++++++++++++++++++++++---
+ include/linux/regulator/driver.h |    3 +++
+ 2 files changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index 71da6b2..8b0d2c4 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -377,14 +377,14 @@ static int wm831x_buckv_set_suspend_voltage(struct regulator_dev *rdev,
- 	return wm831x_set_bits(wm831x, reg, WM831X_DC1_SLP_VSEL_MASK, vsel);
- }
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 671eb53..b362dbd 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -577,7 +577,9 @@ static void drms_uA_update(struct regulator_dev *rdev)
  
--static int wm831x_buckv_get_voltage(struct regulator_dev *rdev)
-+static int wm831x_buckv_get_voltage_sel(struct regulator_dev *rdev)
+ 	err = regulator_check_drms(rdev);
+ 	if (err < 0 || !rdev->desc->ops->get_optimum_mode ||
+-	    !rdev->desc->ops->get_voltage || !rdev->desc->ops->set_mode)
++	    (!rdev->desc->ops->get_voltage &&
++	     !rdev->desc->ops->get_voltage_sel) ||
++	    !rdev->desc->ops->set_mode)
+ 		return;
+ 
+ 	/* get output voltage */
+@@ -1682,7 +1684,14 @@ EXPORT_SYMBOL_GPL(regulator_set_voltage);
+ 
+ static int _regulator_get_voltage(struct regulator_dev *rdev)
  {
- 	struct wm831x_dcdc *dcdc = rdev_get_drvdata(rdev);
- 
- 	if (dcdc->dvs_gpio && dcdc->dvs_gpio_state)
--		return wm831x_buckv_list_voltage(rdev, dcdc->dvs_vsel);
-+		return dcdc->dvs_vsel;
+-	/* sanity check */
++	int sel;
++
++	if (rdev->desc->ops->get_voltage_sel) {
++		sel = rdev->desc->ops->get_voltage_sel(rdev);
++		if (sel < 0)
++			return sel;
++		return rdev->desc->ops->list_voltage(rdev, sel);
++	}
+ 	if (rdev->desc->ops->get_voltage)
+ 		return rdev->desc->ops->get_voltage(rdev);
  	else
--		return wm831x_buckv_list_voltage(rdev, dcdc->on_vsel);
-+		return dcdc->on_vsel;
- }
+@@ -2191,7 +2200,7 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
+ 	int			status = 0;
  
- /* Current limit options */
-@@ -426,7 +426,7 @@ static int wm831x_buckv_get_current_limit(struct regulator_dev *rdev)
+ 	/* some attributes need specific methods to be displayed */
+-	if (ops->get_voltage) {
++	if (ops->get_voltage || ops->get_voltage_sel) {
+ 		status = device_create_file(dev, &dev_attr_microvolts);
+ 		if (status < 0)
+ 			return status;
+@@ -2327,6 +2336,16 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ 	if (!init_data)
+ 		return ERR_PTR(-EINVAL);
  
- static struct regulator_ops wm831x_buckv_ops = {
- 	.set_voltage = wm831x_buckv_set_voltage,
--	.get_voltage = wm831x_buckv_get_voltage,
-+	.get_voltage_sel = wm831x_buckv_get_voltage_sel,
- 	.list_voltage = wm831x_buckv_list_voltage,
- 	.set_suspend_voltage = wm831x_buckv_set_suspend_voltage,
- 	.set_current_limit = wm831x_buckv_set_current_limit,
-@@ -678,7 +678,7 @@ static int wm831x_buckp_set_suspend_voltage(struct regulator_dev *rdev,
- 	return wm831x_buckp_set_voltage_int(rdev, reg, uV, uV, &selector);
- }
++	/* Only one of each should be implemented */
++	WARN_ON(regulator_desc->ops->get_voltage &&
++		regulator_desc->ops->get_voltage_sel);
++
++	/* If we're using selectors we must implement list_voltage. */
++	if (regulator_desc->ops->get_voltage_sel &&
++	    !regulator_desc->ops->list_voltage) {
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	rdev = kzalloc(sizeof(struct regulator_dev), GFP_KERNEL);
+ 	if (rdev == NULL)
+ 		return ERR_PTR(-ENOMEM);
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index cce5753..bf3e653 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -43,6 +43,8 @@ enum regulator_status {
+  * @set_voltage: Set the voltage for the regulator within the range specified.
+  *               The driver should select the voltage closest to min_uV.
+  * @get_voltage: Return the currently configured voltage for the regulator.
++ * @get_voltage_sel: Return the currently configured voltage selector for the
++ *                   regulator.
+  * @list_voltage: Return one of the supported voltages, in microvolts; zero
+  *	if the selector indicates a voltage that is unusable on this system;
+  *	or negative errno.  Selectors range from zero to one less than
+@@ -82,6 +84,7 @@ struct regulator_ops {
+ 	int (*set_voltage) (struct regulator_dev *, int min_uV, int max_uV,
+ 			    unsigned *selector);
+ 	int (*get_voltage) (struct regulator_dev *);
++	int (*get_voltage_sel) (struct regulator_dev *);
  
--static int wm831x_buckp_get_voltage(struct regulator_dev *rdev)
-+static int wm831x_buckp_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct wm831x_dcdc *dcdc = rdev_get_drvdata(rdev);
- 	struct wm831x *wm831x = dcdc->wm831x;
-@@ -689,12 +689,12 @@ static int wm831x_buckp_get_voltage(struct regulator_dev *rdev)
- 	if (val < 0)
- 		return val;
- 
--	return wm831x_buckp_list_voltage(rdev, val & WM831X_DC3_ON_VSEL_MASK);
-+	return val & WM831X_DC3_ON_VSEL_MASK;
- }
- 
- static struct regulator_ops wm831x_buckp_ops = {
- 	.set_voltage = wm831x_buckp_set_voltage,
--	.get_voltage = wm831x_buckp_get_voltage,
-+	.get_voltage_sel = wm831x_buckp_get_voltage_sel,
- 	.list_voltage = wm831x_buckp_list_voltage,
- 	.set_suspend_voltage = wm831x_buckp_set_suspend_voltage,
- 
-diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
-index 9594e71..c94fc5b 100644
---- a/drivers/regulator/wm831x-ldo.c
-+++ b/drivers/regulator/wm831x-ldo.c
-@@ -160,7 +160,7 @@ static int wm831x_gp_ldo_set_suspend_voltage(struct regulator_dev *rdev,
- 	return wm831x_gp_ldo_set_voltage_int(rdev, reg, uV, uV, &selector);
- }
- 
--static int wm831x_gp_ldo_get_voltage(struct regulator_dev *rdev)
-+static int wm831x_gp_ldo_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
- 	struct wm831x *wm831x = ldo->wm831x;
-@@ -173,7 +173,7 @@ static int wm831x_gp_ldo_get_voltage(struct regulator_dev *rdev)
- 
- 	ret &= WM831X_LDO1_ON_VSEL_MASK;
- 
--	return wm831x_gp_ldo_list_voltage(rdev, ret);
-+	return ret;
- }
- 
- static unsigned int wm831x_gp_ldo_get_mode(struct regulator_dev *rdev)
-@@ -293,7 +293,7 @@ static unsigned int wm831x_gp_ldo_get_optimum_mode(struct regulator_dev *rdev,
- 
- static struct regulator_ops wm831x_gp_ldo_ops = {
- 	.list_voltage = wm831x_gp_ldo_list_voltage,
--	.get_voltage = wm831x_gp_ldo_get_voltage,
-+	.get_voltage_sel = wm831x_gp_ldo_get_voltage_sel,
- 	.set_voltage = wm831x_gp_ldo_set_voltage,
- 	.set_suspend_voltage = wm831x_gp_ldo_set_suspend_voltage,
- 	.get_mode = wm831x_gp_ldo_get_mode,
-@@ -465,7 +465,7 @@ static int wm831x_aldo_set_suspend_voltage(struct regulator_dev *rdev,
- 	return wm831x_aldo_set_voltage_int(rdev, reg, uV, uV, &selector);
- }
- 
--static int wm831x_aldo_get_voltage(struct regulator_dev *rdev)
-+static int wm831x_aldo_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
- 	struct wm831x *wm831x = ldo->wm831x;
-@@ -478,7 +478,7 @@ static int wm831x_aldo_get_voltage(struct regulator_dev *rdev)
- 
- 	ret &= WM831X_LDO7_ON_VSEL_MASK;
- 
--	return wm831x_aldo_list_voltage(rdev, ret);
-+	return ret;
- }
- 
- static unsigned int wm831x_aldo_get_mode(struct regulator_dev *rdev)
-@@ -559,7 +559,7 @@ static int wm831x_aldo_get_status(struct regulator_dev *rdev)
- 
- static struct regulator_ops wm831x_aldo_ops = {
- 	.list_voltage = wm831x_aldo_list_voltage,
--	.get_voltage = wm831x_aldo_get_voltage,
-+	.get_voltage_sel = wm831x_aldo_get_voltage_sel,
- 	.set_voltage = wm831x_aldo_set_voltage,
- 	.set_suspend_voltage = wm831x_aldo_set_suspend_voltage,
- 	.get_mode = wm831x_aldo_get_mode,
-@@ -718,7 +718,7 @@ static int wm831x_alive_ldo_set_suspend_voltage(struct regulator_dev *rdev,
- 	return wm831x_alive_ldo_set_voltage_int(rdev, reg, uV, uV, &selector);
- }
- 
--static int wm831x_alive_ldo_get_voltage(struct regulator_dev *rdev)
-+static int wm831x_alive_ldo_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
- 	struct wm831x *wm831x = ldo->wm831x;
-@@ -731,7 +731,7 @@ static int wm831x_alive_ldo_get_voltage(struct regulator_dev *rdev)
- 
- 	ret &= WM831X_LDO11_ON_VSEL_MASK;
- 
--	return wm831x_alive_ldo_list_voltage(rdev, ret);
-+	return ret;
- }
- 
- static int wm831x_alive_ldo_get_status(struct regulator_dev *rdev)
-@@ -753,7 +753,7 @@ static int wm831x_alive_ldo_get_status(struct regulator_dev *rdev)
- 
- static struct regulator_ops wm831x_alive_ldo_ops = {
- 	.list_voltage = wm831x_alive_ldo_list_voltage,
--	.get_voltage = wm831x_alive_ldo_get_voltage,
-+	.get_voltage_sel = wm831x_alive_ldo_get_voltage_sel,
- 	.set_voltage = wm831x_alive_ldo_set_voltage,
- 	.set_suspend_voltage = wm831x_alive_ldo_set_suspend_voltage,
- 	.get_status = wm831x_alive_ldo_get_status,
+ 	/* get/set regulator current  */
+ 	int (*set_current_limit) (struct regulator_dev *,
 -- 
 1.7.1
 
