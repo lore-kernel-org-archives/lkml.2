@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab0LJRcu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:32:50 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60770 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752222Ab0LJRct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 12:32:49 -0500
-Date: Fri, 10 Dec 2010 17:32:47 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Peter Huewe <peterhuewe@gmx.de>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and
- fix build failure
-Message-ID: <20101210173246.GG3200@rakim.wolfsonmicro.main>
-References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de>
- <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com>
- <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6>
- <20101210050755.GA21712@linux-sh.org>
- <20101210121420.GC3200@rakim.wolfsonmicro.main>
- <20101210154332.GB21712@linux-sh.org>
- <20101210170131.GC21712@linux-sh.org>
+	id S1753848Ab0LJRgX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:36:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12784 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753340Ab0LJRgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 12:36:21 -0500
+Date: Fri, 10 Dec 2010 12:35:33 -0500
+From: Dave Jones <davej@redhat.com>
+To: Dan Carpenter <error27@gmail.com>,
+        Marek Belisko <marek.belisko@open-nandra.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/8] staging: ft1000: Convert char device to debugfs.
+Message-ID: <20101210173533.GB2505@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dan Carpenter <error27@gmail.com>,
+	Marek Belisko <marek.belisko@open-nandra.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <1291890413-15255-1-git-send-email-marek.belisko@open-nandra.com>
+ <1291890413-15255-2-git-send-email-marek.belisko@open-nandra.com>
+ <20101209104336.GT10623@bicker>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101210170131.GC21712@linux-sh.org>
-X-Cookie: Well thaaaaaaat's okay.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101209104336.GT10623@bicker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 02:01:31AM +0900, Paul Mundt wrote:
+On Thu, Dec 09, 2010 at 01:43:36PM +0300, Dan Carpenter wrote:
+ > > +	file = debugfs_create_file("device", S_IRUGO | S_IWUGO, dir,
+ >                                                        ^^^^^^^
+ > > +					NULL, &ft1000fops);
+ > 
+ > Don't make this world writeable.
 
-> The above 4 at least should have their dependencies tidied up. The rest
-> of them will break on an allmod/yesconfig for SH for .37, which the
-> following patch addresses. On the other hand, none of these are really
-> all that pressing, particularly as none of these are used by any of the
-> SH defconfigs.
+we should probably make checkpatch catch this.
 
-> I had considered adding a GENERIC_HARDIRQS_DEPRECATED, but that
-> unfortunately gets to be a bit tricky since almost no one sources
-> kernel/irq/Kconfig yet, and this isn't likely to be a problem for very
-> long anyways -- it's basically just the MFD drivers that play around with
-> the irq_chip anyways.
 
-Please remove the changes for the Wolfson drivers, as I said in my
-previous mails if you insist that this must be changed in 2.6.37 I would
-much rather cherry-pick the existing changes over into 2.6.37 than have
-them unusuable on SH for a release (and we'd need to fix -next to remove
-the dependency anyway).  
 
-If you're checking this stuff it'd be good to also take a look at
-drivers/gpio - there's a bunch of irq_chips in there too.  I would also
-urge you to also contact the maintainers for the relevant drivers while
-doing these checks, I suspect quite a few people aren't aware of the new
-APIs yet.
+
+Exporting world writable sysfs/debugfs files is usually a bad thing.
+Warn about it.
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e3c7fc0..5075005 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2892,6 +2892,11 @@ sub process {
+ 				ERROR("lockdep_no_validate class is reserved for device->mutex.\n" . $herecurr);
+ 			}
+ 		}
++
++		if ($line =~ /debugfs_create_file.*S_IWUGO/ ||
++		    $line =~ /DEVICE_ATTR.*S_IWUGO/ ) {
++			WARN("Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
++		}
+ 	}
+ 
+ 	# If we have no input at all, then there is nothing to report on
