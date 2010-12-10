@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab0LJVYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:24:21 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:7504 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab0LJVYU (ORCPT
+	id S1755020Ab0LJVae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:30:34 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63139 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab0LJVac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:24:20 -0500
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 1/5] resources: add arch hook for preventing allocation in reserved areas
-Date: Fri, 10 Dec 2010 14:07:24 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>,
-        Matthew Garrett <mjg@redhat.com>, Dan Williams <dcbw@redhat.com>,
-        rjw@sisk.pl
-References: <20101208213606.13026.47657.stgit@bob.kio> <20101210123008.7fed582d@jbarnes-desktop> <20101210123609.73c12a23@jbarnes-desktop>
-In-Reply-To: <20101210123609.73c12a23@jbarnes-desktop>
+	Fri, 10 Dec 2010 16:30:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qpjaYbzYGozC38AR0ldpl263kNz0izhVCBtdTXpsejqN1ZyfXKl9DblCEUbOf9txCp
+         pWobmbNVNpLx9zmJm8LRkxLUQobiGCsart52vJ2EjapRQiIeBgqSJKja8oVGkc65h5F1
+         3Lr1UFczqgoeSO0obw3HqAaXyhxOSewa/n5/c=
+Message-ID: <4D029BF1.6020709@gmail.com>
+Date: Fri, 10 Dec 2010 22:30:25 +0100
+From: Jarek Poplawski <jarkao2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.13) Gecko/20100916 SeaMonkey/2.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: David Miller <davem@davemloft.net>
+CC: nuclearcat@nuclearcat.com, eric.dumazet@gmail.com, andrej@ota.si,
+        linux-kernel@vger.kernel.org, gvs@zemos.net, ramirose@gmail.com,
+        netdev@vger.kernel.org
+Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
+References: <aa43945b38cee751a8231084866b074d@192.168.253.23>	<1291387595.2897.350.camel@edumazet-laptop>	<201012102151.04983.nuclearcat@nuclearcat.com> <20101210.121845.70177370.davem@davemloft.net>
+In-Reply-To: <20101210.121845.70177370.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012101407.24419.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 10, 2010 01:36:09 pm Jesse Barnes wrote:
-> [Actually cc'ing Matthew this time]
+David Miller wrote:
+> From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+> Date: Fri, 10 Dec 2010 21:51:04 +0200
+...
+>> Is there any plans to queue any patch to stable?
+>> pppoe is almost dead in 2.6.36.*
 > 
-> On Fri, 10 Dec 2010 12:30:08 -0800
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> 
-> > On Wed, 08 Dec 2010 14:36:06 -0700
-> > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> > 
-> > > 
-> > > This adds arch_remove_reservations(), which an arch can implement if it
-> > > needs to protect part of the address space from allocation.
-> > > 
-> > > Sometimes that can be done by just requesting a resource.  This hook is to
-> > > cover cases where protected area doesn't fit well in the hierarchical
-> > > resource tree.  For example, x86 BIOS E820 reservations are not related
-> > > to devices, so they may overlap part of, all of, or more than a device
-> > > resource.
-> > > 
-> > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > > ---
-> > 
-> > Hm, this is bigger than the simple change of just avoiding the high 2M;
-> > Linus have you checked it out yet?  It's nicer than simply adjusting
-> > PCIBIOS_MAX_MEM since it will affect all resource callers rather than
-> > just PCI, but it's definitely bigger.
+> I'll deal with it for -stable once I evaluate this patch for upstream,
+> which I haven't even gotten to yet.
 
-Dan Williams also reproduced the problem on a 2530p and tested this
-series (though I think he actually tested a backport in Fedora):
-  https://bugzilla.kernel.org/show_bug.cgi?id=23542#c7
-  https://bugzilla.kernel.org/show_bug.cgi?id=23542#c23
+This patch is here:
+http://patchwork.ozlabs.org/patch/75095/
 
-The simple PCIBIOS_MAX_MEM_32 change below will fix the 2530p problem,
-but it won't help fix the nx6325 problem Rafael reported; details at:
-  https://bugzilla.kernel.org/show_bug.cgi?id=23332#c20
+But IMHO it's buggy for the reason I mentioned. Since Andrej
+didn't respond yet I'd suggest reverting of the offending
+commit 55c95e738da85. If you agree with that but e.g. too busy,
+let me know.
 
-Rafael did confirm on #acpi Wednesday that the full series fixed
-his nx6325.
-
-Bjorn
-
-> > If you want just the simple change for 2.6.37 I can push that, but
-> > we'll need to get a tested-by from Matthew:
-> > 
-> >   diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-> >   index ca0437c..aef9f77 100644
-> >   --- a/arch/x86/include/asm/pci.h
-> >   +++ b/arch/x86/include/asm/pci.h
-> >   @@ -141,7 +141,7 @@ void dma32_reserve_bootmem(void);
-> > 
-> >    /* generic pci stuff */
-> >    #include <asm-generic/pci.h>
-> >   -#define PCIBIOS_MAX_MEM_32 0xffffffff
-> >   +#define PCIBIOS_MAX_MEM_32 0xfff00000
-> > 
-> >    #ifdef CONFIG_NUMA
-> >    /* Returns the node based on pci bus */
-> > 
-> > and I'll queue up this set for 2.6.38.
-> > 
-> > Thanks,
-> 
-> 
-> 
+Jarek P.
