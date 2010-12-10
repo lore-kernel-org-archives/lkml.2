@@ -1,120 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab0LJI7o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 03:59:44 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52383 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab0LJI7n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 03:59:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=F/rVAaRiY7XRrX/DS4K66jSdxol9xItcqDJ8X6BXPqOlHcjfLxMZUy0u8oVGzg1LNB
-         fBKlbYikyUuTQlwSYsd/3N7q+KoleQCZVb2A3tEoaSt6P3VFjs2ohqsINJ+gkI29VAM8
-         ZVOk4YexxsAqUG375H3h6G5RsJfFkT2MD4nGQ=
-MIME-Version: 1.0
-Date: Fri, 10 Dec 2010 09:59:41 +0100
-Message-ID: <AANLkTi=3ar2Sw3RUkMX3Yo4n1-ohQwFT5w_toE6WMTVf@mail.gmail.com>
-Subject: vga switcheroo not working / crashing the machine on i915/nvidia
- hybrid. (ASUS U30JC)
-From: Giacomo <delleceste@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755146Ab0LJJBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 04:01:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:35372 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754807Ab0LJJBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 04:01:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
+   d="scan'208";a="582403550"
+X-Mailbox-Line: From shaohui.zheng@intel.com Fri Dec 10 15:32:42 2010
+Message-Id: <20101210073242.565520411@intel.com>
+References: <20101210073119.156388875@intel.com>
+User-Agent: quilt/0.46-1
+Date: Fri, 10 Dec 2010 15:31:23 +0800
+From: shaohui.zheng@intel.com
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Shaohui Zheng <shaohui.zheng@intel.com>
+Subject: [4/7, v9] NUMA Hotplug Emulator: Abstract cpu register functions
+Content-Disposition: inline; filename=004-hotplug-emulator-x86-abstract-cpu-register-functions.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Shaohui Zheng <shaohui.zheng@intel.com>
 
-In my double-carded ASUS U30JC (nvidia + intel i915) I do the following:
+Abstract cpu register functions, provide a more flexible interface
+register_cpu_node, the new interface provides convenience to add cpu
+to a specified node, we can use it to add a cpu to a fake node.
 
-stop X
-
-This is the output of /sys/kernel/debug/vgaswitcheroo/switch
-
-daphne linux # cat /sys/kernel/debug/vgaswitcheroo/switch
-0: :Pwr:0000:01:00.0
-1:+:Pwr:0000:00:02.0 (intel graphic card in use, ok)
-
-echo "DDIS" > /sys/kernel/debug/vgaswitcheroo/switch does not change
-the output above (intel remains marked as active)
-
-echo "OFF" > /sys/kernel/debug/vgaswitcheroo/switch
-
-seems to switch off Nvidia card, because the output above becomes:
-0: :Off:0000:01:00.0
-1:+:Pwr:0000:00:02.0
-
-restarting X completely freezes the machine, black screen (need to power down
-by
-pressing the power button).
-
-
-ASUS U30JC Nvidia (nouveau) + intel i915.
-
-Kernel 2.6.35
-x11-base/xorg-server 1.9.2.902
-x11-drivers/xf86-video-nouveau 0.0.16_pre20101010
-
-Shutting down the Nvidia graphic card via acpi_call
-https://github.com/mkottman/acpi_call
-produces the same freeze after trying to restart X.
-
-Same problem with kernel 2.6.36 and acpi_call.
-Did not try vga switcheroo on 2.6.36 due to problems with that kernel
-
-https://bugzilla.kernel.org/show_bug.cgi?id=24542
-
-echo "OFF" > /sys/kernel/debug/vgaswitcheroo/switch
-
-produces in dmesg:
-
-Dec  8 00:06:18 daphne kernel: VGA switcheroo: switched nouveau off
-Dec  8 00:06:18 daphne kernel: [drm] nouveau 0000:01:00.0: Disabling fbcon
-acceleration...
-Dec  8 00:06:18 daphne kernel: [drm] nouveau 0000:01:00.0: Unpinning
-framebuffer(s)...
-Dec  8 00:06:18 daphne kernel: [drm] nouveau 0000:01:00.0: Evicting buffers...
-Dec  8 00:06:18 daphne kernel: [drm] nouveau 0000:01:00.0: Idling channels...
-Dec  8 00:06:18 daphne kernel: [drm] nouveau 0000:01:00.0: Suspending GPU
-objects...
-Dec  8 00:06:19 daphne kernel: [drm] nouveau 0000:01:00.0: And we're gone!
-Dec  8 00:06:19 daphne kernel: nouveau 0000:01:00.0: PCI INT A disabled
-Dec  8 00:06:19 daphne kernel: nouveau 0000:01:00.0: power state changed by
-ACPI to D3
-
-which seems to be correct.
-
-The crash taking place when restarting X does not leave any trace on dmesg.
-
-Thanks in advance.
-
-Giacomo.
-Elettra Synchrotron Radiation Facility
-Trieste, IT.
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+---
+Index: linux-hpe4/arch/x86/include/asm/cpu.h
+===================================================================
+--- linux-hpe4.orig/arch/x86/include/asm/cpu.h	2010-11-17 09:00:59.742608402 +0800
++++ linux-hpe4/arch/x86/include/asm/cpu.h	2010-11-17 09:01:10.192838977 +0800
+@@ -27,6 +27,7 @@
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern int arch_register_cpu(int num);
++extern int arch_register_cpu_node(int num, int nid);
+ extern void arch_unregister_cpu(int);
+ #endif
+ 
+Index: linux-hpe4/arch/x86/kernel/topology.c
+===================================================================
+--- linux-hpe4.orig/arch/x86/kernel/topology.c	2010-11-17 09:01:01.053461766 +0800
++++ linux-hpe4/arch/x86/kernel/topology.c	2010-11-17 10:05:32.934085248 +0800
+@@ -52,6 +52,15 @@
+ }
+ EXPORT_SYMBOL(arch_register_cpu);
+ 
++int __ref arch_register_cpu_node(int num, int nid)
++{
++	if (num)
++		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
++
++	return register_cpu_node(&per_cpu(cpu_devices, num).cpu, num, nid);
++}
++EXPORT_SYMBOL(arch_register_cpu_node);
++
+ void arch_unregister_cpu(int num)
+ {
+ 	unregister_cpu(&per_cpu(cpu_devices, num).cpu);
+Index: linux-hpe4/drivers/base/cpu.c
+===================================================================
+--- linux-hpe4.orig/drivers/base/cpu.c	2010-11-17 09:01:01.053461766 +0800
++++ linux-hpe4/drivers/base/cpu.c	2010-11-17 10:05:32.943465010 +0800
+@@ -208,17 +208,18 @@
+ static SYSDEV_CLASS_ATTR(offline, 0444, print_cpus_offline, NULL);
+ 
+ /*
+- * register_cpu - Setup a sysfs device for a CPU.
++ * register_cpu_node - Setup a sysfs device for a CPU.
+  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
+  *	  sysfs for this CPU.
+  * @num - CPU number to use when creating the device.
++ * @nid - Node ID to use, if any.
+  *
+  * Initialize and register the CPU device.
+  */
+-int __cpuinit register_cpu(struct cpu *cpu, int num)
++int __cpuinit register_cpu_node(struct cpu *cpu, int num, int nid)
+ {
+ 	int error;
+-	cpu->node_id = cpu_to_node(num);
++	cpu->node_id = nid;
+ 	cpu->sysdev.id = num;
+ 	cpu->sysdev.cls = &cpu_sysdev_class;
+ 
+@@ -229,7 +230,7 @@
+ 	if (!error)
+ 		per_cpu(cpu_sys_devices, num) = &cpu->sysdev;
+ 	if (!error)
+-		register_cpu_under_node(num, cpu_to_node(num));
++		register_cpu_under_node(num, nid);
+ 
+ #ifdef CONFIG_KEXEC
+ 	if (!error)
+Index: linux-hpe4/include/linux/cpu.h
+===================================================================
+--- linux-hpe4.orig/include/linux/cpu.h	2010-11-17 09:00:59.772898926 +0800
++++ linux-hpe4/include/linux/cpu.h	2010-11-17 10:05:32.954085309 +0800
+@@ -30,7 +30,13 @@
+ 	struct sys_device sysdev;
+ };
+ 
+-extern int register_cpu(struct cpu *cpu, int num);
++extern int register_cpu_node(struct cpu *cpu, int num, int nid);
++
++static inline int register_cpu(struct cpu *cpu, int num)
++{
++	return register_cpu_node(cpu, num, cpu_to_node(num));
++}
++
+ extern struct sys_device *get_cpu_sysdev(unsigned cpu);
+ 
+ extern int cpu_add_sysdev_attr(struct sysdev_attribute *attr);
 
 -- 
-Giacomo S.
-http://www.giacomos.it
+Thanks & Regards,
+Shaohui
 
-- - - - - - - - - - - - - - - - - - - - - -
 
-* iqfire-wall, un progetto
-  open source che implementa un
-  filtro di pacchetti di rete per Linux,
-  e` disponibile per il download qui:
-  http://sourceforge.net/projects/ipfire-wall
-
-* Informazioni e pagina web ufficiale:
-  http://www.giacomos.it/iqfire/index.html
-
-- - - - - - - - - - - - - - - - - - - - - -
-
- . ''  `.
-:   :'    :
- `.  ` '
-    `- Debian GNU/Linux -- The power of freedom
-        http://www.debian.org
