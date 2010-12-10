@@ -1,192 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab0LJJDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 04:03:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25710 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab0LJJBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 04:01:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
-   d="scan'208";a="685790311"
-X-Mailbox-Line: From shaohui.zheng@intel.com Fri Dec 10 15:32:42 2010
-Message-Id: <20101210073242.462037866@intel.com>
-References: <20101210073119.156388875@intel.com>
-User-Agent: quilt/0.46-1
-Date: Fri, 10 Dec 2010 15:31:22 +0800
-From: shaohui.zheng@intel.com
-To: akpm@linux-foundation.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
-        Haicheng Li <haicheng.li@intel.com>,
-        Shaohui Zheng <shaohui.zheng@intel.com>
-Subject: [3/7, v9] NUMA Hotplug Emulator: Add node hotplug emulation
-Content-Disposition: inline; filename=003-node-hotpluge-emulation.patch
+	id S1754892Ab0LJJE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 04:04:58 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:58634 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab0LJJEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 04:04:53 -0500
+Date: Fri, 10 Dec 2010 10:03:24 +0100
+From: Christian Glindkamp <christian.glindkamp@taskit.de>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Ryan Mallon <ryan@bluewatersys.com>, linux@arm.linux.org.uk,
+        costa.antonior@gmail.com, Igor Plyatov <plyatov@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        linux@maxim.org.za, linux-arm-kernel@lists.infradead.org,
+        pgsellmann@portner-elektronik.at
+Subject: Re: [PATCH] at91: Refactor Stamp9G20 and PControl G20 board file
+Message-ID: <20101210090324.GB24295@taskit.de>
+References: <4CFFE5A9.4040407@bluewatersys.com>
+ <1291889759-12281-1-git-send-email-christian.glindkamp@taskit.de>
+ <20101210033850.GC19897@game.jcrosoft.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101210033850.GC19897@game.jcrosoft.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:36llS7m5Q5A7oRmf1ASlUMJwlSll4CTZrYYNA5PDHMj
+ ho5YWyvbVQONCEVeDACDdwAfLGwjY1nZOy+GUiv0s65C0M/Qiq
+ PumLRIc4homGFDTaR236oRAhn4IkZcqmZcuxDKIJRC+exlEqMI
+ PkBL3gwbzbi2uR9iMzFzFgvX/4XhxMqz33fsSt/T/h3WFJ+kSO
+ nq9TH6v9KsPVqhBPvuVdw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+On 2010-12-10 04:38, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> HI,
+> 
+> 	If the hardware are so near I do need to the need to create a new
+> 	machine use system_rev to auto detect it will be better
+> 
+> 	but we need to have only one defconfig as done on rm9200
+> 	it's really reduce the maintainance and allow to be sure when we
+> 	compile the at91sam9g20_defconfig that we do not brake any board
+> 
+> 	if a board have incompatible option please the system_rev to specify
+> 	them or a specific entry in the Kconfig for this board it will allow
+> 	also to known this information for the maintainance
 
-Add an interface to allow new nodes to be added when performing memory
-hot-add.  This provides a convenient interface to test memory hotplug
-notifier callbacks and surrounding hotplug code when new nodes are
-onlined without actually having a machine with such hotpluggable SRAT
-entries.
+Just because it is near does not mean it is a revision of the other
+board. Just compare
+http://www.taskit.de/en/products/portuxg20/index.htm
+http://www.taskit.de/en/products/stamp9g20/starterkit.htm
 
-This adds a new debugfs interface at /sys/kernel/debug/mem_hotplug/add_node
-that behaves in a similar way to the memory hot-add "probe" interface.
-Its format is size@start, where "size" is the size of the new node to be
-added and "start" is the physical address of the new memory.
+Apart from that, both boards are correctly identifiable via the machine
+id for a year, respectively one and a half year for the Stamp9G20 EVB.
+Why change it for sake of change?
 
-The new node id is a currently offline, but possible, node.  The bit must
-be set in node_possible_map so that nr_node_ids is sized appropriately.
+They both have there own machine id to make it clear that these are
+really different boards. I could have also submitted two board files
+and maybe nobody would have noticed that share a lot, but I thought code
+reuse is better so there are in the same file.
 
-For emulation on x86, for example, it would be possible to set aside
-memory for hotplugged nodes (say, anything above 2G) and to add an
-additional four nodes as being possible on boot with
+And for different carrier boards, system_rev does not make sense at all.
 
-	mem=2G numa=possible=4
-
-and then creating a new 128M node at runtime:
-
-	# echo 128M@0x80000000 > /sys/kernel/debug/mem_hotplug/add_node
-	On node 1 totalpages: 0
-	init_memory_mapping: 0000000080000000-0000000088000000
-	 0080000000 - 0088000000 page 2M
-Once the new node has been added, its memory can be onlined.  If this
-memory represents memory section 16, for example:
-
-	# echo online > /sys/devices/system/memory/memory16/state
-	Built 2 zonelists in Node order, mobility grouping on.  Total pages: 514846
-	Policy zone: Normal
- [ The memory section(s) mapped to a particular node are visible via
-   /sys/kernel/debug/mem_hotplug/node1, in this example. ]
-
-The new node is now hotplugged and ready for testing.
-
-CC: Haicheng Li <haicheng.li@intel.com>
-CC: Greg KH <gregkh@suse.de>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
----
- Documentation/memory-hotplug.txt |   24 +++++++++++++++
- mm/memory_hotplug.c              |   59 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 83 insertions(+), 0 deletions(-)
-Index: linux-hpe4/Documentation/memory-hotplug.txt
-===================================================================
---- linux-hpe4.orig/Documentation/memory-hotplug.txt	2010-11-30 12:40:43.527622001 +0800
-+++ linux-hpe4/Documentation/memory-hotplug.txt	2010-11-30 14:11:11.827622000 +0800
-@@ -18,6 +18,7 @@
- 4. Physical memory hot-add phase
-   4.1 Hardware(Firmware) Support
-   4.2 Notify memory hot-add event by hand
-+  4.3 Node hotplug emulation
- 5. Logical Memory hot-add phase
-   5.1. State of memory
-   5.2. How to online memory
-@@ -215,6 +216,29 @@
- Please see "How to online memory" in this text.
- 
- 
-+4.3 Node hotplug emulation
-+------------
-+With debugfs, it is possible to test node hotplug by assigning the newly
-+added memory to a new node id when using a different interface with a similar
-+behavior to "probe" described in section 4.2.  If a node id is possible
-+(there are bits in /sys/devices/system/memory/possible that are not online),
-+then it may be used to emulate a newly added node as the result of memory
-+hotplug by using the debugfs "add_node" interface.
-+
-+The add_node interface is located at "mem_hotplug/add_node" at the debugfs
-+mount point.
-+
-+You can create a new node of a specified size starting at the physical
-+address of new memory by
-+
-+% echo size@start_address_of_new_memory > /sys/kernel/debug/mem_hotplug/add_node
-+
-+Where "size" can be represented in megabytes or gigabytes (for example,
-+"128M" or "1G").  The minumum size is that of a memory section.
-+
-+Once the new node has been added, it is possible to online the memory by
-+toggling the "state" of its memory section(s) as described in section 5.1.
-+
- 
- ------------------------------
- 5. Logical Memory hot-add phase
-Index: linux-hpe4/mm/memory_hotplug.c
-===================================================================
---- linux-hpe4.orig/mm/memory_hotplug.c	2010-11-30 12:40:43.757622001 +0800
-+++ linux-hpe4/mm/memory_hotplug.c	2010-11-30 14:02:33.877622002 +0800
-@@ -924,3 +924,63 @@
- }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- EXPORT_SYMBOL_GPL(remove_memory);
-+
-+#ifdef CONFIG_DEBUG_FS
-+#include <linux/debugfs.h>
-+
-+static struct dentry *memhp_debug_root;
-+
-+static ssize_t add_node_store(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	nodemask_t mask;
-+	u64 start, size;
-+	char buffer[64];
-+	char *p;
-+	int nid;
-+	int ret;
-+
-+	memset(buffer, 0, sizeof(buffer));
-+	if (count > sizeof(buffer) - 1)
-+		count = sizeof(buffer) - 1;
-+	if (copy_from_user(buffer, buf, count))
-+		return -EFAULT;
-+
-+	size = memparse(buffer, &p);
-+	if (size < (PAGES_PER_SECTION << PAGE_SHIFT))
-+		return -EINVAL;
-+	if (*p != '@')
-+		return -EINVAL;
-+
-+	start = simple_strtoull(p + 1, NULL, 0);
-+
-+	nodes_andnot(mask, node_possible_map, node_online_map);
-+	nid = first_node(mask);
-+	if (nid == MAX_NUMNODES)
-+		return -ENOMEM;
-+
-+	ret = add_memory(nid, start, size);
-+	return ret ? ret : count;
-+}
-+
-+static const struct file_operations add_node_file_ops = {
-+	.write		= add_node_store,
-+	.llseek		= generic_file_llseek,
-+};
-+
-+static int __init node_debug_init(void)
-+{
-+	if (!memhp_debug_root)
-+		memhp_debug_root = debugfs_create_dir("mem_hotplug", NULL);
-+	if (!memhp_debug_root)
-+		return -ENOMEM;
-+
-+	if (!debugfs_create_file("add_node", S_IWUSR, memhp_debug_root,
-+			NULL, &add_node_file_ops))
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+module_init(node_debug_init);
-+#endif /* CONFIG_DEBUG_FS */
-
--- 
-Thanks & Regards,
-Shaohui
-
-
+> 
+> Best Regards,
+> J.
+> On 11:15 Thu 09 Dec     , Christian Glindkamp wrote:
+> > As PControl G20 is a carrier board for the Stamp9G20 SoM, some code can
+> > be shared. Therefore board-stamp9g20.c is refactored to allow reusing the
+> > SoM initialization and board-pcontrol-g20.c is modified to use it.
+> > 
+> > Signed-off-by: Christian Glindkamp <christian.glindkamp@taskit.de>
+> > ---
+> > 
+> > How about this approach? Compile tested for PControl G20 and run time tested
+> > for Stamp9G20 EVB and PortuxG20.
+> > 
+> > Just a side note: PortuxG20 is not a carrier board for the Stamp9G20. It just
+> > shares so much with the evaluation board, that it makes sense to put them both
+> > into the same file. And there is no intention to put other boards into this
+> > file.
+> > 
+> >  arch/arm/mach-at91/Makefile                 |    2 +-
+> >  arch/arm/mach-at91/board-pcontrol-g20.c     |   98 +--------------------------
+> >  arch/arm/mach-at91/board-stamp9g20.c        |   82 ++++++++++++-----------
+> >  arch/arm/mach-at91/include/mach/stamp9g20.h |    7 ++
+> >  4 files changed, 54 insertions(+), 135 deletions(-)
+> >  create mode 100644 arch/arm/mach-at91/include/mach/stamp9g20.h
