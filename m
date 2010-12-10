@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab0LJO6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 09:58:49 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:44774 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab0LJO6r convert rfc822-to-8bit (ORCPT
+	id S1755826Ab0LJPBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 10:01:34 -0500
+Received: from mfbichi11.ns.itscom.net ([219.110.2.189]:64296 "EHLO
+	mfbichi11.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755442Ab0LJPBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 09:58:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
-References: <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
- <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
- <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
- <20101209231616.GA12515@basil.fritz.box> <1291945065-sup-1838@think>
- <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
- <20101210023852.GB3059@thunk.org> <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Fri, 10 Dec 2010 08:58:25 -0600
-Message-ID: <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Matt <jackdachef@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-        Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Dec 2010 10:01:32 -0500
+X-Greylist: delayed 1788 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Dec 2010 10:01:32 EST
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20101209070938.GA3949@amd>
+References: <20101209070938.GA3949@amd>
+Date: Fri, 10 Dec 2010 23:23:17 +0900
+Message-ID: <19324.1291990997@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 12:52 AM, Jon Nelson <jnelson@jamponi.net> wrote:
-> On Thu, Dec 9, 2010 at 8:38 PM, Ted Ts'o <tytso@mit.edu> wrote:
->> On Fri, Dec 10, 2010 at 02:53:30AM +0100, Matt wrote:
->>>
->>> Try a kernel before 5a87b7a5da250c9be6d757758425dfeaf8ed3179
->>>
->>> from the tests I've done that one showed the least or no corruption if
->>> you count the empty /etc/env.d/03opengl as an artefact
->>
->> Yes, that's a good test.  Also try commit bd2d0210cf.  The patch
->> series that is most likely to be at fault if there is a regression in
->> between 5a87b7a5d and bd2d0210cf inclusive.
->>
->> I did a lot of testing before submitting it, but that wa a tricky
->> rewrite.  If you can reproduce the problem reliably, it might be good
->> to try commit 16828088f9 (the commit before 5a87b7a5d) and commit
->> bd2d0210cf.  If it reliably reproduces on bd2d0210cf, but is clean on
->> 16828088f9, then it's my ext4 block i/o submission patches, and we'll
->> need to either figure out what's going on or back out that set of
->> changes.
->>
->> If that's the case, a bisect of those changes (it's only 6 commits, so
->> it shouldn't take long) would be most appreciated.
->
-> I observed the behavior on bd2d0210cf in a qemu-kvm install of
-> openSUSE 11.3 (x86_64) on *totally* different host - an AMD quad-core.
->
-> I did /not/ observe the behavior on 16828088f9 (yet). I'll run the
-> test a few more times on 1682..
->
-> Additionally, I am building a bisected kernel now (
-> cb20d5188366f04d96d2e07b1240cc92170ade40 ), but won't be able to get
-> back at it for a while.
 
-cb20d5188366f04d96d2e07b1240cc92170ade40 seems OK so far. I'm going to
-try 1de3e3df917459422cb2aecac440febc8879d410 soon.
+Nick Piggin:
+> The standard memcmp function on a Westmere system shows up hot in
+> profiles in the `git diff` workload (both parallel and single threaded),
+> and it is likely due to the costs associated with trapping into
+> microcode, and little opportunity to improve memory access (dentry
+> name is not likely to take up more than a cacheline).
+
+Let me make sure.
+What you are pointing out is
+- asm("repe; cmpsb") may grab CPU long time, and can be a hazard for
+  scaling.
+- by breaking it into pieces, the chances to scale will increase.
+Right?
+
+Anyway this appraoch replacing smallest code by larger but faster code
+is interesting.
+How about mixing 'unsigned char *' and 'unsigned long *' in referencing
+the given strings?
+For example,
+
+int f(const unsigned char *cs, const unsigned char *ct, size_t count)
+{
+	int ret;
+	union {
+		const unsigned long *l;
+		const unsigned char *c;
+	} s, t;
+
+/* this macro is your dentry_memcmp() actually */
+#define cmp(s, t, c, step)		      \
+	do {				      \
+		while ((c) >= (step)) {	      \
+			ret = (*(s) != *(t)); \
+			if (ret)	      \
+				return ret;   \
+			(s)++;		      \
+			(t)++;		      \
+			(c) -= (step);	      \
+		}			      \
+	} while (0)
+
+	s.c = cs;
+	t.c = ct;
+	cmp(s.l, t.l, count, sizeof(*s.l));
+	cmp(s.c, t.c, count, sizeof(*s.c));
+	return 0;
+}
+
+What I am thinking here is,
+- in load and compare, there is no difference between 'char*' and
+  'long*', probably.
+- obviously 'step by sizeof(long)' will reduce the number of repeats.
+- but I am not sure whether the length of string is generally longer
+  than 4 (or 8) or not.
 
 
--- 
-Jon
+J. R. Okajima
