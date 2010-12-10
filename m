@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab0LJUqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:46:01 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:39667 "EHLO mxout1.idt.com"
+	id S1757315Ab0LJUqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:46:06 -0500
+Received: from hera.kernel.org ([140.211.167.34]:47816 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757233Ab0LJUp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:45:57 -0500
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Dec 2010 15:45:44 EST
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Micha Nelissen <micha@neli.hopto.org>
-Subject: [PATCH -mm 3/4] RapidIO: Use Component Tag for unified switch identification
-Date: Fri, 10 Dec 2010 15:38:17 -0500
-Message-Id: <1292013498-31406-4-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
-References: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
+	id S1757229Ab0LJUqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 15:46:04 -0500
+Message-ID: <4D029162.1040205@kernel.org>
+Date: Fri, 10 Dec 2010 21:45:22 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, eric.dumazet@gmail.com, yinghai@kernel.org,
+        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org
+Subject: Re: [PATCH 13/16] x86: Unify cpu/apicid <-> NUMA node mapping between
+ 32 and 64bit
+References: <1290871325-3055-1-git-send-email-tj@kernel.org> <1290871325-3055-14-git-send-email-tj@kernel.org> <alpine.LFD.2.00.1012092230010.2653@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1012092230010.2653@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Dec 2010 20:45:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the way how switchid value is set. Local counter variable does not
-provide unified way to identify switch devices in a system with multiple
-processors. Using local counter leads to the situation when the same RIO
-switch has different switch ID for each processor. Replacing local counter
-with unique portion of the Component Tag provides unified reference to the
-switch by every processor in the system.
+Hello, Thomas.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
-Cc: Micha Nelissen <micha@neli.hopto.org>
----
- drivers/rapidio/rio-scan.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+On 12/09/2010 10:43 PM, Thomas Gleixner wrote:
+>> There are several places where using numa_cpu_node() is awkward and
+>> the override doesn't matter.  In those places, __apicid_to_node[] are
+>> used directly.
+> 
+> Why is it awkward? Anything outside the accessor functions or
+> specialized setup code using it is awkward, inconsistent and sloppy.
 
-diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index e655756..467e82b 100644
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -46,7 +46,6 @@ static void rio_init_em(struct rio_dev *rdev);
- DEFINE_SPINLOCK(rio_global_list_lock);
- 
- static int next_destid = 0;
--static int next_switchid = 0;
- static int next_net = 0;
- static int next_comptag = 1;
- 
-@@ -438,6 +437,10 @@ static struct rio_dev __devinit *rio_setup_device(struct rio_net *net,
- 		rio_mport_write_config_32(port, destid, hopcount,
- 					  RIO_COMPONENT_TAG_CSR, next_comptag);
- 		rdev->comp_tag = next_comptag++;
-+	}  else {
-+		rio_mport_read_config_32(port, destid, hopcount,
-+					 RIO_COMPONENT_TAG_CSR,
-+					 &rdev->comp_tag);
- 	}
- 
- 	if (rio_device_has_destid(port, rdev->src_ops, rdev->dst_ops)) {
-@@ -461,7 +464,7 @@ static struct rio_dev __devinit *rio_setup_device(struct rio_net *net,
- 	/* If a PE has both switch and other functions, show it as a switch */
- 	if (rio_is_switch(rdev)) {
- 		rswitch = rdev->rswitch;
--		rswitch->switchid = next_switchid;
-+		rswitch->switchid = rdev->comp_tag & RIO_CTAG_UDEVID;
- 		rswitch->port_ok = 0;
- 		rswitch->route_table = kzalloc(sizeof(u8)*
- 					RIO_MAX_ROUTE_ENTRIES(port->sys_size),
-@@ -816,7 +819,6 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
- 		return -1;
- 
- 	if (rio_is_switch(rdev)) {
--		next_switchid++;
- 		sw_inport = RIO_GET_PORT_NUM(rdev->swpinfo);
- 		rio_route_add_entry(rdev, RIO_GLOBAL_TABLE,
- 				    port->host_deviceid, sw_inport, 0);
-@@ -964,8 +966,6 @@ rio_disc_peer(struct rio_net *net, struct rio_mport *port, u16 destid,
- 		return -1;
- 
- 	if (rio_is_switch(rdev)) {
--		next_switchid++;
--
- 		/* Associated destid is how we accessed this switch */
- 		rdev->destid = destid;
- 
+There are two places which index the mapping by apicid instead of cpu.
+One is acpi_fake_nodes() - this sets up the table, so it doesn't
+constitute violation of accessors.
+
+The problematic one is the nearby detection workaround in
+kernel/cpu/amd.c.  This is rather hacky and looks like added to deal
+with early AMD NUMAs which had broken BIOS.  The intel counterpart
+omits this workaround and simply ignore NUMA configuration in those
+cases.
+
+I can change srat_detect_node() and nearby_node() to index by cpu but
+as I have no idea what kind of broken configurations this is supposed
+to deal with, I'm concerned that this may lead to different outcome by
+walking the table in a different order.  I can implement an apicid ->
+numa node mapping function for this but this is something which is
+inherently ugly, so maybe it's best to leave it ugly.
+
+For now, how about adding a big fat comment explaining the ugliness in
+amd.c?
+
+Thanks.
+
 -- 
-1.7.3.1
-
+tejun
