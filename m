@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0LJBMN (ORCPT <rfc822;w@1wt.eu>);
+	id S932172Ab0LJBMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Dec 2010 20:12:23 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45142 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757637Ab0LJBMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Dec 2010 20:12:13 -0500
-Received: from kroah.org ([198.145.64.141]:38731 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757451Ab0LJBMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Dec 2010 20:12:12 -0500
-Date: Thu, 9 Dec 2010 17:11:53 -0800
-From: Greg KH <greg@kroah.com>
-To: "Allyn, Mark A" <mark.a.allyn@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "dmitry.kasatkin@nokia.com" <dmitry.kasatkin@nokia.com>
-Subject: Re: [PATCH 01/11] Staging: sep: remove virtual address being
- passed to user space application
-Message-ID: <20101210011153.GA6888@kroah.com>
-References: <1291915803-18316-1-git-send-email-mark.a.allyn@intel.com>
- <20101210003717.GA28530@kroah.com>
- <8A0E4C92AE2D6D40AF99653191DA3231614627B823@rrsmsx501.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8A0E4C92AE2D6D40AF99653191DA3231614627B823@rrsmsx501.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 10 Dec 2010 10:06:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] mm: kswapd: Stop high-order balancing when any
+ suitable zone is balanced
+Message-Id: <20101210100628.bd890c77.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1291893500-12342-2-git-send-email-mel@csn.ul.ie>
+References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
+	<1291893500-12342-2-git-send-email-mel@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu,  9 Dec 2010 11:18:15 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-A: No.
-Q: Should I include quotations after my reply?
+> When the allocator enters its slow path, kswapd is woken up to balance the
+> node. It continues working until all zones within the node are balanced. For
+> order-0 allocations, this makes perfect sense but for higher orders it can
+> have unintended side-effects. If the zone sizes are imbalanced, kswapd may
+> reclaim heavily within a smaller zone discarding an excessive number of
+> pages. The user-visible behaviour is that kswapd is awake and reclaiming
+> even though plenty of pages are free from a suitable zone.
+> 
+> This patch alters the "balance" logic for high-order reclaim allowing kswapd
+> to stop if any suitable zone becomes balanced to reduce the number of pages
+> it reclaims from other zones. kswapd still tries to ensure that order-0
+> watermarks for all zones are met before sleeping.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-http://daringfireball.net/2007/07/on_top
-
-On Thu, Dec 09, 2010 at 06:07:55PM -0700, Allyn, Mark A wrote:
-> I just changed it; another copy of that patch is being sent out now
-
-Sorry, I already applied your first one, care to make a follow-on one
-that I can apply on top of your whole series?
-
-thanks,
-
-greg k-h
