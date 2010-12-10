@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab0LJRsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:48:10 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:47490 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754391Ab0LJRsJ (ORCPT
+	id S1754851Ab0LJRt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:49:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42054 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab0LJRtZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 12:48:09 -0500
-Message-ID: <4D0267A6.5020603@euromail.se>
-Date: Fri, 10 Dec 2010 18:47:18 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Ping Cheng <pinglinux@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
-References: <1292001842-5000-1-git-send-email-rydberg@euromail.se>	<20101210173611.GA1630@core.coreip.homeip.net>	<4D026634.4000602@euromail.se> <AANLkTimnJpmRJCFhOvZndTmL3r21KEdqXr2Bd9ZT3kUb@mail.gmail.com>
-In-Reply-To: <AANLkTimnJpmRJCFhOvZndTmL3r21KEdqXr2Bd9ZT3kUb@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PR73v-0008NR-B3.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PR73v-0008NR-B3 a5e898d1434c07fc2a3ad9a95569d08a
+	Fri, 10 Dec 2010 12:49:25 -0500
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Peter Zijlstra <peterz@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+In-Reply-To: <1292001500.3580.268.camel@edumazet-laptop>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
+	 <1291851079-27061-1-git-send-email-venki@google.com>
+	 <1291899120.29292.7.camel@twins>
+	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
+	 <1291917330.6803.7.camel@twins>
+	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
+	 <1291920939.6803.38.camel@twins>
+	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
+	 <1291936593.13513.3.camel@laptop>
+	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
+	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
+	 <1292001500.3580.268.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Dec 2010 18:49:06 +0100
+Message-ID: <1292003346.13513.30.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Legacy to me implies we can upgrade, but this is hardware limitation.
+On Fri, 2010-12-10 at 18:18 +0100, Eric Dumazet wrote:
+> Le vendredi 10 décembre 2010 à 14:47 +0100, Peter Zijlstra a écrit :
 
->>> Can we say "rectangle corner - used by older hardware"?
->>>
->> How about "- older hw only", to stay within a single line?
+> Also irq_time_write_begin() and irq_time_write_end() could be faster
+> (called for current cpu)
 > 
-> Why do we suggest it will only be used by older hardware?
+> static inline void irq_time_write_begin(void)
+> {
+> 	__this_cpu_inc(irq_time_seq.sequence);
+> 	smp_wmb();
+> }
+>  
+> static inline void irq_time_write_end(void)
+> {
+> 	smp_wmb();
+> 	__this_cpu_inc(irq_time_seq.sequence);
+> }
 
+Yeah, but that kinda defeats the purpose of having it implemented in
+seqlock.h. Ideally we'd teach gcc about these long pointers and have
+something like: 
 
-To limit its use - we really do not want to use anything but good contact data
-anywhere, but we do not want to leave abundant (= old) hardware out, either.
-Why, is there some case where it would be useful, you think?
+  write_seqcount_begin(&this_cpu_read(irq_time_seq));
 
-Henrik
+do the right thing.
