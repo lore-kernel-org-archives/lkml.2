@@ -1,63 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab0LJKzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:55:18 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:38510 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab0LJKzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:55:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Zs/AaFkultfDyAD2uq7TT+sTvRtR38q17nXv1gHZc5GQfi1U03HCuKcka+RN/JylZl
-         vJ1VL4YAD1BZjX1Rwa36r5Ctgdvqvrskg09Nop0k3cY1oRtFL1enVHSUs9RcaHm2ctUE
-         bO3XqjLp2sVDVm+xgIEaBhG9jEGvpHPx5jZls=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@osdl.org>, Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [resend][PATCH] fs: use kernel's hex_to_bin() method
-Date: Fri, 10 Dec 2010 12:55:05 +0200
-Message-Id: <1291978505-29076-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1754951Ab0LJKzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:55:25 -0500
+Received: from www.tglx.de ([62.245.132.106]:37791 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754269Ab0LJKzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 05:55:22 -0500
+Date: Fri, 10 Dec 2010 11:55:12 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arthur Kepner <akepner@sgi.com>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86/irq: assign vectors from numa_node
+In-Reply-To: <20101203205348.GI20481@sgi.com>
+Message-ID: <alpine.LFD.2.00.1012101051290.2653@localhost6.localdomain6>
+References: <20101203205348.GI20481@sgi.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
----
- fs/binfmt_misc.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+On Fri, 3 Dec 2010, Arthur Kepner wrote:
+> 
+> Several drivers (e.g., mlx4_core) do something similar to:
+> 
+> 	err = pci_enable_msix(pdev, entries, num_possible_cpus());
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 1befe2e..a0fb271 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -28,6 +28,7 @@
- #include <linux/mount.h>
- #include <linux/syscalls.h>
- #include <linux/fs.h>
-+#include <linux/kernel.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -244,10 +245,8 @@ static int unquote(char *from)
- 	while ((c = *s++) != '\0') {
- 		if (c == '\\' && *s == 'x') {
- 			s++;
--			c = toupper(*s++);
--			*p = (c - (isdigit(c) ? '0' : 'A' - 10)) << 4;
--			c = toupper(*s++);
--			*p++ |= c - (isdigit(c) ? '0' : 'A' - 10);
-+			*p = hex_to_bin(*s++) << 4;
-+			*p++ |= hex_to_bin(*s++);
- 			continue;
- 		}
- 		*p++ = c;
--- 
-1.7.2.3
+Which is the main problem and this patch just addresses the
+symptoms. As Eric pointed out earlier, this needs to be solved
+differently.
 
+There is absolutely no point assigning 4096 interrupts to a single
+node in the first place. Especially not, if we end up using only a few
+of them in the end. And those you use are not necessarily on that very
+node.
+
+I understand, that you want to work around your problem at hand, but
+I'm pushing back on it, as it's a crappy solution which just ignores
+the underlying problem. You don't even mention it in your changelog
+that this is a work around and not a solution.
+
+No, you just ignore that fact and the requests to look at the
+underlying problem.
+
+> which takes us down this code path:
+> 
+> 	pci_enable_msix
+> 	native_setup_msi_irqs
+> 	create_irq_nr
+> 	__assign_irq_vector
+> 
+> __assign_irq_vector() preferentially uses vectors from low-numbered 
+> CPUs. On a system with a large number (>256) CPUs this can result in 
+> a CPU running out of vectors, and subsequent attempts to assign an 
+> interrupt to that CPU will fail.
+
+I agree, that __assign_irq_vector() should honour the request for a
+node, but I don't agree, that we should magically spread stuff on
+whatever node we find, when the node ran out of vectors.
+
+There is probably a reason, why you want an interrupt on a specific
+node and just silently pushing it somewhere else feels very wrong.
+
+This needs to be solved from ground up with proper rules about failure
+modes and fallback decisions.
+
+> +static int
+> +__assign_irq_vector_node(int irq, struct irq_cfg *cfg,
+> +			 const struct cpumask *mask, int node)
+> +{
+> +	int err = -EAGAIN;
+> +	int cpu, best_cpu = -1, min_vector_count = NR_VECTORS;
+> +
+> +	for_each_cpu_and(cpu, cpumask_of_node(node), mask) {
+> +		/* find the 'best' CPU to take this vector -
+> +		 * the one with the fewest assigned vectors is
+> +		 * considered 'best' */
+> +		int i, vector_count = 0;
+> +
+> +		if (!cpu_online(cpu))
+> +			continue;
+> +
+> +		for (i = FIRST_EXTERNAL_VECTOR + VECTOR_OFFSET_START;
+> +		     i < NR_VECTORS ; i++)
+> +			if (per_cpu(vector_irq, cpu)[i] != -1)
+> +				vector_count++;
+
+Instead of having proper book keeping of vectors, we loop through nvec
+* ncpus to figure that out ? And of course we run that loop with
+interrupts disabled and vector lock held.
+
+> +		if (vector_count < min_vector_count) {
+> +			min_vector_count = vector_count;
+> +			best_cpu = cpu;
+> +		}
+> +	}
+> +
+> +	if (best_cpu >= 0) {
+> +		cpumask_var_t tmp_mask;
+> +
+> +		if (!alloc_cpumask_var(&tmp_mask, GFP_ATOMIC))
+
+Bah. I made create_irq_nr() atomic region small with lots of effort
+and got rid of all GFP_ATOMIC allocations.
+
+> +			return -ENOMEM;
+> +
+> +		cpumask_clear(tmp_mask);
+> +		cpumask_set_cpu(best_cpu, tmp_mask);
+> +		err = __assign_irq_vector(irq, cfg, tmp_mask);
+> +
+> +		free_cpumask_var(tmp_mask);
+> +	}
+> +
+> +	return err;
+> +}
+> +
+>  int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+>  {
+>  	int err;
+> @@ -1128,6 +1171,39 @@ int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+>  	return err;
+>  }
+>  
+> +static int
+> +assign_irq_vector_node(int irq, struct irq_cfg *cfg,
+> +		       const struct cpumask *mask, int node)
+> +{
+> +	int err;
+> +	unsigned long flags;
+> +
+> +	if (node == NUMA_NO_NODE)
+> +		return assign_irq_vector(irq, cfg, mask);
+> +
+> +	raw_spin_lock_irqsave(&vector_lock, flags);
+> +	err = __assign_irq_vector_node(irq, cfg, mask, node);
+> +	raw_spin_unlock_irqrestore(&vector_lock, flags);
+> +
+> +	if (err != 0)
+> +		/* uh oh - try again w/o specifying a node */
+> +		return assign_irq_vector(irq, cfg, mask);
+> +	else {
+> +		/* and set the affinity mask so that only
+> +		 * CPUs on 'node' will be used */
+> +		struct irq_desc *desc = irq_to_desc(irq);
+> +		unsigned long flags;
+> +
+> +		raw_spin_lock_irqsave(&desc->lock, flags);
+> +		cpumask_and(desc->irq_data.affinity, cpu_online_mask,
+> +			    cpumask_of_node(node));
+
+Which leaves us with an empty affinity mask, when the last cpu of that
+node just went offline before locking desc->lock. Brilliant.
+
+> +		desc->status |= IRQ_AFFINITY_SET;
+> +		raw_spin_unlock_irqrestore(&desc->lock, flags);
+
+Aside of that low level arch code is not supposed to fiddle in
+irq_desc at will excatly for such reasons. 
+
+As you might have noticed, i'm working on removing access to irq_desc
+from random places and I spent quite some effort to clean up the whole
+irq mess. No way to put crap like this in again, so I can twist my
+brain around it next week how to clean it up.
+
+Thanks,
+
+	tglx
