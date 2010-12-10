@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0LJVWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:22:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49518 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab0LJVWv (ORCPT
+	id S1754656Ab0LJVYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:24:21 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:7504 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab0LJVYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:22:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oVcZHdsW9/pxu/tam9dZU2wLrXd1IS2s9Bi3FRFtz5HU1mA1JeckQZo5aIxAMCMgPO
-         FersKBBBU1ku3Ta3HdWXgk1q4lucIg7K2Wz86SeER3pYhS/NzKXsReS4RTsY0Qkj61fz
-         qfwCZHOn3w1CgdytubBa9MwJpifPpaY/e+lqo=
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>
-In-Reply-To: <alpine.DEB.2.00.1012101505250.13986@router.home>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	 <1291851079-27061-1-git-send-email-venki@google.com>
-	 <1291899120.29292.7.camel@twins>
-	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	 <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
-	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
-	 <1292001500.3580.268.camel@edumazet-laptop>
-	 <1292003346.13513.30.camel@laptop>
-	 <1292004859.3580.387.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1012101236300.13986@router.home>
-	 <1292006788.13513.43.camel@laptop>
-	 <alpine.DEB.2.00.1012101344570.13986@router.home>
-	 <1292011644.13513.61.camel@laptop>
-	 <alpine.DEB.2.00.1012101410571.13986@router.home>
-	 <1292013590.2746.2.camel@edumazet-laptop>
-	 <1292014165.2746.9.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1012101505250.13986@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Dec 2010 22:22:45 +0100
-Message-ID: <1292016165.2746.14.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 10 Dec 2010 16:24:20 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH 1/5] resources: add arch hook for preventing allocation in reserved areas
+Date: Fri, 10 Dec 2010 14:07:24 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>,
+        Matthew Garrett <mjg@redhat.com>, Dan Williams <dcbw@redhat.com>,
+        rjw@sisk.pl
+References: <20101208213606.13026.47657.stgit@bob.kio> <20101210123008.7fed582d@jbarnes-desktop> <20101210123609.73c12a23@jbarnes-desktop>
+In-Reply-To: <20101210123609.73c12a23@jbarnes-desktop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012101407.24419.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 10 décembre 2010 à 15:09 -0600, Christoph Lameter a écrit :
-> On Fri, 10 Dec 2010, Eric Dumazet wrote:
+On Friday, December 10, 2010 01:36:09 pm Jesse Barnes wrote:
+> [Actually cc'ing Matthew this time]
 > 
-> >
-> > By the way, we need smp_wmb(), not barrier(), even only the "owner cpu"
-> > can write into its 'percpu' seqcount.
-> >
-> > There is nothing special about a seqcount being percpu or a 'global'
-> > one. We must have same memory barrier semantics.
+> On Fri, 10 Dec 2010 12:30:08 -0800
+> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 > 
-> There is certainly a major difference in that execution of a stream of
-> instructions on the same cpu is guaranteed to have a coherent view of
-> the data. That is not affected by interrupts etc.
+> > On Wed, 08 Dec 2010 14:36:06 -0700
+> > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > 
+> > > 
+> > > This adds arch_remove_reservations(), which an arch can implement if it
+> > > needs to protect part of the address space from allocation.
+> > > 
+> > > Sometimes that can be done by just requesting a resource.  This hook is to
+> > > cover cases where protected area doesn't fit well in the hierarchical
+> > > resource tree.  For example, x86 BIOS E820 reservations are not related
+> > > to devices, so they may overlap part of, all of, or more than a device
+> > > resource.
+> > > 
+> > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > > ---
+> > 
+> > Hm, this is bigger than the simple change of just avoiding the high 2M;
+> > Linus have you checked it out yet?  It's nicer than simply adjusting
+> > PCIBIOS_MAX_MEM since it will affect all resource callers rather than
+> > just PCI, but it's definitely bigger.
+
+Dan Williams also reproduced the problem on a 2530p and tested this
+series (though I think he actually tested a backport in Fedora):
+  https://bugzilla.kernel.org/show_bug.cgi?id=23542#c7
+  https://bugzilla.kernel.org/show_bug.cgi?id=23542#c23
+
+The simple PCIBIOS_MAX_MEM_32 change below will fix the 2530p problem,
+but it won't help fix the nx6325 problem Rafael reported; details at:
+  https://bugzilla.kernel.org/show_bug.cgi?id=23332#c20
+
+Rafael did confirm on #acpi Wednesday that the full series fixed
+his nx6325.
+
+Bjorn
+
+> > If you want just the simple change for 2.6.37 I can push that, but
+> > we'll need to get a tested-by from Matthew:
+> > 
+> >   diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+> >   index ca0437c..aef9f77 100644
+> >   --- a/arch/x86/include/asm/pci.h
+> >   +++ b/arch/x86/include/asm/pci.h
+> >   @@ -141,7 +141,7 @@ void dma32_reserve_bootmem(void);
+> > 
+> >    /* generic pci stuff */
+> >    #include <asm-generic/pci.h>
+> >   -#define PCIBIOS_MAX_MEM_32 0xffffffff
+> >   +#define PCIBIOS_MAX_MEM_32 0xfff00000
+> > 
+> >    #ifdef CONFIG_NUMA
+> >    /* Returns the node based on pci bus */
+> > 
+> > and I'll queue up this set for 2.6.38.
+> > 
+> > Thanks,
 > 
-
-We dont care of interrupts. We care of doing a transaction over a
-complex set of data, that cannot be done using an atomic op (or we need
-a spinlock/mutex/rwlock), and should not because of performance.
-
-> >
-> > 	this_cpu_write_seqcount_begin(&myseqcount);
-> > 	this_cpu_add(mydata1, add1);
-> > 	this_cpu_add(mydata2, add2);
-> > 	this_cpu_inc(mydata3);
-> > 	this_cpu_write_seqcount_end(&myseqcount);
-> >
-> > We protect the data[1,2,3] set with a seqcount, so need smp_wmb() in
-> > both _begin() and _end()
 > 
-> There is nothing to protect there since processing is on the same cpu. The
-> data coherency guarantees of the processor will not allow anything out of
-> sequence to affect execution. An interrupt f.e. will not cause updates to
-> mydata1 to get lost.
 > 
-
-Please take a look at include/linux/u64_stats_sync.h, maybe you'll
-understand the concern about using a seqcount to protect a set of data,
-for example a 256 bit counter increment.
-
-
-
