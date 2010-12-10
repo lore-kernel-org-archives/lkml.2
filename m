@@ -1,92 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab0LJJBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 04:01:35 -0500
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:56476 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755419Ab0LJJBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 04:01:33 -0500
-Date: Fri, 10 Dec 2010 20:01:26 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Nick Piggin <npiggin@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/46] fs: dcache scale hash
-Message-ID: <20101210090126.GH8259@dastard>
-References: <cover.1290852958.git.npiggin@kernel.dk>
- <3eb32695435ae6c5fd1601467d78b560b5058e2b.1290852959.git.npiggin@kernel.dk>
- <20101209060911.GB8259@dastard>
- <20101209062801.GA3749@amd>
- <20101209081756.GE8259@dastard>
- <AANLkTimF457VDRTxjjhu+J9E616LBKP_86UcNS-u+P3p@mail.gmail.com>
- <20101209234258.GB9925@dastard>
- <20101210023520.GC3331@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101210023520.GC3331@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755223Ab0LJJBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 04:01:24 -0500
+Received: from mga01.intel.com ([192.55.52.88]:19812 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755162Ab0LJJBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 04:01:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
+   d="scan'208";a="866683158"
+X-Mailbox-Line: From shaohui.zheng@intel.com Fri Dec 10 15:32:42 2010
+Message-Id: <20101210073242.357094158@intel.com>
+References: <20101210073119.156388875@intel.com>
+User-Agent: quilt/0.46-1
+Date: Fri, 10 Dec 2010 15:31:21 +0800
+From: shaohui.zheng@intel.com
+To: akpm@linux-foundation.org, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        rientjes@google.com, dave@linux.vnet.ibm.com, gregkh@suse.de,
+        Haicheng Li <haicheng.li@intel.com>,
+        Shaohui Zheng <shaohui.zheng@intel.com>
+Subject: [2/7, v9] NUMA Hotplug Emulator: Add numa=possible option
+Content-Disposition: inline; filename=002-add-node-possible-option.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 01:35:20PM +1100, Nick Piggin wrote:
-> On Fri, Dec 10, 2010 at 10:42:58AM +1100, Dave Chinner wrote:
-> > On Thu, Dec 09, 2010 at 11:53:27PM +1100, Nick Piggin wrote:
-> > > Necessary changes to prevent bad ugliness resulting, or preventing
-> > > repeated steps for the particular changes, etc. of course. Killing un
-> > > related functions no.
-> > 
-> > Ok, I get the picture. You don't want a code review, you want a
-> > rubber stamp. Find someone else to get it from.
-> 
-> Of course I want code review. I am not going to just do everything
-> you say that I don't agree with, but I will explain why every time
-> (as I have done to all your points).
+From:  David Rientjes <rientjes@google.com>
 
-Which generally comes down to "I disagree with you". That's hard to
-argue against because you aren't willing to compromise.
+Adds a numa=possible=<N> command line option to set an additional N nodes
+as being possible for memory hotplug.  This set of possible nodes
+controls nr_node_ids and the sizes of several dynamically allocated node
+arrays.
 
-So, to address your next comment, I'll restate what I was proposing.
-That is, to ensure all the d_flags accesses protected by d_lock as
-an initial patch rather than cleaning it up in an ad-hoc fashion
-later on, such as this later patch in your series:
+This allows memory hotplug to create new nodes for newly added memory
+rather than binding it to existing nodes.
 
-[PATCH 14/46] fs: dcache scale d_unhashed
+The first use-case for this will be node hotplug emulation which will use
+these possible nodes to create new nodes to test the memory hotplug
+callbacks and surrounding memory hotplug code.
 
-which has the description:
+CC: Haicheng Li <haicheng.li@intel.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+---
+ Documentation/x86/x86_64/boot-options.txt |    4 ++++
+ arch/x86/mm/numa_64.c                     |   18 +++++++++++++++---
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-	Protect d_unhashed(dentry) condition with d_lock.
+diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+--- a/Documentation/x86/x86_64/boot-options.txt
++++ b/Documentation/x86/x86_64/boot-options.txt
+@@ -174,6 +174,10 @@ NUMA
+ 		If given as an integer, fills all system RAM with N fake nodes
+ 		interleaved over physical nodes.
+ 
++  numa=possible=<N>
++		Sets an additional N nodes as being possible for memory
++		hotplug.
++
+ ACPI
+ 
+   acpi=off	Don't enable ACPI
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -33,6 +33,7 @@ s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
+ int numa_off __initdata;
+ static unsigned long __initdata nodemap_addr;
+ static unsigned long __initdata nodemap_size;
++static unsigned long __initdata numa_possible_nodes;
+ 
+ /*
+  * Map cpu index to node index
+@@ -611,7 +612,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 
+ #ifdef CONFIG_NUMA_EMU
+ 	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, k8))
+-		return;
++		goto out;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+@@ -619,14 +620,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (!numa_off && acpi && !acpi_scan_nodes(start_pfn << PAGE_SHIFT,
+ 						  last_pfn << PAGE_SHIFT))
+-		return;
++		goto out;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+ 
+ #ifdef CONFIG_K8_NUMA
+ 	if (!numa_off && k8 && !k8_scan_nodes())
+-		return;
++		goto out;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+@@ -646,6 +647,15 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 		numa_set_node(i, 0);
+ 	memblock_x86_register_active_regions(0, start_pfn, last_pfn);
+ 	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
++out: __maybe_unused
++	for (i = 0; i < numa_possible_nodes; i++) {
++		int nid;
++
++		nid = first_unset_node(node_possible_map);
++		if (nid == MAX_NUMNODES)
++			break;
++		node_set(nid, node_possible_map);
++	}
+ }
+ 
+ unsigned long __init numa_free_all_bootmem(void)
+@@ -675,6 +685,8 @@ static __init int numa_setup(char *opt)
+ 	if (!strncmp(opt, "noacpi", 6))
+ 		acpi_numa = -1;
+ #endif
++	if (!strncmp(opt, "possible=", 9))
++		numa_possible_nodes = simple_strtoul(opt + 9, NULL, 0);
+ 	return 0;
+ }
+ early_param("numa", numa_setup);
 
-which illustrates my point that not all accesses to d_flags are
-currently protected by d_lock as you are asserting. Hence:
-
-> I would prefer more in-depth review than from someone who doesn't know
-> d_lock protects d_flags,
-
-Your implication about my competence is incorrect and entirely
-inappropriate.  Ad hominen attacks don't improve your argument or
-encourage other people to review your code.
-
-> but any and all help is welcome. Even minor
-> nitpicking or cleanups are welcome if they are relevant to the patches.
-
-If _you_ decide they are relevant.
-
-Nick, in the past couple of months you've burnt everyone who has
-tried to review your changes in any meaningful way. Nobody wants to
-engage with you because you've aggressively disagreed with every
-significant change that has been requested. You have shown no desire
-to compromise, instead you argue that you are right until you've had
-the last word, and you have frequently resorted to condesending and
-disrespectful attacks on reviewers. You would do well to keep that
-in mind next time you wonder why nobody is stepping up to review
-your code.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Thanks & Regards,
+Shaohui
+
+
