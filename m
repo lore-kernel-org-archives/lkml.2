@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab0LJVae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 16:30:34 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63139 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab0LJVac (ORCPT
+	id S1755248Ab0LJVgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 16:36:03 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:41238 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab0LJVgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 16:30:32 -0500
+	Fri, 10 Dec 2010 16:36:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=qpjaYbzYGozC38AR0ldpl263kNz0izhVCBtdTXpsejqN1ZyfXKl9DblCEUbOf9txCp
-         pWobmbNVNpLx9zmJm8LRkxLUQobiGCsart52vJ2EjapRQiIeBgqSJKja8oVGkc65h5F1
-         3Lr1UFczqgoeSO0obw3HqAaXyhxOSewa/n5/c=
-Message-ID: <4D029BF1.6020709@gmail.com>
-Date: Fri, 10 Dec 2010 22:30:25 +0100
-From: Jarek Poplawski <jarkao2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.13) Gecko/20100916 SeaMonkey/2.0.8
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ttaKGTcFMGLv9dD805cMD5ztJP0x7osgkkCFEzhgYKGiT1NzFoj3ZMjqUZOV72VCzp
+         PjtOCDVCVRGNU4b35YJ/1XZF8PhBTgj3eNFr6Yz4hoPGbQc34RbnprZj3fwfZ4hUG8aR
+         0GzcKq09jlqxJXmGYZNlpb/PBEcRUiUym3yaM=
+Date: Fri, 10 Dec 2010 13:35:51 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] toshiba_acpi: FULL TOS1900 device support
+Message-ID: <20101210213551.GE1630@core.coreip.homeip.net>
+References: <AANLkTimW5ro7EQBgoqMLSxnEsVrinL2S+USu207-Nbh=@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: nuclearcat@nuclearcat.com, eric.dumazet@gmail.com, andrej@ota.si,
-        linux-kernel@vger.kernel.org, gvs@zemos.net, ramirose@gmail.com,
-        netdev@vger.kernel.org
-Subject: Re: unable to handle kernel NULL pointer dereference in skb_dequeue
-References: <aa43945b38cee751a8231084866b074d@192.168.253.23>	<1291387595.2897.350.camel@edumazet-laptop>	<201012102151.04983.nuclearcat@nuclearcat.com> <20101210.121845.70177370.davem@davemloft.net>
-In-Reply-To: <20101210.121845.70177370.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimW5ro7EQBgoqMLSxnEsVrinL2S+USu207-Nbh=@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-> Date: Fri, 10 Dec 2010 21:51:04 +0200
-...
->> Is there any plans to queue any patch to stable?
->> pppoe is almost dead in 2.6.36.*
+Hi Azael,
+
+On Fri, Dec 10, 2010 at 02:13:18PM -0700, Azael Avalos wrote:
+>  	error = input_register_device(toshiba_acpi.hotkey_dev);
+>  	if (error) {
+>  		printk(MY_INFO "Unable to register input device\n");
+> -		goto err_remove_notify;
+> +		 goto err_free_keymap;
+
+Extra space in indentation.
+
+>  	}
 > 
-> I'll deal with it for -stable once I evaluate this patch for upstream,
-> which I haven't even gotten to yet.
+>  	return 0;
+> 
+> - err_remove_notify:
+> -	acpi_remove_notify_handler(toshiba_acpi.handle,
+> -				   ACPI_DEVICE_NOTIFY, toshiba_acpi_notify);
+> - err_free_keymap:
+> -	sparse_keymap_free(toshiba_acpi.hotkey_dev);
+> - err_free_dev:
+> +err_free_keymap:
+> +	if (toshiba_acpi.hci_type == 2)
+> +		i8042_remove_filter(toshiba_i8042_filter);
+> +err_free_dev:
+>  	input_free_device(toshiba_acpi.hotkey_dev);
+>  	toshiba_acpi.hotkey_dev = NULL;
+>  	return error;
 
-This patch is here:
-http://patchwork.ozlabs.org/patch/75095/
+I do not actually see you calling sparse_keymap_free() in the error path
+anymore.
 
-But IMHO it's buggy for the reason I mentioned. Since Andrej
-didn't respond yet I'd suggest reverting of the offending
-commit 55c95e738da85. If you agree with that but e.g. too busy,
-let me know.
+Thanks.
 
-Jarek P.
+-- 
+Dmitry
