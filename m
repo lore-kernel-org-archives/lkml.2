@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab0LJQzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 11:55:20 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43040 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab0LJQzR (ORCPT
+	id S1756775Ab0LJQzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 11:55:50 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:40522 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab0LJQzs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 11:55:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qHEkFDH0XVlrhYQBTcGkEGrRI4PFcVLi9WR6n/T86NJzAzW9bmEeh1nppcidTsq96V
-         l4GWFFEMNqQzMVC4kH8YvK/u98yIgNB3gh05ltIDi1K3oCkiAUfOPSF876ynWCBH7kFa
-         ssRih2P+k4Wbq3smeBYtGR2DuETNeqR7xxBEA=
-Subject: Re: [RFC PATCH V2 5/5] Add TX zero copy in macvtap
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>, mst@redhat.com,
-        xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1291998355.2167.53.camel@localhost.localdomain>
-References: <1291976026.2167.49.camel@localhost.localdomain>
-	 <1291976864.3580.7.camel@edumazet-laptop>
-	 <1291998355.2167.53.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Dec 2010 17:55:06 +0100
-Message-ID: <1292000106.3580.210.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 10 Dec 2010 11:55:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
+References: <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
+ <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
+ <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
+ <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
+ <20101209231616.GA12515@basil.fritz.box> <1291945065-sup-1838@think>
+ <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
+ <20101210023852.GB3059@thunk.org> <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
+ <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
+From: Jon Nelson <jnelson@jamponi.net>
+Date: Fri, 10 Dec 2010 10:54:40 -0600
+Message-ID: <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+To: "Ted Ts'o" <tytso@mit.edu>, Matt <jackdachef@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
+        Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+        Milan Broz <mbroz@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 10 décembre 2010 à 08:25 -0800, Shirley Ma a écrit :
-> On Fri, 2010-12-10 at 11:27 +0100, Eric Dumazet wrote:
-> > You could make one atomic_add() outside of the loop, and factorize
-> > many
-> > things...
-> > 
-> > atomic_add(len, &skb->sk->sk_wmem_alloc);
-> > skb->data_len += len;
-> > skb->len += len;
-> > skb->truesize += len;
-> > while (len) {
-> >         ...
-> > } 
-> 
-> Yep, thanks, will update it!
+On Fri, Dec 10, 2010 at 8:58 AM, Jon Nelson <jnelson@jamponi.net> wrote:
+> On Fri, Dec 10, 2010 at 12:52 AM, Jon Nelson <jnelson@jamponi.net> wrote:
+>> On Thu, Dec 9, 2010 at 8:38 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>>> On Fri, Dec 10, 2010 at 02:53:30AM +0100, Matt wrote:
+>>>>
+>>>> Try a kernel before 5a87b7a5da250c9be6d757758425dfeaf8ed3179
+>>>>
+>>>> from the tests I've done that one showed the least or no corruption if
+>>>> you count the empty /etc/env.d/03opengl as an artefact
+>>>
+>>> Yes, that's a good test.  Also try commit bd2d0210cf.  The patch
+>>> series that is most likely to be at fault if there is a regression in
+>>> between 5a87b7a5d and bd2d0210cf inclusive.
+>>>
+>>> I did a lot of testing before submitting it, but that wa a tricky
+>>> rewrite.  If you can reproduce the problem reliably, it might be good
+>>> to try commit 16828088f9 (the commit before 5a87b7a5d) and commit
+>>> bd2d0210cf.  If it reliably reproduces on bd2d0210cf, but is clean on
+>>> 16828088f9, then it's my ext4 block i/o submission patches, and we'll
+>>> need to either figure out what's going on or back out that set of
+>>> changes.
+>>>
+>>> If that's the case, a bisect of those changes (it's only 6 commits, so
+>>> it shouldn't take long) would be most appreciated.
+>>
+>> I observed the behavior on bd2d0210cf in a qemu-kvm install of
+>> openSUSE 11.3 (x86_64) on *totally* different host - an AMD quad-core.
+>>
+>> I did /not/ observe the behavior on 16828088f9 (yet). I'll run the
+>> test a few more times on 1682..
+>>
+>> Additionally, I am building a bisected kernel now (
+>> cb20d5188366f04d96d2e07b1240cc92170ade40 ), but won't be able to get
+>> back at it for a while.
+>
+> cb20d5188366f04d96d2e07b1240cc92170ade40 seems OK so far. I'm going to
+> try 1de3e3df917459422cb2aecac440febc8879d410 soon.
 
-Also take a look at skb_fill_page_desc() helper, and maybe
-skb_add_rx_frag() too.
+Barring false negatives, bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
+appears to be the culprit (according to git bisect).
+I will test bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc again, confirm
+the behavior, and work backwards to try to reduce the possibility of
+false negatives.
 
-The atomic op should be factorized for sure, but other adds might be
-done by helpers to keep code short.
-
-
-
+-- 
+Jon
