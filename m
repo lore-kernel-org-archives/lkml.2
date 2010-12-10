@@ -1,56 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab0LJKKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:10:24 -0500
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:34671 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752845Ab0LJKKW (ORCPT
+	id S1754255Ab0LJKKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:10:31 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:59319 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754180Ab0LJKK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:10:22 -0500
+	Fri, 10 Dec 2010 05:10:29 -0500
 From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 To: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: [PATCH 0/9] regulators: Update ab8500 regulator driver
-Date: Fri, 10 Dec 2010 11:08:39 +0100
-Message-ID: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
+Subject: [PATCH 6/9] regulators: Modified ab8500 error handling
+Date: Fri, 10 Dec 2010 11:08:45 +0100
+Message-ID: <1291975728-12525-7-git-send-email-bengt.g.jonsson@stericsson.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
+References: <1291975728-12525-1-git-send-email-bengt.g.jonsson@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset updates the ab8500 regulator driver:
-* The first patch modifies the ab8500 platform configuration structure.
-* Patches two through eight updates the ab8500 regulator driver.
-* The ninth patch modifies the ab8500 regulator configuration.
+Error handling is updated to catch NULL pointer errors.
 
-The eighth patch is optional as discussed before.
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/regulator/ab8500.c |   53 +++++++++++++++++++++++++------------------
+ 1 files changed, 31 insertions(+), 22 deletions(-)
 
-Bengt Jonsson (9):
-  regulators: Moved define for number of regulators in ab8500
-  regulators: Fixed errors in ab8500 register mapping
-  regulators: Clean out unused code in ab8500 regulators
-  regulators: Added ab8500 v2 support
-  regulators: Updated ab8500 variable names, macro names and comments
-  regulators: Modified ab8500 error handling
-  regulators: Added verbose debug messages to ab8500 regulators
-  regulators: Removed macros for initialization of ab8500 regulators
-  mach-ux500: Updated and connected ab8500 regulator board
-    configuration
-
- arch/arm/mach-ux500/board-mop500-regulators.c |  153 ++++-----
- arch/arm/mach-ux500/board-mop500-regulators.h |   19 +
- arch/arm/mach-ux500/board-mop500.c            |    3 +
- drivers/regulator/ab8500.c                    |  448 +++++++++++++++++--------
- include/linux/mfd/ab8500.h                    |    5 +-
- include/linux/regulator/ab8500.h              |   24 +-
- 6 files changed, 426 insertions(+), 226 deletions(-)
- create mode 100644 arch/arm/mach-ux500/board-mop500-regulators.h
-
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index ccb0bfd..2a15b63 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -100,12 +100,13 @@ static const int ldo_vintcore_voltages[] = {
+ 
+ static int ab8500_regulator_enable(struct regulator_dev *rdev)
+ {
+-	int regulator_id, ret;
++	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg,
+@@ -118,12 +119,13 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
+ 
+ static int ab8500_regulator_disable(struct regulator_dev *rdev)
+ {
+-	int regulator_id, ret;
++	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg,
+@@ -136,13 +138,14 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
+ 
+ static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
+ {
+-	int regulator_id, ret;
++	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 	u8 value;
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	ret = abx500_get_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg, &value);
+@@ -160,12 +163,12 @@ static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
+ 
+ static int ab8500_list_voltage(struct regulator_dev *rdev, unsigned selector)
+ {
+-	int regulator_id;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	/* return the uV for the fixed regulators */
+ 	if (info->fixed_uV)
+@@ -179,13 +182,14 @@ static int ab8500_list_voltage(struct regulator_dev *rdev, unsigned selector)
+ 
+ static int ab8500_regulator_get_voltage(struct regulator_dev *rdev)
+ {
+-	int regulator_id, ret;
++	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 	u8 value;
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	ret = abx500_get_register_interruptible(info->dev, info->voltage_bank,
+ 		info->voltage_reg, &value);
+@@ -197,7 +201,7 @@ static int ab8500_regulator_get_voltage(struct regulator_dev *rdev)
+ 
+ 	/* vintcore has a different layout */
+ 	value &= info->voltage_mask;
+-	if (regulator_id == AB8500_LDO_INTCORE)
++	if (info->desc.id == AB8500_LDO_INTCORE)
+ 		ret = info->voltages[value >> 0x3];
+ 	else
+ 		ret = info->voltages[value];
+@@ -225,12 +229,13 @@ static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
+ 					int min_uV, int max_uV,
+ 					unsigned *selector)
+ {
+-	int regulator_id, ret;
++	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	/* get the appropriate voltages within the range */
+ 	ret = ab8500_get_best_voltage_index(rdev, min_uV, max_uV);
+@@ -264,12 +269,12 @@ static struct regulator_ops ab8500_regulator_ops = {
+ 
+ static int ab8500_fixed_get_voltage(struct regulator_dev *rdev)
+ {
+-	int regulator_id;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+-	regulator_id = rdev_get_id(rdev);
+-	if (regulator_id >= AB8500_NUM_REGULATORS)
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+ 		return -EINVAL;
++	}
+ 
+ 	return info->fixed_uV;
+ }
+@@ -368,6 +373,10 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 	pdata = dev_get_platdata(ab8500->dev);
++	if (!pdata) {
++		dev_err(&pdev->dev, "null pdata\n");
++		return -EINVAL;
++	}
+ 
+ 	/* make sure the platform data has the correct size */
+ 	if (pdata->num_regulator != ARRAY_SIZE(ab8500_regulator_info)) {
 -- 
 1.7.2.2
 
