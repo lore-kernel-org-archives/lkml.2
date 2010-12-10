@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab0LJK0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 05:26:10 -0500
-Received: from smtpeu1.atmel.com ([195.65.72.27]:50890 "EHLO bagnes.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab0LJK0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 05:26:08 -0500
-Subject: Re: [PATCH v2] avr32: Fix build failure conflicting types for
- 'sys_execve'
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-In-Reply-To: <1291929328-30551-1-git-send-email-peterhuewe@gmx.de>
-References: <20101209182132.GB24175@kroah.com>
-	 <1291929328-30551-1-git-send-email-peterhuewe@gmx.de>
+	id S1754813Ab0LJK1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 05:27:51 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:48122 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab0LJK1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 05:27:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HQ7BNNqU8XYWRpiadJ/WboHjZ+Om/cF7cZoTe/Ab/dR1WEDSE7i9QGjAH3ovuM1qES
+         InQDq+gsaupH6fix4GRBbcOJSmL4eK3PMKMjt+JwSm10FiEGmCerBUpAVxiYJzWWUUXq
+         4/9CZQA/9BeIC9SkrXMzuxsYlVY18CNj6LwlU=
+Subject: Re: [RFC PATCH V2 5/5] Add TX zero copy in macvtap
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>, mst@redhat.com,
+        xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1291976026.2167.49.camel@localhost.localdomain>
+References: <1291976026.2167.49.camel@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Fri, 10 Dec 2010 11:25:41 +0100
-Message-ID: <1291976741.18008.37.camel@hcegtvedt>
+Date: Fri, 10 Dec 2010 11:27:44 +0100
+Message-ID: <1291976864.3580.7.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Dec 2010 10:25:43.0772 (UTC) FILETIME=[99F339C0:01CB9854]
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-09 at 22:15 +0100, Peter Huewe wrote: 
-> This patch fixes a build failure[1] for the avr32 architecture which seems
-> to be introduced by commit d7627467b7a8
-> "Make do_execve() take a const filename pointer"
-> 
-> The commit changes the definition in arch/avr32/kernel/process.c but
-> forgot to change it here.
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> Cc: stable <stable@kernel.org>
+Le vendredi 10 décembre 2010 à 02:13 -0800, Shirley Ma a écrit :
 
-Nack, I've piped up a patch in
-http://git.kernel.org/?p=linux/kernel/git/egtvedt/avr32-2.6.git;a=shortlog;h=refs/heads/next that does this and more. The syscalls.h header file needs a bit more cleanup.
+> +		while (len) {
+> +			f = &skb_shinfo(skb)->frags[i];
+> +			f->page = page[i];
+> +			f->page_offset = base & ~PAGE_MASK;
+> +			f->size = min_t(int, len, PAGE_SIZE - f->page_offset);
+> +			skb->data_len += f->size;
+> +			skb->len += f->size;
+> +			skb->truesize += f->size;
+> +			skb_shinfo(skb)->nr_frags++;
+> +			/* increase sk_wmem_alloc */
+> +			atomic_add(f->size, &skb->sk->sk_wmem_alloc);
+> +			base += f->size;
+> +			len -= f->size;
+> +			i++;
+> +		}
 
-I'll also notify stable to get it backported. Do you have an idea how
-far back it should go?
+You could make one atomic_add() outside of the loop, and factorize many
+things...
 
--- 
-Hans-Christian Egtvedt
+atomic_add(len, &skb->sk->sk_wmem_alloc);
+skb->data_len += len;
+skb->len += len;
+skb->truesize += len;
+while (len) {
+	...
+}
+
 
