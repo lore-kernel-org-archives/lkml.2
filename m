@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab0LJUBz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:01:55 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:59541 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754561Ab0LJUBx (ORCPT
+	id S1756933Ab0LJUEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:04:08 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:53156 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab0LJUEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:01:53 -0500
-Message-ID: <4D02871E.6060204@euromail.se>
-Date: Fri, 10 Dec 2010 21:01:34 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Ping Cheng <pinglinux@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Interface and MT_TOOL documentation updates
-References: <1291929732-5989-1-git-send-email-rydberg@euromail.se>	<AANLkTi=mqMY_VG=0RdN5O0fDh6wpTRb5Z59L6440hvX6@mail.gmail.com>	<4D026DB1.8070100@euromail.se> <AANLkTinctPSxGt36HCdyoWYH7TBznzY0CejLP3uALkV3@mail.gmail.com>
-In-Reply-To: <AANLkTinctPSxGt36HCdyoWYH7TBznzY0CejLP3uALkV3@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PR99y-0004Sl-C9.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PR99y-0004Sl-C9 11de5f42d6714a150640538d4f58b247
+	Fri, 10 Dec 2010 15:04:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=aPKTY3CtTYtoVSlKvCg4tftc7dSsR/GW83ycNhcQK15Qtzog7Xzp1QmceBkVsZnVAL
+         ILrA86XYRBUvEtnTGMcUJca68N4FvqrE/WbPCwN1Sbk6C/DEwhc4lGYieiyykWTj2jI7
+         NXZN67+smyD5bQm94Zk3ozz+nUr1uXsgbe98U=
+From: Igor Plyatov <plyatov@gmail.com>
+To: jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        geomatsi@gmail.com, Igor Plyatov <plyatov@gmail.com>
+Subject: [PATCH] ata: pata_at91.c bugfix for high master clock
+Date: Fri, 10 Dec 2010 23:03:50 +0300
+Message-Id: <1292011430-20835-1-git-send-email-plyatov@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2010 08:00 PM, Ping Cheng wrote:
+The AT91SAM9 microcontrollers with master clock higher then 105 MHz
+and PIO0, have overflow of the NCS_RD_PULSE value in the MSB. This
+lead to "NCS_RD_PULSE" pulse longer then "NRD_CYCLE" pulse and pata_at91
+driver does detect ATA device.
 
-> On Fri, Dec 10, 2010 at 10:13 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->>
->>> Can we make MT_TOOL_ENVELOPE cover a bit more cases by:
->>>
->>> 1. Removing ", and is only used for legacy hardware";
->>> 2. Adding "Or the number of contacts inside the bounding rectangle is
->>> reported if hardware provides the number but not the real contact
->>> positions" to the end of the paragraph.
->>
->> You might disagree, but "old" is still somewhat apt in this situation.
-> 
-> It's ok if we say the new type was inspired by legacy hardware. But
-> saying that it "is only used for legacy hardware" closes the door for
-> future development. That's not what we are trying to do, right?
+Signed-off-by: Igor Plyatov <plyatov@gmail.com>
+---
+ drivers/ata/pata_at91.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+index 0da0dcc..2e189be 100644
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -33,12 +33,14 @@
+ 
+ 
+ #define DRV_NAME "pata_at91"
+-#define DRV_VERSION "0.1"
++#define DRV_VERSION "0.2"
+ 
+ #define CF_IDE_OFFSET	    0x00c00000
+ #define CF_ALT_IDE_OFFSET   0x00e00000
+ #define CF_IDE_RES_SIZE     0x08
+ 
++#define NCS_RD_PULSE_LIMIT  0x3f /* maximal value for pulse bitfields */
++
+ struct at91_ide_info {
+ 	unsigned long mode;
+ 	unsigned int cs;
+@@ -50,7 +52,7 @@ struct at91_ide_info {
+ };
+ 
+ static const struct ata_timing initial_timing =
+-	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
++	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0};
+ 
+ static unsigned long calc_mck_cycles(unsigned long ns, unsigned long mck_hz)
+ {
+@@ -109,6 +111,11 @@ static void set_smc_timing(struct device *dev,
+ 	/* (CS0, CS1, DIR, OE) <= (CFCE1, CFCE2, CFRNW, NCSX) timings */
+ 	ncs_read_setup = 1;
+ 	ncs_read_pulse = read_cycle - 2;
++	if (ncs_read_pulse > NCS_RD_PULSE_LIMIT) {
++		ncs_read_pulse = NCS_RD_PULSE_LIMIT;
++		dev_dbg(dev, "ncs_read_pulse limited to maximal value %lu\n",
++			ncs_read_pulse);
++	}
+ 
+ 	/* Write timings same as read timings */
+ 	write_cycle = read_cycle;
+-- 
+1.7.0.4
 
-Well, in a sense we are. I would agree that data aiming to provide gestures as a
-2D transformation matrix can be handled quite well with two tracked points and a
-finger count. However, a multitouch interface where users manipulate different
-objects on the screen simultaneously is a different story.
-
-> 
->> How would you suggest we report the number of fingers?
-> 
-> I guess if we want to make it generic, we could have something like
-> ABS_MT_NUM_CONTACTS to go with MT_TOOL_ENVELOPE. Clients, such as
-> synaptics touchpads, that only care about the number of contacts
-> inside the envelope don't need to process the contact positions even
-> when they are reported. This also resolve the potential that
-> BTN_TOOL_QUADTAP is not enough to tell us how many contacts are on the
-> surface.
-
-
-I really would like to avoid adding a new way to solve an old problem, in
-particular given the statement above. Adding something like BTN_TOOL_QUINTAP
-would hurt a little bit, but not nearly as much.
-
-> 
-> Maybe we should also tell the clients whether they are going to get
-> the contact positions or not.
-
-
-I may not understand what you mean here, but if you are referring to an up-front
-declaration of what MT_TOOL types are to be expected, we did discuss this
-before, without any conclusion. Perhaps it is relevant to outline why this would
-be important.
-
-Thanks,
-Henrik
