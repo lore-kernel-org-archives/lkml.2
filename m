@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab0LJRS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:18:26 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:46279 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab0LJRSZ (ORCPT
+	id S1753199Ab0LJRTi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:19:38 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23141 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab0LJRTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 12:18:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=v1kNbDDGQ1aGdXleM2GdDBZ1yyR8V/QmwLdDrQhp0LAg6PWOibS5zLpN5eZaBEzSYF
-         7hn++R6sO7s9uTaldTrIs+lyqHgoHonbPK0IKmAejS3jxTYxzSIdxGIhYdXng9AEwU+X
-         qELjEy8ozkwC7dPw6fKbx0OtYPpTM6QZ8SZss=
-Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <1291988866.6803.171.camel@twins>
-References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
-	 <1291851079-27061-1-git-send-email-venki@google.com>
-	 <1291899120.29292.7.camel@twins>
-	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
-	 <1291917330.6803.7.camel@twins>
-	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
-	 <1291920939.6803.38.camel@twins>
-	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
-	 <1291936593.13513.3.camel@laptop>
-	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
-	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
-	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Dec 2010 18:18:20 +0100
-Message-ID: <1292001500.3580.268.camel@edumazet-laptop>
+	Fri, 10 Dec 2010 12:19:36 -0500
+Date: Fri, 10 Dec 2010 09:18:59 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Glauber Costa <glommer@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, kvm@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 22 (kvm)
+Message-Id: <20101210091859.63a6a43e.randy.dunlap@oracle.com>
+In-Reply-To: <4CF3EC1E.7050707@redhat.com>
+References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>
+	<20101122132627.bd4e88ef.randy.dunlap@oracle.com>
+	<20101129083324.6870d7da.randy.dunlap@oracle.com>
+	<4CF3D637.6060204@redhat.com>
+	<4CF3E733.8090809@redhat.com>
+	<4CF3E870.4040308@oracle.com>
+	<4CF3EC1E.7050707@redhat.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 10 décembre 2010 à 14:47 +0100, Peter Zijlstra a écrit :
-> Full patch..
+On Mon, 29 Nov 2010 08:08:30 -1000 Zachary Amsden wrote:
 
-> unt_system_vtime(struct task_struct *curr)
->  {
->  	unsigned long flags;
-> +	s64 delta;
->  	int cpu;
-> -	u64 now, delta;
->  
->  	if (!sched_clock_irqtime)
->  		return;
->  
->  	local_irq_save(flags);
-> -
->  	cpu = smp_processor_id();
-> -	now = sched_clock_cpu(cpu);
-> -	delta = now - per_cpu(irq_start_time, cpu);
-> -	per_cpu(irq_start_time, cpu) = now;
-> -	/*
-> -	 * We do not account for softirq time from ksoftirqd here.
-> -	 * We want to continue accounting softirq time to ksoftirqd thread
-> -	 * in that case, so as not to confuse scheduler with a special task
-> -	 * that do not consume any time, but still wants to run.
-> -	 */
-> +	delta = sched_clock_cpu(cpu) - per_cpu(irq_start_time, cpu);
-> +	per_cpu(irq_start_time, cpu) += delta;
+> On 11/29/2010 07:52 AM, Randy Dunlap wrote:
+> > On 11/29/10 09:47, Zachary Amsden wrote:
+> >    
+> >> On 11/29/2010 06:35 AM, Avi Kivity wrote:
+> >>      
+> >>> On 11/29/2010 06:33 PM, Randy Dunlap wrote:
+> >>>        
+> >>>> On Mon, 22 Nov 2010 13:26:27 -0800 Randy Dunlap wrote:
+> >>>>
+> >>>>          
+> >>>>>   On Mon, 22 Nov 2010 13:49:11 +1100 Stephen Rothwell wrote:
+> >>>>>
+> >>>>>            
+> >>>>>>   Hi all,
+> >>>>>>
+> >>>>>>   Changes since 20101119:
+> >>>>>>              
+> >>>>>
+> >>>>>   kvm.c:(.init.text+0x11f49): undefined reference to
+> >>>>>            
+> >>>> `kvm_register_clock'
+> >>>>          
+> >>>>>   when CONFIG_KVM_CLOCK is not enabled.
+> >>>>>            
+> >>>>
+> >>>> BUild error still present in linux-next-2010-NOV-29.
+> >>>>
+> >>>>          
+> >>> Glauber, Zach?
+> >>>
+> >>>        
+> >> I can only speculate this reference is being called from smpboot without
+> >> CONFIG guarding?
+> >>      
+> > Sorry, looks like I dropped the first line of the error messages:
+> >
+> > arch/x86/built-in.o: In function `kvm_smp_prepare_boot_cpu':
+> > kvm.c:(.init.text+0xad38): undefined reference to `kvm_register_clock'
+> >
+> > from arch/x86/kernel/kvm.c:
+> >
+> > #ifdef CONFIG_SMP
+> > static void __init kvm_smp_prepare_boot_cpu(void)
+> > {
+> > 	WARN_ON(kvm_register_clock("primary cpu clock"));
+> > 	kvm_guest_cpu_init();
+> > 	native_smp_prepare_boot_cpu();
+> > }
+> >
+> > so it looks like you are correct...
+> >    
+> 
+> Looks like this is the appropriate fix:
+> 
+> #ifdef CONFIG_SMP
+> static void __init kvm_smp_prepare_boot_cpu(void)
+> {
+> #ifdef CONFIG_KVM_CLOCK
+> 	WARN_ON(kvm_register_clock("primary cpu clock"));
+> #endif
+> 	kvm_guest_cpu_init();
+> 	native_smp_prepare_boot_cpu();
+> }
 
-We should add some checkpatch warning to any new per_cpu() use.
 
+Can we get this fix merged, please?
 
-	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
-	__this_cpu_add(irq_start_time, delta);
+Build error is still happening in linux-next 20101210.
 
-
-
-Also irq_time_write_begin() and irq_time_write_end() could be faster
-(called for current cpu)
-
-static inline void irq_time_write_begin(void)
-{
-	__this_cpu_inc(irq_time_seq.sequence);
-	smp_wmb();
-}
- 
-static inline void irq_time_write_end(void)
-{
-	smp_wmb();
-	__this_cpu_inc(irq_time_seq.sequence);
-}
- 
-
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
