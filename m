@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab0LJRqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 12:46:43 -0500
-Received: from kroah.org ([198.145.64.141]:33625 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753989Ab0LJRql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 12:46:41 -0500
-Date: Fri, 10 Dec 2010 09:44:10 -0800
-From: Greg KH <greg@kroah.com>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: Re: [stable]  Linux 2.6.32.27+drm33.12
-Message-ID: <20101210174410.GA11952@kroah.com>
-References: <1291991638-8203-1-git-send-email-stefan.bader@canonical.com>
+	id S1755026Ab0LJRqt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 12:46:49 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:40671 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754795Ab0LJRqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 12:46:48 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1+uIeE26ASu6bhrpwnSTsWyZfmCZFs+BaUyU5n0N1
+	E0Gf39wzjZR+1D
+Date: Fri, 10 Dec 2010 18:44:29 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: tvrtko.ursulin@sophos.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH 1/2] fanotify: fix broken ref count in create_fd()
+Message-ID: <20101210174429.GB32555@lsanfilippo.unix.rd.tt.avira.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291991638-8203-1-git-send-email-stefan.bader@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 03:33:58PM +0100, Stefan Bader wrote:
-> I am announcing the release of the 2.6.32.27+drm33.12 stable tree.
 
-I'm sorry, but that combination is anything but "stable".
+In create_fd(), before we fallback to open a file read-only we should grab dentry
+and mount refs again, since they have been put by the former failed call to dentry_open().
 
-> This tree is based on 2.6.32 and generally has all of the stable updates
-> applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-> took updates from that upstream stable as long as that existed. It will
-> continue to add patches to the DRM subsystem as long as they are valid
-> according to the stable update rules (Documentation/stable_kernel_rules.txt).
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+---
+ fs/notify/fanotify/fanotify_user.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-You didn't follow that rule for the drm tree, so please, don't call this
-a "stable" tree at all.
+ Please apply this against commit 26552d4aa4117cd3ea8cbe13ebf317da652e6bfd of
+ branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
 
-Also note the new name for longterm kernel releases, "longterm", not
-"stable".
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 2d4925b..e108960 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -92,6 +92,10 @@ static int create_fd(struct fsnotify_group *group, struct fsnotify_event *event)
+ 		 * in order to at least provide something to the listener.
+ 		 */
+ 		if (IS_ERR(new_file) && group->fanotify_data.readonly_fallback) {
++			/* dentry_open() put our refs, so get them again... */
++			dentry = dget(event->path.dentry);
++			mnt = mntget(event->path.mnt);
++
+ 			flags &= ~O_ACCMODE;
+ 			flags |= O_RDONLY;
+ 			new_file = dentry_open(dentry, mnt, flags,
+-- 
+1.5.6.5
 
-> DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
-
-Why make developers do extra work for this old kernel tree?  That's not
-very nice.
-
-> This release contains patches from upstream 2.6.32.27, but dropped any patches
-> to the DRM subsystem.
-
-That doesn't seem wise, but hey, good luck with it, that's a
-frankenkernel if I've ever seen one...
-
-greg k-h
