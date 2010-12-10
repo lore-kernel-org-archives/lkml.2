@@ -1,138 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab0LJNgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 08:36:04 -0500
-Received: from mail.in-telegence.net ([83.125.45.125]:38496 "EHLO
-	amg.in-telegence.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755428Ab0LJNgB (ORCPT
+	id S1756462Ab0LJNkD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 08:40:03 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:38206 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756435Ab0LJNkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 08:36:01 -0500
-X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Dec 2010 08:36:01 EST
-Message-ID: <4D022A77.1080708@in-telegence.net>
-Date: Fri, 10 Dec 2010 14:26:15 +0100
-From: Dominik Klein <dk@in-telegence.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Fri, 10 Dec 2010 08:40:00 -0500
+Date: Fri, 10 Dec 2010 08:39:05 -0500
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Rupjyoti Sarmah <rsarmah@amcc.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, rsarmah@apm.com
+Subject: Re: [PATCH v5] ppc44x:PHY fixup for USB on canyonlands board
+Message-ID: <20101210133905.GE1903@zod.rchland.ibm.com>
+References: <201012090424.oB94O1DV006463@amcc.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: aliguori@us.ibm.com
-Subject: Possible race condition in net_cls (found in a qemu-kvm environment)
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012090424.oB94O1DV006463@amcc.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Dec 09, 2010 at 09:54:01AM +0530, Rupjyoti Sarmah wrote:
 
-I may be seeing some sort of a race condition in net_cls. I am not a
-programmer, I do not know any kernel code and I cannot really show any
-logs proving what I am about to state. Actually, I don't even know
-whether the bug is in iproute2, qemu-kvm or the kernel itself. Still, it
-is happening. So if you want to read on: You have been warned. Thanks if
-do you read on.
+A few error path issues, plus one leak in the good case.  I'll wait to
+see if there are any more comments for a couple of days.
 
-My goal is to run qemu-kvm virtual machines and limit their bandwidth.
-The environment is as follows:
+>+static int __init ppc460ex_canyonlands_fixup(void)
+>+{
+>+	u8 __iomem *bcsr ;
+>+	void __iomem *vaddr;
+>+	struct device_node *np;
+>+	int ret = 0;
+>+
+>+	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
+>+	if (!np) {
+>+		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
+>+		return -ENODEV;
+>+	}
+>+
+>+	bcsr = of_iomap(np, 0);
+>+	of_node_put(np);
+>+
+>+	if (!bcsr) {
+>+		printk(KERN_CRIT "Could not remap bcsr\n");
+>+		ret = -ENODEV;
+>+	}
+>+
+>+	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
 
-opensuse 11.3 64bit
-vanilla kernel 2.6.36.1
-iproute2 2.6.35
-qemu-kvm 0.13.0
+This can fail if you boot a new kernel on a board with an old FDT that
+lacks the gpio node.  Calling of_iomap with a NULL np seems like it
+would work without crashing anything, so maybe that's not a huge issue.
 
-A neat way to do achieve this goal seems to be the net_cls cgroups
-subsystem which one can put a PID into and have the processes' bandwidth
-be limited by tc.
+>+	vaddr = of_iomap(np, 0);
+>+	if (!vaddr) {
+>+		printk(KERN_CRIT "Could not get gpio node address\n");
+>+		ret = -ENODEV;
+>+		goto err_bcsr;
+>+	}
 
-So I set up tc rules, mounted net_cls and put the qemu-kvm processes'
-pid into the tasks file. The vm however happily kept using more than the
-10MBit I assigned to it.
+A reference count is leaked for the node in this error case because
+of_node_put isn't called for the gpio node.  Also, iounmap is never
+called on vaddr.
 
-I kept looking for documentation on this and also do the old trial and
-error thing but could not make it work. The vm is supposed to use a
-network bridge on the host system btw. I tried putting the tc rules to
-the tap device, to the physical device and to the bridge device, all at
-once and each on their own. Nothing worked, the VM happily used the
-entire bandwidth.
+>+	/* Disable USB, through the BCSR7 bits */
+>+	setbits8(&bcsr[7], BCSR_USB_EN);
+>+
+>+	/* Wait for a while after reset */
+>+	msleep(100);
+>+
+>+	/* Enable USB here */
+>+	clrbits8(&bcsr[7], BCSR_USB_EN);
+>+
+>+	/*
+>+	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
+>+	 * source after USB reset. In this configuration gpio16 will be
+>+	 * USB2HStop and gpio19 will be USB2DStop. For more details refer to
+>+	 * table 34-7 of PPC460EX user manual.
+>+	 */
+>+	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
+>+	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
+>+	of_node_put(np);
+>+err_bcsr:
+>+	iounmap(bcsr);
+>+	return ret;
+>+}
+>+machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
 
-So while testing, I started to automate steps and formed the qemu-kvm
-commandline into sth like
-
-qemu-kvm <machine-definition> & echo $! > tasks
-
-And all of a sudden, the machine was only using the bandwidth it was
-supposed to use.
-
-Here's the entire commands I use.
-
-# step 1 net_cls
-mkdir -p /dev/cgroup/network
-mount -t cgroup net_cls -o net_cls /dev/cgroup/network
-mkdir /dev/cgroup/network/A
-mkdir /dev/cgroup/network/B
-/bin/echo 0x00010001 > /dev/cgroup/network/A/net_cls.classid   # 1:1
-/bin/echo 0x00010002 > /dev/cgroup/network/B/net_cls.classid   # 1:2
-
-# step 2 start virtual machine (command is mostly taken from libvirt)
-/usr/bin/qemu-kvm -M pc-0.13 -enable-kvm -m 512 -smp
-1,sockets=1,cores=1,threads=1 -name cliff -uuid
-7608c418-d0a1-290a-f703-61ec0435991f -nodefconfig -nodefaults -chardev
-socket,id=monitor,path=/var/lib/libvirt/qemu/cliff.monitor,server,nowait
--mon chardev=monitor,mode=readline -rtc base=utc -boot c -drive
-file=/opt/kvm/cliff.img,if=none,id=drive-virtio-disk0,boot=on,format=raw
--device
-virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0
--netdev tap,id=hostnet0 -device
-e1000,netdev=hostnet0,id=net0,mac=52:54:00:03:38:bb,bus=pci.0,addr=0x3
--chardev pty,id=serial0 -device isa-serial,chardev=serial0 -vnc
-127.0.0.1:0 -vga cirrus -device
-virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5 &
-
-# step 3 tc
-dev=eth0
-tc qdisc del dev $dev root 2>/dev/null
-tc qdisc add dev $dev root handle 1: htb
-tc class add dev $dev parent 1: classid 1:1 htb rate 10mbit ceil 10mbit
-tc class add dev $dev parent 1: classid 1:2 htb rate 20mbit ceil 20mbit
-tc filter add dev $dev parent 1: protocol ip prio 1 handle 1: cgroup
-
-# step 4 pid > tasks
-pgrep qemu-kvm > /dev/cgroup/network/A/tasks
-
-At this point, the VM happily keeps using the entire bandwidth.
-
-So now my way to change things:
-
-# step 1 unchanged
-# step 2 start vm and directly afterwards echo its PID to tasks
-/usr/bin/qemu-kvm -M pc-0.13 -enable-kvm -m 512 -smp
-1,sockets=1,cores=1,threads=1 -name cliff -uuid
-7608c418-d0a1-290a-f703-61ec0435991f -nodefconfig -nodefaults -chardev
-socket,id=monitor,path=/var/lib/libvirt/qemu/cliff.monitor,server,nowait
--mon chardev=monitor,mode=readline -rtc base=utc -boot c -drive
-file=/opt/kvm/cliff.img,if=none,id=drive-virtio-disk0,boot=on,format=raw
--device
-virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0
--netdev tap,id=hostnet0 -device
-e1000,netdev=hostnet0,id=net0,mac=52:54:00:03:38:bb,bus=pci.0,addr=0x3
--chardev pty,id=serial0 -device isa-serial,chardev=serial0 -vnc
-127.0.0.1:0 -vga cirrus -device
-virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5 & /bin/echo $! >
-/dev/cgroup/network/A/tasks
-
-# step 3 unchanged
-# step 4 unchanged
-
-Now, the limit configured in tc applies and the virtual machine only
-uses 10 MBit.
-
-This is 100% reproducible here.
-
-On the other hand, echoing my current shell's pid into tasks and then
-using s.th. like "scp" shows the reduced bandwidth usually works.
-
-So I realize I may not be giving you a whole lot to actually work with,
-but I am willing to provide more helpful information if you let me know
-what would be helpful and how to extract that information.
-
-Thanks in advance,
-Dominik
+josh
