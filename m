@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab0LJSNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 13:13:24 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:54882 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753566Ab0LJSNX (ORCPT
+	id S1756777Ab0LJSOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 13:14:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37141 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab0LJSOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 13:13:23 -0500
-Message-ID: <4D026DB1.8070100@euromail.se>
-Date: Fri, 10 Dec 2010 19:13:05 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Ping Cheng <pinglinux@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: mt: Interface and MT_TOOL documentation updates
-References: <1291929732-5989-1-git-send-email-rydberg@euromail.se> <AANLkTi=mqMY_VG=0RdN5O0fDh6wpTRb5Z59L6440hvX6@mail.gmail.com>
-In-Reply-To: <AANLkTi=mqMY_VG=0RdN5O0fDh6wpTRb5Z59L6440hvX6@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PR7Ss-0005cr-Ce.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PR7Ss-0005cr-Ce 52d0e699f3c917fe8c19730b8de94606
+	Fri, 10 Dec 2010 13:14:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=E0UZZgKTh2NHyNdFbujfQFd+tMzMULlS+ZBBdMvlozgDT1FWokx1sX2WDooxcFcZsH
+         1zwEbJqGyUnrE777sNo+SkHzSVZG39oORzzVgkLg67VtPfCfwKN533sn7Twc+VoBploH
+         3IgO22S5PKvw7RiIbkyIZUS4Jra4fthtXHVYI=
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+In-Reply-To: <1292003346.13513.30.camel@laptop>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
+	 <1291851079-27061-1-git-send-email-venki@google.com>
+	 <1291899120.29292.7.camel@twins>
+	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
+	 <1291917330.6803.7.camel@twins>
+	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
+	 <1291920939.6803.38.camel@twins>
+	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
+	 <1291936593.13513.3.camel@laptop>
+	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
+	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
+	 <1292001500.3580.268.camel@edumazet-laptop>
+	 <1292003346.13513.30.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Dec 2010 19:14:19 +0100
+Message-ID: <1292004859.3580.387.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-
-> Can we make MT_TOOL_ENVELOPE cover a bit more cases by:
+Le vendredi 10 décembre 2010 à 18:49 +0100, Peter Zijlstra a écrit :
+> On Fri, 2010-12-10 at 18:18 +0100, Eric Dumazet wrote:
+> > Le vendredi 10 décembre 2010 à 14:47 +0100, Peter Zijlstra a écrit :
 > 
-> 1. Removing ", and is only used for legacy hardware";
-> 2. Adding "Or the number of contacts inside the bounding rectangle is
-> reported if hardware provides the number but not the real contact
-> positions" to the end of the paragraph.
+> > Also irq_time_write_begin() and irq_time_write_end() could be faster
+> > (called for current cpu)
+> > 
+> > static inline void irq_time_write_begin(void)
+> > {
+> > 	__this_cpu_inc(irq_time_seq.sequence);
+> > 	smp_wmb();
+> > }
+> >  
+> > static inline void irq_time_write_end(void)
+> > {
+> > 	smp_wmb();
+> > 	__this_cpu_inc(irq_time_seq.sequence);
+> > }
+> 
+> Yeah, but that kinda defeats the purpose of having it implemented in
+> seqlock.h. Ideally we'd teach gcc about these long pointers and have
+> something like: 
+> 
+>   write_seqcount_begin(&this_cpu_read(irq_time_seq));
+> 
+> do the right thing.
+
+gcc wont be able to do this yet (%fs/%gs selectors)
+
+But we can provide this_cpu_write_seqcount_{begin|end}()
+
+static inline void this_cpu_write_seqcount_begin(seqcount_t *s)
+{
+	__this_cpu_inc(s->sequence);
+	smp_wmb();
+}
 
 
-You might disagree, but "old" is still somewhat apt in this situation. How would
-you suggest we report the number of fingers?
 
-Henrik
