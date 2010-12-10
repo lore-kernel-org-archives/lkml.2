@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab0LJI1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 03:27:08 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39077 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329Ab0LJI1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 03:27:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,323,1288594800"; 
-   d="scan'208";a="582397433"
-Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinanAQYQvwtowTzJ0bpLRUvp-5sqF6M9PoMSJR-@mail.gmail.com>
-References: <1291267223.2405.314.camel@minggr.sh.intel.com>
-	 <1291922467.6803.44.camel@twins>
-	 <AANLkTinanAQYQvwtowTzJ0bpLRUvp-5sqF6M9PoMSJR-@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Dec 2010 16:31:02 +0800
-Message-ID: <1291969862.10384.53.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1754762Ab0LJI1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 03:27:40 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:44904 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753329Ab0LJI1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 03:27:39 -0500
+Message-ID: <4D01E46C.90301@stericsson.com>
+Date: Fri, 10 Dec 2010 09:27:24 +0100
+From: Mattias Wallin <mattias.wallin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] MFD: ab8500-core chip version cut 2.0 support
+References: <1291717247-10280-1-git-send-email-mattias.wallin@stericsson.com> <20101209170851.GZ8884@sortiz-mobl>
+In-Reply-To: <20101209170851.GZ8884@sortiz-mobl>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your great comments.
-
-Let me read it carefully, and then reply back.
-
-Lin Ming
-
-On Fri, 2010-12-10 at 07:46 +0800, Stephane Eranian wrote:
-> Hi,
-> 
-> So I have tested this patch a bit on WSM and as I expected there
-> are issues with sampling.
-> 
-> When HT is on, both siblings CPUs get the interrupt. The HW does not
-> allow you to only point interrupts to a single HT thread (CPU).
-> 
-> I did verify that indeed both threads get the interrupt and that you have a
-> race condition. Both sibling CPUs stop uncore, get the status. They may get
-> the same overflow status. Both will pass the uncore->active_mask because
-> it's shared among siblings cores. Thus,  you have a race for the whole
-> interrupt handler execution.
-> 
-> You need some serialization in there. But the patch does not address this.
-> The problem is different from the back-to-back interrupt issue that
-> Don worked on.
-> The per-cpu marked/handled trick cannot work to avoid this problem.
-> 
-> You cannot simply say "the lowest indexed" CPU of a sibling pair
-> handles the interrupt
-> because you don't know if this in an uncore intr, core interrupt or
-> something else. You
-> need to check. That means each HT thread needs to check uncore
-> ovfl_status. IF the
-> status is zero, then return. Otherwise, you need to do a 2nd level
-> check before you can
-> execute the handler. You need to know if the sibling CPU has already
-> "consumed" that
-> interrupt.
-> 
-> I think you need some sort of generation counter per physical core and
-> per HT thread.
-> On interrupt, you could do something along the line of:
->       if (mycpu->intr_count == mysibling->intr_count) {
->           then mycpu->intr_count++
->           execute intr_handler()
->       } else {
->           mycpu->intr_count++
->           return;
->       }
-> Of course, the above needs some atomicity and ad locking (but I don't
-> think you can
-> use locks in NMI context).
-> 
-> This makes me wonder if vectoring uncore to NMI is really needed,
-> given you cannot
-> correlated to an IP, incl. a kernel IP. If we were to vector to a
-> dedicated (lower prio)
-> vector, then we could use the trick of saying the lowest indexed CPU in a pair
-> handles the interrupt (because we would already know this is an uncore
-> interrupt).
-> This would be much simpler. Price: not samples in kernel's critical
-> section. But those
-> are useless anyway with uncore events.
-> 
-> - uncore_get_status().
->   PERF_GLOBAL_STATUS contains more than overflow
->   status, bit 61-63 need to be masked off.
-> 
-> - uncore_pmu_cpu_prepare()
->   I don't understand the x86_max_cores < 2 test. If you run your
->   NHM/WSM is single core mode, you still have uncore to deal with
->   thus, you need cpuc->intel_uncore initialized, don't you?
-> 
-> - I assume that the reason the uncore->refcnt management is not
->   using atomic ops because the whole CPU hotplug is serialized, right?
 
 
+On 12/09/2010 06:08 PM, Samuel Ortiz wrote:
+> Hi Mattias,
+> 
+> On Tue, Dec 07, 2010 at 11:20:47AM +0100, Mattias Wallin wrote:
+>> This patch adds support for chip version 2.0 or cut 2.0.
+>> One new interrupt latch register - latch 12 - is introduced.
+> One question for you:
+> 
+>> diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
+>> index 1848781..157f000 100644
+>> --- a/include/linux/mfd/ab8500.h
+>> +++ b/include/linux/mfd/ab8500.h
+>> @@ -74,30 +74,37 @@
+>>  #define AB8500_INT_ACC_DETECT_21DB_F	37
+>>  #define AB8500_INT_ACC_DETECT_21DB_R	38
+>>  #define AB8500_INT_GP_SW_ADC_CONV_END	39
+>> -#define AB8500_INT_BTEMP_LOW		72
+>> -#define AB8500_INT_BTEMP_LOW_MEDIUM	73
+>> -#define AB8500_INT_BTEMP_MEDIUM_HIGH	74
+>> -#define AB8500_INT_BTEMP_HIGH		75
+>> -#define AB8500_INT_USB_CHARGER_NOT_OK	81
+>> -#define AB8500_INT_ID_WAKEUP_R		82
+>> -#define AB8500_INT_ID_DET_R1R		84
+>> -#define AB8500_INT_ID_DET_R2R		85
+>> -#define AB8500_INT_ID_DET_R3R		86
+>> -#define AB8500_INT_ID_DET_R4R		87
+>> -#define AB8500_INT_ID_WAKEUP_F		88
+>> -#define AB8500_INT_ID_DET_R1F		90
+>> -#define AB8500_INT_ID_DET_R2F		91
+>> -#define AB8500_INT_ID_DET_R3F		92
+>> -#define AB8500_INT_ID_DET_R4F		93
+>> -#define AB8500_INT_USB_CHG_DET_DONE	94
+>> -#define AB8500_INT_USB_CH_TH_PROT_F	96
+>> -#define AB8500_INT_USB_CH_TH_PROT_R	97
+>> -#define AB8500_INT_MAIN_CH_TH_PROT_F	98
+>> -#define AB8500_INT_MAIN_CH_TH_PROT_R	99
+>> -#define AB8500_INT_USB_CHARGER_NOT_OKF	103
+>> +#define AB8500_INT_ADP_SOURCE_ERROR	72
+>> +#define AB8500_INT_ADP_SINK_ERROR	73
+>> +#define AB8500_INT_ADP_PROBE_PLUG	74
+>> +#define AB8500_INT_ADP_PROBE_UNPLUG	75
+>> +#define AB8500_INT_ADP_SENSE_OFF	76
+>> +#define AB8500_INT_USB_PHY_POWER_ERR	78
+>> +#define AB8500_INT_USB_LINK_STATUS	79
+>> +#define AB8500_INT_BTEMP_LOW		80
+>> +#define AB8500_INT_BTEMP_LOW_MEDIUM	81
+>> +#define AB8500_INT_BTEMP_MEDIUM_HIGH	82
+>> +#define AB8500_INT_BTEMP_HIGH		83
+>> +#define AB8500_INT_USB_CHARGER_NOT_OK	89
+>> +#define AB8500_INT_ID_WAKEUP_R		90
+>> +#define AB8500_INT_ID_DET_R1R		92
+>> +#define AB8500_INT_ID_DET_R2R		93
+>> +#define AB8500_INT_ID_DET_R3R		94
+>> +#define AB8500_INT_ID_DET_R4R		95
+>> +#define AB8500_INT_ID_WAKEUP_F		96
+>> +#define AB8500_INT_ID_DET_R1F		98
+>> +#define AB8500_INT_ID_DET_R2F		99
+>> +#define AB8500_INT_ID_DET_R3F		100
+>> +#define AB8500_INT_ID_DET_R4F		101
+>> +#define AB8500_INT_USB_CHG_DET_DONE	102
+>> +#define AB8500_INT_USB_CH_TH_PROT_F	104
+>> +#define AB8500_INT_USB_CH_TH_PROT_R    105
+>> +#define AB8500_INT_MAIN_CH_TH_PROT_F   106
+>> +#define AB8500_INT_MAIN_CH_TH_PROT_R	107
+>> +#define AB8500_INT_USB_CHARGER_NOT_OKF	111
+> This new interrupt sources layout doesn't seem to be compatible with the
+> current one. What's the story here ?
+The above list of interrupts must match the latch register array (ab8500_irq_regoffset) that the interrupt handler of ab8500-core uses.
+Now, our HW guys added a new latch register in the middle of the other registers so I had to insert the eight new interrupts in the middle of above list.
+But it should not be any problems for the sub drivers since all uses above defines and platform_get_ioresource().
+Did I answer your question or did I answer another question?
+
+/Wallin
