@@ -1,74 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab0LJLCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 06:02:05 -0500
-Received: from www.tglx.de ([62.245.132.106]:35943 "EHLO www.tglx.de"
+	id S1755191Ab0LJLGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 06:06:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56008 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752376Ab0LJLCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 06:02:03 -0500
-Date: Fri, 10 Dec 2010 12:01:51 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
-cc: "'Tejun Heo'" <tj@kernel.org>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: RE: [PATCHv1 000/211] unicore32 architecture support
-In-Reply-To: <026901cb9848$17e71ac0$47b55040$@mprc.pku.edu.cn>
-Message-ID: <alpine.LFD.2.00.1012101156230.2653@localhost6.localdomain6>
-References: <01ca01cb9783$7818c3f0$684a4bd0$@mprc.pku.edu.cn> <4D00A672.9050906@kernel.org> <alpine.LFD.2.00.1012091443580.2653@localhost6.localdomain6> <026901cb9848$17e71ac0$47b55040$@mprc.pku.edu.cn>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752257Ab0LJLGI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 06:06:08 -0500
+Date: Fri, 10 Dec 2010 06:05:56 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: Suresh Jayaraman <sjayaraman@suse.de>, Bernhard Walle <bernhard@bwalle.de>,
+        sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: Add information about noserverino
+Message-ID: <20101210060556.2bb282da@tlielax.poochiereds.net>
+In-Reply-To: <AANLkTi=KJa4w3bwDJgsfjPAH0Vi=oJb+psBB2731jnNG@mail.gmail.com>
+References: <1291568855-22604-1-git-send-email-bernhard@bwalle.de>
+	<20101206095725.78422138@tlielax.poochiereds.net>
+	<20101206101214.52a24415@tlielax.poochiereds.net>
+	<20101206163506.56232lqqhc5c3co4@webmail.df.eu>
+	<20101206103836.0714369a@tlielax.poochiereds.net>
+	<4D00C02C.4070006@suse.de>
+	<20101209070952.24793c23@barsoom.rdu.redhat.com>
+	<AANLkTimm=Ca51y-4kZwpBCiBoSUjxz=maYz6J=ys2z6C@mail.gmail.com>
+	<20101209143448.5c479e50@barsoom.rdu.redhat.com>
+	<AANLkTikKkOEO1gZFCD+aVwVTCEXmR9Q6jVndrX6Bd08V@mail.gmail.com>
+	<4D0199E2.8030006@suse.de>
+	<AANLkTi=KJa4w3bwDJgsfjPAH0Vi=oJb+psBB2731jnNG@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010, Guan Xuetao wrote:
+On Thu, 9 Dec 2010 22:58:20 -0600
+Steve French <smfrench@gmail.com> wrote:
+
+> On Thu, Dec 9, 2010 at 9:09 PM, Suresh Jayaraman <sjayaraman@suse.de> wrote:
+> > On 12/10/2010 02:14 AM, Steve French wrote:
+> >> On Thu, Dec 9, 2010 at 1:34 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> >>> On Thu, 9 Dec 2010 12:26:39 -0600
+> >>> Steve French <smfrench@gmail.com> wrote:
+> >>>
+> >>>> On Thu, Dec 9, 2010 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> >>>>> On Thu, 09 Dec 2010 17:10:28 +0530
+> >>>>> Suresh Jayaraman <sjayaraman@suse.de> wrote:
+> >>>>>
+> >>>>>> On 12/06/2010 09:08 PM, Jeff Layton wrote:
+> >>>>>>> On Mon, 06 Dec 2010 16:35:06 +0100
+> >>>>>>> Bernhard Walle <bernhard@bwalle.de> wrote:
+> >>>>>>>
+> >>>>>>>>
+> >>>>>>>> Zitat von Jeff Layton <jlayton@redhat.com>:
+> >>>>>>>>
+> >>>>>>>>>
+> >>>>>>>>> I'm still not sure I like this patch however. It potentially means a
+> >>>>>>>>> lot of printk spam since these things have no ratelimiting. It also
+> >>>>>>>>> doesn't tell me anything about which server might be giving me grief.
+> >>>>>>>>>
+> >>>>>>>>> Maybe this should be turned into a cFYI?
+> >>>>>>>>
+> >>>>>>>> Well, if I see it in the kernel log, it doesn't matter if it's info or
+> >>>>>>>> something else.
+> >>>>>>>>
+> >>>>>>>>> The bottom line though is that running 32-bit applications that were
+> >>>>>>>>> built without -D_FILE_OFFSET_BITS=64 on a 64-bit kernel is a very bad
+> >>>>>>>>> idea. It would be nice to be able to alert users that things aren't
+> >>>>>>>>> working the way they expect, but I'm not sure this is the right place
+> >>>>>>>>> to do that.
+> >>>>>>>>
+> >>>>>>>> Well, but there *are* such application (in my case it was Softmaker Office
+> >>>>>>>> which is a proprietary word processor) and it's quite nice if you know
+> >>>>>>>> how you can workaround it when you encounter such a problem. That's all.
+> >>>>>>>>
+> >>>>>>>
+> >>>>>>> Sure...but this problem is not limited to CIFS. Many modern filesystems
+> >>>>>>> use 64-bit inodes. Running this application on XFS or NFS for instance
+> >>>>>>> is likely to give you the same trouble. You just hit it on CIFS because
+> >>>>>>> the server happened to give you a very large inode number.
+> >>>>>>>
+> >>>>>>> If we're going to add printk's for this situation, it probably ought to
+> >>>>>>> be in a more generic place.
+> >>>>>>>
+> >>>>>>
+> >>>>>> By generic place, did you mean at the VFS level? I think at VFS level,
+> >>>>>> there is little information about the Server or underlying fs and this
+> >>>>>> information doesn't seem too critical that VFS should warn/care much about.
+> >>>>>>
+> >>>>>> May be sticking to a cFYI along with Server detail is a good idea?
+> >>>>>>
+> >>>>> My poing was mainly that there's nothing special about CIFS in this
+> >>>>> regard, other than the fact that servers regularly send us inodes that
+> >>>>> are larger than 2^32. Why should we do this for cifs but not for nfs,
+> >>>>> xfs, ext4, etc?
+> >>>>>
+> >>>>> The filldir function gets a dentry as an argument, so it could
+> >>>>> reasonably generate a printk for this. I'm also not keen on
+> >>>>> the printk recommending noserverino for this. That has its own
+> >>>>> drawbacks.
+> >>>>>
+> >>>>> A cFYI for this sort of thing seems reasonable however.
+> >>>>
+> >>>> I agree that a cFYI is reasonable. �The next obvious question is: do
+> >>>> we need to add code to generate unique 32 bit inode numbers
+> >>>> that don't collide (as IIRC Samba does by xor the high and low 32
+> >>>> bits of the inode number) when the app can't support ino64
+> >>>> I would prefer not to go back to noserverino since that has worse
+> >>>> drawbacks.
+> >>>>
+> >>>
+> >>> Right, the fact that noserverino works around this is really just due
+> >>> to an implementation detail of iunique(). That should probably be
+> >>> discouraged as a solution since it's not guaranteed to be a workaround
+> >>> in the future.
+> >>>
+> >>> If we did add such a switch, I'd suggest that we pattern it after what
+> >>> NFS did for this. They added an "enable_ino64" module parameter a
+> >>> couple of years ago that defaults to "true".
+> >
+> > What are the advantages we have by making it a module parameter as
+> > opposed to an mount option? XFS seems to have "inode64" mount option for
+> > quite sometime now, without much issues..
 > 
-> > -----Original Message-----
-> > From: linux-arch-owner@vger.kernel.org [mailto:linux-arch-
-> > owner@vger.kernel.org] On Behalf Of Thomas Gleixner
-> > Sent: Thursday, December 09, 2010 9:50 PM
-> > To: Tejun Heo
-> > Cc: Guan Xuetao; Arnd Bergmann; linux-arch@vger.kernel.org; linux-
-> > kernel@vger.kernel.org
-> > Subject: Re: [PATCHv1 000/211] unicore32 architecture support
+> I prefer mount option, but with the default to support 64 bit inode numbers.
+> 
+> >> makes me uncomfortable to break ino64 for all mounts - when we
+> >> may have one application on one mount that needs it (might be
+> >> better to make a mount related)
+> >>
+> >>
 
-Please fix your mail client to do proper citations. A single line 
+I think that NFS did it that way because of the way that superblocks
+are shared between vfsmounts. It would be impossible to share a sb
+between two vfsmounts with two different settings.
 
-On Thu, 9 Dec 2010, Thomas Gleixner wrote:
+I won't object to a new mount option for it if that's the concensus.
 
-or whatever your preferred cite line is, is sufficient. We all have
-the mail header already.
- 
-> > It's ok to have several patches ordered by topics
-> > 
-> >   - generic header stuff
-> >   - processor and system headers
-> >   - low level entry and setup code
-> >   - process/thread related code
-> >   - mm related code
-> >   - timers
-> >   - interrupts
-> >   - ptrace
-> >   - signals
-> >   - fault handling
-> >   - misc
-> >   - build system, main makefile, Kconfig
-> > 
-> > That makes it actually feasible to review.
-> Thanks,
-> I will rearrange my patches.
-
-And please mail them to yourself before you post them and make sure
-they apply and resemble exaclty what you wanted to send. I just
-noticed, that your mailer line-wrapped the patches:
-
-+       /*
-+        * actually the registers should be pushed and pop'd conditionally,
-but
-+        * after bl the flags are certainly clobbered
-+        */
-
-Thanks,
-
-	tglx
+-- 
+Jeff Layton <jlayton@redhat.com>
