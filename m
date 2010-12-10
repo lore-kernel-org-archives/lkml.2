@@ -1,48 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab0LJUad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:30:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37424 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757113Ab0LJUaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:30:30 -0500
-Date: Fri, 10 Dec 2010 12:22:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: Greg KH <greg@kroah.com>, mchehab@redhat.com, stable@kernel.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        hverkuil@xs4all.nl
-Subject: Re: [stable] [RESEND][PATCH for stable 2.6.36 REGRESSION] cx25840:
- Prevent device probe failure due to volume control ERANGE error]
-Message-ID: <20101210202250.GA23699@suse.de>
-References: <1291987197.2064.8.camel@morgan.silverblock.net>
- <20101210181630.GA12772@kroah.com>
- <1292010063.29254.13.camel@morgan.silverblock.net>
+	id S1757168Ab0LJUaq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:30:46 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64904 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757149Ab0LJUan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 15:30:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=sPZW6CetA1YPQ5twi146Bl5GaZaPk9ZV9OEcwy0uoyceD+JMokq+eare75AV7rYqjw
+         tOiwgApNnIv2W4iRoSGzaogpXQAchT/0WPXbPNEFrnb/cZGBZm/Wc9QjT4tYon31yeja
+         3JOI6n8aBav9ZyqNwlUmUvzKB98wou9Pv/sUo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292010063.29254.13.camel@morgan.silverblock.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 10 Dec 2010 21:30:42 +0100
+Message-ID: <AANLkTi=j9zsaYNcu=NgGV=HfE-3rNHzVswov8VrgwjQp@mail.gmail.com>
+Subject: Crash with btrfs rootfs on dm-crypt [ kernel BUG at
+ fs/btrfs/inode.c:806! ] on linux 2.6.37-rc5
+From: Fabio Comolli <fabio.comolli@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Cc: Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 02:41:03PM -0500, Andy Walls wrote:
-> On Fri, 2010-12-10 at 10:16 -0800, Greg KH wrote:
-> > On Fri, Dec 10, 2010 at 08:19:57AM -0500, Andy Walls wrote:
-> > > Resending, since this didn't appear to make its way into in 2.6.36.2.
-> > 
-> > That's because it's not in Linus's tree, right?  I have to wait for that
-> > to happen before I can add it to a stable tree.
-> 
-> Greg,
-> 
-> I wasn't aware of that constraint in the process, but it makes sense to
-> me.
+Hi.
+Just hit the BUG in the subj. Relevant part of the dmesg output I
+somehow managed to save:
 
-Please read Documentation/stable_kernel_rules.txt for what the process
-is, and how to get patches into the stable kernel releases.
+[ 8710.647123] ------------[ cut here ]------------
+[ 8710.647210] kernel BUG at fs/btrfs/inode.c:806!
+[ 8710.647282] invalid opcode: 0000 [#1] PREEMPT
+[ 8710.647362] last sysfs file:
+/sys/devices/platform/eeepc/hwmon/hwmon0/fan1_input
+[ 8710.647476] Modules linked in: [last unloaded: scsi_wait_scan]
+[ 8710.647577]
+[ 8710.647607] Pid: 1106, comm: flush-btrfs-1 Not tainted
+2.6.37-rc5-dirty #1 900/900
+[ 8710.647726] EIP: 0060:[<c1118724>] EFLAGS: 00010286 CPU: 0
+[ 8710.647819] EIP is at cow_file_range+0x230/0x3f9
+[ 8710.647893] EAX: ffffffe4 EBX: 1356a000 ECX: c1491237 EDX: 00000001
+[ 8710.647990] ESI: 00000000 EDI: f5c0e000 EBP: 00000000 ESP: f5f79cd8
+[ 8710.648006]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[ 8710.648006] Process flush-btrfs-1 (pid: 1106, ti=f5f78000
+task=f5cc4dc0 task.ti=f5f78000)
+[ 8710.648006] Stack:
+[ 8710.648006]  00909fff 00000000 001fe000 00000000 f5c0e000 f62ff8b8
+00001000 00000000
+[ 8710.648006]  00001000 f62ff7d4 f6161000 f62ff7d0 f7699a20 00000000
+00000000 a8000000
+[ 8710.648006]  00000000 00000000 00000000 13767fff 00000000 f62ff7b8
+c1119163 12e5f000
+[ 8710.648006] Call Trace:
+[ 8710.648006]  [<c1119163>] ? run_delalloc_range+0xa3/0xda
+[ 8710.648006]  [<c112d8da>] ? __extent_writepage+0x206/0x6e8
+[ 8710.648006]  [<c10577e5>] ? find_get_pages_tag+0xa0/0xc9
+[ 8710.648006]  [<c112decd>] ?
+extent_write_cache_pages.clone.17.clone.29+0x111/0x1d8
+[ 8710.648006]  [<c112e20c>] ? extent_writepages+0x3d/0x4f
+[ 8710.648006]  [<c11161c9>] ? btrfs_get_extent+0x0/0x882
+[ 8710.648006]  [<c1115868>] ? btrfs_writepages+0x18/0x1b
+[ 8710.648006]  [<c105d99c>] ? do_writepages+0x12/0x1b
+[ 8710.648006]  [<c108facc>] ? writeback_single_inode+0x95/0x198
+[ 8710.648006]  [<c109042f>] ? writeback_sb_inodes+0x88/0xf9
+[ 8710.648006]  [<c1090617>] ? writeback_inodes_wb+0xa2/0xe6
+[ 8710.648006]  [<c1090767>] ? wb_writeback+0x10c/0x180
+[ 8710.648006]  [<c10908ca>] ? wb_do_writeback+0xef/0x105
+[ 8710.648006]  [<c109093c>] ? bdi_writeback_thread+0x5c/0x107
+[ 8710.648006]  [<c10908e0>] ? bdi_writeback_thread+0x0/0x107
+[ 8710.648006]  [<c1033d82>] ? kthread+0x62/0x67
+[ 8710.648006]  [<c1033d20>] ? kthread+0x0/0x67
+[ 8710.648006]  [<c1002c76>] ? kernel_thread_helper+0x6/0x10
+[ 8710.648006] Code: 50 6a 00 6a 00 8b 7c 24 34 8b 87 c8 01 00 00 52
+89 fa 50 ff 74 24 38 ff 74 24 38 8b 44 24 5c e8 69 f8 fe ff 83 c4 34
+85 c0 74 02 <0f> 0b b8 50 00 00 00 e8 2b 84 00 00 8b 54 24 37 8b 4c 24
+3b 89
+[ 8710.648006] EIP: [<c1118724>] cow_file_range+0x230/0x3f9 SS:ESP 0068:f5f79cd8
+[ 8710.697024] ---[ end trace 81ccff9fc7ce3765 ]---
 
-thanks,
+The kernel is dirty because of
+sched_autogroup_final_v2.6.37-rc4-12-g22a5b56.diff .
 
-greg k-h
+After the crash the (encrypted) root filesystem was unusable until
+reboot; the /home filesystem (also btrfs) was ok (the dmesg output was
+saved there). After the reboot btrfsck on /dev/mapper/root showed no
+problems at all.
+
+Also, the dmesg output is full of messages (about 1850 lines) like the
+following:
+
+[ 8616.109232] btrfs allocation failed flags 1, wanted 65536
+[ 8616.109311] space_info has 79597568 free, is full
+[ 8616.109318] space_info total=2807562240, used=2727600128,
+pinned=364544, reserved=0, may_use=290816, readonly=0
+[ 8616.109326] block group 12582912 has 8388608 bytes, 8327168 used
+61440 pinned 0 reserved
+[ 8616.109332] block group has cluster?: no
+[ 8616.109336] 0 blocks of free space at or bigger than bytes is
+[ 8616.109343] block group 216793088 has 374865920 bytes, 370073600
+used 167936 pinned 0 reserved
+[ 8616.109349] entry offset 216793088, bytes 978944, bitmap yes
+[ 8616.109355] entry offset 351010816, bytes 790528, bitmap yes
+[ 8616.109361] entry offset 485228544, bytes 647168, bitmap yes
+[ 8616.109366] entry offset 486146048, bytes 4096, bitmap no
+[ 8616.109371] entry offset 487411712, bytes 8192, bitmap no
+[ 8616.109376] block group has cluster?: no
+[ 8616.109380] 3 blocks of free space at or bigger than bytes is
+[ 8616.109386] block group 591659008 has 374865920 bytes, 348446720
+used 12288 pinned 0 reserved
+[ 8616.109393] entry offset 591659008, bytes 528384, bitmap yes
+[ 8616.109398] entry offset 725876736, bytes 675840, bitmap yes
+[ 8616.109404] entry offset 860094464, bytes 208896, bitmap yes
+[ 8616.109408] block group has cluster?: no
+[ 8616.109413] 3 blocks of free space at or bigger than bytes is
+[ 8616.109419] block group 966524928 has 374865920 bytes, 350523392
+used 16384 pinned 0 reserved
+[ 8616.109426] entry offset 966524928, bytes 397312, bitmap yes
+[ 8616.109431] entry offset 973578240, bytes 8192, bitmap no
+[ 8616.109436] entry offset 976687104, bytes 8192, bitmap no
+[ 8616.109442] entry offset 1100742656, bytes 675840, bitmap yes
+[ 8616.109447] entry offset 1196097536, bytes 4096, bitmap no
+[ 8616.109453] entry offset 1234960384, bytes 421888, bitmap yes
+[ 8616.109458] entry offset 1236443136, bytes 4096, bitmap no
+[ 8616.109462] block group has cluster?: no
+[ 8616.109467] 3 blocks of free space at or bigger than bytes is
+[ 8616.109473] block group 1341390848 has 374865920 bytes, 368312320
+used 102400 pinned 0 reserved
+[ 8616.109480] entry offset 1341390848, bytes 991232, bitmap yes
+[ 8616.109485] entry offset 1343913984, bytes 4096, bitmap no
+[ 8616.109490] entry offset 1353039872, bytes 4096, bitmap no
+[ 8616.109496] entry offset 1475604480, bytes 4096, bitmap no
+[ 8616.109501] entry offset 1475608576, bytes 1343488, bitmap yes
+[ 8616.109507] entry offset 1477107712, bytes 4096, bitmap no
+[ 8616.109512] entry offset 1609826304, bytes 1236992, bitmap yes
+[ 8616.109518] entry offset 1688391680, bytes 8192, bitmap no
+[ 8616.109523] entry offset 1692372992, bytes 4096, bitmap no
+[ 8616.109527] block group has cluster?: no
+
+and so on. Unfortunately those messages filled the dmesg buffer, so I
+don't have other info to provide. The BUG lines were at the end.
+
+My btrfs filesystems are mounted like this:
+
+/dev/mapper/root on / type btrfs (rw,noatime,ssd)
+/dev/mapper/home on /home type btrfs (rw,noatime,ssd)
+
+Relevant part of dmesg after a clean boot:
+
+[    5.605844] device fsid 3f4f59f00ccebb53-21bc027c519339ad devid 1
+transid 49814 /dev/mapper/root
+[    5.625868] btrfs: disk space caching is enabled
+[   12.612095] btrfs: use ssd allocation scheme
+[   12.911580] btrfs: use ssd allocation scheme
+[   13.077979] btrfs: unlinked 1 orphans
+[   13.077985] btrfs: truncated 3 orphans
+[   13.191858] device fsid 1c45fb67134eb006-bad591586362b7b1 devid 1
+transid 9938 /dev/mapper/home
+[   13.193316] btrfs: use ssd allocation scheme
+[   13.211713] btrfs: disk space caching is enabled
+
+Please let me know if you need more details.
+Regards,
+Fabio
