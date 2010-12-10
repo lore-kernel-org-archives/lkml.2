@@ -1,299 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab0LJUjB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 15:39:01 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38205 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757097Ab0LJUjA convert rfc822-to-8bit (ORCPT
+	id S1757220Ab0LJUj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 15:39:56 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:50270 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757099Ab0LJUjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 15:39:00 -0500
-Subject: [PATCH] sched: Fix the irqtime code to deal with u64 wraps
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	Fri, 10 Dec 2010 15:39:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=koSjoDohUFzyamtOeYeLQ+xbaEmpultlz/7zgpVrVR3s7ryY0jBMAKYBfoMLzWBZXs
+         WOXJvj1RE5JzWLifm09/w6TUxUThXbSf4Y21FaVNiSizDXfaVYwskngByqkDLtd5as52
+         LfUKMWSfhmy3PZQcs8WsDjWhNOhcRlqXE5F74=
+Subject: Re: [BUG] 2.6.37-rc3 massive interactivity regression on ARM
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
         Venkatesh Pallipadi <venki@google.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
+        John Stultz <johnstul@us.ibm.com>
+In-Reply-To: <alpine.DEB.2.00.1012101410571.13986@router.home>
+References: <20101208142814.GE9777@n2100.arm.linux.org.uk>
+	 <1291851079-27061-1-git-send-email-venki@google.com>
+	 <1291899120.29292.7.camel@twins>
+	 <AANLkTikd3X4pLs5De-LO6=XD+JqUz3-Ku7YM8+0-oK8t@mail.gmail.com>
+	 <1291917330.6803.7.camel@twins>
+	 <AANLkTin+eO_jPceSOHL4e7vqd+tf0ZCMHJ-USoz8aZL1@mail.gmail.com>
+	 <1291920939.6803.38.camel@twins>
+	 <AANLkTim+v21RpWobdw6exEbazDJwm4JjemPVB2+3PuRJ@mail.gmail.com>
+	 <1291936593.13513.3.camel@laptop>
+	 <AANLkTi=_qf8NAgj2HHMP0qG-ibnH-726NzoXbxd-bS1N@mail.gmail.com>
+	 <1291975704.6803.59.camel@twins>  <1291987065.6803.151.camel@twins>
+	 <1291987635.6803.161.camel@twins>  <1291988866.6803.171.camel@twins>
+	 <1292001500.3580.268.camel@edumazet-laptop>
+	 <1292003346.13513.30.camel@laptop>
+	 <1292004859.3580.387.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1012101236300.13986@router.home>
+	 <1292006788.13513.43.camel@laptop>
+	 <alpine.DEB.2.00.1012101344570.13986@router.home>
+	 <1292011644.13513.61.camel@laptop>
+	 <alpine.DEB.2.00.1012101410571.13986@router.home>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Dec 2010 21:38:26 +0100
-Message-ID: <1292013506.13513.78.camel@laptop>
+Date: Fri, 10 Dec 2010 21:39:50 +0100
+Message-ID: <1292013590.2746.2.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, so here's the latest version, using fancy __this_cpu thingies.
+Le vendredi 10 décembre 2010 à 14:23 -0600, Christoph Lameter a écrit :
+> On Fri, 10 Dec 2010, Peter Zijlstra wrote:
+> 
+> > Its not about passing per-cpu pointers, its about passing long pointers.
+> >
+> > When I write:
+> >
+> > void foo(u64 *bla)
+> > {
+> > 	*bla++;
+> > }
+> >
+> > DEFINE_PER_CPU(u64, plop);
+> >
+> > void bar(void)
+> > {
+> > 	foo(__this_cpu_ptr(plop));
+> > }
+> >
+> > I want gcc to emit the equivalent to:
+> >
+> > __this_cpu_inc(plop); /* incq %fs:(%0) */
+> >
+> > Now I guess the C type system will get in the way of this ever working,
+> > since a long pointer would have a distinct type from a regular
+> > pointer :/
+> >
+> > The idea is to use 'regular' functions with the per-cpu data in a
+> > transparent manner so as not to have to replicate all logic.
+> 
+> That would mean you would have to pass information in the pointer at
+> runtime indicating that this particular pointer is a per cpu pointer.
+> 
+> Code for the Itanium arch can do that because it has per cpu virtual
+> mappings. So you define a virtual area for per cpu data and then map it
+> differently for each processor. If we would have a different page table
+> for each processor then we could avoid using segment register and do the
+> same on x86.
+> 
+> > > Seems that you do not have that use case in mind. So a seqlock restricted
+> > > to a single processor? If so then you wont need any of those smp write
+> > > barriers mentioned earlier. A simple compiler barrier() is sufficient.
+> >
+> > The seqcount is sometimes read by different CPUs, but I don't see why we
+> > couldn't do what Eric suggested.
+> 
+> But you would have to define a per cpu seqlock. Each cpu would have
+> its own seqlock. Then you could have this_cpu_read_seqcount_begin and
+> friends:
+> 
+> 
 
-I started a new thread since the old one was quite unwieldy.
+Yes. It was the idea.
 
-Now, admittedly this patch is a tad large, esp for -rc5. So either we
-need lots of Reviewed-by and such or I need to shrink this patch
-somehow.
+> DEFINE_PER_CPU(seqcount, bla);
+> 
+> 
+
+This is in Peter patch :)
+
+> 
+> 
+> /* Start of read using pointer to a sequence counter only.  */
+> static inline unsigned this_cpu_read_seqcount_begin(const seqcount_t __percpu *s)
+> {
+>         /* No other processor can be using this lock since it is per cpu*/
+>         ret = this_cpu_read(s->sequence);
+> 	barrier();
+>         return ret;
+> }
+> 
+> /*
+>  * Test if reader processed invalid data because sequence number has changed.
+>  */
+> static inline int this_cpu_read_seqcount_retry(const seqcount_t __percpu *s, unsigned start)
+> {
+> 	barrier();
+>         return this_cpu_read(s->sequence) != start;
+> }
+> 
+> 
+> /*
+>  * Sequence counter only version assumes that callers are using their
+>  * own mutexing.
+>  */
+> static inline void this_cpu_write_seqcount_begin(seqcount_t __percpu *s)
+> {
+>         __this_cpu_inc(s->sequence);
+> 	barrier();
+> }
+> 
+> static inline void this_cpuwrite_seqcount_end(seqcount_t __percpu *s)
+> {
+>         __this_cpu_dec(s->sequence);
+> 	barrier();
+> }
+> 
+> 
+> Then you can do
+> 
+> this_cpu_read_seqcount_begin(&bla)
+> 
+> ...
+
+This was exactly my suggestion Christoph.
+
+I am glad you understand it now.
 
 
----
-Subject: sched: Fix the irqtime code to deal with u64 wraps
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu Dec 09 14:15:34 CET 2010
-
-ARM systems have a 32bit sched_clock() [ which needs to be fixed ],
-but this exposed a bug in the irq_time code as well, it doesn't deal
-with wraps at all.
-
-Fix the irq_time code to deal with u64 wraps by re-writing the code to
-only use delta increments, which avoids the whole issue.
-
-Furthermore, solve the problem of 32bit arches reading partial updates
-of the u64 time values.
-
-Cc: Venkatesh Pallipadi <venki@google.com>
-Reported-by: Mikael Pettersson <mikpe@it.uu.se>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched.c |  176 +++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 121 insertions(+), 55 deletions(-)
-
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -636,22 +636,16 @@ static inline struct task_group *task_gr
- 
- #endif /* CONFIG_CGROUP_SCHED */
- 
--static u64 irq_time_cpu(int cpu);
--static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
--
--inline void update_rq_clock(struct rq *rq)
-+static void update_rq_clock(struct rq *rq)
- {
--	if (!rq->skip_clock_update) {
--		int cpu = cpu_of(rq);
--		u64 irq_time;
-+	s64 delta;
- 
--		rq->clock = sched_clock_cpu(cpu);
--		irq_time = irq_time_cpu(cpu);
--		if (rq->clock - irq_time > rq->clock_task)
--			rq->clock_task = rq->clock - irq_time;
-+	if (rq->skip_clock_update)
-+		return;
- 
--		sched_irq_time_avg_update(rq, irq_time);
--	}
-+	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-+	rq->clock += delta;
-+	update_rq_clock_task(rq, delta);
- }
- 
- /*
-@@ -1918,90 +1912,162 @@ static void deactivate_task(struct rq *r
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
- 
- /*
-- * There are no locks covering percpu hardirq/softirq time.
-- * They are only modified in account_system_vtime, on corresponding CPU
-- * with interrupts disabled. So, writes are safe.
-+ * There are no locks covering percpu hardirq/softirq time. They are only
-+ * modified in account_system_vtime, on corresponding CPU with interrupts
-+ * disabled. So, writes are safe.
-+ *
-  * They are read and saved off onto struct rq in update_rq_clock().
-- * This may result in other CPU reading this CPU's irq time and can
-- * race with irq/account_system_vtime on this CPU. We would either get old
-- * or new value (or semi updated value on 32 bit) with a side effect of
-- * accounting a slice of irq time to wrong task when irq is in progress
-- * while we read rq->clock. That is a worthy compromise in place of having
-- * locks on each irq in account_system_time.
-+ *
-+ * This may result in other CPU reading this CPU's irq time and can race with
-+ * irq/account_system_vtime on this CPU. We would either get old or new value
-+ * with a side effect of accounting a slice of irq time to wrong task when irq
-+ * is in progress while we read rq->clock. That is a worthy compromise in place
-+ * of having locks on each irq in account_system_time.
-  */
- static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
--
- static DEFINE_PER_CPU(u64, irq_start_time);
--static int sched_clock_irqtime;
- 
--void enable_sched_clock_irqtime(void)
-+#ifndef CONFIG_64BIT
-+static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-+
-+static inline void irq_time_write_begin(void)
- {
--	sched_clock_irqtime = 1;
-+	__this_cpu_inc(irq_time_seq.sequence);
-+	smp_wmb();
- }
- 
--void disable_sched_clock_irqtime(void)
-+static inline void irq_time_write_end(void)
- {
--	sched_clock_irqtime = 0;
-+	smp_wmb();
-+	__this_cpu_inc(irq_time_seq.sequence);
- }
- 
--static u64 irq_time_cpu(int cpu)
-+static inline u64 irq_time_read(int cpu)
- {
--	if (!sched_clock_irqtime)
--		return 0;
-+	u64 irq_time;
-+	unsigned seq;
-+
-+	do {
-+		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
-+		irq_time = per_cpu(cpu_softirq_time, cpu) +
-+			   per_cpu(cpu_hardirq_time, cpu);
-+	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
-+
-+	return irq_time;
-+}
-+#else /* CONFIG_64BIT */
-+static inline void irq_time_write_begin(void)
-+{
-+}
- 
-+static inline void irq_time_write_end(void)
-+{
-+}
-+
-+static inline u64 irq_time_read(int cpu)
-+{
- 	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
- }
-+#endif /* CONFIG_64BIT */
-+
-+static int sched_clock_irqtime;
-+
-+void enable_sched_clock_irqtime(void)
-+{
-+	sched_clock_irqtime = 1;
-+}
-+
-+void disable_sched_clock_irqtime(void)
-+{
-+	sched_clock_irqtime = 0;
-+}
- 
-+/*
-+ * Called before incrementing preempt_count on {soft,}irq_enter
-+ * and before decrementing preempt_count on {soft,}irq_exit.
-+ */
- void account_system_vtime(struct task_struct *curr)
- {
- 	unsigned long flags;
-+	s64 delta;
- 	int cpu;
--	u64 now, delta;
- 
- 	if (!sched_clock_irqtime)
- 		return;
- 
- 	local_irq_save(flags);
--
- 	cpu = smp_processor_id();
--	now = sched_clock_cpu(cpu);
--	delta = now - per_cpu(irq_start_time, cpu);
--	per_cpu(irq_start_time, cpu) = now;
-+	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
-+	__this_cpu_add(irq_start_time, delta);
-+
-+	irq_time_write_begin();
-+
-+	if (hardirq_count())
-+		__this_cpu_add(cpu_hardirq_time, delta);
- 	/*
--	 * We do not account for softirq time from ksoftirqd here.
--	 * We want to continue accounting softirq time to ksoftirqd thread
--	 * in that case, so as not to confuse scheduler with a special task
--	 * that do not consume any time, but still wants to run.
-+	 * We do not account for softirq time from ksoftirqd here. We want to
-+	 * continue accounting softirq time to ksoftirqd thread in that case,
-+	 * so as not to confuse scheduler with a special task that do not
-+	 * consume any time, but still wants to run.
- 	 */
--	if (hardirq_count())
--		per_cpu(cpu_hardirq_time, cpu) += delta;
- 	else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
--		per_cpu(cpu_softirq_time, cpu) += delta;
-+		__this_cpu_add(cpu_softirq_time, delta);
- 
-+	irq_time_write_end();
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(account_system_vtime);
- 
--static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
-+static u64 irq_time_cpu(struct rq *rq)
- {
--	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
--		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
--		rq->prev_irq_time = curr_irq_time;
--		sched_rt_avg_update(rq, delta_irq);
--	}
-+	/*
-+	 * See the comment in update_rq_clock_task(), ideally we'd update
-+	 * the *irq_time values using rq->clock here.
-+	 */
-+	return irq_time_read(cpu_of(rq));
- }
- 
--#else
--
--static u64 irq_time_cpu(int cpu)
-+static void update_rq_clock_task(struct rq *rq, s64 delta)
- {
--	return 0;
-+	s64 irq_delta;
-+
-+	irq_delta = irq_time_cpu(rq) - rq->prev_irq_time;
-+
-+	/*
-+	 * Since irq_time is only updated on {soft,}irq_exit, we might run into
-+	 * this case when a previous update_rq_clock() happened inside a
-+	 * {soft,}irq region.
-+	 *
-+	 * When this happens, we stop ->clock_task and only update the
-+	 * prev_irq_time stamp to account for the part that fit, so that a next
-+	 * update will consume the rest. This ensures ->clock_task is
-+	 * monotonic.
-+	 *
-+	 * It does however cause some slight miss-attribution of {soft,}irq
-+	 * time, a more accurate solution would be to update the irq_time using
-+	 * the current rq->clock timestamp, except that would require using
-+	 * atomic ops.
-+	 */
-+	if (irq_delta > delta)
-+		irq_delta = delta;
-+
-+	rq->prev_irq_time += irq_delta;
-+	delta -= irq_delta;
-+	rq->clock_task += delta;
-+
-+	if (irq_delta && sched_feat(NONIRQ_POWER))
-+		sched_rt_avg_update(rq, irq_delta);
- }
- 
--static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
-+#else /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
--#endif
-+static void update_rq_clock_task(struct rq *rq, s64 delta)
-+{
-+	rq->clock_task += delta;
-+}
-+
-+#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
- #include "sched_idletask.c"
- #include "sched_fair.c"
 
