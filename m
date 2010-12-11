@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab0LKWw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 17:52:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41611 "EHLO mx2.suse.de"
+	id S1752264Ab0LKXP5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 18:15:57 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:33376 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab0LKWwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 17:52:24 -0500
-Date: Sat, 11 Dec 2010 23:52:23 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Updated sysfs attribute documentation
-In-Reply-To: <1292006614.2845.1.camel@neuromancer>
-Message-ID: <alpine.LNX.2.00.1012112352080.15140@pobox.suse.cz>
-References: <1292006614.2845.1.camel@neuromancer>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751496Ab0LKXPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 18:15:54 -0500
+Date: Sat, 11 Dec 2010 15:15:02 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: mat <castet.matthieu@free.fr>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+Message-ID: <20101211231502.GZ4464@outflux.net>
+References: <4CE2F914.9070106@free.fr>
+ <24422.1290656467@localhost>
+ <20101126182355.62615dff@mat-laptop>
+ <20101208221951.GO5750@outflux.net>
+ <20101211001857.4c5e0794@mat-laptop>
+ <20101211002750.GT4464@outflux.net>
+ <20101211115735.21b616fe@mat-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101211115735.21b616fe@mat-laptop>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010, Stefan Achatz wrote:
+On Sat, Dec 11, 2010 at 11:57:35AM +0100, mat wrote:
+> http://marc.info/?l=linux-security-module&m=129105456828505&w=2
 
-> Updated sysfs attribute documentation to reflect recent changes
-> in driver design. The device specific attributes moved from the
-> driver to the respective roccat char device.
+Ah-ha! Thanks for the pointer. So, instead of the other explicit jump_table
+fix, can this get pushed into tip?
 
-Applied, thanks.
+Thanks!
+
+-Kees
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Kees Cook
+Ubuntu Security Team
