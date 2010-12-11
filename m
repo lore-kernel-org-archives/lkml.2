@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab0LKVKd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 16:10:33 -0500
-Received: from beauty.rexursive.com ([150.101.121.179]:53169 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab0LKVKb (ORCPT
+	id S1751816Ab0LKVMN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 16:12:13 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:46491 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab0LKVMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 16:10:31 -0500
-Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature
- to avoid user space breakage
-From: Bojan Smojver <bojan@rexursive.com>
-To: "R. J. Wysocki" <Rafal.Wysocki@fuw.edu.pl>
-Cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Karel Zak <kzak@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>
-In-Reply-To: <201012112149.27399.rwys@fuw.edu.pl>
-References: <201012052324.30231.rjw@sisk.pl>
-	 <201012112136.23543.rjw@sisk.pl>
-	 <1292100440.1630.11.camel@shrek.rexursive.com>
-	 <201012112149.27399.rwys@fuw.edu.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 12 Dec 2010 08:10:27 +1100
-Message-ID: <1292101827.1630.13.camel@shrek.rexursive.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Dec 2010 16:12:12 -0500
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Dec 2010 16:12:12 EST
+Date: Sat, 11 Dec 2010 15:05:48 -0600
+From: David Fries <david@fries.net>
+To: linux-kernel@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH] load fbcon from drm_kms_helper
+Message-ID: <20101211210548.GK13567@spacedout.fries.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 11 Dec 2010 15:05:50 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-12-11 at 21:49 +0100, R. J. Wysocki wrote:
-> Then we can change the signature, no earlier.
+Kconfig says fbcon is required by drm_kms_helper.  If radeon, fbcon,
+and drm_kms_helper are all modules, radeon is auto loaded (by PCI id?),
+drm_kms_helper is loaded because of the module dependency, but fbcon
+isn't loaded leaving the console unusable.  Since fbcon is required
+and there isn't an explicit module dependency, request the module
+to be loaded from drm_kms_helper.
 
-OK, no skin off my back :-)
+Signed-off-by: David Fries <david@fries.net>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+---
+This solves compiling CONFIG_FB=m and being left with a blank screen
+because the radeon module is automatically loaded, but fbcon isn't.
+If radeon had to be manually loaded, then it would be the user's fault for
+not loading fbcon as well, but as radeon is being loaded automatically,
+there isn't much a user can do from console to even fix it.  More bug
+details from here,
+https://bugzilla.kernel.org/show_bug.cgi?id=16221
 
+Does this look like a reasonable solution?  Should it bother checking
+find_module first?
+
+ drivers/gpu/drm/drm_fb_helper.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index d2849e4..dd1e726 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -1530,3 +1530,24 @@ bool drm_fb_helper_hotplug_event(struct drm_fb_helper *fb_helper)
+ }
+ EXPORT_SYMBOL(drm_fb_helper_hotplug_event);
+ 
++/* The Kconfig DRM_KMS_HELPER selects FRAMEBUFFER_CONSOLE (if !EMBEDDED)
++ * but the module doesn't depend on any fb console symbols.  At least
++ * attempt to load fbcon to avoid leaving the system without a usable console.
++ */
++#if defined(CONFIG_FRAMEBUFFER_CONSOLE_MODULE) && !defined(CONFIG_EMBEDDED)
++static int __init drm_fb_helper_modinit(void)
++{
++	const char *namue = "fbcon";
++	struct module *fbcon;
++
++	mutex_lock(&module_mutex);
++	fbcon = find_module(name);
++	mutex_unlock(&module_mutex);
++
++	if (!fbcon)
++		request_module_nowait(name);
++	return 0;
++}
++
++module_init(drm_fb_helper_modinit);
++#endif
 -- 
-Bojan
+1.7.2.3
 
