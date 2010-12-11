@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab0LKTni (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 14:43:38 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:64736 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab0LKTng (ORCPT
+	id S1751570Ab0LKTrT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 14:47:19 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:60724 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751557Ab0LKTrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 14:43:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=CK2AGpezHvgKxHbUX4W+FI3oazCA0YIvmr/e50NhzQUUhCz+SOFkWVDyQ7r0O6PkKh
-         DLJgLwvskzBRQO0+Q5PjttbkTVrUvhuRa2ZkUBMUi+LEBf4UUlbLOEdW1hGH+qKfSpw5
-         RDyCdW1iP9Nij9JRwqJheZQOjACsrvC6zQV5Q=
-Subject: Re: [PATCH] ata: pata_at91.c bugfix for high master clock
-From: Igor Plyatov <plyatov@gmail.com>
-Reply-To: plyatov@gmail.com
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        geomatsi@gmail.com
-In-Reply-To: <4D039930.4050905@ru.mvista.com>
-References: <1292011430-20835-1-git-send-email-plyatov@gmail.com>
-	 <4D0385D1.9080209@ru.mvista.com> <1292081113.1580.21.camel@homepc>
-	 <4D039930.4050905@ru.mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 11 Dec 2010 22:43:31 +0300
-Message-ID: <1292096611.27634.20.camel@homepc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Dec 2010 14:47:17 -0500
+Date: Sat, 11 Dec 2010 14:47:17 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Larry Finger <Larry.Finger@lwfinger.net>
+cc: pali.rohar@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
+ 3df7169e7
+In-Reply-To: <4D03AACB.8020205@lwfinger.net>
+Message-ID: <Pine.LNX.4.44L0.1012111438260.14704-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sergei,
+On Sat, 11 Dec 2010, Larry Finger wrote:
 
-> > I do not test this driver, but I think it have the same problem, because
-> > it have the same algorithm for timings calculation.
+> > I don't see anything wrong with any of this.  Where's the problem?
 > 
->     I quickly looked thru both drivers and the algorithm seemed different. :-)
+> The problem is that I get thousands of the "unable to enumerate" messages in the
+> logs. That PORT_OWNER does not seem to apply to this port. Everything seems to
+> work, but the log spamming is intolerable.
 
-I don't think so...
+Everything seems to work for the EHCI controller, the one you were 
+looking at.  But the OHCI controller isn't working, so that's where you 
+need to concentrate your attention.  ISTR before your computer broke 
+you were trying to figure out why certain parts of the ohci-hcd 
+initialization code weren't getting called.
 
-> > If you will see "cycle" value greater then 63, then problem exists.
+> I find the USB structure on this box to be confusing. The output of lsusb is
 > 
->     I thought the problem was with active pulse width, not total cycle time...
-
-The problem was - the same "cycle" variable used to set up NRD_CYCLE
-(max value = 127) and NCS_RD_PULSE (max value = 63).
-Where NRD_CYCLE, NCS_RD_PULSE names from datasheet for AT91SAM9.
-If NCS_RD_PULSE > 63, then overflow occur and pulse is much longer then
-required.
-
-For the 132 MHz, driver use NCS_RD_PULSE = 80 at device detection moment
-on my board.
-Calculated cycle in at91_ide is the same as for pata_at91 driver.
-
-> > Generally, I does not see any reasons to use at91_ide, because ATA
-> > drivers subsystem going to replace IDE drivers.
+> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 001 Device 002: ID 04f2:b016 Chicony Electronics Co., Ltd VGA 30fps UVC Webcam
+> Bus 001 Device 005: ID 07d1:3300 D-Link System
+> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
 > 
->     There may be reasons -- like larger thruput in PIO mode (you have to check 
-> this though -- but generally libata seems very slow in PIO). Anyway, it 
-> doesn't mean that the bugs in IDE drivers should be ignored, and the 
-> replacemtn will not happen anytime soon (not all IDE drivers are ported to 
-> libata yet).
+> There are 3 external USB ports, which are ports 3, 4, and 5 on the Bus 001 hub.
 
-I will send next patch where this driver corrected and tested.
+There's probably at least one internal port, where that Chicony webcam
+is connected.  Unless it's using an external port?
 
-Best regards!
---
-Igor Plyatov
+> That is the one with iSerial of 1 0000:00:02.1. The other hubs do not seem to be
+> connected to anything.
+
+Bus 2 probably is not connected to anything.  My guess is that bus 3 is 
+also connected to the three external ports and bus 4 is not wired up.
+
+Alan Stern
 
