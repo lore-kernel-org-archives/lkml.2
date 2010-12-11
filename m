@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab0LKAKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 19:10:04 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37178 "EHLO hera.kernel.org"
+	id S1757318Ab0LKAMH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 19:12:07 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:37086 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850Ab0LKAKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 19:10:02 -0500
-Message-ID: <4D02C14E.80001@kernel.org>
-Date: Sat, 11 Dec 2010 01:09:50 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1757257Ab0LKAMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 19:12:06 -0500
+Date: Fri, 10 Dec 2010 16:11:51 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        netdev@vger.kernel.org, jmorris@namei.org, eugeneteo@kernel.org,
+        mingo@elte.hu, davem@davemloft.net
+Subject: Re: [PATCH v2] kptr_restrict for hiding kernel pointers from
+ unprivileged users
+Message-ID: <20101211001151.GS4464@outflux.net>
+References: <1292025924.2965.20.camel@Dan>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 03/10] workqueue: It is likely that WORKER_NOT_RUNNING
- is true
-References: <20101207015834.196176991@goodmis.org>	 <20101207021328.847976021@goodmis.org>  <4CFE0346.6090904@kernel.org> <1292026104.5015.1540.camel@gandalf.stny.rr.com>
-In-Reply-To: <1292026104.5015.1540.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 11 Dec 2010 00:09:55 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292025924.2965.20.camel@Dan>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2010 01:08 AM, Steven Rostedt wrote:
-> On Tue, 2010-12-07 at 10:49 +0100, Tejun Heo wrote:
+On Fri, Dec 10, 2010 at 07:05:24PM -0500, Dan Rosenberg wrote:
+> The below patch adds the %pK format specifier, the
+> CONFIG_SECURITY_KPTR_RESTRICT configuration option, and the
+> kptr_restrict sysctl.
 > 
->> Yeah, I was lost thinking about the busiest case where workers are
->> busy processing works consecutively.  Usually workers are of course
->> switching in and out of idle state all the time.
->>
->> How about just dropping likely/unlikely?
+> The %pK format specifier is designed to hide exposed kernel pointers
+> from unprivileged users, specifically via /proc interfaces.  Its
+> behavior depends on the kptr_restrict sysctl, whose default value
+> depends on CONFIG_SECURITY_KPTR_RESTRICT.  If kptr_restrict is set to 0,
+> no deviation from the standard %p behavior occurs.  If kptr_restrict is
+> set to 1, if the current user (intended to be a reader via seq_printf(),
+> etc.) does not have CAP_SYSLOG (which is currently in the LSM tree),
+> kernel pointers using %pK are printed as 0's.  This was chosen over the
+> default "(null)", which cannot be parsed by userland %p, which expects
+> "(nil)".
 > 
-> OK, if I just remove it, can I add your Acked-by?
+> v2 improves checking for inappropriate context, on suggestion by Peter
+> Zijlstra.  Thanks to Thomas Graf for suggesting use of a centralized
+> format specifier.
+> 
+> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 
-Sure, then, I'll route it through my tree.
+This will come in very handy! Thanks for working on this approach. :)
 
-Thanks.
+Acked-by: Kees Cook <kees.cook@canonical.com>
+
+-Kees
 
 -- 
-tejun
+Kees Cook
+Ubuntu Security Team
