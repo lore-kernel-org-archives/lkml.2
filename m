@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab0LKH1p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 02:27:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28632 "EHLO mx1.redhat.com"
+	id S1752261Ab0LKHbn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 02:31:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60708 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab0LKH1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 02:27:44 -0500
-Message-ID: <4D0327E0.6070500@redhat.com>
-Date: Sat, 11 Dec 2010 09:27:28 +0200
+	id S1751080Ab0LKHbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 02:31:41 -0500
+Message-ID: <4D0328CC.1020809@redhat.com>
+Date: Sat, 11 Dec 2010 09:31:24 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: balbir@linux.vnet.ibm.com
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
-References: <20101202144129.4357fe00@annuminas.surriel.com> <20101202144516.45a0385d@annuminas.surriel.com> <4CFB8BFA.4040100@redhat.com> <4D0008D5.1040102@redhat.com> <4D00AF3C.40603@redhat.com> <4D010CD4.4020400@redhat.com>
-In-Reply-To: <4D010CD4.4020400@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101210050344.GR3158@balbir.in.ibm.com>
+In-Reply-To: <20101210050344.GR3158@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 07:07 PM, Rik van Riel wrote:
->> Right. May be clearer by using a for () loop instead of the goto.
+On 12/10/2010 07:03 AM, Balbir Singh wrote:
+> >
+> >  Scheduler people, please flame me with anything I may have done
+> >  wrong, so I can do it right for a next version :)
+> >
 >
+> This is a good problem statement, there are other things to consider
+> as well
 >
-> And open coding kvm_for_each_vcpu ?
->
-> Somehow I suspect that won't add to clarity...
+> 1. If a hard limit feature is enabled underneath, donating the
+> timeslice would probably not make too much sense in that case
 
-No, I meant having a for (pass = 0; pass < 2; ++pass) and nesting 
-kvm_for_each_vcpu() in it.
+What's the alternative?
+
+Consider a two vcpu guest with a 50% hard cap.  Suppose the workload 
+involves ping-ponging within the guest.  If the scheduler decides to 
+schedule the vcpus without any overlap, then the throughput will be 
+dictated by the time slice.  If we allow donation, throughput is limited 
+by context switch latency.
+
 
 -- 
 I have a truly marvellous patch that fixes the bug which this
