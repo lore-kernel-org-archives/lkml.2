@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab0LKBdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 20:33:39 -0500
-Received: from netnation.com ([204.174.223.2]:41596 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab0LKBdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 20:33:38 -0500
-Date: Fri, 10 Dec 2010 17:33:30 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
-	in response to high-order allocations V2
-Message-ID: <20101211013330.GB30377@hostway.ca>
-References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie> <20101209015530.GD3796@hostway.ca> <20101209114506.GA20133@csn.ul.ie> <20101210000632.GB18263@hostway.ca> <20101210112832.GP20133@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101210112832.GP20133@csn.ul.ie>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754000Ab0LKBhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 20:37:54 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:52948 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753132Ab0LKBhw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 20:37:52 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=nLhD2FPRQZQ2DsvZeLlw/NsDQfRS5jjv05osPDRXr+El/CbnJQXMtqgwlaH3BTWWAtfUvZMnruTKRwErkPEF5Ro4EEwnJVPUYEYYdskA6lkgYiTXrkIOZw506hIAPfPj;
+Date: Fri, 10 Dec 2010 17:37:49 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>,
+        Matthew Garrett <mjg@redhat.com>, Dan Williams <dcbw@redhat.com>,
+        rjw@sisk.pl
+Subject: Re: [PATCH 1/5] resources: add arch hook for preventing allocation
+ in reserved areas
+Message-ID: <20101210173749.7ec3cc28@jbarnes-desktop>
+In-Reply-To: <201012101407.24419.bjorn.helgaas@hp.com>
+References: <20101208213606.13026.47657.stgit@bob.kio>
+	<20101210123008.7fed582d@jbarnes-desktop>
+	<20101210123609.73c12a23@jbarnes-desktop>
+	<201012101407.24419.bjorn.helgaas@hp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 11:28:32AM +0000, Mel Gorman wrote:
+On Fri, 10 Dec 2010 14:07:24 -0700
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 
-> On Thu, Dec 09, 2010 at 04:06:32PM -0800, Simon Kirby wrote:
-> 
-> > Yeah, I don't mean in all cases, I mean when no particular zone is
-> > requested; eg, __alloc_pages_nodemask() with a non-picky zone list, or 
-> > when multiple zones are allowed.  This is the case for most allocations.
-> 
-> Yes, but just because caller A is not picky about the zone does not mean
-> caller B is not. Callers always try the highest-possible zone first so
-> that pages from lower zones are not used unnecessarily.
-
-But this is only true when the machine is booting or hasn't yet ever
-fallen out of the allocator fast path (get_page_from_freelist() has never
-failed).
-
-> > So, I'm not proposing abandoning zones, but simply changing
-> > get_page_from_freelist() to remember where it last walked zonelist, and
-> > try to make a (weighted) round robin out of it.  It can already allocate
-> > from any zone in this case anyway.  (The implementation would be a bit
-> > more complicated than this due to zonelist not being static, of course.)
+> On Friday, December 10, 2010 01:36:09 pm Jesse Barnes wrote:
+> > [Actually cc'ing Matthew this time]
 > > 
+> > On Fri, 10 Dec 2010 12:30:08 -0800
+> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > 
+> > > On Wed, 08 Dec 2010 14:36:06 -0700
+> > > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > > 
+> > > > 
+> > > > This adds arch_remove_reservations(), which an arch can implement if it
+> > > > needs to protect part of the address space from allocation.
+> > > > 
+> > > > Sometimes that can be done by just requesting a resource.  This hook is to
+> > > > cover cases where protected area doesn't fit well in the hierarchical
+> > > > resource tree.  For example, x86 BIOS E820 reservations are not related
+> > > > to devices, so they may overlap part of, all of, or more than a device
+> > > > resource.
+> > > > 
+> > > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > > > ---
+> > > 
+> > > Hm, this is bigger than the simple change of just avoiding the high 2M;
+> > > Linus have you checked it out yet?  It's nicer than simply adjusting
+> > > PCIBIOS_MAX_MEM since it will affect all resource callers rather than
+> > > just PCI, but it's definitely bigger.
 > 
-> I'd worry it'd still fall foul of using lower zones when it shouldn't.
-
-It would definitely increase the chance during boot, though we do live in
-a hotplug world... :)
-
-> > Even if the checking of other zones happens in a buffered or chunky way
-> > to reduce caching effects, it would still mean that all zones fill up at
-> > roughly the same time, rather than the DMA zone filling up last. 
+> Dan Williams also reproduced the problem on a 2530p and tested this
+> series (though I think he actually tested a backport in Fedora):
+>   https://bugzilla.kernel.org/show_bug.cgi?id=23542#c7
+>   https://bugzilla.kernel.org/show_bug.cgi?id=23542#c23
 > 
-> Well, as each zone gets filled, kswapd is woken up to reclaim some
-> pages. kswapd always works from the lowest to the highest zone to reduce
-> the likelihood a picky caller will fail its allocation. If the lower
-> zones have enough free pages they are ignored and kswapd reclaimed from
-> the higher zone.
-
-I thought I saw a patch at some point to implement this to avoid it
-fighting allocations in the other same direction, but anyway, this
-comment which seems to exist since 2.6.5 is interesting:
-
- * kswapd scans the zones in the highmem->normal->dma direction.  It skips
- * zones which have free_pages > high_wmark_pages(zone), but once a zone is
- * found to have free_pages <= high_wmark_pages(zone), we scan that zone and the
- * lower zones regardless of the number of free pages in the lower zones. This
- * interoperates with the page allocator fallback scheme to ensure that aging
- * of pages is balanced across the zones.
-
-Your patch series changes this behaviour, right?
-
-> > This way, the oldest pages would all be the ones that want to be
-> > reclaimed, rather than the a bunch of not-oldest pages being
-> > reclaimed simply because the allocator decided to start with a
-> > higher zone to avoid allocating from the DMA zone.
+> The simple PCIBIOS_MAX_MEM_32 change below will fix the 2530p problem,
+> but it won't help fix the nx6325 problem Rafael reported; details at:
+>   https://bugzilla.kernel.org/show_bug.cgi?id=23332#c20
 > 
-> I see what you're saying - a young page can be reclaimed quickly just
-> because it's in the wrong zone. In cases where the highest zone is
-> comparatively small, it could cause serious issues. Will think about it
-> more but a straight round-robining of the zones used could cause
-> problems of its own :(
+> Rafael did confirm on #acpi Wednesday that the full series fixed
+> his nx6325.
 
-Sure, straight doesn't make sense either.  Weighted round robin based
-on zone size sounds right.  Maybe the algo could be borrowed from
-net/netfilter/ipvs/ip_vs_wrr.c. ;)
+Thanks, I'll add Dan and Rafael's tested-bys to the patches (they're
+already in my for-linus tree).  Unless Linus has a problem with them
+I'll send them over to him this weekend or Monday.
 
-Simon-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
