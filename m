@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab0LKAHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 19:07:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:60387 "EHLO
+	id S1757247Ab0LKAI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 19:08:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55015 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663Ab0LKAHd (ORCPT
+	with ESMTP id S1756691Ab0LKAI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 19:07:33 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=jAmd2lEfFiEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=G2pEFJyoj6u9pRdmD5IA:9 a=EouEY517HSJCprInfmYA:7 a=6u95JcEF_nyXq4VkYhqpJrPRuUcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Fri, 10 Dec 2010 19:08:26 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=sDWRAbKr6x0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=brR3NpVTvUVLjzfJoYIA:9 a=GVlC8zFltYAdZ8iqIVk7KANcBPIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 04/10] sched: Change pick_next_task_rt from
- unlikely to likely
+Subject: Re: [RFC][PATCH 03/10] workqueue: It is likely that
+ WORKER_NOT_RUNNING is true
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Gregory Haskins <ghaskins@novell.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4CFD59CD0200005A00077F6C@novprvoes0310.provo.novell.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4CFE0346.6090904@kernel.org>
 References: <20101207015834.196176991@goodmis.org>
-	 <20101207021329.185936860@goodmis.org>
-	 <4CFD59CD0200005A00077F6C@novprvoes0310.provo.novell.com>
+	 <20101207021328.847976021@goodmis.org>  <4CFE0346.6090904@kernel.org>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 10 Dec 2010 19:07:29 -0500
-Message-ID: <1292026049.5015.1539.camel@gandalf.stny.rr.com>
+Date: Fri, 10 Dec 2010 19:08:24 -0500
+Message-ID: <1292026104.5015.1540.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -30,14 +29,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-06 at 19:46 -0700, Gregory Haskins wrote:
+On Tue, 2010-12-07 at 10:49 +0100, Tejun Heo wrote:
 
-> My feeling is that generally speaking, if the branch is workload dependent, we should probably not annotate it at all and let the CPUs branch-predictor do its thing.  I guess what I am not 100% clear on is how these annotations affect the BPU.  I.e. is it a static decision point or can the BPU still "learn" if the annotation is particularly wrong for a given workload?  For the former, I think we should just remove this particular annotation (and there are others that need review).  For the latter, this is obviously the right annotation we should be using in this particular case.
+> Yeah, I was lost thinking about the busiest case where workers are
+> busy processing works consecutively.  Usually workers are of course
+> switching in and out of idle state all the time.
 > 
+> How about just dropping likely/unlikely?
 
-You need to get a better email client ;-)
+OK, if I just remove it, can I add your Acked-by?
 
-OK, if I just remove the likely() do you Ack it?
+Thanks,
 
 -- Steve
 
