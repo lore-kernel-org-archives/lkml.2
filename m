@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab0LKUhE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 15:37:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:46327 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab0LKUhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 15:37:01 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bojan Smojver <bojan@rexursive.com>
-Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature to avoid user space breakage
-Date: Sat, 11 Dec 2010 21:36:23 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Karel Zak <kzak@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>
-References: <201012052324.30231.rjw@sisk.pl> <201012112058.09689.rjw@sisk.pl> <1292099420.1630.3.camel@shrek.rexursive.com>
-In-Reply-To: <1292099420.1630.3.camel@shrek.rexursive.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012112136.23543.rjw@sisk.pl>
+	id S1752394Ab0LKUhw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 15:37:52 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:35105 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab0LKUht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 15:37:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LIjvWUqJUOUOV14eUIZqd/AnAeXlLHcpeOzpCDaufDg7A6zqlzU0EkwEamQanmv29+
+         lHttKwqtkUrD326V2ekWC/rmG0hd9MLK7S1F6RUYw7RGWlaEff6foyNC8xrRKrPtKPUG
+         B8sSUhmWSDrX4CuMWdVkTGrKR841EX/cguFQo=
+From: Igor Plyatov <plyatov@gmail.com>
+To: sshtylyov@mvista.com
+Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        geomatsi@gmail.com, nicolas.ferre@atmel.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        christian.glindkamp@taskit.de, ryan@bluewatersys.com,
+        pgsellmann@portner-elektronik.at, Igor Plyatov <plyatov@gmail.com>
+Subject: [PATCH v2] ata: pata_at91.c bugfix for high master clock
+Date: Sat, 11 Dec 2010 23:37:26 +0300
+Message-Id: <1292099846-24528-1-git-send-email-plyatov@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 11, 2010, Bojan Smojver wrote:
-> On Sat, 2010-12-11 at 20:58 +0100, Rafael J. Wysocki wrote:
-> > I'm afraid I'll have to push this patch to Linus.  Turns out that
-> > Fedora 14 doesn't pass the resume= argument to the kernel and tries to
-> > trigger the resume from initramfs.  Since the signature changed, it
-> > can't find the image and the resume fails, even if both the resume and
-> > image kernels are the same. 
-> 
-> Why don't you just file a Fedora bug asking for the library to be
-> upgraded or patched?
+The AT91SAM9 microcontrollers with master clock higher then 105 MHz
+and PIO0, have overflow of the NCS_RD_PULSE value in the MSB. This
+lead to "NCS_RD_PULSE" pulse longer then "NRD_CYCLE" pulse and driver
+does not detect ATA device.
 
-Because that wouldn't fix the user space that _already_ is out there.
+Signed-off-by: Igor Plyatov <plyatov@gmail.com>
+---
+ drivers/ata/pata_at91.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-> PS. Karel, who also replied to this thread, has a Red Hat address and he
-> seems to be the maintainer of util-linux-ng package. He should be able
-> to fix this.
+diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+index 0da0dcc..a462405 100644
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -33,12 +33,14 @@
+ 
+ 
+ #define DRV_NAME "pata_at91"
+-#define DRV_VERSION "0.1"
++#define DRV_VERSION "0.2"
+ 
+ #define CF_IDE_OFFSET	    0x00c00000
+ #define CF_ALT_IDE_OFFSET   0x00e00000
+ #define CF_IDE_RES_SIZE     0x08
+ 
++#define NCS_RD_PULSE_LIMIT  0x3f /* maximal value for pulse bitfields */
++
+ struct at91_ide_info {
+ 	unsigned long mode;
+ 	unsigned int cs;
+@@ -50,7 +52,7 @@ struct at91_ide_info {
+ };
+ 
+ static const struct ata_timing initial_timing =
+-	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
++	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0};
+ 
+ static unsigned long calc_mck_cycles(unsigned long ns, unsigned long mck_hz)
+ {
+@@ -109,6 +111,11 @@ static void set_smc_timing(struct device *dev,
+ 	/* (CS0, CS1, DIR, OE) <= (CFCE1, CFCE2, CFRNW, NCSX) timings */
+ 	ncs_read_setup = 1;
+ 	ncs_read_pulse = read_cycle - 2;
++	if (ncs_read_pulse > NCS_RD_PULSE_LIMIT) {
++		ncs_read_pulse = NCS_RD_PULSE_LIMIT;
++		dev_warn(dev, "ncs_read_pulse limited to maximal value %lu\n",
++			ncs_read_pulse);
++	}
+ 
+ 	/* Write timings same as read timings */
+ 	write_cycle = read_cycle;
+-- 
+1.7.0.4
 
-That doesn't matter.  The rule is we don't break user space, even if it does
-unreasonable things.
-
-Thanks,
-Rafael
