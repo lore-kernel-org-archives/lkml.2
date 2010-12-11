@@ -1,83 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab0LKGbm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 01:31:42 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:56487 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab0LKGbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 01:31:40 -0500
-X-Auth-Info: SgMSkCT8nOHTrX82moLxda3vyvC5QpJjljIltrEJfpc=
-From: Heiko Schocher <hs@denx.de>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Heiko Schocher <hs@denx.de>, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
-        Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] powerpc, video: add SM501 support for charon board.
-Date: Sat, 11 Dec 2010 07:31:36 +0100
-Message-Id: <1292049096-1852-1-git-send-email-hs@denx.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1291451028-22532-2-git-send-email-hs@denx.de>
-References: <1291451028-22532-2-git-send-email-hs@denx.de>
+	id S1752597Ab0LKGgo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 01:36:44 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:45006 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752435Ab0LKGgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 01:36:43 -0500
+Date: Fri, 10 Dec 2010 22:36:38 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
+Subject: Re: [PATCH 2/2] rcu: Keep gpnum and completed fields synchronized
+Message-ID: <20101211063638.GA2264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
+ <1292015471-19227-3-git-send-email-fweisbec@gmail.com>
+ <20101210230200.GK2125@linux.vnet.ibm.com>
+ <20101210233920.GA22777@linux.vnet.ibm.com>
+ <20101210234709.GC1713@nowhere>
+ <20101211000451.GN2125@linux.vnet.ibm.com>
+ <20101211001514.GE1713@nowhere>
+ <20101211005827.GP2125@linux.vnet.ibm.com>
+ <20101211012101.GG1713@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101211012101.GG1713@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Heiko Schocher <hs@denx.de>
-cc: linux-fbdev@vger.kernel.org
-cc: devicetree-discuss@ozlabs.org
-cc: Ben Dooks <ben@simtec.co.uk>
-cc: Vincent Sanders <vince@simtec.co.uk>
-cc: Samuel Ortiz <sameo@linux.intel.com>
-cc: linux-kernel@vger.kernel.org
+On Sat, Dec 11, 2010 at 02:21:04AM +0100, Frederic Weisbecker wrote:
+> On Fri, Dec 10, 2010 at 04:58:27PM -0800, Paul E. McKenney wrote:
+> > On Sat, Dec 11, 2010 at 01:15:17AM +0100, Frederic Weisbecker wrote:
+> > > On Fri, Dec 10, 2010 at 04:04:51PM -0800, Paul E. McKenney wrote:
+> > > > On Sat, Dec 11, 2010 at 12:47:11AM +0100, Frederic Weisbecker wrote:
+> > > > > On Fri, Dec 10, 2010 at 03:39:20PM -0800, Paul E. McKenney wrote:
+> > > > > > On Fri, Dec 10, 2010 at 03:02:00PM -0800, Paul E. McKenney wrote:
+> > > > > > > On Fri, Dec 10, 2010 at 10:11:11PM +0100, Frederic Weisbecker wrote:
+> > > > > > > > When a CPU that was in an extended quiescent state wakes
+> > > > > > > > up and catches up with grace periods that remote CPUs
+> > > > > > > > completed on its behalf, we update the completed field
+> > > > > > > > but not the gpnum that keeps a stale value of a backward
+> > > > > > > > grace period ID.
+> > > > > > > > 
+> > > > > > > > Later, note_new_gpnum() will interpret the shift between
+> > > > > > > > the local CPU and the node grace period ID as some new grace
+> > > > > > > > period to handle and will then start to hunt quiescent state.
+> > > > > > > > 
+> > > > > > > > But if every grace periods have already been completed, this
+> > > > > > > > interpretation becomes broken. And we'll be stuck in clusters
+> > > > > > > > of spurious softirqs because rcu_report_qs_rdp() will make
+> > > > > > > > this broken state run into infinite loop.
+> > > > > > > > 
+> > > > > > > > The solution, as suggested by Lai Jiangshan, is to ensure that
+> > > > > > > > the gpnum and completed fields are well synchronized when we catch
+> > > > > > > > up with completed grace periods on their behalf by other cpus.
+> > > > > > > > This way we won't start noting spurious new grace periods.
+> > > > > > > 
+> > > > > > > Also good, queued!
+> > > > > > > 
+> > > > > > > One issue -- this approach is vulnerable to overflow.  I therefore
+> > > > > > > followed up with a patch that changes the condition to
+> > > > > > > 
+> > > > > > > 	if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
+> > > > > > 
+> > > > > > And here is the follow-up patch, FWIW.
+> > > > > > 
+> > > > > > 							Thanx, Paul
+> > > > > 
+> > > > > Hmm, it doesn't apply on top of my two patches. It seems you have
+> > > > > kept my two previous patches, which makes it fail as it lacks them
+> > > > > as a base.
+> > > > > 
+> > > > > Did you intend to keep them? I hope they are quite useless now, otherwise
+> > > > > it means there is other cases I forgot.
+> > > > 
+> > > > One is indeed useless, while the other is useful in combinations of
+> > > > dyntick-idle and force_quiescent_state().
+> > > 
+> > > I don't see how.
+> > > 
+> > > Before we call __note_new_gpnum(), we always have the opportunity
+> > > to resync gpnum and completed as  __rcu_process_gp_end() is called
+> > > before.
+> > > 
+> > > Am I missing something?
+> > 
+> > If the CPU is already aware of the end of the previous grace period,
+> > then __rcu_process_gp_end() will return without doing anything.  But if
+> > force_quiescent_state() already took care of this CPU, there is no point
+> > in its looking for another quiescent state.  This can happen as follows:
+> > 
+> > o	CPU 0 notes the end of the previous grace period and then
+> > 	enters dyntick-idle mode.
+> > 
+> > o	CPU 2 enters a very long RCU read-side critical section.
+> > 
+> > o	CPU 1 starts a new grace period.
+> > 
+> > o	CPU 0 does not check in because it is in dyntick-idle mode.
+> > 
+> > o	CPU 1 eventually calls force_quiescent_state() a few times,
+> > 	and sees that CPU 0 is in dyntick-idle mode, so tells RCU
+> > 	that CPU 0 is in an extended quiescent state.  But the
+> > 	grace period cannot end because CPU 2 is still in its
+> > 	RCU read-side critical section.
+> > 
+> > o	CPU 0 comes out of dyntick-idle mode, and sees the new
+> > 	grace period.  The old code would nevertheless look for
+> > 	a quiescent state, and the new code would avoid doing so.
+> > 
+> > Unless I am missing something, of course...
+> > 
+> > 							Thanx, Paul
+> 
+> Aah, so in your scenario, CPU 0, 1 et 2 are the same node (rnp),
+> we have not updated rnp->completed because we still wait for CPU 2.
+> 
+> Then __rcu_process_gp_end() won't increase the gpnum either
+> because rnp->completed is still equal to rdp->completed.
+> 
+> And later on we call note_new_gpnum() that thinks it has a new
+> gp to handle but it's wrong.
+> 
+> Hence the need to look at the mask level there.
 
----
-- based against 2.6.37-rc4
+CPUs 0, 1, et 2 are not necessarily on the same node, but other than
+that, you have it exactly.  The trick is that force_quiescent_state()
+takes global action, so CPU 1 does not need to be on the same node as CPU 0.
+Furthermore, an RCU read-side critical section anywhere in the system
+will prevent any subsequent grace period from completing, so CPU 2
+can be on yet another node.
 
-./scripts/checkpatch.pl 0003-powerpc-video-add-SM501-support-for-charon-board.patch
-total: 0 errors, 0 warnings, 21 lines checked
+> This makes all sense!
 
-0003-powerpc-video-add-SM501-support-for-charon-board.patch has no obvious style problems and is ready for submission.
+Thank you for the confirmation, will try testing it out more thoroughly.
 
-- changes since v1:
-  - no board specific defconfig file for mpc52xx based boards as suggested
-    from Wolfram Sang
+							Thanx, Paul
 
-- changes since v2:
-  add Ben Dooks, Vincent Sanders and Samuel Ortiz and lkml to cc, as
-  suggested from Paul Mundt.
-
- arch/powerpc/boot/dts/charon.dts |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/arch/powerpc/boot/dts/charon.dts b/arch/powerpc/boot/dts/charon.dts
-index 9776889..d9af022 100644
---- a/arch/powerpc/boot/dts/charon.dts
-+++ b/arch/powerpc/boot/dts/charon.dts
-@@ -186,6 +186,7 @@
- 		#address-cells = <2>;
- 		#size-cells = <1>;
- 		ranges = <	0 0 0xfc000000 0x02000000
-+				1 0 0xe0000000 0x04000000 // CS1 range, SM501
- 				3 0 0xe8000000 0x00080000>;
- 
- 		flash@0,0 {
-@@ -197,6 +198,14 @@
- 			#address-cells = <1>;
- 		};
- 
-+		display@1,0 {
-+			compatible = "smi,sm501";
-+			reg = <1 0x00000000 0x00800000
-+			       1 0x03e00000 0x00200000>;
-+			mode = "640x480-32@60";
-+			interrupts = <1 1 3>;
-+		};
-+
- 		mram0@3,0 {
- 			compatible = "mtd-ram";
- 			reg = <3 0x00000 0x80000>;
--- 
-1.7.2.3
-
+> Thanks!
+> 
+> > 
+> > > Thanks.
+> > > 
+> > > >  I rebased your earlier two
+> > > > out and reworked mine, please see below.  Work better?
+> > > > 
+> > > > 							Thanx, Paul
+> > > > 
+> > > > ------------------------------------------------------------------------
+> > > > 
+> > > > commit c808bedd1b1d7c720546a6682fca44c66703af4e
+> > > > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > Date:   Fri Dec 10 15:02:47 2010 -0800
+> > > > 
+> > > >     rcu: fine-tune grace-period begin/end checks
+> > > >     
+> > > >     Use the CPU's bit in rnp->qsmask to determine whether or not the CPU
+> > > >     should try to report a quiescent state.  Handle overflow in the check
+> > > >     for rdp->gpnum having fallen behind.
+> > > >     
+> > > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > index 368be76..530cdcd 100644
+> > > > --- a/kernel/rcutree.c
+> > > > +++ b/kernel/rcutree.c
+> > > > @@ -616,9 +616,17 @@ static void __init check_cpu_stall_init(void)
+> > > >  static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
+> > > >  {
+> > > >  	if (rdp->gpnum != rnp->gpnum) {
+> > > > -		rdp->qs_pending = 1;
+> > > > -		rdp->passed_quiesc = 0;
+> > > > +		/*
+> > > > +		 * If the current grace period is waiting for this CPU,
+> > > > +		 * set up to detect a quiescent state, otherwise don't
+> > > > +		 * go looking for one.
+> > > > +		 */
+> > > >  		rdp->gpnum = rnp->gpnum;
+> > > > +		if (rnp->qsmask & rdp->grpmask) {
+> > > > +			rdp->qs_pending = 1;
+> > > > +			rdp->passed_quiesc = 0;
+> > > > +		} else
+> > > > +			rdp->qs_pending = 0;
+> > > >  	}
+> > > >  }
+> > > >  
+> > > > @@ -680,19 +688,20 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+> > > >  
+> > > >  		/*
+> > > >  		 * If we were in an extended quiescent state, we may have
+> > > > -		 * missed some grace periods that others CPUs took care on
+> > > > +		 * missed some grace periods that others CPUs handled on
+> > > >  		 * our behalf. Catch up with this state to avoid noting
+> > > > -		 * spurious new grace periods.
+> > > > +		 * spurious new grace periods.  If another grace period
+> > > > +		 * has started, then rnp->gpnum will have advanced, so
+> > > > +		 * we will detect this later on.
+> > > >  		 */
+> > > > -		if (rdp->completed > rdp->gpnum)
+> > > > +		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
+> > > >  			rdp->gpnum = rdp->completed;
+> > > >  
+> > > >  		/*
+> > > > -		 * If another CPU handled our extended quiescent states and
+> > > > -		 * we have no more grace period to complete yet, then stop
+> > > > -		 * chasing quiescent states.
+> > > > +		 * If RCU does not need a quiescent state from this CPU,
+> > > > +		 * then make sure that this CPU doesn't go looking for one.
+> > > >  		 */
+> > > > -		if (rdp->completed == rnp->gpnum)
+> > > > +		if (rnp->qsmask & rdp->grpmask)
+> > > >  			rdp->qs_pending = 0;
+> > > >  	}
+> > > >  }
