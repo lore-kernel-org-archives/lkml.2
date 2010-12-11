@@ -1,167 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab0LKAPX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 19:15:23 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:59792 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756378Ab0LKAPV (ORCPT
+	id S1757337Ab0LKARh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 19:17:37 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34850 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756378Ab0LKARg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 19:15:21 -0500
+	Fri, 10 Dec 2010 19:17:36 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GpIIxFDuwVrC56BtNtWCjm5WNBH/qnYwpYqkmBRRXg8oM/boScBGPNFztocMMA9Iam
-         zaIlO2xps0jWeWNUcQUrJfakGFHJxw/UVH1dQv+FodAD8NWc9fFCLyterWEh2NVI/moo
-         3QHzjvEvqwPnYRoG06lUcgaH5cllIpYGeuy1I=
-Date: Sat, 11 Dec 2010 01:15:17 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
-Subject: Re: [PATCH 2/2] rcu: Keep gpnum and completed fields synchronized
-Message-ID: <20101211001514.GE1713@nowhere>
-References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
- <1292015471-19227-3-git-send-email-fweisbec@gmail.com>
- <20101210230200.GK2125@linux.vnet.ibm.com>
- <20101210233920.GA22777@linux.vnet.ibm.com>
- <20101210234709.GC1713@nowhere>
- <20101211000451.GN2125@linux.vnet.ibm.com>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=UgVg63vYHiFHzJ38BVGlyB0KxIf4Zku/STsHnfODPFk39aehapEewRBU9D0tda9YHL
+         Ej45wTFYGgv5qouLawIBxQy6UbUj28P2zRITOAPQt+OUImmQtsZJno33bOnTjZjIG/08
+         2et1sD0Q7kSKyQZ45Kj3k8S2NyV1jnVqLRnGg=
+Message-ID: <4D02C336.707@lwfinger.net>
+Date: Fri, 10 Dec 2010 18:17:58 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101211000451.GN2125@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: pali.rohar@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
+ 3df7169e7
+References: <Pine.LNX.4.44L0.1011041039450.2522-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011041039450.2522-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 04:04:51PM -0800, Paul E. McKenney wrote:
-> On Sat, Dec 11, 2010 at 12:47:11AM +0100, Frederic Weisbecker wrote:
-> > On Fri, Dec 10, 2010 at 03:39:20PM -0800, Paul E. McKenney wrote:
-> > > On Fri, Dec 10, 2010 at 03:02:00PM -0800, Paul E. McKenney wrote:
-> > > > On Fri, Dec 10, 2010 at 10:11:11PM +0100, Frederic Weisbecker wrote:
-> > > > > When a CPU that was in an extended quiescent state wakes
-> > > > > up and catches up with grace periods that remote CPUs
-> > > > > completed on its behalf, we update the completed field
-> > > > > but not the gpnum that keeps a stale value of a backward
-> > > > > grace period ID.
-> > > > > 
-> > > > > Later, note_new_gpnum() will interpret the shift between
-> > > > > the local CPU and the node grace period ID as some new grace
-> > > > > period to handle and will then start to hunt quiescent state.
-> > > > > 
-> > > > > But if every grace periods have already been completed, this
-> > > > > interpretation becomes broken. And we'll be stuck in clusters
-> > > > > of spurious softirqs because rcu_report_qs_rdp() will make
-> > > > > this broken state run into infinite loop.
-> > > > > 
-> > > > > The solution, as suggested by Lai Jiangshan, is to ensure that
-> > > > > the gpnum and completed fields are well synchronized when we catch
-> > > > > up with completed grace periods on their behalf by other cpus.
-> > > > > This way we won't start noting spurious new grace periods.
-> > > > 
-> > > > Also good, queued!
-> > > > 
-> > > > One issue -- this approach is vulnerable to overflow.  I therefore
-> > > > followed up with a patch that changes the condition to
-> > > > 
-> > > > 	if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
-> > > 
-> > > And here is the follow-up patch, FWIW.
-> > > 
-> > > 							Thanx, Paul
-> > 
-> > Hmm, it doesn't apply on top of my two patches. It seems you have
-> > kept my two previous patches, which makes it fail as it lacks them
-> > as a base.
-> > 
-> > Did you intend to keep them? I hope they are quite useless now, otherwise
-> > it means there is other cases I forgot.
-> 
-> One is indeed useless, while the other is useful in combinations of
-> dyntick-idle and force_quiescent_state().
+Alan,
 
-I don't see how.
+The box with the problem has been repaired, and I am trying to debug it.
 
-Before we call __note_new_gpnum(), we always have the opportunity
-to resync gpnum and completed as  __rcu_process_gp_end() is called
-before.
+What I have learned so far:
 
-Am I missing something?
+The "unable to enumerate" message is triggered because PORT_OWNER is not set in
+the status register.
 
-Thanks.
+So far, I have found that this bit is set in only 4 places:
 
->  I rebased your earlier two
-> out and reworked mine, please see below.  Work better?
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> commit c808bedd1b1d7c720546a6682fca44c66703af4e
-> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Date:   Fri Dec 10 15:02:47 2010 -0800
-> 
->     rcu: fine-tune grace-period begin/end checks
->     
->     Use the CPU's bit in rnp->qsmask to determine whether or not the CPU
->     should try to report a quiescent state.  Handle overflow in the check
->     for rdp->gpnum having fallen behind.
->     
->     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 368be76..530cdcd 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -616,9 +616,17 @@ static void __init check_cpu_stall_init(void)
->  static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
->  {
->  	if (rdp->gpnum != rnp->gpnum) {
-> -		rdp->qs_pending = 1;
-> -		rdp->passed_quiesc = 0;
-> +		/*
-> +		 * If the current grace period is waiting for this CPU,
-> +		 * set up to detect a quiescent state, otherwise don't
-> +		 * go looking for one.
-> +		 */
->  		rdp->gpnum = rnp->gpnum;
-> +		if (rnp->qsmask & rdp->grpmask) {
-> +			rdp->qs_pending = 1;
-> +			rdp->passed_quiesc = 0;
-> +		} else
-> +			rdp->qs_pending = 0;
->  	}
->  }
->  
-> @@ -680,19 +688,20 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
->  
->  		/*
->  		 * If we were in an extended quiescent state, we may have
-> -		 * missed some grace periods that others CPUs took care on
-> +		 * missed some grace periods that others CPUs handled on
->  		 * our behalf. Catch up with this state to avoid noting
-> -		 * spurious new grace periods.
-> +		 * spurious new grace periods.  If another grace period
-> +		 * has started, then rnp->gpnum will have advanced, so
-> +		 * we will detect this later on.
->  		 */
-> -		if (rdp->completed > rdp->gpnum)
-> +		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
->  			rdp->gpnum = rdp->completed;
->  
->  		/*
-> -		 * If another CPU handled our extended quiescent states and
-> -		 * we have no more grace period to complete yet, then stop
-> -		 * chasing quiescent states.
-> +		 * If RCU does not need a quiescent state from this CPU,
-> +		 * then make sure that this CPU doesn't go looking for one.
->  		 */
-> -		if (rdp->completed == rnp->gpnum)
-> +		if (rnp->qsmask & rdp->grpmask)
->  			rdp->qs_pending = 0;
->  	}
->  }
+1. set_owner()
+2. store_companion()
+3. ehci_hub_control()
+4. ehci_relinquish_port()
+5. check_reset_complete()
+
+Of these, only #5 is called before the first enumeration message is logged, but
+it is only called with arguments that never set the PORT_OWNED bit in the status.
+
+At this point I'm at a loss. Could you please give me ideas on where I might look.
+
+The logged data leading up to the first message are:
+
+[    3.002762] hub 4-0:1.0: USB hub found
+[    3.002780] hub 4-0:1.0: 5 ports detected
+[    3.088286] ehci_hcd 0000:00:02.1: usb: Entered check_reset_complete with
+port_status 0x1005
+[    3.088433] ehci_hcd 0000:00:02.1: port 4 high speed
+[    3.144061] usb 1-4: new high speed USB device using ehci_hcd and address 2
+[    3.200286] ehci_hcd 0000:00:02.1: usb: Entered check_reset_complete with
+port_status 0x1005
+[    3.200437] ehci_hcd 0000:00:02.1: port 4 high speed
+[    3.352298] ehci_hcd 0000:00:02.1: usb: Entered check_reset_complete with
+port_status 0x1005
+[    3.352304] ehci_hcd 0000:00:02.1: port 5 high speed
+[    3.408071] usb 1-5: new high speed USB device using ehci_hcd and address 3
+[    3.454449] PM: Starting manual resume from disk
+[    3.464305] ehci_hcd 0000:00:02.1: usb: Entered check_reset_complete with
+port_status 0x1005
+[    3.464449] ehci_hcd 0000:00:02.1: port 5 high speed
+[    3.600052] ehci_hcd 0000:00:04.1: usb: Entered check_reset_complete with
+port_status 0x1001
+[    3.600202] ehci_hcd 0000:00:04.1: port 5 full speed --> companion
+[    3.600307] ehci_hcd 0000:00:04.1: Wrote 0x3001 to status reg
+[    3.656089] hub 2-0:1.0: unable to enumerate USB device on port 5
+[    3.656203] ehci_hcd 0000:00:04.1: In ehci_relinquish_port
+[    3.656295] ehci_hcd 0000:00:04.1: In set_owner
+
+Thanks,
+
+Larry
