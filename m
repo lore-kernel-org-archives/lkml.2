@@ -1,222 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab0LKGgo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 01:36:44 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:45006 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab0LKGgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 01:36:43 -0500
-Date: Fri, 10 Dec 2010 22:36:38 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, laijs@cn.fujitsu.com
-Subject: Re: [PATCH 2/2] rcu: Keep gpnum and completed fields synchronized
-Message-ID: <20101211063638.GA2264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1292015471-19227-1-git-send-email-fweisbec@gmail.com>
- <1292015471-19227-3-git-send-email-fweisbec@gmail.com>
- <20101210230200.GK2125@linux.vnet.ibm.com>
- <20101210233920.GA22777@linux.vnet.ibm.com>
- <20101210234709.GC1713@nowhere>
- <20101211000451.GN2125@linux.vnet.ibm.com>
- <20101211001514.GE1713@nowhere>
- <20101211005827.GP2125@linux.vnet.ibm.com>
- <20101211012101.GG1713@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101211012101.GG1713@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1751345Ab0LKHRi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 02:17:38 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:63769 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab0LKHRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 02:17:35 -0500
+Date: Sat, 11 Dec 2010 02:17:30 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [git pull] ACPI patches for Linux-2.6.37-rc5
+Message-id: <alpine.LFD.2.00.1012110215310.27156@x980>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: MULTIPART/MIXED; BOUNDARY="8323328-1894795178-1292051852=:27156"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 02:21:04AM +0100, Frederic Weisbecker wrote:
-> On Fri, Dec 10, 2010 at 04:58:27PM -0800, Paul E. McKenney wrote:
-> > On Sat, Dec 11, 2010 at 01:15:17AM +0100, Frederic Weisbecker wrote:
-> > > On Fri, Dec 10, 2010 at 04:04:51PM -0800, Paul E. McKenney wrote:
-> > > > On Sat, Dec 11, 2010 at 12:47:11AM +0100, Frederic Weisbecker wrote:
-> > > > > On Fri, Dec 10, 2010 at 03:39:20PM -0800, Paul E. McKenney wrote:
-> > > > > > On Fri, Dec 10, 2010 at 03:02:00PM -0800, Paul E. McKenney wrote:
-> > > > > > > On Fri, Dec 10, 2010 at 10:11:11PM +0100, Frederic Weisbecker wrote:
-> > > > > > > > When a CPU that was in an extended quiescent state wakes
-> > > > > > > > up and catches up with grace periods that remote CPUs
-> > > > > > > > completed on its behalf, we update the completed field
-> > > > > > > > but not the gpnum that keeps a stale value of a backward
-> > > > > > > > grace period ID.
-> > > > > > > > 
-> > > > > > > > Later, note_new_gpnum() will interpret the shift between
-> > > > > > > > the local CPU and the node grace period ID as some new grace
-> > > > > > > > period to handle and will then start to hunt quiescent state.
-> > > > > > > > 
-> > > > > > > > But if every grace periods have already been completed, this
-> > > > > > > > interpretation becomes broken. And we'll be stuck in clusters
-> > > > > > > > of spurious softirqs because rcu_report_qs_rdp() will make
-> > > > > > > > this broken state run into infinite loop.
-> > > > > > > > 
-> > > > > > > > The solution, as suggested by Lai Jiangshan, is to ensure that
-> > > > > > > > the gpnum and completed fields are well synchronized when we catch
-> > > > > > > > up with completed grace periods on their behalf by other cpus.
-> > > > > > > > This way we won't start noting spurious new grace periods.
-> > > > > > > 
-> > > > > > > Also good, queued!
-> > > > > > > 
-> > > > > > > One issue -- this approach is vulnerable to overflow.  I therefore
-> > > > > > > followed up with a patch that changes the condition to
-> > > > > > > 
-> > > > > > > 	if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
-> > > > > > 
-> > > > > > And here is the follow-up patch, FWIW.
-> > > > > > 
-> > > > > > 							Thanx, Paul
-> > > > > 
-> > > > > Hmm, it doesn't apply on top of my two patches. It seems you have
-> > > > > kept my two previous patches, which makes it fail as it lacks them
-> > > > > as a base.
-> > > > > 
-> > > > > Did you intend to keep them? I hope they are quite useless now, otherwise
-> > > > > it means there is other cases I forgot.
-> > > > 
-> > > > One is indeed useless, while the other is useful in combinations of
-> > > > dyntick-idle and force_quiescent_state().
-> > > 
-> > > I don't see how.
-> > > 
-> > > Before we call __note_new_gpnum(), we always have the opportunity
-> > > to resync gpnum and completed as  __rcu_process_gp_end() is called
-> > > before.
-> > > 
-> > > Am I missing something?
-> > 
-> > If the CPU is already aware of the end of the previous grace period,
-> > then __rcu_process_gp_end() will return without doing anything.  But if
-> > force_quiescent_state() already took care of this CPU, there is no point
-> > in its looking for another quiescent state.  This can happen as follows:
-> > 
-> > o	CPU 0 notes the end of the previous grace period and then
-> > 	enters dyntick-idle mode.
-> > 
-> > o	CPU 2 enters a very long RCU read-side critical section.
-> > 
-> > o	CPU 1 starts a new grace period.
-> > 
-> > o	CPU 0 does not check in because it is in dyntick-idle mode.
-> > 
-> > o	CPU 1 eventually calls force_quiescent_state() a few times,
-> > 	and sees that CPU 0 is in dyntick-idle mode, so tells RCU
-> > 	that CPU 0 is in an extended quiescent state.  But the
-> > 	grace period cannot end because CPU 2 is still in its
-> > 	RCU read-side critical section.
-> > 
-> > o	CPU 0 comes out of dyntick-idle mode, and sees the new
-> > 	grace period.  The old code would nevertheless look for
-> > 	a quiescent state, and the new code would avoid doing so.
-> > 
-> > Unless I am missing something, of course...
-> > 
-> > 							Thanx, Paul
-> 
-> Aah, so in your scenario, CPU 0, 1 et 2 are the same node (rnp),
-> we have not updated rnp->completed because we still wait for CPU 2.
-> 
-> Then __rcu_process_gp_end() won't increase the gpnum either
-> because rnp->completed is still equal to rdp->completed.
-> 
-> And later on we call note_new_gpnum() that thinks it has a new
-> gp to handle but it's wrong.
-> 
-> Hence the need to look at the mask level there.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-CPUs 0, 1, et 2 are not necessarily on the same node, but other than
-that, you have it exactly.  The trick is that force_quiescent_state()
-takes global action, so CPU 1 does not need to be on the same node as CPU 0.
-Furthermore, an RCU read-side critical section anywhere in the system
-will prevent any subsequent grace period from completing, so CPU 2
-can be on yet another node.
+--8323328-1894795178-1292051852=:27156
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
-> This makes all sense!
+Hi Linus,
 
-Thank you for the confirmation, will try testing it out more thoroughly.
+please pull from: 
 
-							Thanx, Paul
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
 
-> Thanks!
-> 
-> > 
-> > > Thanks.
-> > > 
-> > > >  I rebased your earlier two
-> > > > out and reworked mine, please see below.  Work better?
-> > > > 
-> > > > 							Thanx, Paul
-> > > > 
-> > > > ------------------------------------------------------------------------
-> > > > 
-> > > > commit c808bedd1b1d7c720546a6682fca44c66703af4e
-> > > > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > Date:   Fri Dec 10 15:02:47 2010 -0800
-> > > > 
-> > > >     rcu: fine-tune grace-period begin/end checks
-> > > >     
-> > > >     Use the CPU's bit in rnp->qsmask to determine whether or not the CPU
-> > > >     should try to report a quiescent state.  Handle overflow in the check
-> > > >     for rdp->gpnum having fallen behind.
-> > > >     
-> > > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > index 368be76..530cdcd 100644
-> > > > --- a/kernel/rcutree.c
-> > > > +++ b/kernel/rcutree.c
-> > > > @@ -616,9 +616,17 @@ static void __init check_cpu_stall_init(void)
-> > > >  static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
-> > > >  {
-> > > >  	if (rdp->gpnum != rnp->gpnum) {
-> > > > -		rdp->qs_pending = 1;
-> > > > -		rdp->passed_quiesc = 0;
-> > > > +		/*
-> > > > +		 * If the current grace period is waiting for this CPU,
-> > > > +		 * set up to detect a quiescent state, otherwise don't
-> > > > +		 * go looking for one.
-> > > > +		 */
-> > > >  		rdp->gpnum = rnp->gpnum;
-> > > > +		if (rnp->qsmask & rdp->grpmask) {
-> > > > +			rdp->qs_pending = 1;
-> > > > +			rdp->passed_quiesc = 0;
-> > > > +		} else
-> > > > +			rdp->qs_pending = 0;
-> > > >  	}
-> > > >  }
-> > > >  
-> > > > @@ -680,19 +688,20 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
-> > > >  
-> > > >  		/*
-> > > >  		 * If we were in an extended quiescent state, we may have
-> > > > -		 * missed some grace periods that others CPUs took care on
-> > > > +		 * missed some grace periods that others CPUs handled on
-> > > >  		 * our behalf. Catch up with this state to avoid noting
-> > > > -		 * spurious new grace periods.
-> > > > +		 * spurious new grace periods.  If another grace period
-> > > > +		 * has started, then rnp->gpnum will have advanced, so
-> > > > +		 * we will detect this later on.
-> > > >  		 */
-> > > > -		if (rdp->completed > rdp->gpnum)
-> > > > +		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed))
-> > > >  			rdp->gpnum = rdp->completed;
-> > > >  
-> > > >  		/*
-> > > > -		 * If another CPU handled our extended quiescent states and
-> > > > -		 * we have no more grace period to complete yet, then stop
-> > > > -		 * chasing quiescent states.
-> > > > +		 * If RCU does not need a quiescent state from this CPU,
-> > > > +		 * then make sure that this CPU doesn't go looking for one.
-> > > >  		 */
-> > > > -		if (rdp->completed == rnp->gpnum)
-> > > > +		if (rnp->qsmask & rdp->grpmask)
-> > > >  			rdp->qs_pending = 0;
-> > > >  	}
-> > > >  }
+A pair of regression fixes, plus some bug fixes and build fixes.
+
+This will update the files shown below.
+
+thanks!
+
+--
+Len Brown
+Intel Open Source Technology Center
+
+
+ps. individual patches are available on linux-acpi@vger.kernel.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/acpi/patches/2.6.37/acpi-release-20101013-2.6.37-rc5.diff.gz
+
+ drivers/acpi/ac.c                |   46 ++++++++++------
+ drivers/acpi/apei/erst.c         |   34 ++++++------
+ drivers/acpi/apei/hest.c         |   10 ++--
+ drivers/acpi/battery.c           |    5 ++
+ drivers/acpi/ec.c                |    3 +
+ drivers/acpi/osl.c               |  113 ++++++++++++++++++++++++++------------
+ drivers/acpi/power.c             |   12 ++--
+ drivers/acpi/processor_thermal.c |    9 ---
+ drivers/acpi/sleep.c             |    4 +-
+ drivers/pnp/pnpacpi/core.c       |    2 +-
+ include/acpi/video.h             |    5 +-
+ include/linux/acpi.h             |    2 +-
+ include/linux/video_output.h     |   15 +++++
+ 13 files changed, 165 insertions(+), 95 deletions(-)
+
+through these commits:
+
+Alexey Starikovskiy (1):
+      ACPI: EC: Add another dmi match entry for MSI hardware
+
+Chris Wilson (1):
+      ACPI: video: fix build for CONFIG_ACPI=n
+
+Huang Ying (1):
+      ACPI, APEI, use raw spinlock in ERST
+
+Jan Beulich (3):
+      ACPI/PNP: avoid section mismatch warning
+      ACPI: eliminate unused variable warning for !ACPI_SLEEP
+      ACPI/HEST: adjust section selection
+
+Len Brown (1):
+      ACPI: video: fix build for VIDEO_OUTPUT_CONTROL=n
+
+Lin Ming (2):
+      acpi: fix _OSI string setup regression
+      ACPI: fix allowing to add/remove multiple _OSI strings
+
+Rafael J. Wysocki (2):
+      ACPI / PM: Check device state before refcounting power resources
+      ACPI / PM: Do not refcount power resources that can't be turned on
+
+Zhang Rui (4):
+      ACPI ac: update AC status upon sysfs query
+      ACPI battery: update status upon sysfs query
+      ACPI: fix a section mismatch
+      ACPI thermal: remove two unused functions
+
+with this log:
+
+commit 6cc5615f7c4decd7b6c4da9317d0e0b5fbdf7290
+Merge: a5dc4f8 3138b32 12b3b5a bec4f22 12d3206
+Author: Len Brown <len.brown@intel.com>
+Date:   Sat Dec 11 02:02:02 2010 -0500
+
+    Merge branches 'bugzilla-15418', 'bugzilla-21722', 'bugzilla-22932', 'misc-2.6.37' and 'osi-regression' into release
+
+commit bec4f22a2dbd5a26079cbddbcadf38f8c7e5381f
+Author: Jan Beulich <JBeulich@novell.com>
+Date:   Tue Dec 7 14:58:44 2010 +0000
+
+    ACPI/HEST: adjust section selection
+    
+    Properly const-, __init-, and __read_mostly-annotate this code.
+    
+    Signed-off-by: Jan Beulich <jbeulich@novell.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 091aad6af4ab29af693ced5d6970ceee9d5981c8
+Author: Jan Beulich <JBeulich@novell.com>
+Date:   Tue Dec 7 14:52:25 2010 +0000
+
+    ACPI: eliminate unused variable warning for !ACPI_SLEEP
+    
+    Signed-off-by: Jan Beulich <jbeulich@novell.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 66c3ec4f1f70ee87833363166b594855631d7ba6
+Author: Jan Beulich <JBeulich@novell.com>
+Date:   Tue Dec 7 15:05:49 2010 +0000
+
+    ACPI/PNP: avoid section mismatch warning
+    
+    Signed-off-by: Jan Beulich <jbeulich@novell.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit b9047599695ae835252ba3d6a19eada98c19dc89
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Wed Dec 8 10:40:26 2010 +0800
+
+    ACPI thermal: remove two unused functions
+    
+    When CONFIG_CPU_FREQ=n ...
+    
+    drivers/acpi/processor_thermal.c:159:12: warning: ¡acpi_thermal_cpufreq_increase¢ defined but not used
+    drivers/acpi/processor_thermal.c:163:12: warning: ¡acpi_thermal_cpufreq_decrease¢ defined but not used
+    
+    Remove unused declaration of ¡acpi_thermal_cpufreq_increase¢ and
+    ¡acpi_thermal_cpufreq_decrease¢
+    
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 32d47eeff05981bfb89a95747eb182bc12630d58
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Wed Dec 8 10:40:36 2010 +0800
+
+    ACPI: fix a section mismatch
+    
+    WARNING: drivers/acpi/acpi.o(.text+0xeda): Section mismatch in reference from the function acpi_os_initialize1() to the function .init.text:set_osi_linux()
+    
+    The function acpi_os_initialize1() references
+    the function __init set_osi_linux().
+    
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 3b38bb5f7f06356a89bb2cbf92ad346025e95192
+Author: Huang Ying <ying.huang@intel.com>
+Date:   Thu Dec 2 10:40:53 2010 +0800
+
+    ACPI, APEI, use raw spinlock in ERST
+    
+    ERST writing may be used in NMI or Machine Check Exception handler. So
+    it need to use raw spinlock instead of normal spinlock.  This patch
+    fixes it.
+    
+    Signed-off-by: Huang Ying <ying.huang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit b72512ed706efb26087fcbbc5f98ed64ac1230d5
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Sun Sep 5 14:51:49 2010 +0100
+
+    ACPI: video: fix build for CONFIG_ACPI=n
+    
+    In file included from drivers/gpu/drm/i915/intel_opregion.c:30:
+    include/acpi/video.h:22: warning: ¡struct acpi_device¢ declared inside parameter list
+    ...
+    include/acpi/video.h:24: error: ¡ENODEV¢ undeclared (first use in this function)
+    
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 3353bebe7c89725ab2f476b9d8d618259402d52e
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Nov 30 18:21:46 2010 -0500
+
+    ACPI: video: fix build for VIDEO_OUTPUT_CONTROL=n
+    
+    drivers/built-in.o: In function `acpi_video_bus_put_devices':
+    video.c:(.text+0x79663): undefined reference to
+    `video_output_unregister'
+    drivers/built-in.o: In function `acpi_video_bus_add':
+    video.c:(.text+0x7b0b3): undefined reference to `video_output_register'
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 12d3206466d2074ef0684aaf7759ae01a0a92560
+Author: Lin Ming <ming.m.lin@intel.com>
+Date:   Thu Dec 9 16:51:06 2010 +0800
+
+    ACPI: fix allowing to add/remove multiple _OSI strings
+    
+    commit b0ed7a91(ACPICA/ACPI: Add new host interfaces for _OSI suppor)
+    introduced another regression that only one _OSI string can be added or
+    removed.
+    
+    Now multiple _OSI strings can be added or removed, for example
+    
+    acpi_osi=Linux acpi_osi=FreeBSD acpi_osi="!Windows 2006"
+    
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit d90aa92c0c1625d7f02050e4d2924805840cda3d
+Author: Lin Ming <ming.m.lin@intel.com>
+Date:   Thu Dec 9 16:50:52 2010 +0800
+
+    acpi: fix _OSI string setup regression
+    
+    commit b0ed7a91(ACPICA/ACPI: Add new host interfaces for _OSI suppor)
+    introduced a regression that _OSI string setup fails.
+    
+    There are 2 paths to setup _OSI string.
+    
+    DMI:
+    acpi_dmi_osi_linux -> set_osi_linux -> acpi_osi_setup -> copy _OSI
+    string to osi_setup_string
+    
+    Boot command line:
+    acpi_osi_setup -> copy _OSI string to osi_setup_string
+    
+    Later, acpi_osi_setup_late will be called to handle osi_setup_string.
+    If _OSI string is "Linux" or "!Linux", then the call path is,
+    
+    acpi_osi_setup_late -> acpi_cmdline_osi_linux -> set_osi_linux ->
+    acpi_osi_setup -> copy _OSI string to osi_setup_string
+    
+    This actually never installs _OSI string(acpi_install_interface not
+    called), but just copy the _OSI string to osi_setup_string.
+    
+    This patch fixes the regression.
+    
+    Reported-and-tested-by: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit a5dc4f898c2a0f66e2cefada6c687db82ba2fcbc
+Author: Alexey Starikovskiy <astarikovskiy@suse.de>
+Date:   Thu Dec 9 17:07:54 2010 -0500
+
+    ACPI: EC: Add another dmi match entry for MSI hardware
+    
+    http://bugzilla.kernel.org/show_bug.cgi?id=15418
+    
+    Signed-off-by: Alexey Starikovskiy <astarikovskiy@suse.de>
+    cc: stable@kernel.org
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 3138b32d5e0998ba3cbd1c74bdc1887d74c5279b
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Wed Dec 8 10:40:49 2010 +0800
+
+    ACPI battery: update status upon sysfs query
+    
+    Sometimes the Battery driver doesn't get notifications when it's
+    plugged/unplugged. And this results in the incorrect Battery
+    status reported by the power supply sysfs I/F.
+    
+    Update Battery status first when querying from sysfs.
+    http://marc.info/?l=linux-acpi&m=128855015826728&w=2
+    
+    Tested_by: Seblu <seblu@seblu.net>
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 3151dbb04ad5a5bd6358371c0bfb457216d00205
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Wed Dec 8 10:40:45 2010 +0800
+
+    ACPI ac: update AC status upon sysfs query
+    
+    http://marc.info/?l=linux-acpi&m=128855015826728&w=2
+    https://bugzilla.kernel.org/show_bug.cgi?id=21722
+    
+    Tested_by: Seblu <seblu@seblu.net>
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 12b3b5afed67e08aa641d30e57df20dab2e33432
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Thu Nov 25 00:03:32 2010 +0100
+
+    ACPI / PM: Do not refcount power resources that can't be turned on
+    
+    If turning on a power resource fails, do not reference count it,
+    since it cannot be in use in that case.
+    
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 212967c69afd348342548272aedbe4d46a9325d6
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Thu Nov 25 00:02:36 2010 +0100
+
+    ACPI / PM: Check device state before refcounting power resources
+    
+    Commit 3e384ee6c687cb397581ee8f9440fc8220cfac80 (ACPI / PM: Fix
+    reference counting of power resources) introduced a regression by
+    causing fan power resources to be turned on and reference counted
+    unnecessarily during resume, so on some boxes fans are always on
+    after resume.
+    
+    Fix the problem by checking if the current device state is different
+    from the new state before reference counting and turning on power
+    resources in acpi_power_transition().
+    
+    Addresses https://bugzilla.kernel.org/show_bug.cgi?id=22932 .
+    
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+    Reported-and-tested-by: Maciej Rutecki <maciej.rutecki@gmail.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+--8323328-1894795178-1292051852=:27156--
