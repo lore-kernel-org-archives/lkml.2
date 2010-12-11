@@ -1,64 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab0LKV4J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 16:56:09 -0500
-Received: from void.printf.net ([89.145.121.20]:60668 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab0LKV4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 16:56:07 -0500
-Date: Sat, 11 Dec 2010 21:55:57 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Oliver Neukum <oneukum@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Fix re-probing after hibernation
-Message-ID: <20101211215557.GA25693@void.printf.net>
-References: <1291821839-15088-1-git-send-email-tiwai@suse.de> <20101209015303.GB19741@void.printf.net> <s5hlj3z1ksb.wl%tiwai@suse.de> <201012092137.24603.rjw@sisk.pl> <s5h39q6yt1s.wl%tiwai@suse.de>
+	id S1752024Ab0LKV52 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 16:57:28 -0500
+Received: from web82108.mail.mud.yahoo.com ([209.191.84.221]:23493 "HELO
+	web82108.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751432Ab0LKV51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 16:57:27 -0500
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Dec 2010 16:57:27 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=w29XSzy2JnfSD/VPa481a3rrFwB8BshjH3Cyd5doftMzM/5ndotOyVf4e976kBjx0byseDuxxtMcl0NazqjwYRd4vvTwPSeVldLcD0wMdyLIJJXzb9yivUp0+J/lsjwqSN/52VEvmmamQA+hBscdQjwNwa0X/UDDgkplHqU3hSI=;
+Message-ID: <859221.44259.qm@web82108.mail.mud.yahoo.com>
+X-YMail-OSG: ujUhpqkVM1ncUqH.oAB9.TSMJiprzx6GHi_SaNJG6N_s3Y6
+ Zj1jrouCv23Ebc_A5gSrYPW8vU9fhHwj9TPQ_T4wtvb2JIPJ80Q.9pb3f6MQ
+ V_YwAduc61LOd.I6FO_RrJI9diTgCA0wVAG6PhyyCHD9UitHH11aOch9rdHr
+ DIsHjwVHNK.g9rE0becli6fiXmE1aO2MC_PjVhBbMda7TdAankRfpbSL4Jlh
+ 9luD3cqY8tX1SgjMJ_hMah9rjiDftsmQecQv.0x02FOKIybxLBNBveIqKXDB
+ qisu4U2_N5ap_mCvRUPTT_YRjYrn66xOKCtKRsfTerlNveA0duhjalAlq7bj
+ Ug1mITCiM7ZNvWnvBtwiOOwCZk1wNWmtuDUKfD7P1GRez61YcLyrn2Ij9i7W
+ dRw--
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Sat, 11 Dec 2010 13:50:45 -0800 (PST)
+From: little-nae@sbcglobal.net
+Subject: End Of Year winner
+To: undisclosed recipients:;
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h39q6yt1s.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
 
-On Fri, Dec 10, 2010 at 08:40:31AM +0100, Takashi Iwai wrote:
-> Subject: [PATCH] mmc: Fix re-probing with PM_POST_RESTORE notification
-> 
-> In the error-path where PM notifies PM_POST_RESTORE, the rescan-blockage
-> should be cleared as well.  Otherwise it'll be never re-probed.
-> 
-> Also, as a bonus, this fixes a bug in S4 with user-mode suspend in the
-> current code, as it sends PM_POST_RESTORE instead of
-> PM_POST_HIBERNATION wrongly.
-> 
-> Cc: <stable@kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/mmc/core/core.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 31ae07a..57dcf8f 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1773,6 +1773,7 @@ int mmc_pm_notify(struct notifier_block *notify_block,
->  
->  	case PM_POST_SUSPEND:
->  	case PM_POST_HIBERNATION:
-> +	case PM_POST_RESTORE:
->  
->  		spin_lock_irqsave(&host->lock, flags);
->  		host->rescan_disable = 0;
-
-Thanks, have pushed this to mmc-next and queued it for .37/stable.
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Name:> Occupation:> Tell:> Sex:> Country:
