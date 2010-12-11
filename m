@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0LKCPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 21:15:20 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:48120 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab0LKCPS convert rfc822-to-8bit (ORCPT
+	id S1754115Ab0LKCXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 21:23:04 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:23988 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243Ab0LKCXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 21:15:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
-References: <20101207182243.GB21112@redhat.com> <20101207193514.GA2921@thunk.org>
- <AANLkTim8UTkfxXV0AkEfjNq3tcmnrXdh6BQ1ibY5iYPy@mail.gmail.com>
- <20101209180111.GF2921@thunk.org> <AANLkTimAUB5L5Ptm4Fv=sQUmL9_P5azPRCKQnmU89xs8@mail.gmail.com>
- <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
- <20101209231616.GA12515@basil.fritz.box> <1291945065-sup-1838@think>
- <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
- <20101210023852.GB3059@thunk.org> <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
- <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com> <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Fri, 10 Dec 2010 20:14:56 -0600
-Message-ID: <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Matt <jackdachef@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-        Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Dec 2010 21:23:03 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 10 Dec 2010 21:23:01 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] sched: Fix the irqtime code to deal with u64 wraps
+In-reply-to: <1292013506.13513.78.camel@laptop>
+Message-id: <alpine.LFD.2.00.1012102116540.10437@xanadu.home>
+References: <1292013506.13513.78.camel@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 10:54 AM, Jon Nelson <jnelson@jamponi.net> wrote:
-> On Fri, Dec 10, 2010 at 8:58 AM, Jon Nelson <jnelson@jamponi.net> wrote:
->> On Fri, Dec 10, 2010 at 12:52 AM, Jon Nelson <jnelson@jamponi.net> wrote:
->>> On Thu, Dec 9, 2010 at 8:38 PM, Ted Ts'o <tytso@mit.edu> wrote:
->>>> On Fri, Dec 10, 2010 at 02:53:30AM +0100, Matt wrote:
->>>>>
->>>>> Try a kernel before 5a87b7a5da250c9be6d757758425dfeaf8ed3179
->>>>>
->>>>> from the tests I've done that one showed the least or no corruption if
->>>>> you count the empty /etc/env.d/03opengl as an artefact
->>>>
->>>> Yes, that's a good test.  Also try commit bd2d0210cf.  The patch
->>>> series that is most likely to be at fault if there is a regression in
->>>> between 5a87b7a5d and bd2d0210cf inclusive.
->>>>
->>>> I did a lot of testing before submitting it, but that wa a tricky
->>>> rewrite.  If you can reproduce the problem reliably, it might be good
->>>> to try commit 16828088f9 (the commit before 5a87b7a5d) and commit
->>>> bd2d0210cf.  If it reliably reproduces on bd2d0210cf, but is clean on
->>>> 16828088f9, then it's my ext4 block i/o submission patches, and we'll
->>>> need to either figure out what's going on or back out that set of
->>>> changes.
->>>>
->>>> If that's the case, a bisect of those changes (it's only 6 commits, so
->>>> it shouldn't take long) would be most appreciated.
->>>
->>> I observed the behavior on bd2d0210cf in a qemu-kvm install of
->>> openSUSE 11.3 (x86_64) on *totally* different host - an AMD quad-core.
->>>
->>> I did /not/ observe the behavior on 16828088f9 (yet). I'll run the
->>> test a few more times on 1682..
->>>
->>> Additionally, I am building a bisected kernel now (
->>> cb20d5188366f04d96d2e07b1240cc92170ade40 ), but won't be able to get
->>> back at it for a while.
->>
->> cb20d5188366f04d96d2e07b1240cc92170ade40 seems OK so far. I'm going to
->> try 1de3e3df917459422cb2aecac440febc8879d410 soon.
->
-> Barring false negatives, bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
-> appears to be the culprit (according to git bisect).
-> I will test bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc again, confirm
-> the behavior, and work backwards to try to reduce the possibility of
-> false negatives.
+On Fri, 10 Dec 2010, Peter Zijlstra wrote:
 
-A few additional notes, in no particular order:
+> OK, so here's the latest version, using fancy __this_cpu thingies.
+> 
+> I started a new thread since the old one was quite unwieldy.
+> 
+> Now, admittedly this patch is a tad large, esp for -rc5. So either we
+> need lots of Reviewed-by and such or I need to shrink this patch
+> somehow.
+> 
+> 
+> ---
+> Subject: sched: Fix the irqtime code to deal with u64 wraps
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Thu Dec 09 14:15:34 CET 2010
+> 
+> ARM systems have a 32bit sched_clock() [ which needs to be fixed ],
+> but this exposed a bug in the irq_time code as well, it doesn't deal
+> with wraps at all.
+[...]
 
-- For me, triggering the problem is fairly easy when encryption is involved.
-- I'm now 81 iterations into testing
-bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc *without* encryption.  Out of
-81 iterations, I have 4 failures: #16, 40, 62, and 64.
+That would be more close to reality if you stated "Some ARM systems have 
+a 32bit sched_clock() [" above.  Most ARM systems in use today have a 
+sched_clock() with more than 32 bits, like 55 bits or so.
 
-I will now try 1de3e3df917459422cb2aecac440febc8879d410 much more extensively.
 
-Is this useful information?
-
--- 
-Jon
+Nicolas
