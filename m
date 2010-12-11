@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816Ab0LKVMN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 16:12:13 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:46491 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab0LKVMM (ORCPT
+	id S1751977Ab0LKVeN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 16:34:13 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33498 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab0LKVeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 16:12:12 -0500
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Dec 2010 16:12:12 EST
-Date: Sat, 11 Dec 2010 15:05:48 -0600
-From: David Fries <david@fries.net>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH] load fbcon from drm_kms_helper
-Message-ID: <20101211210548.GK13567@spacedout.fries.net>
+	Sat, 11 Dec 2010 16:34:09 -0500
+Date: Sat, 11 Dec 2010 13:33:09 -0800
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [PATCH 07/30] ocfs2: don't use flush_scheduled_work()
+Message-ID: <20101211213308.GA8555@mail.oracle.com>
+Mail-Followup-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+	Mark Fasheh <mfasheh@suse.com>
+References: <1292086307-19211-1-git-send-email-tj@kernel.org>
+ <1292086307-19211-8-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1292086307-19211-8-git-send-email-tj@kernel.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 11 Dec 2010 15:05:50 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kconfig says fbcon is required by drm_kms_helper.  If radeon, fbcon,
-and drm_kms_helper are all modules, radeon is auto loaded (by PCI id?),
-drm_kms_helper is loaded because of the module dependency, but fbcon
-isn't loaded leaving the console unusable.  Since fbcon is required
-and there isn't an explicit module dependency, request the module
-to be loaded from drm_kms_helper.
+On Sat, Dec 11, 2010 at 05:51:24PM +0100, Tejun Heo wrote:
+> flush_scheduled_work() is deprecated and scheduled to be removed.
+> 
+> * cancel_delayed_work() + flush_schedule_work() ->
+>   cancel_delayed_work_sync().
+> 
+> * flush qs->qs_work directly on exit instead.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <joel.becker@oracle.com>
 
-Signed-off-by: David Fries <david@fries.net>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
----
-This solves compiling CONFIG_FB=m and being left with a blank screen
-because the radeon module is automatically loaded, but fbcon isn't.
-If radeon had to be manually loaded, then it would be the user's fault for
-not loading fbcon as well, but as radeon is being loaded automatically,
-there isn't much a user can do from console to even fix it.  More bug
-details from here,
-https://bugzilla.kernel.org/show_bug.cgi?id=16221
+Acked-by: Joel Becker <joel.becker@oracle.com>
 
-Does this look like a reasonable solution?  Should it bother checking
-find_module first?
-
- drivers/gpu/drm/drm_fb_helper.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index d2849e4..dd1e726 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -1530,3 +1530,24 @@ bool drm_fb_helper_hotplug_event(struct drm_fb_helper *fb_helper)
- }
- EXPORT_SYMBOL(drm_fb_helper_hotplug_event);
- 
-+/* The Kconfig DRM_KMS_HELPER selects FRAMEBUFFER_CONSOLE (if !EMBEDDED)
-+ * but the module doesn't depend on any fb console symbols.  At least
-+ * attempt to load fbcon to avoid leaving the system without a usable console.
-+ */
-+#if defined(CONFIG_FRAMEBUFFER_CONSOLE_MODULE) && !defined(CONFIG_EMBEDDED)
-+static int __init drm_fb_helper_modinit(void)
-+{
-+	const char *namue = "fbcon";
-+	struct module *fbcon;
-+
-+	mutex_lock(&module_mutex);
-+	fbcon = find_module(name);
-+	mutex_unlock(&module_mutex);
-+
-+	if (!fbcon)
-+		request_module_nowait(name);
-+	return 0;
-+}
-+
-+module_init(drm_fb_helper_modinit);
-+#endif
 -- 
-1.7.2.3
 
+#!/bin/perl -sp0777i<X+d*lMLa^*lN%0]dsXx++lMlN/dsM0<j]dsj
+$/=unpack('H*',$_);$_=`echo 16dio\U$k"SK$/SM$n\EsN0p[lN*1
+lK[d2%Sa2/d0$^Ixp"|dc`;s/\W//g;$_=pack('H*',/((..)*)$/)
+
+Joel Becker
+Senior Development Manager
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
