@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab0LKTrT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 14:47:19 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:60724 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751557Ab0LKTrR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 14:47:17 -0500
-Date: Sat, 11 Dec 2010 14:47:17 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Larry Finger <Larry.Finger@lwfinger.net>
-cc: pali.rohar@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
- 3df7169e7
-In-Reply-To: <4D03AACB.8020205@lwfinger.net>
-Message-ID: <Pine.LNX.4.44L0.1012111438260.14704-100000@netrider.rowland.org>
+	id S1751602Ab0LKT7N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 14:59:13 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46275 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354Ab0LKT7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 14:59:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bojan Smojver <bojan@rexursive.com>
+Subject: Re: [linux-pm] [PATCH] PM / Hibernate: Restore old swap signature to avoid user space breakage
+Date: Sat, 11 Dec 2010 20:58:09 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Karel Zak <kzak@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>
+References: <201012052324.30231.rjw@sisk.pl> <1291592215.2866.3.camel@shrek.rexursive.com>
+In-Reply-To: <1291592215.2866.3.camel@shrek.rexursive.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012112058.09689.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Dec 2010, Larry Finger wrote:
-
-> > I don't see anything wrong with any of this.  Where's the problem?
+On Monday, December 06, 2010, Bojan Smojver wrote:
+> On Sun, 2010-12-05 at 23:24 +0100, Rafael J. Wysocki wrote:
+> > Commit 3624eb0 (PM / Hibernate: Modify signature used to mark swap)
+> > modified hibernate signature used to mark swap partitions containing
+> > hibernation images, but that turns out to have caused problems in
+> > libblkid on recent Ubuntu.  Restore the old signature to avoid those
+> > problems. 
 > 
-> The problem is that I get thousands of the "unable to enumerate" messages in the
-> logs. That PORT_OWNER does not seem to apply to this port. Everything seems to
-> work, but the log spamming is intolerable.
-
-Everything seems to work for the EHCI controller, the one you were 
-looking at.  But the OHCI controller isn't working, so that's where you 
-need to concentrate your attention.  ISTR before your computer broke 
-you were trying to figure out why certain parts of the ohci-hcd 
-initialization code weren't getting called.
-
-> I find the USB structure on this box to be confusing. The output of lsusb is
+> Don't quite understand this change (sorry, probably just being obtuse).
 > 
-> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-> Bus 001 Device 002: ID 04f2:b016 Chicony Electronics Co., Ltd VGA 30fps UVC Webcam
-> Bus 001 Device 005: ID 07d1:3300 D-Link System
-> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-> Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> The signature was changed to make sure older kernels don't handle
+> compressed images by accident, right? If so, this would seem like a bad
+> idea, because this is what can actually happen now.
 > 
-> There are 3 external USB ports, which are ports 3, 4, and 5 on the Bus 001 hub.
+> Shouldn't user space learn how to handle both signatures instead?
 
-There's probably at least one internal port, where that Chicony webcam
-is connected.  Unless it's using an external port?
+I'm afraid I'll have to push this patch to Linus.  Turns out that Fedora 14
+doesn't pass the resume= argument to the kernel and tries to trigger the resume
+from initramfs.  Since the signature changed, it can't find the image and the
+resume fails, even if both the resume and image kernels are the same.
 
-> That is the one with iSerial of 1 0000:00:02.1. The other hubs do not seem to be
-> connected to anything.
-
-Bus 2 probably is not connected to anything.  My guess is that bus 3 is 
-also connected to the three external ports and bus 4 is not wired up.
-
-Alan Stern
-
+Thanks,
+Rafael
