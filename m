@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab0LLKSx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 05:18:53 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:42072 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab0LLKSv convert rfc822-to-8bit (ORCPT
+	id S1752367Ab0LLKpe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 05:45:34 -0500
+Received: from mail-iw0-f170.google.com ([209.85.214.170]:46147 "EHLO
+	mail-iw0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab0LLKpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 05:18:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
-References: <20101209201359.GG2921@thunk.org> <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
- <20101209231616.GA12515@basil.fritz.box> <1291945065-sup-1838@think>
- <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
- <20101210023852.GB3059@thunk.org> <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
- <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
- <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
- <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
- <20101212023415.GG3059@thunk.org> <AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Sun, 12 Dec 2010 04:18:29 -0600
-Message-ID: <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Jon Nelson <jnelson@jamponi.net>,
-        Matt <jackdachef@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 12 Dec 2010 05:45:33 -0500
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2010 05:45:33 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=WO7NZqw87VvwcEOJa7gCxDCMFhKcS7cGuJzWjsMBHRVltgvkGBYn4jvzxgNOddB74X
+         9xZF4zsl7l+8PqD85gcFu7bGMlnv6bDYQNrMQUgEWpT9WY3IQd4OpNMpWI7zS7bJ9Khi
+         UMpPIcqaapgNRX8ftcEoWGG75K8yM0nBamXSQ=
+From: bookjovi@gmail.com
+To: akpm@linux-foundation.org, hidave.darkstar@gmail.com, davem@davemloft.net,
+        mingo@elte.hu, eparis@redhat.com, linux-kernel@vger.kernel.org
+Cc: Jovi Zhang <bookjovi@gmail.com>
+Subject: [PATCH 1/2] sysctl: fix error config typo
+Date: Fri, 10 Dec 2010 22:03:44 -0500
+Message-Id: <1292036624-3019-1-git-send-email-bookjovi@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 9:16 PM, Jon Nelson <jnelson@jamponi.net> wrote:
-> On Sat, Dec 11, 2010 at 7:40 PM, Ted Ts'o <tytso@mit.edu> wrote:
->> Yes, indeed.  Is this in the virtualized environment or on real
->> hardware at this point?  And how many CPU's do you have configured in
->> your virtualized environment, and how memory memory?  Is having a
->> certain number of CPU's critical for reproducing the problem?  Is
->> constricting the amount of memory important?
->
-> Originally, I observed the behavior on really real hardware.
->
-> Since then, I have been able to reproduce it in VirtualBox and
-> qemu-kvm, with openSUSE 11.3 and KUbuntu. All of the more recent tests
-> have been with qemu-kvm.
->
-> I have one CPU configured in the environment, 512MB of memory.
-> I have not done any memory-constriction tests whatsoever.
->
->> It'll be a lot easier if I can reproduce it locally, which is why I'm
->> asking all of these questions.
->
-> On Sat, Dec 11, 2010 at 8:34 PM, Ted Ts'o <tytso@mit.edu> wrote:
->> One experiment --- can you try this with the file system mounted with
->> data=writeback, and see if the problem reproduces in that journalling
->> mode?
->
-> That test is running now, first with encryption. I will report if it
-> shows problems. If it does, I will wait until I have been able to see
-> that a few times, and move to a no-encryption test. Typically, I have
-> to run quite a few more iterations of that test before problems show
-> up (if they will at all).
->
->> I want to rule out (if possible) journal_submit_inode_data_buffers()
->> racing with mpage_da_submit_io().  I don't think that's the issue, but
->> I'd prefer to do the experiment to make sure.  So if you can use a
->> kernel and system configuration which triggers the problem, and then
->> try changing the mount options to include data=writeback, and then
->> rerun the test, and let me know if the problem still reproduces, I'd
->> be really grateful.
+fix error config typo
 
-Using 2.6.37-rc5 and data=writeback,noatime and LUKS encryption I hit
-the problem 71 times out of 173.
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 
--- 
-Jon
+ kernel/sysctl.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 5abfa15..6f3b6f4 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2900,7 +2900,7 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
+ 	}
+ }
+ 
+-#else /* CONFIG_PROC_FS */
++#else /* CONFIG_PROC_SYSCTL */
+ 
+ int proc_dostring(struct ctl_table *table, int write,
+ 		  void __user *buffer, size_t *lenp, loff_t *ppos)
+@@ -2952,7 +2952,7 @@ int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int write,
+ }
+ 
+ 
+-#endif /* CONFIG_PROC_FS */
++#endif /* CONFIG_PROC_SYSCTL */
+ 
+ /*
+  * No sense putting this after each symbol definition, twice,
