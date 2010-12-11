@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab0LKBhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 20:37:54 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:52948 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753132Ab0LKBhw (ORCPT
+	id S1754692Ab0LKCAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 21:00:24 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:53934 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab0LKCAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 20:37:52 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=nLhD2FPRQZQ2DsvZeLlw/NsDQfRS5jjv05osPDRXr+El/CbnJQXMtqgwlaH3BTWWAtfUvZMnruTKRwErkPEF5Ro4EEwnJVPUYEYYdskA6lkgYiTXrkIOZw506hIAPfPj;
-Date: Fri, 10 Dec 2010 17:37:49 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>,
-        Matthew Garrett <mjg@redhat.com>, Dan Williams <dcbw@redhat.com>,
-        rjw@sisk.pl
-Subject: Re: [PATCH 1/5] resources: add arch hook for preventing allocation
- in reserved areas
-Message-ID: <20101210173749.7ec3cc28@jbarnes-desktop>
-In-Reply-To: <201012101407.24419.bjorn.helgaas@hp.com>
-References: <20101208213606.13026.47657.stgit@bob.kio>
-	<20101210123008.7fed582d@jbarnes-desktop>
-	<20101210123609.73c12a23@jbarnes-desktop>
-	<201012101407.24419.bjorn.helgaas@hp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	Fri, 10 Dec 2010 21:00:23 -0500
+Date: Sat, 11 Dec 2010 10:59:08 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Peter Huewe <peterhuewe@gmx.de>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd/wm831x-irq: Convert to new irq_chip functions and fix build failure
+Message-ID: <20101211015907.GC3750@linux-sh.org>
+References: <1291937687-20243-1-git-send-email-peterhuewe@gmx.de> <12ABA93B-6923-4AF7-BF34-E070BE72A8E2@opensource.wolfsonmicro.com> <alpine.LFD.2.00.1012100233510.2653@localhost6.localdomain6> <20101210050755.GA21712@linux-sh.org> <20101210121420.GC3200@rakim.wolfsonmicro.main> <20101210154332.GB21712@linux-sh.org> <20101210172407.GF3200@rakim.wolfsonmicro.main> <20101210174843.GB3750@linux-sh.org> <20101210182455.GJ3200@rakim.wolfsonmicro.main>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101210182455.GJ3200@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 14:07:24 -0700
-Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-
-> On Friday, December 10, 2010 01:36:09 pm Jesse Barnes wrote:
-> > [Actually cc'ing Matthew this time]
-> > 
-> > On Fri, 10 Dec 2010 12:30:08 -0800
-> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > 
-> > > On Wed, 08 Dec 2010 14:36:06 -0700
-> > > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> > > 
-> > > > 
-> > > > This adds arch_remove_reservations(), which an arch can implement if it
-> > > > needs to protect part of the address space from allocation.
-> > > > 
-> > > > Sometimes that can be done by just requesting a resource.  This hook is to
-> > > > cover cases where protected area doesn't fit well in the hierarchical
-> > > > resource tree.  For example, x86 BIOS E820 reservations are not related
-> > > > to devices, so they may overlap part of, all of, or more than a device
-> > > > resource.
-> > > > 
-> > > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > > > ---
-> > > 
-> > > Hm, this is bigger than the simple change of just avoiding the high 2M;
-> > > Linus have you checked it out yet?  It's nicer than simply adjusting
-> > > PCIBIOS_MAX_MEM since it will affect all resource callers rather than
-> > > just PCI, but it's definitely bigger.
+On Fri, Dec 10, 2010 at 06:24:55PM +0000, Mark Brown wrote:
+> On Sat, Dec 11, 2010 at 02:48:43AM +0900, Paul Mundt wrote:
 > 
-> Dan Williams also reproduced the problem on a 2530p and tested this
-> series (though I think he actually tested a backport in Fedora):
->   https://bugzilla.kernel.org/show_bug.cgi?id=23542#c7
->   https://bugzilla.kernel.org/show_bug.cgi?id=23542#c23
+> > I have no intention of dropping the select from SH, but I'm not going to
+> > insist that these drivers have the deprecated dependency if we're a) not
+> > really using them and b) there's a reasonable expectation that they'll
+> > basically be taken care of in .38 anyways.
 > 
-> The simple PCIBIOS_MAX_MEM_32 change below will fix the 2530p problem,
-> but it won't help fix the nx6325 problem Rafael reported; details at:
->   https://bugzilla.kernel.org/show_bug.cgi?id=23332#c20
+> That's unfortunate, I'm a bit concerned about support for users picking
+> up the kernel and using it to build products.
 > 
-> Rafael did confirm on #acpi Wednesday that the full series fixed
-> his nx6325.
+As I pointed out initially, backtracking would only encourage people to
+continue to add new code that uses deprecated interfaces. This happens
+time and time again, and is a far greater concern.
 
-Thanks, I'll add Dan and Rafael's tested-bys to the patches (they're
-already in my for-linus tree).  Unless Linus has a problem with them
-I'll send them over to him this weekend or Monday.
+> Samuel, would you be OK with cherry picking the relevant commits to the
+> Wolfson drivers back into .37?  I'm especially concerned about WM8994
+> here - I'd really not like to see a kernel version go out where that
+> doesn't work.
+> 
+That hardly addresses the issue, and simply covers your own driver. The
+issue at hand is whether it's worth flagging the deprecated API users
+with an explicit dependency or not. You've dismissed the idea of getting
+your dependencies right out of hand, but also don't wish to ship a broken
+driver, so we need an alternative.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+After a full tree audit it's the MFD drivers and a couple of GPIO
+expanders that could theoretically be enabled and break the build. I
+suppose I could switch to
+
+	select GENERIC_HARDIRQS_NO_DEPRECATED if !MFD_SUPPORT && !GPIOLIB
+
+for .37 since it's too late to convert the remaining drivers now.
+Conditionalizing it will at least limit the number of platforms where the
+old API is visible.
+
+> > I haven't been following the progress in -next, but now that you've
+> > pointed it out I'll give it a look. It's less effort to just fix up the
+> > remaining users than it is to audit API dependencies for all of them at
+> > least.
+> 
+> Probably slightly more in that you can't just blindly add the dependency
+> when you see the problem but yeah.
+
+At what point is a dependency being "blindly" added? The patch provided
+was meant as a stop-gap for .37 so that the drivers using the deprecated
+API have an explicit dependency on it. For .38 it's trivial to convert
+them, and as I've done pretty much all of the conversion work that's
+upstream right now I don't think you're in much position to say what has
+and hasn't been thought out.
