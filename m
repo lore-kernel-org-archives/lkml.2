@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab0LKAJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 19:09:16 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42936 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235Ab0LKAJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 19:09:14 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=ol3fQ0Bz-dcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IJv9LcIfAAAA:8 a=BuHDjuvowRZ33NWagAcA:9 a=A6reI9-EYARj1Ay9-4zQKYbbaGcA:4 a=PUjeQqilurYA:10 a=K6kUPx8HyhEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 02/10] mm: Remove likely() from
- mapping_unevictable()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Miles Bader <miles@gnu.org>
-Cc: Joe Perches <joe@perches.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, Rik van Riel <riel@redhat.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-In-Reply-To: <buok4jikq3e.fsf@dhlpc061.dev.necel.com>
-References: <20101207021328.569328536@goodmis.org>
-	 <1291688533.16223.119.camel@gandalf.stny.rr.com>
-	 <20101210160115.C7C4.A69D9226@jp.fujitsu.com>
-	 <1291964792.24978.3.camel@Joe-Laptop>
-	 <buok4jikq3e.fsf@dhlpc061.dev.necel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 10 Dec 2010 19:09:12 -0500
-Message-ID: <1292026152.5015.1541.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757300Ab0LKAKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 19:10:04 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37178 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754850Ab0LKAKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 19:10:02 -0500
+Message-ID: <4D02C14E.80001@kernel.org>
+Date: Sat, 11 Dec 2010 01:09:50 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 03/10] workqueue: It is likely that WORKER_NOT_RUNNING
+ is true
+References: <20101207015834.196176991@goodmis.org>	 <20101207021328.847976021@goodmis.org>  <4CFE0346.6090904@kernel.org> <1292026104.5015.1540.camel@gandalf.stny.rr.com>
+In-Reply-To: <1292026104.5015.1540.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 11 Dec 2010 00:09:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 17:08 +0900, Miles Bader wrote:
-> Joe Perches <joe@perches.com> writes:
-> > It'd be better to use
-> >
-> > 	if (!mapping)
-> > 		return 0;
-> > 	return test_bit(AS_UNEVICTABLE, &mapping->flags);
-> >
-> > to avoid the unnecessary !!
+On 12/11/2010 01:08 AM, Steven Rostedt wrote:
+> On Tue, 2010-12-07 at 10:49 +0100, Tejun Heo wrote:
 > 
-> How about 
+>> Yeah, I was lost thinking about the busiest case where workers are
+>> busy processing works consecutively.  Usually workers are of course
+>> switching in and out of idle state all the time.
+>>
+>> How about just dropping likely/unlikely?
 > 
->  	return mapping && test_bit(AS_UNEVICTABLE, &mapping->flags);
-> 
-> instead...?
+> OK, if I just remove it, can I add your Acked-by?
 
-I'll just add my current patch as a "likely()" clean up. Any other
-change should be separate.
+Sure, then, I'll route it through my tree.
 
-Thanks,
+Thanks.
 
--- Steve
-
-
+-- 
+tejun
