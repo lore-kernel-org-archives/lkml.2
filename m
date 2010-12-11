@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0LKEyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 23:54:14 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44732 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab0LKEyM (ORCPT
+	id S1750955Ab0LKFg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 00:36:27 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36534 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0LKFg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 23:54:12 -0500
+	Sat, 11 Dec 2010 00:36:26 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=jMeTOoNu95H//DZY/2t4Z1YkF9as16jTcVzaxXwB9fMO2Ymksr+BED0sH+D5YuOl+4
-         vNaiRuil3d+k+C6fKwHHTWro5NC3VdO8gJbOZqNHObpuPlgc1x731Xh4qO0Jg+/+flO+
-         spmRu+/gr8kFmyMuMuC11oXjKJw6I7HKIaASA=
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=nok+bvCXCMudh0OILbQqBNhdMTdZ0CJhD2RT7aLF+8yI0fBxcQS6Pw1Yi1auTrOvVK
+         FXZYiJdIJ/1UcULa3yv/IBtN9QzRxn9XHvwveldaDS9MqW06PDAh4qIjUmq2fguKmEgs
+         GK1SaMZyMgx63s5/cI66TK0KmsHAVupH/s+bU=
+Date: Sat, 11 Dec 2010 13:36:05 +0800
+From: HarryWei <harryxiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: CodingStyle Problem
+Message-ID: <20101211053601.GA8683@gmail.com>
 MIME-Version: 1.0
-Date: Sat, 11 Dec 2010 12:54:11 +0800
-Message-ID: <AANLkTiksuf0ZDWyjH6ec9rSRoG+5ZdakA-Tha9MXLvy+@mail.gmail.com>
-Subject: [PATCH] fix bug in Ethernet Channel Bonding Driver
-From: Hillf Danton <dhillf@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The returned slave is incorrect, if the net device under check is not
-charged yet by the master.
+Hi all,
+      I just read the CodingSyle at Documentation directory in linux-2.6.23 kernel source code.
+      But a problem happened to me like following.
+      Functions in linux-2.6.23/fs/fs-writeback.c are "static int" and function name are in different lines.(function name in following line)
+      I can't find the rule in CodingStyle. That We often program functions are "static int" and function name are in the same line. 
+      When do we do the first or second way? What is different between them?
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
-
---- a/drivers/net/bonding/bonding.h	2010-11-01 19:54:12.000000000 +0800
-+++ b/drivers/net/bonding/bonding.h	2010-12-11 12:48:00.000000000 +0800
-@@ -273,11 +273,11 @@ static inline struct slave *bond_get_sla
-
- 	bond_for_each_slave(bond, slave, i) {
- 		if (slave->dev == slave_dev) {
--			break;
-+			return slave;
- 		}
- 	}
-
--	return slave;
-+	return 0;
- }
-
- static inline struct bonding *bond_get_bond_by_slave(struct slave *slave)
+  Any answer is okay.
+  Best regards.
