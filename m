@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab0LKB3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Dec 2010 20:29:25 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:56159 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab0LKB3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Dec 2010 20:29:22 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>
-References: <20101209172027.GA10085@mail.hallyn.com>
-	<20101211005044.GA25513@p183.telecom.by>
-Date: Fri, 10 Dec 2010 17:29:10 -0800
-In-Reply-To: <20101211005044.GA25513@p183.telecom.by> (Alexey Dobriyan's
-	message of "Sat, 11 Dec 2010 02:50:44 +0200")
-Message-ID: <m1r5dpxfkp.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752786Ab0LKBdj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Dec 2010 20:33:39 -0500
+Received: from netnation.com ([204.174.223.2]:41596 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab0LKBdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Dec 2010 20:33:38 -0500
+Date: Fri, 10 Dec 2010 17:33:30 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Prevent kswapd dumping excessive amounts of memory
+	in response to high-order allocations V2
+Message-ID: <20101211013330.GB30377@hostway.ca>
+References: <1291376734-30202-1-git-send-email-mel@csn.ul.ie> <20101209015530.GD3796@hostway.ca> <20101209114506.GA20133@csn.ul.ie> <20101210000632.GB18263@hostway.ca> <20101210112832.GP20133@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/5GrxslU+MOH5weJWbkYWgDg5euGZp3vk=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Alexey Dobriyan <adobriyan@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH 1/4] Add a user_namespace as creator/owner of uts_namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <20101210112832.GP20133@csn.ul.ie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Dobriyan <adobriyan@gmail.com> writes:
+On Fri, Dec 10, 2010 at 11:28:32AM +0000, Mel Gorman wrote:
 
-> On Thu, Dec 09, 2010 at 05:20:27PM +0000, Serge E. Hallyn wrote:
->>  struct uts_namespace {
->>  	struct kref kref;
->>  	struct new_utsname name;
->> +	struct user_namespace *user_ns;
->
-> You're going to add these to the rest?
+> On Thu, Dec 09, 2010 at 04:06:32PM -0800, Simon Kirby wrote:
+> 
+> > Yeah, I don't mean in all cases, I mean when no particular zone is
+> > requested; eg, __alloc_pages_nodemask() with a non-picky zone list, or 
+> > when multiple zones are allowed.  This is the case for most allocations.
+> 
+> Yes, but just because caller A is not picky about the zone does not mean
+> caller B is not. Callers always try the highest-possible zone first so
+> that pages from lower zones are not used unnecessarily.
 
-That is the idea.
+But this is only true when the machine is booting or hasn't yet ever
+fallen out of the allocator fast path (get_page_from_freelist() has never
+failed).
 
-namespaces and other objects of interest will keep a user_ns
-pointer referencing the context in which they were created.
+> > So, I'm not proposing abandoning zones, but simply changing
+> > get_page_from_freelist() to remember where it last walked zonelist, and
+> > try to make a (weighted) round robin out of it.  It can already allocate
+> > from any zone in this case anyway.  (The implementation would be a bit
+> > more complicated than this due to zonelist not being static, of course.)
+> > 
+> 
+> I'd worry it'd still fall foul of using lower zones when it shouldn't.
 
-I took a quick look and all of the namespaces seem to have capability
-checks that we want to allow if you are in the proper context.
+It would definitely increase the chance during boot, though we do live in
+a hotplug world... :)
 
-What is particularly interesting is that this makes a root user in
-something other than the init_user_ns with all capabilities essentially
-a normal user because capable(CAP_XXX) becomes capable(&init_user_ns, CAP_XXX).
-And as such will always fail except where we have updated the capability
-checks.
+> > Even if the checking of other zones happens in a buffered or chunky way
+> > to reduce caching effects, it would still mean that all zones fill up at
+> > roughly the same time, rather than the DMA zone filling up last. 
+> 
+> Well, as each zone gets filled, kswapd is woken up to reclaim some
+> pages. kswapd always works from the lowest to the highest zone to reduce
+> the likelihood a picky caller will fail its allocation. If the lower
+> zones have enough free pages they are ignored and kswapd reclaimed from
+> the higher zone.
 
-Eric
+I thought I saw a patch at some point to implement this to avoid it
+fighting allocations in the other same direction, but anyway, this
+comment which seems to exist since 2.6.5 is interesting:
 
+ * kswapd scans the zones in the highmem->normal->dma direction.  It skips
+ * zones which have free_pages > high_wmark_pages(zone), but once a zone is
+ * found to have free_pages <= high_wmark_pages(zone), we scan that zone and the
+ * lower zones regardless of the number of free pages in the lower zones. This
+ * interoperates with the page allocator fallback scheme to ensure that aging
+ * of pages is balanced across the zones.
+
+Your patch series changes this behaviour, right?
+
+> > This way, the oldest pages would all be the ones that want to be
+> > reclaimed, rather than the a bunch of not-oldest pages being
+> > reclaimed simply because the allocator decided to start with a
+> > higher zone to avoid allocating from the DMA zone.
+> 
+> I see what you're saying - a young page can be reclaimed quickly just
+> because it's in the wrong zone. In cases where the highest zone is
+> comparatively small, it could cause serious issues. Will think about it
+> more but a straight round-robining of the zones used could cause
+> problems of its own :(
+
+Sure, straight doesn't make sense either.  Weighted round robin based
+on zone size sounds right.  Maybe the algo could be borrowed from
+net/netfilter/ipvs/ip_vs_wrr.c. ;)
+
+Simon-
