@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab0LKXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 18:15:57 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:33376 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab0LKXPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 18:15:54 -0500
-Date: Sat, 11 Dec 2010 15:15:02 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: mat <castet.matthieu@free.fr>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Message-ID: <20101211231502.GZ4464@outflux.net>
-References: <4CE2F914.9070106@free.fr>
- <24422.1290656467@localhost>
- <20101126182355.62615dff@mat-laptop>
- <20101208221951.GO5750@outflux.net>
- <20101211001857.4c5e0794@mat-laptop>
- <20101211002750.GT4464@outflux.net>
- <20101211115735.21b616fe@mat-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101211115735.21b616fe@mat-laptop>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1752376Ab0LKXlE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 18:41:04 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47092 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751712Ab0LKXk7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 18:40:59 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6194"; a="66460013"
+Subject: Re: Change-Id's
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikU9L4DeXWJuW4u+UeThzK2GYBMLh59yfHFMzZJ@mail.gmail.com>
+References: <1292089193.4234.440.camel@m0nster>
+	 <AANLkTikU9L4DeXWJuW4u+UeThzK2GYBMLh59yfHFMzZJ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 11 Dec 2010 15:40:58 -0800
+Message-ID: <1292110858.4234.806.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 11:57:35AM +0100, mat wrote:
-> http://marc.info/?l=linux-security-module&m=129105456828505&w=2
+On Sat, 2010-12-11 at 14:23 -0800, Linus Torvalds wrote:
+> On Dec 11, 2010 7:45 AM, "Daniel Walker" <dwalker@codeaurora.org>
+> wrote:
+> >
+> > How do people feel about Change-Id's at the end of commit messages?
+> 
+> In general, I think the rule should be that tags are ok as long as
+> they are useful for EVERYBODY. if it's some internal company tag,
+> expect people to complain. If it doesn't have meaning to others, why
+> should it be in the public tree?
 
-Ah-ha! Thanks for the pointer. So, instead of the other explicit jump_table
-fix, can this get pushed into tip?
+Ok .. I couldn't agree with you more.
 
-Thanks!
+> If you have some internal tracking thing, just associate the commit
+> ids (or " patch ids") with your internal tracker - don't make anybody
+> else have to look at crud that gas no meaning to them.
+> 
+> (Sent from my phone so this probably has HTML crud and gets bounced
+> from the mailing lists)
 
--Kees
+Hopefully my reply doesn't get bounced ..
+
+Daniel
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
