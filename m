@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab0LLMvf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:51:35 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50825 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750854Ab0LLMve (ORCPT
+	id S1752051Ab0LLM4S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:56:18 -0500
+Received: from mail-iw0-f170.google.com ([209.85.214.170]:43772 "EHLO
+	mail-iw0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab0LLM4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:51:34 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Convert TWL4030 to new irq_ APIs
-Date: Sun, 12 Dec 2010 12:51:39 +0000
-Message-Id: <1292158299-25368-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Sun, 12 Dec 2010 07:56:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IF+x6b2WgRc5SpkZecpv/zdMkbTmhABa9SdKyAf7Bol9gpSO7cAAqnWGMyfRDVTEZP
+         Q7CI1H0BTWbLq4isy/NgEHlvWmYGkQR4LwmWfwdltILGIL2fRWuE4RuSt99KK0+W7FPc
+         EgDjLLARrVds4PDqkKexQ3QSCAKC5lX5FKTAc=
+From: bookjovi@gmail.com
+To: bfields@fieldses.org, neilb@suse.de, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jovi Zhang <bookjovi@gmail.com>
+Subject: [PATCH] nfs: add missed CONFIG_NFSD_DEPRECATED
+Date: Sat, 11 Dec 2010 00:21:17 -0500
+Message-Id: <1292044877-4701-1-git-send-email-bookjovi@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The genirq core is being updated to pass struct irq_data to irq_chip
-operations. Update the TWL4030 driver to the new APIs.
+these pieces of code only make sense when CONFIG_NFSD_DEPRECATED enabled
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/twl4030-irq.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 5d3a147..63a30e8 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -599,38 +599,38 @@ static void twl4030_sih_do_edge(struct work_struct *work)
-  * completion, potentially including some re-ordering, of these requests.
-  */
+ fs/nfsd/nfsctl.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 4514ebb..6840ec3 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -127,6 +127,7 @@ static ssize_t nfsctl_transaction_write(struct file *file, const char __user *bu
  
--static void twl4030_sih_mask(unsigned irq)
-+static void twl4030_sih_mask(struct irq_data *data)
+ static ssize_t nfsctl_transaction_read(struct file *file, char __user *buf, size_t size, loff_t *pos)
  {
--	struct sih_agent *sih = get_irq_chip_data(irq);
-+	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&sih_agent_lock, flags);
--	sih->imr |= BIT(irq - sih->irq_base);
-+	sih->imr |= BIT(data->irq - sih->irq_base);
- 	sih->imr_change_pending = true;
- 	queue_work(wq, &sih->mask_work);
- 	spin_unlock_irqrestore(&sih_agent_lock, flags);
- }
- 
--static void twl4030_sih_unmask(unsigned irq)
-+static void twl4030_sih_unmask(struct irq_data *data)
- {
--	struct sih_agent *sih = get_irq_chip_data(irq);
-+	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&sih_agent_lock, flags);
--	sih->imr &= ~BIT(irq - sih->irq_base);
-+	sih->imr &= ~BIT(data->irq - sih->irq_base);
- 	sih->imr_change_pending = true;
- 	queue_work(wq, &sih->mask_work);
- 	spin_unlock_irqrestore(&sih_agent_lock, flags);
- }
- 
--static int twl4030_sih_set_type(unsigned irq, unsigned trigger)
-+static int twl4030_sih_set_type(struct irq_data *data, unsigned trigger)
- {
--	struct sih_agent *sih = get_irq_chip_data(irq);
--	struct irq_desc *desc = irq_to_desc(irq);
-+	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
-+	struct irq_desc *desc = irq_to_desc(data->irq);
- 	unsigned long flags;
- 
- 	if (!desc) {
--		pr_err("twl4030: Invalid IRQ: %d\n", irq);
-+		pr_err("twl4030: Invalid IRQ: %d\n", data->irq);
- 		return -EINVAL;
++#ifdef CONFIG_NFSD_DEPRECATED
+ 	static int warned;
+ 	if (file->f_dentry->d_name.name[0] == '.' && !warned) {
+ 		printk(KERN_INFO
+@@ -135,6 +136,7 @@ static ssize_t nfsctl_transaction_read(struct file *file, char __user *buf, size
+ 		       current->comm, file->f_dentry->d_name.name);
+ 		warned = 1;
  	}
- 
-@@ -641,7 +641,7 @@ static int twl4030_sih_set_type(unsigned irq, unsigned trigger)
- 	if ((desc->status & IRQ_TYPE_SENSE_MASK) != trigger) {
- 		desc->status &= ~IRQ_TYPE_SENSE_MASK;
- 		desc->status |= trigger;
--		sih->edge_change |= BIT(irq - sih->irq_base);
-+		sih->edge_change |= BIT(data->irq - sih->irq_base);
- 		queue_work(wq, &sih->edge_work);
- 	}
- 	spin_unlock_irqrestore(&sih_agent_lock, flags);
-@@ -650,9 +650,9 @@ static int twl4030_sih_set_type(unsigned irq, unsigned trigger)
- 
- static struct irq_chip twl4030_sih_irq_chip = {
- 	.name		= "twl4030",
--	.mask		= twl4030_sih_mask,
--	.unmask		= twl4030_sih_unmask,
--	.set_type	= twl4030_sih_set_type,
-+	.irq_mask      	= twl4030_sih_mask,
-+	.irq_unmask	= twl4030_sih_unmask,
-+	.irq_set_type	= twl4030_sih_set_type,
- };
- 
- /*----------------------------------------------------------------------*/
--- 
-1.7.2.3
-
++#endif
+ 	if (! file->private_data) {
+ 		/* An attempt to read a transaction file without writing
+ 		 * causes a 0-byte write so that the file can return
