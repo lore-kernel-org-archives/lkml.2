@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab0LLXr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:47:26 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36333 "EHLO
+	id S1755545Ab0LLXrd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:47:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36424 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab0LLXrV (ORCPT
+	with ESMTP id S1755464Ab0LLXra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:21 -0500
+	Sun, 12 Dec 2010 18:47:30 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: daniel.vetter@ffwll.ch, anisse@astier.eu, chris@chris-wilson.co.uk,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [137/223] intel-gtt: fix gtt_total_entries detection
-Message-Id: <20101212234719.96089B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:19 +0100 (CET)
+To: josh.wu@atmel.com, jkosina@suse.cz, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [146/223] USB: gadget: AT91: fix typo in atmel_usba_udc driver
+Message-Id: <20101212234729.36843B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:29 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,154 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Josh Wu <josh.wu@atmel.com>
 
-commit e5e408fc94595aab897f613b6f4e2f5b36870a6f upstream.
+commit b48809518631880207796b4aab0fc39c2f036754 upstream.
 
-In commit f1befe71 Chris Wilson added some code to clear the full gtt
-on g33/pineview instead of just the mappable part. The code looks like
-it was copy-pasted from agp/intel-gtt.c, at least an identical piece
-of code is still there (in intel_i830_init_gtt_entries). This lead to
-a regression in 2.6.35 which was supposedly fixed in commit e7b96f28
+compile fix for bug introduced by 969affff547027)
 
-Now this commit makes absolutely no sense to me. It seems to be
-slightly confused about chipset generations - it references docs for
-4th gen but the regression concerns 3rd gen g33. Luckily the the g33
-gmch docs are available with the GMCH Graphics Control pci config
-register definitions. The other (bigger problem) is that the new
-check in there uses the i830 stolen mem bits (.5M, 1M or 8M of stolen
-mem). They are different since the i855GM.
-
-The most likely case is that it hits the 512M fallback, which was
-probably the right thing for the boxes this was tested on.
-
-So the original approach by Chris Wilson seems to be wrong and the
-current code is definitely wrong. There is a third approach by Jesse
-Barnes from his RFC patch "Who wants a bigger GTT mapping range?"
-where he simply shoves g33 in the same clause like later chipset
-generations.
-
-I've asked him and Jesse confirmed that this should work. So implement
-it.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16891$
-Tested-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/char/agp/intel-gtt.c |   63 ++++++++++++++++++-------------------------
- 1 file changed, 27 insertions(+), 36 deletions(-)
+ drivers/usb/gadget/atmel_usba_udc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux/drivers/char/agp/intel-gtt.c
+Index: linux/drivers/usb/gadget/atmel_usba_udc.c
 ===================================================================
---- linux.orig/drivers/char/agp/intel-gtt.c
-+++ linux/drivers/char/agp/intel-gtt.c
-@@ -531,7 +531,7 @@ static void intel_i830_init_gtt_entries(
- 
- 	pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
- 
--	if (IS_I965) {
-+	if (IS_G33 || IS_I965) {
- 		u32 pgetbl_ctl;
- 		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
- 
-@@ -564,22 +564,6 @@ static void intel_i830_init_gtt_entries(
- 			size = 512;
+--- linux.orig/drivers/usb/gadget/atmel_usba_udc.c
++++ linux/drivers/usb/gadget/atmel_usba_udc.c
+@@ -2016,7 +2016,7 @@ static int __init usba_udc_probe(struct
+ 			}
+ 		} else {
+ 			/* gpio_request fail so use -EINVAL for gpio_is_valid */
+-			ubc->vbus_pin = -EINVAL;
++			udc->vbus_pin = -EINVAL;
  		}
- 		size += 4; /* add in BIOS popup space */
--	} else if (IS_G33 && !IS_PINEVIEW) {
--	/* G33's GTT size defined in gmch_ctrl */
--		switch (gmch_ctrl & G33_PGETBL_SIZE_MASK) {
--		case G33_PGETBL_SIZE_1M:
--			size = 1024;
--			break;
--		case G33_PGETBL_SIZE_2M:
--			size = 2048;
--			break;
--		default:
--			dev_info(&agp_bridge->dev->dev,
--				 "unknown page table size 0x%x, assuming 512KB\n",
--				(gmch_ctrl & G33_PGETBL_SIZE_MASK));
--			size = 512;
--		}
--		size += 4;
- 	} else if (IS_G4X || IS_PINEVIEW) {
- 		/* On 4 series hardware, GTT stolen is separate from graphics
- 		 * stolen, ignore it in stolen gtt entries counting.  However,
-@@ -1250,24 +1234,31 @@ static int intel_i915_get_gtt_size(void)
- 	int size;
- 
- 	if (IS_G33) {
--		u16 gmch_ctrl;
-+		u32 pgetbl_ctl;
-+		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
- 
--		/* G33's GTT size defined in gmch_ctrl */
--		pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
--		switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
--		case I830_GMCH_GMS_STOLEN_512:
-+		switch (pgetbl_ctl & I965_PGETBL_SIZE_MASK) {
-+		case I965_PGETBL_SIZE_128KB:
-+			size = 128;
-+			break;
-+		case I965_PGETBL_SIZE_256KB:
-+			size = 256;
-+			break;
-+		case I965_PGETBL_SIZE_512KB:
- 			size = 512;
- 			break;
--		case I830_GMCH_GMS_STOLEN_1024:
-+		case I965_PGETBL_SIZE_1MB:
- 			size = 1024;
- 			break;
--		case I830_GMCH_GMS_STOLEN_8192:
--			size = 8*1024;
-+		case I965_PGETBL_SIZE_2MB:
-+			size = 2048;
-+			break;
-+		case I965_PGETBL_SIZE_1_5MB:
-+			size = 1024 + 512;
- 			break;
- 		default:
--			dev_info(&agp_bridge->dev->dev,
--				 "unknown page table size 0x%x, assuming 512KB\n",
--				(gmch_ctrl & I830_GMCH_GMS_MASK));
-+			dev_info(&intel_private.pcidev->dev,
-+				 "unknown page table size, assuming 512KB\n");
- 			size = 512;
- 		}
- 	} else {
-@@ -1299,14 +1290,6 @@ static int intel_i915_create_gatt_table(
- 	pci_read_config_dword(intel_private.pcidev, I915_MMADDR, &temp);
- 	pci_read_config_dword(intel_private.pcidev, I915_PTEADDR, &temp2);
- 
--	gtt_map_size = intel_i915_get_gtt_size();
--
--	intel_private.gtt = ioremap(temp2, gtt_map_size);
--	if (!intel_private.gtt)
--		return -ENOMEM;
--
--	intel_private.gtt_total_size = gtt_map_size / 4;
--
- 	temp &= 0xfff80000;
- 
- 	intel_private.registers = ioremap(temp, 128 * 4096);
-@@ -1315,6 +1298,14 @@ static int intel_i915_create_gatt_table(
- 		return -ENOMEM;
  	}
- 
-+	gtt_map_size = intel_i915_get_gtt_size();
-+
-+	intel_private.gtt = ioremap(temp2, gtt_map_size);
-+	if (!intel_private.gtt)
-+		return -ENOMEM;
-+
-+	intel_private.gtt_total_size = gtt_map_size / 4;
-+
- 	temp = readl(intel_private.registers+I810_PGETBL_CTL) & 0xfffff000;
- 	global_cache_flush();	/* FIXME: ? */
  
