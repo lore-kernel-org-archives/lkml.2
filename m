@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0LLQtK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:49:10 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45391 "EHLO hera.kernel.org"
+	id S1753720Ab0LLQtT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 11:49:19 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45400 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab0LLQtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:49:07 -0500
+	id S1753677Ab0LLQtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 11:49:14 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
         Duncan Sands <duncan.sands@free.fr>, linux-usb@vger.kernel.org
-Subject: [PATCH 5/6] speedtch: don't abuse struct delayed_work
-Date: Sun, 12 Dec 2010 17:48:18 +0100
-Message-Id: <1292172499-21633-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 6/6] usb: don't use flush_scheduled_work()
+Date: Sun, 12 Dec 2010 17:48:19 +0100
+Message-Id: <1292172499-21633-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292172499-21633-1-git-send-email-tj@kernel.org>
 References: <1292172499-21633-1-git-send-email-tj@kernel.org>
@@ -21,10 +22,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-speedtch directly uses the internal timer and work members of a struct
-delayed_work.  Use a separate work item and timer instead.
+flush_scheduled_work() is being deprecated.  Directly flush or cancel
+work items instead.
+
+* u_ether, isp1301_omap, speedtch conversions are straight-forward.
+
+* ochi-hcd should only flush when quirk_nec() is true as otherwise the
+  work wouldn't have been initialized.
+
+* In oti6858, cancel_delayed_work() + flush_scheduled_work() ->
+  cancel_delayed_work_sync().
 
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
 Cc: Duncan Sands <duncan.sands@free.fr>
 Cc: linux-usb@vger.kernel.org
 ---
@@ -38,105 +48,86 @@ during the next merge window.
 
 Thank you.
 
- drivers/usb/atm/speedtch.c |   25 +++++++++++++------------
- 1 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/usb/atm/speedtch.c     |    2 +-
+ drivers/usb/gadget/u_ether.c   |    4 +---
+ drivers/usb/host/ohci-hcd.c    |    3 ++-
+ drivers/usb/otg/isp1301_omap.c |    2 +-
+ drivers/usb/serial/oti6858.c   |    5 ++---
+ 5 files changed, 7 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/usb/atm/speedtch.c b/drivers/usb/atm/speedtch.c
-index 4716e70..b591906 100644
+index b591906..ff0f219 100644
 --- a/drivers/usb/atm/speedtch.c
 +++ b/drivers/usb/atm/speedtch.c
-@@ -139,7 +139,8 @@ struct speedtch_instance_data {
+@@ -718,7 +718,7 @@ static void speedtch_atm_stop(struct usbatm_data *usbatm, struct atm_dev *atm_de
+ 	del_timer_sync(&instance->resubmit_timer);
+ 	usb_free_urb(int_urb);
  
- 	struct speedtch_params params; /* set in probe, constant afterwards */
- 
--	struct delayed_work status_checker;
-+	struct timer_list status_check_timer;
-+	struct work_struct status_check_work;
- 
- 	unsigned char last_status;
- 
-@@ -498,7 +499,7 @@ static void speedtch_check_status(struct work_struct *work)
- {
- 	struct speedtch_instance_data *instance =
- 		container_of(work, struct speedtch_instance_data,
--			     status_checker.work);
-+			     status_check_work);
- 	struct usbatm_data *usbatm = instance->usbatm;
- 	struct atm_dev *atm_dev = usbatm->atm_dev;
- 	unsigned char *buf = instance->scratch_buffer;
-@@ -575,11 +576,11 @@ static void speedtch_status_poll(unsigned long data)
- {
- 	struct speedtch_instance_data *instance = (void *)data;
- 
--	schedule_delayed_work(&instance->status_checker, 0);
-+	schedule_work(&instance->status_check_work);
- 
- 	/* The following check is racy, but the race is harmless */
- 	if (instance->poll_delay < MAX_POLL_DELAY)
--		mod_timer(&instance->status_checker.timer, jiffies + msecs_to_jiffies(instance->poll_delay));
-+		mod_timer(&instance->status_check_timer, jiffies + msecs_to_jiffies(instance->poll_delay));
- 	else
- 		atm_warn(instance->usbatm, "Too many failures - disabling line status polling\n");
+-	flush_scheduled_work();
++	flush_work_sync(&instance->status_check_work);
  }
-@@ -595,7 +596,7 @@ static void speedtch_resubmit_int(unsigned long data)
- 	if (int_urb) {
- 		ret = usb_submit_urb(int_urb, GFP_ATOMIC);
- 		if (!ret)
--			schedule_delayed_work(&instance->status_checker, 0);
-+			schedule_work(&instance->status_check_work);
- 		else {
- 			atm_dbg(instance->usbatm, "%s: usb_submit_urb failed with result %d\n", __func__, ret);
- 			mod_timer(&instance->resubmit_timer, jiffies + msecs_to_jiffies(RESUBMIT_DELAY));
-@@ -624,7 +625,7 @@ static void speedtch_handle_int(struct urb *int_urb)
- 	}
  
- 	if ((count == 6) && !memcmp(up_int, instance->int_data, 6)) {
--		del_timer(&instance->status_checker.timer);
-+		del_timer(&instance->status_check_timer);
- 		atm_info(usbatm, "DSL line goes up\n");
- 	} else if ((count == 6) && !memcmp(down_int, instance->int_data, 6)) {
- 		atm_info(usbatm, "DSL line goes down\n");
-@@ -640,7 +641,7 @@ static void speedtch_handle_int(struct urb *int_urb)
+ static int speedtch_pre_reset(struct usb_interface *intf)
+diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+index fbe86ca..00a7824 100644
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -829,11 +829,9 @@ void gether_cleanup(void)
+ 		return;
  
- 	if ((int_urb = instance->int_urb)) {
- 		ret = usb_submit_urb(int_urb, GFP_ATOMIC);
--		schedule_delayed_work(&instance->status_checker, 0);
-+		schedule_work(&instance->status_check_work);
- 		if (ret < 0) {
- 			atm_dbg(usbatm, "%s: usb_submit_urb failed with result %d\n", __func__, ret);
- 			goto fail;
-@@ -686,7 +687,7 @@ static int speedtch_atm_start(struct usbatm_data *usbatm, struct atm_dev *atm_de
- 	}
+ 	unregister_netdev(the_dev->net);
++	flush_work_sync(&the_dev->work);
+ 	free_netdev(the_dev->net);
  
- 	/* Start status polling */
--	mod_timer(&instance->status_checker.timer, jiffies + msecs_to_jiffies(1000));
-+	mod_timer(&instance->status_check_timer, jiffies + msecs_to_jiffies(1000));
- 
- 	return 0;
+-	/* assuming we used keventd, it must quiesce too */
+-	flush_scheduled_work();
+-
+ 	the_dev = NULL;
  }
-@@ -698,7 +699,7 @@ static void speedtch_atm_stop(struct usbatm_data *usbatm, struct atm_dev *atm_de
  
- 	atm_dbg(usbatm, "%s entered\n", __func__);
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index 5179acb..bd5eff7 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -901,7 +901,8 @@ static void ohci_stop (struct usb_hcd *hcd)
  
--	del_timer_sync(&instance->status_checker.timer);
-+	del_timer_sync(&instance->status_check_timer);
+ 	ohci_dump (ohci, 1);
  
- 	/*
- 	 * Since resubmit_timer and int_urb can schedule themselves and
-@@ -869,10 +870,10 @@ static int speedtch_bind(struct usbatm_data *usbatm,
+-	flush_scheduled_work();
++	if (quirk_nec(ohci))
++		flush_work_sync(&ohci->nec_work);
  
- 	usbatm->flags |= (use_isoc ? UDSL_USE_ISOC : 0);
+ 	ohci_usb_reset (ohci);
+ 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+diff --git a/drivers/usb/otg/isp1301_omap.c b/drivers/usb/otg/isp1301_omap.c
+index 4569694..e00fa1b 100644
+--- a/drivers/usb/otg/isp1301_omap.c
++++ b/drivers/usb/otg/isp1301_omap.c
+@@ -1247,7 +1247,7 @@ static int __exit isp1301_remove(struct i2c_client *i2c)
+ 	isp->timer.data = 0;
+ 	set_bit(WORK_STOP, &isp->todo);
+ 	del_timer_sync(&isp->timer);
+-	flush_scheduled_work();
++	flush_work_sync(&isp->work);
  
--	INIT_DELAYED_WORK(&instance->status_checker, speedtch_check_status);
-+	INIT_WORK(&instance->status_check_work, speedtch_check_status);
+ 	put_device(&i2c->dev);
+ 	the_transceiver = NULL;
+diff --git a/drivers/usb/serial/oti6858.c b/drivers/usb/serial/oti6858.c
+index e199b0f..5be866b 100644
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -613,9 +613,8 @@ static void oti6858_close(struct usb_serial_port *port)
+ 	dbg("%s(): after buf_clear()", __func__);
  
--	instance->status_checker.timer.function = speedtch_status_poll;
--	instance->status_checker.timer.data = (unsigned long)instance;
-+	instance->status_check_timer.function = speedtch_status_poll;
-+	instance->status_check_timer.data = (unsigned long)instance;
- 	instance->last_status = 0xff;
- 	instance->poll_delay = MIN_POLL_DELAY;
+ 	/* cancel scheduled setup */
+-	cancel_delayed_work(&priv->delayed_setup_work);
+-	cancel_delayed_work(&priv->delayed_write_work);
+-	flush_scheduled_work();
++	cancel_delayed_work_sync(&priv->delayed_setup_work);
++	cancel_delayed_work_sync(&priv->delayed_write_work);
  
+ 	/* shutdown our urbs */
+ 	dbg("%s(): shutting down urbs", __func__);
 -- 
 1.7.1
 
