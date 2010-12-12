@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab0LLMD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:03:59 -0500
-Received: from mail.perches.com ([173.55.12.10]:2528 "EHLO mail.perches.com"
+	id S1752904Ab0LLMDo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:03:44 -0500
+Received: from mail.perches.com ([173.55.12.10]:2511 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab0LLMDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:03:45 -0500
+	id S1752747Ab0LLMDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:03:37 -0500
 From: Joe Perches <joe@perches.com>
 To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>, netdev@vger.kernel.org
-Subject: [RFC PATCH net-next 6/6] ethernet: Move Sun Cassini cassini.[ch]
-Date: Sun, 12 Dec 2010 04:03:27 -0800
-Message-Id: <0ed1dcbd48d5256e63a0cd3b729dac0054ffd520.1292154143.git.joe@perches.com>
+Subject: [RFC PATCH net-next 2/6] ethernet: Move ethoc.c
+Date: Sun, 12 Dec 2010 04:03:23 -0800
+Message-Id: <34c8ff604d6239d62c01e00b3732b9aeab3f2593.1292154142.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <cover.1292154142.git.joe@perches.com>
 References: <cover.1292154142.git.joe@perches.com>
@@ -20,87 +20,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move Sun Cassini files to ethernet directory.
+Move ethernet Open Core file to ethernet directory.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/Kconfig                  |    8 --------
- drivers/net/Makefile                 |    1 -
- drivers/net/ethernet/Kconfig.10-100  |    8 ++++++++
- drivers/net/ethernet/Makefile        |    1 +
- drivers/net/{ => ethernet}/cassini.c |    0
- drivers/net/{ => ethernet}/cassini.h |    0
- 6 files changed, 9 insertions(+), 9 deletions(-)
- rename drivers/net/{ => ethernet}/cassini.c (100%)
- rename drivers/net/{ => ethernet}/cassini.h (100%)
+ drivers/net/Kconfig                 |   10 ----------
+ drivers/net/Makefile                |    1 -
+ drivers/net/ethernet/Kconfig.10-100 |   10 ++++++++++
+ drivers/net/ethernet/Makefile       |    6 +-----
+ drivers/net/{ => ethernet}/ethoc.c  |    0
+ 5 files changed, 11 insertions(+), 16 deletions(-)
+ rename drivers/net/{ => ethernet}/ethoc.c (100%)
 
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index fbae645..847dfbe 100644
+index c1d1be8..ea9dbaf 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -581,14 +581,6 @@ config SUNQE
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called sunqe.
+@@ -1021,16 +1021,6 @@ config ENC28J60_WRITEVERIFY
+ 	  Enable the verify after the buffer write useful for debugging purpose.
+ 	  If unsure, say N.
  
--config CASSINI
--	tristate "Sun Cassini support"
--	depends on PCI
+-config ETHOC
+-	tristate "OpenCores 10/100 Mbps Ethernet MAC support"
+-	depends on NET_ETHERNET && HAS_IOMEM && HAS_DMA
+-	select MII
+-	select PHYLIB
 -	select CRC32
+-	select BITREVERSE
 -	help
--	  Support for the Sun Cassini chip, aka Sun GigaSwift Ethernet. See also
--	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/817-4341-10.pdf>
+-	  Say Y here if you want to use the OpenCores 10/100 Mbps Ethernet MAC.
 -
- config SUNVNET
- 	tristate "Sun Virtual Network support"
- 	depends on SUN_LDOMS
+ config GRETH
+ 	tristate "Aeroflex Gaisler GRETH Ethernet MAC support"
+ 	depends on SPARC
 diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index 129aa08..3972e16 100644
+index bfb5ade..1265d0e 100644
 --- a/drivers/net/Makefile
 +++ b/drivers/net/Makefile
-@@ -60,7 +60,6 @@ obj-$(CONFIG_SUNLANCE) += sunlance.o
- obj-$(CONFIG_SUNQE) += sunqe.o
- obj-$(CONFIG_SUNBMAC) += sunbmac.o
- obj-$(CONFIG_MYRI_SBUS) += myri_sbus.o
--obj-$(CONFIG_CASSINI) += cassini.o
- obj-$(CONFIG_SUNVNET) += sunvnet.o
+@@ -257,7 +257,6 @@ obj-$(CONFIG_PASEMI_MAC) += pasemi_mac_driver.o
+ pasemi_mac_driver-objs := pasemi_mac.o pasemi_mac_ethtool.o
+ obj-$(CONFIG_MLX4_CORE) += mlx4/
+ obj-$(CONFIG_ENC28J60) += enc28j60.o
+-obj-$(CONFIG_ETHOC) += ethoc.o
+ obj-$(CONFIG_GRETH) += greth.o
  
- obj-$(CONFIG_MACE) += mace.o
+ obj-$(CONFIG_XTENSA_XT2000_SONIC) += xtsonic.o
 diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
-index f0430da..2bb39fc 100644
+index 8b1ee80..a5c62bc 100644
 --- a/drivers/net/ethernet/Kconfig.10-100
 +++ b/drivers/net/ethernet/Kconfig.10-100
-@@ -23,6 +23,14 @@ config ETHOC
- 	help
- 	  Say Y here if you want to use the OpenCores 10/100 Mbps Ethernet MAC.
- 
-+config CASSINI
-+	tristate "Sun Cassini support"
-+	depends on PCI
-+	select CRC32
-+	help
-+	  Support for the Sun Cassini chip, aka Sun GigaSwift Ethernet. See also
-+	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/817-4341-10.pdf>
+@@ -1,3 +1,13 @@
+ #
+ # 10 Mb and 100Mb ethernet device configuration
+ #
 +
- config HAPPYMEAL
- 	tristate "Sun Happy Meal 10/100baseT support"
- 	depends on SBUS || PCI
++config ETHOC
++	tristate "OpenCores 10/100 Mbps Ethernet MAC support"
++	depends on NET_ETHERNET && HAS_IOMEM && HAS_DMA
++	select MII
++	select PHYLIB
++	select CRC32
++	select BITREVERSE
++	help
++	  Say Y here if you want to use the OpenCores 10/100 Mbps Ethernet MAC.
 diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index d7c6304..bba207a 100644
+index f2aebec..ad2afc1 100644
 --- a/drivers/net/ethernet/Makefile
 +++ b/drivers/net/ethernet/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_DNET)		+= dnet.o
- obj-$(CONFIG_ETHOC)		+= ethoc.o
- obj-$(CONFIG_HAPPYMEAL)		+= sunhme.o
- obj-$(CONFIG_SUNGEM)		+= sungem.o sungem_phy.o
-+obj-$(CONFIG_CASSINI)		+= cassini.o
-diff --git a/drivers/net/cassini.c b/drivers/net/ethernet/cassini.c
+@@ -2,8 +2,4 @@
+ # Makefile for ethernet device drivers
+ #
+ 
+-# Dummy object just to avoid breaking build
+-# These comments and the line below will be deleted on the
+-# first addition to this file
+-
+-obj-$(CONFIG_ETHERNET_DUMMY_DRIVER) += /dev/null/dummy.o
++obj-$(CONFIG_ETHOC)		+= ethoc.o
+diff --git a/drivers/net/ethoc.c b/drivers/net/ethernet/ethoc.c
 similarity index 100%
-rename from drivers/net/cassini.c
-rename to drivers/net/ethernet/cassini.c
-diff --git a/drivers/net/cassini.h b/drivers/net/ethernet/cassini.h
-similarity index 100%
-rename from drivers/net/cassini.h
-rename to drivers/net/ethernet/cassini.h
+rename from drivers/net/ethoc.c
+rename to drivers/net/ethernet/ethoc.c
 -- 
 1.7.3.3.398.g0b0cd.dirty
 
