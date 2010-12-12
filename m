@@ -1,161 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab0LLQtq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:49:46 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45387 "EHLO hera.kernel.org"
+	id S1753564Ab0LLQx5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 11:53:57 -0500
+Received: from www.tglx.de ([62.245.132.106]:35056 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab0LLQtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:49:03 -0500
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Tejun Heo <tj@kernel.org>, Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH 4/6] media/video: don't use flush_scheduled_work()
-Date: Sun, 12 Dec 2010 17:48:17 +0100
-Message-Id: <1292172499-21633-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1292172499-21633-1-git-send-email-tj@kernel.org>
-References: <1292172499-21633-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 16:48:59 +0000 (UTC)
+	id S1751500Ab0LLQxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 11:53:53 -0500
+Date: Sun, 12 Dec 2010 17:53:31 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Kiszka <jan.kiszka@web.de>
+cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+        Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v2 2/4] genirq: Inform handler about line sharing state
+In-Reply-To: <664535c6596c0c6bf7024f2608134c90e2093c19.1292152963.git.jan.kiszka@web.de>
+Message-ID: <alpine.LFD.2.00.1012121750520.2653@localhost6.localdomain6>
+References: <cover.1292152963.git.jan.kiszka@web.de> <664535c6596c0c6bf7024f2608134c90e2093c19.1292152963.git.jan.kiszka@web.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the remaining users of flush_scheduled_work() in
-media/video.
+On Sun, 12 Dec 2010, Jan Kiszka wrote:
 
-* bttv-input.c and cx23885-input.c don't use workqueue at all.  No
-  need to flush.
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+> 
+> This enabled interrupt handlers to retrieve the current line sharing state via
+> the new interrupt status word so that they can adapt to it.
+> 
+> The switch from shared to exclusive is generally uncritical and can thus be
+> performed on demand. However, preparing a line for shared mode may require
+> preparational steps of the currently registered handler. It can therefore
+> request an ahead-of-time notification via IRQF_ADAPTIVE. The notification
+> consists of an exceptional handler invocation with IRQS_MAKE_SHAREABLE set in
+> the status word.
+> 
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  include/linux/interrupt.h |   10 ++++++++++
+>  include/linux/irqdesc.h   |    2 ++
+>  kernel/irq/irqdesc.c      |    2 ++
+>  kernel/irq/manage.c       |   44 +++++++++++++++++++++++++++++++++++++++++---
+>  4 files changed, 55 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 16cdbbf..c6323a2 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -55,6 +55,7 @@
+>   *                Used by threaded interrupts which need to keep the
+>   *                irq line disabled until the threaded handler has been run.
+>   * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
+> + * IRQF_ADAPTIVE - Request notification about upcoming interrupt line sharing
+>   *
+>   */
+>  #define IRQF_DISABLED		0x00000020
+> @@ -67,6 +68,7 @@
+>  #define IRQF_IRQPOLL		0x00001000
+>  #define IRQF_ONESHOT		0x00002000
+>  #define IRQF_NO_SUSPEND		0x00004000
+> +#define IRQF_ADAPTIVE		0x00008000
+>  
+>  #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
+>  
+> @@ -126,6 +128,14 @@ struct irqaction {
+>  
+>  extern irqreturn_t no_action(int cpl, void *dev_id);
+>  
+> +/*
+> + * Driver-readable IRQ line status flags:
+> + * IRQS_SHARED - line is shared between multiple handlers
+> + * IRQS_MAKE_SHAREABLE - in the process of making an exclusive line shareable
+> + */
+> +#define IRQS_SHARED		0x00000001
+> +#define IRQS_MAKE_SHAREABLE	0x00000002
+> +
+>  extern unsigned long get_irq_status(unsigned long irq);
+>  
+>  #ifdef CONFIG_GENERIC_HARDIRQS
+> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+> index 979c68c..c490e83 100644
+> --- a/include/linux/irqdesc.h
+> +++ b/include/linux/irqdesc.h
+> @@ -29,6 +29,7 @@ struct timer_rand_state;
+>   * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
+>   * @dir:		/proc/irq/ procfs entry
+>   * @name:		flow handler name for /proc/interrupts output
+> + * @register_lock:	protects registration & release, for unshared->shared
 
-* Make omap24xxcam.c and saa7134-empress.c flush the used work
-  directly.
+I think we can make that a global mutex. request/free_irq are not
+hotpath operations which require a mutex per irq descriptor.
 
-* In fd_defio.c, replace cancel_delayed_work() +
-  flush_scheduled_work() with cancel_delayed_work_sync().  While at
-  it, replace the deprecated cancel_rearming_delayed_work() with
-  cancel_delayed_work_sync().
+Thanks,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
----
-This is part of a series to remove flush_scheduled_work() usage to
-prepare for deprecation of flush_scheduled_work().  Patches in this
-series are self contained and mostly straight-forward.
-
-Please feel free to take it into the appropriate tree, or just ack it.
-In the latter case, I'll merge the patch through the workqueue tree
-during the next merge window.
-
-Thank you.
-
- drivers/media/video/bt8xx/bttv-input.c        |    5 +----
- drivers/media/video/cx23885/cx23885-input.c   |    2 --
- drivers/media/video/omap24xxcam.c             |    6 +++---
- drivers/media/video/saa7134/saa7134-empress.c |    2 +-
- drivers/video/fb_defio.c                      |    5 ++---
- 5 files changed, 7 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/media/video/bt8xx/bttv-input.c b/drivers/media/video/bt8xx/bttv-input.c
-index 6bf05a7..1989f00 100644
---- a/drivers/media/video/bt8xx/bttv-input.c
-+++ b/drivers/media/video/bt8xx/bttv-input.c
-@@ -229,16 +229,13 @@ static void bttv_ir_start(struct bttv *btv, struct card_ir *ir)
- 
- static void bttv_ir_stop(struct bttv *btv)
- {
--	if (btv->remote->polling) {
-+	if (btv->remote->polling)
- 		del_timer_sync(&btv->remote->timer);
--		flush_scheduled_work();
--	}
- 
- 	if (btv->remote->rc5_gpio) {
- 		u32 gpio;
- 
- 		del_timer_sync(&btv->remote->timer_end);
--		flush_scheduled_work();
- 
- 		gpio = bttv_gpio_read(&btv->c);
- 		bttv_gpio_write(&btv->c, gpio & ~(1 << 4));
-diff --git a/drivers/media/video/cx23885/cx23885-input.c b/drivers/media/video/cx23885/cx23885-input.c
-index bb61870..4a326fe 100644
---- a/drivers/media/video/cx23885/cx23885-input.c
-+++ b/drivers/media/video/cx23885/cx23885-input.c
-@@ -230,8 +230,6 @@ static void cx23885_input_ir_stop(struct cx23885_dev *dev)
- 		v4l2_subdev_call(dev->sd_ir, ir, rx_s_parameters, &params);
- 		v4l2_subdev_call(dev->sd_ir, ir, rx_g_parameters, &params);
- 	}
--
--	flush_scheduled_work();
- }
- 
- static void cx23885_input_ir_close(void *priv)
-diff --git a/drivers/media/video/omap24xxcam.c b/drivers/media/video/omap24xxcam.c
-index 378b094..0175527 100644
---- a/drivers/media/video/omap24xxcam.c
-+++ b/drivers/media/video/omap24xxcam.c
-@@ -1198,7 +1198,7 @@ static int vidioc_streamoff(struct file *file, void *fh, enum v4l2_buf_type i)
- 
- 	atomic_inc(&cam->reset_disable);
- 
--	flush_scheduled_work();
-+	flush_work_sync(&cam->sensor_reset_work);
- 
- 	rval = videobuf_streamoff(q);
- 	if (!rval) {
-@@ -1512,7 +1512,7 @@ static int omap24xxcam_release(struct file *file)
- 
- 	atomic_inc(&cam->reset_disable);
- 
--	flush_scheduled_work();
-+	flush_work_sync(&cam->sensor_reset_work);
- 
- 	/* stop streaming capture */
- 	videobuf_streamoff(&fh->vbq);
-@@ -1536,7 +1536,7 @@ static int omap24xxcam_release(struct file *file)
- 	 * not be scheduled anymore since streaming is already
- 	 * disabled.)
- 	 */
--	flush_scheduled_work();
-+	flush_work_sync(&cam->sensor_reset_work);
- 
- 	mutex_lock(&cam->mutex);
- 	if (atomic_dec_return(&cam->users) == 0) {
-diff --git a/drivers/media/video/saa7134/saa7134-empress.c b/drivers/media/video/saa7134/saa7134-empress.c
-index b890aaf..6b8459c 100644
---- a/drivers/media/video/saa7134/saa7134-empress.c
-+++ b/drivers/media/video/saa7134/saa7134-empress.c
-@@ -553,7 +553,7 @@ static int empress_fini(struct saa7134_dev *dev)
- 
- 	if (NULL == dev->empress_dev)
- 		return 0;
--	flush_scheduled_work();
-+	flush_work_sync(&dev->empress_workqueue);
- 	video_unregister_device(dev->empress_dev);
- 	dev->empress_dev = NULL;
- 	return 0;
-diff --git a/drivers/video/fb_defio.c b/drivers/video/fb_defio.c
-index 6b93ef9..a79c0de 100644
---- a/drivers/video/fb_defio.c
-+++ b/drivers/video/fb_defio.c
-@@ -75,7 +75,7 @@ int fb_deferred_io_fsync(struct file *file, int datasync)
- 		return 0;
- 
- 	/* Kill off the delayed work */
--	cancel_rearming_delayed_work(&info->deferred_work);
-+	cancel_delayed_work_sync(&info->deferred_work);
- 
- 	/* Run it immediately */
- 	return schedule_delayed_work(&info->deferred_work, 0);
-@@ -216,8 +216,7 @@ void fb_deferred_io_cleanup(struct fb_info *info)
- 	int i;
- 
- 	BUG_ON(!fbdefio);
--	cancel_delayed_work(&info->deferred_work);
--	flush_scheduled_work();
-+	cancel_delayed_work_sync(&info->deferred_work);
- 
- 	/* clear out the mapping that we setup */
- 	for (i = 0 ; i < info->fix.smem_len; i += PAGE_SIZE) {
--- 
-1.7.1
-
+	tglx
