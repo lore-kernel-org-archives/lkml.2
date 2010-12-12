@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab0LLXwS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:52:18 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36848 "EHLO
+	id S1756089Ab0LLXsd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:48:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36786 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab0LLXse (ORCPT
+	with ESMTP id S1756021Ab0LLXsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:34 -0500
+	Sun, 12 Dec 2010 18:48:25 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: hagen@jauu.net, davem@davemloft.net, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [205/223] net: optimize Berkeley Packet Filter (BPF) processing
-Message-Id: <20101212234832.2B8AAB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:32 +0100 (CET)
+To: heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, schwidefsky@de.ibm.com,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [197/223] nohz/s390: fix arch_needs_cpu() return value on offline cpus
+Message-Id: <20101212234823.92217B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:23 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,517 +23,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Gcc is currenlty not in the ability to optimize the switch statement in
-sk_run_filter() because of dense case labels. This patch replace the
-OR'd labels with ordered sequenced case labels. The sk_chk_filter()
-function is modified to patch/replace the original OPCODES in a
-ordered but equivalent form. gcc is now in the ability to transform the
-switch statement in sk_run_filter into a jump table of complexity O(1).
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Until this patch gcc generates a sequence of conditional branches (O(n) of 567
-byte .text segment size (arch x86_64):
+commit 398812159e328478ae49b4bd01f0d71efea96c39 upstream.
 
-7ff: 8b 06                 mov    (%rsi),%eax
-801: 66 83 f8 35           cmp    $0x35,%ax
-805: 0f 84 d0 02 00 00     je     adb <sk_run_filter+0x31d>
-80b: 0f 87 07 01 00 00     ja     918 <sk_run_filter+0x15a>
-811: 66 83 f8 15           cmp    $0x15,%ax
-815: 0f 84 c5 02 00 00     je     ae0 <sk_run_filter+0x322>
-81b: 77 73                 ja     890 <sk_run_filter+0xd2>
-81d: 66 83 f8 04           cmp    $0x4,%ax
-821: 0f 84 17 02 00 00     je     a3e <sk_run_filter+0x280>
-827: 77 29                 ja     852 <sk_run_filter+0x94>
-829: 66 83 f8 01           cmp    $0x1,%ax
-[...]
+This fixes the same problem as described in the patch "nohz: fix
+printk_needs_cpu() return value on offline cpus" for the arch_needs_cpu()
+primitive:
 
-With the modification the compiler translate the switch statement into
-the following jump table fragment:
+arch_needs_cpu() may return 1 if called on offline cpus. When a cpu gets
+offlined it schedules the idle process which, before killing its own cpu,
+will call tick_nohz_stop_sched_tick().
+That function in turn will call arch_needs_cpu() in order to check if the
+local tick can be disabled. On offline cpus this function should naturally
+return 0 since regardless if the tick gets disabled or not the cpu will be
+dead short after. That is besides the fact that __cpu_disable() should already
+have made sure that no interrupts on the offlined cpu will be delivered anyway.
 
-7ff: 66 83 3e 2c           cmpw   $0x2c,(%rsi)
-803: 0f 87 1f 02 00 00     ja     a28 <sk_run_filter+0x26a>
-809: 0f b7 06              movzwl (%rsi),%eax
-80c: ff 24 c5 00 00 00 00  jmpq   *0x0(,%rax,8)
-813: 44 89 e3              mov    %r12d,%ebx
-816: e9 43 03 00 00        jmpq   b5e <sk_run_filter+0x3a0>
-81b: 41 89 dc              mov    %ebx,%r12d
-81e: e9 3b 03 00 00        jmpq   b5e <sk_run_filter+0x3a0>
+In this case it prevents tick_nohz_stop_sched_tick() to call
+select_nohz_load_balancer(). No idea if that really is a problem. However what
+made me debug this is that on 2.6.32 the function get_nohz_load_balancer() is
+used within __mod_timer() to select a cpu on which a timer gets enqueued.
+If arch_needs_cpu() returns 1 then the nohz_load_balancer cpu doesn't get
+updated when a cpu gets offlined. It may contain the cpu number of an offline
+cpu. In turn timers get enqueued on an offline cpu and not very surprisingly
+they never expire and cause system hangs.
 
-Furthermore, I reordered the instructions to reduce cache line misses by
-order the most common instruction to the start.
+This has been observed 2.6.32 kernels. On current kernels __mod_timer() uses
+get_nohz_timer_target() which doesn't have that problem. However there might
+be other problems because of the too early exit tick_nohz_stop_sched_tick()
+in case a cpu goes offline.
 
-[AK: Added as dependency on next patch]
-Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This specific bug was indrocuded with 3c5d92a0 "nohz: Introduce
+arch_needs_cpu".
+
+In this case a cpu hotplug notifier is used to fix the issue in order to keep
+the normal/fast path small. All we need to do is to clear the condition that
+makes arch_needs_cpu() return 1 since it is just a performance improvement
+which is supposed to keep the local tick running for a short period if a cpu
+goes idle. Nothing special needs to be done except for clearing the condition.
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- include/linux/filter.h |   48 +++++++++++
- net/core/filter.c      |  212 +++++++++++++++++++++++++++++++++++++------------
- 2 files changed, 209 insertions(+), 51 deletions(-)
+ arch/s390/kernel/vtime.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-Index: linux/include/linux/filter.h
+Index: linux/arch/s390/kernel/vtime.c
 ===================================================================
---- linux.orig/include/linux/filter.h
-+++ linux/include/linux/filter.h
-@@ -91,6 +91,54 @@ struct sock_fprog {	/* Required for SO_A
- #define         BPF_TAX         0x00
- #define         BPF_TXA         0x80
+--- linux.orig/arch/s390/kernel/vtime.c
++++ linux/arch/s390/kernel/vtime.c
+@@ -19,6 +19,7 @@
+ #include <linux/kernel_stat.h>
+ #include <linux/rcupdate.h>
+ #include <linux/posix-timers.h>
++#include <linux/cpu.h>
  
-+enum {
-+	BPF_S_RET_K = 0,
-+	BPF_S_RET_A,
-+	BPF_S_ALU_ADD_K,
-+	BPF_S_ALU_ADD_X,
-+	BPF_S_ALU_SUB_K,
-+	BPF_S_ALU_SUB_X,
-+	BPF_S_ALU_MUL_K,
-+	BPF_S_ALU_MUL_X,
-+	BPF_S_ALU_DIV_X,
-+	BPF_S_ALU_AND_K,
-+	BPF_S_ALU_AND_X,
-+	BPF_S_ALU_OR_K,
-+	BPF_S_ALU_OR_X,
-+	BPF_S_ALU_LSH_K,
-+	BPF_S_ALU_LSH_X,
-+	BPF_S_ALU_RSH_K,
-+	BPF_S_ALU_RSH_X,
-+	BPF_S_ALU_NEG,
-+	BPF_S_LD_W_ABS,
-+	BPF_S_LD_H_ABS,
-+	BPF_S_LD_B_ABS,
-+	BPF_S_LD_W_LEN,
-+	BPF_S_LD_W_IND,
-+	BPF_S_LD_H_IND,
-+	BPF_S_LD_B_IND,
-+	BPF_S_LD_IMM,
-+	BPF_S_LDX_W_LEN,
-+	BPF_S_LDX_B_MSH,
-+	BPF_S_LDX_IMM,
-+	BPF_S_MISC_TAX,
-+	BPF_S_MISC_TXA,
-+	BPF_S_ALU_DIV_K,
-+	BPF_S_LD_MEM,
-+	BPF_S_LDX_MEM,
-+	BPF_S_ST,
-+	BPF_S_STX,
-+	BPF_S_JMP_JA,
-+	BPF_S_JMP_JEQ_K,
-+	BPF_S_JMP_JEQ_X,
-+	BPF_S_JMP_JGE_K,
-+	BPF_S_JMP_JGE_X,
-+	BPF_S_JMP_JGT_K,
-+	BPF_S_JMP_JGT_X,
-+	BPF_S_JMP_JSET_K,
-+	BPF_S_JMP_JSET_X,
-+};
-+
- #ifndef BPF_MAXINSNS
- #define BPF_MAXINSNS 4096
- #endif
-Index: linux/net/core/filter.c
-===================================================================
---- linux.orig/net/core/filter.c
-+++ linux/net/core/filter.c
-@@ -128,87 +128,87 @@ unsigned int sk_run_filter(struct sk_buf
- 		fentry = &filter[pc];
- 
- 		switch (fentry->code) {
--		case BPF_ALU|BPF_ADD|BPF_X:
-+		case BPF_S_ALU_ADD_X:
- 			A += X;
- 			continue;
--		case BPF_ALU|BPF_ADD|BPF_K:
-+		case BPF_S_ALU_ADD_K:
- 			A += fentry->k;
- 			continue;
--		case BPF_ALU|BPF_SUB|BPF_X:
-+		case BPF_S_ALU_SUB_X:
- 			A -= X;
- 			continue;
--		case BPF_ALU|BPF_SUB|BPF_K:
-+		case BPF_S_ALU_SUB_K:
- 			A -= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_MUL|BPF_X:
-+		case BPF_S_ALU_MUL_X:
- 			A *= X;
- 			continue;
--		case BPF_ALU|BPF_MUL|BPF_K:
-+		case BPF_S_ALU_MUL_K:
- 			A *= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_DIV|BPF_X:
-+		case BPF_S_ALU_DIV_X:
- 			if (X == 0)
- 				return 0;
- 			A /= X;
- 			continue;
--		case BPF_ALU|BPF_DIV|BPF_K:
-+		case BPF_S_ALU_DIV_K:
- 			A /= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_AND|BPF_X:
-+		case BPF_S_ALU_AND_X:
- 			A &= X;
- 			continue;
--		case BPF_ALU|BPF_AND|BPF_K:
-+		case BPF_S_ALU_AND_K:
- 			A &= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_OR|BPF_X:
-+		case BPF_S_ALU_OR_X:
- 			A |= X;
- 			continue;
--		case BPF_ALU|BPF_OR|BPF_K:
-+		case BPF_S_ALU_OR_K:
- 			A |= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_LSH|BPF_X:
-+		case BPF_S_ALU_LSH_X:
- 			A <<= X;
- 			continue;
--		case BPF_ALU|BPF_LSH|BPF_K:
-+		case BPF_S_ALU_LSH_K:
- 			A <<= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_RSH|BPF_X:
-+		case BPF_S_ALU_RSH_X:
- 			A >>= X;
- 			continue;
--		case BPF_ALU|BPF_RSH|BPF_K:
-+		case BPF_S_ALU_RSH_K:
- 			A >>= fentry->k;
- 			continue;
--		case BPF_ALU|BPF_NEG:
-+		case BPF_S_ALU_NEG:
- 			A = -A;
- 			continue;
--		case BPF_JMP|BPF_JA:
-+		case BPF_S_JMP_JA:
- 			pc += fentry->k;
- 			continue;
--		case BPF_JMP|BPF_JGT|BPF_K:
-+		case BPF_S_JMP_JGT_K:
- 			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JGE|BPF_K:
-+		case BPF_S_JMP_JGE_K:
- 			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JEQ|BPF_K:
-+		case BPF_S_JMP_JEQ_K:
- 			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JSET|BPF_K:
-+		case BPF_S_JMP_JSET_K:
- 			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JGT|BPF_X:
-+		case BPF_S_JMP_JGT_X:
- 			pc += (A > X) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JGE|BPF_X:
-+		case BPF_S_JMP_JGE_X:
- 			pc += (A >= X) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JEQ|BPF_X:
-+		case BPF_S_JMP_JEQ_X:
- 			pc += (A == X) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_JMP|BPF_JSET|BPF_X:
-+		case BPF_S_JMP_JSET_X:
- 			pc += (A & X) ? fentry->jt : fentry->jf;
- 			continue;
--		case BPF_LD|BPF_W|BPF_ABS:
-+		case BPF_S_LD_W_ABS:
- 			k = fentry->k;
- load_w:
- 			ptr = load_pointer(skb, k, 4, &tmp);
-@@ -217,7 +217,7 @@ load_w:
- 				continue;
- 			}
- 			break;
--		case BPF_LD|BPF_H|BPF_ABS:
-+		case BPF_S_LD_H_ABS:
- 			k = fentry->k;
- load_h:
- 			ptr = load_pointer(skb, k, 2, &tmp);
-@@ -226,7 +226,7 @@ load_h:
- 				continue;
- 			}
- 			break;
--		case BPF_LD|BPF_B|BPF_ABS:
-+		case BPF_S_LD_B_ABS:
- 			k = fentry->k;
- load_b:
- 			ptr = load_pointer(skb, k, 1, &tmp);
-@@ -235,54 +235,54 @@ load_b:
- 				continue;
- 			}
- 			break;
--		case BPF_LD|BPF_W|BPF_LEN:
-+		case BPF_S_LD_W_LEN:
- 			A = skb->len;
- 			continue;
--		case BPF_LDX|BPF_W|BPF_LEN:
-+		case BPF_S_LDX_W_LEN:
- 			X = skb->len;
- 			continue;
--		case BPF_LD|BPF_W|BPF_IND:
-+		case BPF_S_LD_W_IND:
- 			k = X + fentry->k;
- 			goto load_w;
--		case BPF_LD|BPF_H|BPF_IND:
-+		case BPF_S_LD_H_IND:
- 			k = X + fentry->k;
- 			goto load_h;
--		case BPF_LD|BPF_B|BPF_IND:
-+		case BPF_S_LD_B_IND:
- 			k = X + fentry->k;
- 			goto load_b;
--		case BPF_LDX|BPF_B|BPF_MSH:
-+		case BPF_S_LDX_B_MSH:
- 			ptr = load_pointer(skb, fentry->k, 1, &tmp);
- 			if (ptr != NULL) {
- 				X = (*(u8 *)ptr & 0xf) << 2;
- 				continue;
- 			}
- 			return 0;
--		case BPF_LD|BPF_IMM:
-+		case BPF_S_LD_IMM:
- 			A = fentry->k;
- 			continue;
--		case BPF_LDX|BPF_IMM:
-+		case BPF_S_LDX_IMM:
- 			X = fentry->k;
- 			continue;
--		case BPF_LD|BPF_MEM:
-+		case BPF_S_LD_MEM:
- 			A = mem[fentry->k];
- 			continue;
--		case BPF_LDX|BPF_MEM:
-+		case BPF_S_LDX_MEM:
- 			X = mem[fentry->k];
- 			continue;
--		case BPF_MISC|BPF_TAX:
-+		case BPF_S_MISC_TAX:
- 			X = A;
- 			continue;
--		case BPF_MISC|BPF_TXA:
-+		case BPF_S_MISC_TXA:
- 			A = X;
- 			continue;
--		case BPF_RET|BPF_K:
-+		case BPF_S_RET_K:
- 			return fentry->k;
--		case BPF_RET|BPF_A:
-+		case BPF_S_RET_A:
- 			return A;
--		case BPF_ST:
-+		case BPF_S_ST:
- 			mem[fentry->k] = A;
- 			continue;
--		case BPF_STX:
-+		case BPF_S_STX:
- 			mem[fentry->k] = X;
- 			continue;
- 		default:
-@@ -390,53 +390,128 @@ int sk_chk_filter(struct sock_filter *fi
- 		/* Only allow valid instructions */
- 		switch (ftest->code) {
- 		case BPF_ALU|BPF_ADD|BPF_K:
-+			ftest->code = BPF_S_ALU_ADD_K;
-+			break;
- 		case BPF_ALU|BPF_ADD|BPF_X:
-+			ftest->code = BPF_S_ALU_ADD_X;
-+			break;
- 		case BPF_ALU|BPF_SUB|BPF_K:
-+			ftest->code = BPF_S_ALU_SUB_K;
-+			break;
- 		case BPF_ALU|BPF_SUB|BPF_X:
-+			ftest->code = BPF_S_ALU_SUB_X;
-+			break;
- 		case BPF_ALU|BPF_MUL|BPF_K:
-+			ftest->code = BPF_S_ALU_MUL_K;
-+			break;
- 		case BPF_ALU|BPF_MUL|BPF_X:
-+			ftest->code = BPF_S_ALU_MUL_X;
-+			break;
- 		case BPF_ALU|BPF_DIV|BPF_X:
-+			ftest->code = BPF_S_ALU_DIV_X;
-+			break;
- 		case BPF_ALU|BPF_AND|BPF_K:
-+			ftest->code = BPF_S_ALU_AND_K;
-+			break;
- 		case BPF_ALU|BPF_AND|BPF_X:
-+			ftest->code = BPF_S_ALU_AND_X;
-+			break;
- 		case BPF_ALU|BPF_OR|BPF_K:
-+			ftest->code = BPF_S_ALU_OR_K;
-+			break;
- 		case BPF_ALU|BPF_OR|BPF_X:
-+			ftest->code = BPF_S_ALU_OR_X;
-+			break;
- 		case BPF_ALU|BPF_LSH|BPF_K:
-+			ftest->code = BPF_S_ALU_LSH_K;
-+			break;
- 		case BPF_ALU|BPF_LSH|BPF_X:
-+			ftest->code = BPF_S_ALU_LSH_X;
-+			break;
- 		case BPF_ALU|BPF_RSH|BPF_K:
-+			ftest->code = BPF_S_ALU_RSH_K;
-+			break;
- 		case BPF_ALU|BPF_RSH|BPF_X:
-+			ftest->code = BPF_S_ALU_RSH_X;
-+			break;
- 		case BPF_ALU|BPF_NEG:
-+			ftest->code = BPF_S_ALU_NEG;
-+			break;
- 		case BPF_LD|BPF_W|BPF_ABS:
-+			ftest->code = BPF_S_LD_W_ABS;
-+			break;
- 		case BPF_LD|BPF_H|BPF_ABS:
-+			ftest->code = BPF_S_LD_H_ABS;
-+			break;
- 		case BPF_LD|BPF_B|BPF_ABS:
-+			ftest->code = BPF_S_LD_B_ABS;
-+			break;
- 		case BPF_LD|BPF_W|BPF_LEN:
-+			ftest->code = BPF_S_LD_W_LEN;
-+			break;
- 		case BPF_LD|BPF_W|BPF_IND:
-+			ftest->code = BPF_S_LD_W_IND;
-+			break;
- 		case BPF_LD|BPF_H|BPF_IND:
-+			ftest->code = BPF_S_LD_H_IND;
-+			break;
- 		case BPF_LD|BPF_B|BPF_IND:
-+			ftest->code = BPF_S_LD_B_IND;
-+			break;
- 		case BPF_LD|BPF_IMM:
-+			ftest->code = BPF_S_LD_IMM;
-+			break;
- 		case BPF_LDX|BPF_W|BPF_LEN:
-+			ftest->code = BPF_S_LDX_W_LEN;
-+			break;
- 		case BPF_LDX|BPF_B|BPF_MSH:
-+			ftest->code = BPF_S_LDX_B_MSH;
-+			break;
- 		case BPF_LDX|BPF_IMM:
-+			ftest->code = BPF_S_LDX_IMM;
-+			break;
- 		case BPF_MISC|BPF_TAX:
-+			ftest->code = BPF_S_MISC_TAX;
-+			break;
- 		case BPF_MISC|BPF_TXA:
-+			ftest->code = BPF_S_MISC_TXA;
-+			break;
- 		case BPF_RET|BPF_K:
-+			ftest->code = BPF_S_RET_K;
-+			break;
- 		case BPF_RET|BPF_A:
-+			ftest->code = BPF_S_RET_A;
- 			break;
- 
- 		/* Some instructions need special checks */
- 
--		case BPF_ALU|BPF_DIV|BPF_K:
- 			/* check for division by zero */
-+		case BPF_ALU|BPF_DIV|BPF_K:
- 			if (ftest->k == 0)
- 				return -EINVAL;
-+			ftest->code = BPF_S_ALU_DIV_K;
- 			break;
- 
-+		/* check for invalid memory addresses */
- 		case BPF_LD|BPF_MEM:
-+			if (ftest->k >= BPF_MEMWORDS)
-+				return -EINVAL;
-+			ftest->code = BPF_S_LD_MEM;
-+			break;
- 		case BPF_LDX|BPF_MEM:
-+			if (ftest->k >= BPF_MEMWORDS)
-+				return -EINVAL;
-+			ftest->code = BPF_S_LDX_MEM;
-+			break;
- 		case BPF_ST:
-+			if (ftest->k >= BPF_MEMWORDS)
-+				return -EINVAL;
-+			ftest->code = BPF_S_ST;
-+			break;
- 		case BPF_STX:
--			/* check for invalid memory addresses */
- 			if (ftest->k >= BPF_MEMWORDS)
- 				return -EINVAL;
-+			ftest->code = BPF_S_STX;
- 			break;
- 
- 		case BPF_JMP|BPF_JA:
-@@ -447,28 +522,63 @@ int sk_chk_filter(struct sock_filter *fi
- 			 */
- 			if (ftest->k >= (unsigned)(flen-pc-1))
- 				return -EINVAL;
-+			ftest->code = BPF_S_JMP_JA;
- 			break;
- 
- 		case BPF_JMP|BPF_JEQ|BPF_K:
-+			ftest->code = BPF_S_JMP_JEQ_K;
-+			break;
- 		case BPF_JMP|BPF_JEQ|BPF_X:
-+			ftest->code = BPF_S_JMP_JEQ_X;
-+			break;
- 		case BPF_JMP|BPF_JGE|BPF_K:
-+			ftest->code = BPF_S_JMP_JGE_K;
-+			break;
- 		case BPF_JMP|BPF_JGE|BPF_X:
-+			ftest->code = BPF_S_JMP_JGE_X;
-+			break;
- 		case BPF_JMP|BPF_JGT|BPF_K:
-+			ftest->code = BPF_S_JMP_JGT_K;
-+			break;
- 		case BPF_JMP|BPF_JGT|BPF_X:
-+			ftest->code = BPF_S_JMP_JGT_X;
-+			break;
- 		case BPF_JMP|BPF_JSET|BPF_K:
-+			ftest->code = BPF_S_JMP_JSET_K;
-+			break;
- 		case BPF_JMP|BPF_JSET|BPF_X:
-+			ftest->code = BPF_S_JMP_JSET_X;
-+			break;
-+
-+		default:
-+			return -EINVAL;
-+		}
-+
- 			/* for conditionals both must be safe */
-+		switch (ftest->code) {
-+		case BPF_S_JMP_JEQ_K:
-+		case BPF_S_JMP_JEQ_X:
-+		case BPF_S_JMP_JGE_K:
-+		case BPF_S_JMP_JGE_X:
-+		case BPF_S_JMP_JGT_K:
-+		case BPF_S_JMP_JGT_X:
-+		case BPF_S_JMP_JSET_X:
-+		case BPF_S_JMP_JSET_K:
- 			if (pc + ftest->jt + 1 >= flen ||
- 			    pc + ftest->jf + 1 >= flen)
- 				return -EINVAL;
--			break;
-+		}
-+	}
- 
-+	/* last instruction must be a RET code */
-+	switch (filter[flen - 1].code) {
-+	case BPF_S_RET_K:
-+	case BPF_S_RET_A:
-+		return 0;
-+		break;
- 		default:
- 			return -EINVAL;
- 		}
--	}
--
--	return (BPF_CLASS(filter[flen - 1].code) == BPF_RET) ? 0 : -EINVAL;
+ #include <asm/s390_ext.h>
+ #include <asm/timer.h>
+@@ -565,6 +566,23 @@ void init_cpu_vtimer(void)
+ 	__ctl_set_bit(0,10);
  }
- EXPORT_SYMBOL(sk_chk_filter);
+ 
++static int __cpuinit s390_nohz_notify(struct notifier_block *self,
++				      unsigned long action, void *hcpu)
++{
++	struct s390_idle_data *idle;
++	long cpu = (long) hcpu;
++
++	idle = &per_cpu(s390_idle, cpu);
++	switch (action) {
++	case CPU_DYING:
++	case CPU_DYING_FROZEN:
++		idle->nohz_delay = 0;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
+ void __init vtime_init(void)
+ {
+ 	/* request the cpu timer external interrupt */
+@@ -573,5 +591,6 @@ void __init vtime_init(void)
+ 
+ 	/* Enable cpu timer interrupts on the boot cpu. */
+ 	init_cpu_vtimer();
++	cpu_notifier(s390_nohz_notify, 0);
+ }
  
