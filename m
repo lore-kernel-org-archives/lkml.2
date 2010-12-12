@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab0LLWsl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 17:48:41 -0500
-Received: from cantor.suse.de ([195.135.220.2]:40390 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab0LLWsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 17:48:40 -0500
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4CBD95DC.8000001@kernel.org>
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 12 Dec 2010 16:48:33 -0600
-Message-ID: <1292194113.2989.9.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753008Ab0LLXJX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:09:23 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:24703 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab0LLXJW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 18:09:22 -0500
+Date: Mon, 13 Dec 2010 00:02:55 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: autofs@linux.kernel.org
+cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>
+Subject: [PATCH][RFC] autofs4: Do not potentially dereference null pointer
+ returned by fget() in autofs_dev_ioctl_setpipefd()
+Message-ID: <alpine.LNX.2.00.1012122357570.9206@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 14:58 +0200, Tejun Heo wrote:
-> SCSI is the only subsystem which uses execute_in_process_context().
-> With the recent workqueue updates, unconditionally using work wouldn't
-> cause deadlocks around execution resources and the two places where
-> SCSI uses them are cold paths where using work unconditionally
-> wouldn't make any difference.  Drop execute_in_process_context() and
-> use work directly.
+Hi,
 
-Sorry, managed to lose this until the ping.
+In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
+which may return NULL, but we do not explicitly test for that NULL return 
+so we may end up dereferencing a NULL pointer - bad.
 
-The analysis above isn't quite correct, I'm afraid.  We use the
-execute_in_process_context() not to avoid deadlocks, but to acquire
-process context if we don't have it because the API allows calling from
-sites at interrupt context.  The point of using
-execute_in_process_context() is that we actually want to make use of the
-user context if we have one ... there's no point using a workqueue in
-that case, because there's nothing to be gained (except to slow
-everything down).  We have no ordering constraints (the traditional
-reason for using workqueues) so this is purely about context.
+A comment in fget() says "File object ref couldn't be taken" when that 
+function returns NULL, so I guess EBUSY is the proper error to return from 
+autofs_dev_ioctl_setpipefd() when this happens, but I'm far from sure 
+about this, so I'd like some feedback before this patch is merged.
 
-Alan stern recently did an analysis (at least for the target reap) that
-says we actually have no interrupt context call sites, so abandoning the
-execute_in_process_context() for a direct call in that case might make
-sense.
 
-James
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ dev-ioctl.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
+ compile tested only.
+
+diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+index eff9a41..ab551ee 100644
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+ 		return -EBUSY;
+ 	} else {
+ 		struct file *pipe = fget(pipefd);
++		if (!pipe) {
++			err = -EBUSY;
++			goto out;
++		}
+ 		if (!pipe->f_op || !pipe->f_op->write) {
+ 			err = -EPIPE;
+ 			fput(pipe);
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
