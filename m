@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab0LLPy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 10:54:27 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56565 "EHLO hera.kernel.org"
+	id S1753338Ab0LLPx1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 10:53:27 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56543 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346Ab0LLPx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 10:53:28 -0500
+	id S1753111Ab0LLPxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 10:53:21 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net
-Cc: Tejun Heo <tj@kernel.org>, Santiago Leon <santil@linux.vnet.ibm.com>
-Subject: [PATCH 5/9] iseries_veth: don't use flush_scheduled_work()
-Date: Sun, 12 Dec 2010 16:53:01 +0100
-Message-Id: <1292169185-10579-6-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 7/9] sungem: update gp->reset_task flushing
+Date: Sun, 12 Dec 2010 16:53:03 +0100
+Message-Id: <1292169185-10579-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292169185-10579-1-git-send-email-tj@kernel.org>
 References: <1292169185-10579-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 15:53:18 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 15:53:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() is on its way out.  Remove its usage from
-iseries_veth.
+gp->reset_task_pending is always set right before reset_task is
+scheduled and as there is no synchronization between the setting and
+scheduling, busy looping on reset_task_pending before flushing
+reset_task doesn't really buy anything.
 
-* Cancelling a delayed work, queueing it for immediate execution if
-  cancelled and then waiting for completion can be done by simply
-  calling flush_delayed_work_sync().
-
-* Explicitly cancel cnx->statemachine_wq on module unload.
+Directly flush gp->reset_task on suspend and cancel on detach.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Santiago Leon <santil@linux.vnet.ibm.com>
 Cc: netdev@vger.kernel.org
 ---
- drivers/net/iseries_veth.c |   18 ++++--------------
- 1 files changed, 4 insertions(+), 14 deletions(-)
+ drivers/net/sungem.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/iseries_veth.c b/drivers/net/iseries_veth.c
-index 63ac531..9ece1fd 100644
---- a/drivers/net/iseries_veth.c
-+++ b/drivers/net/iseries_veth.c
-@@ -885,17 +885,8 @@ static void veth_stop_connection(struct veth_lpar_connection *cnx)
- 	veth_kick_statemachine(cnx);
- 	spin_unlock_irq(&cnx->lock);
+diff --git a/drivers/net/sungem.c b/drivers/net/sungem.c
+index 4ceb3cf..9e992ca 100644
+--- a/drivers/net/sungem.c
++++ b/drivers/net/sungem.c
+@@ -2380,10 +2380,8 @@ static int gem_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	 */
+ 	mutex_unlock(&gp->pm_mutex);
  
--	/* There's a slim chance the reset code has just queued the
--	 * statemachine to run in five seconds. If so we need to cancel
--	 * that and requeue the work to run now. */
--	if (cancel_delayed_work(&cnx->statemachine_wq)) {
--		spin_lock_irq(&cnx->lock);
--		veth_kick_statemachine(cnx);
--		spin_unlock_irq(&cnx->lock);
--	}
--
--	/* Wait for the state machine to run. */
+-	/* Wait for a pending reset task to complete */
+-	while (gp->reset_task_pending)
+-		yield();
 -	flush_scheduled_work();
-+	/* ensure the statemachine runs now and waits for its completion */
-+	flush_delayed_work_sync(&cnx->statemachine_wq);
- }
++	/* Wait for the pending reset task to complete */
++	flush_work_sync(&gp->reset_task);
  
- static void veth_destroy_connection(struct veth_lpar_connection *cnx)
-@@ -1653,15 +1644,14 @@ static void __exit veth_module_cleanup(void)
- 	/* Disconnect our "irq" to stop events coming from the Hypervisor. */
- 	HvLpEvent_unregisterHandler(HvLpEvent_Type_VirtualLan);
+ 	/* Shut the PHY down eventually and setup WOL */
+ 	gem_stop_phy(gp, gp->asleep_wol);
+@@ -2928,10 +2926,8 @@ static void gem_remove_one(struct pci_dev *pdev)
+ 		/* We shouldn't need any locking here */
+ 		gem_get_cell(gp);
  
--	/* Make sure any work queued from Hypervisor callbacks is finished. */
--	flush_scheduled_work();
--
- 	for (i = 0; i < HVMAXARCHITECTEDLPS; ++i) {
- 		cnx = veth_cnx[i];
+-		/* Wait for a pending reset task to complete */
+-		while (gp->reset_task_pending)
+-			yield();
+-		flush_scheduled_work();
++		/* Cancel reset task */
++		cancel_work_sync(&gp->reset_task);
  
- 		if (!cnx)
- 			continue;
- 
-+		/* Cancel work queued from Hypervisor callbacks */
-+		cancel_delayed_work_sync(&cnx->statemachine_wq);
- 		/* Remove the connection from sysfs */
- 		kobject_del(&cnx->kobject);
- 		/* Drop the driver's reference to the connection */
+ 		/* Shut the PHY down */
+ 		gem_stop_phy(gp, 0);
 -- 
 1.7.1
 
