@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab0LMATd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:19:33 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35838 "EHLO
+	id S1754891Ab0LMATq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:19:46 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44934 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab0LLXqD (ORCPT
+	with ESMTP id S1754313Ab0LLXqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:03 -0500
+	Sun, 12 Dec 2010 18:46:02 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: richard@nod.at, toralf.foerster@gmx.de, hch@lst.de,
-        viro@zeniv.linux.org.uk, jdike@addtoit.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [64/223] hostfs: fix UML crash: remove f_spare from hostfs
-Message-Id: <20101212234602.5DAB5B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:02 +0100 (CET)
+To: itoumsn@nttdata.co.jp, itoumsn@nttdata.co.jp, tj@kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [63/223] percpu: fix list_head init bug in __percpu_counter_init()
+Message-Id: <20101212234601.50309B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:01 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,79 +24,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Richard Weinberger <richard@nod.at>
+From: Masanori ITOH <itoumsn@nttdata.co.jp>
 
-commit 1b627d5771312c92404b66f0a0b16f66036dd2e1 upstream.
+commit 8474b591faf3bb0a1e08a60d21d6baac498f15e4 upstream.
 
-365b1818 ("add f_flags to struct statfs(64)") resized f_spare within
-struct statfs which caused a UML crash.  There is no need to copy f_spare.
+WARNING: at lib/list_debug.c:26 __list_add+0x3f/0x81()
+Hardware name: Express5800/B120a [N8400-085]
+list_add corruption. next->prev should be prev (ffffffff81a7ea00), but was dead000000200200. (next=ffff88080b872d58).
+Modules linked in: aoe ipt_MASQUERADE iptable_nat nf_nat autofs4 sunrpc bridge 8021q garp stp llc ipv6 cpufreq_ondemand acpi_cpufreq freq_table dm_round_robin dm_multipath kvm_intel kvm uinput lpfc scsi_transport_fc igb ioatdma scsi_tgt i2c_i801 i2c_core dca iTCO_wdt iTCO_vendor_support pcspkr shpchp megaraid_sas [last unloaded: aoe]
+Pid: 54, comm: events/3 Tainted: G        W  2.6.34-vanilla1 #1
+Call Trace:
+[<ffffffff8104bd77>] warn_slowpath_common+0x7c/0x94
+[<ffffffff8104bde6>] warn_slowpath_fmt+0x41/0x43
+[<ffffffff8120fd2e>] __list_add+0x3f/0x81
+[<ffffffff81212a12>] __percpu_counter_init+0x59/0x6b
+[<ffffffff810d8499>] bdi_init+0x118/0x17e
+[<ffffffff811f2c50>] blk_alloc_queue_node+0x79/0x143
+[<ffffffff811f2d2b>] blk_alloc_queue+0x11/0x13
+[<ffffffffa02a931d>] aoeblk_gdalloc+0x8e/0x1c9 [aoe]
+[<ffffffffa02aa655>] aoecmd_sleepwork+0x25/0xa8 [aoe]
+[<ffffffff8106186c>] worker_thread+0x1a9/0x237
+[<ffffffffa02aa630>] ? aoecmd_sleepwork+0x0/0xa8 [aoe]
+[<ffffffff81065827>] ? autoremove_wake_function+0x0/0x39
+[<ffffffff810616c3>] ? worker_thread+0x0/0x237
+[<ffffffff810653ad>] kthread+0x7f/0x87
+[<ffffffff8100aa24>] kernel_thread_helper+0x4/0x10
+[<ffffffff8106532e>] ? kthread+0x0/0x87
+[<ffffffff8100aa20>] ? kernel_thread_helper+0x0/0x10
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Jeff Dike <jdike@addtoit.com>
+It's because there is no initialization code for a list_head contained in
+the struct backing_dev_info under CONFIG_HOTPLUG_CPU, and the bug comes up
+when block device drivers calling blk_alloc_queue() are used.  In case of
+me, I got them by using aoe.
+
+Signed-off-by: Masanori Itoh <itoumsn@nttdata.co.jp>
+Cc: Tejun Heo <tj@kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/hostfs/hostfs.h      |    3 +--
- fs/hostfs/hostfs_kern.c |    2 +-
- fs/hostfs/hostfs_user.c |    9 ++-------
- 3 files changed, 4 insertions(+), 10 deletions(-)
+ lib/percpu_counter.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux/fs/hostfs/hostfs.h
+Index: linux/lib/percpu_counter.c
 ===================================================================
---- linux.orig/fs/hostfs/hostfs.h
-+++ linux/fs/hostfs/hostfs.h
-@@ -86,7 +86,6 @@ extern int rename_file(char *from, char
- extern int do_statfs(char *root, long *bsize_out, long long *blocks_out,
- 		     long long *bfree_out, long long *bavail_out,
- 		     long long *files_out, long long *ffree_out,
--		     void *fsid_out, int fsid_size, long *namelen_out,
--		     long *spare_out);
-+		     void *fsid_out, int fsid_size, long *namelen_out);
- 
- #endif
-Index: linux/fs/hostfs/hostfs_kern.c
-===================================================================
---- linux.orig/fs/hostfs/hostfs_kern.c
-+++ linux/fs/hostfs/hostfs_kern.c
-@@ -272,7 +272,7 @@ int hostfs_statfs(struct dentry *dentry,
- 	err = do_statfs(HOSTFS_I(dentry->d_sb->s_root->d_inode)->host_filename,
- 			&sf->f_bsize, &f_blocks, &f_bfree, &f_bavail, &f_files,
- 			&f_ffree, &sf->f_fsid, sizeof(sf->f_fsid),
--			&sf->f_namelen, sf->f_spare);
-+			&sf->f_namelen);
- 	if (err)
- 		return err;
- 	sf->f_blocks = f_blocks;
-Index: linux/fs/hostfs/hostfs_user.c
-===================================================================
---- linux.orig/fs/hostfs/hostfs_user.c
-+++ linux/fs/hostfs/hostfs_user.c
-@@ -402,8 +402,7 @@ int rename_file(char *from, char *to)
- int do_statfs(char *root, long *bsize_out, long long *blocks_out,
- 	      long long *bfree_out, long long *bavail_out,
- 	      long long *files_out, long long *ffree_out,
--	      void *fsid_out, int fsid_size, long *namelen_out,
--	      long *spare_out)
-+	      void *fsid_out, int fsid_size, long *namelen_out)
- {
- 	struct statfs64 buf;
- 	int err;
-@@ -422,10 +421,6 @@ int do_statfs(char *root, long *bsize_ou
- 	       sizeof(buf.f_fsid) > fsid_size ? fsid_size :
- 	       sizeof(buf.f_fsid));
- 	*namelen_out = buf.f_namelen;
--	spare_out[0] = buf.f_spare[0];
--	spare_out[1] = buf.f_spare[1];
--	spare_out[2] = buf.f_spare[2];
--	spare_out[3] = buf.f_spare[3];
--	spare_out[4] = buf.f_spare[4];
-+
- 	return 0;
- }
+--- linux.orig/lib/percpu_counter.c
++++ linux/lib/percpu_counter.c
+@@ -76,6 +76,7 @@ int __percpu_counter_init(struct percpu_
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+ #ifdef CONFIG_HOTPLUG_CPU
++	INIT_LIST_HEAD(&fbc->list);
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_add(&fbc->list, &percpu_counters);
+ 	mutex_unlock(&percpu_counters_lock);
