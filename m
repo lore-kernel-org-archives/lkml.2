@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab0LLXrY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:47:24 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36310 "EHLO
+	id S1755659Ab0LMAEs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:04:48 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36384 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab0LLXrV (ORCPT
+	with ESMTP id S1755443Ab0LLXrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:21 -0500
+	Sun, 12 Dec 2010 18:47:24 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: peterz@infradead.org, a.p.zijlstra@chello.nl, paulmck@linux.vnet.ibm.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [138/223] sched: fix RCU lockdep splat from task_group()
-Message-Id: <20101212234720.A37A2B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:20 +0100 (CET)
+To: martin.wilck@ts.fujitsu.com, jbarnes@virtuousgeek.org, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [140/223] PCI: fix size checks for mmap() on /proc/bus/pci files
+Message-Id: <20101212234722.C1201B27C0@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:22 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,101 +22,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Peter Zijlstra <peterz@infradead.org>
+From: Martin Wilck <martin.wilck@ts.fujitsu.com>
 
-commit 6506cf6ce68d78a5470a8360c965dafe8e4b78e3 upstream.
+commit 3b519e4ea618b6943a82931630872907f9ac2c2b upstream.
 
-This addresses the following RCU lockdep splat:
+The checks for valid mmaps of PCI resources made through /proc/bus/pci files
+that were introduced in 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several
+problems:
 
-[0.051203] CPU0: AMD QEMU Virtual CPU version 0.12.4 stepping 03
-[0.052999] lockdep: fixing up alternatives.
-[0.054105]
-[0.054106] ===================================================
-[0.054999] [ INFO: suspicious rcu_dereference_check() usage. ]
-[0.054999] ---------------------------------------------------
-[0.054999] kernel/sched.c:616 invoked rcu_dereference_check() without protection!
-[0.054999]
-[0.054999] other info that might help us debug this:
-[0.054999]
-[0.054999]
-[0.054999] rcu_scheduler_active = 1, debug_locks = 1
-[0.054999] 3 locks held by swapper/1:
-[0.054999]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff814be933>] cpu_up+0x42/0x6a
-[0.054999]  #1:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810400d8>] cpu_hotplug_begin+0x2a/0x51
-[0.054999]  #2:  (&rq->lock){-.-...}, at: [<ffffffff814be2f7>] init_idle+0x2f/0x113
-[0.054999]
-[0.054999] stack backtrace:
-[0.054999] Pid: 1, comm: swapper Not tainted 2.6.35 #1
-[0.054999] Call Trace:
-[0.054999]  [<ffffffff81068054>] lockdep_rcu_dereference+0x9b/0xa3
-[0.054999]  [<ffffffff810325c3>] task_group+0x7b/0x8a
-[0.054999]  [<ffffffff810325e5>] set_task_rq+0x13/0x40
-[0.054999]  [<ffffffff814be39a>] init_idle+0xd2/0x113
-[0.054999]  [<ffffffff814be78a>] fork_idle+0xb8/0xc7
-[0.054999]  [<ffffffff81068717>] ? mark_held_locks+0x4d/0x6b
-[0.054999]  [<ffffffff814bcebd>] do_fork_idle+0x17/0x2b
-[0.054999]  [<ffffffff814bc89b>] native_cpu_up+0x1c1/0x724
-[0.054999]  [<ffffffff814bcea6>] ? do_fork_idle+0x0/0x2b
-[0.054999]  [<ffffffff814be876>] _cpu_up+0xac/0x127
-[0.054999]  [<ffffffff814be946>] cpu_up+0x55/0x6a
-[0.054999]  [<ffffffff81ab562a>] kernel_init+0xe1/0x1ff
-[0.054999]  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
-[0.054999]  [<ffffffff814c353c>] ? restore_args+0x0/0x30
-[0.054999]  [<ffffffff81ab5549>] ? kernel_init+0x0/0x1ff
-[0.054999]  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
-[0.056074] Booting Node   0, Processors  #1lockdep: fixing up alternatives.
-[0.130045]  #2lockdep: fixing up alternatives.
-[0.203089]  #3 Ok.
-[0.275286] Brought up 4 CPUs
-[0.276005] Total of 4 processors activated (16017.17 BogoMIPS).
+1. mmap() calls on /proc/bus/pci files are made with real file offsets > 0,
+whereas under /sys/bus/pci/devices, the start of the resource corresponds
+to offset 0. This may lead to false negatives in pci_mmap_fits(), which
+implicitly assumes the /sys/bus/pci/devices layout.
 
-The cgroup_subsys_state structures referenced by idle tasks are never
-freed, because the idle tasks should be part of the root cgroup,
-which is not removable.
+2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This leads
+to false positives, because pci_mmap_fits() doesn't treat empty resources
+correctly (the calculated size is 1 << (8*sizeof(resource_size_t)-PAGE_SHIFT)
+in this case!).
 
-The problem is that while we do in-fact hold rq->lock, the newly spawned
-idle thread's cpu is not yet set to the correct cpu so the lockdep check
-in task_group():
+3. If a user maps resources with BAR > 0, pci_mmap_fits will emit bogus
+WARNINGS for the first resources that don't fit until the correct one is found.
 
-  lockdep_is_held(&task_rq(p)->lock)
+On many controllers the first 2-4 BARs are used, and the others are empty.
+In this case, an mmap attempt will first fail on the non-empty BARs
+(including the "right" BAR because of 1.) and emit bogus WARNINGS because
+of 3., and finally succeed on the first empty BAR because of 2.
+This is certainly not the intended behaviour.
 
-will fail.
+This patch addresses all 3 issues.
+Updated with an enum type for the additional parameter for pci_mmap_fits().
 
-But this is a chicken and egg problem.  Setting the CPU's runqueue requires
-that the CPU's runqueue already be set.  ;-)
-
-So insert an RCU read-side critical section to avoid the complaint.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- kernel/sched.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/pci/pci-sysfs.c |   22 ++++++++++++++++------
+ drivers/pci/pci.h       |    7 ++++++-
+ drivers/pci/proc.c      |    2 +-
+ 3 files changed, 23 insertions(+), 8 deletions(-)
 
-Index: linux/kernel/sched.c
+Index: linux/drivers/pci/pci-sysfs.c
 ===================================================================
---- linux.orig/kernel/sched.c
-+++ linux/kernel/sched.c
-@@ -5157,7 +5157,19 @@ void __cpuinit init_idle(struct task_str
- 	idle->se.exec_start = sched_clock();
+--- linux.orig/drivers/pci/pci-sysfs.c
++++ linux/drivers/pci/pci-sysfs.c
+@@ -705,17 +705,21 @@ void pci_remove_legacy_files(struct pci_
  
- 	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
-+	/*
-+	 * We're having a chicken and egg problem, even though we are
-+	 * holding rq->lock, the cpu isn't yet set to this cpu so the
-+	 * lockdep check in task_group() will fail.
-+	 *
-+	 * Similar case to sched_fork(). / Alternatively we could
-+	 * use task_rq_lock() here and obtain the other rq->lock.
-+	 *
-+	 * Silence PROVE_RCU
-+	 */
-+	rcu_read_lock();
- 	__set_task_cpu(idle, cpu);
-+	rcu_read_unlock();
+ #ifdef HAVE_PCI_MMAP
  
- 	rq->curr = rq->idle = idle;
- #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
+-int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma)
++int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
++		  enum pci_mmap_api mmap_api)
+ {
+-	unsigned long nr, start, size;
++	unsigned long nr, start, size, pci_start;
+ 
++	if (pci_resource_len(pdev, resno) == 0)
++		return 0;
+ 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 	start = vma->vm_pgoff;
+ 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+-	if (start < size && size - start >= nr)
++	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
++			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
++	if (start >= pci_start && start < pci_start + size &&
++			start + nr <= pci_start + size)
+ 		return 1;
+-	WARN(1, "process \"%s\" tried to map 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
+-		current->comm, start, start+nr, pci_name(pdev), resno, size);
+ 	return 0;
+ }
+ 
+@@ -745,8 +749,14 @@ pci_mmap_resource(struct kobject *kobj,
+ 	if (i >= PCI_ROM_RESOURCE)
+ 		return -ENODEV;
+ 
+-	if (!pci_mmap_fits(pdev, i, vma))
++	if (!pci_mmap_fits(pdev, i, vma, PCI_MMAP_SYSFS)) {
++		WARN(1, "process \"%s\" tried to map 0x%08lx bytes "
++			"at page 0x%08lx on %s BAR %d (start 0x%16Lx, size 0x%16Lx)\n",
++			current->comm, vma->vm_end-vma->vm_start, vma->vm_pgoff,
++			pci_name(pdev), i,
++			pci_resource_start(pdev, i), pci_resource_len(pdev, i));
+ 		return -EINVAL;
++	}
+ 
+ 	/* pci_mmap_page_range() expects the same kind of entry as coming
+ 	 * from /proc/bus/pci/ which is a "user visible" value. If this is
+Index: linux/drivers/pci/pci.h
+===================================================================
+--- linux.orig/drivers/pci/pci.h
++++ linux/drivers/pci/pci.h
+@@ -13,8 +13,13 @@ extern int pci_create_sysfs_dev_files(st
+ extern void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
+ extern void pci_cleanup_rom(struct pci_dev *dev);
+ #ifdef HAVE_PCI_MMAP
++enum pci_mmap_api {
++	PCI_MMAP_SYSFS,	/* mmap on /sys/bus/pci/devices/<BDF>/resource<N> */
++	PCI_MMAP_PROCFS	/* mmap on /proc/bus/pci/<BDF> */
++};
+ extern int pci_mmap_fits(struct pci_dev *pdev, int resno,
+-			 struct vm_area_struct *vma);
++			 struct vm_area_struct *vmai,
++			 enum pci_mmap_api mmap_api);
+ #endif
+ int pci_probe_reset_function(struct pci_dev *dev);
+ 
+Index: linux/drivers/pci/proc.c
+===================================================================
+--- linux.orig/drivers/pci/proc.c
++++ linux/drivers/pci/proc.c
+@@ -260,7 +260,7 @@ static int proc_bus_pci_mmap(struct file
+ 
+ 	/* Make sure the caller is mapping a real resource for this device */
+ 	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
+-		if (pci_mmap_fits(dev, i, vma))
++		if (pci_mmap_fits(dev, i, vma,  PCI_MMAP_PROCFS))
+ 			break;
+ 	}
+ 
