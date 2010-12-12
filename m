@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab0LLBMI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 20:12:08 -0500
-Received: from elettra.colt-to.towertech.it ([213.215.222.70]:59566 "EHLO
-	smtp.towertech.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab0LLBMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 20:12:06 -0500
-Date: Sun, 12 Dec 2010 02:11:55 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Artem Kukhta <artem.kukhta@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
-Subject: Re: rtc: Add support for ST M41ST85W RTC chip
-Message-ID: <20101212021155.2e525317@linux.lan.towertech.it>
-In-Reply-To: <AANLkTin0RkyLKBTKP3zxUD8aVRM=H0jqbO_ac22Qiqdg@mail.gmail.com>
-References: <AANLkTin0RkyLKBTKP3zxUD8aVRM=H0jqbO_ac22Qiqdg@mail.gmail.com>
-Organization: Tower Technologies
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752376Ab0LLBUW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 20:20:22 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10680 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293Ab0LLBUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 20:20:21 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: avagin@openvz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: delete expired route in ip6_pmtu_deliver
+Date: Sun, 12 Dec 2010 04:20:11 +0300
+Message-Id: <1292116811-22216-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Dec 2010 12:34:13 +0200
-Artem Kukhta <artem.kukhta@gmail.com> wrote:
+The first big packets sent to a "low-MTU" client correctly
+triggers the creation of a temporary route containing the reduced MTU.
 
-> Also, I have a question: what should I put in MODULE_AUTHOR() macros
-> (and others)?
+But after the temporary route has expired, new ICMP6 "packet too big"
+will be sent, rt6_pmtu_discovery will find the previous EXPIRED route
+check that its mtu isn't bigger then in icmp packet and do nothing
+before the temporary route will not deleted by gc.
 
- the author(s) name AND email
+I make the simple experiment:
+while :; do
+    time ( dd if=/dev/zero bs=10K count=1 | ssh hostname dd of=/dev/null ) || break;
+done
 
- if you are maintaining it, add your name and email,
- don't be shy ;)
+The "time" reports real 0m0.197s if a temporary route isn't expired, but
+it reports real 0m52.837s (!!!!) immediately after a temporare route has
+expired.
 
+Cc: stable@kernel.org
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ net/ipv6/route.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 96455ffb..7659d6f 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1565,11 +1565,16 @@ static void rt6_do_pmtu_disc(struct in6_addr *daddr, struct in6_addr *saddr,
+ {
+ 	struct rt6_info *rt, *nrt;
+ 	int allfrag = 0;
+-
++again:
+ 	rt = rt6_lookup(net, daddr, saddr, ifindex, 0);
+ 	if (rt == NULL)
+ 		return;
+ 
++	if (rt6_check_expired(rt)) {
++		ip6_del_rt(rt);
++		goto again;
++	}
++
+ 	if (pmtu >= dst_mtu(&rt->dst))
+ 		goto out;
+ 
 -- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
+1.7.2.1
 
