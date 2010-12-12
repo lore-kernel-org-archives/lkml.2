@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab0LLVl2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 16:41:28 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:48131 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab0LLVl1 (ORCPT
+	id S1751909Ab0LLVqo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 16:46:44 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23494 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab0LLVqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 16:41:27 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6195"; a="66530539"
-Message-ID: <25fe5fad8d9b14d10c502549f0b475ec.squirrel@codeaurora.org>
-In-Reply-To: <20101212135305.GI15189@opensource.wolfsonmicro.com>
-References: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
-    <20101212135305.GI15189@opensource.wolfsonmicro.com>
-Date: Sun, 12 Dec 2010 13:41:13 -0800 (PST)
-Subject: Re: [PATCH] regulator: Call into regulator driver only when 
-     voltage min/max really changes.
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
-Cc: "Saravana Kannan" <skannan@codeaurora.org>,
-        "Liam Girdwood" <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Sun, 12 Dec 2010 16:46:42 -0500
+Date: Sun, 12 Dec 2010 22:40:15 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-pci@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ashok Raj <ashok.raj@intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Subject: [PATCH] Don't index beyond end of intr_remap_fault_reasons array in
+ dmar_get_fault_reason
+Message-ID: <alpine.LNX.2.00.1012122232580.9206@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So, I tried to apply this against my local tree to avoid collisions with
-> it but it doesn't apply so I suspect Liam will have trouble also, there
-> are several updates in there that overlap with your change.  Please
-> regenerate against -next or Liam's tree:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6
->
-> You should always submit changes against the development versions of
-> code, generally -next will have these merged into it.
->
-Will do. From a quick git log made it looked like for-linus was the
-latest. Looks like I was mistaken.
+Hi,
 
--Saravana
+In drivers/pci/dmar.c::dmar_get_fault_reason() we have 7 entries in the 
+intr_remap_fault_reasons array and then this code:
+
+...
+	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
+				     ARRAY_SIZE(intr_remap_fault_reasons))) {
+		*fault_type = INTR_REMAP;
+		return intr_remap_fault_reasons[fault_reason - 0x20];
+...
+
+This ends up allowing array index values of 0-7 (both inclusive). A value 
+of 7 indexes 1 past the end of the array, so I believe the code should be 
+this instead:
+
+...
+	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
+				     ARRAY_SIZE(intr_remap_fault_reasons) - 1)) {
+		*fault_type = INTR_REMAP;
+		return intr_remap_fault_reasons[fault_reason - 0x20];
+...
+
+Which only allows the actually legal values 0-6.
+
+The patch below makes that change and also (while I was there) removes the 
+completely unused  #define MAX_FAULT_REASON_IDX .
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ dmar.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+index 0157708..f210f96 100644
+--- a/drivers/pci/dmar.c
++++ b/drivers/pci/dmar.c
+@@ -1207,12 +1207,10 @@ static const char *intr_remap_fault_reasons[] =
+ 	"Blocked an interrupt request due to source-id verification failure",
+ };
+ 
+-#define MAX_FAULT_REASON_IDX 	(ARRAY_SIZE(fault_reason_strings) - 1)
+-
+ const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
+ {
+ 	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
+-				     ARRAY_SIZE(intr_remap_fault_reasons))) {
++				     ARRAY_SIZE(intr_remap_fault_reasons) - 1)) {
+ 		*fault_type = INTR_REMAP;
+ 		return intr_remap_fault_reasons[fault_reason - 0x20];
+ 	} else if (fault_reason < ARRAY_SIZE(dma_remap_fault_reasons)) {
+
+
+
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
