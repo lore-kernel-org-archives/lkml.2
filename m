@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab0LLMDl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:03:41 -0500
-Received: from mail.perches.com ([173.55.12.10]:2507 "EHLO mail.perches.com"
+	id S1752990Ab0LLMEu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:04:50 -0500
+Received: from mail.perches.com ([173.55.12.10]:2515 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752738Ab0LLMDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:03:34 -0500
+	id S1752762Ab0LLMDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:03:39 -0500
 From: Joe Perches <joe@perches.com>
 To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>, netdev@vger.kernel.org
-Subject: [RFC PATCH net-next 1/6] drivers/net: Add directory ethernet
-Date: Sun, 12 Dec 2010 04:03:22 -0800
-Message-Id: <ca0d9a13864803217f53ca4798efe026d420a75e.1292154142.git.joe@perches.com>
+Subject: [RFC PATCH net-next 3/6] ethernet: Move dnet.[ch]
+Date: Sun, 12 Dec 2010 04:03:24 -0800
+Message-Id: <e692e136c6e0ac8fcd4c73b17942de1b6145d3c5.1292154142.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <cover.1292154142.git.joe@perches.com>
 References: <cover.1292154142.git.joe@perches.com>
@@ -20,109 +20,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add empty Kconfig files for various speeds and a no effect Makefile.
-Modify drivers/net Kconfig and Makefile to include these new files.
+Move dnet files to ethernet directory.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/Kconfig                 |    6 ++++++
- drivers/net/Makefile                |    2 ++
- drivers/net/ethernet/Kconfig.10-100 |    3 +++
- drivers/net/ethernet/Kconfig.1000   |    3 +++
- drivers/net/ethernet/Kconfig.10000  |    3 +++
- drivers/net/ethernet/Makefile       |    9 +++++++++
- 6 files changed, 26 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/ethernet/Kconfig.10-100
- create mode 100644 drivers/net/ethernet/Kconfig.1000
- create mode 100644 drivers/net/ethernet/Kconfig.10000
- create mode 100644 drivers/net/ethernet/Makefile
+ drivers/net/Kconfig                 |   11 -----------
+ drivers/net/Makefile                |    1 -
+ drivers/net/ethernet/Kconfig.10-100 |   11 +++++++++++
+ drivers/net/ethernet/Makefile       |    1 +
+ drivers/net/{ => ethernet}/dnet.c   |    0
+ drivers/net/{ => ethernet}/dnet.h   |    0
+ 6 files changed, 12 insertions(+), 12 deletions(-)
+ rename drivers/net/{ => ethernet}/dnet.c (100%)
+ rename drivers/net/{ => ethernet}/dnet.h (100%)
 
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index a20693f..c1d1be8 100644
+index ea9dbaf..c0716d9 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -222,6 +222,8 @@ menuconfig NET_ETHERNET
+@@ -1114,17 +1114,6 @@ config NI65
+ 	  To compile this driver as a module, choose M here. The module
+ 	  will be called ni65.
  
- if NET_ETHERNET
+-config DNET
+-	tristate "Dave ethernet support (DNET)"
+-	depends on NET_ETHERNET && HAS_IOMEM
+-	select PHYLIB
+-	help
+-	  The Dave ethernet interface (DNET) is found on Qong Board FPGA.
+-	  Say Y to include support for the DNET chip.
+-
+-	  To compile this driver as a module, choose M here: the module
+-	  will be called dnet.
+-
+ source "drivers/net/tulip/Kconfig"
  
-+source "drivers/net/ethernet/Kconfig.10-100"
-+
- config MACB
- 	tristate "Atmel MACB support"
- 	depends on HAVE_NET_MACB
-@@ -2041,6 +2043,8 @@ menuconfig NETDEV_1000
- 
- if NETDEV_1000
- 
-+source "drivers/net/ethernet/Kconfig.1000"
-+
- config ACENIC
- 	tristate "Alteon AceNIC/3Com 3C985/NetGear GA620 Gigabit support"
- 	depends on PCI
-@@ -2569,6 +2573,8 @@ menuconfig NETDEV_10000
- 
- if NETDEV_10000
- 
-+source "drivers/net/ethernet/Kconfig.10000"
-+
- config MDIO
- 	tristate
- 
+ config AT1700
 diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index 652fc6b..bfb5ade 100644
+index 1265d0e..0379639 100644
 --- a/drivers/net/Makefile
 +++ b/drivers/net/Makefile
-@@ -2,6 +2,8 @@
- # Makefile for the Linux network (ethercard) device drivers.
+@@ -261,7 +261,6 @@ obj-$(CONFIG_GRETH) += greth.o
+ 
+ obj-$(CONFIG_XTENSA_XT2000_SONIC) += xtsonic.o
+ 
+-obj-$(CONFIG_DNET) += dnet.o
+ obj-$(CONFIG_MACB) += macb.o
+ obj-$(CONFIG_S6GMAC) += s6gmac.o
+ 
+diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
+index a5c62bc..e4fa897 100644
+--- a/drivers/net/ethernet/Kconfig.10-100
++++ b/drivers/net/ethernet/Kconfig.10-100
+@@ -2,6 +2,17 @@
+ # 10 Mb and 100Mb ethernet device configuration
  #
  
-+obj-y += ethernet/
++config DNET
++	tristate "Dave ethernet support (DNET)"
++	depends on NET_ETHERNET && HAS_IOMEM
++	select PHYLIB
++	help
++	  The Dave ethernet interface (DNET) is found on Qong Board FPGA.
++	  Say Y to include support for the DNET chip.
 +
- obj-$(CONFIG_MII) += mii.o
- obj-$(CONFIG_MDIO) += mdio.o
- obj-$(CONFIG_PHYLIB) += phy/
-diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
-new file mode 100644
-index 0000000..8b1ee80
---- /dev/null
-+++ b/drivers/net/ethernet/Kconfig.10-100
-@@ -0,0 +1,3 @@
-+#
-+# 10 Mb and 100Mb ethernet device configuration
-+#
-diff --git a/drivers/net/ethernet/Kconfig.1000 b/drivers/net/ethernet/Kconfig.1000
-new file mode 100644
-index 0000000..f51b97c
---- /dev/null
-+++ b/drivers/net/ethernet/Kconfig.1000
-@@ -0,0 +1,3 @@
-+#
-+# 1 Gb ethernet device configuration
-+#
-diff --git a/drivers/net/ethernet/Kconfig.10000 b/drivers/net/ethernet/Kconfig.10000
-new file mode 100644
-index 0000000..a8e28fe
---- /dev/null
-+++ b/drivers/net/ethernet/Kconfig.10000
-@@ -0,0 +1,3 @@
-+#
-+# 10 Gb ethernet device configuration
-+#
++	  To compile this driver as a module, choose M here: the module
++	  will be called dnet.
++
+ config ETHOC
+ 	tristate "OpenCores 10/100 Mbps Ethernet MAC support"
+ 	depends on NET_ETHERNET && HAS_IOMEM && HAS_DMA
 diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-new file mode 100644
-index 0000000..f2aebec
---- /dev/null
+index ad2afc1..6e419ed 100644
+--- a/drivers/net/ethernet/Makefile
 +++ b/drivers/net/ethernet/Makefile
-@@ -0,0 +1,9 @@
-+#
-+# Makefile for ethernet device drivers
-+#
-+
-+# Dummy object just to avoid breaking build
-+# These comments and the line below will be deleted on the
-+# first addition to this file
-+
-+obj-$(CONFIG_ETHERNET_DUMMY_DRIVER) += /dev/null/dummy.o
+@@ -2,4 +2,5 @@
+ # Makefile for ethernet device drivers
+ #
+ 
++obj-$(CONFIG_DNET)		+= dnet.o
+ obj-$(CONFIG_ETHOC)		+= ethoc.o
+diff --git a/drivers/net/dnet.c b/drivers/net/ethernet/dnet.c
+similarity index 100%
+rename from drivers/net/dnet.c
+rename to drivers/net/ethernet/dnet.c
+diff --git a/drivers/net/dnet.h b/drivers/net/ethernet/dnet.h
+similarity index 100%
+rename from drivers/net/dnet.h
+rename to drivers/net/ethernet/dnet.h
 -- 
 1.7.3.3.398.g0b0cd.dirty
 
