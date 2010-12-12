@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab0LLMER (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:04:17 -0500
-Received: from mail.perches.com ([173.55.12.10]:2523 "EHLO mail.perches.com"
+	id S1752834Ab0LLMDl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:03:41 -0500
+Received: from mail.perches.com ([173.55.12.10]:2507 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab0LLMDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:03:43 -0500
+	id S1752738Ab0LLMDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:03:34 -0500
 From: Joe Perches <joe@perches.com>
 To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>, netdev@vger.kernel.org
-Subject: [RFC PATCH net-next 5/6] ethernet: Move Sun GEM sungem*.[ch]
-Date: Sun, 12 Dec 2010 04:03:26 -0800
-Message-Id: <66c71f111ab31ab00ec378ab096966a8a2ed9b37.1292154142.git.joe@perches.com>
+Subject: [RFC PATCH net-next 1/6] drivers/net: Add directory ethernet
+Date: Sun, 12 Dec 2010 04:03:22 -0800
+Message-Id: <ca0d9a13864803217f53ca4798efe026d420a75e.1292154142.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <cover.1292154142.git.joe@perches.com>
 References: <cover.1292154142.git.joe@perches.com>
@@ -20,96 +20,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move Sun GEM files to ethernet directory.
+Add empty Kconfig files for various speeds and a no effect Makefile.
+Modify drivers/net Kconfig and Makefile to include these new files.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/Kconfig                     |    8 --------
- drivers/net/Makefile                    |    1 -
- drivers/net/ethernet/Kconfig.10-100     |    8 ++++++++
- drivers/net/ethernet/Makefile           |    1 +
- drivers/net/{ => ethernet}/sungem.c     |    0
- drivers/net/{ => ethernet}/sungem.h     |    0
- drivers/net/{ => ethernet}/sungem_phy.c |    0
- drivers/net/{ => ethernet}/sungem_phy.h |    0
- 8 files changed, 9 insertions(+), 9 deletions(-)
- rename drivers/net/{ => ethernet}/sungem.c (100%)
- rename drivers/net/{ => ethernet}/sungem.h (100%)
- rename drivers/net/{ => ethernet}/sungem_phy.c (100%)
- rename drivers/net/{ => ethernet}/sungem_phy.h (100%)
+ drivers/net/Kconfig                 |    6 ++++++
+ drivers/net/Makefile                |    2 ++
+ drivers/net/ethernet/Kconfig.10-100 |    3 +++
+ drivers/net/ethernet/Kconfig.1000   |    3 +++
+ drivers/net/ethernet/Kconfig.10000  |    3 +++
+ drivers/net/ethernet/Makefile       |    9 +++++++++
+ 6 files changed, 26 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/ethernet/Kconfig.10-100
+ create mode 100644 drivers/net/ethernet/Kconfig.1000
+ create mode 100644 drivers/net/ethernet/Kconfig.10000
+ create mode 100644 drivers/net/ethernet/Makefile
 
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 926f090..fbae645 100644
+index a20693f..c1d1be8 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -581,14 +581,6 @@ config SUNQE
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called sunqe.
+@@ -222,6 +222,8 @@ menuconfig NET_ETHERNET
  
--config SUNGEM
--	tristate "Sun GEM support"
--	depends on PCI
--	select CRC32
--	help
--	  Support for the Sun GEM chip, aka Sun GigabitEthernet/P 2.0.  See also
--	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/806-3985-10.pdf>.
--
- config CASSINI
- 	tristate "Sun Cassini support"
+ if NET_ETHERNET
+ 
++source "drivers/net/ethernet/Kconfig.10-100"
++
+ config MACB
+ 	tristate "Atmel MACB support"
+ 	depends on HAVE_NET_MACB
+@@ -2041,6 +2043,8 @@ menuconfig NETDEV_1000
+ 
+ if NETDEV_1000
+ 
++source "drivers/net/ethernet/Kconfig.1000"
++
+ config ACENIC
+ 	tristate "Alteon AceNIC/3Com 3C985/NetGear GA620 Gigabit support"
  	depends on PCI
+@@ -2569,6 +2573,8 @@ menuconfig NETDEV_10000
+ 
+ if NETDEV_10000
+ 
++source "drivers/net/ethernet/Kconfig.10000"
++
+ config MDIO
+ 	tristate
+ 
 diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index 8f2c0ee..129aa08 100644
+index 652fc6b..bfb5ade 100644
 --- a/drivers/net/Makefile
 +++ b/drivers/net/Makefile
-@@ -60,7 +60,6 @@ obj-$(CONFIG_SUNLANCE) += sunlance.o
- obj-$(CONFIG_SUNQE) += sunqe.o
- obj-$(CONFIG_SUNBMAC) += sunbmac.o
- obj-$(CONFIG_MYRI_SBUS) += myri_sbus.o
--obj-$(CONFIG_SUNGEM) += sungem.o sungem_phy.o
- obj-$(CONFIG_CASSINI) += cassini.o
- obj-$(CONFIG_SUNVNET) += sunvnet.o
+@@ -2,6 +2,8 @@
+ # Makefile for the Linux network (ethercard) device drivers.
+ #
  
-diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
-index dbb95d3..f0430da 100644
---- a/drivers/net/ethernet/Kconfig.10-100
-+++ b/drivers/net/ethernet/Kconfig.10-100
-@@ -35,3 +35,11 @@ config HAPPYMEAL
- 
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called sunhme.
++obj-y += ethernet/
 +
-+config SUNGEM
-+	tristate "Sun GEM support"
-+	depends on PCI
-+	select CRC32
-+	help
-+	  Support for the Sun GEM chip, aka Sun GigabitEthernet/P 2.0.  See also
-+	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/806-3985-10.pdf>.
+ obj-$(CONFIG_MII) += mii.o
+ obj-$(CONFIG_MDIO) += mdio.o
+ obj-$(CONFIG_PHYLIB) += phy/
+diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
+new file mode 100644
+index 0000000..8b1ee80
+--- /dev/null
++++ b/drivers/net/ethernet/Kconfig.10-100
+@@ -0,0 +1,3 @@
++#
++# 10 Mb and 100Mb ethernet device configuration
++#
+diff --git a/drivers/net/ethernet/Kconfig.1000 b/drivers/net/ethernet/Kconfig.1000
+new file mode 100644
+index 0000000..f51b97c
+--- /dev/null
++++ b/drivers/net/ethernet/Kconfig.1000
+@@ -0,0 +1,3 @@
++#
++# 1 Gb ethernet device configuration
++#
+diff --git a/drivers/net/ethernet/Kconfig.10000 b/drivers/net/ethernet/Kconfig.10000
+new file mode 100644
+index 0000000..a8e28fe
+--- /dev/null
++++ b/drivers/net/ethernet/Kconfig.10000
+@@ -0,0 +1,3 @@
++#
++# 10 Gb ethernet device configuration
++#
 diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index 0daa85c..d7c6304 100644
---- a/drivers/net/ethernet/Makefile
+new file mode 100644
+index 0000000..f2aebec
+--- /dev/null
 +++ b/drivers/net/ethernet/Makefile
-@@ -5,3 +5,4 @@
- obj-$(CONFIG_DNET)		+= dnet.o
- obj-$(CONFIG_ETHOC)		+= ethoc.o
- obj-$(CONFIG_HAPPYMEAL)		+= sunhme.o
-+obj-$(CONFIG_SUNGEM)		+= sungem.o sungem_phy.o
-diff --git a/drivers/net/sungem.c b/drivers/net/ethernet/sungem.c
-similarity index 100%
-rename from drivers/net/sungem.c
-rename to drivers/net/ethernet/sungem.c
-diff --git a/drivers/net/sungem.h b/drivers/net/ethernet/sungem.h
-similarity index 100%
-rename from drivers/net/sungem.h
-rename to drivers/net/ethernet/sungem.h
-diff --git a/drivers/net/sungem_phy.c b/drivers/net/ethernet/sungem_phy.c
-similarity index 100%
-rename from drivers/net/sungem_phy.c
-rename to drivers/net/ethernet/sungem_phy.c
-diff --git a/drivers/net/sungem_phy.h b/drivers/net/ethernet/sungem_phy.h
-similarity index 100%
-rename from drivers/net/sungem_phy.h
-rename to drivers/net/ethernet/sungem_phy.h
+@@ -0,0 +1,9 @@
++#
++# Makefile for ethernet device drivers
++#
++
++# Dummy object just to avoid breaking build
++# These comments and the line below will be deleted on the
++# first addition to this file
++
++obj-$(CONFIG_ETHERNET_DUMMY_DRIVER) += /dev/null/dummy.o
 -- 
 1.7.3.3.398.g0b0cd.dirty
 
