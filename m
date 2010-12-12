@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab0LMAbu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:31:50 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44663 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab0LLXpS (ORCPT
+	id S1756442Ab0LMAcG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:32:06 -0500
+Received: from smtp-rs1-vallila2.fe.helsinki.fi ([128.214.173.75]:51034 "EHLO
+	smtp-rs1.it.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab0LMAcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:18 -0500
-From: Andi Kleen <andi@firstfloor.org>
-References: <201012131244.547034648@firstfloor.org>
-In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: johannes.berg@intel.com, linville@tuxdriver.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [21/223] mac80211: use correct station flags lock
-Message-Id: <20101212234516.E54D1B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:16 +0100 (CET)
+	Sun, 12 Dec 2010 19:32:03 -0500
+X-Greylist: delayed 3612 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2010 19:32:03 EST
+Date: Mon, 13 Dec 2010 01:31:44 +0200 (EET)
+From: Jouko Orava <jouko.orava@helsinki.fi>
+Reply-To: Jouko Orava <jouko.orava@helsinki.fi>
+To: linux-kernel@vger.kernel.org
+Subject: Custom kernel logging using an USB microcontroller?
+Message-ID: <alpine.LRH.2.00.1012130108200.12183@ruuvi.it.helsinki.fi>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
-From: Johannes Berg <johannes.berg@intel.com>
+Would any of you happen to have written a kernel module for
+custom kernel logging to a USB microcontroller?
 
-commit f5521b13880f4f4f612e1d20dd4f565122d16e04 upstream.
+I'm having unexpected shutdowns/reboots with absolutely no
+sign of the cause in any logs, when using the radeon driver
+heavily, and having kernel MCE support enabled. Disabling kernel
+MCE support seems to eliminate the problem. See
+https://bugs.freedesktop.org/show_bug.cgi?id=30349 for details.
 
-This code is modifying the station flags, and
-as such should hold the flags lock so it can
-do so atomically vs. other flags modifications
-and readers. This issue was introduced when
-this code was added in eccb8e8f, as it used
-the wrong lock (thus not fixing the race that
-was previously documented in a comment.)
+I don't have suitable hardware for a serial console, so
+this is proving really difficult to investigate.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+I do, however, have a USB AVR microcontroller (pjrc.com/teensy),
+which has a few thousand bytes of RAM; I'd like to use it as a custom
+logging device. Specifically, I need an in-kernel interface to log
+directly to the USB microcontroller, so I can find out the codepath
+causing the problems I'm having. (I suspect thermal or voltage
+misreporting, so a printk interface would be useful.)
+I don't really want nor need to save the entire kernel log.
 
----
- net/mac80211/cfg.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Since these USB microcontrollers are dirt cheap (24 USD), need only
+an USB cable to work, and are very easy to program as HID devices using
+avr-gcc, it occurs to me that this has probably been already done.
+It seems like a useful tool for any kernel or kernel module developer.
 
-Index: linux/net/mac80211/cfg.c
-===================================================================
---- linux.orig/net/mac80211/cfg.c
-+++ linux/net/mac80211/cfg.c
-@@ -639,6 +639,7 @@ static void sta_apply_parameters(struct
- 				 struct sta_info *sta,
- 				 struct station_parameters *params)
- {
-+	unsigned long flags;
- 	u32 rates;
- 	int i, j;
- 	struct ieee80211_supported_band *sband;
-@@ -647,7 +648,7 @@ static void sta_apply_parameters(struct
- 
- 	sband = local->hw.wiphy->bands[local->oper_channel->band];
- 
--	spin_lock_bh(&sta->lock);
-+	spin_lock_irqsave(&sta->flaglock, flags);
- 	mask = params->sta_flags_mask;
- 	set = params->sta_flags_set;
- 
-@@ -674,7 +675,7 @@ static void sta_apply_parameters(struct
- 		if (set & BIT(NL80211_STA_FLAG_MFP))
- 			sta->flags |= WLAN_STA_MFP;
- 	}
--	spin_unlock_bh(&sta->lock);
-+	spin_unlock_irqrestore(&sta->flaglock, flags);
- 
- 	/*
- 	 * cfg80211 validates this (1-2007) and allows setting the AID
+So, any pointers to existing code I could adapt?
+Or hints on how the kernel-side logging via USB should be done?
+
+Thanks for your time,
+	Jouko Orava
