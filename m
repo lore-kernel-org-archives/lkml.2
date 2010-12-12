@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab0LLXrn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:47:43 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36489 "EHLO
+	id S1755763Ab0LLXry (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:47:54 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36530 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab0LLXrl (ORCPT
+	with ESMTP id S1755716Ab0LLXrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:41 -0500
+	Sun, 12 Dec 2010 18:47:51 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: gregkh@suse.de, castet.matthieu@free.fr, stf_xl@wp.pl,
-        damien.bergamini@free.fr, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [156/223] USB: atm: ueagle-atm: fix up some permissions on the sysfs files
-Message-Id: <20101212234739.C848BB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:39 +0100 (CET)
+To: rui.zhang@intel.com, toralf.foerster@gmx.de, len.brown@intel.com,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [166/223] acpi-cpufreq: fix a memleak when unloading driver
+Message-Id: <20101212234750.65FA0B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,53 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit e502ac5e1eca99d7dc3f12b2a6780ccbca674858 upstream.
+commit dab5fff14df2cd16eb1ad4c02e83915e1063fece upstream.
 
-Some of the sysfs files had the incorrect permissions.  Some didn't make
-sense at all (writable for a file that you could not write to?)
+We didn't free per_cpu(acfreq_data, cpu)->freq_table
+when acpi_freq driver is unloaded.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthieu Castet <castet.matthieu@free.fr>
-Cc: Stanislaw Gruszka <stf_xl@wp.pl>
-Cc: Damien Bergamini <damien.bergamini@free.fr>
+Resulting in the following messages in /sys/kernel/debug/kmemleak:
+
+unreferenced object 0xf6450e80 (size 64):
+  comm "modprobe", pid 1066, jiffies 4294677317 (age 19290.453s)
+  hex dump (first 32 bytes):
+    00 00 00 00 e8 a2 24 00 01 00 00 00 00 9f 24 00  ......$.......$.
+    02 00 00 00 00 6a 18 00 03 00 00 00 00 35 0c 00  .....j.......5..
+  backtrace:
+    [<c123ba97>] kmemleak_alloc+0x27/0x50
+    [<c109f96f>] __kmalloc+0xcf/0x110
+    [<f9da97ee>] acpi_cpufreq_cpu_init+0x1ee/0x4e4 [acpi_cpufreq]
+    [<c11cd8d2>] cpufreq_add_dev+0x142/0x3a0
+    [<c11920b7>] sysdev_driver_register+0x97/0x110
+    [<c11cce56>] cpufreq_register_driver+0x86/0x140
+    [<f9dad080>] 0xf9dad080
+    [<c1001130>] do_one_initcall+0x30/0x160
+    [<c10626e9>] sys_init_module+0x99/0x1e0
+    [<c1002d97>] sysenter_do_call+0x12/0x26
+    [<ffffffff>] 0xffffffff
+
+https://bugzilla.kernel.org/show_bug.cgi?id=15807#c21
+
+Tested-by: Toralf Forster <toralf.foerster@gmx.de>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/atm/ueagle-atm.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux/drivers/usb/atm/ueagle-atm.c
+Index: linux/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
 ===================================================================
---- linux.orig/drivers/usb/atm/ueagle-atm.c
-+++ linux/drivers/usb/atm/ueagle-atm.c
-@@ -2291,7 +2291,7 @@ out:
- 	return ret;
- }
+--- linux.orig/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
++++ linux/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+@@ -704,6 +704,7 @@ static int acpi_cpufreq_cpu_exit(struct
+ 		per_cpu(acfreq_data, policy->cpu) = NULL;
+ 		acpi_processor_unregister_performance(data->acpi_data,
+ 						      policy->cpu);
++		kfree(data->freq_table);
+ 		kfree(data);
+ 	}
  
--static DEVICE_ATTR(stat_status, S_IWUGO | S_IRUGO, read_status, reboot);
-+static DEVICE_ATTR(stat_status, S_IWUSR | S_IRUGO, read_status, reboot);
- 
- static ssize_t read_human_status(struct device *dev,
- 			struct device_attribute *attr, char *buf)
-@@ -2354,8 +2354,7 @@ out:
- 	return ret;
- }
- 
--static DEVICE_ATTR(stat_human_status, S_IWUGO | S_IRUGO,
--				read_human_status, NULL);
-+static DEVICE_ATTR(stat_human_status, S_IRUGO, read_human_status, NULL);
- 
- static ssize_t read_delin(struct device *dev, struct device_attribute *attr,
- 		char *buf)
-@@ -2387,7 +2386,7 @@ out:
- 	return ret;
- }
- 
--static DEVICE_ATTR(stat_delin, S_IWUGO | S_IRUGO, read_delin, NULL);
-+static DEVICE_ATTR(stat_delin, S_IRUGO, read_delin, NULL);
- 
- #define UEA_ATTR(name, reset)					\
- 								\
