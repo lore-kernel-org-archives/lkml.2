@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab0LLMoK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:44:10 -0500
-Received: from thunk.org ([69.25.196.29]:49508 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834Ab0LLMoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:44:07 -0500
-Date: Sun, 12 Dec 2010 07:43:54 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jon Nelson <jnelson@jamponi.net>
-Cc: Matt <jackdachef@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101212124354.GA4513@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jon Nelson <jnelson@jamponi.net>, Matt <jackdachef@gmail.com>,
-	Chris Mason <chris.mason@oracle.com>,
-	Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
-	Milan Broz <mbroz@redhat.com>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	dm-devel <dm-devel@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-	linux-ext4 <linux-ext4@vger.kernel.org>
-References: <1291945065-sup-1838@think>
- <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
- <20101210023852.GB3059@thunk.org>
- <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
- <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
- <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
- <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
- <20101212023415.GG3059@thunk.org>
- <AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
- <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1751664Ab0LLMvf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:51:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50825 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750854Ab0LLMve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:51:34 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Convert TWL4030 to new irq_ APIs
+Date: Sun, 12 Dec 2010 12:51:39 +0000
+Message-Id: <1292158299-25368-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 04:18:29AM -0600, Jon Nelson wrote:
-> > I have one CPU configured in the environment, 512MB of memory.
-> > I have not done any memory-constriction tests whatsoever.
+The genirq core is being updated to pass struct irq_data to irq_chip
+operations. Update the TWL4030 driver to the new APIs.
 
-I've finally been able to reproduce it myself, on real hardware.  SMP
-is not necessary to reproduce it, although having more than one CPU
-doesn't hurt.  What I did need to do (on real hardware with 4 gigs of
-memory) was to turn off swap and pin enough memory so that free memory
-was around 200megs or so before the start of the test.  (This is the
-natural amount of free memory that the system would try to reach,
-since 200 megs is about 5% of 4 gigs.)
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/twl4030-irq.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
 
-Then, during the test, free memory would drop to 50-70 megabytes,
-forcing writeback to run, and then I could trigger it about 1-2 times
-out of three.
+diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
+index 5d3a147..63a30e8 100644
+--- a/drivers/mfd/twl4030-irq.c
++++ b/drivers/mfd/twl4030-irq.c
+@@ -599,38 +599,38 @@ static void twl4030_sih_do_edge(struct work_struct *work)
+  * completion, potentially including some re-ordering, of these requests.
+  */
+ 
+-static void twl4030_sih_mask(unsigned irq)
++static void twl4030_sih_mask(struct irq_data *data)
+ {
+-	struct sih_agent *sih = get_irq_chip_data(irq);
++	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&sih_agent_lock, flags);
+-	sih->imr |= BIT(irq - sih->irq_base);
++	sih->imr |= BIT(data->irq - sih->irq_base);
+ 	sih->imr_change_pending = true;
+ 	queue_work(wq, &sih->mask_work);
+ 	spin_unlock_irqrestore(&sih_agent_lock, flags);
+ }
+ 
+-static void twl4030_sih_unmask(unsigned irq)
++static void twl4030_sih_unmask(struct irq_data *data)
+ {
+-	struct sih_agent *sih = get_irq_chip_data(irq);
++	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&sih_agent_lock, flags);
+-	sih->imr &= ~BIT(irq - sih->irq_base);
++	sih->imr &= ~BIT(data->irq - sih->irq_base);
+ 	sih->imr_change_pending = true;
+ 	queue_work(wq, &sih->mask_work);
+ 	spin_unlock_irqrestore(&sih_agent_lock, flags);
+ }
+ 
+-static int twl4030_sih_set_type(unsigned irq, unsigned trigger)
++static int twl4030_sih_set_type(struct irq_data *data, unsigned trigger)
+ {
+-	struct sih_agent *sih = get_irq_chip_data(irq);
+-	struct irq_desc *desc = irq_to_desc(irq);
++	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
++	struct irq_desc *desc = irq_to_desc(data->irq);
+ 	unsigned long flags;
+ 
+ 	if (!desc) {
+-		pr_err("twl4030: Invalid IRQ: %d\n", irq);
++		pr_err("twl4030: Invalid IRQ: %d\n", data->irq);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -641,7 +641,7 @@ static int twl4030_sih_set_type(unsigned irq, unsigned trigger)
+ 	if ((desc->status & IRQ_TYPE_SENSE_MASK) != trigger) {
+ 		desc->status &= ~IRQ_TYPE_SENSE_MASK;
+ 		desc->status |= trigger;
+-		sih->edge_change |= BIT(irq - sih->irq_base);
++		sih->edge_change |= BIT(data->irq - sih->irq_base);
+ 		queue_work(wq, &sih->edge_work);
+ 	}
+ 	spin_unlock_irqrestore(&sih_agent_lock, flags);
+@@ -650,9 +650,9 @@ static int twl4030_sih_set_type(unsigned irq, unsigned trigger)
+ 
+ static struct irq_chip twl4030_sih_irq_chip = {
+ 	.name		= "twl4030",
+-	.mask		= twl4030_sih_mask,
+-	.unmask		= twl4030_sih_unmask,
+-	.set_type	= twl4030_sih_set_type,
++	.irq_mask      	= twl4030_sih_mask,
++	.irq_unmask	= twl4030_sih_unmask,
++	.irq_set_type	= twl4030_sih_set_type,
+ };
+ 
+ /*----------------------------------------------------------------------*/
+-- 
+1.7.2.3
 
-I'm guessing that when you used 512mb of memory, that was in effect a
-memory-constriction test, and if you were to push the memory down a
-little further, it might reproduce even more quickly.  My next step is
-to try to reproduce this in a VM, and then I can start probing to see
-what might be going on.
-
-						- Ted
