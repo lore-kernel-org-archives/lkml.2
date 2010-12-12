@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0LLXsb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:48:31 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36774 "EHLO
+	id S1755744Ab0LLXs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:48:29 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36802 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab0LLXsZ (ORCPT
+	with ESMTP id S1755093Ab0LLXs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:25 -0500
+	Sun, 12 Dec 2010 18:48:27 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: kaneshige.kenji@jp.fujitsu.com, ak@linux.intel.com, yong.zhang0@gmail.com,
-        tglx@linutronix.de, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [198/223] genirq: Fix incorrect proc spurious output
-Message-Id: <20101212234824.9CE9DB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:24 +0100 (CET)
+To: torvalds@linux-foundation.org, davem@davemloft.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [199/223] net: Truncate recvfrom and sendto length to INT_MAX.
+Message-Id: <20101212234825.AD122B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:25 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,42 +22,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 25c9170ed64a6551beefe9315882f754e14486f4 upstream.
+commit 253eacc070b114c2ec1f81b067d2fed7305467b0 upstream.
 
-Since commit a1afb637(switch /proc/irq/*/spurious to seq_file) all
-/proc/irq/XX/spurious files show the information of irq 0.
-
-Current irq_spurious_proc_open() passes on NULL as the 3rd argument,
-which is used as an IRQ number in irq_spurious_proc_show(), to the
-single_open(). Because of this, all the /proc/irq/XX/spurious file
-shows IRQ 0 information regardless of the IRQ number.
-
-To fix the problem, irq_spurious_proc_open() must pass on the
-appropreate data (IRQ number) to single_open().
-
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
-LKML-Reference: <4CF4B778.90604@jp.fujitsu.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- kernel/irq/proc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/socket.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Index: linux/kernel/irq/proc.c
+Index: linux/net/socket.c
 ===================================================================
---- linux.orig/kernel/irq/proc.c
-+++ linux/kernel/irq/proc.c
-@@ -214,7 +214,7 @@ static int irq_spurious_proc_show(struct
+--- linux.orig/net/socket.c
++++ linux/net/socket.c
+@@ -1652,6 +1652,8 @@ SYSCALL_DEFINE6(sendto, int, fd, void __
+ 	struct iovec iov;
+ 	int fput_needed;
  
- static int irq_spurious_proc_open(struct inode *inode, struct file *file)
- {
--	return single_open(file, irq_spurious_proc_show, NULL);
-+	return single_open(file, irq_spurious_proc_show, PDE(inode)->data);
- }
++	if (len > INT_MAX)
++		len = INT_MAX;
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+ 		goto out;
+@@ -1709,6 +1711,8 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void
+ 	int err, err2;
+ 	int fput_needed;
  
- static const struct file_operations irq_spurious_proc_fops = {
++	if (size > INT_MAX)
++		size = INT_MAX;
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (!sock)
+ 		goto out;
