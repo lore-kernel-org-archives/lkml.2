@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab0LLRmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 12:42:23 -0500
-Received: from hera.kernel.org ([140.211.167.34]:60520 "EHLO hera.kernel.org"
+	id S1753666Ab0LLRsH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 12:48:07 -0500
+Received: from mail.asbjorn.biz ([217.195.185.3]:37935 "EHLO mail.asbjorn.biz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753227Ab0LLRmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 12:42:20 -0500
-Date: Sun, 12 Dec 2010 17:41:43 GMT
-From: tip-bot for Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        mathieu.desnoyers@efficios.com, eric.dumazet@gmail.com,
-        penberg@cs.helsinki.fi, cl@linux.com, tj@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        penberg@cs.helsinki.fi, cl@linux.com, tj@kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.00.1011301404490.4039@router.home>
-References: <alpine.DEB.2.00.1011301404490.4039@router.home>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timers: Use this_cpu_read
-Message-ID: <tip-7496351ad87e61e96b49dd7b43c6534e3401f566@git.kernel.org>
-Git-Commit-ID: 7496351ad87e61e96b49dd7b43c6534e3401f566
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 17:41:44 +0000 (UTC)
+	id S1752623Ab0LLRsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 12:48:04 -0500
+From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: [PATCH v4] kbuild, deb-pkg: support overriding userland architecture
+Date: Sun, 12 Dec 2010 17:39:40 +0000
+Message-Id: <1292175580-22085-1-git-send-email-asbjorn@asbjorn.biz>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <4D00F709.1000406@suse.cz>
+References: <4D00F709.1000406@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7496351ad87e61e96b49dd7b43c6534e3401f566
-Gitweb:     http://git.kernel.org/tip/7496351ad87e61e96b49dd7b43c6534e3401f566
-Author:     Christoph Lameter <cl@linux.com>
-AuthorDate: Tue, 30 Nov 2010 14:05:53 -0600
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 12 Dec 2010 18:38:09 +0100
+Usefull if building for sparc64 userland, because the
+sparc and sparc64 userlands use the same 64-bit kernel,
+making it impossible to always select the correct userland
+architecture for the resulting debian package.
 
-timers: Use this_cpu_read
+Might also be usefull, if you want a i386 userland with a amd64 kernel.
 
-Eric asked for this.
+Example usage:
+	make KBUILD_DEBARCH=i386 deb-pkg
 
-[tglx: Because it generates faster code according to Erics ]
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org
-LKML-Reference: <alpine.DEB.2.00.1011301404490.4039@router.home>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
+LKML-reference: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
+Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Acked-by: maximilian attems <max@stro.at>
 ---
- kernel/timer.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/kbuild/kbuild.txt |    8 ++++++++
+ scripts/package/builddeb        |    3 +++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 483e54b..beb97fd 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1227,7 +1227,7 @@ static unsigned long cmp_next_hrtimer_event(unsigned long now,
-  */
- unsigned long get_next_timer_interrupt(unsigned long now)
- {
--	struct tvec_base *base = __get_cpu_var(tvec_bases);
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
- 	unsigned long expires;
+diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
+index 634c625..b146eb8 100644
+--- a/Documentation/kbuild/kbuild.txt
++++ b/Documentation/kbuild/kbuild.txt
+@@ -51,6 +51,14 @@ Specify the output directory when building the kernel.
+ The output directory can also be specificed using "O=...".
+ Setting "O=..." takes precedence over KBUILD_OUTPUT.
  
- 	spin_lock(&base->lock);
-@@ -1267,7 +1267,7 @@ void update_process_times(int user_tick)
-  */
- static void run_timer_softirq(struct softirq_action *h)
- {
--	struct tvec_base *base = __get_cpu_var(tvec_bases);
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
- 
- 	hrtimer_run_pending();
- 
++KBUILD_DEBARCH
++--------------------------------------------------
++For the deb-pkg target, allows overriding the normal heuristics deployed by
++deb-pkg. Normally deb-pkg attempts to guess the right architecture based on
++the UTS_MACHINE variable, and on some architectures also the kernel config.
++The value of KBUILD_DEBARCH is assumed (not checked) to be a valid Debian
++architecture.
++
+ ARCH
+ --------------------------------------------------
+ Set ARCH to the architecture to be built.
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 5d6be3f..ffe2419 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -54,6 +54,9 @@ create_package() {
+ 		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
+ 		echo "" >&2
+ 	esac
++	if [ -n "$KBUILD_DEBARCH" ] ; then
++		debarch="$KBUILD_DEBARCH"
++	fi
+ 	if [ -n "$debarch" ] ; then
+ 		forcearch="-DArchitecture=$debarch"
+ 	fi
+-- 
+1.7.2.3
+
