@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0LLXqb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:46:31 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36015 "EHLO
+	id S1754597Ab0LLXp7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:45:59 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44848 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab0LLXq1 (ORCPT
+	with ESMTP id S1754390Ab0LLXps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:27 -0500
+	Sun, 12 Dec 2010 18:45:48 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: FlorianSchandinat@gmx.de, JosephChan@via.com.tw, dsd@laptop.org,
-        jon.nettleton@gmail.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [86/223] viafb: use proper register for colour when doing fill ops
-Message-Id: <20101212234625.B0E3AB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:25 +0100 (CET)
+To: chris@chris-wilson.co.uk, ak@linux.intel.com, daniel.vetter@ffwll.ch,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [50/223] drm/i915/overlay: Ensure that the reg_bo is in the GTT prior to writing.
+Message-Id: <20101212234547.8F7AAB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:45:47 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,47 +22,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit efd4f6398dc92b5bf392670df862f42a19f34cf2 upstream.
+commit 0ddc1289f3ffd779779ddd3922f26ae7d0a21604 upstream.
 
-The colour was written to a wrong register for fillrect operations.
-This sometimes caused empty console space (for example after 'clear')
-to have a different colour than desired. Fix this by writing to the
-correct register.
-Many thanks to Daniel Drake and Jon Nettleton for pointing out this
-issue and pointing me in the right direction for the fix.
+Just makes sure that writes are not being aliased by the CPU cache and
+do make it out to main memory.
 
-Fixes http://dev.laptop.org/ticket/9323
-
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Joseph Chan <JosephChan@via.com.tw>
-Cc: Daniel Drake <dsd@laptop.org>
-Cc: Jon Nettleton <jon.nettleton@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=24977
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/via/accel.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_overlay.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Index: linux/drivers/video/via/accel.c
+Index: linux/drivers/gpu/drm/i915/intel_overlay.c
 ===================================================================
---- linux.orig/drivers/video/via/accel.c
-+++ linux/drivers/video/via/accel.c
-@@ -283,11 +283,12 @@ static int hw_bitblt_2(void __iomem *eng
- 		writel(tmp, engine + 0x1C);
- 	}
+--- linux.orig/drivers/gpu/drm/i915/intel_overlay.c
++++ linux/drivers/gpu/drm/i915/intel_overlay.c
+@@ -1364,6 +1364,12 @@ void intel_setup_overlay(struct drm_devi
+                         goto out_free_bo;
+                 }
+ 		overlay->flip_addr = overlay->reg_bo->gtt_offset;
++
++		ret = i915_gem_object_set_to_gtt_domain(reg_bo, true);
++		if (ret) {
++                        DRM_ERROR("failed to move overlay register bo into the GTT\n");
++                        goto out_unpin_bo;
++                }
+ 	} else {
+ 		ret = i915_gem_attach_phys_object(dev, reg_bo,
+ 				I915_GEM_PHYS_OVERLAY_REGS);
+@@ -1395,6 +1401,8 @@ void intel_setup_overlay(struct drm_devi
+ 	DRM_INFO("initialized overlay support\n");
+ 	return;
  
--	if (op != VIA_BITBLT_COLOR)
-+	if (op == VIA_BITBLT_FILL) {
-+		writel(fg_color, engine + 0x58);
-+	} else if (op == VIA_BITBLT_MONO) {
- 		writel(fg_color, engine + 0x4C);
--
--	if (op == VIA_BITBLT_MONO)
- 		writel(bg_color, engine + 0x50);
-+	}
- 
- 	if (op == VIA_BITBLT_FILL)
- 		ge_cmd |= fill_rop << 24 | 0x00002000 | 0x00000001;
++out_unpin_bo:
++	i915_gem_object_unpin(reg_bo);
+ out_free_bo:
+ 	drm_gem_object_unreference(reg_bo);
+ out_free:
