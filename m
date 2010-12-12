@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab0LLXxU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:53:20 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36826 "EHLO
+	id S1756270Ab0LLXxs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:53:48 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36786 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab0LLXsa (ORCPT
+	with ESMTP id S1756030Ab0LLXs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:30 -0500
+	Sun, 12 Dec 2010 18:48:27 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: jhnikula@gmail.com, peter.ujfalusi@nokia.com, manjugk@ti.com,
-        tony@atomide.com, gregkh@suse.de, ak@linux.intel.com,
+To: davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [202/223] omap: dma: Fix buffering disable bit setting for omap24xx
-Message-Id: <20101212234828.DEE2CB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:28 +0100 (CET)
+Subject: [PATCH] [200/223] net: Limit socket I/O iovec total length to INT_MAX.
+Message-Id: <20101212234826.C0167B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:26 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,88 +22,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Jarkko Nikula <jhnikula@gmail.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit 3e57f1626b5febe5cc99aa6870377deef3ae03cc upstream.
+commit 8acfe468b0384e834a303f08ebc4953d72fb690a upstream.
 
-An errata workaround for omap24xx is not setting the buffering disable bit
-25 what is the purpose but channel enable bit 7 instead.
+This helps protect us from overflow issues down in the
+individual protocol sendmsg/recvmsg handlers.  Once
+we hit INT_MAX we truncate out the rest of the iovec
+by setting the iov_len members to zero.
 
-Background for this fix is the DMA stalling issue with ASoC omap-mcbsp
-driver. Peter Ujfalusi <peter.ujfalusi@nokia.com> has found an issue in
-recording that the DMA stall could happen if there were a buffer overrun
-detected by ALSA and the DMA was stopped and restarted due that. This
-problem is known to occur on both OMAP2420 and OMAP3. It can recover on
-OMAP3 after dma free, dma request and reconfiguration cycle. However, on
-OMAP2420 it seems that only way to recover is a reset.
+This works because:
 
-Problem was not visible before the commit c12abc0. That commit changed that
-the McBSP transmitter/receiver is released from reset only when needed. That
-is, only enabled McBSP transmitter without transmission was able to prevent
-this DMA stall problem in receiving side and underlying problem did not show
-up until now. McBSP transmitter itself seems to no be reason since DMA
-stall does not recover by enabling the transmission after stall.
+1) For SOCK_STREAM and SOCK_SEQPACKET sockets, partial
+   writes are allowed and the application will just continue
+   with another write to send the rest of the data.
 
-Debugging showed that there were a DMA write active during DMA stop time and
-it never completed even when restarting the DMA. Experimenting showed that
-the DMA buffering disable bit could be used to avoid stalling when using
-source synchronized transfers. However that could have performance hit and
-OMAP3 TRM states that buffering disable is not allowed for destination
-synchronized transfers so subsequent patch will implement a method to
-complete DMA writes when stopping.
+2) For datagram oriented sockets, where there must be a
+   one-to-one correspondance between write() calls and
+   packets on the wire, INT_MAX is going to be far larger
+   than the packet size limit the protocol is going to
+   check for and signal with -EMSGSIZE.
 
-This patch is based on assumtion that complete lock-up on OMAP2420 is
-different but related problem. I don't have access to OMAP2420 errata but
-I believe this old workaround here is put for a reason but unfortunately
-a wrong bit was typed and problem showed up only now.
+Based upon a patch by Linus Torvalds.
 
-Signed-off-by: Jarkko Nikula <jhnikula@gmail.com>
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
-Acked-by: Manjunath Kondaiah G <manjugk@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/arm/plat-omap/dma.c              |   14 ++++++++++----
- arch/arm/plat-omap/include/plat/dma.h |    1 +
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ net/compat.c     |   10 ++++++----
+ net/core/iovec.c |   15 +++++++--------
+ 2 files changed, 13 insertions(+), 12 deletions(-)
 
-Index: linux/arch/arm/plat-omap/dma.c
+Index: linux/net/compat.c
 ===================================================================
---- linux.orig/arch/arm/plat-omap/dma.c
-+++ linux/arch/arm/plat-omap/dma.c
-@@ -993,11 +993,17 @@ void omap_start_dma(int lch)
- 	l = dma_read(CCR(lch));
+--- linux.orig/net/compat.c
++++ linux/net/compat.c
+@@ -41,10 +41,12 @@ static inline int iov_from_user_compat_t
+ 		compat_size_t len;
  
- 	/*
--	 * Errata: On ES2.0 BUFFERING disable must be set.
--	 * This will always fail on ES1.0
-+	 * Errata: Inter Frame DMA buffering issue (All OMAP2420 and
-+	 * OMAP2430ES1.0): DMA will wrongly buffer elements if packing and
-+	 * bursting is enabled. This might result in data gets stalled in
-+	 * FIFO at the end of the block.
-+	 * Workaround: DMA channels must have BUFFERING_DISABLED bit set to
-+	 * guarantee no data will stay in the DMA FIFO in case inter frame
-+	 * buffering occurs.
- 	 */
--	if (cpu_is_omap24xx())
--		l |= OMAP_DMA_CCR_EN;
-+	if (cpu_is_omap2420() ||
-+	    (cpu_is_omap2430() && (omap_type() == OMAP2430_REV_ES1_0)))
-+		l |= OMAP_DMA_CCR_BUFFERING_DISABLE;
- 
- 	l |= OMAP_DMA_CCR_EN;
- 	dma_write(l, CCR(lch));
-Index: linux/arch/arm/plat-omap/include/plat/dma.h
+ 		if (get_user(len, &uiov32->iov_len) ||
+-		   get_user(buf, &uiov32->iov_base)) {
+-			tot_len = -EFAULT;
+-			break;
+-		}
++		    get_user(buf, &uiov32->iov_base))
++			return -EFAULT;
++
++		if (len > INT_MAX - tot_len)
++			len = INT_MAX - tot_len;
++
+ 		tot_len += len;
+ 		kiov->iov_base = compat_ptr(buf);
+ 		kiov->iov_len = (__kernel_size_t) len;
+Index: linux/net/core/iovec.c
 ===================================================================
---- linux.orig/arch/arm/plat-omap/include/plat/dma.h
-+++ linux/arch/arm/plat-omap/include/plat/dma.h
-@@ -335,6 +335,7 @@
- #define OMAP2_DMA_MISALIGNED_ERR_IRQ	(1 << 11)
+--- linux.orig/net/core/iovec.c
++++ linux/net/core/iovec.c
+@@ -59,14 +59,13 @@ int verify_iovec(struct msghdr *m, struc
+ 	err = 0;
  
- #define OMAP_DMA_CCR_EN			(1 << 7)
-+#define OMAP_DMA_CCR_BUFFERING_DISABLE	(1 << 25)
+ 	for (ct = 0; ct < m->msg_iovlen; ct++) {
+-		err += iov[ct].iov_len;
+-		/*
+-		 * Goal is not to verify user data, but to prevent returning
+-		 * negative value, which is interpreted as errno.
+-		 * Overflow is still possible, but it is harmless.
+-		 */
+-		if (err < 0)
+-			return -EMSGSIZE;
++		size_t len = iov[ct].iov_len;
++
++		if (len > INT_MAX - err) {
++			len = INT_MAX - err;
++			iov[ct].iov_len = len;
++		}
++		err += len;
+ 	}
  
- #define OMAP_DMA_DATA_TYPE_S8		0x00
- #define OMAP_DMA_DATA_TYPE_S16		0x01
+ 	return err;
