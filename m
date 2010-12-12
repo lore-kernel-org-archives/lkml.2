@@ -1,131 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab0LLPRH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 10:17:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40494 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab0LLPRC (ORCPT
+	id S1752963Ab0LLPTO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 10:19:14 -0500
+Received: from mail.heshosting.com ([66.255.252.7]:59174 "EHLO
+	mail.heshosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab0LLPTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 10:17:02 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
-        2nddept-manager@sdl.hitachi.co.jp,
-        Francis Moreau <francis.moro@gmail.com>,
-        Franck Bui-Huu <vagabon.xyz@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/2] perf probe: Fix use of kernel image path given by 'k' option
-Date: Sun, 12 Dec 2010 13:16:53 -0200
-Message-Id: <1292167014-20936-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1292167014-20936-1-git-send-email-acme@infradead.org>
-References: <1292167014-20936-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 12 Dec 2010 10:19:13 -0500
+X-Greylist: delayed 1022 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2010 10:19:13 EST
+X-Originating-IP: 127.0.0.1
+MIME-Version: 1.0
+Date: Sun, 12 Dec 2010 08:58:01 -0600
+From: Universitetet i Oslo <admin@uio.no>
+To: undisclosed-recipients:;
+Subject: =?UTF-8?Q?Kj=C3=A6re=20uio=2Eno=20konto=20Bruker?=
+Reply-To: webm_aster111@ml.lt
+Message-ID: <ea0637324b8e3daaf3e04aa00958ed73@localhost>
+User-Agent: RoundCube Webmail/0.2.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-Users were not being able to have the explicitely specified vmlinux
-pathname used, instead a search on the vmlinux path was always being
-made.
 
-Reported-by: Francis Moreau <francis.moro@gmail.com>
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Francis Moreau <francis.moro@gmail.com>
-Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-LPU-Reference: <m3hbelydz8.fsf_-_@gmail.com>
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-probe.c    |    5 +++++
- tools/perf/util/probe-event.c |   15 ++++++++++++---
- tools/perf/util/symbol.c      |    4 ++--
- tools/perf/util/symbol.h      |    2 ++
- 4 files changed, 21 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 2e000c0..add163c 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -249,6 +249,11 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	     !params.show_lines))
- 		usage_with_options(probe_usage, options);
- 
-+	/*
-+	 * Only consider the user's kernel image path if given.
-+	 */
-+	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
-+
- 	if (params.list_events) {
- 		if (params.mod_events) {
- 			pr_err("  Error: Don't use --list with --add/--del.\n");
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 3b6a529..b71acd6 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -114,6 +114,8 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
- const char *kernel_get_module_path(const char *module)
- {
- 	struct dso *dso;
-+	struct map *map;
-+	const char *vmlinux_name;
- 
- 	if (module) {
- 		list_for_each_entry(dso, &machine.kernel_dsos, node) {
-@@ -123,10 +125,17 @@ const char *kernel_get_module_path(const char *module)
- 		}
- 		pr_debug("Failed to find module %s.\n", module);
- 		return NULL;
-+	}
-+
-+	map = machine.vmlinux_maps[MAP__FUNCTION];
-+	dso = map->dso;
-+
-+	vmlinux_name = symbol_conf.vmlinux_name;
-+	if (vmlinux_name) {
-+		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
-+			return NULL;
- 	} else {
--		dso = machine.vmlinux_maps[MAP__FUNCTION]->dso;
--		if (dso__load_vmlinux_path(dso,
--			 machine.vmlinux_maps[MAP__FUNCTION], NULL) < 0) {
-+		if (dso__load_vmlinux_path(dso, map, NULL) < 0) {
- 			pr_debug("Failed to load kernel map.\n");
- 			return NULL;
- 		}
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index d628c8d..439ab94 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1780,8 +1780,8 @@ out_failure:
- 	return -1;
- }
- 
--static int dso__load_vmlinux(struct dso *self, struct map *map,
--			     const char *vmlinux, symbol_filter_t filter)
-+int dso__load_vmlinux(struct dso *self, struct map *map,
-+		      const char *vmlinux, symbol_filter_t filter)
- {
- 	int err = -1, fd;
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 038f220..6c6eafd 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -166,6 +166,8 @@ void dso__sort_by_name(struct dso *self, enum map_type type);
- struct dso *__dsos__findnew(struct list_head *head, const char *name);
- 
- int dso__load(struct dso *self, struct map *map, symbol_filter_t filter);
-+int dso__load_vmlinux(struct dso *self, struct map *map,
-+		      const char *vmlinux, symbol_filter_t filter);
- int dso__load_vmlinux_path(struct dso *self, struct map *map,
- 			   symbol_filter_t filter);
- int dso__load_kallsyms(struct dso *self, const char *filename, struct map *map,
 -- 
-1.6.2.5
+Kjære uio.no konto Bruker, 
 
+Denne E-post er fra (uio.no) helpdesk og vi sender det til hver av (uio.no)
+kontoer bruker for sikkerhet / vedlikehold fra spam mails.we har
+blodansamlinger på grunn av anonym registrering av (uio.no) kontoer så vi
+blir å slå ned noen (uio.no) regnskap og kontoen var blant dem å være
+som må re-oppdateres på grunn av denne tilstanden. 
+
+Vi sender deg denne e-post slik at du kan kontrollere og for å for
+sikkerhet og vedlikehold av account.If dine du er fremdeles interessert kan
+du bekrefte kontoen din ved å fylle plassen below.Your Brukernavn,
+passord, fødselsdato og din landinformasjon ville være nødvendig for å
+bekrefte kontoen. 
+
+* Brukernavn: (.................) (obligatorisk) 
+* Passord: (..........................)( Obligatorisk) 
+* Fødselsdato: (..........................) (valgfritt) 
+* Land eller territorium: (..................) (valgfritt) 
+
+Før du sender kontoopplysningene dine til oss, er du råd til å logge inn
+i denne linken: https: / / webmail.uio.no / src / login.php 
+
+Merk at hvis kontoen din gjøre Login sende oss detaljene, hvis ellers
+betyr det at den allerede har blitt slettet. Beklager bryderiet dette kan
+føre til at du vi bare prøver å sikre at du bla fin med våre
+regnskaper. 
+
+Alt du trenger å gjøre er å Klikk Svar og levere ut informasjonen
+ovenfor, Kontoen din vil ikke bli avbrutt og vil fortsette som normalt.
+Takk for oppmerksomheten på denne request.Once igjen Vi beklager
+eventuelle ulemper. 
+
+
+* * * ADVARSEL * * * 
+
+ Konto brukere som nekter å oppdatere sin / heraccount etter 7 dager etter
+å ha mottatt denne advarselen vil miste sin konto permanent. 
+
+Uautorisert tilgang til denne maskinen er i strid med Annotated Code,
+Criminal Law artikkel § § 8-606, og 7-302 og Computer Fraud og Abuse Act,
+18 USC § § 1030 flg.. Dette kontoret kan overvåke bruk av sine
+dataressurser som tillatt av statlige og føderale lover, inkludert
+Electronic Communications Privacy Act, 18 USC § § 2510-2521 og Md
+Annotated Code, Domstoler og rettergang artikkel, § 10, Undertekst fire.
+Alle som bruker dette systemet erkjenner at all bruk er underlagt (uio.no)
+Policy på akseptabel bruk av IT-ressurser tilgjengelig på https: / /
+webmail.uio.no / src / login.php 
+
+© Webmaster Unit {Universitetet i Oslo (UiO)} (uio.no)
