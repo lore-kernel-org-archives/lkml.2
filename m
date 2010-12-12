@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab0LLPRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 10:17:12 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:40814 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab0LLPRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753046Ab0LLPRJ (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 12 Dec 2010 10:17:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40495 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab0LLPRC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 10:17:02 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
         2nddept-manager@sdl.hitachi.co.jp,
         Francis Moreau <francis.moro@gmail.com>,
-        Franck Bui-Huu <fbuihuu@gmail.com>,
         Franck Bui-Huu <vagabon.xyz@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/2] perf/urgent fixes
-Date: Sun, 12 Dec 2010 13:16:52 -0200
-Message-Id: <1292167014-20936-1-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/2] perf symbols: Stop using vmlinux files with no symbols
+Date: Sun, 12 Dec 2010 13:16:54 -0200
+Message-Id: <1292167014-20936-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+In-Reply-To: <1292167014-20936-1-git-send-email-acme@infradead.org>
+References: <1292167014-20936-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-        Please pull from:
+Fail if the kernel image contains no symbol, allowing using other images
+in the vmlinux search path that may have a usable symtab.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Francis Moreau <francis.moro@gmail.com>
+Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+LPU-Reference: <m3d3p9ydx9.fsf_-_@gmail.com>
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/probe-event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Regards,
-
-- Arnaldo
-
-Franck Bui-Huu (2):
-  perf probe: Fix use of kernel image path given by 'k' option
-  perf symbols: Stop using vmlinux files with no symbols
-
- tools/perf/builtin-probe.c    |    5 +++++
- tools/perf/util/probe-event.c |   15 ++++++++++++---
- tools/perf/util/symbol.c      |    4 ++--
- tools/perf/util/symbol.h      |    2 ++
- 4 files changed, 21 insertions(+), 5 deletions(-)
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index b71acd6..61191c6 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -135,7 +135,7 @@ const char *kernel_get_module_path(const char *module)
+ 		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
+ 			return NULL;
+ 	} else {
+-		if (dso__load_vmlinux_path(dso, map, NULL) < 0) {
++		if (dso__load_vmlinux_path(dso, map, NULL) <= 0) {
+ 			pr_debug("Failed to load kernel map.\n");
+ 			return NULL;
+ 		}
+-- 
+1.6.2.5
 
