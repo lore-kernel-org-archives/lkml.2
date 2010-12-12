@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab0LLIFF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 03:05:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56527 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab0LLIE6 (ORCPT
+	id S1751770Ab0LLIJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 03:09:09 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:55413 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751409Ab0LLIJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 03:04:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BCPzZzolMFKeWJ4jRgCC8jPd4FmXtRsVopwi3TEZ1klog3ucKsKt+nCRWcsGMF4Enj
-         EgMXRuBn9NlYfYvv+F4DwMcEVN3t4jpYXEIJ100BVifWlBE+e8Fy4mhpSiL6TGWYbpby
-         O9sJaWLsfmU64miamL/WCfVoP9yuTgPkswGF8=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Staging: vme_tsi148: use __dev{init,exit} for ->probe/remove
-Date: Sun, 12 Dec 2010 17:04:28 +0900
-Message-Id: <1292141068-31458-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.3.400.g93cef
-In-Reply-To: <1292141068-31458-1-git-send-email-namhyung@gmail.com>
-References: <1292141068-31458-1-git-send-email-namhyung@gmail.com>
+	Sun, 12 Dec 2010 03:09:05 -0500
+Date: Sun, 12 Dec 2010 09:08:51 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Dave Airlie <airlied@linux.ie>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        mbroemme@plusserver.de, linux-fbdev@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: intelfb refuses to load
+Message-ID: <20101212080851.GA2254@elf.ucw.cz>
+References: <20101211221325.GA1954@elf.ucw.cz>
+ <20101211234356.1e9007fe@neptune.home>
+ <20101212075203.GA1934@elf.ucw.cz>
+ <alpine.DEB.2.00.1012120759520.28614@skynet.skynet.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1012120759520.28614@skynet.skynet.ie>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- drivers/staging/vme/bridges/vme_tsi148.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+Hi!
 
-diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-index 2f5b70986998..0ec9fa4768c2 100644
---- a/drivers/staging/vme/bridges/vme_tsi148.c
-+++ b/drivers/staging/vme/bridges/vme_tsi148.c
-@@ -35,8 +35,9 @@
- #include "vme_tsi148.h"
- 
- static int __init tsi148_init(void);
--static int tsi148_probe(struct pci_dev *, const struct pci_device_id *);
--static void tsi148_remove(struct pci_dev *);
-+static int __devinit tsi148_probe(struct pci_dev *,
-+				  const struct pci_device_id *);
-+static void __devexit tsi148_remove(struct pci_dev *);
- static void __exit tsi148_exit(void);
- 
- 
-@@ -55,7 +56,7 @@ static struct pci_driver tsi148_driver = {
- 	.name = driver_name,
- 	.id_table = tsi148_ids,
- 	.probe = tsi148_probe,
--	.remove = tsi148_remove,
-+	.remove = __devexit_p(tsi148_remove),
- };
- 
- static void reg_join(unsigned int high, unsigned int low,
-@@ -2215,7 +2216,8 @@ static void tsi148_crcsr_exit(struct vme_bridge *tsi148_bridge,
- 		bridge->crcsr_bus);
- }
- 
--static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+static int __devinit tsi148_probe(struct pci_dev *pdev,
-+				  const struct pci_device_id *id)
- {
- 	int retval, i, master_num;
- 	u32 data;
-@@ -2528,7 +2530,7 @@ err_struct:
- 
- }
- 
--static void tsi148_remove(struct pci_dev *pdev)
-+static void __devexit tsi148_remove(struct pci_dev *pdev)
- {
- 	struct list_head *pos = NULL;
- 	struct vme_master_resource *master_image;
+> > i915.modeset=1 video=inteldrmfb:mode=1024x768 fbcon=scrollback:64k 
+> > 
+> > on cmdline and:
+> > 
+> > CONFIG_DRM=y
+> > CONFIG_DRM_KMS_HELPER=y
+> > # CONFIG_DRM_TDFX is not set
+> > # CONFIG_DRM_R128 is not set
+> > # CONFIG_DRM_RADEON is not set
+> > # CONFIG_DRM_I810 is not set
+> > # CONFIG_DRM_I830 is not set
+> > CONFIG_DRM_I915=y
+> > # CONFIG_DRM_I915_KMS is not set
+> > # CONFIG_DRM_MGA is not set
+> > # CONFIG_DRM_SIS is not set
+> > # CONFIG_DRM_VIA is not set
+> > # CONFIG_DRM_SAVAGE is not set
+> > # CONFIG_STUB_POULSBO is not set
+> > CONFIG_VGASTATE=y
+> > CONFIG_VIDEO_OUTPUT_CONTROL=y
+> > CONFIG_FB=y
+> > CONFIG_FIRMWARE_EDID=y
+> > # CONFIG_FB_DDC is not set
+> > ...
+> > CONFIG_ACPI_VIDEO=y
+> 
+> CONFIG_FRAMEBUFFER_CONSOLE?
+
+No, that one was set. (I see even two penguins for a short while).
+
+#
+# Console display driver support
+#
+CONFIG_VGA_CONSOLE=y
+# CONFIG_VGACON_SOFT_SCROLLBACK is not set
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+# CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY is not set
+# CONFIG_FRAMEBUFFER_CONSOLE_ROTATION is not set
+CONFIG_FONTS=y
+
+Thanks,
+									Pavel
+
 -- 
-1.7.3.3.400.g93cef
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
