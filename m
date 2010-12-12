@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab0LLEQV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 23:16:21 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:48762 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752507Ab0LLEQT convert rfc822-to-8bit (ORCPT
+	id S1752613Ab0LLE0H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 23:26:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51805 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750854Ab0LLE0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 23:16:19 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Zd2I/4lddPzCFYimfJSE59HIXhyWwbij04UeH/P7SX7fAGfuWAuFVbrScoVMcLTxwBKIn8cKv3+eNwxdYiYD0G7fHTXiQLJ4SHOAbBfkvbAmIyxGF9ofndY6oVEkbzp6;
-Date: Sat, 11 Dec 2010 20:16:15 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Adam Belay <abelay@mit.edu>, Matthew Garrett <mjg@redhat.com>,
-        Dan Williams <dcbw@redhat.com>, rjw@sisk.pl
-Subject: Re: [PATCH 1/5] resources: add arch hook for preventing allocation
- in reserved areas
-Message-ID: <20101211201615.79186de7@jbarnes-desktop>
-In-Reply-To: <AANLkTi=b5pq+RhA1DpyyRaLEQxQFOrf4aEXHrG-Qjqbt@mail.gmail.com>
-References: <20101208213606.13026.47657.stgit@bob.kio>
-	<20101210123008.7fed582d@jbarnes-desktop>
-	<20101210123609.73c12a23@jbarnes-desktop>
-	<201012101407.24419.bjorn.helgaas@hp.com>
-	<20101210173749.7ec3cc28@jbarnes-desktop>
-	<AANLkTi=b5pq+RhA1DpyyRaLEQxQFOrf4aEXHrG-Qjqbt@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Sat, 11 Dec 2010 23:26:05 -0500
+From: Ben Hutchings <benh@debian.org>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1291619474-3244-1-git-send-email-hayeswang@realtek.com>
+References: <1291619474-3244-1-git-send-email-hayeswang@realtek.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-4AFJPI6FkkeNcNHco4AA"
+Organization: Debian Project
+Date: Sun, 12 Dec 2010 04:25:59 +0000
+Message-ID: <1292127959.3136.272.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: benh@debian.org
+Subject: Re: [PATCH v2] net/r8169: Remove the firmware of RTL8111D
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Dec 2010 19:34:05 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> On Fri, Dec 10, 2010 at 5:37 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> > Thanks, I'll add Dan and Rafael's tested-bys to the patches (they're
-> > already in my for-linus tree).  Unless Linus has a problem with them
-> > I'll send them over to him this weekend or Monday.
-> 
-> See my other email I just sent out.
-> 
-> I really am not going to take some totally new experimental and hacky
-> major PCI resource management thing this late in the -rc game. No way,
-> no how.
-> 
-> If the top-down allocator is causing regressions that cannot be fixed
-> by _simple_ patches, we're simply going to have to undo it. What's the
-> advantage of top-down? None. Not if we then need all this crap, which
-> we could as easily do on top of the bottom-up one WITHOUT any
-> regressions.
-> 
-> Why isn't anybody else questioning the whole basic premise here?
+--=-4AFJPI6FkkeNcNHco4AA
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Questioning the whole premise is fine, but so far we've gone in (or at
-least think we're going in) a consistent direction: behave like Windows
-on platforms designed for Windows to avoid bugs that Windows doesn't
-hit and enable all the same devices Windows allows.
+On Tue, 2010-12-07 at 15:19 +0000, Hayes Wang wrote:
+> Remove the firmware of RTL8111D from the kernel.
+> The binary file of firmware would be moved to linux-firmware repository.
+> The firmwares are rtl_nic/rtl8168d-1.fw and rtl_nic/rtl8168d-2.fw.
+> The driver would load the firmware through request_firmware. The driver
+> would just go along if the firmware couldn't be found. However, it is
+> suggested to be done with the suitable firmware.
+>=20
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/r8169.c |  796 ++++++++-------------------------------------=
+------
+>  1 files changed, 117 insertions(+), 679 deletions(-)
+>  mode change 100644 =3D> 100755 drivers/net/r8169.c
+>=20
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> old mode 100644
+> new mode 100755
 
-But yes, I really don't like the nx6325 patch either; there's obviously
-something we're still missing that's preventing us from doing the right
-thing on that platform.  Quirking it isn't a good long term answer.
+Please do not make source files executable.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> index 7d33ef4..e0df607
+> --- a/drivers/net/r8169.c
+> +++ b/drivers/net/r8169.c
+[...]
+> +static void
+> +rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+> +{
+> +	void __iomem *ioaddr =3D tp->mmio_addr;
+> +	u32 *phytable =3D (u32 *)fw->data;
+
+This line should use __le32 not u32 to make it clearer which byte order
+is being used.
+
+> +	u32 action;
+> +	size_t len =3D fw->size / sizeof(*phytable);
+> +	u32 regno, data;
+> +
+> +	while (len-- > 0 && *phytable !=3D 0) {
+> +		action =3D le32_to_cpu(*phytable);
+> +		regno =3D (action & 0x0FFF0000) >> 16;
+> +		data =3D action & 0x0000FFFF;
+> +
+> +		switch(action & 0xF0000000) {
+> +		case PHY_WRITE:
+> +			mdio_write(ioaddr, regno, data);
+> +			phytable++;
+> +			break;
+> +		default:
+> +			netif_err(tp, probe, tp->dev,
+> +				  "Unknown action 0x%08x\n", action);
+> +			return;
+> +		}
+> +	}
+[...]
+
+I think should validate the action types before starting.  Otherwise it
+could begin loading the firmware and then abort (without even returning
+an error code) which would be worse than not loading it at all.
+
+Other than that, this is good, especially the addition of comments for
+some of the register initialisation sequences.
+
+Ben.
+
+--=20
+Ben Hutchings, Debian Developer and kernel team member
+
+
+--=-4AFJPI6FkkeNcNHco4AA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATQRO0ue/yOyVhhEJAQINLxAAoIONiR5ej4R551LbYMU6itSpXArv6JnO
+t+R9ZEBMC/QMhqL2j6VZgUmbySarw0dB15s4g3CaOoim/TnXr7ipM8igT7SJyPt+
+kp/CrBfpjepu7ANoarRJ++de9O7KimTX9bLMFBZUco/5QsUtGSHhf7ukEZBQI8+Z
+KEF3x+Ogy+QpCvp+UW6sfa+zJUtl7V00KOPq1e8Qkqv9vJnDIFEyHnkaUGAILNQq
+JuxQOdeaO47NbDn7Os/GiprrvtpLmT+4wZY/5Cg1hTbIEk/OybXx5OmmTW+wzjmz
+EEO2xQjdsiupkFPHRzwVuERWPqDu96jj8TWHl5ClPku38Y8V4bZJwpOFdT3JDj6g
+qHFf1b9t3+s5mNtM7xy31TWjfsYaPxMJYcwMgqdqBv8lyPj1v8cy+7fZpNhnMQfw
+/OmleUc+S2wZPRpoWIuoY1LaLomLWHEuNW3QAY5/YuKFcGLp/27OMChEF/ZgvrK4
+/s/Ko6jpMpvASHEg81kjKeAeBQv1xmFd6kJZ+6i6KyUQf2m4WuimojdszV/Jx6aB
+vRVnJJKq0Tr59B5y9YsG3l0mKMrhkkIS3Ov14dTR5pkDyw5zX/dXnqyjBuiQmQ5H
+n+nWLE+hSW+QVVOfZ++fPpkcaMvEGdQvKcuMjAgRwhLZZzlnN7Tw0Jxy0fl84n39
+FRMWtNe8zco=
+=kX3i
+-----END PGP SIGNATURE-----
+
+--=-4AFJPI6FkkeNcNHco4AA--
