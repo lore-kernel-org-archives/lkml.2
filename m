@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab0LLJXd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 04:23:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60616 "EHLO mx1.redhat.com"
+	id S1752190Ab0LLJ2h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 04:28:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751757Ab0LLJXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 04:23:31 -0500
-Message-ID: <4D049488.5020105@redhat.com>
-Date: Sun, 12 Dec 2010 11:23:20 +0200
+	id S1751696Ab0LLJ2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 04:28:33 -0500
+Message-ID: <4D0495AA.4050600@redhat.com>
+Date: Sun, 12 Dec 2010 11:28:10 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>, Glauber Costa <glommer@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, kvm@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 22 (kvm)
-References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>	<20101122132627.bd4e88ef.randy.dunlap@oracle.com>	<20101129083324.6870d7da.randy.dunlap@oracle.com>	<4CF3D637.6060204@redhat.com>	<4CF3E733.8090809@redhat.com>	<4CF3E870.4040308@oracle.com>	<4CF3EC1E.7050707@redhat.com> <20101210091859.63a6a43e.randy.dunlap@oracle.com>
-In-Reply-To: <20101210091859.63a6a43e.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: linux-kernel@vger.kernel.org, zamsden@redhat.com,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] Fix preempt imbalance in kvm_timer_init()
+References: <1291920155.8141.4.camel@localhost.localdomain>
+In-Reply-To: <1291920155.8141.4.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2010 07:18 PM, Randy Dunlap wrote:
-> >  Looks like this is the appropriate fix:
-> >
-> >  #ifdef CONFIG_SMP
-> >  static void __init kvm_smp_prepare_boot_cpu(void)
-> >  {
-> >  #ifdef CONFIG_KVM_CLOCK
-> >  	WARN_ON(kvm_register_clock("primary cpu clock"));
-> >  #endif
-> >  	kvm_guest_cpu_init();
-> >  	native_smp_prepare_boot_cpu();
-> >  }
+On 12/09/2010 08:42 PM, Thomas Meyer wrote:
+> Signed-off-by: Thomas Meyer<thomas@m3y3r.de>
+> ---
+>   arch/x86/kvm/x86.c |    5 +++--
+>   1 files changed, 3 insertions(+), 2 deletions(-)
 >
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index cdac9e5..2609c3d 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4561,7 +4561,7 @@ static struct notifier_block kvmclock_cpu_notifier_block = {
 >
-> Can we get this fix merged, please?
+>   static void kvm_timer_init(void)
+>   {
+> -	int cpu;
+> +	int cpu = get_cpu();
 >
-> Build error is still happening in linux-next 20101210.
->
+>   	max_tsc_khz = tsc_khz;
+>   	register_hotcpu_notifier(&kvmclock_cpu_notifier_block);
 
-Zach, a proper patch please.
+This eventually takes a mutex (in cpu_maps_update_begin()), so it can't 
+be called with preemption disabled.
+
+> @@ -4569,13 +4569,14 @@ static void kvm_timer_init(void)
+>   #ifdef CONFIG_CPU_FREQ
+>   		struct cpufreq_policy policy;
+>   		memset(&policy, 0, sizeof(policy));
+> -		cpufreq_get_policy(&policy, get_cpu());
+> +		cpufreq_get_policy(&policy, cpu);
+>   		if (policy.cpuinfo.max_freq)
+>   			max_tsc_khz = policy.cpuinfo.max_freq;
+>   #endif
+>   		cpufreq_register_notifier(&kvmclock_cpufreq_notifier_block,
+>   					  CPUFREQ_TRANSITION_NOTIFIER);
+>   	}
+> +	put_cpu();
+>   	pr_debug("kvm: max_tsc_khz = %ld\n", max_tsc_khz);
+>   	for_each_online_cpu(cpu)
+>   		smp_call_function_single(cpu, tsc_khz_changed, NULL, 1);
+
 
 -- 
 error compiling committee.c: too many arguments to function
