@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab0LMAGA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:06:00 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36333 "EHLO
+	id S1755401Ab0LMAG0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:06:26 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36310 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401Ab0LLXrS (ORCPT
+	with ESMTP id S1755398Ab0LLXrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:18 -0500
+	Sun, 12 Dec 2010 18:47:17 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: oleg@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [135/223] exec: copy-and-paste the fixes into compat_do_execve() paths
-Message-Id: <20101212234717.784F3B27C0@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:17 +0100 (CET)
+To: oleg@redhat.com, ak@linux.intel.com, torvalds@linux-foundation.org,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [134/223] exec: make argv/envp memory visible to oom-killer
+Message-Id: <20101212234716.6AE2AB27C0@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:16 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,145 +24,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Oleg Nesterov <oleg@redhat.com>
 
-commit 114279be2120a916e8a04feeb2ac976a10016f2f upstream.
+commit 3c77f845722158206a7209c45ccddc264d19319c upstream.
 
-Note: this patch targets 2.6.37 and tries to be as simple as possible.
-That is why it adds more copy-and-paste horror into fs/compat.c and
-uglifies fs/exec.c, this will be cleanuped later.
+Brad Spengler published a local memory-allocation DoS that
+evades the OOM-killer (though not the virtual memory RLIMIT):
+http://www.grsecurity.net/~spender/64bit_dos.c
 
-compat_copy_strings() plays with bprm->vma/mm directly and thus has
-two problems: it lacks the RLIMIT_STACK check and argv/envp memory
-is not visible to oom killer.
+execve()->copy_strings() can allocate a lot of memory, but
+this is not visible to oom-killer, nobody can see the nascent
+bprm->mm and take it into account.
 
-Export acct_arg_size() and get_arg_page(), change compat_copy_strings()
-to use get_arg_page(), change compat_do_execve() to do acct_arg_size(0)
-as do_execve() does.
+With this patch get_arg_page() increments current's MM_ANONPAGES
+counter every time we allocate the new page for argv/envp. When
+do_execve() succeds or fails, we change this counter back.
 
-Add the fatal_signal_pending/cond_resched checks into compat_count() and
-compat_copy_strings(), this matches the code in fs/exec.c and certainly
-makes sense.
+Technically this is not 100% correct, we can't know if the new
+page is swapped out and turn MM_ANONPAGES into MM_SWAPENTS, but
+I don't think this really matters and everything becomes correct
+once exec changes ->mm or fails.
 
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-and-discussed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/compat.c             |   28 +++++++++++++++-------------
- fs/exec.c               |    8 ++++----
- include/linux/binfmts.h |    4 ++++
- 3 files changed, 23 insertions(+), 17 deletions(-)
+ fs/exec.c               |   32 ++++++++++++++++++++++++++++++--
+ include/linux/binfmts.h |    1 +
+ 2 files changed, 31 insertions(+), 2 deletions(-)
 
-Index: linux/fs/compat.c
-===================================================================
---- linux.orig/fs/compat.c
-+++ linux/fs/compat.c
-@@ -1376,6 +1376,10 @@ static int compat_count(compat_uptr_t __
- 			argv++;
- 			if (i++ >= max)
- 				return -E2BIG;
-+
-+			if (fatal_signal_pending(current))
-+				return -ERESTARTNOHAND;
-+			cond_resched();
- 		}
- 	}
- 	return i;
-@@ -1417,6 +1421,12 @@ static int compat_copy_strings(int argc,
- 		while (len > 0) {
- 			int offset, bytes_to_copy;
- 
-+			if (fatal_signal_pending(current)) {
-+				ret = -ERESTARTNOHAND;
-+				goto out;
-+			}
-+			cond_resched();
-+
- 			offset = pos % PAGE_SIZE;
- 			if (offset == 0)
- 				offset = PAGE_SIZE;
-@@ -1433,18 +1443,8 @@ static int compat_copy_strings(int argc,
- 			if (!kmapped_page || kpos != (pos & PAGE_MASK)) {
- 				struct page *page;
- 
--#ifdef CONFIG_STACK_GROWSUP
--				ret = expand_stack_downwards(bprm->vma, pos);
--				if (ret < 0) {
--					/* We've exceed the stack rlimit. */
--					ret = -E2BIG;
--					goto out;
--				}
--#endif
--				ret = get_user_pages(current, bprm->mm, pos,
--						     1, 1, 1, &page, NULL);
--				if (ret <= 0) {
--					/* We've exceed the stack rlimit. */
-+				page = get_arg_page(bprm, pos, 1);
-+				if (!page) {
- 					ret = -E2BIG;
- 					goto out;
- 				}
-@@ -1565,8 +1565,10 @@ int compat_do_execve(char * filename,
- 	return retval;
- 
- out:
--	if (bprm->mm)
-+	if (bprm->mm) {
-+		acct_arg_size(bprm, 0);
- 		mmput(bprm->mm);
-+	}
- 
- out_file:
- 	if (bprm->file) {
 Index: linux/fs/exec.c
 ===================================================================
 --- linux.orig/fs/exec.c
 +++ linux/fs/exec.c
-@@ -158,7 +158,7 @@ out:
+@@ -158,6 +158,25 @@ out:
  
  #ifdef CONFIG_MMU
  
--static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- 	struct mm_struct *mm = current->mm;
- 	long diff = (long)(pages - bprm->vma_pages);
-@@ -177,7 +177,7 @@ static void acct_arg_size(struct linux_b
- #endif
- }
- 
--static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++	struct mm_struct *mm = current->mm;
++	long diff = (long)(pages - bprm->vma_pages);
++
++	if (!mm || !diff)
++		return;
++
++	bprm->vma_pages = pages;
++
++#ifdef SPLIT_RSS_COUNTING
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++#else
++	spin_lock(&mm->page_table_lock);
++	add_mm_counter(mm, MM_ANONPAGES, diff);
++	spin_unlock(&mm->page_table_lock);
++#endif
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
  		int write)
  {
- 	struct page *page;
-@@ -291,11 +291,11 @@ static bool valid_arg_len(struct linux_b
+@@ -180,6 +199,8 @@ static struct page *get_arg_page(struct
+ 		unsigned long size = bprm->vma->vm_end - bprm->vma->vm_start;
+ 		struct rlimit *rlim;
+ 
++		acct_arg_size(bprm, size / PAGE_SIZE);
++
+ 		/*
+ 		 * We've historically supported up to 32 pages (ARG_MAX)
+ 		 * of argument strings even with small stacks
+@@ -270,6 +291,10 @@ static bool valid_arg_len(struct linux_b
  
  #else
  
--static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
-+void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
- {
- }
- 
--static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
++static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
++{
++}
++
+ static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
  		int write)
  {
- 	struct page *page;
+@@ -991,6 +1016,7 @@ int flush_old_exec(struct linux_binprm *
+ 	/*
+ 	 * Release all of the old mmap stuff
+ 	 */
++	acct_arg_size(bprm, 0);
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
+@@ -1415,8 +1441,10 @@ int do_execve(char * filename,
+ 	return retval;
+ 
+ out:
+-	if (bprm->mm)
+-		mmput (bprm->mm);
++	if (bprm->mm) {
++		acct_arg_size(bprm, 0);
++		mmput(bprm->mm);
++	}
+ 
+ out_file:
+ 	if (bprm->file) {
 Index: linux/include/linux/binfmts.h
 ===================================================================
 --- linux.orig/include/linux/binfmts.h
 +++ linux/include/linux/binfmts.h
-@@ -60,6 +60,10 @@ struct linux_binprm{
- 	unsigned long loader, exec;
- };
- 
-+extern void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
-+extern struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-+					int write);
-+
- #define BINPRM_FLAGS_ENFORCE_NONDUMP_BIT 0
- #define BINPRM_FLAGS_ENFORCE_NONDUMP (1 << BINPRM_FLAGS_ENFORCE_NONDUMP_BIT)
- 
+@@ -29,6 +29,7 @@ struct linux_binprm{
+ 	char buf[BINPRM_BUF_SIZE];
+ #ifdef CONFIG_MMU
+ 	struct vm_area_struct *vma;
++	unsigned long vma_pages;
+ #else
+ # define MAX_ARG_PAGES	32
+ 	struct page *page[MAX_ARG_PAGES];
