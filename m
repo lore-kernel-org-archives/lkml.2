@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab0LLXs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:48:29 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36802 "EHLO
+	id S1756273Ab0LLXxU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:53:20 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36826 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab0LLXs1 (ORCPT
+	with ESMTP id S1756056Ab0LLXsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:27 -0500
+	Sun, 12 Dec 2010 18:48:30 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: torvalds@linux-foundation.org, davem@davemloft.net, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [199/223] net: Truncate recvfrom and sendto length to INT_MAX.
-Message-Id: <20101212234825.AD122B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:25 +0100 (CET)
+To: jhnikula@gmail.com, peter.ujfalusi@nokia.com, manjugk@ti.com,
+        tony@atomide.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [202/223] omap: dma: Fix buffering disable bit setting for omap24xx
+Message-Id: <20101212234828.DEE2CB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:28 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,38 +23,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Jarkko Nikula <jhnikula@gmail.com>
 
-commit 253eacc070b114c2ec1f81b067d2fed7305467b0 upstream.
+commit 3e57f1626b5febe5cc99aa6870377deef3ae03cc upstream.
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+An errata workaround for omap24xx is not setting the buffering disable bit
+25 what is the purpose but channel enable bit 7 instead.
+
+Background for this fix is the DMA stalling issue with ASoC omap-mcbsp
+driver. Peter Ujfalusi <peter.ujfalusi@nokia.com> has found an issue in
+recording that the DMA stall could happen if there were a buffer overrun
+detected by ALSA and the DMA was stopped and restarted due that. This
+problem is known to occur on both OMAP2420 and OMAP3. It can recover on
+OMAP3 after dma free, dma request and reconfiguration cycle. However, on
+OMAP2420 it seems that only way to recover is a reset.
+
+Problem was not visible before the commit c12abc0. That commit changed that
+the McBSP transmitter/receiver is released from reset only when needed. That
+is, only enabled McBSP transmitter without transmission was able to prevent
+this DMA stall problem in receiving side and underlying problem did not show
+up until now. McBSP transmitter itself seems to no be reason since DMA
+stall does not recover by enabling the transmission after stall.
+
+Debugging showed that there were a DMA write active during DMA stop time and
+it never completed even when restarting the DMA. Experimenting showed that
+the DMA buffering disable bit could be used to avoid stalling when using
+source synchronized transfers. However that could have performance hit and
+OMAP3 TRM states that buffering disable is not allowed for destination
+synchronized transfers so subsequent patch will implement a method to
+complete DMA writes when stopping.
+
+This patch is based on assumtion that complete lock-up on OMAP2420 is
+different but related problem. I don't have access to OMAP2420 errata but
+I believe this old workaround here is put for a reason but unfortunately
+a wrong bit was typed and problem showed up only now.
+
+Signed-off-by: Jarkko Nikula <jhnikula@gmail.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Acked-by: Manjunath Kondaiah G <manjugk@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/socket.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/plat-omap/dma.c              |   14 ++++++++++----
+ arch/arm/plat-omap/include/plat/dma.h |    1 +
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-Index: linux/net/socket.c
+Index: linux/arch/arm/plat-omap/dma.c
 ===================================================================
---- linux.orig/net/socket.c
-+++ linux/net/socket.c
-@@ -1652,6 +1652,8 @@ SYSCALL_DEFINE6(sendto, int, fd, void __
- 	struct iovec iov;
- 	int fput_needed;
+--- linux.orig/arch/arm/plat-omap/dma.c
++++ linux/arch/arm/plat-omap/dma.c
+@@ -993,11 +993,17 @@ void omap_start_dma(int lch)
+ 	l = dma_read(CCR(lch));
  
-+	if (len > INT_MAX)
-+		len = INT_MAX;
- 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
- 	if (!sock)
- 		goto out;
-@@ -1709,6 +1711,8 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void
- 	int err, err2;
- 	int fput_needed;
+ 	/*
+-	 * Errata: On ES2.0 BUFFERING disable must be set.
+-	 * This will always fail on ES1.0
++	 * Errata: Inter Frame DMA buffering issue (All OMAP2420 and
++	 * OMAP2430ES1.0): DMA will wrongly buffer elements if packing and
++	 * bursting is enabled. This might result in data gets stalled in
++	 * FIFO at the end of the block.
++	 * Workaround: DMA channels must have BUFFERING_DISABLED bit set to
++	 * guarantee no data will stay in the DMA FIFO in case inter frame
++	 * buffering occurs.
+ 	 */
+-	if (cpu_is_omap24xx())
+-		l |= OMAP_DMA_CCR_EN;
++	if (cpu_is_omap2420() ||
++	    (cpu_is_omap2430() && (omap_type() == OMAP2430_REV_ES1_0)))
++		l |= OMAP_DMA_CCR_BUFFERING_DISABLE;
  
-+	if (size > INT_MAX)
-+		size = INT_MAX;
- 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
- 	if (!sock)
- 		goto out;
+ 	l |= OMAP_DMA_CCR_EN;
+ 	dma_write(l, CCR(lch));
+Index: linux/arch/arm/plat-omap/include/plat/dma.h
+===================================================================
+--- linux.orig/arch/arm/plat-omap/include/plat/dma.h
++++ linux/arch/arm/plat-omap/include/plat/dma.h
+@@ -335,6 +335,7 @@
+ #define OMAP2_DMA_MISALIGNED_ERR_IRQ	(1 << 11)
+ 
+ #define OMAP_DMA_CCR_EN			(1 << 7)
++#define OMAP_DMA_CCR_BUFFERING_DISABLE	(1 << 25)
+ 
+ #define OMAP_DMA_DATA_TYPE_S8		0x00
+ #define OMAP_DMA_DATA_TYPE_S16		0x01
