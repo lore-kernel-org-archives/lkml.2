@@ -1,39 +1,51 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0LHXnq (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 8 Dec 2010 18:43:46 -0500
-Received: from beta.look.ca ([216.66.192.3]:53642 "EHLO beta.look.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754509Ab0LHXnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Dec 2010 18:43:45 -0500
-X-Greylist: delayed 1726 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Dec 2010 18:43:45 EST
-Message-ID: <155a7849e1e3df0d5a149ec5bc5fbfa2@webmail.look.ca>
-Date: Wed, 8 Dec 2010 18:14:18 -0500 (EST)
-Subject: Loan Offer Apply Now
-From: "Loan Offer" <jrbatman@look.ca>
-Reply-To: loanoffer71@yahoo.com.hk
-User-Agent: Look WebMail
+	id S1753299Ab0LLNr6 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sun, 12 Dec 2010 08:47:58 -0500
+Received: from 173.193.78.152-static.reverse.softlayer.com ([173.193.78.152]:46796
+	"EHLO dannylifted.dannylifted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752983Ab0LLNry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 08:47:54 -0500
+X-Greylist: delayed 5234 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2010 08:47:54 EST
+To: linux-kernel@vger.kernel.org
+Subject: hey
+X-PHP-Script: dannylifted.com/lists/admin/index.php for 76.168.136.171
+Recieved: 
+Date: Sun, 12 Dec 2010 06:20:39 -0600
+From: monstagetup4@gmail.com
+Message-ID: <e632dfb946a4873d8f08b71ef70551f7@dannylifted.com>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.12
+X-MessageID: 40
+X-ListMember: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - dannylifted.dannylifted.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [503 32008] / [47 12]
+X-AntiAbuse: Sender Address Domain - dannylifted.dannylifted.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hey i tried callin u but ur phone is going straight to voice mail.
+this is the guy with the beats i meant to tell you about. Very well
+made stuff, orchestrated very nicely. some of the best tracks ive
+heard, he uses a roland fantom g6 primarily. www.rolandbeats.tk and
+fix your phone! 
 
 
 
-We Offer Loan At 3% send your
-Names...Address...Tell...Amount...Duration...Sex...contact :
-loanoffer71@yahoo.com.hk
+xxx
 
 
-
-
-
-
-
+--
+Powered by PHPlist, www.phplist.com --
 
 
