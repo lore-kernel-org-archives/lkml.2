@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab0LLKzy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 05:55:54 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49030 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab0LLKzx (ORCPT
+	id S1752602Ab0LLK5t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 05:57:49 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39594 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab0LLK5q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 05:55:53 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6194"; a="66293208"
-From: Saravana Kannan <skannan@codeaurora.org>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-arm-msm@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: Call into regulator driver only when voltage min/max really changes.
-Date: Sun, 12 Dec 2010 02:55:40 -0800
-Message-Id: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.7.1.1
+	Sun, 12 Dec 2010 05:57:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xItQioqzxELkCAH/4NHXyLGIkHRF4akI1ZX6Jh48s2t/qRUc70Ovfs7nzUyS0PdQCd
+         wuAmimE76NRcT06ttpZQlKm24/PYS6aRlPDP82R+x1IGN4j8IlcAjl6MDNYgWdu8xerh
+         P7PHGPa+n+KLeHCfAmTYXYJdeacv5/AX7jK7U=
+MIME-Version: 1.0
+In-Reply-To: <20101211192320.GA24430@void.printf.net>
+References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com>
+	<20101208115510.GD10998@console-pimps.org>
+	<AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com>
+	<AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
+	<20101209064751.GA21128@void.printf.net>
+	<AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
+	<20101209160157.GA28586@void.printf.net>
+	<AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com>
+	<20101211192320.GA24430@void.printf.net>
+Date: Sun, 12 Dec 2010 10:57:44 +0000
+Message-ID: <AANLkTin5aVPz5Y=jS89V00XS=rje3gqeUb2VTYt2A_9=@mail.gmail.com>
+Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
+From: Will Newton <will.newton@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even in cases where the consumer driver calls the regulator core with
-different voltage min/max values, the application of the various
-voltage constraints could result in the min/max voltage values passed
-to the regulator driver to be unchanged since the previous invocation.
+On Sat, Dec 11, 2010 at 7:23 PM, Chris Ball <cjb@laptop.org> wrote:
+> Hi Will,
+>
+> On Thu, Dec 09, 2010 at 05:24:26PM +0000, Will Newton wrote:
+>> This adds the mmc host driver for the Synopsys DesignWare mmc
+>> host controller, found in a number of embedded SoC designs.
+>>
+>> Signed-off-by: Will Newton <will.newton@imgtec.com>
+>> Reviewed-by: Matt Fleming <matt@console-pimps.org>
+>
+> Running a test build on ARM fails:
+>
+> drivers/mmc/host/dw_mmc.c: In function ‘dw_mci_push_data64’:
+> drivers/mmc/host/dw_mmc.c:985: error: implicit declaration of function ‘__raw_writeq’
+> drivers/mmc/host/dw_mmc.c: In function ‘dw_mci_pull_data64’:
+> drivers/mmc/host/dw_mmc.c:998: error: implicit declaration of function ‘__raw_readq’
+>
+> because arch/arm doesn't implement raw versions of these 64-bit accesses.
+> I'm surprised that this driver hasn't been compiled on ARM before!  What
 
-Optimize these cases by not calling into the regulator driver and not
-sending incorrect/unnecessary voltage change notifications.
+That particular bit of code has been added since it was last built for
+arm. Our architecture can do 64bit accesses so we implement readq.
+Unfortunately there doesn't seem to be a sane way to conditionalize
+code for architectures that have or don't have readq, so I suspect
+I'll have to just remove that branch of the if statement for now.
 
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
----
- drivers/regulator/core.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+> kind of arch are you testing on?  Do you have any ARM hardware (lpc313x?)
+> to verify the driver on?
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index ba521f0..c2e67bb 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1640,12 +1640,18 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 	ret = regulator_check_voltage(rdev, &min_uV, &max_uV);
- 	if (ret < 0)
- 		goto out;
--	regulator->min_uV = min_uV;
--	regulator->max_uV = max_uV;
-+
-+	if (regulator->min_uV == min_uV && regulator->max_uV == max_uV)
-+		goto unlock;
- 	ret = rdev->desc->ops->set_voltage(rdev, min_uV, max_uV);
-+	if (!ret) {
-+		regulator->min_uV = min_uV;
-+		regulator->max_uV = max_uV;
-+	}
- 
- out:
- 	_notifier_call_chain(rdev, REGULATOR_EVENT_VOLTAGE_CHANGE, NULL);
-+unlock:
- 	mutex_unlock(&rdev->mutex);
- 	return ret;
- }
--- 
-1.7.1.1
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Our architecture is not merged into mainline yet (although I am
+working on that). I don't have an lpc313x board but I would be happy
+to work on this code with anyone who does.
