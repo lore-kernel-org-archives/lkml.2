@@ -1,39 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0LLTCI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 14:02:08 -0500
-Received: from kroah.org ([198.145.64.141]:34870 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab0LLTCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 14:02:07 -0500
-Date: Sun, 12 Dec 2010 10:48:34 -0800
-From: Greg KH <greg@kroah.com>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Micha Nelissen <micha@neli.hopto.org>
-Subject: Re: [PATCH -mm 4/4] RapidIO: Add new sysfs attributes
-Message-ID: <20101212184834.GA17052@kroah.com>
-References: <1292013498-31406-1-git-send-email-alexandre.bounine@idt.com>
- <1292013498-31406-5-git-send-email-alexandre.bounine@idt.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292013498-31406-5-git-send-email-alexandre.bounine@idt.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753925Ab0LLTDJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 14:03:09 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:43376 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab0LLTDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 14:03:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PC0VK4C3OQ/c1hdOmHkOuEASgr2ne4r6cpE3ifCHblgj/3I902aj9wm7t7OHXii+Sw
+         VRK/hnL1xdNSVVGLC/YPboiMBCVZCLaSAcHR/giSYGduV5QMlDnBJ43QG3IF7yiXMtdP
+         IXpEUkMqG9S/UqM4zf7sY7EGGQhRpuvNbaf08=
+Subject: Re: [PATCH v2] ata: pata_at91.c bugfix for high master clock
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        geomatsi@gmail.com, nicolas.ferre@atmel.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        christian.glindkamp@taskit.de, ryan@bluewatersys.com,
+        pgsellmann@portner-elektronik.at
+In-Reply-To: <4D04D2E2.20100@ru.mvista.com>
+References: <1292099846-24528-1-git-send-email-plyatov@gmail.com>
+	 <4D04D2E2.20100@ru.mvista.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 12 Dec 2010 22:02:59 +0300
+Message-ID: <1292180579.8737.12.camel@homepc>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 03:38:18PM -0500, Alexandre Bounine wrote:
-> Add new sysfs attributes.
+Dear Sergei,
 
-Like Andrew pointed out, all sysfs files are required to have entries in
-Documentation/ABI.  If the existing rapidio sysfs files are not
-documented, please document them in there _before_ adding new ones.
+> Hello.
+> 
+> On 11-12-2010 23:37, Igor Plyatov wrote:
+> 
+> > The AT91SAM9 microcontrollers with master clock higher then 105 MHz
+> > and PIO0, have overflow of the NCS_RD_PULSE value in the MSB. This
+> > lead to "NCS_RD_PULSE" pulse longer then "NRD_CYCLE" pulse and driver
+> > does not detect ATA device.
+> 
+> > Signed-off-by: Igor Plyatov<plyatov@gmail.com>
+> [...]
 
-thanks,
+Please use more descriptive comments, because it is not clear what you
+mean here. Maybe here you just cut a text...
+It is so strange to cut such small amount of text and I does not have
+any idea why here is "[...]" exists.
 
-greg k-h
+> > diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+> > index 0da0dcc..a462405 100644
+> > --- a/drivers/ata/pata_at91.c
+> > +++ b/drivers/ata/pata_at91.c
+> [...]
+
+The same as above. Nobody are able to read you mind on the distance :-)
+
+> > @@ -50,7 +52,7 @@ struct at91_ide_info {
+> >   };
+> >
+> >   static const struct ata_timing initial_timing =
+> > -	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
+> > +	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0};
+> 
+>     BTW, you haven't described this in the changelog...
+
+Here is just a typo fixed for the ata_timing structure. This typo does
+not have influence on the driver operation, but I do not like to leave
+such a negligible problem as it is.
+
+> WBR, Sergei
+
+Best regards!
+--
+Igor Plyatov
+
