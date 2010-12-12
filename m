@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab0LLIE6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 03:04:58 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40652 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab0LLIE4 (ORCPT
+	id S1751867Ab0LLIFF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 03:05:05 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56527 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab0LLIE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 03:04:56 -0500
+	Sun, 12 Dec 2010 03:04:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=PahfqIGVhpSgtqaykF/6U6pQcMadIDEdhLVATbAaNI6XsEqNE3sjkIf0gVwNwW3BDo
-         D/SvJ5AlvJMEB0rQGNpcRNXwkcMTng22adotaeHWjLAJsvakNphjyAxgJlBVl/tEtDC+
-         h3ARoG7xjxPb0R8GVXZLRPxLC6z1UZ53XHzNs=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=BCPzZzolMFKeWJ4jRgCC8jPd4FmXtRsVopwi3TEZ1klog3ucKsKt+nCRWcsGMF4Enj
+         EgMXRuBn9NlYfYvv+F4DwMcEVN3t4jpYXEIJ100BVifWlBE+e8Fy4mhpSiL6TGWYbpby
+         O9sJaWLsfmU64miamL/WCfVoP9yuTgPkswGF8=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Staging: vme_ca91cx42: use __dev{init,exit} for ->probe/remove
-Date: Sun, 12 Dec 2010 17:04:27 +0900
-Message-Id: <1292141068-31458-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/2] Staging: vme_tsi148: use __dev{init,exit} for ->probe/remove
+Date: Sun, 12 Dec 2010 17:04:28 +0900
+Message-Id: <1292141068-31458-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.3.3.400.g93cef
+In-Reply-To: <1292141068-31458-1-git-send-email-namhyung@gmail.com>
+References: <1292141068-31458-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- drivers/staging/vme/bridges/vme_ca91cx42.c |   12 +++++++-----
+ drivers/staging/vme/bridges/vme_tsi148.c |   12 +++++++-----
  1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 7db44fe32762..d1df7d12f504 100644
---- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
+index 2f5b70986998..0ec9fa4768c2 100644
+--- a/drivers/staging/vme/bridges/vme_tsi148.c
++++ b/drivers/staging/vme/bridges/vme_tsi148.c
 @@ -35,8 +35,9 @@
- #include "vme_ca91cx42.h"
+ #include "vme_tsi148.h"
  
- static int __init ca91cx42_init(void);
--static int ca91cx42_probe(struct pci_dev *, const struct pci_device_id *);
--static void ca91cx42_remove(struct pci_dev *);
-+static int __devinit ca91cx42_probe(struct pci_dev *,
-+				    const struct pci_device_id *);
-+static void __devexit ca91cx42_remove(struct pci_dev *);
- static void __exit ca91cx42_exit(void);
+ static int __init tsi148_init(void);
+-static int tsi148_probe(struct pci_dev *, const struct pci_device_id *);
+-static void tsi148_remove(struct pci_dev *);
++static int __devinit tsi148_probe(struct pci_dev *,
++				  const struct pci_device_id *);
++static void __devexit tsi148_remove(struct pci_dev *);
+ static void __exit tsi148_exit(void);
  
- /* Module parameters */
-@@ -53,7 +54,7 @@ static struct pci_driver ca91cx42_driver = {
+ 
+@@ -55,7 +56,7 @@ static struct pci_driver tsi148_driver = {
  	.name = driver_name,
- 	.id_table = ca91cx42_ids,
- 	.probe = ca91cx42_probe,
--	.remove = ca91cx42_remove,
-+	.remove = __devexit_p(ca91cx42_remove),
+ 	.id_table = tsi148_ids,
+ 	.probe = tsi148_probe,
+-	.remove = tsi148_remove,
++	.remove = __devexit_p(tsi148_remove),
  };
  
- static u32 ca91cx42_DMA_irqhandler(struct ca91cx42_driver *bridge)
-@@ -1565,7 +1566,8 @@ static void ca91cx42_crcsr_exit(struct vme_bridge *ca91cx42_bridge,
+ static void reg_join(unsigned int high, unsigned int low,
+@@ -2215,7 +2216,8 @@ static void tsi148_crcsr_exit(struct vme_bridge *tsi148_bridge,
  		bridge->crcsr_bus);
  }
  
--static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+static int __devinit ca91cx42_probe(struct pci_dev *pdev,
-+				    const struct pci_device_id *id)
+-static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++static int __devinit tsi148_probe(struct pci_dev *pdev,
++				  const struct pci_device_id *id)
  {
- 	int retval, i;
+ 	int retval, i, master_num;
  	u32 data;
-@@ -1831,7 +1833,7 @@ err_struct:
+@@ -2528,7 +2530,7 @@ err_struct:
  
  }
  
--void ca91cx42_remove(struct pci_dev *pdev)
-+void __devexit ca91cx42_remove(struct pci_dev *pdev)
+-static void tsi148_remove(struct pci_dev *pdev)
++static void __devexit tsi148_remove(struct pci_dev *pdev)
  {
  	struct list_head *pos = NULL;
  	struct vme_master_resource *master_image;
