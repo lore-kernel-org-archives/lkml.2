@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab0LLX6M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:58:12 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:53525 "EHLO
+	id S1755917Ab0LLX6b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:58:31 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36610 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755677Ab0LLX55 (ORCPT
+	with ESMTP id S1755800Ab0LLXr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:57:57 -0500
-Date: Mon, 13 Dec 2010 00:57:56 +0100
+	Sun, 12 Dec 2010 18:47:59 -0500
 From: Andi Kleen <andi@firstfloor.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andi Kleen <andi@firstfloor.org>, toralf.foerster@gmx.de, hch@lst.de,
-        viro@zeniv.linux.org.uk, jdike@addtoit.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] [64/223] hostfs: fix UML crash: remove f_spare from hostfs
-Message-ID: <20101212235756.GA21492@one.firstfloor.org>
-References: <201012131244.547034648@firstfloor.org> <20101212234602.5DAB5B27BF@basil.firstfloor.org> <201012130051.55692.richard@nod.at>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012130051.55692.richard@nod.at>
-User-Agent: Mutt/1.4.2.2i
+References: <201012131244.547034648@firstfloor.org>
+In-Reply-To: <201012131244.547034648@firstfloor.org>
+To: oskar@scara.com, ak@linux.intel.com, jj@chaosbits.net, sfrench@us.ibm.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [173/223] cifs: fix another memleak, in cifs_root_iget
+Message-Id: <20101212234757.E7C5BB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:57 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 12:51:55AM +0100, Richard Weinberger wrote:
-> Andi,
-> 
-> Am Montag 13 Dezember 2010, 00:46:02 schrieb Andi Kleen:
-> > 2.6.35-longterm review patch.  If anyone has any objections, please let me
-> > know.
-> 
-> This patch is not needed on 2.6.35.
-> It makes only sense on >= 2.6.36.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Dropped. Thanks.
+------------------
+From: Oskar Schirmer <oskar@scara.com>
 
--Andi
+commit a7851ce73b9fdef53f251420e6883cf4f3766534 upstream.
+
+cifs_root_iget allocates full_path through
+cifs_build_path_to_root, but fails to kfree it upon
+cifs_get_inode_info* failure.
+
+Make all failure exit paths traverse clean up
+handling at the end of the function.
+
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/cifs/inode.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+Index: linux/fs/cifs/inode.c
+===================================================================
+--- linux.orig/fs/cifs/inode.c
++++ linux/fs/cifs/inode.c
+@@ -804,8 +804,10 @@ struct inode *cifs_root_iget(struct supe
+ 		rc = cifs_get_inode_info(&inode, full_path, NULL, sb,
+ 						xid, NULL);
+ 
+-	if (!inode)
+-		return ERR_PTR(-ENOMEM);
++	if (!inode) {
++		inode = ERR_PTR(rc);
++		goto out;
++	}
+ 
+ 	if (rc && cifs_sb->tcon->ipc) {
+ 		cFYI(1, "ipc connection - fake read inode");
+@@ -816,13 +818,11 @@ struct inode *cifs_root_iget(struct supe
+ 		inode->i_uid = cifs_sb->mnt_uid;
+ 		inode->i_gid = cifs_sb->mnt_gid;
+ 	} else if (rc) {
+-		kfree(full_path);
+-		_FreeXid(xid);
+ 		iget_failed(inode);
+-		return ERR_PTR(rc);
++		inode = ERR_PTR(rc);
+ 	}
+ 
+-
++out:
+ 	kfree(full_path);
+ 	/* can not call macro FreeXid here since in a void func
+ 	 * TODO: This is no longer true
