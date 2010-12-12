@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab0LMAO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:14:57 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36034 "EHLO
+	id S1754888Ab0LMAP0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:15:26 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35987 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754763Ab0LLXq3 (ORCPT
+	with ESMTP id S1754393Ab0LLXqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:29 -0500
+	Sun, 12 Dec 2010 18:46:25 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: tyhicks@linux.vnet.ibm.com, gregkh@suse.de, ak@linux.intel.com,
+To: graham.gower@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [88/223] eCryptfs: Clear LOOKUP_OPEN flag when creating lower file
-Message-Id: <20101212234627.CC56EB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:27 +0100 (CET)
+Subject: [PATCH] [85/223] drivers/char/vt_ioctl.c: fix VT_OPENQRY error value
+Message-Id: <20101212234624.A0A7CB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:24 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,51 +23,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: Graham Gower <graham.gower@gmail.com>
 
-commit 2e21b3f124eceb6ab5a07c8a061adce14ac94e14 upstream.
+commit 1e0ad2881d50becaeea70ec696a80afeadf944d2 upstream.
 
-eCryptfs was passing the LOOKUP_OPEN flag through to the lower file
-system, even though ecryptfs_create() doesn't support the flag. A valid
-filp for the lower filesystem could be returned in the nameidata if the
-lower file system's create() function supported LOOKUP_OPEN, possibly
-resulting in unencrypted writes to the lower file.
+When all VT's are in use, VT_OPENQRY casts -1 to unsigned char before
+returning it to userspace as an int.  VT255 is not the next available
+console.
 
-However, this is only a potential problem in filesystems (FUSE, NFS,
-CIFS, CEPH, 9p) that eCryptfs isn't known to support today.
-
-https://bugs.launchpad.net/ecryptfs/+bug/641703
-
-Reported-by: Kevin Buhr
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Graham Gower <graham.gower@gmail.com>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/ecryptfs/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/char/vt_ioctl.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-Index: linux/fs/ecryptfs/inode.c
+Index: linux/drivers/char/vt_ioctl.c
 ===================================================================
---- linux.orig/fs/ecryptfs/inode.c
-+++ linux/fs/ecryptfs/inode.c
-@@ -70,15 +70,19 @@ ecryptfs_create_underlying_file(struct i
- 	struct vfsmount *lower_mnt = ecryptfs_dentry_to_lower_mnt(dentry);
- 	struct dentry *dentry_save;
- 	struct vfsmount *vfsmount_save;
-+	unsigned int flags_save;
- 	int rc;
+--- linux.orig/drivers/char/vt_ioctl.c
++++ linux/drivers/char/vt_ioctl.c
+@@ -503,6 +503,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 	struct kbd_struct * kbd;
+ 	unsigned int console;
+ 	unsigned char ucval;
++	unsigned int uival;
+ 	void __user *up = (void __user *)arg;
+ 	int i, perm;
+ 	int ret = 0;
+@@ -657,7 +658,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		break;
  
- 	dentry_save = nd->path.dentry;
- 	vfsmount_save = nd->path.mnt;
-+	flags_save = nd->flags;
- 	nd->path.dentry = lower_dentry;
- 	nd->path.mnt = lower_mnt;
-+	nd->flags &= ~LOOKUP_OPEN;
- 	rc = vfs_create(lower_dir_inode, lower_dentry, mode, nd);
- 	nd->path.dentry = dentry_save;
- 	nd->path.mnt = vfsmount_save;
-+	nd->flags = flags_save;
- 	return rc;
- }
+ 	case KDGETMODE:
+-		ucval = vc->vc_mode;
++		uival = vc->vc_mode;
+ 		goto setint;
  
+ 	case KDMAPDISP:
+@@ -695,7 +696,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		break;
+ 
+ 	case KDGKBMODE:
+-		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
++		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
+ 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
+ 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
+ 				 K_XLATE);
+@@ -717,9 +718,9 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		break;
+ 
+ 	case KDGKBMETA:
+-		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
++		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
+ 	setint:
+-		ret = put_user(ucval, (int __user *)arg);
++		ret = put_user(uival, (int __user *)arg);
+ 		break;
+ 
+ 	case KDGETKEYCODE:
+@@ -949,7 +950,7 @@ int vt_ioctl(struct tty_struct *tty, str
+ 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
+ 			if (! VT_IS_IN_USE(i))
+ 				break;
+-		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
++		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
+ 		goto setint;		 
+ 
+ 	/*
