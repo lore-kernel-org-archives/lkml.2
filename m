@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab0LMABR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:01:17 -0500
-Received: from capside.net ([81.19.98.74]:48737 "EHLO eul0600410.eu.verio.net"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755193Ab0LMABO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 19:01:14 -0500
-Date: Mon, 13 Dec 2010 01:01:06 +0100
-From: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
-To: Joe Perches <joe@perches.com>
-Cc: devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Staging: rt2860: include KERN_* in printk
-Message-ID: <20101213000106.GA2049@bart.evergreen.loc>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>,
-	linux-kernel@vger.kernel.org
-References: <1292176591-26081-1-git-send-email-agimenez@sysvalve.es>
- <1292176591-26081-4-git-send-email-agimenez@sysvalve.es>
- <1292180668.18202.43.camel@Joe-Laptop>
- <20101212192554.GA32583@bart.evergreen.loc>
- <1292183170.18202.56.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1292183170.18202.56.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756164Ab0LMABd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:01:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36499 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab0LLXrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 18:47:43 -0500
+From: Andi Kleen <andi@firstfloor.org>
+References: <201012131244.547034648@firstfloor.org>
+In-Reply-To: <201012131244.547034648@firstfloor.org>
+To: gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [158/223] USB: misc: usbled: fix up some sysfs attribute permissions
+Message-Id: <20101212234741.E5F8DB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:41 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 11:46:09AM -0800, Joe Perches wrote:
-> On Sun, 2010-12-12 at 20:25 +0100, L. Alberto Giménez wrote:
-> > On Sun, Dec 12, 2010 at 11:04:28AM -0800, Joe Perches wrote:
-> > > On Sun, 2010-12-12 at 18:56 +0100, L. Alberto Giménez wrote:
-> > > > diff --git a/drivers/staging/rt2860/pci_main_dev.c b/drivers/staging/rt2860/pci_main_dev.c
-> > > > @@ -601,15 +600,15 @@ void hex_dump(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen)
-> > > >[...]
-> > > This should use print_hex_dump
-> > Ok, but I'll have to figure out how to translate the arguments without losing
-> > the original developers intended format.
-> 
-> I think you can change the format without concern.
-> 
-> print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 1,
-> 	       pSrcBufVA, SrcBufLen, true);
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Hi Joe,
+------------------
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-If you don't mind, I will send this as a separate patch, since including it in
-the KERN_* cleanup would clobber the patch and I'd prefer to make an standalone
-patch for the hex_dump -> print_hex_dump modifications (many files in the source
-do use the function).
+commit 48f115470e68d443436b76b22dad63ffbffd6b97 upstream.
 
-Regards,
--- 
-L. Alberto Giménez
-JabberID agimenez@jabber.sysvalve.es
-GnuPG key ID 0x3BAABDE1
+They should not be writable by any user.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ drivers/usb/misc/usbled.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux/drivers/usb/misc/usbled.c
+===================================================================
+--- linux.orig/drivers/usb/misc/usbled.c
++++ linux/drivers/usb/misc/usbled.c
+@@ -94,7 +94,7 @@ static ssize_t set_##value(struct device
+ 	change_color(led);						\
+ 	return count;							\
+ }									\
+-static DEVICE_ATTR(value, S_IWUGO | S_IRUGO, show_##value, set_##value);
++static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, show_##value, set_##value);
+ show_set(blue);
+ show_set(red);
+ show_set(green);
