@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab0LMAYZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:24:25 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44819 "EHLO
+	id S1754271Ab0LLXpk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:45:40 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44620 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab0LLXpo (ORCPT
+	with ESMTP id S1753264Ab0LLXpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:44 -0500
+	Sun, 12 Dec 2010 18:45:13 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: Trond.Myklebust@netapp.com, gregkh@suse.de, ak@linux.intel.com,
+To: lrodriguez@atheros.com, pstew@google.com, amod.bodas@atheros.com,
+        linville@tuxdriver.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [43/223] NFS: Don't SIGBUS if nfs_vm_page_mkwrite races with a cache invalidation
-Message-Id: <20101212234540.26060B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:40 +0100 (CET)
+Subject: [PATCH] [17/223] mac80211: reset connection idle when going offchannel
+Message-Id: <20101212234512.AF672B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:45:12 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,61 +23,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit bc4866b6e0b44f8ea0df22a16e5927714beb4983 upstream.
+commit 4730d5977f3e12b828d354f7752cffd94bdf39e5 upstream.
 
-In the case where we lock the page, and then find out that the page has
-been thrown out of the page cache, we should just return VM_FAULT_NOPAGE.
-This is what block_page_mkwrite() does in these situations.
+When we go offchannel mac80211 currently leaves alive the
+connection idle monitor. This should be instead postponed
+until we come back to our home channel, otherwise by the
+time we get back to the home channel we could be triggering
+unecesary probe requests. For APs that do not respond to
+unicast probe requests (Nexus One is a simple example) this
+means we essentially get disconnected after the probes
+fails.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This patch has stable fixes for kernels [2.6.35+]
+
+Cc: Paul Stewart <pstew@google.com>
+Cc: Amod Bodas <amod.bodas@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/nfs/file.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ net/mac80211/offchannel.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-Index: linux/fs/nfs/file.c
+Index: linux/net/mac80211/offchannel.c
 ===================================================================
---- linux.orig/fs/nfs/file.c
-+++ linux/fs/nfs/file.c
-@@ -560,7 +560,7 @@ static int nfs_vm_page_mkwrite(struct vm
- 	struct file *filp = vma->vm_file;
- 	struct dentry *dentry = filp->f_path.dentry;
- 	unsigned pagelen;
--	int ret = -EINVAL;
-+	int ret = VM_FAULT_NOPAGE;
- 	struct address_space *mapping;
+--- linux.orig/net/mac80211/offchannel.c
++++ linux/net/mac80211/offchannel.c
+@@ -22,12 +22,15 @@
+ static void ieee80211_offchannel_ps_enable(struct ieee80211_sub_if_data *sdata)
+ {
+ 	struct ieee80211_local *local = sdata->local;
++	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
  
- 	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
-@@ -576,21 +576,20 @@ static int nfs_vm_page_mkwrite(struct vm
- 	if (mapping != dentry->d_inode->i_mapping)
- 		goto out_unlock;
+ 	local->offchannel_ps_enabled = false;
  
--	ret = 0;
- 	pagelen = nfs_page_length(page);
- 	if (pagelen == 0)
- 		goto out_unlock;
+ 	/* FIXME: what to do when local->pspolling is true? */
  
--	ret = nfs_flush_incompatible(filp, page);
--	if (ret != 0)
--		goto out_unlock;
-+	ret = VM_FAULT_LOCKED;
-+	if (nfs_flush_incompatible(filp, page) == 0 &&
-+	    nfs_updatepage(filp, page, 0, pagelen) == 0)
-+		goto out;
+ 	del_timer_sync(&local->dynamic_ps_timer);
++	del_timer_sync(&ifmgd->conn_mon_timer);
++
+ 	cancel_work_sync(&local->dynamic_ps_enable_work);
  
--	ret = nfs_updatepage(filp, page, 0, pagelen);
-+	ret = VM_FAULT_SIGBUS;
- out_unlock:
--	if (!ret)
--		return VM_FAULT_LOCKED;
- 	unlock_page(page);
--	return VM_FAULT_SIGBUS;
-+out:
-+	return ret;
+ 	if (local->hw.conf.flags & IEEE80211_CONF_PS) {
+@@ -85,6 +88,8 @@ static void ieee80211_offchannel_ps_disa
+ 		mod_timer(&local->dynamic_ps_timer, jiffies +
+ 			  msecs_to_jiffies(local->hw.conf.dynamic_ps_timeout));
+ 	}
++
++	ieee80211_sta_reset_conn_monitor(sdata);
  }
  
- static const struct vm_operations_struct nfs_file_vm_ops = {
+ void ieee80211_offchannel_stop_beaconing(struct ieee80211_local *local)
