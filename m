@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab0LLQCl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:02:41 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45712 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752855Ab0LLQCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:02:39 -0500
-Message-ID: <4D04F211.6080602@kernel.org>
-Date: Sun, 12 Dec 2010 17:02:25 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753346Ab0LLQNw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 11:13:52 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64215 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab0LLQNs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 11:13:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BtTg4YQcn/wlZ3K2IfZ7jlBYF6z9cVdgcmbHQn28bJb+lMHUkuGWb2AAODC9JT82Ib
+         OVkS+817sP/P+yEp5DDIjUrlUvR1E3rWl+1Il0wtkYxQrpu7to6VxgiJncyY4U8xqI1m
+         dKMTneFgWOfwMvKZtlgm0IzHAcEY3rbEFICAA=
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 09/30] sound: don't use flush_scheduled_work()
-References: <1292086307-19211-1-git-send-email-tj@kernel.org> <1292086307-19211-10-git-send-email-tj@kernel.org> <s5hk4jfbc94.wl%tiwai@suse.de> <4D0492CB.2010702@kernel.org> <s5hhbejb1yr.wl%tiwai@suse.de> <20101212124041.GD15189@opensource.wolfsonmicro.com>
-In-Reply-To: <20101212124041.GD15189@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <20101212131550.GA2608@darkstar>
+References: <20101212131550.GA2608@darkstar>
+Date: Sun, 12 Dec 2010 17:13:47 +0100
+Message-ID: <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
+Subject: Re: [PATCH] bttv: fix mutex use before init
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Clayton <chris2553@googlemail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 16:02:28 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2010 01:40 PM, Mark Brown wrote:
-> On Sun, Dec 12, 2010 at 01:38:36PM +0100, Takashi Iwai wrote:
-> 
->> Meanwhile, I wondered whether it's the really wanted behavior for
->> that particular code path, thus the previous question to Liam.
-> 
-> Yes, it's desired behaviour.  That's what the old code was trying to do.
-> I've not seen the original patch, could someone resend it to me please
-> (or send a pointer)?
+On Sun, Dec 12, 2010 at 2:15 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> oops happen in bttv_open while locking uninitialized mutex fh->cap.vb_lock
+> add mutex_init before usage
 
-Weirdly, lkml seemed to have eaten the original postings.  I can't
-find them in any archive.  The following is the original patch.
+I have seen the same problem twice since I switched of the BKL in
+2.6.37-rc2, but only had the time today to search for the cause.
+(It only happend on two boots out of probably more then 50, so I only
+investigated after it happened a second time with -rc5)
 
-  http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=01f8126c2e14245cf0ba11a25fb9a291710066e1;hp=cd591981a8d06d6aaca6d7ef2412d12a7adf47ed
+The cause was making this change to bttv_open() and radio_open() to
+remove the BKL from them:
++	mutex_lock(&fh->cap.vb_lock);
+ 	*fh = btv->init;
++	mutex_unlock(&fh->cap.vb_lock);
 
-Thanks.
+This is wrong because of two things:
+First: The fh->cap.vb_lock has not been initialised, as you noted.
+Second: The middle line will overwrite the mutex!
 
--- 
-tejun
+Just adding mutex_init() will not really help the second problem and
+seems to be wrong from the point that cap.vb_lock already has a
+mutex_init() via videobuf_queue_sg_init().
+
+I'm not sure what the correct fix is, but I would rather suggest this:
+
+ * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
+&btv->init.cap.vb_lock
+ * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
+
+> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+> Tested-by: Chris Clayton <chris2553@googlemail.com>
+> ---
+>  drivers/media/video/bt8xx/bttv-driver.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> --- linux-2.6.orig/drivers/media/video/bt8xx/bttv-driver.c      2010-11-27 11:21:30.000000000 +0800
+> +++ linux-2.6/drivers/media/video/bt8xx/bttv-driver.c   2010-12-12 16:31:39.633333338 +0800
+> @@ -3291,6 +3291,8 @@ static int bttv_open(struct file *file)
+>        fh = kmalloc(sizeof(*fh), GFP_KERNEL);
+>        if (unlikely(!fh))
+>                return -ENOMEM;
+> +
+> +       mutex_init(&fh->cap.vb_lock);
+>        file->private_data = fh;
+>
+>        /*
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
