@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab0LMA2j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:28:39 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44735 "EHLO
+	id S1756425Ab0LMA2w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:28:52 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44726 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab0LLXp2 (ORCPT
+	with ESMTP id S1753180Ab0LLXp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:28 -0500
+	Sun, 12 Dec 2010 18:45:27 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: FlorianSchandinat@gmx.de, corbet@lwn.net, JosephChan@via.com.tw,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [31/223] viafb: fix i2c_transfer error handling
-Message-Id: <20101212234527.80A54B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:27 +0100 (CET)
+To: nobuhiro.iwamatsu.yj@renesas.com, w.sang@pengutronix.de,
+        khali@linux-fr.org, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [30/223] i2c-pca-platform: Change device name of request_irq
+Message-Id: <20101212234526.72F5DB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:45:26 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,96 +23,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
 
-commit 85c5702ac046b14713f776d59768252d8ed8018f upstream.
+commit 323584436db0cb05286425d4dfd9516fce88487f upstream.
 
-i2c_transfer returns negative errno on error and number of messages
-processed on success. Just returning this value would give a poor
-interface as it is not obvious that you must compare with 2 after reading
-1 or n bytes and with 1 after writing 1 byte to determine if it was
-successful. To avoid this error prone interface convert the error code
-of a successful read/write to zero and all other non-negative values to
-an negative error code.
-This fixes a regression introduced by
-	via: Rationalize vt1636 detection
-which resulted in no longer detecting a VT1636 chip and therefore has
-broken the output in configurations which contain this chip.
+i2c->adap.name shouldn't be used in request_irq.
+Instead the driver name "i2c-pca-platform" should be used.
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Acked-by: Jonathan Corbet <corbet@lwn.net>
-Cc: Joseph Chan <JosephChan@via.com.tw>
+Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/video/via/via_i2c.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-pca-platform.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux/drivers/video/via/via_i2c.c
+Index: linux/drivers/i2c/busses/i2c-pca-platform.c
 ===================================================================
---- linux.orig/drivers/video/via/via_i2c.c
-+++ linux/drivers/video/via/via_i2c.c
-@@ -114,6 +114,7 @@ static void via_i2c_setsda(void *data, i
+--- linux.orig/drivers/i2c/busses/i2c-pca-platform.c
++++ linux/drivers/i2c/busses/i2c-pca-platform.c
+@@ -224,7 +224,7 @@ static int __devinit i2c_pca_pf_probe(st
  
- int viafb_i2c_readbyte(u8 adap, u8 slave_addr, u8 index, u8 *pdata)
- {
-+	int ret;
- 	u8 mm1[] = {0x00};
- 	struct i2c_msg msgs[2];
- 
-@@ -126,11 +127,18 @@ int viafb_i2c_readbyte(u8 adap, u8 slave
- 	mm1[0] = index;
- 	msgs[0].len = 1; msgs[1].len = 1;
- 	msgs[0].buf = mm1; msgs[1].buf = pdata;
--	return i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	ret = i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	if (ret == 2)
-+		ret = 0;
-+	else if (ret >= 0)
-+		ret = -EIO;
-+
-+	return ret;
- }
- 
- int viafb_i2c_writebyte(u8 adap, u8 slave_addr, u8 index, u8 data)
- {
-+	int ret;
- 	u8 msg[2] = { index, data };
- 	struct i2c_msg msgs;
- 
-@@ -140,11 +148,18 @@ int viafb_i2c_writebyte(u8 adap, u8 slav
- 	msgs.addr = slave_addr / 2;
- 	msgs.len = 2;
- 	msgs.buf = msg;
--	return i2c_transfer(&via_i2c_par[adap].adapter, &msgs, 1);
-+	ret = i2c_transfer(&via_i2c_par[adap].adapter, &msgs, 1);
-+	if (ret == 1)
-+		ret = 0;
-+	else if (ret >= 0)
-+		ret = -EIO;
-+
-+	return ret;
- }
- 
- int viafb_i2c_readbytes(u8 adap, u8 slave_addr, u8 index, u8 *buff, int buff_len)
- {
-+	int ret;
- 	u8 mm1[] = {0x00};
- 	struct i2c_msg msgs[2];
- 
-@@ -156,7 +171,13 @@ int viafb_i2c_readbytes(u8 adap, u8 slav
- 	mm1[0] = index;
- 	msgs[0].len = 1; msgs[1].len = buff_len;
- 	msgs[0].buf = mm1; msgs[1].buf = buff;
--	return i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	ret = i2c_transfer(&via_i2c_par[adap].adapter, msgs, 2);
-+	if (ret == 2)
-+		ret = 0;
-+	else if (ret >= 0)
-+		ret = -EIO;
-+
-+	return ret;
- }
- 
- /*
+ 	if (irq) {
+ 		ret = request_irq(irq, i2c_pca_pf_handler,
+-			IRQF_TRIGGER_FALLING, i2c->adap.name, i2c);
++			IRQF_TRIGGER_FALLING, pdev->name, i2c);
+ 		if (ret)
+ 			goto e_reqirq;
+ 	}
