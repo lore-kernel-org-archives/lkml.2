@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab0LLRsH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 12:48:07 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:37935 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752623Ab0LLRsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 12:48:04 -0500
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Subject: [PATCH v4] kbuild, deb-pkg: support overriding userland architecture
-Date: Sun, 12 Dec 2010 17:39:40 +0000
-Message-Id: <1292175580-22085-1-git-send-email-asbjorn@asbjorn.biz>
+	id S1753627Ab0LLSDY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 13:03:24 -0500
+Received: from 232.Red-88-26-245.staticIP.rima-tde.net ([88.26.245.232]:54980
+	"HELO sysvalve.homelinux.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753483Ab0LLSDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 13:03:23 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2010 13:03:22 EST
+From: =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
+To: linux-kernel@vger.kernel.org
+Cc: devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
+Subject: [PATCH 1/3] Staging: rt2860: Clean spaces before tabs
+Date: Sun, 12 Dec 2010 18:56:29 +0100
+Message-Id: <1292176591-26081-2-git-send-email-agimenez@sysvalve.es>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4D00F709.1000406@suse.cz>
-References: <4D00F709.1000406@suse.cz>
+In-Reply-To: <1292176591-26081-1-git-send-email-agimenez@sysvalve.es>
+References: <1292176591-26081-1-git-send-email-agimenez@sysvalve.es>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Usefull if building for sparc64 userland, because the
-sparc and sparc64 userlands use the same 64-bit kernel,
-making it impossible to always select the correct userland
-architecture for the resulting debian package.
+Fix checkpatch complains
 
-Might also be usefull, if you want a i386 userland with a amd64 kernel.
-
-Example usage:
-	make KBUILD_DEBARCH=i386 deb-pkg
-
-LKML-reference: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Acked-by: maximilian attems <max@stro.at>
+Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
 ---
- Documentation/kbuild/kbuild.txt |    8 ++++++++
- scripts/package/builddeb        |    3 +++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/staging/rt2860/oid.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-index 634c625..b146eb8 100644
---- a/Documentation/kbuild/kbuild.txt
-+++ b/Documentation/kbuild/kbuild.txt
-@@ -51,6 +51,14 @@ Specify the output directory when building the kernel.
- The output directory can also be specificed using "O=...".
- Setting "O=..." takes precedence over KBUILD_OUTPUT.
+diff --git a/drivers/staging/rt2860/oid.h b/drivers/staging/rt2860/oid.h
+index 1704c27..a75f28b 100644
+--- a/drivers/staging/rt2860/oid.h
++++ b/drivers/staging/rt2860/oid.h
+@@ -87,7 +87,7 @@
+ #define MAX_NUMBER_OF_DLS_ENTRY			4
  
-+KBUILD_DEBARCH
-+--------------------------------------------------
-+For the deb-pkg target, allows overriding the normal heuristics deployed by
-+deb-pkg. Normally deb-pkg attempts to guess the right architecture based on
-+the UTS_MACHINE variable, and on some architectures also the kernel config.
-+The value of KBUILD_DEBARCH is assumed (not checked) to be a valid Debian
-+architecture.
-+
- ARCH
- --------------------------------------------------
- Set ARCH to the architecture to be built.
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 5d6be3f..ffe2419 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -54,6 +54,9 @@ create_package() {
- 		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
- 		echo "" >&2
- 	esac
-+	if [ -n "$KBUILD_DEBARCH" ] ; then
-+		debarch="$KBUILD_DEBARCH"
-+	fi
- 	if [ -n "$debarch" ] ; then
- 		forcearch="-DArchitecture=$debarch"
- 	fi
+ #define RT_QUERY_SIGNAL_CONTEXT				0x0402
+-#define RT_SET_IAPP_PID                 	0x0404
++#define RT_SET_IAPP_PID				0x0404
+ #define RT_SET_APD_PID						0x0405
+ #define RT_SET_DEL_MAC_ENTRY				0x0406
+ #define RT_QUERY_EVENT_TABLE			0x0407
 -- 
 1.7.2.3
 
