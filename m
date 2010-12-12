@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0LLX5q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:57:46 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36610 "EHLO
+	id S1755941Ab0LLX56 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:57:58 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36619 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab0LLXsB (ORCPT
+	with ESMTP id S1755733Ab0LLXsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:01 -0500
+	Sun, 12 Dec 2010 18:48:00 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: u.kleine-koenig@pengutronix.de, u.kleine-koenig@pengutronix.de,
-        u.kleine-koenig@pengutronix.de, rpurdie@linux.intel.com,
+To: will.newton@gmail.com, xiyou.wangcong@gmail.com, jdike@addtoit.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
         stable@kernel.org
-Subject: [PATCH] [175/223] backlight: grab ops_lock before testing bd->ops
-Message-Id: <20101212234800.114FAB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:00 +0100 (CET)
+Subject: [PATCH] [174/223] uml: disable winch irq before freeing handler data
+Message-Id: <20101212234759.0113CB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:58 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,61 +24,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Will Newton <will.newton@gmail.com>
 
-commit d1d73578e053b981c3611e5a211534290d24a5eb upstream.
+commit 69e83dad5207f8f03c9699e57e1febb114383cb8 upstream.
 
-According to the comment describing ops_lock in the definition of struct
-backlight_device and when comparing with other functions in backlight.c
-the mutex must be hold when checking ops to be non-NULL.
+Disable the winch irq early to make sure we don't take an interrupt part
+way through the freeing of the handler data, resulting in a crash on
+shutdown:
 
-Fixes a problem added by c835ee7f4154992e6 ("backlight: Add suspend/resume
-support to the backlight core") in Jan 2009.
+  winch_interrupt : read failed, errno = 9
+  fd 13 is losing SIGWINCH support
+  ------------[ cut here ]------------
+  WARNING: at lib/list_debug.c:48 list_del+0xc6/0x100()
+  list_del corruption, next is LIST_POISON1 (00100100)
+  082578c8:  [<081fd77f>] dump_stack+0x22/0x24
+  082578e0:  [<0807a18a>] warn_slowpath_common+0x5a/0x80
+  08257908:  [<0807a23e>] warn_slowpath_fmt+0x2e/0x30
+  08257920:  [<08172196>] list_del+0xc6/0x100
+  08257940:  [<08060244>] free_winch+0x14/0x80
+  08257958:  [<080606fb>] winch_interrupt+0xdb/0xe0
+  08257978:  [<080a65b5>] handle_IRQ_event+0x35/0xe0
+  08257998:  [<080a8717>] handle_edge_irq+0xb7/0x170
+  082579bc:  [<08059bc4>] do_IRQ+0x34/0x50
+  082579d4:  [<08059e1b>] sigio_handler+0x5b/0x80
+  082579ec:  [<0806a374>] sig_handler_common+0x44/0xb0
+  08257a68:  [<0806a538>] sig_handler+0x38/0x50
+  08257a78:  [<0806a77c>] handle_signal+0x5c/0xa0
+  08257a9c:  [<0806be28>] hard_handler+0x18/0x20
+  08257aac:  [<00c14400>] 0xc14400
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Acked-by: Richard Purdie <rpurdie@linux.intel.com>
+Signed-off-by: Will Newton <will.newton@gmail.com>
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: Jeff Dike <jdike@addtoit.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/video/backlight/backlight.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/um/drivers/line.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Index: linux/drivers/video/backlight/backlight.c
+Index: linux/arch/um/drivers/line.c
 ===================================================================
---- linux.orig/drivers/video/backlight/backlight.c
-+++ linux/drivers/video/backlight/backlight.c
-@@ -197,12 +197,12 @@ static int backlight_suspend(struct devi
+--- linux.orig/arch/um/drivers/line.c
++++ linux/arch/um/drivers/line.c
+@@ -727,6 +727,9 @@ struct winch {
+ 
+ static void free_winch(struct winch *winch, int free_irq_ok)
  {
- 	struct backlight_device *bd = to_backlight_device(dev);
++	if (free_irq_ok)
++		free_irq(WINCH_IRQ, winch);
++
+ 	list_del(&winch->list);
  
--	if (bd->ops->options & BL_CORE_SUSPENDRESUME) {
--		mutex_lock(&bd->ops_lock);
-+	mutex_lock(&bd->ops_lock);
-+	if (bd->ops && bd->ops->options & BL_CORE_SUSPENDRESUME) {
- 		bd->props.state |= BL_CORE_SUSPENDED;
- 		backlight_update_status(bd);
--		mutex_unlock(&bd->ops_lock);
- 	}
-+	mutex_unlock(&bd->ops_lock);
- 
- 	return 0;
+ 	if (winch->pid != -1)
+@@ -735,8 +738,6 @@ static void free_winch(struct winch *win
+ 		os_close_file(winch->fd);
+ 	if (winch->stack != 0)
+ 		free_stack(winch->stack, 0);
+-	if (free_irq_ok)
+-		free_irq(WINCH_IRQ, winch);
+ 	kfree(winch);
  }
-@@ -211,12 +211,12 @@ static int backlight_resume(struct devic
- {
- 	struct backlight_device *bd = to_backlight_device(dev);
  
--	if (bd->ops->options & BL_CORE_SUSPENDRESUME) {
--		mutex_lock(&bd->ops_lock);
-+	mutex_lock(&bd->ops_lock);
-+	if (bd->ops && bd->ops->options & BL_CORE_SUSPENDRESUME) {
- 		bd->props.state &= ~BL_CORE_SUSPENDED;
- 		backlight_update_status(bd);
--		mutex_unlock(&bd->ops_lock);
- 	}
-+	mutex_unlock(&bd->ops_lock);
- 
- 	return 0;
- }
