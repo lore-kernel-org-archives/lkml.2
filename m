@@ -1,119 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab0LLNCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 08:02:33 -0500
-Received: from mail-iw0-f170.google.com ([209.85.214.170]:34684 "EHLO
-	mail-iw0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab0LLNCb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 08:02:31 -0500
-X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Dec 2010 08:02:30 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=kKeOlchWTI4XZIxPklk7BED/srLrgcYYrT9tnEw91DgWF09sevHhBEQvWv4IprfUjf
-         GK4seWlezzV/KxYxmWEzPuBfTp0MSKmwoaHlh+hFQaXy6/vvIIeZKX4UIGGDmQxPljHi
-         q0ow2aHkwyCaAKqfWdazF3kUinqaNHyqgJQNs=
+	id S1752892Ab0LLNDR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 08:03:17 -0500
+Received: from fanny.its.uu.se ([130.238.4.241]:51197 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab0LLNDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 08:03:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <1292157244-21679-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1292157244-21679-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-From: Ian Molton <ian@mnementh.co.uk>
-Date: Sun, 12 Dec 2010 12:55:00 +0000
-X-Google-Sender-Auth: ucvyHzRb53x9RfxQ6ajhkoWrUWc
-Message-ID: <AANLkTikYJq2RjRZGhq7k6oeybZYoQ0PHJ3n3pv51jAYF@mail.gmail.com>
-Subject: Re: [PATCH] mfd: Convert tc6393xb driver to new irq_ APIs
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marek Vasut <marek.vasut@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19716.51210.876628.496900@pilspetsen.it.uu.se>
+Date: Sun, 12 Dec 2010 14:03:06 +0100
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] sched: Fix the irqtime code to deal with u64 wraps
+In-Reply-To: <1292013506.13513.78.camel@laptop>
+References: <1292013506.13513.78.camel@laptop>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can add my:
-
-Acked-by: Ian Molton <ian.molton@collabora.co.uk>
-
-To this and the TMIO and ASIC3 drivers :)
-
--- 
-Ian Molton
-Linux, Automotive, and other hacking:
-http://www.mnementh.co.uk/
-
-
-
-On 12 December 2010 12:34, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> The genirq core is being update to pass struct irq_data to irq_chip rather
-> than an irq number to operations. Update tc6393 to the new API.
->
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Fri, 10 Dec 2010 21:38:26 +0100, Peter Zijlstra <peterz@infradead.org> wrote:
+> OK, so here's the latest version, using fancy __this_cpu thingies.
+> 
+> I started a new thread since the old one was quite unwieldy.
+> 
+> Now, admittedly this patch is a tad large, esp for -rc5. So either we
+> need lots of Reviewed-by and such or I need to shrink this patch
+> somehow.
+> 
+> 
 > ---
->  drivers/mfd/tc6393xb.c |   22 +++++++++++-----------
->  1 files changed, 11 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-> index 1ea80d8a..9a23863 100644
-> --- a/drivers/mfd/tc6393xb.c
-> +++ b/drivers/mfd/tc6393xb.c
-> @@ -527,41 +527,41 @@ tc6393xb_irq(unsigned int irq, struct irq_desc *desc)
->                }
->  }
->
-> -static void tc6393xb_irq_ack(unsigned int irq)
-> +static void tc6393xb_irq_ack(struct irq_data *data)
->  {
->  }
->
-> -static void tc6393xb_irq_mask(unsigned int irq)
-> +static void tc6393xb_irq_mask(struct irq_data *data)
->  {
-> -       struct tc6393xb *tc6393xb = get_irq_chip_data(irq);
-> +       struct tc6393xb *tc6393xb = irq_data_get_irq_chip_data(data);
->        unsigned long flags;
->        u8 imr;
->
->        spin_lock_irqsave(&tc6393xb->lock, flags);
->        imr = tmio_ioread8(tc6393xb->scr + SCR_IMR);
-> -       imr |= 1 << (irq - tc6393xb->irq_base);
-> +       imr |= 1 << (data->irq - tc6393xb->irq_base);
->        tmio_iowrite8(imr, tc6393xb->scr + SCR_IMR);
->        spin_unlock_irqrestore(&tc6393xb->lock, flags);
->  }
->
-> -static void tc6393xb_irq_unmask(unsigned int irq)
-> +static void tc6393xb_irq_unmask(struct irq_data *data)
->  {
-> -       struct tc6393xb *tc6393xb = get_irq_chip_data(irq);
-> +       struct tc6393xb *tc6393xb = irq_data_get_irq_chip_data(data);
->        unsigned long flags;
->        u8 imr;
->
->        spin_lock_irqsave(&tc6393xb->lock, flags);
->        imr = tmio_ioread8(tc6393xb->scr + SCR_IMR);
-> -       imr &= ~(1 << (irq - tc6393xb->irq_base));
-> +       imr &= ~(1 << (data->irq - tc6393xb->irq_base));
->        tmio_iowrite8(imr, tc6393xb->scr + SCR_IMR);
->        spin_unlock_irqrestore(&tc6393xb->lock, flags);
->  }
->
->  static struct irq_chip tc6393xb_chip = {
-> -       .name   = "tc6393xb",
-> -       .ack    = tc6393xb_irq_ack,
-> -       .mask   = tc6393xb_irq_mask,
-> -       .unmask = tc6393xb_irq_unmask,
-> +       .name           = "tc6393xb",
-> +       .irq_ack        = tc6393xb_irq_ack,
-> +       .irq_mask       = tc6393xb_irq_mask,
-> +       .irq_unmask     = tc6393xb_irq_unmask,
->  };
->
->  static void tc6393xb_attach_irq(struct platform_device *dev)
-> --
-> 1.7.2.3
->
->
+> Subject: sched: Fix the irqtime code to deal with u64 wraps
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Thu Dec 09 14:15:34 CET 2010
+> 
+> ARM systems have a 32bit sched_clock() [ which needs to be fixed ],
+> but this exposed a bug in the irq_time code as well, it doesn't deal
+> with wraps at all.
+> 
+> Fix the irq_time code to deal with u64 wraps by re-writing the code to
+> only use delta increments, which avoids the whole issue.
+> 
+> Furthermore, solve the problem of 32bit arches reading partial updates
+> of the u64 time values.
+> 
+> Cc: Venkatesh Pallipadi <venki@google.com>
+> Reported-by: Mikael Pettersson <mikpe@it.uu.se>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+Tested 2.6.37-rc5 + this patch on ARM/mach-ixp4xx and ARM/mach-iop32x,
+and it did solve the previously reported interactivity problems.  Thanks.
+
+Tested-by: Mikael Pettersson <mikpe@it.uu.se>
+
+I did however have to apply the following to avoid a compilation error:
+
+--- linux-2.6.37-rc5/kernel/sched.c.~1~	2010-12-12 13:03:07.000000000 +0100
++++ linux-2.6.37-rc5/kernel/sched.c	2010-12-12 13:05:40.000000000 +0100
+@@ -636,6 +636,8 @@ static inline struct task_group *task_gr
+ 
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
++static void update_rq_clock_task(struct rq *rq, s64 delta);
++
+ static void update_rq_clock(struct rq *rq)
+ {
+ 	s64 delta;
+
+> ---
+>  kernel/sched.c |  176 +++++++++++++++++++++++++++++++++++++++------------------
+>  1 file changed, 121 insertions(+), 55 deletions(-)
+> 
+> Index: linux-2.6/kernel/sched.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -636,22 +636,16 @@ static inline struct task_group *task_gr
+>  
+>  #endif /* CONFIG_CGROUP_SCHED */
+>  
+> -static u64 irq_time_cpu(int cpu);
+> -static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
+> -
+> -inline void update_rq_clock(struct rq *rq)
+> +static void update_rq_clock(struct rq *rq)
+>  {
+> -	if (!rq->skip_clock_update) {
+> -		int cpu = cpu_of(rq);
+> -		u64 irq_time;
+> +	s64 delta;
+>  
+> -		rq->clock = sched_clock_cpu(cpu);
+> -		irq_time = irq_time_cpu(cpu);
+> -		if (rq->clock - irq_time > rq->clock_task)
+> -			rq->clock_task = rq->clock - irq_time;
+> +	if (rq->skip_clock_update)
+> +		return;
+>  
+> -		sched_irq_time_avg_update(rq, irq_time);
+> -	}
+> +	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
+> +	rq->clock += delta;
+> +	update_rq_clock_task(rq, delta);
+>  }
+>  
+>  /*
+> @@ -1918,90 +1912,162 @@ static void deactivate_task(struct rq *r
+>  #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+>  
+>  /*
+> - * There are no locks covering percpu hardirq/softirq time.
+> - * They are only modified in account_system_vtime, on corresponding CPU
+> - * with interrupts disabled. So, writes are safe.
+> + * There are no locks covering percpu hardirq/softirq time. They are only
+> + * modified in account_system_vtime, on corresponding CPU with interrupts
+> + * disabled. So, writes are safe.
+> + *
+>   * They are read and saved off onto struct rq in update_rq_clock().
+> - * This may result in other CPU reading this CPU's irq time and can
+> - * race with irq/account_system_vtime on this CPU. We would either get old
+> - * or new value (or semi updated value on 32 bit) with a side effect of
+> - * accounting a slice of irq time to wrong task when irq is in progress
+> - * while we read rq->clock. That is a worthy compromise in place of having
+> - * locks on each irq in account_system_time.
+> + *
+> + * This may result in other CPU reading this CPU's irq time and can race with
+> + * irq/account_system_vtime on this CPU. We would either get old or new value
+> + * with a side effect of accounting a slice of irq time to wrong task when irq
+> + * is in progress while we read rq->clock. That is a worthy compromise in place
+> + * of having locks on each irq in account_system_time.
+>   */
+>  static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+>  static DEFINE_PER_CPU(u64, cpu_softirq_time);
+> -
+>  static DEFINE_PER_CPU(u64, irq_start_time);
+> -static int sched_clock_irqtime;
+>  
+> -void enable_sched_clock_irqtime(void)
+> +#ifndef CONFIG_64BIT
+> +static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
+> +
+> +static inline void irq_time_write_begin(void)
+>  {
+> -	sched_clock_irqtime = 1;
+> +	__this_cpu_inc(irq_time_seq.sequence);
+> +	smp_wmb();
+>  }
+>  
+> -void disable_sched_clock_irqtime(void)
+> +static inline void irq_time_write_end(void)
+>  {
+> -	sched_clock_irqtime = 0;
+> +	smp_wmb();
+> +	__this_cpu_inc(irq_time_seq.sequence);
+>  }
+>  
+> -static u64 irq_time_cpu(int cpu)
+> +static inline u64 irq_time_read(int cpu)
+>  {
+> -	if (!sched_clock_irqtime)
+> -		return 0;
+> +	u64 irq_time;
+> +	unsigned seq;
+> +
+> +	do {
+> +		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
+> +		irq_time = per_cpu(cpu_softirq_time, cpu) +
+> +			   per_cpu(cpu_hardirq_time, cpu);
+> +	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
+> +
+> +	return irq_time;
+> +}
+> +#else /* CONFIG_64BIT */
+> +static inline void irq_time_write_begin(void)
+> +{
+> +}
+>  
+> +static inline void irq_time_write_end(void)
+> +{
+> +}
+> +
+> +static inline u64 irq_time_read(int cpu)
+> +{
+>  	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
+>  }
+> +#endif /* CONFIG_64BIT */
+> +
+> +static int sched_clock_irqtime;
+> +
+> +void enable_sched_clock_irqtime(void)
+> +{
+> +	sched_clock_irqtime = 1;
+> +}
+> +
+> +void disable_sched_clock_irqtime(void)
+> +{
+> +	sched_clock_irqtime = 0;
+> +}
+>  
+> +/*
+> + * Called before incrementing preempt_count on {soft,}irq_enter
+> + * and before decrementing preempt_count on {soft,}irq_exit.
+> + */
+>  void account_system_vtime(struct task_struct *curr)
+>  {
+>  	unsigned long flags;
+> +	s64 delta;
+>  	int cpu;
+> -	u64 now, delta;
+>  
+>  	if (!sched_clock_irqtime)
+>  		return;
+>  
+>  	local_irq_save(flags);
+> -
+>  	cpu = smp_processor_id();
+> -	now = sched_clock_cpu(cpu);
+> -	delta = now - per_cpu(irq_start_time, cpu);
+> -	per_cpu(irq_start_time, cpu) = now;
+> +	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
+> +	__this_cpu_add(irq_start_time, delta);
+> +
+> +	irq_time_write_begin();
+> +
+> +	if (hardirq_count())
+> +		__this_cpu_add(cpu_hardirq_time, delta);
+>  	/*
+> -	 * We do not account for softirq time from ksoftirqd here.
+> -	 * We want to continue accounting softirq time to ksoftirqd thread
+> -	 * in that case, so as not to confuse scheduler with a special task
+> -	 * that do not consume any time, but still wants to run.
+> +	 * We do not account for softirq time from ksoftirqd here. We want to
+> +	 * continue accounting softirq time to ksoftirqd thread in that case,
+> +	 * so as not to confuse scheduler with a special task that do not
+> +	 * consume any time, but still wants to run.
+>  	 */
+> -	if (hardirq_count())
+> -		per_cpu(cpu_hardirq_time, cpu) += delta;
+>  	else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
+> -		per_cpu(cpu_softirq_time, cpu) += delta;
+> +		__this_cpu_add(cpu_softirq_time, delta);
+>  
+> +	irq_time_write_end();
+>  	local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(account_system_vtime);
+>  
+> -static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
+> +static u64 irq_time_cpu(struct rq *rq)
+>  {
+> -	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
+> -		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
+> -		rq->prev_irq_time = curr_irq_time;
+> -		sched_rt_avg_update(rq, delta_irq);
+> -	}
+> +	/*
+> +	 * See the comment in update_rq_clock_task(), ideally we'd update
+> +	 * the *irq_time values using rq->clock here.
+> +	 */
+> +	return irq_time_read(cpu_of(rq));
+>  }
+>  
+> -#else
+> -
+> -static u64 irq_time_cpu(int cpu)
+> +static void update_rq_clock_task(struct rq *rq, s64 delta)
+>  {
+> -	return 0;
+> +	s64 irq_delta;
+> +
+> +	irq_delta = irq_time_cpu(rq) - rq->prev_irq_time;
+> +
+> +	/*
+> +	 * Since irq_time is only updated on {soft,}irq_exit, we might run into
+> +	 * this case when a previous update_rq_clock() happened inside a
+> +	 * {soft,}irq region.
+> +	 *
+> +	 * When this happens, we stop ->clock_task and only update the
+> +	 * prev_irq_time stamp to account for the part that fit, so that a next
+> +	 * update will consume the rest. This ensures ->clock_task is
+> +	 * monotonic.
+> +	 *
+> +	 * It does however cause some slight miss-attribution of {soft,}irq
+> +	 * time, a more accurate solution would be to update the irq_time using
+> +	 * the current rq->clock timestamp, except that would require using
+> +	 * atomic ops.
+> +	 */
+> +	if (irq_delta > delta)
+> +		irq_delta = delta;
+> +
+> +	rq->prev_irq_time += irq_delta;
+> +	delta -= irq_delta;
+> +	rq->clock_task += delta;
+> +
+> +	if (irq_delta && sched_feat(NONIRQ_POWER))
+> +		sched_rt_avg_update(rq, irq_delta);
+>  }
+>  
+> -static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
+> +#else /* CONFIG_IRQ_TIME_ACCOUNTING */
+>  
+> -#endif
+> +static void update_rq_clock_task(struct rq *rq, s64 delta)
+> +{
+> +	rq->clock_task += delta;
+> +}
+> +
+> +#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+>  
+>  #include "sched_idletask.c"
+>  #include "sched_fair.c"
