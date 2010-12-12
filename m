@@ -1,33 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab0LLSlu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 13:41:50 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:42257 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab0LLSlt (ORCPT
+	id S1753839Ab0LLSpM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 13:45:12 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47904 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752657Ab0LLSpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 13:41:49 -0500
-Date: Sun, 12 Dec 2010 12:41:45 -0600
-From: David Fries <david@fries.net>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] load fbcon from drm_kms_helper
-Message-ID: <20101212184145.GA13675@spacedout.fries.net>
-References: <20101211210548.GK13567@spacedout.fries.net>
+	Sun, 12 Dec 2010 13:45:11 -0500
+Date: Sun, 12 Dec 2010 18:45:22 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, lethal@linux-sh.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Convert jz4740-adc to new irq_ methods
+Message-ID: <20101212184522.GA20358@opensource.wolfsonmicro.com>
+References: <1292154400-15759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1292172032-20463-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101211210548.GK13567@spacedout.fries.net>
+In-Reply-To: <1292172032-20463-1-git-send-email-lars@metafoo.de>
+X-Cookie: Never give an inch!
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sun, 12 Dec 2010 12:41:45 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 03:05:48PM -0600, David Fries wrote:
-> +	const char *namue = "fbcon";
-Typo, 'namue' see the next patch.
+On Sun, Dec 12, 2010 at 05:40:32PM +0100, Lars-Peter Clausen wrote:
+> From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> Convert the jz4740-adc driver to use the recently introduced IRQ API
+> variants which are passed struct irq_data rather than an IRQ number.
 
--- 
-David Fries <david@fries.net>
-http://fries.net/~david/ (PGP encryption key available)
+Hrm, what's that patch against?  I tried to replace my version with this
+one but I'm unable to apply it against Samuel's tree, and git am can't
+find what you're patching in any of the trees in my repository (which
+includes -next).
