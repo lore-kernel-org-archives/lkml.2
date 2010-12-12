@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab0LLK5t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 05:57:49 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39594 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab0LLK5q convert rfc822-to-8bit (ORCPT
+	id S1752624Ab0LLLP0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 06:15:26 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:61965 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab0LLLPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 05:57:46 -0500
+	Sun, 12 Dec 2010 06:15:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xItQioqzxELkCAH/4NHXyLGIkHRF4akI1ZX6Jh48s2t/qRUc70Ovfs7nzUyS0PdQCd
-         wuAmimE76NRcT06ttpZQlKm24/PYS6aRlPDP82R+x1IGN4j8IlcAjl6MDNYgWdu8xerh
-         P7PHGPa+n+KLeHCfAmTYXYJdeacv5/AX7jK7U=
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=FjWkmHyNoXYIErwJIGy18eg4M+yFr/EiBNeNo4qZWZxMcIDJb7856bijKTf86sin3e
+         hLf58XZxrkcEhNAhm64dmtaabm0t62kH18SQ/bbC9WcY1njEczm3O6yZBIRXLFIMNr5T
+         iNT8P4KASyVnX4li/XJ0jcjH0fWfNtRZ+uBKw=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: Dave Young <hidave.darkstar@gmail.com>
+Subject: Re: Oops in 2.6.37-rc{3,4,5}
+Date: Sun, 12 Dec 2010 11:15:02 +0000
+User-Agent: KMail/1.9.10
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-media@vger.kernel.org
+References: <201012102234.06446.chris2553@googlemail.com> <20101212084504.GA27059@darkstar>
+In-Reply-To: <20101212084504.GA27059@darkstar>
 MIME-Version: 1.0
-In-Reply-To: <20101211192320.GA24430@void.printf.net>
-References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com>
-	<20101208115510.GD10998@console-pimps.org>
-	<AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com>
-	<AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
-	<20101209064751.GA21128@void.printf.net>
-	<AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
-	<20101209160157.GA28586@void.printf.net>
-	<AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com>
-	<20101211192320.GA24430@void.printf.net>
-Date: Sun, 12 Dec 2010 10:57:44 +0000
-Message-ID: <AANLkTin5aVPz5Y=jS89V00XS=rje3gqeUb2VTYt2A_9=@mail.gmail.com>
-Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
-From: Will Newton <will.newton@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201012121115.02874.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 11, 2010 at 7:23 PM, Chris Ball <cjb@laptop.org> wrote:
-> Hi Will,
->
-> On Thu, Dec 09, 2010 at 05:24:26PM +0000, Will Newton wrote:
->> This adds the mmc host driver for the Synopsys DesignWare mmc
->> host controller, found in a number of embedded SoC designs.
->>
->> Signed-off-by: Will Newton <will.newton@imgtec.com>
->> Reviewed-by: Matt Fleming <matt@console-pimps.org>
->
-> Running a test build on ARM fails:
->
-> drivers/mmc/host/dw_mmc.c: In function ‘dw_mci_push_data64’:
-> drivers/mmc/host/dw_mmc.c:985: error: implicit declaration of function ‘__raw_writeq’
-> drivers/mmc/host/dw_mmc.c: In function ‘dw_mci_pull_data64’:
-> drivers/mmc/host/dw_mmc.c:998: error: implicit declaration of function ‘__raw_readq’
->
-> because arch/arm doesn't implement raw versions of these 64-bit accesses.
-> I'm surprised that this driver hasn't been compiled on ARM before!  What
+On Sunday 12 December 2010, Dave Young wrote:
+> On Fri, Dec 10, 2010 at 10:34:06PM +0000, Chris Clayton wrote:
+> > I'm not subscribed, so please cc me on any reply.
+> >
+> > With rc kernels from 2.6.37, X frequently (approx 3 boots out of every 4)
+> > fails to start. dmesg shows the oops below. I can bisect over the weekend
+> > - probably Sunday - if no answer comes up in the meantime. I get the same
+> > oops with rc3, rc and rc5. rc2 doesn't get as far as trying to start X.
+> > Happy to test patches or provide additional diagnostics, but I'll be off
+> > line soon until 20:00 or so UK time tomorrow.
 
-That particular bit of code has been added since it was last built for
-arm. Our architecture can do 64bit accesses so we implement readq.
-Unfortunately there doesn't seem to be a sane way to conditionalize
-code for architectures that have or don't have readq, so I suspect
-I'll have to just remove that branch of the if statement for now.
+<snip>
 
-> kind of arch are you testing on?  Do you have any ARM hardware (lpc313x?)
-> to verify the driver on?
+> >
+> > [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+> > BUG: unable to handle kernel NULL pointer dereference at   (null)
+> > IP: [<c13229ef>] __mutex_lock_slowpath+0x9f/0x170
+> > *pdpt = 0000000034676001 *pde = 0000000000000000
+> > Oops: 0002 [#1] PREEMPT SMP
+> > last sysfs file: /sys/module/drm_kms_helper/initstate
+> > Modules linked in: i915 drm_kms_helper drm fb fbdev cfbcopyarea video
+> > backlight output cfbimgblt cfbfillrect xt_state iptable_filter
+> > ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack
+> > nf_defrag_ipv4 saa7134_alsa tda10048 saa7134_dvb videobuf_dvb dvb_core
+> > mt20xx tea5767 tda9887 msp3400 gspca_zc3xx gspca_main tda18271 tda8290
+> > ir_lirc_codec tuner lirc_dev bttv i2c_algo_bit btcx_risc snd_bt87x
+> > ir_common uhci_hcd ir_core saa7134 v4l2_common videodev v4l1_compat
+> > ehci_hcd videobuf_dma_sg videobuf_core tveeprom evdev [last unloaded:
+> > floppy]
+> >
+> > Pid: 1725, comm: X Not tainted 2.6.37-rc5+ #476 EG41MF-US2H/EG41MF-US2H
+> > EIP: 0060:[<c13229ef>] EFLAGS: 00013246 CPU: 3
+> > EIP is at __mutex_lock_slowpath+0x9f/0x170
+> > EAX: 00000000 EBX: f4403410 ECX: f4403420 EDX: f4641dd8
+> > ESI: f4403414 EDI: 00000000 EBP: f4403418 ESP: f4641dd4
+> >  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> > Process X (pid: 1725, ti=f4640000 task=f3c67390 task.ti=f4640000)
+> > Stack:
+> >  f3c67390 f4403418 00000000 f46a3800 f4403410 f4fd14f0 f425f600 f4403400
+> >  c13228a6 f4fd1000 f4fd14f0 f8841b6c c10aabb2 ffffffff 05100004 f4c34000
+> >  f4df72c0 c10aabf7 f4403410 00000001 f425f600 ffffffed f425f604 f46bfe40
+> > Call Trace:
+> >  [<c13228a6>] ? mutex_lock+0x16/0x30
+> >  [<f8841b6c>] ? bttv_open+0xac/0x280 [bttv]
+> >  [<c10aabb2>] ? cdev_get+0x52/0x90
+> >  [<c10aabf7>] ? exact_lock+0x7/0x10
+> >  [<f87095a7>] ? v4l2_open+0xb7/0xd0 [videodev]
+> >  [<c10ab2ea>] ? chrdev_open+0xda/0x1b0
+> >  [<c10a5f25>] ? __dentry_open+0xd5/0x280
+> >  [<c10a7068>] ? nameidata_to_filp+0x68/0x70
+> >  [<c10ab210>] ? chrdev_open+0x0/0x1b0
+> >  [<c10b351f>] ? do_last.clone.32+0x34f/0x5a0
+> >  [<c10b3af3>] ? do_filp_open+0x383/0x550
+> >  [<c10b1e58>] ? getname+0x28/0xf0
+> >  [<c10a70c8>] ? do_sys_open+0x58/0x110
+> >  [<c10a5d09>] ? filp_close+0x49/0x70
+> >  [<c10a71ac>] ? sys_open+0x2c/0x40
+> >  [<c1002d10>] ? sysenter_do_call+0x12/0x26
+> >  [<c1320000>] ? timer_cpu_notify+0x1b4/0x233
+> > Code: 83 78 18 63 7f b6 8d b6 00 00 00 00 8d 73 04 8d 6b 08 89 f0 e8 f3
+> > 10 00 00 8b 43 0c 8d 54 24 04 89 44 24 08 89 53 0c 89 6c 24 04 <89> 10 8b
+> > 04 24 ba ff ff ff ff 89 44 24 0c 89 d0 87 03 83 f8 01
+> > EIP: [<c13229ef>] __mutex_lock_slowpath+0x9f/0x170 SS:ESP 0068:f4641dd4
+> > CR2: 0000000000000000
+> > ---[ end trace 5ac4e44ad0dc7959 ]---
 
-Our architecture is not merged into mainline yet (although I am
-working on that). I don't have an lpc313x board but I would be happy
-to work on this code with anyone who does.
+<snip>
+
+> Could you try following patch?
+>
+> --- linux-2.6.orig/drivers/media/video/bt8xx/bttv-driver.c	2010-11-27
+> 11:21:30.000000000 +0800 +++
+> linux-2.6/drivers/media/video/bt8xx/bttv-driver.c	2010-12-12
+> 16:31:39.633333338 +0800 @@ -3291,6 +3291,8 @@ static int bttv_open(struct
+> file *file)
+>  	fh = kmalloc(sizeof(*fh), GFP_KERNEL);
+>  	if (unlikely(!fh))
+>  		return -ENOMEM;
+> +
+> +	mutex_init(&fh->cap.vb_lock);
+>  	file->private_data = fh;
+>
+>  	/*
+
+Yes Dave, that's fixed it thanks. Six successful boots, which never happened 
+without the patch.
+
+Tested-by: Chris Clayton <chris2553@googlemail.com>
+
+-- 
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
