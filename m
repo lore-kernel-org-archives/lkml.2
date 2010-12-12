@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0LMAEd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:04:33 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36393 "EHLO
+	id S1755453Ab0LLXrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:47:24 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36310 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab0LLXrZ (ORCPT
+	with ESMTP id S1755384Ab0LLXrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:25 -0500
+	Sun, 12 Dec 2010 18:47:21 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: djwong@us.ibm.com, martin.wilck@ts.fujitsu.com, jbarnes@virtuousgeek.org,
+To: peterz@infradead.org, a.p.zijlstra@chello.nl, paulmck@linux.vnet.ibm.com,
         gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
         stable@kernel.org
-Subject: [PATCH] [141/223] PCI: fix offset check for sysfs mmapped files
-Message-Id: <20101212234723.CEA1FB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:23 +0100 (CET)
+Subject: [PATCH] [138/223] sched: fix RCU lockdep splat from task_group()
+Message-Id: <20101212234720.A37A2B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:20 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,64 +23,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Darrick J. Wong <djwong@us.ibm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 8c05cd08a7504b855c265263e84af61aabafa329 upstream.
+commit 6506cf6ce68d78a5470a8360c965dafe8e4b78e3 upstream.
 
-I just loaded 2.6.37-rc2 on my machines, and I noticed that X no longer starts.
-Running an strace of the X server shows that it's doing this:
+This addresses the following RCU lockdep splat:
 
-open("/sys/bus/pci/devices/0000:07:00.0/resource0", O_RDWR) = 10
-mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 10, 0) = -1 EINVAL (Invalid argument)
+[0.051203] CPU0: AMD QEMU Virtual CPU version 0.12.4 stepping 03
+[0.052999] lockdep: fixing up alternatives.
+[0.054105]
+[0.054106] ===================================================
+[0.054999] [ INFO: suspicious rcu_dereference_check() usage. ]
+[0.054999] ---------------------------------------------------
+[0.054999] kernel/sched.c:616 invoked rcu_dereference_check() without protection!
+[0.054999]
+[0.054999] other info that might help us debug this:
+[0.054999]
+[0.054999]
+[0.054999] rcu_scheduler_active = 1, debug_locks = 1
+[0.054999] 3 locks held by swapper/1:
+[0.054999]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff814be933>] cpu_up+0x42/0x6a
+[0.054999]  #1:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810400d8>] cpu_hotplug_begin+0x2a/0x51
+[0.054999]  #2:  (&rq->lock){-.-...}, at: [<ffffffff814be2f7>] init_idle+0x2f/0x113
+[0.054999]
+[0.054999] stack backtrace:
+[0.054999] Pid: 1, comm: swapper Not tainted 2.6.35 #1
+[0.054999] Call Trace:
+[0.054999]  [<ffffffff81068054>] lockdep_rcu_dereference+0x9b/0xa3
+[0.054999]  [<ffffffff810325c3>] task_group+0x7b/0x8a
+[0.054999]  [<ffffffff810325e5>] set_task_rq+0x13/0x40
+[0.054999]  [<ffffffff814be39a>] init_idle+0xd2/0x113
+[0.054999]  [<ffffffff814be78a>] fork_idle+0xb8/0xc7
+[0.054999]  [<ffffffff81068717>] ? mark_held_locks+0x4d/0x6b
+[0.054999]  [<ffffffff814bcebd>] do_fork_idle+0x17/0x2b
+[0.054999]  [<ffffffff814bc89b>] native_cpu_up+0x1c1/0x724
+[0.054999]  [<ffffffff814bcea6>] ? do_fork_idle+0x0/0x2b
+[0.054999]  [<ffffffff814be876>] _cpu_up+0xac/0x127
+[0.054999]  [<ffffffff814be946>] cpu_up+0x55/0x6a
+[0.054999]  [<ffffffff81ab562a>] kernel_init+0xe1/0x1ff
+[0.054999]  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
+[0.054999]  [<ffffffff814c353c>] ? restore_args+0x0/0x30
+[0.054999]  [<ffffffff81ab5549>] ? kernel_init+0x0/0x1ff
+[0.054999]  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+[0.056074] Booting Node   0, Processors  #1lockdep: fixing up alternatives.
+[0.130045]  #2lockdep: fixing up alternatives.
+[0.203089]  #3 Ok.
+[0.275286] Brought up 4 CPUs
+[0.276005] Total of 4 processors activated (16017.17 BogoMIPS).
 
-This code seems to be asking for a shared read/write mapping of 16MB worth of
-BAR0 starting at file offset 0, and letting the kernel assign a starting
-address.  Unfortunately, this -EINVAL causes X not to start.  Looking into
-dmesg, there's a complaint like so:
+The cgroup_subsys_state structures referenced by idle tasks are never
+freed, because the idle tasks should be part of the root cgroup,
+which is not removable.
 
-process "Xorg" tried to map 0x01000000 bytes at page 0x00000000 on 0000:07:00.0 BAR 0 (start 0x        96000000, size 0x         1000000)
+The problem is that while we do in-fact hold rq->lock, the newly spawned
+idle thread's cpu is not yet set to the correct cpu so the lockdep check
+in task_group():
 
-...with the following code in pci_mmap_fits:
+  lockdep_is_held(&task_rq(p)->lock)
 
-	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-		pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
-        if (start >= pci_start && start < pci_start + size &&
-                        start + nr <= pci_start + size)
+will fail.
 
-It looks like the logic here is set up such that when the mmap call comes via
-sysfs, the check in pci_mmap_fits wants vma->vm_pgoff to be between the
-resource's start and end address, and the end of the vma to be no farther than
-the end.  However, the sysfs PCI resource files always start at offset zero,
-which means that this test always fails for programs that mmap the sysfs files.
-Given the comment in the original commit
-3b519e4ea618b6943a82931630872907f9ac2c2b, I _think_ the old procfs files
-require that the file offset be equal to the resource's base address when
-mmapping.
+But this is a chicken and egg problem.  Setting the CPU's runqueue requires
+that the CPU's runqueue already be set.  ;-)
 
-I think what we want here is for pci_start to be 0 when mmap_api ==
-PCI_MMAP_PROCFS.  The following patch makes that change, after which the Matrox
-and Mach64 X drivers work again.
+So insert an RCU read-side critical section to avoid the complaint.
 
-Acked-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/pci/pci-sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Index: linux/drivers/pci/pci-sysfs.c
+Index: linux/kernel/sched.c
 ===================================================================
---- linux.orig/drivers/pci/pci-sysfs.c
-+++ linux/drivers/pci/pci-sysfs.c
-@@ -715,7 +715,7 @@ int pci_mmap_fits(struct pci_dev *pdev,
- 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- 	start = vma->vm_pgoff;
- 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
--	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-+	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
- 			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
- 	if (start >= pci_start && start < pci_start + size &&
- 			start + nr <= pci_start + size)
+--- linux.orig/kernel/sched.c
++++ linux/kernel/sched.c
+@@ -5157,7 +5157,19 @@ void __cpuinit init_idle(struct task_str
+ 	idle->se.exec_start = sched_clock();
+ 
+ 	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
++	/*
++	 * We're having a chicken and egg problem, even though we are
++	 * holding rq->lock, the cpu isn't yet set to this cpu so the
++	 * lockdep check in task_group() will fail.
++	 *
++	 * Similar case to sched_fork(). / Alternatively we could
++	 * use task_rq_lock() here and obtain the other rq->lock.
++	 *
++	 * Silence PROVE_RCU
++	 */
++	rcu_read_lock();
+ 	__set_task_cpu(idle, cpu);
++	rcu_read_unlock();
+ 
+ 	rq->curr = rq->idle = idle;
+ #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
