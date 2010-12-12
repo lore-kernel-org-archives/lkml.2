@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab0LLS3p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 13:29:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51430 "EHLO
+	id S1753996Ab0LLS3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 13:29:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51439 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab0LLS3b (ORCPT
+	with ESMTP id S1753547Ab0LLS3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 13:29:31 -0500
-Message-ID: <4D04E98E.5090800@pengutronix.de>
-Date: Sun, 12 Dec 2010 16:26:06 +0100
+	Sun, 12 Dec 2010 13:29:33 -0500
+Message-ID: <4D04EA92.2010802@pengutronix.de>
+Date: Sun, 12 Dec 2010 16:30:26 +0100
 From: Marc Kleine-Budde <mkl@pengutronix.de>
 Organization: Pengutronix
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
@@ -19,13 +19,13 @@ CC: Wolfgang Grandegger <wg@grandegger.com>, socketcan-core@lists.berlios.de,
         andrew.chih.howe.khor@intel.com, qi.wang@intel.com,
         margie.foster@intel.com, yong.y.wang@intel.com, kok.howg.ewe@intel.com,
         joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v8 01/20] CAN : Add flow control processing.
-References: <4CFE13E4.2020707@dsn.okisemi.com>
-In-Reply-To: <4CFE13E4.2020707@dsn.okisemi.com>
+Subject: Re: [PATCH net-next-2.6 v8 03/20] CAN : Fix endianness issue.
+References: <4CFE1489.4030808@dsn.okisemi.com>
+In-Reply-To: <4CFE1489.4030808@dsn.okisemi.com>
 X-Enigmail-Version: 1.0.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="------------enig779C94C24F67452167BA05DC"
+ boundary="------------enig6811D42A31640DF4F02BB901"
 X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
 X-SA-Exim-Mail-From: mkl@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -35,100 +35,156 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig779C94C24F67452167BA05DC
+--------------enig6811D42A31640DF4F02BB901
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 12/07/2010 12:00 PM, Tomoya MORINAGA wrote:
-> Currently, there is no flow control processing.
-> Thus, Add flow control processing as
-> when there is no empty of tx buffer,
-> netif_stop_queue is called.
-> When there is empty buffer, netif_wake_queue is called.
+On 12/07/2010 12:03 PM, Tomoya MORINAGA wrote:
+> there is endianness issue both Tx and Rx.
+> Currently, data is set like below.
+> Register:
+> MSB--LSB
+> x x D0 D1
+> x x D2 D3
+> x x D4 D5
+> x x D6 D7
+>=20
+> But Data to be sent must be set like below.
+> Register:
+> MSB--LSB
+> x x D1 D0
+> x x D3 D2
+> x x D5 D4
+> x x D7 D6  (x means reserved area.)
 
-See comment inline.
+Nitpick inline, please fix it, then add my Acked-by
+
+Marc
 
 > Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 > ---
->  drivers/net/can/pch_can.c |   31 ++++++++++++-------------------
->  1 files changed, 12 insertions(+), 19 deletions(-)
+>  drivers/net/can/pch_can.c |   47 +++++++++++++++++++------------------=
+-------
+>  1 files changed, 20 insertions(+), 27 deletions(-)
 >=20
 > diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-> index a9b6a65..f0f1404 100644
+> index 0b6d4f4..b17ca0c 100644
 > --- a/drivers/net/can/pch_can.c
 > +++ b/drivers/net/can/pch_can.c
-> @@ -102,6 +102,10 @@
+> @@ -138,10 +138,7 @@ struct pch_can_if_regs {
+>  	u32 id1;
+>  	u32 id2;
+>  	u32 mcont;
+> -	u32 dataa1;
+> -	u32 dataa2;
+> -	u32 datab1;
+> -	u32 datab2;
+> +	u32 data[4];
+>  	u32 rsv[13];
+>  };
 > =20
->  #define PCH_FIFO_THRESH		16
+> @@ -424,10 +421,10 @@ static void pch_can_clear_buffers(struct pch_can_=
+priv *priv)
+>  		iowrite32(0x0, &priv->regs->ifregs[0].id1);
+>  		iowrite32(0x0, &priv->regs->ifregs[0].id2);
+>  		iowrite32(0x0, &priv->regs->ifregs[0].mcont);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].dataa1);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].dataa2);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].datab1);
+> -		iowrite32(0x0, &priv->regs->ifregs[0].datab2);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[0]);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[1]);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[2]);
+> +		iowrite32(0x0, &priv->regs->ifregs[0].data[3]);
+>  		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+>  			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+>  			  &priv->regs->ifregs[0].cmask);
+> @@ -441,10 +438,10 @@ static void pch_can_clear_buffers(struct pch_can_=
+priv *priv)
+>  		iowrite32(0x0, &priv->regs->ifregs[1].id1);
+>  		iowrite32(0x0, &priv->regs->ifregs[1].id2);
+>  		iowrite32(0x0, &priv->regs->ifregs[1].mcont);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].dataa1);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].dataa2);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].datab1);
+> -		iowrite32(0x0, &priv->regs->ifregs[1].datab2);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[0]);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[1]);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[2]);
+> +		iowrite32(0x0, &priv->regs->ifregs[1].data[3]);
+>  		iowrite32(PCH_CMASK_RDWR | PCH_CMASK_MASK |
+>  			  PCH_CMASK_ARB | PCH_CMASK_CTRL,
+>  			  &priv->regs->ifregs[1].cmask);
+> @@ -707,12 +704,13 @@ static int pch_can_rx_normal(struct net_device *n=
+dev, u32 int_stat)
+>  	canid_t id;
+>  	u32 ide;
+>  	u32 rtr;
+> -	int i, j, k;
+> +	int i, k;
+>  	int rcv_pkts =3D 0;
+>  	struct sk_buff *skb;
+>  	struct can_frame *cf;
+>  	struct pch_can_priv *priv =3D netdev_priv(ndev);
+>  	struct net_device_stats *stats =3D &(priv->ndev->stats);
+> +	u16 data_reg;
 > =20
-> +/* TxRqst2 show status of MsgObjNo.17~32 */
-> +#define PCH_TREQ2_TX_MASK	(((1 << PCH_TX_OBJ_NUM) - 1) <<\
-> +							(PCH_RX_OBJ_END - 16))
-> +
->  enum pch_ifreg {
->  	PCH_RX_IFREG,
->  	PCH_TX_IFREG,
-> @@ -871,6 +875,8 @@ MSG_OBJ:
->  			dlc =3D 8;
->  		stats->tx_bytes +=3D dlc;
->  		stats->tx_packets++;
-> +		if (int_stat =3D=3D PCH_TX_OBJ_END)
-> +			netif_wake_queue(ndev);
->  	}
+>  	/* Reading the messsage object from the Message RAM */
+>  	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[0].cmask);
+> @@ -778,12 +776,10 @@ static int pch_can_rx_normal(struct net_device *n=
+dev, u32 int_stat)
+>  			      ((ioread32(&priv->regs->ifregs[0].mcont)) & 0x0f);
+>  		}
 > =20
->  	int_stat =3D pch_can_int_pending(priv);
-> @@ -1009,18 +1015,6 @@ static int pch_close(struct net_device *ndev)
->  	return 0;
->  }
+> -		for (i =3D 0, j =3D 0; i < cf->can_dlc; j++) {
+> -			reg =3D ioread32(&priv->regs->ifregs[0].dataa1 + j*4);
+> -			cf->data[i++] =3D cpu_to_le32(reg & 0xff);
+> -			if (i =3D=3D cf->can_dlc)
+> -				break;
+> -			cf->data[i++] =3D cpu_to_le32((reg >> 8) & 0xff);
+> +		for (i =3D 0; i < cf->can_dlc; i +=3D 2) {
+> +			data_reg =3D ioread16(&priv->regs->ifregs[0].data[i / 2]);
+> +			cf->data[i] =3D data_reg & 0xff;
+
+The & 0xff is not needed cf->data is only 8bit wide.
+
+> +			cf->data[i + 1] =3D data_reg >> 8;
+>  		}
 > =20
-> -static int pch_get_msg_obj_sts(struct net_device *ndev, u32 obj_id)
-> -{
-> -	u32 buffer_status =3D 0;
-> -	struct pch_can_priv *priv =3D netdev_priv(ndev);
-> -
-> -	/* Getting the message object status. */
-> -	buffer_status =3D (u32) pch_can_get_buffer_status(priv);
-> -
-> -	return buffer_status & obj_id;
-> -}
-> -
-> -
+>  		netif_receive_skb(skb);
+> @@ -1016,10 +1012,10 @@ static int pch_close(struct net_device *ndev)
+> =20
 >  static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *nd=
 ev)
 >  {
->  	int i, j;
-> @@ -1031,17 +1025,16 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb=
-, struct net_device *ndev)
+> -	int i, j;
+>  	struct pch_can_priv *priv =3D netdev_priv(ndev);
+>  	struct can_frame *cf =3D (struct can_frame *)skb->data;
+>  	int tx_buffer_avail =3D 0;
+> +	int i;
+> =20
 >  	if (can_dropped_invalid_skb(ndev, skb))
 >  		return NETDEV_TX_OK;
+> @@ -1060,13 +1056,10 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb=
+, struct net_device *ndev)
+>  	if (cf->can_id & CAN_RTR_FLAG)
+>  		pch_can_bit_clear(&priv->regs->ifregs[1].id2, PCH_ID2_DIR);
 > =20
-> -	if (priv->tx_obj =3D=3D PCH_TX_OBJ_END) { /* Point tail Obj */
-> -		while (pch_get_msg_obj_sts(ndev, (((1 << PCH_TX_OBJ_NUM)-1) <<
-> -					   PCH_RX_OBJ_NUM)))
-> -			udelay(500);
-> +	if (priv->tx_obj =3D=3D PCH_TX_OBJ_END) {
-> +		if (ioread32(&priv->regs->treq2) & PCH_TREQ2_TX_MASK)
-> +			netif_stop_queue(ndev);
-
-David asked you in his previous review to implement a pure software
-solution without relying on the hardware because it tends to be racy.
-
-> =20
-> -		priv->tx_obj =3D PCH_TX_OBJ_START; /* Point head of Tx Obj ID */
-> -		tx_buffer_avail =3D priv->tx_obj; /* Point Tail of Tx Obj */
-> +		tx_buffer_avail =3D priv->tx_obj;
-> +		priv->tx_obj =3D PCH_TX_OBJ_START;
->  	} else {
->  		tx_buffer_avail =3D priv->tx_obj;
-> +		priv->tx_obj++;
+> -	for (i =3D 0, j =3D 0; i < cf->can_dlc; j++) {
+> -		iowrite32(le32_to_cpu(cf->data[i++]),
+> -			 (&priv->regs->ifregs[1].dataa1) + j*4);
+> -		if (i =3D=3D cf->can_dlc)
+> -			break;
+> -		iowrite32(le32_to_cpu(cf->data[i++] << 8),
+> -			 (&priv->regs->ifregs[1].dataa1) + j*4);
+> +	/* Copy data to register */
+> +	for (i =3D 0; i < cf->can_dlc; i +=3D 2) {
+> +		iowrite16(cf->data[i] | (cf->data[i + 1] << 8),
+> +			  &priv->regs->ifregs[1].data[i / 2]);
 >  	}
-> -	priv->tx_obj++;
 > =20
->  	/* Reading the Msg Obj from the Msg RAM to the Interface register. */=
+>  	can_put_echo_skb(skb, ndev, tx_buffer_avail - PCH_RX_OBJ_END - 1);
 
->  	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[1].cmask);
-
-cheers, Marc
 
 --=20
 Pengutronix e.K.                  | Marc Kleine-Budde           |
@@ -137,7 +193,7 @@ Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
 Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
---------------enig779C94C24F67452167BA05DC
+--------------enig6811D42A31640DF4F02BB901
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -146,9 +202,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.10 (GNU/Linux)
 Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iEYEARECAAYFAk0E6ZEACgkQjTAFq1RaXHOkfQCfYOcWycuoEAr7Uw0+WHk9gMl1
-H3gAnjbrhyelv3OHgGbx/4+tRRgejrVL
-=viGG
+iEYEARECAAYFAk0E6pMACgkQjTAFq1RaXHNDhwCeNCsCUUZXijS4lSgVyfDGGdmL
+o6UAnjYHFyHm6OTYEpEsLHk2cIppjg1W
+=oSfo
 -----END PGP SIGNATURE-----
 
---------------enig779C94C24F67452167BA05DC--
+--------------enig6811D42A31640DF4F02BB901--
