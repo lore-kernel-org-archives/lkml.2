@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab0LMAMR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:12:17 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36149 "EHLO
+	id S1755151Ab0LLXqr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:46:47 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36153 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100Ab0LLXqo (ORCPT
+	with ESMTP id S1755113Ab0LLXqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:44 -0500
+	Sun, 12 Dec 2010 18:46:46 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: akpm@linux-foundation.org, mchehab@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [103/223] drivers/media/video/cx23885/cx23885-core.c: fix cx23885_dev_checkrevision()
-Message-Id: <20101212234643.A2EF2B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:43 +0100 (CET)
+To: mst@redhat.com, avi@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [104/223] KVM: Write protect memory after slot swap
+Message-Id: <20101212234644.B05DAB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:44 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,33 +22,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-commit abe1def46d84aa27d3f84d729204b162e8c64d76 upstream.
+commit edde99ce05290e50ce0b3495d209e54e6349ab47 upstream.
 
-It was missing the `break'.
+I have observed the following bug trigger:
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=18672
+1. userspace calls GET_DIRTY_LOG
+2. kvm_mmu_slot_remove_write_access is called and makes a page ro
+3. page fault happens and makes the page writeable
+   fault is logged in the bitmap appropriately
+4. kvm_vm_ioctl_get_dirty_log swaps slot pointers
 
-Reported-by: Igor <i2g2r2@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+a lot of time passes
+
+5. guest writes into the page
+6. userspace calls GET_DIRTY_LOG
+
+At point (5), bitmap is clean and page is writeable,
+thus, guest modification of memory is not logged
+and GET_DIRTY_LOG returns an empty bitmap.
+
+The rule is that all pages are either dirty in the current bitmap,
+or write-protected, which is violated here.
+
+It seems that just moving kvm_mmu_slot_remove_write_access down
+to after the slot pointer swap should fix this bug.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/media/video/cx23885/cx23885-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kvm/x86.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Index: linux/drivers/media/video/cx23885/cx23885-core.c
+Index: linux/arch/x86/kvm/x86.c
 ===================================================================
---- linux.orig/drivers/media/video/cx23885/cx23885-core.c
-+++ linux/drivers/media/video/cx23885/cx23885-core.c
-@@ -737,6 +737,7 @@ static void cx23885_dev_checkrevision(st
- 	case 0x0e:
- 		/* CX23887-15Z */
- 		dev->hwrevision = 0xc0;
-+		break;
- 	case 0x0f:
- 		/* CX23887-14Z */
- 		dev->hwrevision = 0xb1;
+--- linux.orig/arch/x86/kvm/x86.c
++++ linux/arch/x86/kvm/x86.c
+@@ -2825,10 +2825,6 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
+ 	if (is_dirty) {
+ 		struct kvm_memslots *slots, *old_slots;
+ 
+-		spin_lock(&kvm->mmu_lock);
+-		kvm_mmu_slot_remove_write_access(kvm, log->slot);
+-		spin_unlock(&kvm->mmu_lock);
+-
+ 		slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+ 		if (!slots)
+ 			goto out_free;
+@@ -2841,6 +2837,11 @@ int kvm_vm_ioctl_get_dirty_log(struct kv
+ 		synchronize_srcu_expedited(&kvm->srcu);
+ 		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
+ 		kfree(old_slots);
++
++		spin_lock(&kvm->mmu_lock);
++		kvm_mmu_slot_remove_write_access(kvm, log->slot);
++		spin_unlock(&kvm->mmu_lock);
++
+ 	}
+ 
+ 	r = 0;
