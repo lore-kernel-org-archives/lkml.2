@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab0LMAIT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:08:19 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36262 "EHLO
+	id S1755383Ab0LMAId (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:08:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36268 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320Ab0LLXrG (ORCPT
+	with ESMTP id S1755242Ab0LLXrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Dec 2010 18:47:06 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: eparis@redhat.com, kaber@trash.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [124/223] netfilter: NF_HOOK_COND has wrong conditional
-Message-Id: <20101212234705.D256CB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:05 +0100 (CET)
+To: eric.dumazet@gmail.com, kaber@trash.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [123/223] netfilter: nf_conntrack: allow nf_ct_alloc_hashtable() to get highmem pages
+Message-Id: <20101212234704.C4E03B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:04 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,47 +22,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Eric Paris <eparis@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit ac5aa2e3332ec04889074afdbd1479424d0227a5 upstream.
+commit 6b1686a71e3158d3c5f125260effce171cc7852b upstream.
 
-The NF_HOOK_COND returns 0 when it shouldn't due to what I believe to be an
-error in the code as the order of operations is not what was intended.  C will
-evalutate == before =.  Which means ret is getting set to the bool result,
-rather than the return value of the function call.  The code says
+commit ea781f197d6a8 (use SLAB_DESTROY_BY_RCU and get rid of call_rcu())
+did a mistake in __vmalloc() call in nf_ct_alloc_hashtable().
 
-if (ret = function() == 1)
-when it meant to say:
-if ((ret = function()) == 1)
+I forgot to add __GFP_HIGHMEM, so pages were taken from LOWMEM only.
 
-Normally the compiler would warn, but it doesn't notice it because its
-a actually complex conditional and so the wrong code is wrapped in an explict
-set of () [exactly what the compiler wants you to do if this was intentional].
-Fixing this means that errors when netfilter denies a packet get propagated
-back up the stack rather than lost.
-
-Problem introduced by commit 2249065f (netfilter: get rid of the grossness
-in netfilter.h).
-
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- include/linux/netfilter.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/netfilter/nf_conntrack_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Index: linux/include/linux/netfilter.h
+Index: linux/net/netfilter/nf_conntrack_core.c
 ===================================================================
---- linux.orig/include/linux/netfilter.h
-+++ linux/include/linux/netfilter.h
-@@ -215,7 +215,7 @@ NF_HOOK_COND(uint8_t pf, unsigned int ho
- 	int ret;
+--- linux.orig/net/netfilter/nf_conntrack_core.c
++++ linux/net/netfilter/nf_conntrack_core.c
+@@ -1252,7 +1252,8 @@ void *nf_ct_alloc_hashtable(unsigned int
+ 	if (!hash) {
+ 		*vmalloced = 1;
+ 		printk(KERN_WARNING "nf_conntrack: falling back to vmalloc.\n");
+-		hash = __vmalloc(sz, GFP_KERNEL | __GFP_ZERO, PAGE_KERNEL);
++		hash = __vmalloc(sz, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
++				 PAGE_KERNEL);
+ 	}
  
- 	if (!cond ||
--	    (ret = nf_hook_thresh(pf, hook, skb, in, out, okfn, INT_MIN) == 1))
-+	    ((ret = nf_hook_thresh(pf, hook, skb, in, out, okfn, INT_MIN)) == 1))
- 		ret = okfn(skb);
- 	return ret;
- }
+ 	if (hash && nulls)
