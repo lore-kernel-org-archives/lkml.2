@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab0LLQCr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:02:47 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46181 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab0LLQCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:02:44 -0500
-X-AuditID: b753bd60-a69a5ba000003e7d-6c-4d04f2217d82
-Message-ID: <4D04F21D.6060300@hitachi.com>
-Date: Mon, 13 Dec 2010 01:02:37 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1753347Ab0LLQCl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 11:02:41 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45712 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752855Ab0LLQCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 11:02:39 -0500
+Message-ID: <4D04F211.6080602@kernel.org>
+Date: Sun, 12 Dec 2010 17:02:25 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Franck Bui-Huu <fbuihuu@gmail.com>, 2nddept-manager@sdl.hitachi.co.jp,
-        Francis Moreau <francis.moro@gmail.com>,
-        Franck Bui-Huu <vagabon.xyz@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 2/2] perf symbols: Stop using vmlinux files with no symbols
-References: <1292167014-20936-1-git-send-email-acme@infradead.org> <1292167014-20936-3-git-send-email-acme@infradead.org>
-In-Reply-To: <1292167014-20936-3-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 09/30] sound: don't use flush_scheduled_work()
+References: <1292086307-19211-1-git-send-email-tj@kernel.org> <1292086307-19211-10-git-send-email-tj@kernel.org> <s5hk4jfbc94.wl%tiwai@suse.de> <4D0492CB.2010702@kernel.org> <s5hhbejb1yr.wl%tiwai@suse.de> <20101212124041.GD15189@opensource.wolfsonmicro.com>
+In-Reply-To: <20101212124041.GD15189@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 16:02:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/12/13 0:16), Arnaldo Carvalho de Melo wrote:
-> From: Franck Bui-Huu <fbuihuu@gmail.com>
+On 12/12/2010 01:40 PM, Mark Brown wrote:
+> On Sun, Dec 12, 2010 at 01:38:36PM +0100, Takashi Iwai wrote:
 > 
-> Fail if the kernel image contains no symbol, allowing using other images
-> in the vmlinux search path that may have a usable symtab.
+>> Meanwhile, I wondered whether it's the really wanted behavior for
+>> that particular code path, thus the previous question to Liam.
 > 
-> Cc: 2nddept-manager@sdl.hitachi.co.jp
-> Cc: Francis Moreau <francis.moro@gmail.com>
-> Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> LPU-Reference: <m3d3p9ydx9.fsf_-_@gmail.com>
-> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Yes, it's desired behaviour.  That's what the old code was trying to do.
+> I've not seen the original patch, could someone resend it to me please
+> (or send a pointer)?
 
-Looks good for me:)
+Weirdly, lkml seemed to have eaten the original postings.  I can't
+find them in any archive.  The following is the original patch.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+  http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=01f8126c2e14245cf0ba11a25fb9a291710066e1;hp=cd591981a8d06d6aaca6d7ef2412d12a7adf47ed
 
-> ---
->  tools/perf/util/probe-event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index b71acd6..61191c6 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -135,7 +135,7 @@ const char *kernel_get_module_path(const char *module)
->  		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
->  			return NULL;
->  	} else {
-> -		if (dso__load_vmlinux_path(dso, map, NULL) < 0) {
-> +		if (dso__load_vmlinux_path(dso, map, NULL) <= 0) {
->  			pr_debug("Failed to load kernel map.\n");
->  			return NULL;
->  		}
-
+Thanks.
 
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+tejun
