@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0LMAP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:15:26 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35987 "EHLO
+	id S1754859Ab0LLXqY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:46:24 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35966 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab0LLXqZ (ORCPT
+	with ESMTP id S1754796Ab0LLXqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:25 -0500
+	Sun, 12 Dec 2010 18:46:19 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: graham.gower@gmail.com, greg@kroah.com, akpm@linux-foundation.org,
+To: Robin@sgi.com, holt@sgi.com, akpm@linux-foundation.org,
         torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [85/223] drivers/char/vt_ioctl.c: fix VT_OPENQRY error value
-Message-Id: <20101212234624.A0A7CB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:24 +0100 (CET)
+Subject: [PATCH] [79/223] sgi-xpc: XPC fails to discover partitions with all nasids above 128
+Message-Id: <20101212234618.476AAB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:18 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,73 +23,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Graham Gower <graham.gower@gmail.com>
+From: Robin@sgi.com <Robin@sgi.com>
 
-commit 1e0ad2881d50becaeea70ec696a80afeadf944d2 upstream.
+commit c22c7aeff69796f46ae0fcec141538e28f50b24e upstream.
 
-When all VT's are in use, VT_OPENQRY casts -1 to unsigned char before
-returning it to userspace as an int.  VT255 is not the next available
-console.
+UV hardware defines 256 memory protection regions versus the baseline 64
+with increasing size for the SN2 ia64.  This was overlooked when XPC was
+modified to accomodate both UV and SN2.
 
-Signed-off-by: Graham Gower <graham.gower@gmail.com>
-Cc: Greg KH <greg@kroah.com>
+Without this patch, a user could reconfigure their existing system and
+suddenly disable cross-partition communications with no indication of what
+has gone wrong.  It also prevents larger configurations from using
+cross-partition communication.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/char/vt_ioctl.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/misc/sgi-xp/xpc_partition.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
-Index: linux/drivers/char/vt_ioctl.c
+Index: linux/drivers/misc/sgi-xp/xpc_partition.c
 ===================================================================
---- linux.orig/drivers/char/vt_ioctl.c
-+++ linux/drivers/char/vt_ioctl.c
-@@ -503,6 +503,7 @@ int vt_ioctl(struct tty_struct *tty, str
- 	struct kbd_struct * kbd;
- 	unsigned int console;
- 	unsigned char ucval;
-+	unsigned int uival;
- 	void __user *up = (void __user *)arg;
- 	int i, perm;
- 	int ret = 0;
-@@ -657,7 +658,7 @@ int vt_ioctl(struct tty_struct *tty, str
- 		break;
+--- linux.orig/drivers/misc/sgi-xp/xpc_partition.c
++++ linux/drivers/misc/sgi-xp/xpc_partition.c
+@@ -439,18 +439,23 @@ xpc_discovery(void)
+ 	 * nodes that can comprise an access protection grouping. The access
+ 	 * protection is in regards to memory, IOI and IPI.
+ 	 */
+-	max_regions = 64;
+ 	region_size = xp_region_size;
  
- 	case KDGETMODE:
--		ucval = vc->vc_mode;
-+		uival = vc->vc_mode;
- 		goto setint;
+-	switch (region_size) {
+-	case 128:
+-		max_regions *= 2;
+-	case 64:
+-		max_regions *= 2;
+-	case 32:
+-		max_regions *= 2;
+-		region_size = 16;
+-		DBUG_ON(!is_shub2());
++	if (is_uv())
++		max_regions = 256;
++	else {
++		max_regions = 64;
++
++		switch (region_size) {
++		case 128:
++			max_regions *= 2;
++		case 64:
++			max_regions *= 2;
++		case 32:
++			max_regions *= 2;
++			region_size = 16;
++			DBUG_ON(!is_shub2());
++		}
+ 	}
  
- 	case KDMAPDISP:
-@@ -695,7 +696,7 @@ int vt_ioctl(struct tty_struct *tty, str
- 		break;
- 
- 	case KDGKBMODE:
--		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
-+		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
- 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
- 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
- 				 K_XLATE);
-@@ -717,9 +718,9 @@ int vt_ioctl(struct tty_struct *tty, str
- 		break;
- 
- 	case KDGKBMETA:
--		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
-+		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
- 	setint:
--		ret = put_user(ucval, (int __user *)arg);
-+		ret = put_user(uival, (int __user *)arg);
- 		break;
- 
- 	case KDGETKEYCODE:
-@@ -949,7 +950,7 @@ int vt_ioctl(struct tty_struct *tty, str
- 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
- 			if (! VT_IS_IN_USE(i))
- 				break;
--		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
-+		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
- 		goto setint;		 
- 
- 	/*
+ 	for (region = 0; region < max_regions; region++) {
