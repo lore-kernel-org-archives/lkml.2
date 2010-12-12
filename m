@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0LLS3b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 13:29:31 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51420 "EHLO
+	id S1753762Ab0LLS3a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 13:29:30 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51414 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab0LLS32 (ORCPT
+	with ESMTP id S1753484Ab0LLS31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 13:29:28 -0500
-Message-ID: <4D04E75D.10704@pengutronix.de>
-Date: Sun, 12 Dec 2010 16:16:45 +0100
+	Sun, 12 Dec 2010 13:29:27 -0500
+Message-ID: <4D04E6FD.50106@pengutronix.de>
+Date: Sun, 12 Dec 2010 16:15:09 +0100
 From: Marc Kleine-Budde <mkl@pengutronix.de>
 Organization: Pengutronix
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
@@ -19,14 +19,13 @@ CC: Wolfgang Grandegger <wg@grandegger.com>, socketcan-core@lists.berlios.de,
         andrew.chih.howe.khor@intel.com, qi.wang@intel.com,
         margie.foster@intel.com, yong.y.wang@intel.com, kok.howg.ewe@intel.com,
         joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v8 18/20] CAN : Optimize "if" condition in
- rx/tx	processing
-References: <4CFE166D.8040805@dsn.okisemi.com>
-In-Reply-To: <4CFE166D.8040805@dsn.okisemi.com>
+Subject: Re: [PATCH net-next-2.6 v8 20/20] CAN : Replace netif_rx to	netif_receive_skb
+References: <4CFE16A3.6070903@dsn.okisemi.com>
+In-Reply-To: <4CFE16A3.6070903@dsn.okisemi.com>
 X-Enigmail-Version: 1.0.1
 Content-Type: multipart/signed; micalg=pgp-sha1;
  protocol="application/pgp-signature";
- boundary="------------enig0B4D4768880F210FDDDD36B2"
+ boundary="------------enig04ADE4E05813609ACB2750FC"
 X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
 X-SA-Exim-Mail-From: mkl@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -36,82 +35,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig0B4D4768880F210FDDDD36B2
+--------------enig04ADE4E05813609ACB2750FC
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 12/07/2010 12:11 PM, Tomoya MORINAGA wrote:
-> For reduce "if" condition, easy to read/understand the code,
-> optimize "if" condition in rx/tx processing.
+On 12/07/2010 12:12 PM, Tomoya MORINAGA wrote:
+> Since this driver is implemented as NAPI,
+> netif_receive_skb must be used not netif_rx.
 >=20
 > Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+
+Looks good.
 Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+
+Marc
+
 > ---
->  drivers/net/can/pch_can.c |   26 ++++++++++----------------
->  1 files changed, 10 insertions(+), 16 deletions(-)
+>  drivers/net/can/pch_can.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >=20
 > diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-> index 8efbe35..dcd8f00 100644
+> index 4697b1c..8d45fdd 100644
 > --- a/drivers/net/can/pch_can.c
 > +++ b/drivers/net/can/pch_can.c
-> @@ -746,19 +746,16 @@ static int pch_can_poll(struct napi_struct *napi,=
- int quota)
+> @@ -572,7 +572,7 @@ static void pch_can_error(struct net_device *ndev, =
+u32 status)
+>  	cf->data[7] =3D (errc & PCH_REC) >> 8;
 > =20
->  	if (int_stat =3D=3D PCH_STATUS_INT) {
->  		reg_stat =3D ioread32(&priv->regs->stat);
-> -		if (reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) {
-> -			if (reg_stat & PCH_BUS_OFF ||
-> -			   (reg_stat & PCH_LEC_ALL) !=3D PCH_LEC_ALL) {
-> -				pch_can_error(ndev, reg_stat);
-> -				quota--;
-> -			}
-> -		}
+>  	priv->can.state =3D state;
+> -	netif_rx(skb);
+> +	netif_receive_skb(skb);
 > =20
-> -		if (reg_stat & PCH_TX_OK)
-> -			pch_can_bit_clear(&priv->regs->stat, PCH_TX_OK);
-> +		if ((reg_stat & (PCH_BUS_OFF | PCH_LEC_ALL)) &&
-> +		   ((reg_stat & PCH_LEC_ALL) !=3D PCH_LEC_ALL)) {
-> +			pch_can_error(ndev, reg_stat);
-> +			quota--;
-> +		}
-> =20
-> -		if (reg_stat & PCH_RX_OK)
-> -			pch_can_bit_clear(&priv->regs->stat, PCH_RX_OK);
-> +		if (reg_stat & (PCH_TX_OK | PCH_RX_OK))
-> +			pch_can_bit_clear(&priv->regs->stat,
-> +					  reg_stat & (PCH_TX_OK | PCH_RX_OK));
-> =20
->  		int_stat =3D pch_can_int_pending(priv);
->  	}
-> @@ -900,14 +897,13 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, =
-struct net_device *ndev)
->  	if (can_dropped_invalid_skb(ndev, skb))
->  		return NETDEV_TX_OK;
-> =20
-> +	tx_obj_no =3D priv->tx_obj;
->  	if (priv->tx_obj =3D=3D PCH_TX_OBJ_END) {
->  		if (ioread32(&priv->regs->treq2) & PCH_TREQ2_TX_MASK)
->  			netif_stop_queue(ndev);
-> =20
-> -		tx_obj_no =3D priv->tx_obj;
->  		priv->tx_obj =3D PCH_TX_OBJ_START;
->  	} else {
-> -		tx_obj_no =3D priv->tx_obj;
->  		priv->tx_obj++;
->  	}
-> =20
-> @@ -926,9 +922,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, st=
-ruct net_device *ndev)
->  	id2 |=3D PCH_ID_MSGVAL;
-> =20
->  	/* If remote frame has to be transmitted.. */
-> -	if (cf->can_id & CAN_RTR_FLAG)
-> -		id2 &=3D ~PCH_ID2_DIR;
-> -	else
-> +	if (!(cf->can_id & CAN_RTR_FLAG))
->  		id2 |=3D PCH_ID2_DIR;
-> =20
->  	iowrite32(id2, &priv->regs->ifregs[1].id2);
+>  	stats->rx_packets++;
+>  	stats->rx_bytes +=3D cf->can_dlc;
 
 
 --=20
@@ -121,7 +77,7 @@ Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
 Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
---------------enig0B4D4768880F210FDDDD36B2
+--------------enig04ADE4E05813609ACB2750FC
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -130,9 +86,9 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.10 (GNU/Linux)
 Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iEYEARECAAYFAk0E510ACgkQjTAFq1RaXHO/sgCgj2dWDPB8BiY2qtu4i+jWOdYg
-GUgAoJgdMuYmkTeQm/D9AoTJr87xm8hj
-=z6zT
+iEYEARECAAYFAk0E5wAACgkQjTAFq1RaXHO+/ACeOx5pkWUz7wuLSScnxBa7AGVA
+Z/QAn0Ho3vV9IPUoHqAakZ8Aml733ScJ
+=AlF3
 -----END PGP SIGNATURE-----
 
---------------enig0B4D4768880F210FDDDD36B2--
+--------------enig04ADE4E05813609ACB2750FC--
