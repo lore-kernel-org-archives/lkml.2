@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab0LLQx5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:53:57 -0500
-Received: from www.tglx.de ([62.245.132.106]:35056 "EHLO www.tglx.de"
+	id S1753521Ab0LLRaL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 12:30:11 -0500
+Received: from www.tglx.de ([62.245.132.106]:56583 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab0LLQxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:53:53 -0500
-Date: Sun, 12 Dec 2010 17:53:31 +0100 (CET)
+	id S1750944Ab0LLRaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 12:30:07 -0500
+Date: Sun, 12 Dec 2010 18:29:48 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Jan Kiszka <jan.kiszka@web.de>
 cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
@@ -15,10 +15,11 @@ cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Alex Williamson <alex.williamson@redhat.com>,
         "Michael S. Tsirkin" <mst@redhat.com>,
         Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH v2 2/4] genirq: Inform handler about line sharing state
-In-Reply-To: <664535c6596c0c6bf7024f2608134c90e2093c19.1292152963.git.jan.kiszka@web.de>
-Message-ID: <alpine.LFD.2.00.1012121750520.2653@localhost6.localdomain6>
-References: <cover.1292152963.git.jan.kiszka@web.de> <664535c6596c0c6bf7024f2608134c90e2093c19.1292152963.git.jan.kiszka@web.de>
+Subject: Re: [PATCH v2 1/4] genirq: Introduce driver-readable IRQ status
+ word
+In-Reply-To: <0b28922dfb7f5791fcb1866a0f1c033bacb8f4d8.1292152963.git.jan.kiszka@web.de>
+Message-ID: <alpine.LFD.2.00.1012121747000.2653@localhost6.localdomain6>
+References: <cover.1292152963.git.jan.kiszka@web.de> <0b28922dfb7f5791fcb1866a0f1c033bacb8f4d8.1292152963.git.jan.kiszka@web.de>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,71 +31,60 @@ On Sun, 12 Dec 2010, Jan Kiszka wrote:
 
 > From: Jan Kiszka <jan.kiszka@siemens.com>
 > 
-> This enabled interrupt handlers to retrieve the current line sharing state via
-> the new interrupt status word so that they can adapt to it.
-> 
-> The switch from shared to exclusive is generally uncritical and can thus be
-> performed on demand. However, preparing a line for shared mode may require
-> preparational steps of the currently registered handler. It can therefore
-> request an ahead-of-time notification via IRQF_ADAPTIVE. The notification
-> consists of an exceptional handler invocation with IRQS_MAKE_SHAREABLE set in
-> the status word.
+> This associates a status word with every IRQ descriptor. Drivers can obtain
+> its content via get_irq_status(irq). First use case will be propagating the
+> interrupt sharing state.
 > 
 > Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 > ---
->  include/linux/interrupt.h |   10 ++++++++++
->  include/linux/irqdesc.h   |    2 ++
->  kernel/irq/irqdesc.c      |    2 ++
->  kernel/irq/manage.c       |   44 +++++++++++++++++++++++++++++++++++++++++---
->  4 files changed, 55 insertions(+), 3 deletions(-)
+>  include/linux/interrupt.h |    2 ++
+>  include/linux/irq.h       |    2 ++
+>  kernel/irq/manage.c       |   15 +++++++++++++++
+>  3 files changed, 19 insertions(+), 0 deletions(-)
 > 
 > diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> index 16cdbbf..c6323a2 100644
+> index 79d0c4f..16cdbbf 100644
 > --- a/include/linux/interrupt.h
 > +++ b/include/linux/interrupt.h
-> @@ -55,6 +55,7 @@
->   *                Used by threaded interrupts which need to keep the
->   *                irq line disabled until the threaded handler has been run.
->   * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-> + * IRQF_ADAPTIVE - Request notification about upcoming interrupt line sharing
->   *
->   */
->  #define IRQF_DISABLED		0x00000020
-> @@ -67,6 +68,7 @@
->  #define IRQF_IRQPOLL		0x00001000
->  #define IRQF_ONESHOT		0x00002000
->  #define IRQF_NO_SUSPEND		0x00004000
-> +#define IRQF_ADAPTIVE		0x00008000
->  
->  #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
->  
-> @@ -126,6 +128,14 @@ struct irqaction {
+> @@ -126,6 +126,8 @@ struct irqaction {
 >  
 >  extern irqreturn_t no_action(int cpl, void *dev_id);
 >  
-> +/*
-> + * Driver-readable IRQ line status flags:
-> + * IRQS_SHARED - line is shared between multiple handlers
-> + * IRQS_MAKE_SHAREABLE - in the process of making an exclusive line shareable
-> + */
-> +#define IRQS_SHARED		0x00000001
-> +#define IRQS_MAKE_SHAREABLE	0x00000002
+> +extern unsigned long get_irq_status(unsigned long irq);
 > +
->  extern unsigned long get_irq_status(unsigned long irq);
->  
 >  #ifdef CONFIG_GENERIC_HARDIRQS
-> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-> index 979c68c..c490e83 100644
-> --- a/include/linux/irqdesc.h
-> +++ b/include/linux/irqdesc.h
-> @@ -29,6 +29,7 @@ struct timer_rand_state;
->   * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
->   * @dir:		/proc/irq/ procfs entry
->   * @name:		flow handler name for /proc/interrupts output
-> + * @register_lock:	protects registration & release, for unshared->shared
+>  extern int __must_check
+>  request_threaded_irq(unsigned int irq, irq_handler_t handler,
+> diff --git a/include/linux/irq.h b/include/linux/irq.h
+> index abde252..5554203 100644
+> --- a/include/linux/irq.h
+> +++ b/include/linux/irq.h
+> @@ -96,6 +96,7 @@ struct msi_desc;
+>   *			methods, to allow shared chip implementations
+>   * @msi_desc:		MSI descriptor
+>   * @affinity:		IRQ affinity on SMP
+> + * @status:		driver-readable status flags (IRQS_*)
+>   *
+>   * The fields here need to overlay the ones in irq_desc until we
+>   * cleaned up the direct references and switched everything over to
+> @@ -108,6 +109,7 @@ struct irq_data {
+>  	void			*handler_data;
+>  	void			*chip_data;
+>  	struct msi_desc		*msi_desc;
+> +	unsigned long		status;
 
-I think we can make that a global mutex. request/free_irq are not
-hotpath operations which require a mutex per irq descriptor.
+That breaks the current code which has irq_data embedded and shadowed
+in irq_desc for migratory reasons until all users are fixed up and the
+GENERIC_HARDIRQS_NO_DEPRECATED sections are cleaned up. I know it's
+ugly, but that was the only way not to rewrite the world in one go. :)
+Just move it below affinity.
+
+Also we should name it different than status, drv_status perhaps, to
+avoid confusion with the irq_desc status.
+
+>  #ifdef CONFIG_SMP
+>  	cpumask_var_t		affinity;
+>  #endif
 
 Thanks,
 
