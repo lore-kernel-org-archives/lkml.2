@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab0LLXp7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:45:59 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44848 "EHLO
+	id S1755034Ab0LLXqk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:46:40 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36084 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab0LLXps (ORCPT
+	with ESMTP id S1754980Ab0LLXqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:48 -0500
+	Sun, 12 Dec 2010 18:46:37 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: chris@chris-wilson.co.uk, ak@linux.intel.com, daniel.vetter@ffwll.ch,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [50/223] drm/i915/overlay: Ensure that the reg_bo is in the GTT prior to writing.
-Message-Id: <20101212234547.8F7AAB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:47 +0100 (CET)
+To: philippe.retornaz@epfl.ch, philippe.retornaz@epfl.ch,
+        philippe.retornaz@epfl.ch, alan@linux.intel.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [95/223] tty_ldisc: Fix BUG() on hangup
+Message-Id: <20101212234635.36C7AB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:35 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,46 +23,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>
 
-commit 0ddc1289f3ffd779779ddd3922f26ae7d0a21604 upstream.
+commit 1c95ba1e1de7edffc0c4e275e147f1a9eb1f81ae upstream.
 
-Just makes sure that writes are not being aliased by the CPU cache and
-do make it out to main memory.
+A kernel BUG when bluetooth rfcomm connection drop while the associated
+serial port is open is sometime triggered.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=24977
+It seems that the line discipline can disappear between the
+tty_ldisc_put and tty_ldisc_get. This patch fall back to the N_TTY line
+discipline if the previous discipline is not available anymore.
+
+Signed-off-by: Philippe Retornaz <philippe.retornaz@epfl.ch>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/gpu/drm/i915/intel_overlay.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/char/tty_ldisc.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-Index: linux/drivers/gpu/drm/i915/intel_overlay.c
+Index: linux/drivers/char/tty_ldisc.c
 ===================================================================
---- linux.orig/drivers/gpu/drm/i915/intel_overlay.c
-+++ linux/drivers/gpu/drm/i915/intel_overlay.c
-@@ -1364,6 +1364,12 @@ void intel_setup_overlay(struct drm_devi
-                         goto out_free_bo;
-                 }
- 		overlay->flip_addr = overlay->reg_bo->gtt_offset;
-+
-+		ret = i915_gem_object_set_to_gtt_domain(reg_bo, true);
-+		if (ret) {
-+                        DRM_ERROR("failed to move overlay register bo into the GTT\n");
-+                        goto out_unpin_bo;
-+                }
- 	} else {
- 		ret = i915_gem_attach_phys_object(dev, reg_bo,
- 				I915_GEM_PHYS_OVERLAY_REGS);
-@@ -1395,6 +1401,8 @@ void intel_setup_overlay(struct drm_devi
- 	DRM_INFO("initialized overlay support\n");
- 	return;
+--- linux.orig/drivers/char/tty_ldisc.c
++++ linux/drivers/char/tty_ldisc.c
+@@ -741,9 +741,12 @@ static void tty_reset_termios(struct tty
+  *	state closed
+  */
  
-+out_unpin_bo:
-+	i915_gem_object_unpin(reg_bo);
- out_free_bo:
- 	drm_gem_object_unreference(reg_bo);
- out_free:
+-static void tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
++static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+ {
+-	struct tty_ldisc *ld;
++	struct tty_ldisc *ld = tty_ldisc_get(ldisc);
++
++	if (IS_ERR(ld))
++		return -1;
+ 
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+@@ -751,10 +754,10 @@ static void tty_ldisc_reinit(struct tty_
+ 	/*
+ 	 *	Switch the line discipline back
+ 	 */
+-	ld = tty_ldisc_get(ldisc);
+-	BUG_ON(IS_ERR(ld));
+ 	tty_ldisc_assign(tty, ld);
+ 	tty_set_termios_ldisc(tty, ldisc);
++
++	return 0;
+ }
+ 
+ /**
+@@ -816,13 +819,16 @@ void tty_ldisc_hangup(struct tty_struct
+ 	   a FIXME */
+ 	if (tty->ldisc) {	/* Not yet closed */
+ 		if (reset == 0) {
+-			tty_ldisc_reinit(tty, tty->termios->c_line);
+-			err = tty_ldisc_open(tty, tty->ldisc);
++
++			if (!tty_ldisc_reinit(tty, tty->termios->c_line))
++				err = tty_ldisc_open(tty, tty->ldisc);
++			else
++				err = 1;
+ 		}
+ 		/* If the re-open fails or we reset then go to N_TTY. The
+ 		   N_TTY open cannot fail */
+ 		if (reset || err) {
+-			tty_ldisc_reinit(tty, N_TTY);
++			BUG_ON(tty_ldisc_reinit(tty, N_TTY));
+ 			WARN_ON(tty_ldisc_open(tty, tty->ldisc));
+ 		}
+ 		tty_ldisc_enable(tty);
