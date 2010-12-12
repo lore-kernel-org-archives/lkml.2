@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab0LLMDf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:03:35 -0500
-Received: from mail.perches.com ([173.55.12.10]:2503 "EHLO mail.perches.com"
+	id S1752965Ab0LLMDs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:03:48 -0500
+Received: from mail.perches.com ([173.55.12.10]:2519 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab0LLMDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:03:32 -0500
+	id S1752825Ab0LLMDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:03:41 -0500
 From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH net-next 0/6] Start moving ethernet drivers to new directory
-Date: Sun, 12 Dec 2010 04:03:21 -0800
-Message-Id: <cover.1292154142.git.joe@perches.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>, netdev@vger.kernel.org
+Subject: [RFC PATCH net-next 4/6] ethernet: Move Sun Happymeal sunhme.[ch]
+Date: Sun, 12 Dec 2010 04:03:25 -0800
+Message-Id: <d95e2675d60e5df1052911deec264cb56824767a.1292154142.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
+In-Reply-To: <cover.1292154142.git.joe@perches.com>
+References: <cover.1292154142.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As discussed a few times, here's a start at moving various files
-around in drivers/net to a new drivers/net/ethernet directory.
+Move Sun Happymeal files to ethernet directory.
 
-The general idea is to move one at a time compilation units
-associated to the various subsystems in drivers/net, updating
-the Kconfig and Makefile files. 
-
-I think this is a form that doesn't break the build, is reviewable
-and acceptable and makes the top level drivers/net directory much
-cleaner.
-
-The biggest downsides of this move style are:
-
-o high number of trivial commits so:
-o serialization: it's best done by one person because the likelihood
-  of commit clash will be also be high.
-o the order the entries in Kconfig are changed, so the order of entries
-  in menuconfig/xconfig is also changed.
-
-An alternative to the high commit count is to collect many of these patches
-together into a single commit.
-
-If this approach is acceptable, I'll do all the unmaintained ethernet
-subsystems in drivers/net in this style, followed by adding separate
-subdirectories for 3com and 8390, moving tulip, then onto the various
-vendor directories as appropriate.
-
-Moving bonding, ppp, and such to different directories will be done
-separately.
-
-David, the Sun GEM and Cassini files are currently selected under the
-10/100 menu.  Shouldn't these be presented under the 1000Mb menu?
-I didn't move them to that menu so all current configs should work,
-but it'd be logically sensible to move the selection for these subsystems
-to the 1000 menu though maybe that's not practical.
-
-Comments?
-
-Joe Perches (6):
-  drivers/net: Add directory ethernet
-  ethernet: Move ethoc.c
-  ethernet: Move dnet.[ch]
-  ethernet: Move Sun Happymeal sunhme.[ch]
-  ethernet: Move Sun GEM sungem*.[ch]
-  ethernet: Move Sun Cassini cassini.[ch]
-
- drivers/net/Kconfig                     |   56 +++---------------------------
- drivers/net/Makefile                    |    7 +---
- drivers/net/ethernet/Kconfig.10-100     |   53 +++++++++++++++++++++++++++++
- drivers/net/ethernet/Kconfig.1000       |    3 ++
- drivers/net/ethernet/Kconfig.10000      |    3 ++
- drivers/net/ethernet/Makefile           |    9 +++++
- drivers/net/{ => ethernet}/cassini.c    |    0
- drivers/net/{ => ethernet}/cassini.h    |    0
- drivers/net/{ => ethernet}/dnet.c       |    0
- drivers/net/{ => ethernet}/dnet.h       |    0
- drivers/net/{ => ethernet}/ethoc.c      |    0
- drivers/net/{ => ethernet}/sungem.c     |    0
- drivers/net/{ => ethernet}/sungem.h     |    0
- drivers/net/{ => ethernet}/sungem_phy.c |    0
- drivers/net/{ => ethernet}/sungem_phy.h |    0
- drivers/net/{ => ethernet}/sunhme.c     |    0
- drivers/net/{ => ethernet}/sunhme.h     |    0
- 17 files changed, 76 insertions(+), 55 deletions(-)
- create mode 100644 drivers/net/ethernet/Kconfig.10-100
- create mode 100644 drivers/net/ethernet/Kconfig.1000
- create mode 100644 drivers/net/ethernet/Kconfig.10000
- create mode 100644 drivers/net/ethernet/Makefile
- rename drivers/net/{ => ethernet}/cassini.c (100%)
- rename drivers/net/{ => ethernet}/cassini.h (100%)
- rename drivers/net/{ => ethernet}/dnet.c (100%)
- rename drivers/net/{ => ethernet}/dnet.h (100%)
- rename drivers/net/{ => ethernet}/ethoc.c (100%)
- rename drivers/net/{ => ethernet}/sungem.c (100%)
- rename drivers/net/{ => ethernet}/sungem.h (100%)
- rename drivers/net/{ => ethernet}/sungem_phy.c (100%)
- rename drivers/net/{ => ethernet}/sungem_phy.h (100%)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/Kconfig                 |   13 -------------
+ drivers/net/Makefile                |    1 -
+ drivers/net/ethernet/Kconfig.10-100 |   13 +++++++++++++
+ drivers/net/ethernet/Makefile       |    1 +
+ drivers/net/{ => ethernet}/sunhme.c |    0
+ drivers/net/{ => ethernet}/sunhme.h |    0
+ 6 files changed, 14 insertions(+), 14 deletions(-)
  rename drivers/net/{ => ethernet}/sunhme.c (100%)
  rename drivers/net/{ => ethernet}/sunhme.h (100%)
 
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index c0716d9..926f090 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -558,19 +558,6 @@ config SUNLANCE
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called sunlance.
+ 
+-config HAPPYMEAL
+-	tristate "Sun Happy Meal 10/100baseT support"
+-	depends on SBUS || PCI
+-	select CRC32
+-	help
+-	  This driver supports the "hme" interface present on most Ultra
+-	  systems and as an option on older Sbus systems. This driver supports
+-	  both PCI and Sbus devices. This driver also supports the "qfe" quad
+-	  100baseT device available in both PCI and Sbus configurations.
+-
+-	  To compile this driver as a module, choose M here: the module
+-	  will be called sunhme.
+-
+ config SUNBMAC
+ 	tristate "Sun BigMAC 10/100baseT support (EXPERIMENTAL)"
+ 	depends on SBUS && EXPERIMENTAL
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 0379639..8f2c0ee 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -56,7 +56,6 @@ obj-$(CONFIG_PLIP) += plip.o
+ 
+ obj-$(CONFIG_ROADRUNNER) += rrunner.o
+ 
+-obj-$(CONFIG_HAPPYMEAL) += sunhme.o
+ obj-$(CONFIG_SUNLANCE) += sunlance.o
+ obj-$(CONFIG_SUNQE) += sunqe.o
+ obj-$(CONFIG_SUNBMAC) += sunbmac.o
+diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
+index e4fa897..dbb95d3 100644
+--- a/drivers/net/ethernet/Kconfig.10-100
++++ b/drivers/net/ethernet/Kconfig.10-100
+@@ -22,3 +22,16 @@ config ETHOC
+ 	select BITREVERSE
+ 	help
+ 	  Say Y here if you want to use the OpenCores 10/100 Mbps Ethernet MAC.
++
++config HAPPYMEAL
++	tristate "Sun Happy Meal 10/100baseT support"
++	depends on SBUS || PCI
++	select CRC32
++	help
++	  This driver supports the "hme" interface present on most Ultra
++	  systems and as an option on older Sbus systems. This driver supports
++	  both PCI and Sbus devices. This driver also supports the "qfe" quad
++	  100baseT device available in both PCI and Sbus configurations.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called sunhme.
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index 6e419ed..0daa85c 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -4,3 +4,4 @@
+ 
+ obj-$(CONFIG_DNET)		+= dnet.o
+ obj-$(CONFIG_ETHOC)		+= ethoc.o
++obj-$(CONFIG_HAPPYMEAL)		+= sunhme.o
+diff --git a/drivers/net/sunhme.c b/drivers/net/ethernet/sunhme.c
+similarity index 100%
+rename from drivers/net/sunhme.c
+rename to drivers/net/ethernet/sunhme.c
+diff --git a/drivers/net/sunhme.h b/drivers/net/ethernet/sunhme.h
+similarity index 100%
+rename from drivers/net/sunhme.h
+rename to drivers/net/ethernet/sunhme.h
 -- 
 1.7.3.3.398.g0b0cd.dirty
 
