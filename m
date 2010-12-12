@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab0LMAR3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:17:29 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35931 "EHLO
+	id S1754750Ab0LLXqO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:46:14 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35889 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab0LLXqP (ORCPT
+	with ESMTP id S1754684Ab0LLXqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:15 -0500
+	Sun, 12 Dec 2010 18:46:10 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: Larry.Finger@lwfinger.net, arnd@arndnet.de, linville@tuxdriver.com,
+To: santosh.shilimkar@ti.com, r.sricharan@ti.com, robert.richter@amd.com,
         gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
         stable@kernel.org
-Subject: [PATCH] [75/223] b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
-Message-Id: <20101212234614.0126EB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:13 +0100 (CET)
+Subject: [PATCH] [70/223] oprofile: Fix the hang while taking the cpu offline
+Message-Id: <20101212234608.AEEA1B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:08 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,69 +23,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-commit 9f2a0fac625bcef9c579bcf0b0c904ab1a56e7c4 upstream.
+commit 4ac3dbec800d93485a5c84e37af676278eea657c upstream.
 
-On module removal, the sdio version of b43 generates the following warning:
+The kernel build with CONFIG_OPROFILE and CPU_HOTPLUG enabled.
+The oprofile is initialised using system timer in absence of hardware
+counters supports. Oprofile isn't started from userland.
 
-[  851.560519] ------------[ cut here ]------------
-[  851.560531] WARNING: at drivers/mmc/core/core.c:237 mmc_wait_for_cmd+0x88/0x90()
-[  851.560534] Hardware name: 20552PG
-[  851.560536] Modules linked in: b43(-) ssb mmc_block binfmt_misc rfcomm sco bnep ppdev l2cap ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp kvm_intel kvm arc4 iwlagn snd_hda_codec_conexant snd_hda_intel snd_hda_codec iwlcore snd_hwdep snd_pcm thinkpad_acpi mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq r852 joydev snd_timer sm_common pcmcia nand snd_seq_device cfg80211 sdhci_pci btusb psmouse tpm_tis yenta_socket nand_ids lp snd pcmcia_rsrc nand_ecc bluetooth sdhci tpm pcmcia_core parport mtd snd_page_alloc serio_raw tpm_bios soundcore nvram led_class sha256_generic aes_i586 aes_generic dm_crypt i915 drm_kms_helper drm ahci intel_agp i2c_algo_bit intel_gtt e1000e libahci video agpgart output
-[  851.560620] Pid: 2504, comm: rmmod Not tainted 2.6.36-titan0+ #1
-[  851.560622] Call Trace:
-[  851.560631]  [<c014a102>] warn_slowpath_common+0x72/0xa0
-[  851.560636]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
-[  851.560641]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
-[  851.560645]  [<c014a152>] warn_slowpath_null+0x22/0x30
-[  851.560649]  [<c04d94c8>] mmc_wait_for_cmd+0x88/0x90
-[  851.560655]  [<c0401585>] ? device_release+0x25/0x80
-[  851.560660]  [<c04df210>] mmc_io_rw_direct_host+0xa0/0x150
-[  851.560665]  [<c04df370>] mmc_io_rw_direct+0x30/0x40
-[  851.560669]  [<c04e06e7>] sdio_disable_func+0x37/0xa0
-[  851.560683]  [<f8dfcb80>] b43_sdio_remove+0x30/0x50 [b43]
-[  851.560687]  [<c04df8cc>] sdio_bus_remove+0x1c/0x60
-[  851.560692]  [<c016d39f>] ? blocking_notifier_call_chain+0x1f/0x30
-[  851.560697]  [<c0404991>] __device_release_driver+0x51/0xb0
-[  851.560701]  [<c0404a7f>] driver_detach+0x8f/0xa0
-[  851.560705]  [<c0403c83>] bus_remove_driver+0x63/0xa0
-[  851.560709]  [<c0405039>] driver_unregister+0x49/0x80
-[  851.560713]  [<c0405039>] ? driver_unregister+0x49/0x80
-[  851.560718]  [<c04dfad7>] sdio_unregister_driver+0x17/0x20
-[  851.560727]  [<f8dfcb42>] b43_sdio_exit+0x12/0x20 [b43]
-[  851.560734]  [<f8dfe76f>] b43_exit+0x17/0x3c [b43]
-[  851.560740]  [<c017fb8d>] sys_delete_module+0x13d/0x200
-[  851.560747]  [<c01fd7d2>] ? do_munmap+0x212/0x300
-[  851.560752]  [<c010311f>] sysenter_do_call+0x12/0x28
-[  851.560757] ---[ end trace 31e14488072d2f7d ]---
-[  851.560759] ------------[ cut here ]------------
+In this setup while doing a CPU offline the kernel hangs in infinite
+for loop inside lock_hrtimer_base() function
 
-The warning is caused by b43 not claiming the device before calling
-sdio_disable_func().
+This happens because as part of oprofile_cpu_notify(, it tries to
+stop an hrtimer which was never started. These per-cpu hrtimers
+are started when the oprfile is started.
+	echo 1	> /dev/oprofile/enable
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Arnd Hannemann <arnd@arndnet.de>
-Tested-by: Arnd Hannemann <arnd@arndnet.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This problem also existwhen the cpu is booted with maxcpus parameter
+set. When bringing the remaining cpus online the timers are started
+even if oprofile is not yet enabled.
+
+This patch fix this issue by adding a state variable so that
+these hrtimer start/stop is only attempted when oprofile is
+started
+
+For stable kernels v2.6.35.y and v2.6.36.y.
+
+Reported-by: Jan Sebastien <s-jan@ti.com>
+Tested-by: sricharan <r.sricharan@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/net/wireless/b43/sdio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/oprofile/timer_int.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Index: linux/drivers/net/wireless/b43/sdio.c
+Index: linux/drivers/oprofile/timer_int.c
 ===================================================================
---- linux.orig/drivers/net/wireless/b43/sdio.c
-+++ linux/drivers/net/wireless/b43/sdio.c
-@@ -175,7 +175,9 @@ static void b43_sdio_remove(struct sdio_
- 	struct b43_sdio *sdio = sdio_get_drvdata(func);
+--- linux.orig/drivers/oprofile/timer_int.c
++++ linux/drivers/oprofile/timer_int.c
+@@ -21,6 +21,7 @@
+ #include "oprof.h"
  
- 	ssb_bus_unregister(&sdio->ssb);
-+	sdio_claim_host(func);
- 	sdio_disable_func(func);
-+	sdio_release_host(func);
- 	kfree(sdio);
- 	sdio_set_drvdata(func, NULL);
+ static DEFINE_PER_CPU(struct hrtimer, oprofile_hrtimer);
++static int ctr_running;
+ 
+ static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
+ {
+@@ -33,6 +34,9 @@ static void __oprofile_hrtimer_start(voi
+ {
+ 	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
+ 
++	if (!ctr_running)
++		return;
++
+ 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hrtimer->function = oprofile_hrtimer_notify;
+ 
+@@ -42,7 +46,10 @@ static void __oprofile_hrtimer_start(voi
+ 
+ static int oprofile_hrtimer_start(void)
+ {
++	get_online_cpus();
++	ctr_running = 1;
+ 	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
++	put_online_cpus();
+ 	return 0;
  }
+ 
+@@ -50,6 +57,9 @@ static void __oprofile_hrtimer_stop(int
+ {
+ 	struct hrtimer *hrtimer = &per_cpu(oprofile_hrtimer, cpu);
+ 
++	if (!ctr_running)
++		return;
++
+ 	hrtimer_cancel(hrtimer);
+ }
+ 
+@@ -57,8 +67,11 @@ static void oprofile_hrtimer_stop(void)
+ {
+ 	int cpu;
+ 
++	get_online_cpus();
+ 	for_each_online_cpu(cpu)
+ 		__oprofile_hrtimer_stop(cpu);
++	ctr_running = 0;
++	put_online_cpus();
+ }
+ 
+ static int __cpuinit oprofile_cpu_notify(struct notifier_block *self,
