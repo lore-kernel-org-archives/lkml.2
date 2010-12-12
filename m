@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab0LLNrF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 08:47:05 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:65460 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab0LLNrC (ORCPT
+	id S1753268Ab0LLNrx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 08:47:53 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41725 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab0LLNru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 08:47:02 -0500
-Message-ID: <4D04D219.4040300@ru.mvista.com>
-Date: Sun, 12 Dec 2010 16:46:01 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 12 Dec 2010 08:47:50 -0500
+Date: Sun, 12 Dec 2010 11:46:57 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, yakui.zhao@intel.com, fweisbec@gmail.com,
+        ling.ma@intel.com, rostedt@goodmis.org, miaox@cn.fujitsu.com,
+        tglx@linutronix.de, mingo@elte.hu, acme@ghostprotocols.net
+Subject: perf monitoring triggers Was: Re: [tip:perf/core] perf bench:
+	Print both of prefaulted and no prefaulted results by default
+Message-ID: <20101212134657.GA19166@ghostprotocols.net>
+References: <1290668693-27068-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <tip-49ce8fc651794878189fd5f273228832cdfb5be9@git.kernel.org> <4D03B1AD.7000606@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-To: plyatov@gmail.com
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, jgarzik@pobox.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        geomatsi@gmail.com
-Subject: Re: [PATCH] ata: pata_at91.c bugfix for high master clock
-References: <1292011430-20835-1-git-send-email-plyatov@gmail.com>	 <4D0385D1.9080209@ru.mvista.com> <1292081113.1580.21.camel@homepc>	 <4D039930.4050905@ru.mvista.com> <1292096611.27634.20.camel@homepc>
-In-Reply-To: <1292096611.27634.20.camel@homepc>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D03B1AD.7000606@dcl.info.waseda.ac.jp>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Em Sun, Dec 12, 2010 at 02:15:25AM +0900, Hitoshi Mitake escreveu:
+> BTW, I found that measuring performance of prefaulted memcpy()
+> with perf stat is difficult. Because current perf stat monitors
+> whole execution of program or range of perf stat lifetime.
 
-On 11-12-2010 22:43, Igor Plyatov wrote:
+> If perf stat and monitored program can interact and work
+> synchronously, it will be better.
 
->>> I do not test this driver, but I think it have the same problem, because
->>> it have the same algorithm for timings calculation.
+> For example, if perf stat waits on the unix domain socket
+> before create_perf_stat_counter() and monitored program wakes perf stat
+> up through the socket, more fine grain monitoring will be possible.
 
->>      I quickly looked thru both drivers and the algorithm seemed different. :-)
+> I imagine the execution will be like this:
+> perf stat --wait-on /tmp/perf_wait perf bench mem memcpy --wake-up  
+> /tmp/perf_wait
 
-> I don't think so...
+> --wait-on is imaginaly option of perf stat, and the way of waking up
+> perf stat is left to monitored program (in this case, --wake-up is
+> used for specifying the name of the socket).
 
-    In fact, the algorithm is slightly different.
+> I'd like to implement such a option to perf stat, how do you think?
 
->>> If you will see "cycle" value greater then 63, then problem exists.
+Looks interesting, and also interesting would be to be able to place
+probes that would wake up it too, for unmodified binaries to have
+something similar.
 
->>      I thought the problem was with active pulse width, not total cycle time...
+Other kinds of triggers may be to hook on syscalls and when some
+expression matches, like connecting to host 1.2.3.4, start monitoring,
+stop when the socket is closed, i.e. monitor a connection lifetime, etc.
 
-> The problem was - the same "cycle" variable used to set up NRD_CYCLE
-> (max value = 127) and NCS_RD_PULSE (max value = 63).
-> Where NRD_CYCLE, NCS_RD_PULSE names from datasheet for AT91SAM9.
-> If NCS_RD_PULSE > 63, then overflow occur and pulse is much longer then
-> required.
+I think it is worth pursuing and encourage you to work on it :-)
 
-    Ah, NCS_RD_PULSE is different from active pulse time which is in the 
-variable 'nrd_pulse'.
-
-> For the 132 MHz, driver use NCS_RD_PULSE = 80 at device detection moment
-> on my board.
-> Calculated cycle in at91_ide is the same as for pata_at91 driver.
-
-    Yes, but NCS_RD_PULSE is different in these drivers, it's cycle_time in 
-at91_ide.c and (cycle time - 2) in the pata_at91.c... Then there should indeed 
-be an error in at91_ide.c as well.
-
->>> Generally, I does not see any reasons to use at91_ide, because ATA
->>> drivers subsystem going to replace IDE drivers.
-
->>      There may be reasons -- like larger thruput in PIO mode (you have to check
->> this though -- but generally libata seems very slow in PIO). Anyway, it
->> doesn't mean that the bugs in IDE drivers should be ignored, and the
->> replacemtn will not happen anytime soon (not all IDE drivers are ported to
->> libata yet).
-
-> I will send next patch where this driver corrected and tested.
-
-    Thanks. :-)
-
-> Best regards!
-> --
-> Igor Plyatov
-
-WBR, Sergei
+- Arnaldo
