@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab0LMAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:19:58 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44926 "EHLO
+	id S1755815Ab0LMAUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:20:00 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44921 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab0LLXqB (ORCPT
+	with ESMTP id S1752808Ab0LLXqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Dec 2010 18:46:01 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: richard@laptop.org, dsd@laptop.org, cbouatmailru@gmail.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [62/223] olpc_battery: Fix endian neutral breakage for s16 values
-Message-Id: <20101212234600.42BE4B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:00 +0100 (CET)
+To: jslaby@suse.cz, clemens@ladisch.de, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [61/223] hpet: unmap unused I/O space
+Message-Id: <20101212234559.35395B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:45:59 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,61 +23,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Richard A. Smith <richard@laptop.org>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 7cfbb29466633e6ecdc14f76a693c8478c2b22af upstream.
+commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
 
-When the driver was updated to be endian neutral (8e9c7716c)
-the signed part of the s16 values was lost.  This is because be16_to_cpu()
-returns an unsigned value.  This patch casts the values back to a s16
-number prior to the the implicit cast up to an int.
+When the initialization code in hpet finds a memory resource and does not
+find an IRQ, it does not unmap the memory resource previously mapped.
 
-Signed-off-by: Richard A. Smith <richard@laptop.org>
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+There are buggy BIOSes which report resources exactly like this and what
+is worse the memory region bases point to normal RAM.  This normally would
+not matter since the space is not touched.  But when PAT is turned on,
+ioremap causes the page to be uncached and sets this bit in page->flags.
+
+Then when the page is about to be used by the allocator, it is reported
+as:
+
+BUG: Bad page state in process md5sum  pfn:3ed00
+page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x20000001000000(uncached)
+Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
+Call Trace:
+ [<ffffffff810df851>] bad_page+0xb1/0x100
+ [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
+ [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
+ [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
+...
+
+In this particular case:
+
+1) HPET returns 3ed00000 as memory region base, but it is not in
+reserved ranges reported by the BIOS (excerpt):
+ BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
+ BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
+
+2) there is no IRQ resource reported by HPET method. On the other
+hand, the Intel HPET specs (1.0a) says (3.2.5.1):
+_CRS (
+  // Report 1K of memory consumed by this Timer Block
+  memory range consumed
+  // Optional: only used if BIOS allocates Interrupts [1]
+  IRQs consumed
+)
+
+[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
+Legacy 8254/Legacy RTC hardware still exists, the device objects
+associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
+"consumed resources".
+
+So in theory we should check whether if it is the case and use those
+interrupts instead.
+
+Anyway the address reported by the BIOS here is bogus, so non-presence
+of IRQ doesn't mean the "optional" part in point 2).
+
+Since I got no reply previously, fix this by simply unmapping the space
+when IRQ is not found and memory region was mapped previously.  It would
+be probably more safe to walk the resources again and unmap appropriately
+depending on type.  But as we now use only ioremap for both 2 memory
+resource types, it is not necessarily needed right now.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
+
+Reported-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/power/olpc_battery.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/char/hpet.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Index: linux/drivers/power/olpc_battery.c
+Index: linux/drivers/char/hpet.c
 ===================================================================
---- linux.orig/drivers/power/olpc_battery.c
-+++ linux/drivers/power/olpc_battery.c
-@@ -271,14 +271,14 @@ static int olpc_bat_get_property(struct
- 		if (ret)
- 			return ret;
+--- linux.orig/drivers/char/hpet.c
++++ linux/drivers/char/hpet.c
+@@ -985,6 +985,8 @@ static int hpet_acpi_add(struct acpi_dev
+ 		return -ENODEV;
  
--		val->intval = (int)be16_to_cpu(ec_word) * 9760L / 32;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 9760L / 32;
- 		break;
- 	case POWER_SUPPLY_PROP_CURRENT_AVG:
- 		ret = olpc_ec_cmd(EC_BAT_CURRENT, NULL, 0, (void *)&ec_word, 2);
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 15625L / 120;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 15625L / 120;
- 		break;
- 	case POWER_SUPPLY_PROP_CAPACITY:
- 		ret = olpc_ec_cmd(EC_BAT_SOC, NULL, 0, &ec_byte, 1);
-@@ -299,7 +299,7 @@ static int olpc_bat_get_property(struct
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 100 / 256;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 100 / 256;
- 		break;
- 	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
- 		ret = olpc_ec_cmd(EC_AMB_TEMP, NULL, 0, (void *)&ec_word, 2);
-@@ -313,7 +313,7 @@ static int olpc_bat_get_property(struct
- 		if (ret)
- 			return ret;
- 
--		val->intval = (int)be16_to_cpu(ec_word) * 6250 / 15;
-+		val->intval = (s16)be16_to_cpu(ec_word) * 6250 / 15;
- 		break;
- 	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
- 		ret = olpc_ec_cmd(EC_BAT_SERIAL, NULL, 0, (void *)&ser_buf, 8);
+ 	if (!data.hd_address || !data.hd_nirqs) {
++		if (data.hd_address)
++			iounmap(data.hd_address);
+ 		printk("%s: no address or irqs in _CRS\n", __func__);
+ 		return -ENODEV;
+ 	}
