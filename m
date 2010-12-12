@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab0LLWYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 17:24:43 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23968 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab0LLWYm (ORCPT
+	id S1752659Ab0LLWh6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 17:37:58 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34205
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751767Ab0LLWh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 17:24:42 -0500
-Date: Sun, 12 Dec 2010 23:18:15 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Jan Kara <jack@suse.cz>, Ben Fennema <bfennema@falcon.csc.calpoly.edu>
-Subject: [PATCH] UDF: Close small mem leak in udf_find_entry()
-Message-ID: <alpine.LNX.2.00.1012122313290.9206@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 12 Dec 2010 17:37:57 -0500
+Date: Sun, 12 Dec 2010 14:38:25 -0800 (PST)
+Message-Id: <20101212.143825.48496658.davem@davemloft.net>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCHSET] net-dev: don't use flush_scheduled_work()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1292169185-10579-1-git-send-email-tj@kernel.org>
+References: <1292169185-10579-1-git-send-email-tj@kernel.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Tejun Heo <tj@kernel.org>
+Date: Sun, 12 Dec 2010 16:52:56 +0100
 
-There's a small memory leak in fs/udf/namei.c::udf_find_entry().
+> This patchset removes the use of flush_scheduled_work(), which is
+> being deprecated, from various network drivers.  It contains the
+> following nine patches.
+> 
+>  0001-drivers-net-remove-unnecessary-flush_scheduled_work-.patch
+>  0002-drivers-net-don-t-use-flush_scheduled_work.patch
+>  0003-ehea-kill-unused-ehea_rereg_mr_task.patch
+>  0004-ehea-don-t-use-flush_scheduled_work.patch
+>  0005-iseries_veth-don-t-use-flush_scheduled_work.patch
+>  0006-igb-v-ixgbe-don-t-use-flush_scheduled_work.patch
+>  0007-sungem-update-gp-reset_task-flushing.patch
+>  0008-i2400m-drop-i2400m_schedule_work.patch
+>  0009-hostap-don-t-use-flush_scheduled_work.patch
+> 
+> 0001 and 0002 are straight forward conversions across multiple network
+> drivers.  The rest are a bit more involved per-driver or driver family
+> conversions.
+> 
+> This patchset is on top of the current net-next-2.6.git#master
+> (ad1184c6cf067a13e8cb2a4e7ccc407f947027d0) and available in the
+> following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git net-dev-kill-flush_scheduled_work
+> 
+> diffstat follows.  Thanks.
 
-We dynamically allocate memory for 'fname' with kmalloc() and in most 
-situations we free it before we leave the function, but there is one 
-situation where we do not (but should). This patch closes the leak by 
-jumping to the 'out_ok' label which does the correct cleanup rather than 
-doing half the cleanup and returning directly.
+I spent the afternoon going over these and they look good to me.
+Pulled, thanks a lot.
 
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- namei.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
- compile tested only
-
-diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-index 6d8dc02..899ef91 100644
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -228,10 +228,8 @@ static struct fileIdentDesc *udf_find_entry(struct inode *dir,
- 		}
- 
- 		if ((cfi->fileCharacteristics & FID_FILE_CHAR_PARENT) &&
--		    isdotdot) {
--			brelse(epos.bh);
--			return fi;
--		}
-+		    isdotdot)
-+			goto out_ok;
- 
- 		if (!lfi)
- 			continue;
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+If any follow-up bug fixes show up just send me relative patches,
+thanks again!
