@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750906Ab0LLFX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 00:23:26 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40115 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0LLFXX (ORCPT
+	id S1751104Ab0LLF1H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 00:27:07 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63764 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab0LLF1E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 00:23:23 -0500
+	Sun, 12 Dec 2010 00:27:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=TkGWC6t48pKnY/tIOGCDd3wnecm5jjDWKK633s7+3cIkz5sjkepqvrQVot6qKR5n5o
-         926Hvaesa0DUvCzrlr3UlST5kGwK9K2l/jt52hEJBvWRfsnLTMwBDJOqlhb2oEZUHsJ5
-         BVd9+cp/+QI2VswI6lTv82BA+bDLsyJGCHriQ=
+         :cc:content-type:content-transfer-encoding;
+        b=XB+ysZDAV34pV0/VvdxVoQpzG00N3vCM2vDNmGy7DT3WRqAkpEH+diC3f4OpUVOoqg
+         25OtA8KR+WhBQ5l+NYzxotW/gR4op3ibSnOTJZoCSNuBY2cUhXNgASbxMpPMduxPKvn+
+         pcGMF+M/Vxe7wIKamYunaFAISa/hqms6mbFN0=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
-References: <20101208213606.13026.47657.stgit@bob.kio>
-	<20101208213627.13026.18854.stgit@bob.kio>
-	<AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
-Date: Sun, 12 Dec 2010 15:23:21 +1000
-Message-ID: <AANLkTimOHk5KHQy=DyLfi-rG9m-M=yR2RO1e_mRnD3zR@mail.gmail.com>
-Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20101210092533.4f426650.randy.dunlap@oracle.com>
+References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
+	<20101210092533.4f426650.randy.dunlap@oracle.com>
+Date: Sun, 12 Dec 2010 11:27:02 +0600
+Message-ID: <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 10 (x86 nmi_watchdog)
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 1:30 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Dec 8, 2010 at 1:36 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+On Fri, Dec 10, 2010 at 11:25 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Fri, 10 Dec 2010 13:57:46 +1100 Stephen Rothwell wrote:
+>
+>> Hi all,
 >>
->> The HP nx6325 BIOS doesn't report any devices in the [0xf8000000-0xfbffffff]
->> region via ACPI devices or the E820 memory map, but when we assign it to the
->> 00:14.4 bridge as a prefetchable memory window, the machine hangs.
+>> Changes since 20101209:
 >
-> Quite frankly, I think this patch sucks.
 >
-> It sucks because these kinds of hw-specific patches are fundamentally
-> a sign of something else being wrong. Why didn't windows hit this? Why
-> do we need this total hack?
+> arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of 'touch_nmi_watchdog'
+> include/linux/nmi.h:22: note: previous definition of 'touch_nmi_watchdog' was here
 >
-> And is there any reason at all to believe that that one particular
-> laptop is really special? I doubt it. And what happens for the next
-> random machine that comes along an hits this?
->
-> Maybe we should just say that if we know the bridge is negative
-> decode, and it hasn't been set up by the BIOS, we just don't allocate
-> it at all. And try to look like Windows.
->
-> Or figure out what else Windows is doing differently.
->
-> The whole "allocate bottom up" old PCI allocation has _years_ of
-> testing and quirk that have been gathered over a long time. We can't
-> just say "we'll do the same thing for the top-down allocator".
->
-> The WHOLE AND ONLY POINT of the top-down allocator was to act lik
-> Windows and not need crap like this. If that doesn't work, then I
-> seriously don't think we should change bottom-up to top-down at all,
-> and for 2.6.37 we should just revert the "set to top-down by default".
->
-> Seriously. That "whole and only point" thing is important. If we need
-> hacks like this, then we shouldn't do it. We're much better off with
-> the model that has year of testing an not the upheaval. Top-down
-> allocation is in _no_ way inherently better, the only excuse for it
-> was supposed to be "we don't need these kinds of hooks".
+Hello Randy,
 
-I agree, I've got an NX6125 predecessor of this and I'll take any
-money that is has an equally insane BIOS, considering its the worst
-laptop in my pile in nearly every way imaginable.
+Please checkout the following patch. Does it work?
+----
 
-and I suspect the HP laptop braindamage won't end with those two.
+x86: Fix kernel build in hw_nmi.c when CONFIG_HARDLOCKUP_DETECTOR=n.
 
-Dave.
+This patch fixes kernel build introduced by commit
+96a84c20d635fb1e98ab92f9fc517c4441f5c424. That commit supposed to
+define touch_nmi_watchdog when CONFIG_HARDLOCKUP_DETECTOR=y in
+hw_nmi.c. But mistakenly defines touch_nmi_watchdog when
+CONFIG_HARDLOCKUP_DETECTOR=n in hw_nmi.c.
+
+arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of ‘touch_nmi_watchdog’
+include/linux/nmi.h:23: error: previous definition of
+‘touch_nmi_watchdog’ was here
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
+
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index c558e11..2056569 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -24,7 +24,7 @@ u64 hw_nmi_get_sample_period(void)
+ }
+ #endif
+
+-#ifndef CONFIG_HARDLOCKUP_DETECTOR
++#ifdef CONFIG_HARDLOCKUP_DETECTOR
+ void touch_nmi_watchdog(void)
+ {
+ 	touch_softlockup_watchdog();
