@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab0LLMm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:42:59 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:40475 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab0LLMm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:42:58 -0500
-Date: Sun, 12 Dec 2010 13:42:47 +0100
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20101212124247.GA14450@gundam.enneenne.com>
-Mail-Followup-To: Greg Kroah-Hartman <gregkh@suse.de>,
-	linux-kernel@vger.kernel.org
+	id S1753114Ab0LLMoK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:44:10 -0500
+Received: from thunk.org ([69.25.196.29]:49508 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752834Ab0LLMoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:44:07 -0500
+Date: Sun, 12 Dec 2010 07:43:54 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Matt <jackdachef@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+        Milan Broz <mbroz@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101212124354.GA4513@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jon Nelson <jnelson@jamponi.net>, Matt <jackdachef@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+	Milan Broz <mbroz@redhat.com>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	dm-devel <dm-devel@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+	linux-ext4 <linux-ext4@vger.kernel.org>
+References: <1291945065-sup-1838@think>
+ <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
+ <20101210023852.GB3059@thunk.org>
+ <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
+ <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
+ <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
+ <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
+ <20101212023415.GG3059@thunk.org>
+ <AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
+ <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 192.168.32.254
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: fsnotify & sysfs
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+In-Reply-To: <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Dec 12, 2010 at 04:18:29AM -0600, Jon Nelson wrote:
+> > I have one CPU configured in the environment, 512MB of memory.
+> > I have not done any memory-constriction tests whatsoever.
 
-I know that a sysfs file may be pollable but I'm asking to myself how
-it could be difficult adding notifying support also.
+I've finally been able to reproduce it myself, on real hardware.  SMP
+is not necessary to reproduce it, although having more than one CPU
+doesn't hurt.  What I did need to do (on real hardware with 4 gigs of
+memory) was to turn off swap and pin enough memory so that free memory
+was around 200megs or so before the start of the test.  (This is the
+natural amount of free memory that the system would try to reach,
+since 200 megs is about 5% of 4 gigs.)
 
-Maybe adding a call to the fsnotify subsystem within the
-sysfs_notify() function as follow can do the trick?
+Then, during the test, free memory would drop to 50-70 megabytes,
+forcing writeback to run, and then I could trigger it about 1-2 times
+out of three.
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index da3fefe..afee69f 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -484,8 +486,10 @@ void sysfs_notify(struct kobject *k, const char
-*dir, const
-                sd = sysfs_find_dirent(sd, NULL, dir);
-        if (sd && attr)
-                sd = sysfs_find_dirent(sd, NULL, attr);
--       if (sd)
-+       if (sd) {
-                sysfs_notify_dirent(sd);
-+               fsnotify_change(dentry, ATTR_SIZE);
-+       }
- 
-        mutex_unlock(&sysfs_mutex);
- }
+I'm guessing that when you used 512mb of memory, that was in effect a
+memory-constriction test, and if you were to push the memory down a
+little further, it might reproduce even more quickly.  My next step is
+to try to reproduce this in a VM, and then I can start probing to see
+what might be going on.
 
-However my problem is how to get the struct dentry pointer needed by
-fsnotify_change() related to the struct sysfs_dirent pointer passed to
-sysfs_notify(). :(
-
-Can you please give me any advice about to solve it?
-
-Another question: in file linux/fs/sysfs/file.c I see:
-
-   #include <linux/fsnotify.h>
-
-but none of its functions are called into file.c... maybe it's a
-mistake?
-
-Thanks in advance,
-
-Rodolfo
-
--- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+						- Ted
