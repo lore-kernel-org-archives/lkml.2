@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab0LLMSd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:18:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34935 "EHLO
+	id S1752886Ab0LLMSu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:18:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34940 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752489Ab0LLMSb (ORCPT
+	by vger.kernel.org with ESMTP id S1752576Ab0LLMSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:18:31 -0500
-Date: Sun, 12 Dec 2010 12:18:42 +0000
+	Sun, 12 Dec 2010 07:18:49 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Call into regulator driver only when
- voltage min/max really changes.
-Message-ID: <20101212121842.GC15189@opensource.wolfsonmicro.com>
-References: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ian Molton <spyro@f2s.com>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Convert t7166xb driver to new irq_ API
+Date: Sun, 12 Dec 2010 12:18:58 +0000
+Message-Id: <1292156338-19893-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 02:55:40AM -0800, Saravana Kannan wrote:
-> Even in cases where the consumer driver calls the regulator core with
-> different voltage min/max values, the application of the various
-> voltage constraints could result in the min/max voltage values passed
-> to the regulator driver to be unchanged since the previous invocation.
+The genirq core is being updated to pass struct irq_data rather than an
+irq number to irq_chip operations. Update the t7166xb driver to the new
+APIs.
 
-Out of interest do we have any examples of consumers that do this
-sufficiently often and/or in paths sufficiently performance critical for
-it to be an issue?  Sounds like there might be room for optimisation in
-those consumers.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/t7l66xb.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-> Optimize these cases by not calling into the regulator driver and not
-> sending incorrect/unnecessary voltage change notifications.
+diff --git a/drivers/mfd/t7l66xb.c b/drivers/mfd/t7l66xb.c
+index 006c121..9caeb4a 100644
+--- a/drivers/mfd/t7l66xb.c
++++ b/drivers/mfd/t7l66xb.c
+@@ -199,37 +199,37 @@ static void t7l66xb_irq(unsigned int irq, struct irq_desc *desc)
+ 				generic_handle_irq(irq_base + i);
+ }
+ 
+-static void t7l66xb_irq_mask(unsigned int irq)
++static void t7l66xb_irq_mask(struct irq_data *data)
+ {
+-	struct t7l66xb *t7l66xb = get_irq_chip_data(irq);
++	struct t7l66xb *t7l66xb = irq_data_get_irq_chip_data(data);
+ 	unsigned long			flags;
+ 	u8 imr;
+ 
+ 	spin_lock_irqsave(&t7l66xb->lock, flags);
+ 	imr = tmio_ioread8(t7l66xb->scr + SCR_IMR);
+-	imr |= 1 << (irq - t7l66xb->irq_base);
++	imr |= 1 << (data->irq - t7l66xb->irq_base);
+ 	tmio_iowrite8(imr, t7l66xb->scr + SCR_IMR);
+ 	spin_unlock_irqrestore(&t7l66xb->lock, flags);
+ }
+ 
+-static void t7l66xb_irq_unmask(unsigned int irq)
++static void t7l66xb_irq_unmask(struct irq_data *data)
+ {
+-	struct t7l66xb *t7l66xb = get_irq_chip_data(irq);
++	struct t7l66xb *t7l66xb = irq_data_get_irq_chip_data(data);
+ 	unsigned long flags;
+ 	u8 imr;
+ 
+ 	spin_lock_irqsave(&t7l66xb->lock, flags);
+ 	imr = tmio_ioread8(t7l66xb->scr + SCR_IMR);
+-	imr &= ~(1 << (irq - t7l66xb->irq_base));
++	imr &= ~(1 << (data->irq - t7l66xb->irq_base));
+ 	tmio_iowrite8(imr, t7l66xb->scr + SCR_IMR);
+ 	spin_unlock_irqrestore(&t7l66xb->lock, flags);
+ }
+ 
+ static struct irq_chip t7l66xb_chip = {
+-	.name	= "t7l66xb",
+-	.ack	= t7l66xb_irq_mask,
+-	.mask	= t7l66xb_irq_mask,
+-	.unmask	= t7l66xb_irq_unmask,
++	.name		= "t7l66xb",
++	.irq_ack	= t7l66xb_irq_mask,
++	.irq_mask	= t7l66xb_irq_mask,
++	.irq_unmask	= t7l66xb_irq_unmask,
+ };
+ 
+ /*--------------------------------------------------------------------------*/
+-- 
+1.7.2.3
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-The down side of doing this is that if the regulator state changes
-underneath us we've now got no way of recovering from that situation.
-This is something that's only partially supported by the API at the
-minute but it's nice to have a story about how drivers can work with
-this.  I'll send a patch adding an explicit sync API.
