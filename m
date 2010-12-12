@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab0LMARJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:17:09 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35956 "EHLO
+	id S1755253Ab0LMAR3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:17:29 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35931 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab0LLXqS (ORCPT
+	with ESMTP id S1754684Ab0LLXqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:18 -0500
+	Sun, 12 Dec 2010 18:46:15 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: michael.hennerich@analog.com, vapier@gentoo.org, chrisv@cyberswitching.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+To: Larry.Finger@lwfinger.net, arnd@arndnet.de, linville@tuxdriver.com,
         gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
         stable@kernel.org
-Subject: [PATCH] [78/223] drivers/misc/ad525x_dpot.c: fix typo in spi write16 and write24 transfer counts
-Message-Id: <20101212234617.2C609B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:17 +0100 (CET)
+Subject: [PATCH] [75/223] b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
+Message-Id: <20101212234614.0126EB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:13 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,44 +23,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Michael Hennerich <michael.hennerich@analog.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 1f9fa5216eacf4fdf9d3e4ab57feb8b642f0e78b upstream.
+commit 9f2a0fac625bcef9c579bcf0b0c904ab1a56e7c4 upstream.
 
-This is a bug fix.  Some SPI connected devices using 16/24 bit accesses,
-previously failed, now work.
+On module removal, the sdio version of b43 generates the following warning:
 
-This typo slipped in after testing, during some restructuring.
+[  851.560519] ------------[ cut here ]------------
+[  851.560531] WARNING: at drivers/mmc/core/core.c:237 mmc_wait_for_cmd+0x88/0x90()
+[  851.560534] Hardware name: 20552PG
+[  851.560536] Modules linked in: b43(-) ssb mmc_block binfmt_misc rfcomm sco bnep ppdev l2cap ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp kvm_intel kvm arc4 iwlagn snd_hda_codec_conexant snd_hda_intel snd_hda_codec iwlcore snd_hwdep snd_pcm thinkpad_acpi mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq r852 joydev snd_timer sm_common pcmcia nand snd_seq_device cfg80211 sdhci_pci btusb psmouse tpm_tis yenta_socket nand_ids lp snd pcmcia_rsrc nand_ecc bluetooth sdhci tpm pcmcia_core parport mtd snd_page_alloc serio_raw tpm_bios soundcore nvram led_class sha256_generic aes_i586 aes_generic dm_crypt i915 drm_kms_helper drm ahci intel_agp i2c_algo_bit intel_gtt e1000e libahci video agpgart output
+[  851.560620] Pid: 2504, comm: rmmod Not tainted 2.6.36-titan0+ #1
+[  851.560622] Call Trace:
+[  851.560631]  [<c014a102>] warn_slowpath_common+0x72/0xa0
+[  851.560636]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
+[  851.560641]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
+[  851.560645]  [<c014a152>] warn_slowpath_null+0x22/0x30
+[  851.560649]  [<c04d94c8>] mmc_wait_for_cmd+0x88/0x90
+[  851.560655]  [<c0401585>] ? device_release+0x25/0x80
+[  851.560660]  [<c04df210>] mmc_io_rw_direct_host+0xa0/0x150
+[  851.560665]  [<c04df370>] mmc_io_rw_direct+0x30/0x40
+[  851.560669]  [<c04e06e7>] sdio_disable_func+0x37/0xa0
+[  851.560683]  [<f8dfcb80>] b43_sdio_remove+0x30/0x50 [b43]
+[  851.560687]  [<c04df8cc>] sdio_bus_remove+0x1c/0x60
+[  851.560692]  [<c016d39f>] ? blocking_notifier_call_chain+0x1f/0x30
+[  851.560697]  [<c0404991>] __device_release_driver+0x51/0xb0
+[  851.560701]  [<c0404a7f>] driver_detach+0x8f/0xa0
+[  851.560705]  [<c0403c83>] bus_remove_driver+0x63/0xa0
+[  851.560709]  [<c0405039>] driver_unregister+0x49/0x80
+[  851.560713]  [<c0405039>] ? driver_unregister+0x49/0x80
+[  851.560718]  [<c04dfad7>] sdio_unregister_driver+0x17/0x20
+[  851.560727]  [<f8dfcb42>] b43_sdio_exit+0x12/0x20 [b43]
+[  851.560734]  [<f8dfe76f>] b43_exit+0x17/0x3c [b43]
+[  851.560740]  [<c017fb8d>] sys_delete_module+0x13d/0x200
+[  851.560747]  [<c01fd7d2>] ? do_munmap+0x212/0x300
+[  851.560752]  [<c010311f>] sysenter_do_call+0x12/0x28
+[  851.560757] ---[ end trace 31e14488072d2f7d ]---
+[  851.560759] ------------[ cut here ]------------
 
-Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Chris Verges <chrisv@cyberswitching.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The warning is caused by b43 not claiming the device before calling
+sdio_disable_func().
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Arnd Hannemann <arnd@arndnet.de>
+Tested-by: Arnd Hannemann <arnd@arndnet.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/misc/ad525x_dpot-spi.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/sdio.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Index: linux/drivers/misc/ad525x_dpot-spi.c
+Index: linux/drivers/net/wireless/b43/sdio.c
 ===================================================================
---- linux.orig/drivers/misc/ad525x_dpot-spi.c
-+++ linux/drivers/misc/ad525x_dpot-spi.c
-@@ -53,13 +53,13 @@ static int write8(void *client, u8 val)
- static int write16(void *client, u8 reg, u8 val)
- {
- 	u8 data[2] = {reg, val};
--	return spi_write(client, data, 1);
-+	return spi_write(client, data, 2);
- }
+--- linux.orig/drivers/net/wireless/b43/sdio.c
++++ linux/drivers/net/wireless/b43/sdio.c
+@@ -175,7 +175,9 @@ static void b43_sdio_remove(struct sdio_
+ 	struct b43_sdio *sdio = sdio_get_drvdata(func);
  
- static int write24(void *client, u8 reg, u16 val)
- {
- 	u8 data[3] = {reg, val >> 8, val};
--	return spi_write(client, data, 1);
-+	return spi_write(client, data, 3);
+ 	ssb_bus_unregister(&sdio->ssb);
++	sdio_claim_host(func);
+ 	sdio_disable_func(func);
++	sdio_release_host(func);
+ 	kfree(sdio);
+ 	sdio_set_drvdata(func, NULL);
  }
- 
- static int read8(void *client)
