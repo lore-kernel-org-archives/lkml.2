@@ -1,180 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab0LLP34 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 10:29:56 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:56364 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab0LLP3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 10:29:54 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 12 Dec 2010 16:29:35 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire regression fixes
-Message-ID: <20101212162935.1a1474d7@stein>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752971Ab0LLPxN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 10:53:13 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56516 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367Ab0LLPxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 10:53:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net
+Subject: [PATCHSET] net-dev: don't use flush_scheduled_work()
+Date: Sun, 12 Dec 2010 16:52:56 +0100
+Message-Id: <1292169185-10579-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 15:53:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the fixes branch at
+Hello,
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git fixes
+This patchset removes the use of flush_scheduled_work(), which is
+being deprecated, from various network drivers.  It contains the
+following nine patches.
 
-to receive two IEEE 1394 (FireWire) subsystem fixes.  Thanks.
+ 0001-drivers-net-remove-unnecessary-flush_scheduled_work-.patch
+ 0002-drivers-net-don-t-use-flush_scheduled_work.patch
+ 0003-ehea-kill-unused-ehea_rereg_mr_task.patch
+ 0004-ehea-don-t-use-flush_scheduled_work.patch
+ 0005-iseries_veth-don-t-use-flush_scheduled_work.patch
+ 0006-igb-v-ixgbe-don-t-use-flush_scheduled_work.patch
+ 0007-sungem-update-gp-reset_task-flushing.patch
+ 0008-i2400m-drop-i2400m_schedule_work.patch
+ 0009-hostap-don-t-use-flush_scheduled_work.patch
 
-A side note:  During the coexistence of drivers/ieee1394/ and
-drivers/firewire/, we explored previously unused hardware features in
-the latter in order to expand the driver capabilities (example:
-dual-buffer isochronous DMA mode) or to rely more on hardware for
-correctness (example: observing reset packets in the asynchronous
-reception queue).  Consequently we had quite a number of regressions in
-drivers/firewire/ relative to drivers/ieee1394/ or even relative to
-itself (example: MSI support).
+0001 and 0002 are straight forward conversions across multiple network
+drivers.  The rest are a bit more involved per-driver or driver family
+conversions.
 
-Now that drivers/ieee1394/ is no longer present in the mainline as a
-fallback --- and that drivers/firewire/ had become feature-complete ---
-I plan to maintain drivers/firewire/ in a much more conservative
-fashion.
+This patchset is on top of the current net-next-2.6.git#master
+(ad1184c6cf067a13e8cb2a4e7ccc407f947027d0) and available in the
+following git branch.
 
-Shortlog, diffstat, full logs and diffs:
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git net-dev-kill-flush_scheduled_work
 
-Stefan Richter (2):
-      firewire: ohci: fix regression with VIA VT6315, disable MSI
-      firewire: ohci: fix regression with Agere FW643 rev 06, disable MSI
+diffstat follows.  Thanks.
 
- drivers/firewire/ohci.c |   47 +++++++++++++++++++++++++++++++++--------------
- 1 files changed, 33 insertions(+), 14 deletions(-)
+ drivers/net/8139too.c                   |    3 -
+ drivers/net/atlx/atl2.c                 |    4 -
+ drivers/net/bcm63xx_enet.c              |    2 
+ drivers/net/bnx2.c                      |    4 -
+ drivers/net/can/janz-ican3.c            |    9 ---
+ drivers/net/cassini.c                   |    4 -
+ drivers/net/cxgb3/cxgb3_main.c          |    3 -
+ drivers/net/e1000e/netdev.c             |    6 +-
+ drivers/net/ehea/ehea.h                 |    2 
+ drivers/net/ehea/ehea_main.c            |   14 +---
+ drivers/net/enic/enic_main.c            |    2 
+ drivers/net/ibm_newemac/core.c          |    2 
+ drivers/net/igb/igb_main.c              |    9 ++-
+ drivers/net/igbvf/netdev.c              |    7 +-
+ drivers/net/irda/mcs7780.c              |    2 
+ drivers/net/iseries_veth.c              |   18 +-----
+ drivers/net/ixgb/ixgb_main.c            |    2 
+ drivers/net/ixgbe/ixgbe_main.c          |   11 ++-
+ drivers/net/ixgbevf/ixgbevf_main.c      |    3 -
+ drivers/net/mv643xx_eth.c               |    2 
+ drivers/net/myri10ge/myri10ge.c         |    2 
+ drivers/net/niu.c                       |    2 
+ drivers/net/pxa168_eth.c                |    2 
+ drivers/net/r8169.c                     |    2 
+ drivers/net/s2io.c                      |    6 +-
+ drivers/net/sh_eth.c                    |    1 
+ drivers/net/sh_eth.h                    |    1 
+ drivers/net/sis190.c                    |    3 -
+ drivers/net/skge.c                      |    2 
+ drivers/net/sungem.c                    |   12 +---
+ drivers/net/tg3.c                       |    4 -
+ drivers/net/usb/sierra_net.c            |    5 -
+ drivers/net/usb/usbnet.c                |    3 -
+ drivers/net/vmxnet3/vmxnet3_drv.c       |    2 
+ drivers/net/vxge/vxge-main.c            |    2 
+ drivers/net/wimax/i2400m/driver.c       |   96 +++++---------------------------
+ drivers/net/wimax/i2400m/i2400m.h       |   19 +-----
+ drivers/net/wimax/i2400m/sdio.c         |    1 
+ drivers/net/wimax/i2400m/usb.c          |    1 
+ drivers/net/wireless/hostap/hostap_ap.c |    3 +
+ drivers/net/wireless/hostap/hostap_hw.c |    8 ++
+ 41 files changed, 97 insertions(+), 189 deletions(-)
 
-commit 9993e0fe0f5f29c69e79efcb271ffc9843002985
-Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Date:   Tue Dec 7 20:32:40 2010 +0100
-
-    firewire: ohci: fix regression with Agere FW643 rev 06, disable MSI
-    
-    Agere FW643 rev 06, listed as "11c1:5901 (rev 06) (prog-if 10 [OHCI])",
-    produced SBP-2 I/O errors since kernel 2.6.36.  Disabling MSI fixes it.
-    
-    Since MSI work on Agere FW643-E (same vendor and device ID, but rev 07),
-    introduce a device revision field into firewire-ohci's quirks list so
-    that different quirks can be defined for older and newer revisions.
-    
-    Reported-by: Jonathan Isom <jeisom@gmail.com>
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-    Cc: <stable@kernel.org> # 2.6.36.y
-
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 5697cf2..e3c8b60 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -242,6 +242,7 @@ static inline struct fw_ohci *fw_ohci(struct fw_card *card)
- 
- static char ohci_driver_name[] = KBUILD_MODNAME;
- 
-+#define PCI_DEVICE_ID_AGERE_FW643	0x5901
- #define PCI_DEVICE_ID_JMICRON_JMB38X_FW	0x2380
- #define PCI_DEVICE_ID_TI_TSB12LV22	0x8009
- 
-@@ -253,19 +254,34 @@ static char ohci_driver_name[] = KBUILD_MODNAME;
- 
- /* In case of multiple matches in ohci_quirks[], only the first one is used. */
- static const struct {
--	unsigned short vendor, device, flags;
-+	unsigned short vendor, device, revision, flags;
- } ohci_quirks[] = {
--	{PCI_VENDOR_ID_TI,	PCI_DEVICE_ID_TI_TSB12LV22, QUIRK_CYCLE_TIMER |
--							    QUIRK_RESET_PACKET |
--							    QUIRK_NO_1394A},
--	{PCI_VENDOR_ID_TI,	PCI_ANY_ID,	QUIRK_RESET_PACKET},
--	{PCI_VENDOR_ID_AL,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
--	{PCI_VENDOR_ID_JMICRON,	PCI_DEVICE_ID_JMICRON_JMB38X_FW, QUIRK_NO_MSI},
--	{PCI_VENDOR_ID_NEC,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
--	{PCI_VENDOR_ID_VIA,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER |
--						QUIRK_NO_MSI},
--	{PCI_VENDOR_ID_RICOH,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
--	{PCI_VENDOR_ID_APPLE,	PCI_DEVICE_ID_APPLE_UNI_N_FW, QUIRK_BE_HEADERS},
-+	{PCI_VENDOR_ID_AL, PCI_ANY_ID, PCI_ANY_ID,
-+		QUIRK_CYCLE_TIMER},
-+
-+	{PCI_VENDOR_ID_APPLE, PCI_DEVICE_ID_APPLE_UNI_N_FW, PCI_ANY_ID,
-+		QUIRK_BE_HEADERS},
-+
-+	{PCI_VENDOR_ID_ATT, PCI_DEVICE_ID_AGERE_FW643, 6,
-+		QUIRK_NO_MSI},
-+
-+	{PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB38X_FW, PCI_ANY_ID,
-+		QUIRK_NO_MSI},
-+
-+	{PCI_VENDOR_ID_NEC, PCI_ANY_ID, PCI_ANY_ID,
-+		QUIRK_CYCLE_TIMER},
-+
-+	{PCI_VENDOR_ID_RICOH, PCI_ANY_ID, PCI_ANY_ID,
-+		QUIRK_CYCLE_TIMER},
-+
-+	{PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_TSB12LV22, PCI_ANY_ID,
-+		QUIRK_CYCLE_TIMER | QUIRK_RESET_PACKET | QUIRK_NO_1394A},
-+
-+	{PCI_VENDOR_ID_TI, PCI_ANY_ID, PCI_ANY_ID,
-+		QUIRK_RESET_PACKET},
-+
-+	{PCI_VENDOR_ID_VIA, PCI_ANY_ID, PCI_ANY_ID,
-+		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
- };
- 
- /* This overrides anything that was found in ohci_quirks[]. */
-@@ -2928,9 +2944,11 @@ static int __devinit pci_probe(struct pci_dev *dev,
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(ohci_quirks); i++)
--		if (ohci_quirks[i].vendor == dev->vendor &&
--		    (ohci_quirks[i].device == dev->device ||
--		     ohci_quirks[i].device == (unsigned short)PCI_ANY_ID)) {
-+		if ((ohci_quirks[i].vendor == dev->vendor) &&
-+		    (ohci_quirks[i].device == (unsigned short)PCI_ANY_ID ||
-+		     ohci_quirks[i].device == dev->device) &&
-+		    (ohci_quirks[i].revision == (unsigned short)PCI_ANY_ID ||
-+		     ohci_quirks[i].revision >= dev->revision)) {
- 			ohci->quirks = ohci_quirks[i].flags;
- 			break;
- 		}
-
-commit af0cdf4947818becfe209610b209315578645ab4
-Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Date:   Tue Dec 7 19:16:02 2010 +0100
-
-    firewire: ohci: fix regression with VIA VT6315, disable MSI
-    
-    "VIA Technologies, Inc. VT6315 Series Firewire Controller [1106:3403]"
-    does not generate any interrupts if Message Signaled Interrupts were
-    enabled.  This is a regression since kernel 2.6.36 in which MSI support
-    was added to firewire-ohci.  Hence blacklist MSI on all VIA controllers.
-    
-    Reported-by: Robin Cook <rcook@wyrms.net>
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-    Cc: <stable@kernel.org> # 2.6.36.y
-
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 84eb607..5697cf2 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -262,7 +262,8 @@ static const struct {
- 	{PCI_VENDOR_ID_AL,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
- 	{PCI_VENDOR_ID_JMICRON,	PCI_DEVICE_ID_JMICRON_JMB38X_FW, QUIRK_NO_MSI},
- 	{PCI_VENDOR_ID_NEC,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
--	{PCI_VENDOR_ID_VIA,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
-+	{PCI_VENDOR_ID_VIA,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER |
-+						QUIRK_NO_MSI},
- 	{PCI_VENDOR_ID_RICOH,	PCI_ANY_ID,	QUIRK_CYCLE_TIMER},
- 	{PCI_VENDOR_ID_APPLE,	PCI_DEVICE_ID_APPLE_UNI_N_FW, QUIRK_BE_HEADERS},
- };
-
--- 
-Stefan Richter
--=====-==-=- ==-- -==--
-http://arcgraph.de/sr/
+--
+tejun
