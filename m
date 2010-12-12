@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0LLQs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:48:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45344 "EHLO hera.kernel.org"
+	id S1753530Ab0LLQsm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 11:48:42 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45354 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab0LLQs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:48:27 -0500
+	id S1753470Ab0LLQsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 11:48:40 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: [PATCHSET] workqueue: another assorted flush_scheduled_work() removals
-Date: Sun, 12 Dec 2010 17:48:13 +0100
-Message-Id: <1292172499-21633-1-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/6] init: don't call flush_scheduled_work() from do_initcalls()
+Date: Sun, 12 Dec 2010 17:48:14 +0100
+Message-Id: <1292172499-21633-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 16:48:24 +0000 (UTC)
+In-Reply-To: <1292172499-21633-1-git-send-email-tj@kernel.org>
+References: <1292172499-21633-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 16:48:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The call to flush_scheduled_work() in do_initcalls() is there to make
+sure all works queued to system_wq by initcalls finish before the init
+sections are dropped.
 
-This is another set of patches to remove flush_scheduled_work() users.
+However, the call doesn't make much sense at this point - there
+already are multiple different workqueues and different subsystems are
+free to create and use their own.  Ordering requirements are and
+should be expressed explicitly.
 
- 0001-init-don-t-call-flush_scheduled_work-from-do_initcal.patch
- 0002-ioc4-use-static-work_struct-for-ioc4_load_modules.patch
- 0003-media-video-explicitly-flush-request_module-work.patch
- 0004-media-video-don-t-use-flush_scheduled_work.patch
- 0005-speedtch-don-t-abuse-struct-delayed_work.patch
- 0006-usb-don-t-use-flush_scheduled_work.patch
+Drop the call to prepare for the deprecation and removal of
+flush_scheduled_work().
 
-Andrew, implementing proper work function in init text test requires
-tracking an additional state for each worker.  I don't think it'll be
-worth the effort or complexity as removal of init sections itself will
-make the bugs, if exists, quite visible anyway, so I just updated
-patch description of 0001.  What do you think?
+Andrew suggested adding sanity check where the workqueue code checks
+whether any pending or running work has the work function in the init
+text section.  However, checking this for running works requires the
+worker to keep track of the current function being executed, and
+checking only the pending works will miss most cases.  As a violation
+will almost always be caught by the usual page fault mechanism, I
+don't think it would be worthwhile to make the workqueue code track
+extra state just for this.
 
-0002 updates the ioc4 driver to use static work_struct and removes
-flush_scheduled_work() call in the process.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+This is part of a series to remove flush_scheduled_work() usage to
+prepare for deprecation of flush_scheduled_work().  Patches in this
+series are self contained and mostly straight-forward.
 
-0003-0004 convert the video drivers and 0005-0006 usb.
+Please feel free to take it into the appropriate tree, or just ack it.
+In the latter case, I'll merge the patch through the workqueue tree
+during the next merge window.
 
-These patches are available in the following git tree.
+Thank you.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git net-dev-kill-flush_scheduled_work
+ init/main.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Note that the branch is on top of the previous set of
-flush_scheduled_work() removal patches; however, they're independent
-and this series cleanly applies on top of 2.6.37-rc5
-(6313e3c21743cc88bb5bd8aa72948ee1e83937b6).
+diff --git a/init/main.c b/init/main.c
+index 8646401..5421e8f 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -775,9 +775,6 @@ static void __init do_initcalls(void)
+ 
+ 	for (fn = __early_initcall_end; fn < __initcall_end; fn++)
+ 		do_one_initcall(*fn);
+-
+-	/* Make sure there is no pending stuff from the initcall sequence */
+-	flush_scheduled_work();
+ }
+ 
+ /*
+-- 
+1.7.1
 
-diffstat follows.  Thanks.
-
- drivers/media/video/bt8xx/bttv-driver.c       |    9 ++++++++
- drivers/media/video/bt8xx/bttv-input.c        |    5 ----
- drivers/media/video/cx18/cx18-driver.c        |    8 +++++++
- drivers/media/video/cx231xx/cx231xx-cards.c   |    8 +++++++
- drivers/media/video/cx23885/cx23885-input.c   |    2 -
- drivers/media/video/cx88/cx88-mpeg.c          |    8 +++++++
- drivers/media/video/em28xx/em28xx-cards.c     |    8 +++++++
- drivers/media/video/omap24xxcam.c             |    6 ++---
- drivers/media/video/saa7134/saa7134-core.c    |   11 ++++++++-
- drivers/media/video/saa7134/saa7134-empress.c |    2 -
- drivers/misc/ioc4.c                           |   29 ++++++++------------------
- drivers/usb/atm/speedtch.c                    |   27 ++++++++++++------------
- drivers/usb/gadget/u_ether.c                  |    4 ---
- drivers/usb/host/ohci-hcd.c                   |    3 +-
- drivers/usb/otg/isp1301_omap.c                |    2 -
- drivers/usb/serial/oti6858.c                  |    5 +---
- drivers/video/fb_defio.c                      |    5 +---
- init/main.c                                   |    3 --
- 18 files changed, 86 insertions(+), 59 deletions(-)
-
---
-tejun
