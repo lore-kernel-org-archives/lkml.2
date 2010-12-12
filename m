@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab0LLXvA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:51:00 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36884 "EHLO
+	id S1756109Ab0LLXsf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:48:35 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36817 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab0LLXsk (ORCPT
+	with ESMTP id S1755093Ab0LLXs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:40 -0500
+	Sun, 12 Dec 2010 18:48:29 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: philb@gnu.org, davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [212/223] econet: fix CVE-2010-3848
-Message-Id: <20101212234839.9A619B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:39 +0100 (CET)
+To: dmitry.torokhov@gmail.com, dtor@mail.ru, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [201/223] Input: i8042 - add Sony VAIO VPCZ122GX to nomux list
+Message-Id: <20101212234827.D17D5B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:27 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,155 +22,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Phil Blundell <philb@gnu.org>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit a27e13d370415add3487949c60810e36069a23a6 upstream.
+[Note that the mainline will not have this particular fix but rather
+will blacklist entire VAIO line based off DMI board name. For stable
+I am being a bit more cautious and blacklist one particular product.]
 
-Don't declare variable sized array of iovecs on the stack since this
-could cause stack overflow if msg->msgiovlen is large.  Instead, coalesce
-the user-supplied data into a new buffer and use a single iovec for it.
+Trying to query/activate active multiplexing mode on this VAIO makes
+both keyboard and touchpad inoperable. Futher kernels will blacklist
+entire VAIO line, however here we blacklist just one particular model.
 
-Signed-off-by: Phil Blundell <philb@gnu.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/econet/af_econet.c |   62 ++++++++++++++++++++++++-------------------------
- 1 file changed, 31 insertions(+), 31 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Index: linux/net/econet/af_econet.c
+Index: linux/drivers/input/serio/i8042-x86ia64io.h
 ===================================================================
---- linux.orig/net/econet/af_econet.c
-+++ linux/net/econet/af_econet.c
-@@ -31,6 +31,7 @@
- #include <linux/skbuff.h>
- #include <linux/udp.h>
- #include <linux/slab.h>
-+#include <linux/vmalloc.h>
- #include <net/sock.h>
- #include <net/inet_common.h>
- #include <linux/stat.h>
-@@ -276,12 +277,12 @@ static int econet_sendmsg(struct kiocb *
- #endif
- #ifdef CONFIG_ECONET_AUNUDP
- 	struct msghdr udpmsg;
--	struct iovec iov[msg->msg_iovlen+1];
-+	struct iovec iov[2];
- 	struct aunhdr ah;
- 	struct sockaddr_in udpdest;
- 	__kernel_size_t size;
--	int i;
- 	mm_segment_t oldfs;
-+	char *userbuf;
- #endif
- 
- 	/*
-@@ -319,17 +320,17 @@ static int econet_sendmsg(struct kiocb *
- 		}
- 	}
- 
--	if (len + 15 > dev->mtu) {
--		mutex_unlock(&econet_mutex);
--		return -EMSGSIZE;
--	}
--
- 	if (dev->type == ARPHRD_ECONET) {
- 		/* Real hardware Econet.  We're not worthy etc. */
- #ifdef CONFIG_ECONET_NATIVE
- 		unsigned short proto = 0;
- 		int res;
- 
-+		if (len + 15 > dev->mtu) {
-+			mutex_unlock(&econet_mutex);
-+			return -EMSGSIZE;
-+		}
-+
- 		dev_hold(dev);
- 
- 		skb = sock_alloc_send_skb(sk, len+LL_ALLOCATED_SPACE(dev),
-@@ -405,6 +406,11 @@ static int econet_sendmsg(struct kiocb *
- 		return -ENETDOWN;		/* No socket - can't send */
- 	}
- 
-+	if (len > 32768) {
-+		err = -E2BIG;
-+		goto error;
-+	}
-+
- 	/* Make up a UDP datagram and hand it off to some higher intellect. */
- 
- 	memset(&udpdest, 0, sizeof(udpdest));
-@@ -436,36 +442,26 @@ static int econet_sendmsg(struct kiocb *
- 
- 	/* tack our header on the front of the iovec */
- 	size = sizeof(struct aunhdr);
--	/*
--	 * XXX: that is b0rken.  We can't mix userland and kernel pointers
--	 * in iovec, since on a lot of platforms copy_from_user() will
--	 * *not* work with the kernel and userland ones at the same time,
--	 * regardless of what we do with set_fs().  And we are talking about
--	 * econet-over-ethernet here, so "it's only ARM anyway" doesn't
--	 * apply.  Any suggestions on fixing that code?		-- AV
--	 */
- 	iov[0].iov_base = (void *)&ah;
- 	iov[0].iov_len = size;
--	for (i = 0; i < msg->msg_iovlen; i++) {
--		void __user *base = msg->msg_iov[i].iov_base;
--		size_t iov_len = msg->msg_iov[i].iov_len;
--		/* Check it now since we switch to KERNEL_DS later. */
--		if (!access_ok(VERIFY_READ, base, iov_len)) {
--			mutex_unlock(&econet_mutex);
--			return -EFAULT;
--		}
--		iov[i+1].iov_base = base;
--		iov[i+1].iov_len = iov_len;
--		size += iov_len;
-+
-+	userbuf = vmalloc(len);
-+	if (userbuf == NULL) {
-+		err = -ENOMEM;
-+		goto error;
- 	}
- 
-+	iov[1].iov_base = userbuf;
-+	iov[1].iov_len = len;
-+	err = memcpy_fromiovec(userbuf, msg->msg_iov, len);
-+	if (err)
-+		goto error_free_buf;
-+
- 	/* Get a skbuff (no data, just holds our cb information) */
- 	if ((skb = sock_alloc_send_skb(sk, 0,
- 				       msg->msg_flags & MSG_DONTWAIT,
--				       &err)) == NULL) {
--		mutex_unlock(&econet_mutex);
--		return err;
--	}
-+				       &err)) == NULL)
-+		goto error_free_buf;
- 
- 	eb = (struct ec_cb *)&skb->cb;
- 
-@@ -481,7 +477,7 @@ static int econet_sendmsg(struct kiocb *
- 	udpmsg.msg_name = (void *)&udpdest;
- 	udpmsg.msg_namelen = sizeof(udpdest);
- 	udpmsg.msg_iov = &iov[0];
--	udpmsg.msg_iovlen = msg->msg_iovlen + 1;
-+	udpmsg.msg_iovlen = 2;
- 	udpmsg.msg_control = NULL;
- 	udpmsg.msg_controllen = 0;
- 	udpmsg.msg_flags=0;
-@@ -489,9 +485,13 @@ static int econet_sendmsg(struct kiocb *
- 	oldfs = get_fs(); set_fs(KERNEL_DS);	/* More privs :-) */
- 	err = sock_sendmsg(udpsock, &udpmsg, size);
- 	set_fs(oldfs);
-+
-+error_free_buf:
-+	vfree(userbuf);
- #else
- 	err = -EPROTOTYPE;
- #endif
-+	error:
- 	mutex_unlock(&econet_mutex);
- 
- 	return err;
+--- linux.orig/drivers/input/serio/i8042-x86ia64io.h
++++ linux/drivers/input/serio/i8042-x86ia64io.h
+@@ -333,6 +333,13 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Sony Vaio VPCZ122GX */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "VPCZ122GX"),
++		},
++	},
++	{
+ 		/* Sony Vaio FS-115b */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
