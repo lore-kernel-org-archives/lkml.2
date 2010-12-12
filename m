@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab0LLXsY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:48:24 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36756 "EHLO
+	id S1756166Ab0LLXsn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:48:43 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36890 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab0LLXsV (ORCPT
+	with ESMTP id S1756125Ab0LLXsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:21 -0500
+	Sun, 12 Dec 2010 18:48:41 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: mroberto@cpti.cetuc.puc-rio.br, rmk+kernel@arm.linux.org.uk,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [194/223] ARM: 6456/1: Fix for building DEBUG with sa11xx_base.c as a module.
-Message-Id: <20101212234820.56C51B27C0@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:20 +0100 (CET)
+To: drosenberg@vsecurity.com, davem@davemloft.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [213/223] rds: Integer overflow in RDS cmsg handling
+Message-Id: <20101212234840.A7E4FB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:40 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,37 +22,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit b9f515e3e3861abbaa093359f7c6f31283695228 upstream.
+commit 218854af84038d828a32f061858b1902ed2beec6 upstream.
 
-This patch fixes a compilation issue when compiling PCMCIA SA1100
-support as a module with PCMCIA_DEBUG enabled. The symbol
-soc_pcmcia_debug was not beeing exported.
-ARM: pcmcia: Fix for building DEBUG with sa11xx_base.c as a module.
+In rds_cmsg_rdma_args(), the user-provided args->nr_local value is
+restricted to less than UINT_MAX.  This seems to need a tighter upper
+bound, since the calculation of total iov_size can overflow, resulting
+in a small sock_kmalloc() allocation.  This would probably just result
+in walking off the heap and crashing when calling rds_rdma_pages() with
+a high count value.  If it somehow doesn't crash here, then memory
+corruption could occur soon after.
 
-This patch fixes a compilation issue when compiling PCMCIA SA1100
-support as a module with PCMCIA_DEBUG enabled. The symbol
-soc_pcmcia_debug was not beeing exported.
-
-Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/pcmcia/soc_common.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/rds/rdma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux/drivers/pcmcia/soc_common.c
+Index: linux/net/rds/rdma.c
 ===================================================================
---- linux.orig/drivers/pcmcia/soc_common.c
-+++ linux/drivers/pcmcia/soc_common.c
-@@ -65,6 +65,7 @@ void soc_pcmcia_debug(struct soc_pcmcia_
- 		va_end(args);
+--- linux.orig/net/rds/rdma.c
++++ linux/net/rds/rdma.c
+@@ -474,7 +474,7 @@ static struct rds_rdma_op *rds_rdma_prep
+ 		goto out;
  	}
- }
-+EXPORT_SYMBOL(soc_pcmcia_debug);
  
- #endif
- 
+-	if (args->nr_local > (u64)UINT_MAX) {
++	if (args->nr_local > UIO_MAXIOV) {
+ 		ret = -EMSGSIZE;
+ 		goto out;
+ 	}
