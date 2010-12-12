@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab0LMAId (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:08:33 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36268 "EHLO
+	id S1755373Ab0LMAIr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:08:47 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36248 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242Ab0LLXrG (ORCPT
+	with ESMTP id S1755107Ab0LLXrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:06 -0500
+	Sun, 12 Dec 2010 18:47:03 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: eric.dumazet@gmail.com, kaber@trash.net, gregkh@suse.de,
+To: david.henningsson@canonical.com, tiwai@suse.de, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [123/223] netfilter: nf_conntrack: allow nf_ct_alloc_hashtable() to get highmem pages
-Message-Id: <20101212234704.C4E03B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:04 +0100 (CET)
+Subject: [PATCH] [120/223] ALSA: HDA: Add an extra DAC for Realtek ALC887-VD
+Message-Id: <20101212234701.99C4DB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:01 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,35 +22,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 6b1686a71e3158d3c5f125260effce171cc7852b upstream.
+commit cc1c452e509aefc28f7ad2deed75bc69d4f915f7 upstream.
 
-commit ea781f197d6a8 (use SLAB_DESTROY_BY_RCU and get rid of call_rcu())
-did a mistake in __vmalloc() call in nf_ct_alloc_hashtable().
+The patch enables ALC887-VD to use the DAC at nid 0x26,
+which makes it possible to use this DAC for e g Headphone
+volume.
 
-I forgot to add __GFP_HIGHMEM, so pages were taken from LOWMEM only.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/netfilter/nf_conntrack_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Index: linux/net/netfilter/nf_conntrack_core.c
+Index: linux/sound/pci/hda/patch_realtek.c
 ===================================================================
---- linux.orig/net/netfilter/nf_conntrack_core.c
-+++ linux/net/netfilter/nf_conntrack_core.c
-@@ -1252,7 +1252,8 @@ void *nf_ct_alloc_hashtable(unsigned int
- 	if (!hash) {
- 		*vmalloced = 1;
- 		printk(KERN_WARNING "nf_conntrack: falling back to vmalloc.\n");
--		hash = __vmalloc(sz, GFP_KERNEL | __GFP_ZERO, PAGE_KERNEL);
-+		hash = __vmalloc(sz, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
-+				 PAGE_KERNEL);
- 	}
+--- linux.orig/sound/pci/hda/patch_realtek.c
++++ linux/sound/pci/hda/patch_realtek.c
+@@ -18357,6 +18357,8 @@ static inline hda_nid_t alc662_mix_to_da
+ 		return 0x02;
+ 	else if (nid >= 0x0c && nid <= 0x0e)
+ 		return nid - 0x0c + 0x02;
++	else if (nid == 0x26) /* ALC887-VD has this DAC too */
++		return 0x25;
+ 	else
+ 		return 0;
+ }
+@@ -18365,7 +18367,7 @@ static inline hda_nid_t alc662_mix_to_da
+ static hda_nid_t alc662_dac_to_mix(struct hda_codec *codec, hda_nid_t pin,
+ 				   hda_nid_t dac)
+ {
+-	hda_nid_t mix[4];
++	hda_nid_t mix[5];
+ 	int i, num;
  
- 	if (hash && nulls)
+ 	num = snd_hda_get_connections(codec, pin, mix, ARRAY_SIZE(mix));
