@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab0LMAEs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:04:48 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36384 "EHLO
+	id S1756332Ab0LMAFD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:05:03 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36378 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab0LLXrY (ORCPT
+	with ESMTP id S1755313Ab0LLXrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:24 -0500
+	Sun, 12 Dec 2010 18:47:23 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: martin.wilck@ts.fujitsu.com, jbarnes@virtuousgeek.org, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [140/223] PCI: fix size checks for mmap() on /proc/bus/pci files
-Message-Id: <20101212234722.C1201B27C0@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:22 +0100 (CET)
+To: tj@kernel.org, jgarzik@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [139/223] libata: fix NULL sdev dereference race in atapi_qc_complete()
+Message-Id: <20101212234721.B0F8EB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:21 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,123 +22,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Martin Wilck <martin.wilck@ts.fujitsu.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 3b519e4ea618b6943a82931630872907f9ac2c2b upstream.
+commit 2a5f07b5ec098edc69e05fdd2f35d3fbb1235723 upstream.
 
-The checks for valid mmaps of PCI resources made through /proc/bus/pci files
-that were introduced in 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several
-problems:
+SCSI commands may be issued between __scsi_add_device() and dev->sdev
+assignment, so it's unsafe for ata_qc_complete() to dereference
+dev->sdev->locked without checking whether it's NULL or not.  Fix it.
 
-1. mmap() calls on /proc/bus/pci files are made with real file offsets > 0,
-whereas under /sys/bus/pci/devices, the start of the resource corresponds
-to offset 0. This may lead to false negatives in pci_mmap_fits(), which
-implicitly assumes the /sys/bus/pci/devices layout.
-
-2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This leads
-to false positives, because pci_mmap_fits() doesn't treat empty resources
-correctly (the calculated size is 1 << (8*sizeof(resource_size_t)-PAGE_SHIFT)
-in this case!).
-
-3. If a user maps resources with BAR > 0, pci_mmap_fits will emit bogus
-WARNINGS for the first resources that don't fit until the correct one is found.
-
-On many controllers the first 2-4 BARs are used, and the others are empty.
-In this case, an mmap attempt will first fail on the non-empty BARs
-(including the "right" BAR because of 1.) and emit bogus WARNINGS because
-of 3., and finally succeed on the first empty BAR because of 2.
-This is certainly not the intended behaviour.
-
-This patch addresses all 3 issues.
-Updated with an enum type for the additional parameter for pci_mmap_fits().
-
-Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/pci/pci-sysfs.c |   22 ++++++++++++++++------
- drivers/pci/pci.h       |    7 ++++++-
- drivers/pci/proc.c      |    2 +-
- 3 files changed, 23 insertions(+), 8 deletions(-)
+ drivers/ata/libata-scsi.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Index: linux/drivers/pci/pci-sysfs.c
+Index: linux/drivers/ata/libata-scsi.c
 ===================================================================
---- linux.orig/drivers/pci/pci-sysfs.c
-+++ linux/drivers/pci/pci-sysfs.c
-@@ -705,17 +705,21 @@ void pci_remove_legacy_files(struct pci_
+--- linux.orig/drivers/ata/libata-scsi.c
++++ linux/drivers/ata/libata-scsi.c
+@@ -2577,8 +2577,11 @@ static void atapi_qc_complete(struct ata
+ 		 *
+ 		 * If door lock fails, always clear sdev->locked to
+ 		 * avoid this infinite loop.
++		 *
++		 * This may happen before SCSI scan is complete.  Make
++		 * sure qc->dev->sdev isn't NULL before dereferencing.
+ 		 */
+-		if (qc->cdb[0] == ALLOW_MEDIUM_REMOVAL)
++		if (qc->cdb[0] == ALLOW_MEDIUM_REMOVAL && qc->dev->sdev)
+ 			qc->dev->sdev->locked = 0;
  
- #ifdef HAVE_PCI_MMAP
- 
--int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma)
-+int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
-+		  enum pci_mmap_api mmap_api)
- {
--	unsigned long nr, start, size;
-+	unsigned long nr, start, size, pci_start;
- 
-+	if (pci_resource_len(pdev, resno) == 0)
-+		return 0;
- 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
- 	start = vma->vm_pgoff;
- 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
--	if (start < size && size - start >= nr)
-+	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-+			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
-+	if (start >= pci_start && start < pci_start + size &&
-+			start + nr <= pci_start + size)
- 		return 1;
--	WARN(1, "process \"%s\" tried to map 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
--		current->comm, start, start+nr, pci_name(pdev), resno, size);
- 	return 0;
- }
- 
-@@ -745,8 +749,14 @@ pci_mmap_resource(struct kobject *kobj,
- 	if (i >= PCI_ROM_RESOURCE)
- 		return -ENODEV;
- 
--	if (!pci_mmap_fits(pdev, i, vma))
-+	if (!pci_mmap_fits(pdev, i, vma, PCI_MMAP_SYSFS)) {
-+		WARN(1, "process \"%s\" tried to map 0x%08lx bytes "
-+			"at page 0x%08lx on %s BAR %d (start 0x%16Lx, size 0x%16Lx)\n",
-+			current->comm, vma->vm_end-vma->vm_start, vma->vm_pgoff,
-+			pci_name(pdev), i,
-+			pci_resource_start(pdev, i), pci_resource_len(pdev, i));
- 		return -EINVAL;
-+	}
- 
- 	/* pci_mmap_page_range() expects the same kind of entry as coming
- 	 * from /proc/bus/pci/ which is a "user visible" value. If this is
-Index: linux/drivers/pci/pci.h
-===================================================================
---- linux.orig/drivers/pci/pci.h
-+++ linux/drivers/pci/pci.h
-@@ -13,8 +13,13 @@ extern int pci_create_sysfs_dev_files(st
- extern void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
- extern void pci_cleanup_rom(struct pci_dev *dev);
- #ifdef HAVE_PCI_MMAP
-+enum pci_mmap_api {
-+	PCI_MMAP_SYSFS,	/* mmap on /sys/bus/pci/devices/<BDF>/resource<N> */
-+	PCI_MMAP_PROCFS	/* mmap on /proc/bus/pci/<BDF> */
-+};
- extern int pci_mmap_fits(struct pci_dev *pdev, int resno,
--			 struct vm_area_struct *vma);
-+			 struct vm_area_struct *vmai,
-+			 enum pci_mmap_api mmap_api);
- #endif
- int pci_probe_reset_function(struct pci_dev *dev);
- 
-Index: linux/drivers/pci/proc.c
-===================================================================
---- linux.orig/drivers/pci/proc.c
-+++ linux/drivers/pci/proc.c
-@@ -260,7 +260,7 @@ static int proc_bus_pci_mmap(struct file
- 
- 	/* Make sure the caller is mapping a real resource for this device */
- 	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
--		if (pci_mmap_fits(dev, i, vma))
-+		if (pci_mmap_fits(dev, i, vma,  PCI_MMAP_PROCFS))
- 			break;
- 	}
- 
+ 		qc->scsicmd->result = SAM_STAT_CHECK_CONDITION;
