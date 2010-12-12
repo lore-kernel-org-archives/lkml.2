@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab0LLG0H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 01:26:07 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51496 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab0LLG0D convert rfc822-to-8bit (ORCPT
+	id S1751392Ab0LLGhg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 01:37:36 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:46034 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab0LLGhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 01:26:03 -0500
+	Sun, 12 Dec 2010 01:37:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vjrsKSdAAd6ZCpOyJT+CgL8LYECk0E4lVRgDO1aDG/XU0zRyXT4vjNhf3eCIMB4bNx
-         ZaAloRjnRwgt9SI+gEz1WuiKeX8H+xrDhoox0R+O1Mf/F0vTtiGVgN7ODwqPWy7m82RZ
-         lm1FfLZbiKAWNbMARxKQOHGa8IlEqyY+PEKJY=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
-References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
-	<20101210092533.4f426650.randy.dunlap@oracle.com>
-	<AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
-Date: Sun, 12 Dec 2010 12:26:02 +0600
-Message-ID: <AANLkTinRaGcEzGaRZSvGzRAubNtRUnHstru_0E0aCdrd@mail.gmail.com>
-Subject: Re: linux-next: Tree for December 10 (x86 nmi_watchdog)
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=jKa16TMONBT/fryUkn+Zr994Adfp6Ly4bPEwrwgHQZNJ7WZC4+/peUGIY08YSQIqwp
+         3OZd3bLSwTvHCXCpE7k1AQHHl7PmllWw7k3Gj3V6kHN2soycHz3NfAkKJ0wP84LLIerq
+         1bDQsqnNw43UuxffYs7VrudinrsBSOjaIbB7A=
+Subject: Re: [PATCH v4] mach-at91: Support for gsia18s board added
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@maxim.org.za, nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
+        costa.antonior@gmail.com, ryan@bluewatersys.com,
+        christian.glindkamp@taskit.de, pgsellmann@portner-elektronik.at
+In-Reply-To: <20101212005048.GH19897@game.jcrosoft.org>
+References: <1292000411-6691-1-git-send-email-plyatov@gmail.com>
+	 <20101212005048.GH19897@game.jcrosoft.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 12 Dec 2010 09:37:28 +0300
+Message-ID: <1292135848.2456.19.camel@homepc>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 11:27 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> On Fri, Dec 10, 2010 at 11:25 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> On Fri, 10 Dec 2010 13:57:46 +1100 Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20101209:
->>
->>
->> arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of 'touch_nmi_watchdog'
->> include/linux/nmi.h:22: note: previous definition of 'touch_nmi_watchdog' was here
->>
-> Hello Randy,
->
-> Please checkout the following patch. Does it work?
-> ----
->
-> x86: Fix kernel build in hw_nmi.c when CONFIG_HARDLOCKUP_DETECTOR=n.
->
-> This patch fixes kernel build introduced by commit
-> 96a84c20d635fb1e98ab92f9fc517c4441f5c424. That commit supposed to
-> define touch_nmi_watchdog when CONFIG_HARDLOCKUP_DETECTOR=y in
-> hw_nmi.c. But mistakenly defines touch_nmi_watchdog when
-> CONFIG_HARDLOCKUP_DETECTOR=n in hw_nmi.c.
->
-> arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of ‘touch_nmi_watchdog’
-> include/linux/nmi.h:23: error: previous definition of
-> ‘touch_nmi_watchdog’ was here
->
+Dear Jean-Christophe,
 
-NO. I don't think this is the correct one. Cause we don't want
-touch_softlockup_watchdog() to be called if
-CONFIG_HARDLOCKUP_DETECTOR=y.
+> On 20:00 Fri 10 Dec     , Igor Plyatov wrote:
+> > The GS_IA18_S (GMS) is a carrier board from GeoSIG Ltd used with the
+> > Stamp9G20 SoM from Taskit company.
+> > It operate as an internet accelerometer.
+> > 
+> > Signed-off-by: Igor Plyatov <plyatov@gmail.com>
+> > ---
+> >  arch/arm/configs/gsia18s_defconfig        |  147 +++++++
+> please no new defconfig
+> start to merge them
 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> ---
->
-> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-> index c558e11..2056569 100644
-> --- a/arch/x86/kernel/apic/hw_nmi.c
-> +++ b/arch/x86/kernel/apic/hw_nmi.c
-> @@ -24,7 +24,7 @@ u64 hw_nmi_get_sample_period(void)
->  }
->  #endif
->
-> -#ifndef CONFIG_HARDLOCKUP_DETECTOR
-> +#ifdef CONFIG_HARDLOCKUP_DETECTOR
->  void touch_nmi_watchdog(void)
->  {
->        touch_softlockup_watchdog();
->
+I already write that it is not possible to use same defconfig for our
+board and Stamp9G20, because 69 different CONFIG_xxx options required
+for our machine (compared with Portux G20 and Stamp9G20) and our options
+very excessive for other devices based on the Stamp9G20.
+This device for the embedded, where space constraints exists for memory
+and it is required to save resources as more as possible.
+
+> your patch contain a lots of whitespace please fix it
+
+There is no problems with whitespace. This patch checked by
+scripts/checkpatch.pl twice. It seems your mailer corrupt this patch.
+
+> > +
+> > +/*
+> > + * Up to date linux/arch/arm/tools/mach-types database required to support this.
+> > +MACHINE_START(GSIA18S, "GS_IA18_S")
+> > +*/
+> > +MACHINE_START(STAMP9G20, "GS_IA18_S")
+> if you do this you must use system_rev to identify the board
+
+I can cite Christian Glindkamp:
+"And for different carrier boards, system_rev does not make sense at
+all."
+
+Please, use more testimony why it is required to use system_rev here.
+Yours position does not clear for me.
+You can point me to the right documentation or discussion about this
+requirements in the mail archives...
+
+> > +	.boot_params	= AT91_SDRAM_BASE + 0x100,
+> > +	.timer		= &at91sam926x_timer,
+> > +	.map_io		= gsia18s_map_io,
+> > +	.init_irq	= init_irq,
+> > +	.init_machine	= gsia18s_board_init,
+> > +MACHINE_END
+> Best Regards,
+> J.
+
+Best regards!
+--
+Igor Plyatov
+
