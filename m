@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab0LLNLv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 08:11:51 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:51226 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab0LLNLu convert rfc822-to-8bit (ORCPT
+	id S1752951Ab0LLNNU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 08:13:20 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55381 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751752Ab0LLNNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 08:11:50 -0500
+	Sun, 12 Dec 2010 08:13:17 -0500
+Date: Sun, 12 Dec 2010 13:13:28 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: skannan@codeaurora.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Call into regulator driver only when
+ voltage min/max really changes.
+Message-ID: <20101212131328.GF15189@opensource.wolfsonmicro.com>
+References: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
+ <20101212121842.GC15189@opensource.wolfsonmicro.com>
+ <d681667c87585c281d0330c030c97025.squirrel@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20101212124354.GA4513@thunk.org>
-References: <1291945065-sup-1838@think> <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
- <20101210023852.GB3059@thunk.org> <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
- <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
- <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
- <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
- <20101212023415.GG3059@thunk.org> <AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
- <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com> <20101212124354.GA4513@thunk.org>
-From: Jon Nelson <jnelson@jamponi.net>
-Date: Sun, 12 Dec 2010 07:11:28 -0600
-Message-ID: <AANLkTikZkCs7Wee2=uhe3bw96Pggcv0jsCkZ+nkWEQ+=@mail.gmail.com>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-To: "Ted Ts'o" <tytso@mit.edu>, Jon Nelson <jnelson@jamponi.net>,
-        Matt <jackdachef@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d681667c87585c281d0330c030c97025.squirrel@codeaurora.org>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 6:43 AM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Sun, Dec 12, 2010 at 04:18:29AM -0600, Jon Nelson wrote:
->> > I have one CPU configured in the environment, 512MB of memory.
->> > I have not done any memory-constriction tests whatsoever.
->
-> I've finally been able to reproduce it myself, on real hardware.  SMP
-> is not necessary to reproduce it, although having more than one CPU
-> doesn't hurt.  What I did need to do (on real hardware with 4 gigs of
-> memory) was to turn off swap and pin enough memory so that free memory
-> was around 200megs or so before the start of the test.  (This is the
-> natural amount of free memory that the system would try to reach,
-> since 200 megs is about 5% of 4 gigs.)
->
-> Then, during the test, free memory would drop to 50-70 megabytes,
-> forcing writeback to run, and then I could trigger it about 1-2 times
-> out of three.
->
-> I'm guessing that when you used 512mb of memory, that was in effect a
-> memory-constriction test, and if you were to push the memory down a
-> little further, it might reproduce even more quickly.  My next step is
-> to try to reproduce this in a VM, and then I can start probing to see
-> what might be going on.
+On Sun, Dec 12, 2010 at 04:41:04AM -0800, skannan@codeaurora.org wrote:
+> > On Sun, Dec 12, 2010 at 02:55:40AM -0800, Saravana Kannan wrote:
 
-I'm glad you've been able to reproduce the problem! If you should need
-any further assistance, please do not hesitate to ask.
+> > Out of interest do we have any examples of consumers that do this
+> > sufficiently often and/or in paths sufficiently performance critical for
+> > it to be an issue?  Sounds like there might be room for optimisation in
+> > those consumers.
 
+> Wouldn't it be better to optimize in one location (the core), instead of
+> optimizing in several consumers?
 
--- 
-Jon
+It's certainly good to optimise in the core, which is why I acked your
+patch, but it strikes me that if these consumers are regularly setting
+the regulator voltage to the same thing over and over again they may
+well also be doing whatever else goes along with setting the voltage
+over and over again and there's room for optimisation there also.
+
+> > The down side of doing this is that if the regulator state changes
+> > underneath us we've now got no way of recovering from that situation.
+> > This is something that's only partially supported by the API at the
+> > minute but it's nice to have a story about how drivers can work with
+> > this.  I'll send a patch adding an explicit sync API.
+
+> Would this be a problem irrespective of this optimization?
+
+At the minute this can be handled at the consumer level since if the
+consumer knows that the voltage got changed underneath it (and if it
+cares about the voltage then it probably ought to know about this
+otherwise something is going to get upset) it can reconfigure the
+voltage by calling set_voltage() again.
+
+> Btw, after sending this patch, I just realized there might be another
+> "bug" in the existing code (not my changes). What's the meaning of the
+> "voltage change" event? It appears to be sent even if the regulator driver
+> fails to set the voltage. It would be correct if the event just means
+> "someone called set_voltage", but that seems like an unlikely definition.
+
+It's an indication to other consumers that they might want to reread the
+voltage.  Overnotification doesn't really hurt here, though it'd be nice
+to avoid it.
+
+> Let me know if I should send in a patch for that too.
+
+It'd probably coollide with the update I'm doing for syncing voltages.
