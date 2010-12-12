@@ -1,74 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab0LLPR2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 10:17:28 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47621 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab0LLPRW convert rfc822-to-8bit (ORCPT
+	id S1752899Ab0LLPRH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 10:17:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40494 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab0LLPRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 10:17:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VcCJECitk+o2Zy+GRUEnHD6ODgoH5DQbQEBEVlc3POVN9MthFtbeYgjXoeS3vpivBH
-         ctR+171baQCoUocdiwFKuvMfhBYPwQA8gtSYt0jHWtlXWM9Y/OQS2m3WYNw6C3SwfGs8
-         9PAppVwAUWYPQkGQo3bLPH3stZVRpQlGONc0o=
-MIME-Version: 1.0
-In-Reply-To: <20101212144750.GH8665@n2100.arm.linux.org.uk>
-References: <20101209064751.GA21128@void.printf.net>
-	<AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
-	<20101209160157.GA28586@void.printf.net>
-	<AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com>
-	<20101211192320.GA24430@void.printf.net>
-	<AANLkTin5aVPz5Y=jS89V00XS=rje3gqeUb2VTYt2A_9=@mail.gmail.com>
-	<20101212135224.GA31812@void.printf.net>
-	<AANLkTinMYeWNLu8e7xyBTvjmeFMsJ5sDGtsCesu04d4K@mail.gmail.com>
-	<20101212141112.GF8665@n2100.arm.linux.org.uk>
-	<AANLkTin++a_juBQDssFDd881R449so7Um2AvHFLXqiT_@mail.gmail.com>
-	<20101212144750.GH8665@n2100.arm.linux.org.uk>
-Date: Sun, 12 Dec 2010 15:17:20 +0000
-Message-ID: <AANLkTinr_D8GvUON5PqHSiZCAS8tQy-0YChnYD4N+zY2@mail.gmail.com>
-Subject: Re: [PATCH] dw_mmc: Add Synopsys DesignWare mmc host driver.
-From: Will Newton <will.newton@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Chris Ball <cjb@laptop.org>, Matt Fleming <matt@console-pimps.org>,
-        linux-mmc@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 12 Dec 2010 10:17:02 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Francis Moreau <francis.moro@gmail.com>,
+        Franck Bui-Huu <vagabon.xyz@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/2] perf probe: Fix use of kernel image path given by 'k' option
+Date: Sun, 12 Dec 2010 13:16:53 -0200
+Message-Id: <1292167014-20936-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1292167014-20936-1-git-send-email-acme@infradead.org>
+References: <1292167014-20936-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 2:47 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Dec 12, 2010 at 02:31:40PM +0000, Will Newton wrote:
->> On Sun, Dec 12, 2010 at 2:11 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > Maybe invent CONFIG_HAVE_MMIO_64BIT which architectures can select as
->> > appropriate?
->>
->> Wouldn't it be simpler to have a fallback readq/writeq implementation
->> like the below?
->>
->> static inline u64 __raw_readq(const volatile void __iomem *addr)
->> {
->>         return *(const volatile u64 __force *) addr;
->> }
->>
->> It won't break any existing hardware (if your SoC bus does not support
->> 64bit accesses you are unlikely to have peripherals that require it)
->> and would avoid a number of #ifdefs and/or Kconfig dependencies.
->
-> Firstly, why, then, are we discussing fixing dw_mmc.c so it builds on ARM?
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-It's a configurable IP block, so one would assume that if it was
-configured with a 64bit FIFO width on ARM then your SoC integration
-engineers dropped the ball.
+Users were not being able to have the explicitely specified vmlinux
+pathname used, instead a search on the vmlinux path was always being
+made.
 
-Even on architectures that can do 64bit MMIO, I would expect there to
-be systems where that is not safe in practice (e.g. 32bit bus fabric
-that will translate a 64bit access into 2 32bit accesses) so I don't
-know if it's ideal to make this an architecture level config symbol.
+Reported-by: Francis Moreau <francis.moro@gmail.com>
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Francis Moreau <francis.moro@gmail.com>
+Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+LPU-Reference: <m3hbelydz8.fsf_-_@gmail.com>
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-probe.c    |    5 +++++
+ tools/perf/util/probe-event.c |   15 ++++++++++++---
+ tools/perf/util/symbol.c      |    4 ++--
+ tools/perf/util/symbol.h      |    2 ++
+ 4 files changed, 21 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 2e000c0..add163c 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -249,6 +249,11 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 	     !params.show_lines))
+ 		usage_with_options(probe_usage, options);
+ 
++	/*
++	 * Only consider the user's kernel image path if given.
++	 */
++	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
++
+ 	if (params.list_events) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --list with --add/--del.\n");
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 3b6a529..b71acd6 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -114,6 +114,8 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
+ const char *kernel_get_module_path(const char *module)
+ {
+ 	struct dso *dso;
++	struct map *map;
++	const char *vmlinux_name;
+ 
+ 	if (module) {
+ 		list_for_each_entry(dso, &machine.kernel_dsos, node) {
+@@ -123,10 +125,17 @@ const char *kernel_get_module_path(const char *module)
+ 		}
+ 		pr_debug("Failed to find module %s.\n", module);
+ 		return NULL;
++	}
++
++	map = machine.vmlinux_maps[MAP__FUNCTION];
++	dso = map->dso;
++
++	vmlinux_name = symbol_conf.vmlinux_name;
++	if (vmlinux_name) {
++		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
++			return NULL;
+ 	} else {
+-		dso = machine.vmlinux_maps[MAP__FUNCTION]->dso;
+-		if (dso__load_vmlinux_path(dso,
+-			 machine.vmlinux_maps[MAP__FUNCTION], NULL) < 0) {
++		if (dso__load_vmlinux_path(dso, map, NULL) < 0) {
+ 			pr_debug("Failed to load kernel map.\n");
+ 			return NULL;
+ 		}
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index d628c8d..439ab94 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1780,8 +1780,8 @@ out_failure:
+ 	return -1;
+ }
+ 
+-static int dso__load_vmlinux(struct dso *self, struct map *map,
+-			     const char *vmlinux, symbol_filter_t filter)
++int dso__load_vmlinux(struct dso *self, struct map *map,
++		      const char *vmlinux, symbol_filter_t filter)
+ {
+ 	int err = -1, fd;
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 038f220..6c6eafd 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -166,6 +166,8 @@ void dso__sort_by_name(struct dso *self, enum map_type type);
+ struct dso *__dsos__findnew(struct list_head *head, const char *name);
+ 
+ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter);
++int dso__load_vmlinux(struct dso *self, struct map *map,
++		      const char *vmlinux, symbol_filter_t filter);
+ int dso__load_vmlinux_path(struct dso *self, struct map *map,
+ 			   symbol_filter_t filter);
+ int dso__load_kallsyms(struct dso *self, const char *filename, struct map *map,
+-- 
+1.6.2.5
+
