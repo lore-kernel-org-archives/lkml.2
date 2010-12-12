@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab0LLMDs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:03:48 -0500
-Received: from mail.perches.com ([173.55.12.10]:2519 "EHLO mail.perches.com"
+	id S1753058Ab0LLMD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:03:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:2528 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825Ab0LLMDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:03:41 -0500
+	id S1752908Ab0LLMDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:03:45 -0500
 From: Joe Perches <joe@perches.com>
 To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>, netdev@vger.kernel.org
-Subject: [RFC PATCH net-next 4/6] ethernet: Move Sun Happymeal sunhme.[ch]
-Date: Sun, 12 Dec 2010 04:03:25 -0800
-Message-Id: <d95e2675d60e5df1052911deec264cb56824767a.1292154142.git.joe@perches.com>
+Subject: [RFC PATCH net-next 6/6] ethernet: Move Sun Cassini cassini.[ch]
+Date: Sun, 12 Dec 2010 04:03:27 -0800
+Message-Id: <0ed1dcbd48d5256e63a0cd3b729dac0054ffd520.1292154143.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <cover.1292154142.git.joe@perches.com>
 References: <cover.1292154142.git.joe@perches.com>
@@ -20,94 +20,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move Sun Happymeal files to ethernet directory.
+Move Sun Cassini files to ethernet directory.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/Kconfig                 |   13 -------------
- drivers/net/Makefile                |    1 -
- drivers/net/ethernet/Kconfig.10-100 |   13 +++++++++++++
- drivers/net/ethernet/Makefile       |    1 +
- drivers/net/{ => ethernet}/sunhme.c |    0
- drivers/net/{ => ethernet}/sunhme.h |    0
- 6 files changed, 14 insertions(+), 14 deletions(-)
- rename drivers/net/{ => ethernet}/sunhme.c (100%)
- rename drivers/net/{ => ethernet}/sunhme.h (100%)
+ drivers/net/Kconfig                  |    8 --------
+ drivers/net/Makefile                 |    1 -
+ drivers/net/ethernet/Kconfig.10-100  |    8 ++++++++
+ drivers/net/ethernet/Makefile        |    1 +
+ drivers/net/{ => ethernet}/cassini.c |    0
+ drivers/net/{ => ethernet}/cassini.h |    0
+ 6 files changed, 9 insertions(+), 9 deletions(-)
+ rename drivers/net/{ => ethernet}/cassini.c (100%)
+ rename drivers/net/{ => ethernet}/cassini.h (100%)
 
 diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index c0716d9..926f090 100644
+index fbae645..847dfbe 100644
 --- a/drivers/net/Kconfig
 +++ b/drivers/net/Kconfig
-@@ -558,19 +558,6 @@ config SUNLANCE
+@@ -581,14 +581,6 @@ config SUNQE
  	  To compile this driver as a module, choose M here: the module
- 	  will be called sunlance.
+ 	  will be called sunqe.
  
--config HAPPYMEAL
--	tristate "Sun Happy Meal 10/100baseT support"
--	depends on SBUS || PCI
+-config CASSINI
+-	tristate "Sun Cassini support"
+-	depends on PCI
 -	select CRC32
 -	help
--	  This driver supports the "hme" interface present on most Ultra
--	  systems and as an option on older Sbus systems. This driver supports
--	  both PCI and Sbus devices. This driver also supports the "qfe" quad
--	  100baseT device available in both PCI and Sbus configurations.
+-	  Support for the Sun Cassini chip, aka Sun GigaSwift Ethernet. See also
+-	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/817-4341-10.pdf>
 -
--	  To compile this driver as a module, choose M here: the module
--	  will be called sunhme.
--
- config SUNBMAC
- 	tristate "Sun BigMAC 10/100baseT support (EXPERIMENTAL)"
- 	depends on SBUS && EXPERIMENTAL
+ config SUNVNET
+ 	tristate "Sun Virtual Network support"
+ 	depends on SUN_LDOMS
 diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index 0379639..8f2c0ee 100644
+index 129aa08..3972e16 100644
 --- a/drivers/net/Makefile
 +++ b/drivers/net/Makefile
-@@ -56,7 +56,6 @@ obj-$(CONFIG_PLIP) += plip.o
- 
- obj-$(CONFIG_ROADRUNNER) += rrunner.o
- 
--obj-$(CONFIG_HAPPYMEAL) += sunhme.o
- obj-$(CONFIG_SUNLANCE) += sunlance.o
+@@ -60,7 +60,6 @@ obj-$(CONFIG_SUNLANCE) += sunlance.o
  obj-$(CONFIG_SUNQE) += sunqe.o
  obj-$(CONFIG_SUNBMAC) += sunbmac.o
+ obj-$(CONFIG_MYRI_SBUS) += myri_sbus.o
+-obj-$(CONFIG_CASSINI) += cassini.o
+ obj-$(CONFIG_SUNVNET) += sunvnet.o
+ 
+ obj-$(CONFIG_MACE) += mace.o
 diff --git a/drivers/net/ethernet/Kconfig.10-100 b/drivers/net/ethernet/Kconfig.10-100
-index e4fa897..dbb95d3 100644
+index f0430da..2bb39fc 100644
 --- a/drivers/net/ethernet/Kconfig.10-100
 +++ b/drivers/net/ethernet/Kconfig.10-100
-@@ -22,3 +22,16 @@ config ETHOC
- 	select BITREVERSE
+@@ -23,6 +23,14 @@ config ETHOC
  	help
  	  Say Y here if you want to use the OpenCores 10/100 Mbps Ethernet MAC.
-+
-+config HAPPYMEAL
-+	tristate "Sun Happy Meal 10/100baseT support"
-+	depends on SBUS || PCI
+ 
++config CASSINI
++	tristate "Sun Cassini support"
++	depends on PCI
 +	select CRC32
 +	help
-+	  This driver supports the "hme" interface present on most Ultra
-+	  systems and as an option on older Sbus systems. This driver supports
-+	  both PCI and Sbus devices. This driver also supports the "qfe" quad
-+	  100baseT device available in both PCI and Sbus configurations.
++	  Support for the Sun Cassini chip, aka Sun GigaSwift Ethernet. See also
++	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/817-4341-10.pdf>
 +
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called sunhme.
+ config HAPPYMEAL
+ 	tristate "Sun Happy Meal 10/100baseT support"
+ 	depends on SBUS || PCI
 diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index 6e419ed..0daa85c 100644
+index d7c6304..bba207a 100644
 --- a/drivers/net/ethernet/Makefile
 +++ b/drivers/net/ethernet/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_DNET)		+= dnet.o
+@@ -6,3 +6,4 @@ obj-$(CONFIG_DNET)		+= dnet.o
  obj-$(CONFIG_ETHOC)		+= ethoc.o
-+obj-$(CONFIG_HAPPYMEAL)		+= sunhme.o
-diff --git a/drivers/net/sunhme.c b/drivers/net/ethernet/sunhme.c
+ obj-$(CONFIG_HAPPYMEAL)		+= sunhme.o
+ obj-$(CONFIG_SUNGEM)		+= sungem.o sungem_phy.o
++obj-$(CONFIG_CASSINI)		+= cassini.o
+diff --git a/drivers/net/cassini.c b/drivers/net/ethernet/cassini.c
 similarity index 100%
-rename from drivers/net/sunhme.c
-rename to drivers/net/ethernet/sunhme.c
-diff --git a/drivers/net/sunhme.h b/drivers/net/ethernet/sunhme.h
+rename from drivers/net/cassini.c
+rename to drivers/net/ethernet/cassini.c
+diff --git a/drivers/net/cassini.h b/drivers/net/ethernet/cassini.h
 similarity index 100%
-rename from drivers/net/sunhme.h
-rename to drivers/net/ethernet/sunhme.h
+rename from drivers/net/cassini.h
+rename to drivers/net/ethernet/cassini.h
 -- 
 1.7.3.3.398.g0b0cd.dirty
 
