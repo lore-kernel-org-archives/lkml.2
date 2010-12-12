@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab0LMAUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:20:00 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44921 "EHLO
+	id S1754564Ab0LLXp6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:45:58 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44834 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab0LLXqB (ORCPT
+	with ESMTP id S1754367Ab0LLXpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:01 -0500
+	Sun, 12 Dec 2010 18:45:47 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: jslaby@suse.cz, clemens@ladisch.de, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [61/223] hpet: unmap unused I/O space
-Message-Id: <20101212234559.35395B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:59 +0100 (CET)
+To: jbarnes@virtuousgeek.org, chris@chris-wilson.co.uk, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [49/223] drm/i915: diasable clock gating for the panel power sequencer
+Message-Id: <20101212234546.81BFFB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:45:46 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,89 +22,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Jiri Slaby <jslaby@suse.cz>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit a56d5318716d120e040294bb258901ba89fb9c90 upstream.
+commit 382b09362711d7d03272230a33767015a277926e upstream.
 
-When the initialization code in hpet finds a memory resource and does not
-find an IRQ, it does not unmap the memory resource previously mapped.
+Needed on Ibex Peak and Cougar Point or the panel won't always come on.
 
-There are buggy BIOSes which report resources exactly like this and what
-is worse the memory region bases point to normal RAM.  This normally would
-not matter since the space is not touched.  But when PAT is turned on,
-ioremap causes the page to be uncached and sets this bit in page->flags.
-
-Then when the page is about to be used by the allocator, it is reported
-as:
-
-BUG: Bad page state in process md5sum  pfn:3ed00
-page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
-page flags: 0x20000001000000(uncached)
-Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
-Call Trace:
- [<ffffffff810df851>] bad_page+0xb1/0x100
- [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
- [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
- [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
-...
-
-In this particular case:
-
-1) HPET returns 3ed00000 as memory region base, but it is not in
-reserved ranges reported by the BIOS (excerpt):
- BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
- BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
-
-2) there is no IRQ resource reported by HPET method. On the other
-hand, the Intel HPET specs (1.0a) says (3.2.5.1):
-_CRS (
-  // Report 1K of memory consumed by this Timer Block
-  memory range consumed
-  // Optional: only used if BIOS allocates Interrupts [1]
-  IRQs consumed
-)
-
-[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
-Legacy 8254/Legacy RTC hardware still exists, the device objects
-associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
-"consumed resources".
-
-So in theory we should check whether if it is the case and use those
-interrupts instead.
-
-Anyway the address reported by the BIOS here is bogus, so non-presence
-of IRQ doesn't mean the "optional" part in point 2).
-
-Since I got no reply previously, fix this by simply unmapping the space
-when IRQ is not found and memory region was mapped previously.  It would
-be probably more safe to walk the resources again and unmap appropriately
-depending on type.  But as we now use only ioremap for both 2 memory
-resource types, it is not necessarily needed right now.
-
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=629908
-
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/char/hpet.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h      |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    7 +++++++
+ 2 files changed, 10 insertions(+)
 
-Index: linux/drivers/char/hpet.c
+Index: linux/drivers/gpu/drm/i915/i915_reg.h
 ===================================================================
---- linux.orig/drivers/char/hpet.c
-+++ linux/drivers/char/hpet.c
-@@ -985,6 +985,8 @@ static int hpet_acpi_add(struct acpi_dev
- 		return -ENODEV;
+--- linux.orig/drivers/gpu/drm/i915/i915_reg.h
++++ linux/drivers/gpu/drm/i915/i915_reg.h
+@@ -2709,6 +2709,9 @@
+ #define FDI_RXB_CHICKEN         0xc2010
+ #define  FDI_RX_PHASE_SYNC_POINTER_ENABLE       (1)
  
- 	if (!data.hd_address || !data.hd_nirqs) {
-+		if (data.hd_address)
-+			iounmap(data.hd_address);
- 		printk("%s: no address or irqs in _CRS\n", __func__);
- 		return -ENODEV;
- 	}
++#define SOUTH_DSPCLK_GATE_D	0xc2020
++#define  PCH_DPLSUNIT_CLOCK_GATE_DISABLE (1<<29)
++
+ /* CPU: FDI_TX */
+ #define FDI_TXA_CTL             0x60100
+ #define FDI_TXB_CTL             0x61100
+Index: linux/drivers/gpu/drm/i915/intel_display.c
+===================================================================
+--- linux.orig/drivers/gpu/drm/i915/intel_display.c
++++ linux/drivers/gpu/drm/i915/intel_display.c
+@@ -5416,6 +5416,13 @@ void intel_init_clock_gating(struct drm_
+ 		I915_WRITE(PCH_DSPCLK_GATE_D, dspclk_gate);
+ 
+ 		/*
++		 * On Ibex Peak and Cougar Point, we need to disable clock
++		 * gating for the panel power sequencer or it will fail to
++		 * start up when no ports are active.
++		 */
++		I915_WRITE(SOUTH_DSPCLK_GATE_D, PCH_DPLSUNIT_CLOCK_GATE_DISABLE);
++
++		/*
+ 		 * According to the spec the following bits should be set in
+ 		 * order to enable memory self-refresh
+ 		 * The bit 22/21 of 0x42004
