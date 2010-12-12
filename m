@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab0LLXqE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:46:04 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44910 "EHLO
+	id S1754765Ab0LMATd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:19:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35838 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab0LLXp7 (ORCPT
+	with ESMTP id S1754610Ab0LLXqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:59 -0500
+	Sun, 12 Dec 2010 18:46:03 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: clemens@ladisch.de, mingo@elte.hu, tglx@linutronix.de, johnstul@us.ibm.com,
-        bpicco@redhat.com, akpm@linux-foundation.org,
+To: richard@nod.at, toralf.foerster@gmx.de, hch@lst.de,
+        viro@zeniv.linux.org.uk, jdike@addtoit.com, akpm@linux-foundation.org,
         torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [60/223] hpet: fix unwanted interrupt due to stale irq status bit
-Message-Id: <20101212234558.24FDBB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:58 +0100 (CET)
+Subject: [PATCH] [64/223] hostfs: fix UML crash: remove f_spare from hostfs
+Message-Id: <20101212234602.5DAB5B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:02 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,78 +24,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Richard Weinberger <richard@nod.at>
 
-commit 96e9694df446d1154ec2f4fdba8908588b9cba38 upstream.
+commit 1b627d5771312c92404b66f0a0b16f66036dd2e1 upstream.
 
-Jaswinder Singh Rajput wrote:
-> By executing Documentation/timers/hpet_example.c
->
-> for polling, I requested for 3 iterations but it seems iteration work
-> for only 2 as first expired time is always very small.
->
-> # ./hpet_example poll /dev/hpet 10 3
-> -hpet: executing poll
-> hpet_poll: info.hi_flags 0x0
-> hpet_poll: expired time = 0x13
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
-> hpet_poll: expired time = 0x1868c
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
-> hpet_poll: expired time = 0x18645
-> hpet_poll: revents = 0x1
-> hpet_poll: data 0x1
+365b1818 ("add f_flags to struct statfs(64)") resized f_spare within
+struct statfs which caused a UML crash.  There is no need to copy f_spare.
 
-Clearing the HPET interrupt enable bit disables interrupt generation
-but does not disable the timer, so the interrupt status bit will still
-be set when the timer elapses.  If another interrupt arrives before
-the timer has been correctly programmed (due to some other device on
-the same interrupt line, or CONFIG_DEBUG_SHIRQ), this results in an
-extra unwanted interrupt event because the status bit is likely to be
-set from comparator matches that happened before the device was opened.
-
-Therefore, we have to ensure that the interrupt status bit is and
-stays cleared until we actually program the timer.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: john stultz <johnstul@us.ibm.com>
-Cc: Bob Picco <bpicco@redhat.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jeff Dike <jdike@addtoit.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/char/hpet.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ fs/hostfs/hostfs.h      |    3 +--
+ fs/hostfs/hostfs_kern.c |    2 +-
+ fs/hostfs/hostfs_user.c |    9 ++-------
+ 3 files changed, 4 insertions(+), 10 deletions(-)
 
-Index: linux/drivers/char/hpet.c
+Index: linux/fs/hostfs/hostfs.h
 ===================================================================
---- linux.orig/drivers/char/hpet.c
-+++ linux/drivers/char/hpet.c
-@@ -479,6 +479,21 @@ static int hpet_ioctl_ieon(struct hpet_d
- 	if (irq) {
- 		unsigned long irq_flags;
+--- linux.orig/fs/hostfs/hostfs.h
++++ linux/fs/hostfs/hostfs.h
+@@ -86,7 +86,6 @@ extern int rename_file(char *from, char
+ extern int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+ 		     long long *bfree_out, long long *bavail_out,
+ 		     long long *files_out, long long *ffree_out,
+-		     void *fsid_out, int fsid_size, long *namelen_out,
+-		     long *spare_out);
++		     void *fsid_out, int fsid_size, long *namelen_out);
  
-+		if (devp->hd_flags & HPET_SHARED_IRQ) {
-+			/*
-+			 * To prevent the interrupt handler from seeing an
-+			 * unwanted interrupt status bit, program the timer
-+			 * so that it will not fire in the near future ...
-+			 */
-+			writel(readl(&timer->hpet_config) & ~Tn_TYPE_CNF_MASK,
-+			       &timer->hpet_config);
-+			write_counter(read_counter(&hpet->hpet_mc),
-+				      &timer->hpet_compare);
-+			/* ... and clear any left-over status. */
-+			isr = 1 << (devp - devp->hd_hpets->hp_dev);
-+			writel(isr, &hpet->hpet_isr);
-+		}
+ #endif
+Index: linux/fs/hostfs/hostfs_kern.c
+===================================================================
+--- linux.orig/fs/hostfs/hostfs_kern.c
++++ linux/fs/hostfs/hostfs_kern.c
+@@ -272,7 +272,7 @@ int hostfs_statfs(struct dentry *dentry,
+ 	err = do_statfs(HOSTFS_I(dentry->d_sb->s_root->d_inode)->host_filename,
+ 			&sf->f_bsize, &f_blocks, &f_bfree, &f_bavail, &f_files,
+ 			&f_ffree, &sf->f_fsid, sizeof(sf->f_fsid),
+-			&sf->f_namelen, sf->f_spare);
++			&sf->f_namelen);
+ 	if (err)
+ 		return err;
+ 	sf->f_blocks = f_blocks;
+Index: linux/fs/hostfs/hostfs_user.c
+===================================================================
+--- linux.orig/fs/hostfs/hostfs_user.c
++++ linux/fs/hostfs/hostfs_user.c
+@@ -402,8 +402,7 @@ int rename_file(char *from, char *to)
+ int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+ 	      long long *bfree_out, long long *bavail_out,
+ 	      long long *files_out, long long *ffree_out,
+-	      void *fsid_out, int fsid_size, long *namelen_out,
+-	      long *spare_out)
++	      void *fsid_out, int fsid_size, long *namelen_out)
+ {
+ 	struct statfs64 buf;
+ 	int err;
+@@ -422,10 +421,6 @@ int do_statfs(char *root, long *bsize_ou
+ 	       sizeof(buf.f_fsid) > fsid_size ? fsid_size :
+ 	       sizeof(buf.f_fsid));
+ 	*namelen_out = buf.f_namelen;
+-	spare_out[0] = buf.f_spare[0];
+-	spare_out[1] = buf.f_spare[1];
+-	spare_out[2] = buf.f_spare[2];
+-	spare_out[3] = buf.f_spare[3];
+-	spare_out[4] = buf.f_spare[4];
 +
- 		sprintf(devp->hd_name, "hpet%d", (int)(devp - hpetp->hp_dev));
- 		irq_flags = devp->hd_flags & HPET_SHARED_IRQ
- 						? IRQF_SHARED : IRQF_DISABLED;
+ 	return 0;
+ }
