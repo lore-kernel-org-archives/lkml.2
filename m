@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab0LLDWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 22:22:46 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47160 "EHLO
+	id S1752627Ab0LLDbY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 22:31:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59782 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752231Ab0LLDWp (ORCPT
+	by vger.kernel.org with ESMTP id S1752231Ab0LLDbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 22:22:45 -0500
+	Sat, 11 Dec 2010 22:31:22 -0500
 MIME-Version: 1.0
+In-Reply-To: <20101208213627.13026.18854.stgit@bob.kio>
+References: <20101208213606.13026.47657.stgit@bob.kio> <20101208213627.13026.18854.stgit@bob.kio>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 11 Dec 2010 19:22:16 -0800
-Message-ID: <AANLkTim4Y+gG+tRdAivZMJ93e2hESvJed5vjkuzv63Rh@mail.gmail.com>
-Subject: Re: [GIT PULL] Please pull xyzzy fixes
-To: Trond Myklebust <Trond.Myklebust@netapp.com>, Len Brown <lenb@kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alex Elder <aelder@sgi.com>, Tejun Heo <tj@kernel.org>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Sage Weil <sage@newdream.net>, Takashi Iwai <tiwai@suse.de>,
-        Borislav Petkov <bp@amd64.org>, Steve French <smfrench@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, xfs@oss.sgi.com,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org
+Date: Sat, 11 Dec 2010 19:30:54 -0800
+Message-ID: <AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
+Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Len Brown <lenb@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Adam Belay <abelay@mit.edu>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 10:05 AM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> Resending pull request after appending Chuck's fix for the nfs_umount() panic.
+On Wed, Dec 8, 2010 at 1:36 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+>
+> The HP nx6325 BIOS doesn't report any devices in the [0xf8000000-0xfbffffff]
+> region via ACPI devices or the E820 memory map, but when we assign it to the
+> 00:14.4 bridge as a prefetchable memory window, the machine hangs.
 
-[ .. and other people have other similar pull requests - acpi, ceph,
-cifs, xfs etc ]
+Quite frankly, I think this patch sucks.
 
-Right now I'm traveling without access to my laptop to actually do
-pulls. That was unintentional, but my laptop got co-opted for more
-important stuff (child needed it for school an my other laptop has a
-broken harddisk), so I've just been reading email with my cellphone.
-That allows me to keep up-to-date and mark the stuff that I'm
-scheduling for pulling, but I end up not replying a lot because typing
-is so painful and it does that silly html email thing.
+It sucks because these kinds of hw-specific patches are fundamentally
+a sign of something else being wrong. Why didn't windows hit this? Why
+do we need this total hack?
 
-Anyway, this is just a reply to say that I've not lost your emails,
-I'm just effectively partly offline until Monday. I just stole Dirk's
-laptop just to write a reply-to-all (or at least a "reply-to-most").
+And is there any reason at all to believe that that one particular
+laptop is really special? I doubt it. And what happens for the next
+random machine that comes along an hits this?
 
-                                         Linus
+Maybe we should just say that if we know the bridge is negative
+decode, and it hasn't been set up by the BIOS, we just don't allocate
+it at all. And try to look like Windows.
+
+Or figure out what else Windows is doing differently.
+
+The whole "allocate bottom up" old PCI allocation has _years_ of
+testing and quirk that have been gathered over a long time. We can't
+just say "we'll do the same thing for the top-down allocator".
+
+The WHOLE AND ONLY POINT of the top-down allocator was to act lik
+Windows and not need crap like this. If that doesn't work, then I
+seriously don't think we should change bottom-up to top-down at all,
+and for 2.6.37 we should just revert the "set to top-down by default".
+
+Seriously. That "whole and only point" thing is important. If we need
+hacks like this, then we shouldn't do it. We're much better off with
+the model that has year of testing an not the upheaval. Top-down
+allocation is in _no_ way inherently better, the only excuse for it
+was supposed to be "we don't need these kinds of hooks".
+
+                Linus
