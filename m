@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab0LLBUW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 20:20:22 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:10680 "EHLO relay.sw.ru"
+	id S1752483Ab0LLBkg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Dec 2010 20:40:36 -0500
+Received: from thunk.org ([69.25.196.29]:33042 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab0LLBUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 20:20:21 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: avagin@openvz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: delete expired route in ip6_pmtu_deliver
-Date: Sun, 12 Dec 2010 04:20:11 +0300
-Message-Id: <1292116811-22216-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.2.1
+	id S1751323Ab0LLBkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Dec 2010 20:40:32 -0500
+Date: Sat, 11 Dec 2010 20:40:13 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jon Nelson <jnelson@jamponi.net>
+Cc: Matt <jackdachef@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+        Milan Broz <mbroz@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101212014013.GF3059@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jon Nelson <jnelson@jamponi.net>, Matt <jackdachef@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+	Milan Broz <mbroz@redhat.com>,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	dm-devel <dm-devel@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+	linux-ext4 <linux-ext4@vger.kernel.org>
+References: <20101209201359.GG2921@thunk.org>
+ <AANLkTik=ivDrBEzg1wQAp5AFzNtRRq1=NpvnowggU=_0@mail.gmail.com>
+ <20101209231616.GA12515@basil.fritz.box>
+ <1291945065-sup-1838@think>
+ <AANLkTi=SgzVcOwqJfAHBe5U+1CuhPnm0eKet4hRM2JKz@mail.gmail.com>
+ <20101210023852.GB3059@thunk.org>
+ <AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
+ <AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
+ <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
+ <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first big packets sent to a "low-MTU" client correctly
-triggers the creation of a temporary route containing the reduced MTU.
+On Fri, Dec 10, 2010 at 08:14:56PM -0600, Jon Nelson wrote:
+> > Barring false negatives, bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc
+> > appears to be the culprit (according to git bisect).
+> > I will test bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc again, confirm
+> > the behavior, and work backwards to try to reduce the possibility of
+> > false negatives.
+> 
+> A few additional notes, in no particular order:
+> 
+> - For me, triggering the problem is fairly easy when encryption is involved.
+> - I'm now 81 iterations into testing
+> bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc *without* encryption.  Out of
+> 81 iterations, I have 4 failures: #16, 40, 62, and 64.
+> 
+> I will now try 1de3e3df917459422cb2aecac440febc8879d410 much more extensively.
+> 
+> Is this useful information?
 
-But after the temporary route has expired, new ICMP6 "packet too big"
-will be sent, rt6_pmtu_discovery will find the previous EXPIRED route
-check that its mtu isn't bigger then in icmp packet and do nothing
-before the temporary route will not deleted by gc.
+Yes, indeed.  Is this in the virtualized environment or on real
+hardware at this point?  And how many CPU's do you have configured in
+your virtualized environment, and how memory memory?  Is having a
+certain number of CPU's critical for reproducing the problem?  Is
+constricting the amount of memory important?
 
-I make the simple experiment:
-while :; do
-    time ( dd if=/dev/zero bs=10K count=1 | ssh hostname dd of=/dev/null ) || break;
-done
+It'll be a lot easier if I can reproduce it locally, which is why I'm
+asking all of these questions.
 
-The "time" reports real 0m0.197s if a temporary route isn't expired, but
-it reports real 0m52.837s (!!!!) immediately after a temporare route has
-expired.
+Thanks,
 
-Cc: stable@kernel.org
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- net/ipv6/route.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 96455ffb..7659d6f 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1565,11 +1565,16 @@ static void rt6_do_pmtu_disc(struct in6_addr *daddr, struct in6_addr *saddr,
- {
- 	struct rt6_info *rt, *nrt;
- 	int allfrag = 0;
--
-+again:
- 	rt = rt6_lookup(net, daddr, saddr, ifindex, 0);
- 	if (rt == NULL)
- 		return;
- 
-+	if (rt6_check_expired(rt)) {
-+		ip6_del_rt(rt);
-+		goto again;
-+	}
-+
- 	if (pmtu >= dst_mtu(&rt->dst))
- 		goto out;
- 
--- 
-1.7.2.1
-
+					- Ted
