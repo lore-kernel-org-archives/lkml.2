@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab0LLXpc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:45:32 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44589 "EHLO
+	id S1754138Ab0LMA1g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:27:36 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44753 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab0LLXpG (ORCPT
+	with ESMTP id S1753197Ab0LLXpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:06 -0500
+	Sun, 12 Dec 2010 18:45:32 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: johannes.berg@intel.com, hkwynn@candelatech.com, linville@tuxdriver.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [10/223] cfg80211: fix BSS double-unlinking
-Message-Id: <20101212234505.4E1B8B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:05 +0100 (CET)
+To: perex@perex.cz, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [35/223] ALSA: OSS mixer emulation - fix locking
+Message-Id: <20101212234531.B3E34B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:45:31 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,57 +22,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Johannes Berg <johannes.berg@intel.com>
+From: Jaroslav Kysela <perex@perex.cz>
 
-commit 3207390a8b58bfc1335750f91cf6783c48ca19ca upstream.
+commit 838c364ff05c143fd1810e8ad1469935d6c23a7a upstream.
 
-When multiple interfaces are actively trying
-to associate with the same BSS, they may both
-find that the BSS isn't there and then try to
-unlink it. This can cause errors since the
-unlinking code can't currently deal with items
-that have already been unlinked.
+Fix mutex release and cleanup some locking code.
 
-Normally this doesn't happen as most people
-don't try to use multiple station interfaces
-that associate at the same time too.
-
-Fix this by using the list entry as a flag to
-see if the item is still on a list.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Hun-Kyi Wynn <hkwynn@candelatech.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jaroslav Kysela <perex@perex.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/wireless/scan.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ sound/core/oss/mixer_oss.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Index: linux/net/wireless/scan.c
+Index: linux/sound/core/oss/mixer_oss.c
 ===================================================================
---- linux.orig/net/wireless/scan.c
-+++ linux/net/wireless/scan.c
-@@ -650,14 +650,14 @@ void cfg80211_unlink_bss(struct wiphy *w
- 	bss = container_of(pub, struct cfg80211_internal_bss, pub);
- 
- 	spin_lock_bh(&dev->bss_lock);
-+	if (!list_empty(&bss->list)) {
-+		list_del_init(&bss->list);
-+		dev->bss_generation++;
-+		rb_erase(&bss->rbn, &dev->bss_tree);
- 
--	list_del(&bss->list);
--	dev->bss_generation++;
--	rb_erase(&bss->rbn, &dev->bss_tree);
--
-+		kref_put(&bss->ref, bss_release);
+--- linux.orig/sound/core/oss/mixer_oss.c
++++ linux/sound/core/oss/mixer_oss.c
+@@ -618,8 +618,10 @@ static void snd_mixer_oss_put_volume1_vo
+ 	if (numid == ID_UNKNOWN)
+ 		return;
+ 	down_read(&card->controls_rwsem);
+-	if ((kctl = snd_ctl_find_numid(card, numid)) == NULL)
++	if ((kctl = snd_ctl_find_numid(card, numid)) == NULL) {
++		up_read(&card->controls_rwsem);
+ 		return;
 +	}
- 	spin_unlock_bh(&dev->bss_lock);
--
--	kref_put(&bss->ref, bss_release);
- }
- EXPORT_SYMBOL(cfg80211_unlink_bss);
- 
+ 	uinfo = kzalloc(sizeof(*uinfo), GFP_KERNEL);
+ 	uctl = kzalloc(sizeof(*uctl), GFP_KERNEL);
+ 	if (uinfo == NULL || uctl == NULL)
+@@ -658,7 +660,7 @@ static void snd_mixer_oss_put_volume1_sw
+ 		return;
+ 	down_read(&card->controls_rwsem);
+ 	if ((kctl = snd_ctl_find_numid(card, numid)) == NULL) {
+-		up_read(&fmixer->card->controls_rwsem);
++		up_read(&card->controls_rwsem);
+ 		return;
+ 	}
+ 	uinfo = kzalloc(sizeof(*uinfo), GFP_KERNEL);
+@@ -797,7 +799,7 @@ static int snd_mixer_oss_get_recsrc2(str
+ 	uctl = kzalloc(sizeof(*uctl), GFP_KERNEL);
+ 	if (uinfo == NULL || uctl == NULL) {
+ 		err = -ENOMEM;
+-		goto __unlock;
++		goto __free_only;
+ 	}
+ 	down_read(&card->controls_rwsem);
+ 	kctl = snd_mixer_oss_test_id(mixer, "Capture Source", 0);
+@@ -826,6 +828,7 @@ static int snd_mixer_oss_get_recsrc2(str
+ 	err = 0;
+       __unlock:
+      	up_read(&card->controls_rwsem);
++      __free_only:
+       	kfree(uctl);
+       	kfree(uinfo);
+       	return err;
+@@ -847,7 +850,7 @@ static int snd_mixer_oss_put_recsrc2(str
+ 	uctl = kzalloc(sizeof(*uctl), GFP_KERNEL);
+ 	if (uinfo == NULL || uctl == NULL) {
+ 		err = -ENOMEM;
+-		goto __unlock;
++		goto __free_only;
+ 	}
+ 	down_read(&card->controls_rwsem);
+ 	kctl = snd_mixer_oss_test_id(mixer, "Capture Source", 0);
+@@ -880,6 +883,7 @@ static int snd_mixer_oss_put_recsrc2(str
+ 	err = 0;
+       __unlock:
+ 	up_read(&card->controls_rwsem);
++      __free_only:
+ 	kfree(uctl);
+ 	kfree(uinfo);
+ 	return err;
