@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab0LMAHX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:07:23 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36287 "EHLO
+	id S1755418Ab0LMAHW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:07:22 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36316 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab0LLXrJ (ORCPT
+	with ESMTP id S1755368Ab0LLXrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:09 -0500
+	Sun, 12 Dec 2010 18:47:12 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: kenchen@google.com, ak@linux.intel.com, arjan@infradead.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [126/223] latencytop: fix per task accumulator
-Message-Id: <20101212234707.F2FD9B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:07 +0100 (CET)
+To: alexdeucher@gmail.com, airlied@redhat.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [129/223] drm/radeon/kms/atom: set sane defaults in atombios_get_encoder_mode()
+Message-Id: <20101212234711.274A2B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:11 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,61 +22,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Ken Chen <kenchen@google.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 38715258aa2e8cd94bd4aafadc544e5104efd551 upstream.
+commit c7a71fc761551dc8be8543f14a90d08cda4e77f9 upstream.
 
-Per task latencytop accumulator prematurely terminates due to erroneous
-placement of latency_record_count.  It should be incremented whenever a
-new record is allocated instead of increment on every latencytop event.
+If there was no connector mapped to the encoder, atombios_get_encoder_mode()
+returned 0 which is the id for DP.  Return something sane instead based on
+the encoder id.  This avoids hitting the DP paths on non-DP encoders.
 
-Also fix search iterator to only search known record events instead of
-blindly searching all pre-allocated space.
-
-Signed-off-by: Ken Chen <kenchen@google.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Arjan van de Ven <arjan@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- kernel/latencytop.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/radeon_encoders.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-Index: linux/kernel/latencytop.c
+Index: linux/drivers/gpu/drm/radeon/radeon_encoders.c
 ===================================================================
---- linux.orig/kernel/latencytop.c
-+++ linux/kernel/latencytop.c
-@@ -194,14 +194,7 @@ __account_scheduler_latency(struct task_
+--- linux.orig/drivers/gpu/drm/radeon/radeon_encoders.c
++++ linux/drivers/gpu/drm/radeon/radeon_encoders.c
+@@ -626,11 +626,23 @@ atombios_get_encoder_mode(struct drm_enc
+ 	struct drm_connector *connector;
+ 	struct radeon_connector *radeon_connector;
+ 	struct radeon_connector_atom_dig *dig_connector;
++	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
  
- 	account_global_scheduler_latency(tsk, &lat);
- 
--	/*
--	 * short term hack; if we're > 32 we stop; future we recycle:
--	 */
--	tsk->latency_record_count++;
--	if (tsk->latency_record_count >= LT_SAVECOUNT)
--		goto out_unlock;
+ 	connector = radeon_get_connector_for_encoder(encoder);
+-	if (!connector)
+-		return 0;
 -
--	for (i = 0; i < LT_SAVECOUNT; i++) {
-+	for (i = 0; i < tsk->latency_record_count; i++) {
- 		struct latency_record *mylat;
- 		int same = 1;
++	if (!connector) {
++		switch (radeon_encoder->encoder_id) {
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
++		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
++			return ATOM_ENCODER_MODE_DVI;
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
++		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
++		default:
++			return ATOM_ENCODER_MODE_CRT;
++		}
++	}
+ 	radeon_connector = to_radeon_connector(connector);
  
-@@ -227,8 +220,14 @@ __account_scheduler_latency(struct task_
- 		}
- 	}
- 
-+	/*
-+	 * short term hack; if we're > 32 we stop; future we recycle:
-+	 */
-+	if (tsk->latency_record_count >= LT_SAVECOUNT)
-+		goto out_unlock;
-+
- 	/* Allocated a new one: */
--	i = tsk->latency_record_count;
-+	i = tsk->latency_record_count++;
- 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
- 
- out_unlock:
+ 	switch (connector->connector_type) {
