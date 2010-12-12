@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab0LMAbX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:31:23 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44656 "EHLO
+	id S1753547Ab0LLXpU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:45:20 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:44566 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab0LLXpT (ORCPT
+	with ESMTP id S1753168Ab0LLXpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:19 -0500
+	Sun, 12 Dec 2010 18:45:01 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: chunkeey@googlemail.com, johannes@sipsolutions.net, linville@tuxdriver.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [22/223] mac80211: clear txflags for ps-filtered frames
-Message-Id: <20101212234518.0427EB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:17 +0100 (CET)
+To: jaxboe@fusionio.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [5/223] block: check for proper length of iov entries in blk_rq_map_user_iov()
+Message-Id: <20101212234459.F3AFDB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:44:59 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,71 +22,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Jens Axboe <jaxboe@fusionio.com>
 
-commit eb7d3066cf864342e8ae6a5c1126a1602c4d06c0 upstream.
+commit 9284bcf4e335e5f18a8bc7b26461c33ab60d0689 upstream.
 
-This patch fixes stale mac80211_tx_control_flags for
-filtered / retried frames.
+Ensure that we pass down properly validated iov segments before
+calling into the mapping or copy functions.
 
-Because ieee80211_handle_filtered_frame feeds skbs back
-into the tx path, they have to be stripped of some tx
-flags so they won't confuse the stack, driver or device.
-
-Acked-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- include/net/mac80211.h |   16 ++++++++++++++++
- net/mac80211/status.c  |    1 +
- 2 files changed, 17 insertions(+)
+ block/blk-map.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Index: linux/include/net/mac80211.h
+Index: linux/block/blk-map.c
 ===================================================================
---- linux.orig/include/net/mac80211.h
-+++ linux/include/net/mac80211.h
-@@ -287,6 +287,9 @@ struct ieee80211_bss_conf {
-  * @IEEE80211_TX_CTL_LDPC: tells the driver to use LDPC for this frame
-  * @IEEE80211_TX_CTL_STBC: Enables Space-Time Block Coding (STBC) for this
-  *	frame and selects the maximum number of streams that it can use.
-+ *
-+ * Note: If you have to add new flags to the enumeration, then don't
-+ *	 forget to update %IEEE80211_TX_TEMPORARY_FLAGS when necessary.
-  */
- enum mac80211_tx_control_flags {
- 	IEEE80211_TX_CTL_REQ_TX_STATUS		= BIT(0),
-@@ -315,6 +318,19 @@ enum mac80211_tx_control_flags {
- #define IEEE80211_TX_CTL_STBC_SHIFT		23
- };
+--- linux.orig/block/blk-map.c
++++ linux/block/blk-map.c
+@@ -205,6 +205,8 @@ int blk_rq_map_user_iov(struct request_q
+ 			unaligned = 1;
+ 			break;
+ 		}
++		if (!iov[i].iov_len)
++			return -EINVAL;
+ 	}
  
-+/*
-+ * This definition is used as a mask to clear all temporary flags, which are
-+ * set by the tx handlers for each transmission attempt by the mac80211 stack.
-+ */
-+#define IEEE80211_TX_TEMPORARY_FLAGS (IEEE80211_TX_CTL_NO_ACK |		      \
-+	IEEE80211_TX_CTL_CLEAR_PS_FILT | IEEE80211_TX_CTL_FIRST_FRAGMENT |    \
-+	IEEE80211_TX_CTL_SEND_AFTER_DTIM | IEEE80211_TX_CTL_AMPDU |	      \
-+	IEEE80211_TX_STAT_TX_FILTERED |	IEEE80211_TX_STAT_ACK |		      \
-+	IEEE80211_TX_STAT_AMPDU | IEEE80211_TX_STAT_AMPDU_NO_BACK |	      \
-+	IEEE80211_TX_CTL_RATE_CTRL_PROBE | IEEE80211_TX_CTL_PSPOLL_RESPONSE | \
-+	IEEE80211_TX_CTL_MORE_FRAMES | IEEE80211_TX_CTL_LDPC |		      \
-+	IEEE80211_TX_CTL_STBC)
-+
- /**
-  * enum mac80211_rate_control_flags - per-rate flags set by the
-  *	Rate Control algorithm.
-Index: linux/net/mac80211/status.c
-===================================================================
---- linux.orig/net/mac80211/status.c
-+++ linux/net/mac80211/status.c
-@@ -58,6 +58,7 @@ static void ieee80211_handle_filtered_fr
- 	info->control.vif = &sta->sdata->vif;
- 	info->flags |= IEEE80211_TX_INTFL_NEED_TXPROCESSING |
- 		       IEEE80211_TX_INTFL_RETRANSMISSION;
-+	info->flags &= ~IEEE80211_TX_TEMPORARY_FLAGS;
- 
- 	sta->tx_filtered_count++;
- 
+ 	if (unaligned || (q->dma_pad_mask & len) || map_data)
