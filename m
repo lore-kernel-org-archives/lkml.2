@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab0LLQlb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 11:41:31 -0500
-Received: from smtp-out-063.synserver.de ([212.40.180.63]:1034 "HELO
-	smtp-out-063.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751500Ab0LLQl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 11:41:29 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 6743
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: lethal@linux-sh.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] mfd: Convert jz4740-adc to new irq_ methods
-Date: Sun, 12 Dec 2010 17:40:32 +0100
-Message-Id: <1292172032-20463-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1292154400-15759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1292154400-15759-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1753457Ab0LLQqc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 11:46:32 -0500
+Received: from cantor.suse.de ([195.135.220.2]:58721 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753299Ab0LLQqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 11:46:30 -0500
+Date: Sun, 12 Dec 2010 08:45:39 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: fsnotify & sysfs
+Message-ID: <20101212164539.GB14167@suse.de>
+References: <20101212124247.GA14450@gundam.enneenne.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101212124247.GA14450@gundam.enneenne.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Sun, Dec 12, 2010 at 01:42:47PM +0100, Rodolfo Giometti wrote:
+> Hello,
+> 
+> I know that a sysfs file may be pollable but I'm asking to myself how
+> it could be difficult adding notifying support also.
+> 
+> Maybe adding a call to the fsnotify subsystem within the
+> sysfs_notify() function as follow can do the trick?
 
-Convert the jz4740-adc driver to use the recently introduced IRQ API
-variants which are passed struct irq_data rather than an IRQ number.
+Perhaps, does that work?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/mfd/jz4740-adc.c |   25 ++++++++++++-------------
- 1 files changed, 12 insertions(+), 13 deletions(-)
+> However my problem is how to get the struct dentry pointer needed by
+> fsnotify_change() related to the struct sysfs_dirent pointer passed to
+> sysfs_notify(). :(
 
-diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
-index 3a3037b..0ab1879 100644
---- a/drivers/mfd/jz4740-adc.c
-+++ b/drivers/mfd/jz4740-adc.c
-@@ -84,32 +84,31 @@ static inline void jz4740_adc_irq_set_masked(struct jz4740_adc *adc, int irq,
- 	spin_unlock_irqrestore(&adc->lock, flags);
- }
- 
--static void jz4740_adc_irq_mask(unsigned int irq)
-+static void jz4740_adc_irq_mask(struct irq_data *data)
- {
--	struct jz4740_adc *adc = get_irq_chip_data(irq);
--	jz4740_adc_irq_set_masked(adc, irq, true);
-+	struct jz4740_adc *adc = irq_data_get_irq_chip_data(data);
-+	jz4740_adc_irq_set_masked(adc, data->irq, true);
- }
- 
--static void jz4740_adc_irq_unmask(unsigned int irq)
-+static void jz4740_adc_irq_unmask(struct irq_data *data)
- {
--	struct jz4740_adc *adc = get_irq_chip_data(irq);
--	jz4740_adc_irq_set_masked(adc, irq, false);
-+	struct jz4740_adc *adc = irq_data_get_irq_chip_data(data);
-+	jz4740_adc_irq_set_masked(adc, data->irq, false);
- }
- 
--static void jz4740_adc_irq_ack(unsigned int irq)
-+static void jz4740_adc_irq_ack(struct irq_data *data)
- {
--	struct jz4740_adc *adc = get_irq_chip_data(irq);
--
--	irq -= adc->irq_base;
-+	struct jz4740_adc *adc = irq_data_get_irq_chip_data(data);
-+	unsigned int irq = data->irq - adc->irq_base;
- 
- 	writeb(BIT(irq), adc->base + JZ_REG_ADC_STATUS);
- }
- 
- static struct irq_chip jz4740_adc_irq_chip = {
- 	.name = "jz4740-adc",
--	.mask = jz4740_adc_irq_mask,
--	.unmask = jz4740_adc_irq_unmask,
--	.ack = jz4740_adc_irq_ack,
-+	.irq_mask = jz4740_adc_irq_mask,
-+	.irq_unmask = jz4740_adc_irq_unmask,
-+	.irq_ack = jz4740_adc_irq_ack,
- };
- 
- static void jz4740_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
--- 
-1.7.2.3
+Yup, that's a problem :(
 
+> Can you please give me any advice about to solve it?
+> 
+> Another question: in file linux/fs/sysfs/file.c I see:
+> 
+>    #include <linux/fsnotify.h>
+> 
+> but none of its functions are called into file.c... maybe it's a
+> mistake?
+
+Possibly, but look at the patch that added that line, perhaps it was put
+there for a reason.
+
+thanks,
+
+greg k-h
