@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0LLXqT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:46:19 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35949 "EHLO
+	id S1754974Ab0LLXqg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:46:36 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36042 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab0LLXqR (ORCPT
+	with ESMTP id S1754937Ab0LLXqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:46:17 -0500
+	Sun, 12 Dec 2010 18:46:33 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: danielklaffenbach@gmail.com, Larry.Finger@lwfinger.net,
-        linville@tuxdriver.com, gregkh@suse.de, ak@linux.intel.com,
+To: crimsun@ubuntu.com, tiwai@suse.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [77/223] ssb: b43-pci-bridge: Add new vendor for BCM4318
-Message-Id: <20101212234616.1C1F0B27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:46:16 +0100 (CET)
+Subject: [PATCH] [92/223] ALSA: hda: Use BIOS auto-parsing instead of existing model quirk for MEDION MD2
+Message-Id: <20101212234632.0E54AB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:32 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,44 +22,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Daniel Klaffenbach <danielklaffenbach@gmail.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 1d8638d4038eb8709edc80e37a0bbb77253d86e9 upstream.
+commit ac70eb1305d5a81efd1e32327d7e79be15a63a5a upstream.
 
-Add new vendor for Broadcom 4318.
+BugLink: https://launchpad.net/bugs/682199
 
-Signed-off-by: Daniel Klaffenbach <danielklaffenbach@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+A 2.6.35 (Ubuntu Maverick) user, burningphantom1, reported a regression
+in audio: playback was inaudible through both speakers and headphones.
+In commit 272a527c04 of sound-2.6.git, a new model was added with this
+machine's PCI SSID.  Fortunately, it is now sufficient to use the auto
+model for BIOS auto-parsing instead of the existing quirk.
+
+Playback, capture, and jack sense were verified working for both
+2.6.35 and the alsa-driver snapshot from 2010-11-27 when model=auto is
+used.
+
+Reported-and-tested-by: burningphantom1
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/ssb/b43_pci_bridge.c |    1 +
- include/linux/pci_ids.h      |    1 +
- 2 files changed, 2 insertions(+)
+ sound/pci/hda/patch_realtek.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Index: linux/drivers/ssb/b43_pci_bridge.c
+Index: linux/sound/pci/hda/patch_realtek.c
 ===================================================================
---- linux.orig/drivers/ssb/b43_pci_bridge.c
-+++ linux/drivers/ssb/b43_pci_bridge.c
-@@ -24,6 +24,7 @@ static const struct pci_device_id b43_pc
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4312) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4315) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4318) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_BCM_GVC,  0x4318) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4319) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4320) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4321) },
-Index: linux/include/linux/pci_ids.h
-===================================================================
---- linux.orig/include/linux/pci_ids.h
-+++ linux/include/linux/pci_ids.h
-@@ -2038,6 +2038,7 @@
- #define PCI_DEVICE_ID_AFAVLAB_P030	0x2182
- #define PCI_SUBDEVICE_ID_AFAVLAB_P061		0x2150
- 
-+#define PCI_VENDOR_ID_BCM_GVC          0x14a4
- #define PCI_VENDOR_ID_BROADCOM		0x14e4
- #define PCI_DEVICE_ID_TIGON3_5752	0x1600
- #define PCI_DEVICE_ID_TIGON3_5752M	0x1601
+--- linux.orig/sound/pci/hda/patch_realtek.c
++++ linux/sound/pci/hda/patch_realtek.c
+@@ -9472,7 +9472,6 @@ static struct snd_pci_quirk alc882_cfg_t
+ 	SND_PCI_QUIRK(0x17aa, 0x3bfc, "Lenovo NB0763", ALC883_LENOVO_NB0763),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bfd, "Lenovo NB0763", ALC883_LENOVO_NB0763),
+ 	SND_PCI_QUIRK(0x17aa, 0x101d, "Lenovo Sky", ALC888_LENOVO_SKY),
+-	SND_PCI_QUIRK(0x17c0, 0x4071, "MEDION MD2", ALC883_MEDION_MD2),
+ 	SND_PCI_QUIRK(0x17c0, 0x4085, "MEDION MD96630", ALC888_LENOVO_MS7195_DIG),
+ 	SND_PCI_QUIRK(0x17f2, 0x5000, "Albatron KI690-AM2", ALC883_6ST_DIG),
+ 	SND_PCI_QUIRK(0x1991, 0x5625, "Haier W66", ALC883_HAIER_W66),
