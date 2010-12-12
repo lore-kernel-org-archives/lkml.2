@@ -1,258 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab0LLXwA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:52:00 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36857 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab0LLXsf (ORCPT
+	id S1756242Ab0LLXwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:52:17 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:49039 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755823Ab0LLXwN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:35 -0500
-From: Andi Kleen <andi@firstfloor.org>
-References: <201012131244.547034648@firstfloor.org>
-In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: davem@davemloft.net, eric.dumazet@gmail.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [206/223] filter: make sure filters dont read uninitialized memory
-Message-Id: <20101212234833.3BC1AB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:33 +0100 (CET)
+	Sun, 12 Dec 2010 18:52:13 -0500
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] [64/223] hostfs: fix UML crash: remove f_spare from hostfs
+Date: Mon, 13 Dec 2010 00:51:55 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: toralf.foerster@gmx.de, hch@lst.de, viro@zeniv.linux.org.uk,
+        jdike@addtoit.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+References: <201012131244.547034648@firstfloor.org> <20101212234602.5DAB5B27BF@basil.firstfloor.org>
+In-Reply-To: <20101212234602.5DAB5B27BF@basil.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201012130051.55692.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+Andi,
 
-------------------
-From: David S. Miller <davem@davemloft.net>
+Am Montag 13 Dezember 2010, 00:46:02 schrieb Andi Kleen:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me
+> know.
 
-commit 57fe93b374a6b8711995c2d466c502af9f3a08bb upstream.
+This patch is not needed on 2.6.35.
+It makes only sense on >= 2.6.36.
 
-There is a possibility malicious users can get limited information about
-uninitialized stack mem array. Even if sk_run_filter() result is bound
-to packet length (0 .. 65535), we could imagine this can be used by
-hostile user.
+Thanks,
+//richard
 
-Initializing mem[] array, like Dan Rosenberg suggested in his patch is
-expensive since most filters dont even use this array.
+> ------------------
+> From: Richard Weinberger <richard@nod.at>
+> 
+> commit 1b627d5771312c92404b66f0a0b16f66036dd2e1 upstream.
+> 
+> 365b1818 ("add f_flags to struct statfs(64)") resized f_spare within
+> struct statfs which caused a UML crash.  There is no need to copy f_spare.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+> Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Jeff Dike <jdike@addtoit.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> ---
+>  fs/hostfs/hostfs.h      |    3 +--
+>  fs/hostfs/hostfs_kern.c |    2 +-
+>  fs/hostfs/hostfs_user.c |    9 ++-------
+>  3 files changed, 4 insertions(+), 10 deletions(-)
+> 
+> Index: linux/fs/hostfs/hostfs.h
+> ===================================================================
+> --- linux.orig/fs/hostfs/hostfs.h
+> +++ linux/fs/hostfs/hostfs.h
+> @@ -86,7 +86,6 @@ extern int rename_file(char *from, char
+>  extern int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+>  		     long long *bfree_out, long long *bavail_out,
+>  		     long long *files_out, long long *ffree_out,
+> -		     void *fsid_out, int fsid_size, long *namelen_out,
+> -		     long *spare_out);
+> +		     void *fsid_out, int fsid_size, long *namelen_out);
+> 
+>  #endif
+> Index: linux/fs/hostfs/hostfs_kern.c
+> ===================================================================
+> --- linux.orig/fs/hostfs/hostfs_kern.c
+> +++ linux/fs/hostfs/hostfs_kern.c
+> @@ -272,7 +272,7 @@ int hostfs_statfs(struct dentry *dentry,
+>  	err = do_statfs(HOSTFS_I(dentry->d_sb->s_root->d_inode)->host_filename,
+>  			&sf->f_bsize, &f_blocks, &f_bfree, &f_bavail, &f_files,
+>  			&f_ffree, &sf->f_fsid, sizeof(sf->f_fsid),
+> -			&sf->f_namelen, sf->f_spare);
+> +			&sf->f_namelen);
+>  	if (err)
+>  		return err;
+>  	sf->f_blocks = f_blocks;
+> Index: linux/fs/hostfs/hostfs_user.c
+> ===================================================================
+> --- linux.orig/fs/hostfs/hostfs_user.c
+> +++ linux/fs/hostfs/hostfs_user.c
+> @@ -402,8 +402,7 @@ int rename_file(char *from, char *to)
+>  int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+>  	      long long *bfree_out, long long *bavail_out,
+>  	      long long *files_out, long long *ffree_out,
+> -	      void *fsid_out, int fsid_size, long *namelen_out,
+> -	      long *spare_out)
+> +	      void *fsid_out, int fsid_size, long *namelen_out)
+>  {
+>  	struct statfs64 buf;
+>  	int err;
+> @@ -422,10 +421,6 @@ int do_statfs(char *root, long *bsize_ou
+>  	       sizeof(buf.f_fsid) > fsid_size ? fsid_size :
+>  	       sizeof(buf.f_fsid));
+>  	*namelen_out = buf.f_namelen;
+> -	spare_out[0] = buf.f_spare[0];
+> -	spare_out[1] = buf.f_spare[1];
+> -	spare_out[2] = buf.f_spare[2];
+> -	spare_out[3] = buf.f_spare[3];
+> -	spare_out[4] = buf.f_spare[4];
+> +
+>  	return 0;
+>  }
 
-Its hard to make the filter validation in sk_chk_filter(), because of
-the jumps. This might be done later.
-
-In this patch, I use a bitmap (a single long var) so that only filters
-using mem[] loads/stores pay the price of added security checks.
-
-For other filters, additional cost is a single instruction.
-
-[ Since we access fentry->k a lot now, cache it in a local variable
-  and mark filter entry pointer as const. -DaveM ]
-
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- net/core/filter.c |   64 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 35 insertions(+), 29 deletions(-)
-
-Index: linux/net/core/filter.c
-===================================================================
---- linux.orig/net/core/filter.c
-+++ linux/net/core/filter.c
-@@ -112,39 +112,41 @@ EXPORT_SYMBOL(sk_filter);
-  */
- unsigned int sk_run_filter(struct sk_buff *skb, struct sock_filter *filter, int flen)
- {
--	struct sock_filter *fentry;	/* We walk down these */
- 	void *ptr;
- 	u32 A = 0;			/* Accumulator */
- 	u32 X = 0;			/* Index Register */
- 	u32 mem[BPF_MEMWORDS];		/* Scratch Memory Store */
-+	unsigned long memvalid = 0;
- 	u32 tmp;
- 	int k;
- 	int pc;
- 
-+	BUILD_BUG_ON(BPF_MEMWORDS > BITS_PER_LONG);
- 	/*
- 	 * Process array of filter instructions.
- 	 */
- 	for (pc = 0; pc < flen; pc++) {
--		fentry = &filter[pc];
-+		const struct sock_filter *fentry = &filter[pc];
-+		u32 f_k = fentry->k;
- 
- 		switch (fentry->code) {
- 		case BPF_S_ALU_ADD_X:
- 			A += X;
- 			continue;
- 		case BPF_S_ALU_ADD_K:
--			A += fentry->k;
-+			A += f_k;
- 			continue;
- 		case BPF_S_ALU_SUB_X:
- 			A -= X;
- 			continue;
- 		case BPF_S_ALU_SUB_K:
--			A -= fentry->k;
-+			A -= f_k;
- 			continue;
- 		case BPF_S_ALU_MUL_X:
- 			A *= X;
- 			continue;
- 		case BPF_S_ALU_MUL_K:
--			A *= fentry->k;
-+			A *= f_k;
- 			continue;
- 		case BPF_S_ALU_DIV_X:
- 			if (X == 0)
-@@ -152,49 +154,49 @@ unsigned int sk_run_filter(struct sk_buf
- 			A /= X;
- 			continue;
- 		case BPF_S_ALU_DIV_K:
--			A /= fentry->k;
-+			A /= f_k;
- 			continue;
- 		case BPF_S_ALU_AND_X:
- 			A &= X;
- 			continue;
- 		case BPF_S_ALU_AND_K:
--			A &= fentry->k;
-+			A &= f_k;
- 			continue;
- 		case BPF_S_ALU_OR_X:
- 			A |= X;
- 			continue;
- 		case BPF_S_ALU_OR_K:
--			A |= fentry->k;
-+			A |= f_k;
- 			continue;
- 		case BPF_S_ALU_LSH_X:
- 			A <<= X;
- 			continue;
- 		case BPF_S_ALU_LSH_K:
--			A <<= fentry->k;
-+			A <<= f_k;
- 			continue;
- 		case BPF_S_ALU_RSH_X:
- 			A >>= X;
- 			continue;
- 		case BPF_S_ALU_RSH_K:
--			A >>= fentry->k;
-+			A >>= f_k;
- 			continue;
- 		case BPF_S_ALU_NEG:
- 			A = -A;
- 			continue;
- 		case BPF_S_JMP_JA:
--			pc += fentry->k;
-+			pc += f_k;
- 			continue;
- 		case BPF_S_JMP_JGT_K:
--			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A > f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_S_JMP_JGE_K:
--			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A >= f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_S_JMP_JEQ_K:
--			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A == f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_S_JMP_JSET_K:
--			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
-+			pc += (A & f_k) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_S_JMP_JGT_X:
- 			pc += (A > X) ? fentry->jt : fentry->jf;
-@@ -209,7 +211,7 @@ unsigned int sk_run_filter(struct sk_buf
- 			pc += (A & X) ? fentry->jt : fentry->jf;
- 			continue;
- 		case BPF_S_LD_W_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_w:
- 			ptr = load_pointer(skb, k, 4, &tmp);
- 			if (ptr != NULL) {
-@@ -218,7 +220,7 @@ load_w:
- 			}
- 			break;
- 		case BPF_S_LD_H_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_h:
- 			ptr = load_pointer(skb, k, 2, &tmp);
- 			if (ptr != NULL) {
-@@ -227,7 +229,7 @@ load_h:
- 			}
- 			break;
- 		case BPF_S_LD_B_ABS:
--			k = fentry->k;
-+			k = f_k;
- load_b:
- 			ptr = load_pointer(skb, k, 1, &tmp);
- 			if (ptr != NULL) {
-@@ -242,32 +244,34 @@ load_b:
- 			X = skb->len;
- 			continue;
- 		case BPF_S_LD_W_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_w;
- 		case BPF_S_LD_H_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_h;
- 		case BPF_S_LD_B_IND:
--			k = X + fentry->k;
-+			k = X + f_k;
- 			goto load_b;
- 		case BPF_S_LDX_B_MSH:
--			ptr = load_pointer(skb, fentry->k, 1, &tmp);
-+			ptr = load_pointer(skb, f_k, 1, &tmp);
- 			if (ptr != NULL) {
- 				X = (*(u8 *)ptr & 0xf) << 2;
- 				continue;
- 			}
- 			return 0;
- 		case BPF_S_LD_IMM:
--			A = fentry->k;
-+			A = f_k;
- 			continue;
- 		case BPF_S_LDX_IMM:
--			X = fentry->k;
-+			X = f_k;
- 			continue;
- 		case BPF_S_LD_MEM:
--			A = mem[fentry->k];
-+			A = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_S_LDX_MEM:
--			X = mem[fentry->k];
-+			X = (memvalid & (1UL << f_k)) ?
-+				mem[f_k] : 0;
- 			continue;
- 		case BPF_S_MISC_TAX:
- 			X = A;
-@@ -276,14 +280,16 @@ load_b:
- 			A = X;
- 			continue;
- 		case BPF_S_RET_K:
--			return fentry->k;
-+			return f_k;
- 		case BPF_S_RET_A:
- 			return A;
- 		case BPF_S_ST:
--			mem[fentry->k] = A;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = A;
- 			continue;
- 		case BPF_S_STX:
--			mem[fentry->k] = X;
-+			memvalid |= 1UL << f_k;
-+			mem[f_k] = X;
- 			continue;
- 		default:
- 			WARN_ON(1);
