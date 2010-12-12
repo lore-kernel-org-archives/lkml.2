@@ -1,200 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab0LLUQZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 15:16:25 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:38424 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab0LLUQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 15:16:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=V6HrnskNJiVzqssFQsYWWqbBmYK0LakoqhHdMSUg0/3h+rxkeQFyWhdWXGcvrddDqb
-         x+Wz4InNOi82Z4AHy54NEiihFcO1ER10AE/Z7Dd98olfYnsv56YEBhuEzgHzN8usFS2N
-         HpNbd9fBTBDnLUL9/RDwUdCwSPYY1VMeRVqQw=
-Date: Sun, 12 Dec 2010 21:16:16 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
-Message-ID: <20101212201613.GA1784@nowhere>
-References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
- <1291773285-16254-2-git-send-email-daahern@cisco.com>
+	id S1752477Ab0LLVX4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 16:23:56 -0500
+Received: from rere.qmqm.pl ([89.167.52.164]:60422 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510Ab0LLVXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 16:23:55 -0500
+Message-Id: <17eaa416d82b1c57f70443e56ad22feb3c3a3a6f.1292184347.git.mirq-linux@rere.qmqm.pl>
+From: =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [PATCH] fs/splice: Pull buf->ops->confirm() from splice_from_pipe actors
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1291773285-16254-2-git-send-email-daahern@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Sun, 12 Dec 2010 22:23:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 07, 2010 at 06:54:44PM -0700, David Ahern wrote:
-> Add a reference timestamp to the perf header - snapshotting kernel
-> time to gettimeofday. This allows 'perf report' to convert kernel
-> timestamps to time-of-day which is convenient for comparing to other
-> (non perf related) log files.
-> 
-> The timestamp is added using a feature bit for compatibility with
-> older binaries and data files.
-> 
-> Signed-off-by: David Ahern <daahern@cisco.com>
-> ---
->  tools/perf/util/header.c  |   51 +++++++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/header.h  |    3 ++
->  tools/perf/util/session.c |   26 +++++++++++++++++++++++
->  3 files changed, 80 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 76e949a..2fe893b 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -191,6 +191,40 @@ static int write_padded(int fd, const void *bf, size_t count,
->  	return err;
->  }
->  
-> +static int perf_header__read_ref_time(struct perf_header *header,
-> +			int fd, u64 offset, u64 size)
-> +{
-> +	size_t sz_nsec = sizeof(header->nsec_ref);
-> +	size_t sz_tv   = sizeof(header->tv_ref);
-> +	int err = -1;
-> +
-> +	if (((size - offset) < (sz_nsec + sz_tv)) ||
-> +	    (read(fd, &header->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
-> +	    (read(fd, &header->tv_ref, sz_tv) != (ssize_t) sz_tv))
-> +		goto out;
+This patch pulls calls to buf->ops->confirm() from all actors passed
+(also indirectly) to splice_from_pipe_feed().
 
-Hmm, could we have endianness related troubles if we write the timespec on
-an arch and cross read from another, or other cross read issues?
+Is avoiding the call to buf->ops->confirm() while splice()ing to
+/dev/null is an intentional optimization? No other user does that
+and this will remove this special case.
 
-> +
-> +	err = 0;
-> +
-> +out:
-> +	return err;
-> +}
-> +
-> +static int perf_header__write_ref_time(struct perf_header *header, int fd)
-> +{
-> +	size_t sz_nsec = sizeof(header->nsec_ref);
-> +	size_t sz_tv   = sizeof(header->tv_ref);
-> +	int err = -1;
-> +
-> +	if ((write(fd, &header->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
-> +	    (write(fd, &header->tv_ref, sz_tv) != (ssize_t) sz_tv))
-> +		goto out;
-> +
-> +	err = 0;
-> +
-> +out:
-> +	return err;
-> +}
-> +
->  #define dsos__for_each_with_build_id(pos, head)	\
->  	list_for_each_entry(pos, head, node)	\
->  		if (!pos->has_build_id)		\
-> @@ -483,6 +517,19 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
->  			perf_session__cache_build_ids(session);
->  	}
->  
-> +	if (perf_header__has_feat(self, HEADER_REFERENCE_TIME)) {
-> +		struct perf_file_section *tref_sec;
-> +
-> +		tref_sec = &feat_sec[idx++];
-> +		tref_sec->offset = lseek(fd, 0, SEEK_CUR);
-> +		err = perf_header__write_ref_time(self, fd);
-> +		if (err < 0) {
-> +			pr_debug("failed to write reference time\n");
-> +			goto out_free;
-> +		}
-> +		tref_sec->size = lseek(fd, 0, SEEK_CUR) - tref_sec->offset;
-> +	}
-> +
->  	lseek(fd, sec_start, SEEK_SET);
->  	err = do_write(fd, feat_sec, sec_size);
->  	if (err < 0)
-> @@ -810,6 +857,10 @@ static int perf_file_section__process(struct perf_file_section *self,
->  		if (perf_header__read_build_ids(ph, fd, self->offset, self->size))
->  			pr_debug("Failed to read buildids, continuing...\n");
->  		break;
-> +	case HEADER_REFERENCE_TIME:
-> +		if (perf_header__read_ref_time(ph, fd, self->offset, self->size))
-> +			pr_debug("Failed to read reference time, continuing...\n");
-> +		break;
->  	default:
->  		pr_debug("unknown feature %d, continuing...\n", feat);
->  	}
-> diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-> index 6335965..0721c78 100644
-> --- a/tools/perf/util/header.h
-> +++ b/tools/perf/util/header.h
-> @@ -19,6 +19,7 @@ struct perf_header_attr {
->  enum {
->  	HEADER_TRACE_INFO = 1,
->  	HEADER_BUILD_ID,
-> +	HEADER_REFERENCE_TIME,
->  	HEADER_LAST_FEATURE,
->  };
->  
-> @@ -59,6 +60,8 @@ struct perf_header {
->  	u64			data_size;
->  	u64			event_offset;
->  	u64			event_size;
-> +	u64			nsec_ref;
-> +	struct timeval		tv_ref;
->  	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
->  };
->  
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 3074d38..720838e 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -110,6 +110,29 @@ void perf_session__update_sample_type(struct perf_session *self)
->  	perf_session__id_header_size(self);
->  }
->  
-> +static int perf_session__create_ref_time(struct perf_session *session)
-> +{
-> +	struct timespec tp;
-> +
-> +	/* race here between successive calls, but should be close enough */
-> +	if (gettimeofday(&session->header.tv_ref, NULL) != 0) {
-> +		pr_err("gettimeofday failed. Cannot set reference time.\n");
-> +		return -1;
-> +	}
-> +
-> +	if (clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
-> +		pr_err("clock_gettime failed. Cannot set reference time.\n");
-> +		return -1;
-> +	}
-> +
-> +	session->header.nsec_ref = (u64) tp.tv_sec * NSEC_PER_SEC
-> +		                       + (u64) tp.tv_nsec;
-> +
-> +	perf_header__set_feat(&session->header, HEADER_REFERENCE_TIME);
-> +
-> +	return 0;
-> +}
-> +
->  int perf_session__create_kernel_maps(struct perf_session *self)
->  {
->  	int ret = machine__create_kernel_maps(&self->host_machine);
-> @@ -167,6 +190,9 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
->  		 */
->  		if (perf_session__create_kernel_maps(self) < 0)
->  			goto out_delete;
-> +
-> +		if (perf_session__create_ref_time(self) < 0)
-> +			goto out_delete;
+Against current linux.git 6313e3c21743cc88bb5bd8aa72948ee1e83937b6.
 
-So, it does record it anytime?
+Signed-off-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
+---
+ drivers/block/loop.c |    4 ----
+ fs/nfsd/vfs.c        |    4 ----
+ fs/splice.c          |   43 ++++++++++++++-----------------------------
+ 3 files changed, 14 insertions(+), 37 deletions(-)
 
->  	}
->  
->  	perf_session__update_sample_type(self);
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 7ea0bea..c87b084 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -397,10 +397,6 @@ lo_splice_actor(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 	sector_t IV;
+ 	int size, ret;
+ 
+-	ret = buf->ops->confirm(pipe, buf);
+-	if (unlikely(ret))
+-		return ret;
+-
+ 	IV = ((sector_t) page->index << (PAGE_CACHE_SHIFT - 9)) +
+ 							(buf->offset >> 9);
+ 	size = sd->len;
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 184938f..c6e0866 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -847,10 +847,6 @@ nfsd_splice_actor(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 	size_t size;
+ 	int ret;
+ 
+-	ret = buf->ops->confirm(pipe, buf);
+-	if (unlikely(ret))
+-		return ret;
+-
+ 	size = sd->len;
+ 
+ 	if (rqstp->rq_res.page_len == 0) {
+diff --git a/fs/splice.c b/fs/splice.c
+index ce2f025..50a5d978 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -682,19 +682,14 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
+ {
+ 	struct file *file = sd->u.file;
+ 	loff_t pos = sd->pos;
+-	int ret, more;
+-
+-	ret = buf->ops->confirm(pipe, buf);
+-	if (!ret) {
+-		more = (sd->flags & SPLICE_F_MORE) || sd->len < sd->total_len;
+-		if (file->f_op && file->f_op->sendpage)
+-			ret = file->f_op->sendpage(file, buf->page, buf->offset,
+-						   sd->len, &pos, more);
+-		else
+-			ret = -EINVAL;
+-	}
++	int more;
+ 
+-	return ret;
++	if (!likely(file->f_op && file->f_op->sendpage))
++		return -EINVAL;
++
++	more = (sd->flags & SPLICE_F_MORE) || sd->len < sd->total_len;
++	return file->f_op->sendpage(file, buf->page, buf->offset,
++				    sd->len, &pos, more);
+ }
+ 
+ /*
+@@ -727,13 +722,6 @@ int pipe_to_file(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 	void *fsdata;
+ 	int ret;
+ 
+-	/*
+-	 * make sure the data in this buffer is uptodate
+-	 */
+-	ret = buf->ops->confirm(pipe, buf);
+-	if (unlikely(ret))
+-		return ret;
+-
+ 	offset = sd->pos & ~PAGE_CACHE_MASK;
+ 
+ 	this_len = sd->len;
+@@ -805,12 +793,17 @@ int splice_from_pipe_feed(struct pipe_inode_info *pipe, struct splice_desc *sd,
+ 		if (sd->len > sd->total_len)
+ 			sd->len = sd->total_len;
+ 
+-		ret = actor(pipe, buf, sd);
+-		if (ret <= 0) {
++		ret = buf->ops->confirm(pipe, buf);
++		if (unlikely(ret)) {
+ 			if (ret == -ENODATA)
+ 				ret = 0;
+ 			return ret;
+ 		}
++
++		ret = actor(pipe, buf, sd);
++		if (ret <= 0)
++			return ret;
++
+ 		buf->offset += ret;
+ 		buf->len -= ret;
+ 
+@@ -1044,10 +1037,6 @@ static int write_pipe_buf(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 	int ret;
+ 	void *data;
+ 
+-	ret = buf->ops->confirm(pipe, buf);
+-	if (ret)
+-		return ret;
+-
+ 	data = buf->ops->map(pipe, buf, 0);
+ 	ret = kernel_write(sd->u.file, data + buf->offset, sd->len, sd->pos);
+ 	buf->ops->unmap(pipe, buf, data);
+@@ -1495,10 +1484,6 @@ static int pipe_to_user(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 	char *src;
+ 	int ret;
+ 
+-	ret = buf->ops->confirm(pipe, buf);
+-	if (unlikely(ret))
+-		return ret;
+-
+ 	/*
+ 	 * See if we can use the atomic maps, by prefaulting in the
+ 	 * pages and doing an atomic copy
+-- 
+1.7.2.3
 
-
-Other than that, looks good!
