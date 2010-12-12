@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab0LLE7A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Dec 2010 23:59:00 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:9613 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab0LLE66 (ORCPT
+	id S1750906Ab0LLFX0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 00:23:26 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40115 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0LLFXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Dec 2010 23:58:58 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6194"; a="66481732"
-Message-ID: <4D045692.4050607@codeaurora.org>
-Date: Sat, 11 Dec 2010 20:58:58 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Sun, 12 Dec 2010 00:23:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=TkGWC6t48pKnY/tIOGCDd3wnecm5jjDWKK633s7+3cIkz5sjkepqvrQVot6qKR5n5o
+         926Hvaesa0DUvCzrlr3UlST5kGwK9K2l/jt52hEJBvWRfsnLTMwBDJOqlhb2oEZUHsJ5
+         BVd9+cp/+QI2VswI6lTv82BA+bDLsyJGCHriQ=
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>, dwalker@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, Nicolas Pitre <nico@marvell.com>,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to early_initcall
-References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org>	<20101202221909.GK29347@n2100.arm.linux.org.uk>	<4CF94DDD.8000409@codeaurora.org>	<20101203203653.GB10245@n2100.arm.linux.org.uk>	<4CFDD297.4020600@codeaurora.org>	<15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>	<20101209103835.GA31465@n2100.arm.linux.org.uk>	<4D017B45.4000805@codeaurora.org> <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
-In-Reply-To: <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
+References: <20101208213606.13026.47657.stgit@bob.kio>
+	<20101208213627.13026.18854.stgit@bob.kio>
+	<AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
+Date: Sun, 12 Dec 2010 15:23:21 +1000
+Message-ID: <AANLkTimOHk5KHQy=DyLfi-rG9m-M=yR2RO1e_mRnD3zR@mail.gmail.com>
+Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2010 02:00 AM, Catalin Marinas wrote:
-> On 10 December 2010 00:58, Saravana Kannan<skannan@codeaurora.org>  wrote:
->> Russell King - ARM Linux wrote:
->>>
->>> On Thu, Dec 09, 2010 at 01:23:24AM -0800, skannan@codeaurora.org wrote:
->>>>
->>>> Russell, Have you had a chance to look at this? Any comments? How do we
->>>> move ahead?
->>>
->>> I had connected the other thread with this one - it's pretty hard not
->>> to as it included this patch in that set as the first patch.
+On Sun, Dec 12, 2010 at 1:30 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Dec 8, 2010 at 1:36 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 >>
->> Ok. So what's your take on handling the cache coherency with secure domain?
->> Do we get to add cache invalidate APIs outside of DMA APIs?
+>> The HP nx6325 BIOS doesn't report any devices in the [0xf8000000-0xfbffffff]
+>> region via ACPI devices or the E820 memory map, but when we assign it to the
+>> 00:14.4 bridge as a prefetchable memory window, the machine hangs.
 >
-> Can the secure software not create NS pages and be fully coherent?
+> Quite frankly, I think this patch sucks.
 >
+> It sucks because these kinds of hw-specific patches are fundamentally
+> a sign of something else being wrong. Why didn't windows hit this? Why
+> do we need this total hack?
+>
+> And is there any reason at all to believe that that one particular
+> laptop is really special? I doubt it. And what happens for the next
+> random machine that comes along an hits this?
+>
+> Maybe we should just say that if we know the bridge is negative
+> decode, and it hasn't been set up by the BIOS, we just don't allocate
+> it at all. And try to look like Windows.
+>
+> Or figure out what else Windows is doing differently.
+>
+> The whole "allocate bottom up" old PCI allocation has _years_ of
+> testing and quirk that have been gathered over a long time. We can't
+> just say "we'll do the same thing for the top-down allocator".
+>
+> The WHOLE AND ONLY POINT of the top-down allocator was to act lik
+> Windows and not need crap like this. If that doesn't work, then I
+> seriously don't think we should change bottom-up to top-down at all,
+> and for 2.6.37 we should just revert the "set to top-down by default".
+>
+> Seriously. That "whole and only point" thing is important. If we need
+> hacks like this, then we shouldn't do it. We're much better off with
+> the model that has year of testing an not the upheaval. Top-down
+> allocation is in _no_ way inherently better, the only excuse for it
+> was supposed to be "we don't need these kinds of hooks".
 
-IMHO, trying to keep the cache fully coherent with the secure world 
-without using explicit cache flush/invalidate raises the following 
-concerns (in decreasing order of importance):
-1. Since the secure world would need to enable the MMU to mark the pages 
-as NS, it removes the possibility of secure world implementations that 
-don't use MMU. The secure world image that's in use for MSM8660 as of 
-today doesn't enable its MMU.
-2. Even if MMU was enabled in secure world, the same binary needs to 
-operate with different non-secure kernels. I'm certainly not a cache 
-expert, but if I'm not mistaken, there are other page attributes that 
-need to match between virt mem mappings for them to end up on the same 
-cache lines (wasn't this a reason that Russell added the "already 
-mapped?" check to ioremap). Trying to coordinate this between various 
-non-secure kernels would be harder than having the various non-secure 
-kernels do a flush/invalidate.
-3. *If* a user of the SCM driver wants to pass phys addr of other memory 
-pages to a service on the secure world (say, to avoid multiple copies), 
-then they will also have to start coordinating on the page attributes. 
-That would be harder to maintain than just an "invalidate before reading 
-if secure-world service will write to this memory" approach.
-4. Coordinating to make sure all the necessary page attributes match 
-becomes harder if OEMs decide to make changes to the secure world 
-implementation or drop in a new one.
+I agree, I've got an NX6125 predecessor of this and I'll take any
+money that is has an equally insane BIOS, considering its the worst
+laptop in my pile in nearly every way imaginable.
 
-As you and James suggested, having the NS bit set by the secure world is 
-definitely a solution that would work. But IMHO, the explicit cache 
-flush/invalidate approach keeps the design simple and easy to maintain.
+and I suspect the HP laptop braindamage won't end with those two.
 
-Thanks,
-Saravana
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Dave.
