@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab0LMAGy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:06:54 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36310 "EHLO
+	id S1755846Ab0LMAHX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:07:23 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36287 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284Ab0LLXrN (ORCPT
+	with ESMTP id S1755353Ab0LLXrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:13 -0500
+	Sun, 12 Dec 2010 18:47:09 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: alexdeucher@gmail.com, airlied@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [130/223] drm/radeon/kms: fix typos in disabled vbios code
-Message-Id: <20101212234712.34C4EB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:12 +0100 (CET)
+To: kenchen@google.com, ak@linux.intel.com, arjan@infradead.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [126/223] latencytop: fix per task accumulator
+Message-Id: <20101212234707.F2FD9B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:07 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,97 +23,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Ken Chen <kenchen@google.com>
 
-commit 0ec80d645661dda50acd417bdfcb33df2e5dd31e upstream.
+commit 38715258aa2e8cd94bd4aafadc544e5104efd551 upstream.
 
-6xx/7xx was hitting the wrong BUS_CNTL reg and bits.
+Per task latencytop accumulator prematurely terminates due to erroneous
+placement of latency_record_count.  It should be incremented whenever a
+new record is allocated instead of increment on every latencytop event.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Also fix search iterator to only search known record events instead of
+blindly searching all pre-allocated space.
+
+Signed-off-by: Ken Chen <kenchen@google.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Arjan van de Ven <arjan@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r600_reg.h    |    1 +
- drivers/gpu/drm/radeon/radeon_bios.c |   13 +++++++------
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/latencytop.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-Index: linux/drivers/gpu/drm/radeon/r600_reg.h
+Index: linux/kernel/latencytop.c
 ===================================================================
---- linux.orig/drivers/gpu/drm/radeon/r600_reg.h
-+++ linux/drivers/gpu/drm/radeon/r600_reg.h
-@@ -86,6 +86,7 @@
- #define R600_HDP_NONSURFACE_BASE                                0x2c04
+--- linux.orig/kernel/latencytop.c
++++ linux/kernel/latencytop.c
+@@ -194,14 +194,7 @@ __account_scheduler_latency(struct task_
  
- #define R600_BUS_CNTL                                           0x5420
-+#       define R600_BIOS_ROM_DIS                                (1 << 1)
- #define R600_CONFIG_CNTL                                        0x5424
- #define R600_CONFIG_MEMSIZE                                     0x5428
- #define R600_CONFIG_F0_BASE                                     0x542C
-Index: linux/drivers/gpu/drm/radeon/radeon_bios.c
-===================================================================
---- linux.orig/drivers/gpu/drm/radeon/radeon_bios.c
-+++ linux/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -130,6 +130,7 @@ static bool radeon_atrm_get_bios(struct
+ 	account_global_scheduler_latency(tsk, &lat);
+ 
+-	/*
+-	 * short term hack; if we're > 32 we stop; future we recycle:
+-	 */
+-	tsk->latency_record_count++;
+-	if (tsk->latency_record_count >= LT_SAVECOUNT)
+-		goto out_unlock;
+-
+-	for (i = 0; i < LT_SAVECOUNT; i++) {
++	for (i = 0; i < tsk->latency_record_count; i++) {
+ 		struct latency_record *mylat;
+ 		int same = 1;
+ 
+@@ -227,8 +220,14 @@ __account_scheduler_latency(struct task_
+ 		}
  	}
- 	return true;
- }
+ 
++	/*
++	 * short term hack; if we're > 32 we stop; future we recycle:
++	 */
++	if (tsk->latency_record_count >= LT_SAVECOUNT)
++		goto out_unlock;
 +
- static bool r700_read_disabled_bios(struct radeon_device *rdev)
- {
- 	uint32_t viph_control;
-@@ -143,7 +144,7 @@ static bool r700_read_disabled_bios(stru
- 	bool r;
+ 	/* Allocated a new one: */
+-	i = tsk->latency_record_count;
++	i = tsk->latency_record_count++;
+ 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
  
- 	viph_control = RREG32(RADEON_VIPH_CONTROL);
--	bus_cntl = RREG32(RADEON_BUS_CNTL);
-+	bus_cntl = RREG32(R600_BUS_CNTL);
- 	d1vga_control = RREG32(AVIVO_D1VGA_CONTROL);
- 	d2vga_control = RREG32(AVIVO_D2VGA_CONTROL);
- 	vga_render_control = RREG32(AVIVO_VGA_RENDER_CONTROL);
-@@ -152,7 +153,7 @@ static bool r700_read_disabled_bios(stru
- 	/* disable VIP */
- 	WREG32(RADEON_VIPH_CONTROL, (viph_control & ~RADEON_VIPH_EN));
- 	/* enable the rom */
--	WREG32(RADEON_BUS_CNTL, (bus_cntl & ~RADEON_BUS_BIOS_DIS_ROM));
-+	WREG32(R600_BUS_CNTL, (bus_cntl & ~R600_BIOS_ROM_DIS));
- 	/* Disable VGA mode */
- 	WREG32(AVIVO_D1VGA_CONTROL,
- 	       (d1vga_control & ~(AVIVO_DVGA_CONTROL_MODE_ENABLE |
-@@ -191,7 +192,7 @@ static bool r700_read_disabled_bios(stru
- 			cg_spll_status = RREG32(R600_CG_SPLL_STATUS);
- 	}
- 	WREG32(RADEON_VIPH_CONTROL, viph_control);
--	WREG32(RADEON_BUS_CNTL, bus_cntl);
-+	WREG32(R600_BUS_CNTL, bus_cntl);
- 	WREG32(AVIVO_D1VGA_CONTROL, d1vga_control);
- 	WREG32(AVIVO_D2VGA_CONTROL, d2vga_control);
- 	WREG32(AVIVO_VGA_RENDER_CONTROL, vga_render_control);
-@@ -216,7 +217,7 @@ static bool r600_read_disabled_bios(stru
- 	bool r;
- 
- 	viph_control = RREG32(RADEON_VIPH_CONTROL);
--	bus_cntl = RREG32(RADEON_BUS_CNTL);
-+	bus_cntl = RREG32(R600_BUS_CNTL);
- 	d1vga_control = RREG32(AVIVO_D1VGA_CONTROL);
- 	d2vga_control = RREG32(AVIVO_D2VGA_CONTROL);
- 	vga_render_control = RREG32(AVIVO_VGA_RENDER_CONTROL);
-@@ -231,7 +232,7 @@ static bool r600_read_disabled_bios(stru
- 	/* disable VIP */
- 	WREG32(RADEON_VIPH_CONTROL, (viph_control & ~RADEON_VIPH_EN));
- 	/* enable the rom */
--	WREG32(RADEON_BUS_CNTL, (bus_cntl & ~RADEON_BUS_BIOS_DIS_ROM));
-+	WREG32(R600_BUS_CNTL, (bus_cntl & ~R600_BIOS_ROM_DIS));
- 	/* Disable VGA mode */
- 	WREG32(AVIVO_D1VGA_CONTROL,
- 	       (d1vga_control & ~(AVIVO_DVGA_CONTROL_MODE_ENABLE |
-@@ -262,7 +263,7 @@ static bool r600_read_disabled_bios(stru
- 
- 	/* restore regs */
- 	WREG32(RADEON_VIPH_CONTROL, viph_control);
--	WREG32(RADEON_BUS_CNTL, bus_cntl);
-+	WREG32(R600_BUS_CNTL, bus_cntl);
- 	WREG32(AVIVO_D1VGA_CONTROL, d1vga_control);
- 	WREG32(AVIVO_D2VGA_CONTROL, d2vga_control);
- 	WREG32(AVIVO_VGA_RENDER_CONTROL, vga_render_control);
+ out_unlock:
