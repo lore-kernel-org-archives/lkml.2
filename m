@@ -1,103 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab0LLMBI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 07:01:08 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50741 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751316Ab0LLMBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 07:01:05 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Sundar Iyer <sundar.iyer@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Convert SMTPE driver to new irq_ APIs
-Date: Sun, 12 Dec 2010 12:01:08 +0000
-Message-Id: <1292155268-18246-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752726Ab0LLMDf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 07:03:35 -0500
+Received: from mail.perches.com ([173.55.12.10]:2503 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752254Ab0LLMDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 07:03:32 -0500
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH net-next 0/6] Start moving ethernet drivers to new directory
+Date: Sun, 12 Dec 2010 04:03:21 -0800
+Message-Id: <cover.1292154142.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The genirq core is being updated to supply struct irq_data to irq_chip
-operations rather than an irq number. Update the SMTPE driver to the new
-APIs.
+As discussed a few times, here's a start at moving various files
+around in drivers/net to a new drivers/net/ethernet directory.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/stmpe.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+The general idea is to move one at a time compilation units
+associated to the various subsystems in drivers/net, updating
+the Kconfig and Makefile files. 
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index b11487f..3e5732b 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -699,16 +699,16 @@ static irqreturn_t stmpe_irq(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
--static void stmpe_irq_lock(unsigned int irq)
-+static void stmpe_irq_lock(struct irq_data *data)
- {
--	struct stmpe *stmpe = get_irq_chip_data(irq);
-+	struct stmpe *stmpe = irq_data_get_irq_chip_data(data);
- 
- 	mutex_lock(&stmpe->irq_lock);
- }
- 
--static void stmpe_irq_sync_unlock(unsigned int irq)
-+static void stmpe_irq_sync_unlock(struct irq_data *data)
- {
--	struct stmpe *stmpe = get_irq_chip_data(irq);
-+	struct stmpe *stmpe = irq_data_get_irq_chip_data(data);
- 	struct stmpe_variant_info *variant = stmpe->variant;
- 	int num = DIV_ROUND_UP(variant->num_irqs, 8);
- 	int i;
-@@ -727,20 +727,20 @@ static void stmpe_irq_sync_unlock(unsigned int irq)
- 	mutex_unlock(&stmpe->irq_lock);
- }
- 
--static void stmpe_irq_mask(unsigned int irq)
-+static void stmpe_irq_mask(struct irq_data *data)
- {
--	struct stmpe *stmpe = get_irq_chip_data(irq);
--	int offset = irq - stmpe->irq_base;
-+	struct stmpe *stmpe = irq_data_get_irq_chip_data(data);
-+	int offset = data->irq - stmpe->irq_base;
- 	int regoffset = offset / 8;
- 	int mask = 1 << (offset % 8);
- 
- 	stmpe->ier[regoffset] &= ~mask;
- }
- 
--static void stmpe_irq_unmask(unsigned int irq)
-+static void stmpe_irq_unmask(struct irq_data *data)
- {
--	struct stmpe *stmpe = get_irq_chip_data(irq);
--	int offset = irq - stmpe->irq_base;
-+	struct stmpe *stmpe = irq_data_get_irq_chip_data(data);
-+	int offset = data->irq - stmpe->irq_base;
- 	int regoffset = offset / 8;
- 	int mask = 1 << (offset % 8);
- 
-@@ -749,10 +749,10 @@ static void stmpe_irq_unmask(unsigned int irq)
- 
- static struct irq_chip stmpe_irq_chip = {
- 	.name			= "stmpe",
--	.bus_lock		= stmpe_irq_lock,
--	.bus_sync_unlock	= stmpe_irq_sync_unlock,
--	.mask			= stmpe_irq_mask,
--	.unmask			= stmpe_irq_unmask,
-+	.irq_bus_lock		= stmpe_irq_lock,
-+	.irq_bus_sync_unlock	= stmpe_irq_sync_unlock,
-+	.irq_mask		= stmpe_irq_mask,
-+	.irq_unmask		= stmpe_irq_unmask,
- };
- 
- static int __devinit stmpe_irq_init(struct stmpe *stmpe)
+I think this is a form that doesn't break the build, is reviewable
+and acceptable and makes the top level drivers/net directory much
+cleaner.
+
+The biggest downsides of this move style are:
+
+o high number of trivial commits so:
+o serialization: it's best done by one person because the likelihood
+  of commit clash will be also be high.
+o the order the entries in Kconfig are changed, so the order of entries
+  in menuconfig/xconfig is also changed.
+
+An alternative to the high commit count is to collect many of these patches
+together into a single commit.
+
+If this approach is acceptable, I'll do all the unmaintained ethernet
+subsystems in drivers/net in this style, followed by adding separate
+subdirectories for 3com and 8390, moving tulip, then onto the various
+vendor directories as appropriate.
+
+Moving bonding, ppp, and such to different directories will be done
+separately.
+
+David, the Sun GEM and Cassini files are currently selected under the
+10/100 menu.  Shouldn't these be presented under the 1000Mb menu?
+I didn't move them to that menu so all current configs should work,
+but it'd be logically sensible to move the selection for these subsystems
+to the 1000 menu though maybe that's not practical.
+
+Comments?
+
+Joe Perches (6):
+  drivers/net: Add directory ethernet
+  ethernet: Move ethoc.c
+  ethernet: Move dnet.[ch]
+  ethernet: Move Sun Happymeal sunhme.[ch]
+  ethernet: Move Sun GEM sungem*.[ch]
+  ethernet: Move Sun Cassini cassini.[ch]
+
+ drivers/net/Kconfig                     |   56 +++---------------------------
+ drivers/net/Makefile                    |    7 +---
+ drivers/net/ethernet/Kconfig.10-100     |   53 +++++++++++++++++++++++++++++
+ drivers/net/ethernet/Kconfig.1000       |    3 ++
+ drivers/net/ethernet/Kconfig.10000      |    3 ++
+ drivers/net/ethernet/Makefile           |    9 +++++
+ drivers/net/{ => ethernet}/cassini.c    |    0
+ drivers/net/{ => ethernet}/cassini.h    |    0
+ drivers/net/{ => ethernet}/dnet.c       |    0
+ drivers/net/{ => ethernet}/dnet.h       |    0
+ drivers/net/{ => ethernet}/ethoc.c      |    0
+ drivers/net/{ => ethernet}/sungem.c     |    0
+ drivers/net/{ => ethernet}/sungem.h     |    0
+ drivers/net/{ => ethernet}/sungem_phy.c |    0
+ drivers/net/{ => ethernet}/sungem_phy.h |    0
+ drivers/net/{ => ethernet}/sunhme.c     |    0
+ drivers/net/{ => ethernet}/sunhme.h     |    0
+ 17 files changed, 76 insertions(+), 55 deletions(-)
+ create mode 100644 drivers/net/ethernet/Kconfig.10-100
+ create mode 100644 drivers/net/ethernet/Kconfig.1000
+ create mode 100644 drivers/net/ethernet/Kconfig.10000
+ create mode 100644 drivers/net/ethernet/Makefile
+ rename drivers/net/{ => ethernet}/cassini.c (100%)
+ rename drivers/net/{ => ethernet}/cassini.h (100%)
+ rename drivers/net/{ => ethernet}/dnet.c (100%)
+ rename drivers/net/{ => ethernet}/dnet.h (100%)
+ rename drivers/net/{ => ethernet}/ethoc.c (100%)
+ rename drivers/net/{ => ethernet}/sungem.c (100%)
+ rename drivers/net/{ => ethernet}/sungem.h (100%)
+ rename drivers/net/{ => ethernet}/sungem_phy.c (100%)
+ rename drivers/net/{ => ethernet}/sungem_phy.h (100%)
+ rename drivers/net/{ => ethernet}/sunhme.c (100%)
+ rename drivers/net/{ => ethernet}/sunhme.h (100%)
+
 -- 
-1.7.2.3
+1.7.3.3.398.g0b0cd.dirty
 
