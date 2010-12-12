@@ -1,120 +1,538 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0LLXwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:52:17 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:49039 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755823Ab0LLXwN convert rfc822-to-8bit (ORCPT
+	id S1756281Ab0LLXwS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:52:18 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36848 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021Ab0LLXse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:52:13 -0500
-/m: 
-From: Richard Weinberger <richard@nod.at>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] [64/223] hostfs: fix UML crash: remove f_spare from hostfs
-Date: Mon, 13 Dec 2010 00:51:55 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: toralf.foerster@gmx.de, hch@lst.de, viro@zeniv.linux.org.uk,
-        jdike@addtoit.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, gregkh@suse.de, ak@linux.intel.com,
+	Sun, 12 Dec 2010 18:48:34 -0500
+From: Andi Kleen <andi@firstfloor.org>
+References: <201012131244.547034648@firstfloor.org>
+In-Reply-To: <201012131244.547034648@firstfloor.org>
+To: hagen@jauu.net, davem@davemloft.net, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-References: <201012131244.547034648@firstfloor.org> <20101212234602.5DAB5B27BF@basil.firstfloor.org>
-In-Reply-To: <20101212234602.5DAB5B27BF@basil.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201012130051.55692.richard@nod.at>
+Subject: [PATCH] [205/223] net: optimize Berkeley Packet Filter (BPF) processing
+Message-Id: <20101212234832.2B8AAB27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:48:32 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Am Montag 13 Dezember 2010, 00:46:02 schrieb Andi Kleen:
-> 2.6.35-longterm review patch.  If anyone has any objections, please let me
-> know.
+------------------
+Gcc is currenlty not in the ability to optimize the switch statement in
+sk_run_filter() because of dense case labels. This patch replace the
+OR'd labels with ordered sequenced case labels. The sk_chk_filter()
+function is modified to patch/replace the original OPCODES in a
+ordered but equivalent form. gcc is now in the ability to transform the
+switch statement in sk_run_filter into a jump table of complexity O(1).
 
-This patch is not needed on 2.6.35.
-It makes only sense on >= 2.6.36.
+Until this patch gcc generates a sequence of conditional branches (O(n) of 567
+byte .text segment size (arch x86_64):
 
-Thanks,
-//richard
+7ff: 8b 06                 mov    (%rsi),%eax
+801: 66 83 f8 35           cmp    $0x35,%ax
+805: 0f 84 d0 02 00 00     je     adb <sk_run_filter+0x31d>
+80b: 0f 87 07 01 00 00     ja     918 <sk_run_filter+0x15a>
+811: 66 83 f8 15           cmp    $0x15,%ax
+815: 0f 84 c5 02 00 00     je     ae0 <sk_run_filter+0x322>
+81b: 77 73                 ja     890 <sk_run_filter+0xd2>
+81d: 66 83 f8 04           cmp    $0x4,%ax
+821: 0f 84 17 02 00 00     je     a3e <sk_run_filter+0x280>
+827: 77 29                 ja     852 <sk_run_filter+0x94>
+829: 66 83 f8 01           cmp    $0x1,%ax
+[...]
 
-> ------------------
-> From: Richard Weinberger <richard@nod.at>
-> 
-> commit 1b627d5771312c92404b66f0a0b16f66036dd2e1 upstream.
-> 
-> 365b1818 ("add f_flags to struct statfs(64)") resized f_spare within
-> struct statfs which caused a UML crash.  There is no need to copy f_spare.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-> Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Jeff Dike <jdike@addtoit.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
-> ---
->  fs/hostfs/hostfs.h      |    3 +--
->  fs/hostfs/hostfs_kern.c |    2 +-
->  fs/hostfs/hostfs_user.c |    9 ++-------
->  3 files changed, 4 insertions(+), 10 deletions(-)
-> 
-> Index: linux/fs/hostfs/hostfs.h
-> ===================================================================
-> --- linux.orig/fs/hostfs/hostfs.h
-> +++ linux/fs/hostfs/hostfs.h
-> @@ -86,7 +86,6 @@ extern int rename_file(char *from, char
->  extern int do_statfs(char *root, long *bsize_out, long long *blocks_out,
->  		     long long *bfree_out, long long *bavail_out,
->  		     long long *files_out, long long *ffree_out,
-> -		     void *fsid_out, int fsid_size, long *namelen_out,
-> -		     long *spare_out);
-> +		     void *fsid_out, int fsid_size, long *namelen_out);
-> 
->  #endif
-> Index: linux/fs/hostfs/hostfs_kern.c
-> ===================================================================
-> --- linux.orig/fs/hostfs/hostfs_kern.c
-> +++ linux/fs/hostfs/hostfs_kern.c
-> @@ -272,7 +272,7 @@ int hostfs_statfs(struct dentry *dentry,
->  	err = do_statfs(HOSTFS_I(dentry->d_sb->s_root->d_inode)->host_filename,
->  			&sf->f_bsize, &f_blocks, &f_bfree, &f_bavail, &f_files,
->  			&f_ffree, &sf->f_fsid, sizeof(sf->f_fsid),
-> -			&sf->f_namelen, sf->f_spare);
-> +			&sf->f_namelen);
->  	if (err)
->  		return err;
->  	sf->f_blocks = f_blocks;
-> Index: linux/fs/hostfs/hostfs_user.c
-> ===================================================================
-> --- linux.orig/fs/hostfs/hostfs_user.c
-> +++ linux/fs/hostfs/hostfs_user.c
-> @@ -402,8 +402,7 @@ int rename_file(char *from, char *to)
->  int do_statfs(char *root, long *bsize_out, long long *blocks_out,
->  	      long long *bfree_out, long long *bavail_out,
->  	      long long *files_out, long long *ffree_out,
-> -	      void *fsid_out, int fsid_size, long *namelen_out,
-> -	      long *spare_out)
-> +	      void *fsid_out, int fsid_size, long *namelen_out)
->  {
->  	struct statfs64 buf;
->  	int err;
-> @@ -422,10 +421,6 @@ int do_statfs(char *root, long *bsize_ou
->  	       sizeof(buf.f_fsid) > fsid_size ? fsid_size :
->  	       sizeof(buf.f_fsid));
->  	*namelen_out = buf.f_namelen;
-> -	spare_out[0] = buf.f_spare[0];
-> -	spare_out[1] = buf.f_spare[1];
-> -	spare_out[2] = buf.f_spare[2];
-> -	spare_out[3] = buf.f_spare[3];
-> -	spare_out[4] = buf.f_spare[4];
-> +
->  	return 0;
->  }
+With the modification the compiler translate the switch statement into
+the following jump table fragment:
 
+7ff: 66 83 3e 2c           cmpw   $0x2c,(%rsi)
+803: 0f 87 1f 02 00 00     ja     a28 <sk_run_filter+0x26a>
+809: 0f b7 06              movzwl (%rsi),%eax
+80c: ff 24 c5 00 00 00 00  jmpq   *0x0(,%rax,8)
+813: 44 89 e3              mov    %r12d,%ebx
+816: e9 43 03 00 00        jmpq   b5e <sk_run_filter+0x3a0>
+81b: 41 89 dc              mov    %ebx,%r12d
+81e: e9 3b 03 00 00        jmpq   b5e <sk_run_filter+0x3a0>
+
+Furthermore, I reordered the instructions to reduce cache line misses by
+order the most common instruction to the start.
+
+[AK: Added as dependency on next patch]
+Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ include/linux/filter.h |   48 +++++++++++
+ net/core/filter.c      |  212 +++++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 209 insertions(+), 51 deletions(-)
+
+Index: linux/include/linux/filter.h
+===================================================================
+--- linux.orig/include/linux/filter.h
++++ linux/include/linux/filter.h
+@@ -91,6 +91,54 @@ struct sock_fprog {	/* Required for SO_A
+ #define         BPF_TAX         0x00
+ #define         BPF_TXA         0x80
+ 
++enum {
++	BPF_S_RET_K = 0,
++	BPF_S_RET_A,
++	BPF_S_ALU_ADD_K,
++	BPF_S_ALU_ADD_X,
++	BPF_S_ALU_SUB_K,
++	BPF_S_ALU_SUB_X,
++	BPF_S_ALU_MUL_K,
++	BPF_S_ALU_MUL_X,
++	BPF_S_ALU_DIV_X,
++	BPF_S_ALU_AND_K,
++	BPF_S_ALU_AND_X,
++	BPF_S_ALU_OR_K,
++	BPF_S_ALU_OR_X,
++	BPF_S_ALU_LSH_K,
++	BPF_S_ALU_LSH_X,
++	BPF_S_ALU_RSH_K,
++	BPF_S_ALU_RSH_X,
++	BPF_S_ALU_NEG,
++	BPF_S_LD_W_ABS,
++	BPF_S_LD_H_ABS,
++	BPF_S_LD_B_ABS,
++	BPF_S_LD_W_LEN,
++	BPF_S_LD_W_IND,
++	BPF_S_LD_H_IND,
++	BPF_S_LD_B_IND,
++	BPF_S_LD_IMM,
++	BPF_S_LDX_W_LEN,
++	BPF_S_LDX_B_MSH,
++	BPF_S_LDX_IMM,
++	BPF_S_MISC_TAX,
++	BPF_S_MISC_TXA,
++	BPF_S_ALU_DIV_K,
++	BPF_S_LD_MEM,
++	BPF_S_LDX_MEM,
++	BPF_S_ST,
++	BPF_S_STX,
++	BPF_S_JMP_JA,
++	BPF_S_JMP_JEQ_K,
++	BPF_S_JMP_JEQ_X,
++	BPF_S_JMP_JGE_K,
++	BPF_S_JMP_JGE_X,
++	BPF_S_JMP_JGT_K,
++	BPF_S_JMP_JGT_X,
++	BPF_S_JMP_JSET_K,
++	BPF_S_JMP_JSET_X,
++};
++
+ #ifndef BPF_MAXINSNS
+ #define BPF_MAXINSNS 4096
+ #endif
+Index: linux/net/core/filter.c
+===================================================================
+--- linux.orig/net/core/filter.c
++++ linux/net/core/filter.c
+@@ -128,87 +128,87 @@ unsigned int sk_run_filter(struct sk_buf
+ 		fentry = &filter[pc];
+ 
+ 		switch (fentry->code) {
+-		case BPF_ALU|BPF_ADD|BPF_X:
++		case BPF_S_ALU_ADD_X:
+ 			A += X;
+ 			continue;
+-		case BPF_ALU|BPF_ADD|BPF_K:
++		case BPF_S_ALU_ADD_K:
+ 			A += fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_SUB|BPF_X:
++		case BPF_S_ALU_SUB_X:
+ 			A -= X;
+ 			continue;
+-		case BPF_ALU|BPF_SUB|BPF_K:
++		case BPF_S_ALU_SUB_K:
+ 			A -= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_MUL|BPF_X:
++		case BPF_S_ALU_MUL_X:
+ 			A *= X;
+ 			continue;
+-		case BPF_ALU|BPF_MUL|BPF_K:
++		case BPF_S_ALU_MUL_K:
+ 			A *= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_DIV|BPF_X:
++		case BPF_S_ALU_DIV_X:
+ 			if (X == 0)
+ 				return 0;
+ 			A /= X;
+ 			continue;
+-		case BPF_ALU|BPF_DIV|BPF_K:
++		case BPF_S_ALU_DIV_K:
+ 			A /= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_AND|BPF_X:
++		case BPF_S_ALU_AND_X:
+ 			A &= X;
+ 			continue;
+-		case BPF_ALU|BPF_AND|BPF_K:
++		case BPF_S_ALU_AND_K:
+ 			A &= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_OR|BPF_X:
++		case BPF_S_ALU_OR_X:
+ 			A |= X;
+ 			continue;
+-		case BPF_ALU|BPF_OR|BPF_K:
++		case BPF_S_ALU_OR_K:
+ 			A |= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_LSH|BPF_X:
++		case BPF_S_ALU_LSH_X:
+ 			A <<= X;
+ 			continue;
+-		case BPF_ALU|BPF_LSH|BPF_K:
++		case BPF_S_ALU_LSH_K:
+ 			A <<= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_RSH|BPF_X:
++		case BPF_S_ALU_RSH_X:
+ 			A >>= X;
+ 			continue;
+-		case BPF_ALU|BPF_RSH|BPF_K:
++		case BPF_S_ALU_RSH_K:
+ 			A >>= fentry->k;
+ 			continue;
+-		case BPF_ALU|BPF_NEG:
++		case BPF_S_ALU_NEG:
+ 			A = -A;
+ 			continue;
+-		case BPF_JMP|BPF_JA:
++		case BPF_S_JMP_JA:
+ 			pc += fentry->k;
+ 			continue;
+-		case BPF_JMP|BPF_JGT|BPF_K:
++		case BPF_S_JMP_JGT_K:
+ 			pc += (A > fentry->k) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JGE|BPF_K:
++		case BPF_S_JMP_JGE_K:
+ 			pc += (A >= fentry->k) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JEQ|BPF_K:
++		case BPF_S_JMP_JEQ_K:
+ 			pc += (A == fentry->k) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JSET|BPF_K:
++		case BPF_S_JMP_JSET_K:
+ 			pc += (A & fentry->k) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JGT|BPF_X:
++		case BPF_S_JMP_JGT_X:
+ 			pc += (A > X) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JGE|BPF_X:
++		case BPF_S_JMP_JGE_X:
+ 			pc += (A >= X) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JEQ|BPF_X:
++		case BPF_S_JMP_JEQ_X:
+ 			pc += (A == X) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_JMP|BPF_JSET|BPF_X:
++		case BPF_S_JMP_JSET_X:
+ 			pc += (A & X) ? fentry->jt : fentry->jf;
+ 			continue;
+-		case BPF_LD|BPF_W|BPF_ABS:
++		case BPF_S_LD_W_ABS:
+ 			k = fentry->k;
+ load_w:
+ 			ptr = load_pointer(skb, k, 4, &tmp);
+@@ -217,7 +217,7 @@ load_w:
+ 				continue;
+ 			}
+ 			break;
+-		case BPF_LD|BPF_H|BPF_ABS:
++		case BPF_S_LD_H_ABS:
+ 			k = fentry->k;
+ load_h:
+ 			ptr = load_pointer(skb, k, 2, &tmp);
+@@ -226,7 +226,7 @@ load_h:
+ 				continue;
+ 			}
+ 			break;
+-		case BPF_LD|BPF_B|BPF_ABS:
++		case BPF_S_LD_B_ABS:
+ 			k = fentry->k;
+ load_b:
+ 			ptr = load_pointer(skb, k, 1, &tmp);
+@@ -235,54 +235,54 @@ load_b:
+ 				continue;
+ 			}
+ 			break;
+-		case BPF_LD|BPF_W|BPF_LEN:
++		case BPF_S_LD_W_LEN:
+ 			A = skb->len;
+ 			continue;
+-		case BPF_LDX|BPF_W|BPF_LEN:
++		case BPF_S_LDX_W_LEN:
+ 			X = skb->len;
+ 			continue;
+-		case BPF_LD|BPF_W|BPF_IND:
++		case BPF_S_LD_W_IND:
+ 			k = X + fentry->k;
+ 			goto load_w;
+-		case BPF_LD|BPF_H|BPF_IND:
++		case BPF_S_LD_H_IND:
+ 			k = X + fentry->k;
+ 			goto load_h;
+-		case BPF_LD|BPF_B|BPF_IND:
++		case BPF_S_LD_B_IND:
+ 			k = X + fentry->k;
+ 			goto load_b;
+-		case BPF_LDX|BPF_B|BPF_MSH:
++		case BPF_S_LDX_B_MSH:
+ 			ptr = load_pointer(skb, fentry->k, 1, &tmp);
+ 			if (ptr != NULL) {
+ 				X = (*(u8 *)ptr & 0xf) << 2;
+ 				continue;
+ 			}
+ 			return 0;
+-		case BPF_LD|BPF_IMM:
++		case BPF_S_LD_IMM:
+ 			A = fentry->k;
+ 			continue;
+-		case BPF_LDX|BPF_IMM:
++		case BPF_S_LDX_IMM:
+ 			X = fentry->k;
+ 			continue;
+-		case BPF_LD|BPF_MEM:
++		case BPF_S_LD_MEM:
+ 			A = mem[fentry->k];
+ 			continue;
+-		case BPF_LDX|BPF_MEM:
++		case BPF_S_LDX_MEM:
+ 			X = mem[fentry->k];
+ 			continue;
+-		case BPF_MISC|BPF_TAX:
++		case BPF_S_MISC_TAX:
+ 			X = A;
+ 			continue;
+-		case BPF_MISC|BPF_TXA:
++		case BPF_S_MISC_TXA:
+ 			A = X;
+ 			continue;
+-		case BPF_RET|BPF_K:
++		case BPF_S_RET_K:
+ 			return fentry->k;
+-		case BPF_RET|BPF_A:
++		case BPF_S_RET_A:
+ 			return A;
+-		case BPF_ST:
++		case BPF_S_ST:
+ 			mem[fentry->k] = A;
+ 			continue;
+-		case BPF_STX:
++		case BPF_S_STX:
+ 			mem[fentry->k] = X;
+ 			continue;
+ 		default:
+@@ -390,53 +390,128 @@ int sk_chk_filter(struct sock_filter *fi
+ 		/* Only allow valid instructions */
+ 		switch (ftest->code) {
+ 		case BPF_ALU|BPF_ADD|BPF_K:
++			ftest->code = BPF_S_ALU_ADD_K;
++			break;
+ 		case BPF_ALU|BPF_ADD|BPF_X:
++			ftest->code = BPF_S_ALU_ADD_X;
++			break;
+ 		case BPF_ALU|BPF_SUB|BPF_K:
++			ftest->code = BPF_S_ALU_SUB_K;
++			break;
+ 		case BPF_ALU|BPF_SUB|BPF_X:
++			ftest->code = BPF_S_ALU_SUB_X;
++			break;
+ 		case BPF_ALU|BPF_MUL|BPF_K:
++			ftest->code = BPF_S_ALU_MUL_K;
++			break;
+ 		case BPF_ALU|BPF_MUL|BPF_X:
++			ftest->code = BPF_S_ALU_MUL_X;
++			break;
+ 		case BPF_ALU|BPF_DIV|BPF_X:
++			ftest->code = BPF_S_ALU_DIV_X;
++			break;
+ 		case BPF_ALU|BPF_AND|BPF_K:
++			ftest->code = BPF_S_ALU_AND_K;
++			break;
+ 		case BPF_ALU|BPF_AND|BPF_X:
++			ftest->code = BPF_S_ALU_AND_X;
++			break;
+ 		case BPF_ALU|BPF_OR|BPF_K:
++			ftest->code = BPF_S_ALU_OR_K;
++			break;
+ 		case BPF_ALU|BPF_OR|BPF_X:
++			ftest->code = BPF_S_ALU_OR_X;
++			break;
+ 		case BPF_ALU|BPF_LSH|BPF_K:
++			ftest->code = BPF_S_ALU_LSH_K;
++			break;
+ 		case BPF_ALU|BPF_LSH|BPF_X:
++			ftest->code = BPF_S_ALU_LSH_X;
++			break;
+ 		case BPF_ALU|BPF_RSH|BPF_K:
++			ftest->code = BPF_S_ALU_RSH_K;
++			break;
+ 		case BPF_ALU|BPF_RSH|BPF_X:
++			ftest->code = BPF_S_ALU_RSH_X;
++			break;
+ 		case BPF_ALU|BPF_NEG:
++			ftest->code = BPF_S_ALU_NEG;
++			break;
+ 		case BPF_LD|BPF_W|BPF_ABS:
++			ftest->code = BPF_S_LD_W_ABS;
++			break;
+ 		case BPF_LD|BPF_H|BPF_ABS:
++			ftest->code = BPF_S_LD_H_ABS;
++			break;
+ 		case BPF_LD|BPF_B|BPF_ABS:
++			ftest->code = BPF_S_LD_B_ABS;
++			break;
+ 		case BPF_LD|BPF_W|BPF_LEN:
++			ftest->code = BPF_S_LD_W_LEN;
++			break;
+ 		case BPF_LD|BPF_W|BPF_IND:
++			ftest->code = BPF_S_LD_W_IND;
++			break;
+ 		case BPF_LD|BPF_H|BPF_IND:
++			ftest->code = BPF_S_LD_H_IND;
++			break;
+ 		case BPF_LD|BPF_B|BPF_IND:
++			ftest->code = BPF_S_LD_B_IND;
++			break;
+ 		case BPF_LD|BPF_IMM:
++			ftest->code = BPF_S_LD_IMM;
++			break;
+ 		case BPF_LDX|BPF_W|BPF_LEN:
++			ftest->code = BPF_S_LDX_W_LEN;
++			break;
+ 		case BPF_LDX|BPF_B|BPF_MSH:
++			ftest->code = BPF_S_LDX_B_MSH;
++			break;
+ 		case BPF_LDX|BPF_IMM:
++			ftest->code = BPF_S_LDX_IMM;
++			break;
+ 		case BPF_MISC|BPF_TAX:
++			ftest->code = BPF_S_MISC_TAX;
++			break;
+ 		case BPF_MISC|BPF_TXA:
++			ftest->code = BPF_S_MISC_TXA;
++			break;
+ 		case BPF_RET|BPF_K:
++			ftest->code = BPF_S_RET_K;
++			break;
+ 		case BPF_RET|BPF_A:
++			ftest->code = BPF_S_RET_A;
+ 			break;
+ 
+ 		/* Some instructions need special checks */
+ 
+-		case BPF_ALU|BPF_DIV|BPF_K:
+ 			/* check for division by zero */
++		case BPF_ALU|BPF_DIV|BPF_K:
+ 			if (ftest->k == 0)
+ 				return -EINVAL;
++			ftest->code = BPF_S_ALU_DIV_K;
+ 			break;
+ 
++		/* check for invalid memory addresses */
+ 		case BPF_LD|BPF_MEM:
++			if (ftest->k >= BPF_MEMWORDS)
++				return -EINVAL;
++			ftest->code = BPF_S_LD_MEM;
++			break;
+ 		case BPF_LDX|BPF_MEM:
++			if (ftest->k >= BPF_MEMWORDS)
++				return -EINVAL;
++			ftest->code = BPF_S_LDX_MEM;
++			break;
+ 		case BPF_ST:
++			if (ftest->k >= BPF_MEMWORDS)
++				return -EINVAL;
++			ftest->code = BPF_S_ST;
++			break;
+ 		case BPF_STX:
+-			/* check for invalid memory addresses */
+ 			if (ftest->k >= BPF_MEMWORDS)
+ 				return -EINVAL;
++			ftest->code = BPF_S_STX;
+ 			break;
+ 
+ 		case BPF_JMP|BPF_JA:
+@@ -447,28 +522,63 @@ int sk_chk_filter(struct sock_filter *fi
+ 			 */
+ 			if (ftest->k >= (unsigned)(flen-pc-1))
+ 				return -EINVAL;
++			ftest->code = BPF_S_JMP_JA;
+ 			break;
+ 
+ 		case BPF_JMP|BPF_JEQ|BPF_K:
++			ftest->code = BPF_S_JMP_JEQ_K;
++			break;
+ 		case BPF_JMP|BPF_JEQ|BPF_X:
++			ftest->code = BPF_S_JMP_JEQ_X;
++			break;
+ 		case BPF_JMP|BPF_JGE|BPF_K:
++			ftest->code = BPF_S_JMP_JGE_K;
++			break;
+ 		case BPF_JMP|BPF_JGE|BPF_X:
++			ftest->code = BPF_S_JMP_JGE_X;
++			break;
+ 		case BPF_JMP|BPF_JGT|BPF_K:
++			ftest->code = BPF_S_JMP_JGT_K;
++			break;
+ 		case BPF_JMP|BPF_JGT|BPF_X:
++			ftest->code = BPF_S_JMP_JGT_X;
++			break;
+ 		case BPF_JMP|BPF_JSET|BPF_K:
++			ftest->code = BPF_S_JMP_JSET_K;
++			break;
+ 		case BPF_JMP|BPF_JSET|BPF_X:
++			ftest->code = BPF_S_JMP_JSET_X;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++
+ 			/* for conditionals both must be safe */
++		switch (ftest->code) {
++		case BPF_S_JMP_JEQ_K:
++		case BPF_S_JMP_JEQ_X:
++		case BPF_S_JMP_JGE_K:
++		case BPF_S_JMP_JGE_X:
++		case BPF_S_JMP_JGT_K:
++		case BPF_S_JMP_JGT_X:
++		case BPF_S_JMP_JSET_X:
++		case BPF_S_JMP_JSET_K:
+ 			if (pc + ftest->jt + 1 >= flen ||
+ 			    pc + ftest->jf + 1 >= flen)
+ 				return -EINVAL;
+-			break;
++		}
++	}
+ 
++	/* last instruction must be a RET code */
++	switch (filter[flen - 1].code) {
++	case BPF_S_RET_K:
++	case BPF_S_RET_A:
++		return 0;
++		break;
+ 		default:
+ 			return -EINVAL;
+ 		}
+-	}
+-
+-	return (BPF_CLASS(filter[flen - 1].code) == BPF_RET) ? 0 : -EINVAL;
+ }
+ EXPORT_SYMBOL(sk_chk_filter);
+ 
