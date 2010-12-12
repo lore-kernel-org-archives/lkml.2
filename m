@@ -1,148 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab0LMALS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:11:18 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:63020 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab0LMALP convert rfc822-to-8bit (ORCPT
+	id S1755122Ab0LLXqq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:46:46 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36132 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754993Ab0LLXqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 19:11:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101206222703.32fbe852@xenia.leun.net>
-References: <20101129201716.1d0257c4@xenia.leun.net>
-	<4CF442FA.4070701@candelatech.com>
-	<20101130095944.41b5f7b6@xenia.leun.net>
-	<1291108809.2904.3.camel@edumazet-laptop>
-	<20101201111716.424fb771@xenia.leun.net>
-	<1291200914.2856.546.camel@edumazet-laptop>
-	<20101205030712.36149bc2@xenia.leun.net>
-	<1291536233.2806.102.camel@edumazet-laptop>
-	<20101205105528.49fa9a9f@xenia.leun.net>
-	<20101205114404.7c0cddc2@xenia.leun.net>
-	<AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
-	<20101206203437.54b550e0@xenia.leun.net>
-	<AANLkTikKkAesHc4Fi4SwAkV0e65D0TQRztrRYoDNu3MP@mail.gmail.com>
-	<20101206222703.32fbe852@xenia.leun.net>
-Date: Sun, 12 Dec 2010 16:11:13 -0800
-Message-ID: <AANLkTinLMCzKz7n45HdeAwNxsWjCADAkgfK+MjXVcFqh@mail.gmail.com>
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used
-From: Jesse Gross <jesse@nicira.com>
-To: Michael Leun <lkml20101129@newton.leun.net>,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 12 Dec 2010 18:46:42 -0500
+From: Andi Kleen <andi@firstfloor.org>
+References: <201012131244.547034648@firstfloor.org>
+In-Reply-To: <201012131244.547034648@firstfloor.org>
+To: moinejf@free.fr, moinejf@free.fr, moinejf@free.fr, mchehab@redhat.com,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [101/223] gspca - sonixj: Fix a regression of sensors hv7131r and mi0360
+Message-Id: <20101212234641.89455B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:46:41 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 6, 2010 at 1:27 PM, Michael Leun
-<lkml20101129@newton.leun.net> wrote:
-> On Mon, 6 Dec 2010 12:04:48 -0800
-> Jesse Gross <jesse@nicira.com> wrote:
->
->> On Mon, Dec 6, 2010 at 11:34 AM, Michael Leun
->> <lkml20101129@newton.leun.net> wrote:
->> > On Mon, 6 Dec 2010 10:14:55 -0800
->> > Jesse Gross <jesse@nicira.com> wrote:
->> >
->> >> On Sun, Dec 5, 2010 at 2:44 AM, Michael Leun
->> >> <lkml20101129@newton.leun.net> wrote:
->> >> > Hi Jesse,
->> >> >
->> >> > On Sun, 5 Dec 2010 10:55:28 +0100
->> >> > Michael Leun <lkml20101129@newton.leun.net> wrote:
->> >> >
->> >> >> On Sun, 05 Dec 2010 09:03:53 +0100
->> >> >> Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> >> >>
->> >> >> > > But on
->> >> >> > >
->> >> >> > > hpdl320g5:/home/ml # lspci | grep Eth
->> >> >> > > 03:04.0 Ethernet controller: Broadcom Corporation NetXtreme
->> >> >> > > BCM5714 Gigabit Ethernet (rev a3) 03:04.1 Ethernet
->> >> >> > > controller: Broadcom Corporation NetXtreme BCM5714 Gigabit
->> >> >> > > Ethernet (rev a3)
->> >> >> > >
->> >> >> > > the good message is that it also does not crash, but with
->> >> >> > > tcpdump I see vlan tags when no vlan devices configured on
->> >> >> > > the respective eth, if so I do not see tags anymore vlan
->> >> >> > > tags on the trunk interface.
->> >> >> > >
->> >> >> >
->> >> >> > For all these very specific needs, you'll have to try 2.6.37
->> >> >> > I am afraid. Jesse did huge changes to exactly make this
->> >> >> > working, we wont backport this to 2.6.36, but only avoid
->> >> >> > crashes.
->> >> >>
->> >> >> OK, I'm perfectly fine with that, of course, actually nice to
->> >> >> hear that the issue already is addressed.
->> >> >>
->> >> >> Likely I'll give some rc an shot on this machine (maybe over
->> >> >> christmas), but it is an production machine (acutally testing
->> >> >> other devices is the "product" produced on this machine), so
->> >> >> unfortunately I'm not that free in when and what I can do (but
->> >> >> the possibility to, for example, bridge the trunk interface
->> >> >> would make testing easier, that justifies something...).
->> >> >>
->> >> >> Thank you all very much for your work.
->> >> >
->> >> > Are these changes already in 2.6.37-rc4? Or, if not are they
->> >> > somewhere publically available already?
->> >> >
->> >> > I looked into various changelogs but have some difficulties to
->> >> > identify them...
->> >> >
->> >> > Maybe I have some time next days to give them an try...
->> >>
->> >> Yes, all of the existing vlan changes are in 2.6.37-rc4. †There
->> >> were a number of patches but the main one was
->> >> 3701e51382a026cba10c60b03efabe534fba4ca4
->> >
->> > Then, I'm afraid, this (seeing vlan tags even if vlan interfaces are
->> > configured) does not work on HP DL320G5 (for exact description and
->> > examples please see my mail a few days ago).
->>
->> What driver are you using? †Is it tg3?
->>
->> The vlan changes that I made unfortunately require updating drivers to
->> get the full benefit. †I've been busy lately so tg3 hasn't yet been
->> updated.
->>
->> I know that tg3 does some things differently depending on whether a
->> vlan group is configured, so that would likely be the cause of what
->> you are seeing. †I'd have to look at it in more detail to be sure
->> though.
->>
->> You said that everything works on the other Broadcom NIC that you
->> tested? †Maybe it uses bnx2 instead?
->>
->
-> Both machines use tg3 / 2.6.36.1 - one is opensuse, one ubuntu (but
-> this should not matter, I think).
->
-> If I can do anything to support your investigations / work (most
-> likely testing / providing information) please let me know.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Unfortunately, I probably won't have time to look at this in the near
-future.  Given that the test works on one NIC but not another that
-strongly suggests that it is a driver problem, even if both NICs use
-the same driver.  I see tg3 can do different things with vlans
-depending on the model and what features are enabled.  I also ran a
-quick test on some of my machines and I didn't experience this issue.
-They are running net-next with ixgbe.
+------------------
+From: =?UTF-8?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>
 
-One of the main goals of my general vlan changes was to remove as much
-logic as possible from the drivers and put it in the networking core,
-so we should in theory see consistent behavior.  However, in 2.6.36
-and earlier, each driver knows about what vlan devices are configured
-and does different things with that information.
+commit 0303a90a744662e934877a5d637a43197229274b upstream.
 
-Given all of that, the most logical step to me is simply to convert
-tg3 to use the new vlan infrastructure.  It should be done regardless
-and it will probably solve this problem.  Maybe you can convince the
-Broadcom guys to do that?  It would be a lot faster for them to do it
-than me.
+The bug was introduced by commit 23a98274cc348880ecb6803307c254448084953a
+applying values of sensor sp80708 to sensors hv7131r and mi0360.
+
+Signed-off-by: Jean-Fran√ßois Moine <moinejf@free.fr>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ drivers/media/video/gspca/sonixj.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Index: linux/drivers/media/video/gspca/sonixj.c
+===================================================================
+--- linux.orig/drivers/media/video/gspca/sonixj.c
++++ linux/drivers/media/video/gspca/sonixj.c
+@@ -2488,8 +2488,7 @@ static int sd_start(struct gspca_dev *gs
+ 		reg1 = 0x44;
+ 		reg17 = 0xa2;
+ 		break;
+-	default:
+-/*	case SENSOR_SP80708: */
++	case SENSOR_SP80708:
+ 		init = sp80708_sensor_param1;
+ 		if (mode) {
+ /*??			reg1 = 0x04;	 * 320 clk 48Mhz */
