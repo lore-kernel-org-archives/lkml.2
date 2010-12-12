@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab0LMAFD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:05:03 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36378 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab0LLXrX (ORCPT
+	id S1755364Ab0LMAFB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:05:01 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45872 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517Ab0LMAE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:23 -0500
-From: Andi Kleen <andi@firstfloor.org>
-References: <201012131244.547034648@firstfloor.org>
-In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: tj@kernel.org, jgarzik@redhat.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [139/223] libata: fix NULL sdev dereference race in atapi_qc_complete()
-Message-Id: <20101212234721.B0F8EB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:21 +0100 (CET)
+	Sun, 12 Dec 2010 19:04:58 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 13 Dec 2010 08:58:55 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] mm: kswapd: Treat zone->all_unreclaimable in
+ sleeping_prematurely similar to balance_pgdat()
+Message-Id: <20101213085855.d0e907bd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101210105532.GM20133@csn.ul.ie>
+References: <1291893500-12342-1-git-send-email-mel@csn.ul.ie>
+	<1291893500-12342-6-git-send-email-mel@csn.ul.ie>
+	<20101210102337.8ff1fad2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101210105532.GM20133@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Fri, 10 Dec 2010 10:55:32 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-------------------
-From: Tejun Heo <tj@kernel.org>
+> On Fri, Dec 10, 2010 at 10:23:37AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu,  9 Dec 2010 11:18:19 +0000
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > After DEF_PRIORITY, balance_pgdat() considers all_unreclaimable zones to
+> > > be balanced but sleeping_prematurely does not. This can force kswapd to
+> > > stay awake longer than it should. This patch fixes it.
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > Hmm, maybe the logic works well but I don't like very much.
+> > 
+> > How about adding below instead of pgdat->node_present_pages ?
+> > 
+> > static unsigned long required_balanced_pages(pgdat, classzone_idx)
+> > {
+> > 	unsigned long present = 0;
+> > 
+> > 	for_each_zone_in_node(zone, pgdat) {
+> > 		if (zone->all_unreclaimable) /* Ignore unreclaimable zone at checking balance */
+> > 			continue;
+> > 		if (zone_idx(zone) > classzone_idx)
+> > 			continue;
+> > 		present = zone->present_pages;
+> > 	}
+> > 	return present;
+> > }
+> > 
+> 
+> I'm afraid I do not really understand. After your earlier comments,
+> pgdat_balanced() now looks like
+> 
+> static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
+>                                                 int classzone_idx)
+> {
+>         unsigned long present_pages = 0;
+>         int i;
+> 
+>         for (i = 0; i <= classzone_idx; i++)
+>                 present_pages += pgdat->node_zones[i].present_pages;
+> 
+>         return balanced_pages > (present_pages >> 2);
+> }
+> 
+> so the classzone is being taken into account. I'm not sure what you're
+> asking for it to be changed to. Maybe it'll be clearer after V4 comes
+> out rebased on top of mmotm.
+> 
 
-commit 2a5f07b5ec098edc69e05fdd2f35d3fbb1235723 upstream.
+Ah, this seems okay to me.
 
-SCSI commands may be issued between __scsi_add_device() and dev->sdev
-assignment, so it's unsafe for ata_qc_complete() to dereference
-dev->sdev->locked without checking whether it's NULL or not.  Fix it.
+Thank you.
+-Kame
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- drivers/ata/libata-scsi.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Index: linux/drivers/ata/libata-scsi.c
-===================================================================
---- linux.orig/drivers/ata/libata-scsi.c
-+++ linux/drivers/ata/libata-scsi.c
-@@ -2577,8 +2577,11 @@ static void atapi_qc_complete(struct ata
- 		 *
- 		 * If door lock fails, always clear sdev->locked to
- 		 * avoid this infinite loop.
-+		 *
-+		 * This may happen before SCSI scan is complete.  Make
-+		 * sure qc->dev->sdev isn't NULL before dereferencing.
- 		 */
--		if (qc->cdb[0] == ALLOW_MEDIUM_REMOVAL)
-+		if (qc->cdb[0] == ALLOW_MEDIUM_REMOVAL && qc->dev->sdev)
- 			qc->dev->sdev->locked = 0;
- 
- 		qc->scsicmd->result = SAM_STAT_CHECK_CONDITION;
