@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0LLXrc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:47:32 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36407 "EHLO
+	id S1756292Ab0LMADd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:03:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36429 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab0LLXr1 (ORCPT
+	with ESMTP id S1755504Ab0LLXrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:47:27 -0500
+	Sun, 12 Dec 2010 18:47:31 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: Paul.Zimmerman@synopsys.com, paulz@synopsys.com,
-        sarah.a.sharp@linux.intel.com, gregkh@suse.de, ak@linux.intel.com,
+To: tom.leiming@gmail.com, ajay.gupta@ti.com, sshtylyov@ru.mvista.com,
+        gadiyar@ti.com, balbi@ti.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [143/223] xhci: Fix reset-device and configure-endpoint commands
-Message-Id: <20101212234725.E9C8FB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:47:25 +0100 (CET)
+Subject: [PATCH] [147/223] usb: musb: fix kernel oops when loading musb_hdrc module for the 2nd time
+Message-Id: <20101212234730.43F88B27BF@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:30 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,76 +23,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 7a3783efffc7bc2e702d774e47fad5b8e37e9ad1 upstream.
+commit b212091474a5f967979e62c5c24687ee4d0342d9 upstream.
 
-We have been having problems with the USB-IF Gold Tree tests when plugging
-and unplugging devices from the tree. I have seen that the reset-device
-and configure-endpoint commands, which are invoked from
-xhci_discover_or_reset_device() and xhci_configure_endpoint(), will sometimes
-time out.
+musb driver still may write MUSB_DEVCTL register after clock is disabled
+in musb_platform_exit, which may cause the kernel oops[1] when musb_hdrc
+module is loaded for the 2nd time.
 
-After much debugging, I determined that the commands themselves do not actually
-time out, but rather their completion events do not get delivered to the right
-place.
+The patch fixes the kernel oops in this case.
 
-This happens when the command ring has just wrapped around, and it's enqueue
-pointer is left pointing to the link TRB. xhci_discover_or_reset_device() and
-xhci_configure_endpoint() use the enqueue pointer directly as their command
-TRB pointer, without checking whether it's pointing to the link TRB.
+[1] kernel oops when loading musb_hdrc module for the 2nd time
 
-When the completion event arrives, if the command TRB is pointing to the link
-TRB, the check against the command ring dequeue pointer in
-handle_cmd_in_cmd_wait_list() fails, so the completion inside the command does
-not get signaled.
+[   93.380279] musb_hdrc: version 6.0, musb-dma, otg (peripheral+host), debug=5
+[   93.387847] bus: 'platform': add driver musb_hdrc
+[   93.388153] bus: 'platform': driver_probe_device: matched device musb_hdrc with driver musb_hdrc
+[   93.388183] bus: 'platform': really_probe: probing driver musb_hdrc with device musb_hdrc
+[   93.405090] HS USB OTG: revision 0x33, sysconfig 0x2010, sysstatus 0x1, intrfsel 0x1, simenable  0x0
+[   93.405364] musb_hdrc: ConfigData=0xde (UTMI-8, dyn FIFOs, bulk combine, bulk split, HB-ISO Rx, HB-ISO Tx, SoftConn)
+[   93.405395] musb_hdrc: MHDRC RTL version 1.400
+[   93.405426] musb_hdrc: setup fifo_mode 3
+[   93.405456] musb_hdrc: 7/31 max ep, 3648/16384 memory
+[   93.405487] musb_core_init 1524: musb_hdrc: hw_ep 0shared, max 64
+[   93.405487] musb_core_init 1524: musb_hdrc: hw_ep 1tx, doublebuffer, max 512
+[   93.405517] musb_core_init 1533: musb_hdrc: hw_ep 1rx, doublebuffer, max 512
+[   93.405548] musb_core_init 1524: musb_hdrc: hw_ep 2tx, max 512
+[   93.405578] musb_core_init 1533: musb_hdrc: hw_ep 2rx, max 512
+[   93.405578] musb_core_init 1524: musb_hdrc: hw_ep 3shared, max 256
+[   93.405609] musb_core_init 1524: musb_hdrc: hw_ep 4shared, max 256
+[   93.405853] musb_platform_try_idle 133: b_idle inactive, for idle timer for 7 ms
+[   93.405944] device: 'gadget': device_add
+[   93.406921] PM: Adding info for No Bus:gadget
+[   93.406951] musb_init_controller 2136: OTG mode, status 0, dev80
+[   93.407379] musb_do_idle 51: musb_do_idle: state=1
+[   93.408233] musb_hdrc musb_hdrc: USB OTG mode controller at fa0ab000 using DMA, IRQ 92
+[   93.416656] driver: 'musb_hdrc': driver_bound: bound to device 'musb_hdrc'
+[   93.416687] bus: 'platform': really_probe: bound device musb_hdrc to driver musb_hdrc
+[  124.486938] bus: 'platform': remove driver musb_hdrc
+[  124.490509] twl4030_usb twl4030_usb: twl4030_phy_suspend
+[  124.491424] device: 'gadget': device_unregister
+[  124.491424] PM: Removing info for No Bus:gadget
+[  124.495269]  gadget: musb_gadget_release
+[  124.498992] driver: 'musb_hdrc': driver_release
+[  129.569366] musb_hdrc: version 6.0, musb-dma, otg (peripheral+host), debug=5
+[  129.576934] bus: 'platform': add driver musb_hdrc
+[  129.577209] bus: 'platform': driver_probe_device: matched device musb_hdrc with driver musb_hdrc
+[  129.577239] bus: 'platform': really_probe: probing driver musb_hdrc with device musb_hdrc
+[  129.592651] twl4030_usb twl4030_usb: twl4030_phy_resume
+[  129.592681] Unhandled fault: external abort on non-linefetch (0x1028) at 0xfa0ab404
+[  129.600830] Internal error: : 1028 [#1]
+[  129.604858] last sysfs file: /sys/devices/platform/i2c_omap.3/i2c-3/i2c-dev/i2c-3/dev
+[  129.613067] Modules linked in: musb_hdrc(+) [last unloaded: musb_hdrc]
+[  129.619964] CPU: 0    Not tainted  (2.6.36-next-20101021+ #372)
+[  129.626281] PC is at musb_platform_init+0xb0/0x1c8 [musb_hdrc]
+[  129.632415] LR is at mark_held_locks+0x64/0x94
+[  129.637084] pc : [<bf032198>]    lr : [<c00ad7c4>]    psr: 20000013
+[  129.637084] sp : c6d5fcb0  ip : c6d5fc38  fp : c6d5fcd4
+[  129.649139] r10: c6e72180  r9 : fa0ab000  r8 : c05612e8
+[  129.654602] r7 : 0000005c  r6 : c0559cc8  r5 : c6e72180  r4 : c0561548
+[  129.661468] r3 : 04d60047  r2 : fa0ab000  r1 : c07169d8  r0 : 00000000
+[  129.668304] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[  129.675811] Control: 10c5387d  Table: 86e4c019  DAC: 00000015
+[  129.681823] Process insmod (pid: 554, stack limit = 0xc6d5e2f0)
+[  129.688049] Stack: (0xc6d5fcb0 to 0xc6d60000)
+[  129.692626] fca0:                                     fa0ab000 c0555c54 c6d5fcd4 c0561548
+[  129.701202] fcc0: 00000003 c05612e0 c6d5fe04 c6d5fcd8 bf03140c bf0320f4 c6d5fd9c c6d5fce8
+[  129.709808] fce0: c015cb94 c041448c c06d9d10 ffffffff c6d5fd14 c6d5fd00 c00adbec c6d5fd40
+[  129.718383] fd00: c015d478 c6d5fdb0 c6d5fd24 c00a9d18 c6d5e000 60000013 bf02a4ac c05612bc
+[  129.726989] fd20: c0414fb4 c00a9cf0 c6d5fd54 c6d5fd38 c015bbdc c0244280 c6e8b7b0 c7929330
+[  129.735565] fd40: c6d5fdb0 c6d5fdb0 c6d5fd7c c6e7227c c015c010 c015bb90 c015c2ac c6d5fdb0
+[  129.744171] fd60: c7929330 c6d5fdb0 c7929330 c6e8b7b0 c6d5fd9c 00000000 c7929330 c6e8b7b0
+[  129.752746] fd80: c6d5fdb0 00000000 00000001 00000000 c6d5fde4 c6d5fda0 c015d478 c015cb74
+[  129.761322] fda0: c056138c 00000000 c6d5fdcc c6d5fdb8 c7929330 00000000 c056138c c05612e8
+[  129.769927] fdc0: 00000000 c05612f0 c0c5d62c c06f6e00 c73217c0 00000000 c6d5fdf4 c05612e8
+[  129.778503] fde0: c05612e8 bf02a2e4 c0c5d62c c06f6e00 c73217c0 00000000 c6d5fe14 c6d5fe08
+[  129.787109] fe00: c029a398 bf0311c8 c6d5fe4c c6d5fe18 c0299120 c029a384 c7919140 22222222
+[  129.795684] fe20: c6d5fe4c c05612e8 c056131c bf02a2e4 c0299278 c06f6e00 c73217c0 00000000
+[  129.804290] fe40: c6d5fe6c c6d5fe50 c0299314 c0299020 00000000 c6d5fe70 bf02a2e4 c0299278
+[  129.812866] fe60: c6d5fe94 c6d5fe70 c02987d4 c0299284 c7825060 c78c6618 00000000 bf02a2e4
+[  129.821441] fe80: c06e4c98 00000000 c6d5fea4 c6d5fe98 c0298ea4 c0298778 c6d5fedc c6d5fea8
+[  129.830047] fea0: c0297f84 c0298e8c bf02716c 000b9008 bf02a2e4 bf02a2d0 000b9008 bf02a2e4
+[  129.838623] fec0: 00000000 c06f6e00 bf031000 00000000 c6d5fefc c6d5fee0 c0299614 c0297ec0
+[  129.847229] fee0: bf02a2d0 000b9008 bf02a388 00000000 c6d5ff0c c6d5ff00 c029a868 c02995a8
+[  129.855804] ff00: c6d5ff24 c6d5ff10 c029a88c c029a818 0010281c 000b9008 c6d5ff34 c6d5ff28
+[  129.864410] ff20: bf03104c c029a878 c6d5ff7c c6d5ff38 c00463dc bf03100c 00000000 00000000
+[  129.872985] ff40: 00000000 0010281c 000b9008 bf02a388 00000000 0010281c 000b9008 bf02a388
+[  129.881591] ff60: 00000000 c00521c8 c6d5e000 00000000 c6d5ffa4 c6d5ff80 c00bb9b8 c00463ac
+[  129.890167] ff80: c00adc88 c00ada68 00097e8e bebbfcf4 0010281c 00000080 00000000 c6d5ffa8
+[  129.898742] ffa0: c0052000 c00bb908 00097e8e bebbfcf4 402c9008 0010281c 000b9008 bebbfe5a
+[  129.907348] ffc0: 00097e8e bebbfcf4 0010281c 00000080 00000014 bebbfcf4 bebbfe06 0000005b
+[  129.915924] ffe0: bebbf9a0 bebbf990 0001a108 40263ec0 60000010 402c9008 011b0000 0000007c
+[  129.924499] Backtrace:
+[  129.927185] [<bf0320e8>] (musb_platform_init+0x0/0x1c8 [musb_hdrc]) from [<bf03140c>] (musb_probe+0x250/0xf2c [musb_hdrc])
+[  129.938781]  r6:c05612e0 r5:00000003 r4:c0561548
+[  129.943695] [<bf0311bc>] (musb_probe+0x0/0xf2c [musb_hdrc]) from [<c029a398>] (platform_drv_probe+0x20/0x24)
+[  129.954040] [<c029a378>] (platform_drv_probe+0x0/0x24) from [<c0299120>] (driver_probe_device+0x10c/0x264)
+[  129.964172] [<c0299014>] (driver_probe_device+0x0/0x264) from [<c0299314>] (__driver_attach+0x9c/0xa0)
+[  129.973968] [<c0299278>] (__driver_attach+0x0/0xa0) from [<c02987d4>] (bus_for_each_dev+0x68/0x94)
+[  129.983367]  r7:c0299278 r6:bf02a2e4 r5:c6d5fe70 r4:00000000
+[  129.989349] [<c029876c>] (bus_for_each_dev+0x0/0x94) from [<c0298ea4>] (driver_attach+0x24/0x28)
+[  129.998565]  r7:00000000 r6:c06e4c98 r5:bf02a2e4 r4:00000000
+[  130.004547] [<c0298e80>] (driver_attach+0x0/0x28) from [<c0297f84>] (bus_add_driver+0xd0/0x274)
+[  130.013671] [<c0297eb4>] (bus_add_driver+0x0/0x274) from [<c0299614>] (driver_register+0x78/0x158)
+[  130.023101] [<c029959c>] (driver_register+0x0/0x158) from [<c029a868>] (platform_driver_register+0x5c/0x60)
+[  130.033325]  r7:00000000 r6:bf02a388 r5:000b9008 r4:bf02a2d0
+[  130.039276] [<c029a80c>] (platform_driver_register+0x0/0x60) from [<c029a88c>] (platform_driver_probe+0x20/0xa8)
+[  130.050018] [<c029a86c>] (platform_driver_probe+0x0/0xa8) from [<bf03104c>] (musb_init+0x4c/0x54 [musb_hdrc])
+[  130.060424]  r5:000b9008 r4:0010281c
+[  130.064239] [<bf031000>] (musb_init+0x0/0x54 [musb_hdrc]) from [<c00463dc>] (do_one_initcall+0x3c/0x1c0)
+[  130.074218] [<c00463a0>] (do_one_initcall+0x0/0x1c0) from [<c00bb9b8>] (sys_init_module+0xbc/0x1d0)
+[  130.083709] [<c00bb8fc>] (sys_init_module+0x0/0x1d0) from [<c0052000>] (ret_fast_syscall+0x0/0x3c)
+[  130.093109]  r7:00000080 r6:0010281c r5:bebbfcf4 r4:00097e8e
+[  130.099090] Code: 0a000046 e3a01001 e12fff33 e59520e4 (e5923404)
+[  130.105621] ---[ end trace 1d0bd69deb79164d ]---
 
-The patch below fixes the timeout problem for me.
-
-This should be queued for the 2.6.35 and 2.6.36 stable trees.
-
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Cc: Anand Gadiyar <gadiyar@ti.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/host/xhci.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/usb/musb/musb_core.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Index: linux/drivers/usb/host/xhci.c
+Index: linux/drivers/usb/musb/musb_core.c
 ===================================================================
---- linux.orig/drivers/usb/host/xhci.c
-+++ linux/drivers/usb/host/xhci.c
-@@ -1224,6 +1224,15 @@ static int xhci_configure_endpoint(struc
- 		cmd_completion = command->completion;
- 		cmd_status = &command->status;
- 		command->command_trb = xhci->cmd_ring->enqueue;
-+
-+		/* Enqueue pointer can be left pointing to the link TRB,
-+		 * we must handle that
-+		 */
-+		if ((command->command_trb->link.control & TRB_TYPE_BITMASK)
-+				== TRB_TYPE(TRB_LINK))
-+			command->command_trb =
-+				xhci->cmd_ring->enq_seg->next->trbs;
-+
- 		list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
- 	} else {
- 		in_ctx = virt_dev->in_ctx;
-@@ -1933,6 +1942,15 @@ int xhci_reset_device(struct usb_hcd *hc
- 	/* Attempt to submit the Reset Device command to the command ring */
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	reset_device_cmd->command_trb = xhci->cmd_ring->enqueue;
-+
-+	/* Enqueue pointer can be left pointing to the link TRB,
-+	 * we must handle that
-+	 */
-+	if ((reset_device_cmd->command_trb->link.control & TRB_TYPE_BITMASK)
-+			== TRB_TYPE(TRB_LINK))
-+		reset_device_cmd->command_trb =
-+			xhci->cmd_ring->enq_seg->next->trbs;
-+
- 	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
- 	ret = xhci_queue_reset_device(xhci, slot_id);
- 	if (ret) {
+--- linux.orig/drivers/usb/musb/musb_core.c
++++ linux/drivers/usb/musb/musb_core.c
+@@ -2244,7 +2244,6 @@ static int __exit musb_remove(struct pla
+ #endif
+ 	musb_writeb(musb->mregs, MUSB_DEVCTL, 0);
+ 	musb_platform_exit(musb);
+-	musb_writeb(musb->mregs, MUSB_DEVCTL, 0);
+ 
+ 	musb_free(musb);
+ 	iounmap(ctrl_base);
