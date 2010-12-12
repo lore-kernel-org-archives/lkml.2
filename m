@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab0LLXsn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 18:48:43 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:36890 "EHLO
+	id S1755438Ab0LLXrV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 18:47:21 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36316 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125Ab0LLXsl (ORCPT
+	with ESMTP id S1755384Ab0LLXrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:48:41 -0500
+	Sun, 12 Dec 2010 18:47:15 -0500
 From: Andi Kleen <andi@firstfloor.org>
 References: <201012131244.547034648@firstfloor.org>
 In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: drosenberg@vsecurity.com, davem@davemloft.net, gregkh@suse.de,
+To: daenzer@vmware.com, daenzer@vmware.com, daenzer@vmware.com,
+        markus@trippelsdorf.de, airlied@redhat.com, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [213/223] rds: Integer overflow in RDS cmsg handling
-Message-Id: <20101212234840.A7E4FB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:48:40 +0100 (CET)
+Subject: [PATCH] [132/223] drm/radeon/kms: Fix retrying ttm_bo_init() after it failed once.
+Message-Id: <20101212234714.4FA9FB27C0@basil.firstfloor.org>
+Date: Mon, 13 Dec 2010 00:47:14 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -22,37 +23,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <daenzer@vmware.com>
 
-commit 218854af84038d828a32f061858b1902ed2beec6 upstream.
+commit 2b66b50b12cabc05f05543e792d4c9c2465d5702 upstream.
 
-In rds_cmsg_rdma_args(), the user-provided args->nr_local value is
-restricted to less than UINT_MAX.  This seems to need a tighter upper
-bound, since the calculation of total iov_size can overflow, resulting
-in a small sock_kmalloc() allocation.  This would probably just result
-in walking off the heap and crashing when calling rds_rdma_pages() with
-a high count value.  If it somehow doesn't crash here, then memory
-corruption could occur soon after.
+If ttm_bo_init() returns failure, it already destroyed the BO, so we need to
+retry from scratch.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Michel Dänzer <daenzer@vmware.com>
+Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/rds/rdma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_object.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux/net/rds/rdma.c
+Index: linux/drivers/gpu/drm/radeon/radeon_object.c
 ===================================================================
---- linux.orig/net/rds/rdma.c
-+++ linux/net/rds/rdma.c
-@@ -474,7 +474,7 @@ static struct rds_rdma_op *rds_rdma_prep
- 		goto out;
+--- linux.orig/drivers/gpu/drm/radeon/radeon_object.c
++++ linux/drivers/gpu/drm/radeon/radeon_object.c
+@@ -102,6 +102,8 @@ int radeon_bo_create(struct radeon_devic
+ 		type = ttm_bo_type_device;
  	}
- 
--	if (args->nr_local > (u64)UINT_MAX) {
-+	if (args->nr_local > UIO_MAXIOV) {
- 		ret = -EMSGSIZE;
- 		goto out;
- 	}
+ 	*bo_ptr = NULL;
++
++retry:
+ 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
+ 	if (bo == NULL)
+ 		return -ENOMEM;
+@@ -109,8 +111,6 @@ int radeon_bo_create(struct radeon_devic
+ 	bo->gobj = gobj;
+ 	bo->surface_reg = -1;
+ 	INIT_LIST_HEAD(&bo->list);
+-
+-retry:
+ 	radeon_ttm_placement_from_domain(bo, domain);
+ 	/* Kernel allocation are uninterruptible */
+ 	mutex_lock(&rdev->vram_mutex);
