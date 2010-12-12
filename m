@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab0LLNuS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 08:50:18 -0500
+	id S1753308Ab0LLNuY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 08:50:24 -0500
 Received: from mail-ew0-f45.google.com ([209.85.215.45]:61140 "EHLO
 	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab0LLNuQ (ORCPT
+	with ESMTP id S1753181Ab0LLNuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 08:50:16 -0500
+	Sun, 12 Dec 2010 08:50:21 -0500
+Message-ID: <4D04D2E2.20100@ru.mvista.com>
+Date: Sun, 12 Dec 2010 16:49:22 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-From: Tom Gundersen <teg@jklm.no>
-Date: Sun, 12 Dec 2010 14:49:54 +0100
-Message-ID: <AANLkTimdBb-j=8qrkO+dbH6ATE_64vODCGbfqO=H5YGZ@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Igor Plyatov <plyatov@gmail.com>
+CC: sshtylyov@mvista.com, jgarzik@pobox.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, geomatsi@gmail.com,
+        nicolas.ferre@atmel.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        christian.glindkamp@taskit.de, ryan@bluewatersys.com,
+        pgsellmann@portner-elektronik.at
+Subject: Re: [PATCH v2] ata: pata_at91.c bugfix for high master clock
+References: <1292099846-24528-1-git-send-email-plyatov@gmail.com>
+In-Reply-To: <1292099846-24528-1-git-send-email-plyatov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Hello.
 
-I have a question about your patch:
+On 11-12-2010 23:37, Igor Plyatov wrote:
 
-If I understand sched-rt-group.txt correctly, a non-root user will not
-be able to run rt tasks if it is in a cgroup that has not been
-explicitly given non-zero bandwidth. I could not see from your patch
-where the bandwidth is assigned. Care to explain how it works?
+> The AT91SAM9 microcontrollers with master clock higher then 105 MHz
+> and PIO0, have overflow of the NCS_RD_PULSE value in the MSB. This
+> lead to "NCS_RD_PULSE" pulse longer then "NRD_CYCLE" pulse and driver
+> does not detect ATA device.
 
-Sorry if this has already been discussed (or if it should be obvious).
+> Signed-off-by: Igor Plyatov<plyatov@gmail.com>
+[...]
 
-Cheers,
+> diff --git a/drivers/ata/pata_at91.c b/drivers/ata/pata_at91.c
+> index 0da0dcc..a462405 100644
+> --- a/drivers/ata/pata_at91.c
+> +++ b/drivers/ata/pata_at91.c
+[...]
+> @@ -50,7 +52,7 @@ struct at91_ide_info {
+>   };
+>
+>   static const struct ata_timing initial_timing =
+> -	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 600, 0};
+> +	{XFER_PIO_0, 70, 290, 240, 600, 165, 150, 0, 600, 0};
 
-Tom
+    BTW, you haven't described this in the changelog...
+
+WBR, Sergei
