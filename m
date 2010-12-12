@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab0LLSuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 13:50:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41501 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab0LLSuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 13:50:15 -0500
-Message-ID: <4D05195A.8070107@kernel.org>
-Date: Sun, 12 Dec 2010 19:50:02 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+	id S1753848Ab0LLTAZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 14:00:25 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50856 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753596Ab0LLTAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 14:00:24 -0500
+Date: Sun, 12 Dec 2010 19:00:35 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
         Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lrg@slimlogic.co.uk>
 Subject: Re: [PATCH 09/30] sound: don't use flush_scheduled_work()
-References: <1292086307-19211-1-git-send-email-tj@kernel.org> <1292086307-19211-10-git-send-email-tj@kernel.org> <s5hk4jfbc94.wl%tiwai@suse.de> <4D0492CB.2010702@kernel.org> <s5hhbejb1yr.wl%tiwai@suse.de> <20101212124041.GD15189@opensource.wolfsonmicro.com> <4D04F211.6080602@kernel.org> <20101212184733.GB20358@opensource.wolfsonmicro.com>
-In-Reply-To: <20101212184733.GB20358@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Dec 2010 18:50:04 +0000 (UTC)
+Message-ID: <20101212190035.GA21207@opensource.wolfsonmicro.com>
+References: <1292086307-19211-1-git-send-email-tj@kernel.org>
+ <1292086307-19211-10-git-send-email-tj@kernel.org>
+ <s5hk4jfbc94.wl%tiwai@suse.de>
+ <4D0492CB.2010702@kernel.org>
+ <s5hhbejb1yr.wl%tiwai@suse.de>
+ <20101212124041.GD15189@opensource.wolfsonmicro.com>
+ <4D04F211.6080602@kernel.org>
+ <20101212184733.GB20358@opensource.wolfsonmicro.com>
+ <4D05195A.8070107@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D05195A.8070107@kernel.org>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Dec 12, 2010 at 07:50:02PM +0100, Tejun Heo wrote:
 
-On 12/12/2010 07:47 PM, Mark Brown wrote:
-> On Sun, Dec 12, 2010 at 05:02:25PM +0100, Tejun Heo wrote:
-> 
->> Weirdly, lkml seemed to have eaten the original postings.  I can't
->> find them in any archive.  The following is the original patch.
-> 
-> Possibly too big or something?
-> 
->>   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=01f8126c2e14245cf0ba11a25fb9a291710066e1;hp=cd591981a8d06d6aaca6d7ef2412d12a7adf47ed
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> For future reference please note that sound/soc is maintained as a
-> subtree of ALSA - if you could send patches to that separately to myself
-> and Liam as well as Takashi and Jaroslav that'd make life a little
-> easier.
+> > For future reference please note that sound/soc is maintained as a
+> > subtree of ALSA - if you could send patches to that separately to myself
+> > and Liam as well as Takashi and Jaroslav that'd make life a little
+> > easier.
 
-I can resplit and resend if necessary.  Takashi, do you wanna take the
-patch as-is or resplit?  Or shall I route it through wq tree?
+> I can resplit and resend if necessary.  Takashi, do you wanna take the
+> patch as-is or resplit?  Or shall I route it through wq tree?
 
-Thanks.
+No need, just merge it along with the rest of the patch however that's
+going.  I was mentioning this for future reference rather than for the
+present patch.
 
--- 
-tejun
+Liam, will the TWL6040 updates Magi posted the other day also be
+affected?  I seem to remember they added the same pattern as WM835x has.
