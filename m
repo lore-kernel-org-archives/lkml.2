@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab0LMUVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 15:21:15 -0500
-Received: from kroah.org ([198.145.64.141]:32873 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755018Ab0LMUVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 15:21:15 -0500
-Date: Mon, 13 Dec 2010 12:18:43 -0800
-From: Greg KH <greg@kroah.com>
-To: Hank Janssen <hjanssen@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/1] hv: Use only one receive buffer and kmalloc on
- initialize
-Message-ID: <20101213201843.GA19409@kroah.com>
-References: <1292262350-29001-1-git-send-email-hjanssen@microsoft.com>
- <20101213183448.GA11745@kroah.com>
- <8AFC7968D54FB448A30D8F38F259C5622C0BB71F@TK5EX14MBXC116.redmond.corp.microsoft.com>
- <20101213194101.GA18431@kroah.com>
- <8AFC7968D54FB448A30D8F38F259C5622C0BC809@TK5EX14MBXC116.redmond.corp.microsoft.com>
+	id S1755307Ab0LMUYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 15:24:40 -0500
+Received: from capside.net ([81.19.98.74]:37350 "EHLO eul0600410.eu.verio.net"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034Ab0LMUYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 15:24:39 -0500
+Date: Mon, 13 Dec 2010 21:24:30 +0100
+From: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH v2] Staging: rt2860: include KERN_* in printk
+Message-ID: <20101213202429.GA6811@bart.evergreen.loc>
+Mail-Followup-To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+	devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>
+References: <1292176591-26081-4-git-send-email-agimenez@sysvalve.es>
+ <1292198324-12072-1-git-send-email-agimenez@sysvalve.es>
+ <20101213183032.GA6147@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <8AFC7968D54FB448A30D8F38F259C5622C0BC809@TK5EX14MBXC116.redmond.corp.microsoft.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101213183032.GA6147@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 08:06:20PM +0000, Hank Janssen wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Monday, December 13, 2010 11:41 AM
-> > > The current versions of Hyper-V support interrupt handling on CPU0 only.
-> > > I can make multiple buffers per channel, but because of Hyper-V
-> > > implementation It does not really make a difference.
+On Mon, Dec 13, 2010 at 10:30:32AM -0800, Greg KH wrote:
+> On Mon, Dec 13, 2010 at 12:58:44AM +0100, L. Alberto Giménez wrote:
+> > Fix checkpatch complains.
 > > 
-> > Then put a big fat note in there saying this, and that it will have to change if
-> > the hyperv channel ever changes.
-> > 
-> > Hm, how will you handle things if the hyperv core changes and an old kernel
-> > is running this code where things were "assumed" about the reentrancy
-> > happening here?
+> > The change of the DBGPRINT_ERR macro causes the change on the callers.
 > 
-> I will re-roll this patch to have a buffer per channel. It is a more elegant design
-> Even though Hyper-V behavior is not changing in Win8 for this.
+> What change?
 
-Win8, fine, but what about Win9?  :)
+-#define DBGPRINT_ERR(Fmt)           \
+-{                                   \
+-    printk("ERROR! ");          \
+-    printk Fmt;                  \
+-}
++#define DBGPRINT_ERR(fmt, args...) printk(KERN_ERR fmt, ##args)
 
-thanks for changing it.
+Recommended by Joe. I agree that it is cleaner and more compliant.
+That macro needed that the callers use two parens, as in:
 
-greg k-h
+DBGPRINT_ERR(("MlmeInit failed, Status[=0x%08x]\n", Status));
+
+With the introduced change, all calls to the DBGPRINT_ERR macro must be
+translated to a regular single-parenthesized.
+
+DBGPRINT_ERR("NICInitializeAdapter failed, Status[=0x%08x]\n", Status);
+
+Yes, it's crap code, but I own an eeepc 901 and this was the perfect excuse to
+get my harnds dirty :)
+
+> 
+> > 
+> > Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
+> > ---
+> >  drivers/staging/rt2860/chip/rtmp_phy.h      |   14 ++++++------
+> >  drivers/staging/rt2860/common/ba_action.c   |    6 ++--
+> >  drivers/staging/rt2860/common/cmm_data.c    |    2 +-
+> >  drivers/staging/rt2860/common/cmm_mac_pci.c |   10 ++++----
+> >  drivers/staging/rt2860/common/cmm_mac_usb.c |    2 +-
+> >  drivers/staging/rt2860/common/cmm_wpa.c     |   22 +++++++-----------
+> >  drivers/staging/rt2860/common/ee_efuse.c    |   15 +++++++++---
+> >  drivers/staging/rt2860/common/mlme.c        |   13 +++++------
+> >  drivers/staging/rt2860/common/rt_rf.c       |    3 +-
+> >  drivers/staging/rt2860/common/rtmp_init.c   |   24 ++++++++-----------
+> >  drivers/staging/rt2860/common/rtmp_mcu.c    |    4 +-
+> >  drivers/staging/rt2860/common/spectrum.c    |    2 +-
+> >  drivers/staging/rt2860/pci_main_dev.c       |    2 +-
+> >  drivers/staging/rt2860/rt_linux.c           |   21 ++++++++---------
+> >  drivers/staging/rt2860/rt_linux.h           |    6 +----
+> >  drivers/staging/rt2860/rt_main_dev.c        |    2 +-
+> >  drivers/staging/rt2860/rt_usb.c             |   32 +++++++++++++-------------
+> >  drivers/staging/rt2860/sta/assoc.c          |    2 +-
+> >  drivers/staging/rt2860/sta/auth.c           |    3 +-
+> >  drivers/staging/rt2860/sta/connect.c        |    3 +-
+> >  drivers/staging/rt2860/sta/rtmp_data.c      |    2 +-
+> >  drivers/staging/rt2860/sta/sync.c           |    6 ++--
+> >  drivers/staging/rt2860/usb_main_dev.c       |   12 +++++-----
+> >  23 files changed, 99 insertions(+), 109 deletions(-)
+> 
+> That's a lot of different changes all in one patch.  Care to break it up
+> into a few different patches so it makes more sense?
+
+I can break it up, but it made sense to me to group all KERN_* changes. That
+included the DBGPRINT_ERR fix, that caused *a lot* of files to be changed as
+well (to fix the macro call too).
+
+Anyway, if you want me to split it up, please confirm :)
+
+Regards,
+-- 
+L. Alberto Giménez
+JabberID agimenez@jabber.sysvalve.es
+GnuPG key ID 0x3BAABDE1
