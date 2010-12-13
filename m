@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab0LMLsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:48:12 -0500
-Received: from mx3.schottelius.org ([77.109.138.221]:44413 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab0LMLsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:48:11 -0500
-X-Greylist: delayed 409 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 06:48:10 EST
-Date: Mon, 13 Dec 2010 12:42:02 +0100
-From: Nico Schottelius <nico-kernel@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: filesystem: suspend issue / Trace 2.6.37-rc5-00062-g6313e3c
-Message-ID: <20101213114202.GB30023@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-kernel@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1757170Ab0LMLtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:49:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18330 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751780Ab0LMLtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 06:49:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
+   d="scan'208";a="867556639"
+Date: Mon, 13 Dec 2010 19:49:11 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/47] IO-less dirty throttling v3
+Message-ID: <20101213114911.GA2232@localhost>
+References: <20101213064249.648862451@intel.com>
+ <1292239631.6803.186.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0eh6TmSyL6TZE2Uz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.37-rc5-00062-g6313e3c x86_64)
+In-Reply-To: <1292239631.6803.186.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 13, 2010 at 07:27:11PM +0800, Peter Zijlstra wrote:
+> On Mon, 2010-12-13 at 14:42 +0800, Wu Fengguang wrote:
+> > bdi dirty limit fixes
+> >         [PATCH 01/47] writeback: enabling gate limit for light dirtied bdi
+> >         [PATCH 02/47] writeback: safety margin for bdi stat error
+> > 
+> > v2 patches rebased onto the above two fixes
+> >         [PATCH 03/47] writeback: IO-less balance_dirty_pages()
+> >         [PATCH 04/47] writeback: consolidate variable names in balance_dirty_pages()
+> >         [PATCH 05/47] writeback: per-task rate limit on balance_dirty_pages()
+> >         [PATCH 06/47] writeback: prevent duplicate balance_dirty_pages_ratelimited() calls
+> >         [PATCH 07/47] writeback: account per-bdi accumulated written pages
+> >         [PATCH 08/47] writeback: bdi write bandwidth estimation
+> >         [PATCH 09/47] writeback: show bdi write bandwidth in debugfs
+> >         [PATCH 10/47] writeback: quit throttling when bdi dirty pages dropped low
+> >         [PATCH 11/47] writeback: reduce per-bdi dirty threshold ramp up time
+> >         [PATCH 12/47] writeback: make reasonable gap between the dirty/background thresholds
+> >         [PATCH 13/47] writeback: scale down max throttle bandwidth on concurrent dirtiers
+> >         [PATCH 14/47] writeback: add trace event for balance_dirty_pages()
+> >         [PATCH 15/47] writeback: make nr_to_write a per-file limit
+> > 
+> > trivial fixes for v2
+> >         [PATCH 16/47] writeback: make-nr_to_write-a-per-file-limit fix
+> >         [PATCH 17/47] writeback: do uninterruptible sleep in balance_dirty_pages()
+> >         [PATCH 18/47] writeback: move BDI_WRITTEN accounting into __bdi_writeout_inc()
+> >         [PATCH 19/47] writeback: fix increasement of nr_dirtied_pause
+> >         [PATCH 20/47] writeback: use do_div in bw calculation
+> >         [PATCH 21/47] writeback: prevent divide error on tiny HZ
+> >         [PATCH 22/47] writeback: prevent bandwidth calculation overflow
+> > 
+> > spinlock protected bandwidth estimation, as suggested by Peter
+> >         [PATCH 23/47] writeback: spinlock protected bdi bandwidth update
+> > 
+> > algorithm updates
+> >         [PATCH 24/47] writeback: increase pause time on concurrent dirtiers
+> >         [PATCH 25/47] writeback: make it easier to break from a dirty exceeded bdi
+> >         [PATCH 26/47] writeback: start background writeback earlier
+> >         [PATCH 27/47] writeback: user space think time compensation
+> >         [PATCH 28/47] writeback: bdi base throttle bandwidth
+> >         [PATCH 29/47] writeback: smoothed bdi dirty pages
+> >         [PATCH 30/47] writeback: adapt max balance pause time to memory size
+> >         [PATCH 31/47] writeback: increase min pause time on concurrent dirtiers 
+> 
+> I would think it would be easier for review to fold all this back into
+> sensible patches.
+> 
+> Reviewing is lots easier if the patches present logical steps. The
+> presented series will have us looking back and forth, review patch, find
+> bugs, then scan fwd to see if the bug has been solved, etc..
 
---0eh6TmSyL6TZE2Uz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good suggestion. Sorry I did have the plan to fold them at some later
+time.  I'll do a new version to fold the patches 16-25.  26-31 will be
+retained since they are logical enhancements that do not involve
+back-and-forth changes. 12 will be removed as it seems not absolutely
+necessary -- let the users do whatever they feel OK, even if it means
+make the throttling algorithms work in some suboptimal condition.
 
-Hey Guys,
-
-trying to suspend (after several times) gives me the following error:
-
-
-[168459.057712] ------------[ cut here ]------------
-[168459.057720] WARNING: at fs/dcache.c:1984 prepend_path+0x10c/0x122()
-[168459.057722] Hardware name: 3626A14
-[168459.057723] Root dentry has weird name <>
-[168459.057724] Modules linked in: nfs lockd fscache nfs_acl auth_rpcgss su=
-nrpc cdc_ether usbnet cdc_acm sr_mod cdrom nls_utf8 hfsplus nls_iso8859_1 n=
-ls_cp437 vfat fat fbcon tileblit font bitblit fbcon_rotate fbcon_cw fbcon_u=
-d fbcon_ccw softcursor ipv6 usb_storage usb_libusual uas uvcvideo videodev =
-v4l2_compat_ioctl32 btusb bluetooth sha256_generic aesni_intel cryptd aes_x=
-86_64 aes_generic cbc dm_crypt dm_mod arc4 ecb i915 iwlagn drm_kms_helper d=
-rm iwlcore snd_hda_codec_hdmi snd_hda_codec_conexant mac80211 kvm_intel fb =
-snd_pcm_oss thinkpad_acpi snd_mixer_oss fbdev cfg80211 i2c_algo_bit cfbcopy=
-area ehci_hcd tpm_tis kvm i2c_i801 i2c_core snd_hda_intel sg usbcore joydev=
- mac_hid snd_hda_codec e1000e tpm snd_hwdep hwmon wmi snd_pcm nvram snd_tim=
-er rfkill tpm_bios pcspkr snd video intel_ips soundcore snd_page_alloc inte=
-l_agp intel_gtt backlight output cfbimgblt cfbfillrect rtc_cmos rtc_core rt=
-c_lib
-[168459.057793] Pid: 561, comm: lsof Not tainted 2.6.37-rc5-00062-g6313e3c =
-#51
-[168459.057794] Call Trace:
-[168459.057802]  [<ffffffff81038ded>] warn_slowpath_common+0x80/0x98
-[168459.057805]  [<ffffffff81038e99>] warn_slowpath_fmt+0x41/0x43
-[168459.057808]  [<ffffffff810dc271>] prepend_path+0x10c/0x122
-[168459.057810]  [<ffffffff810dc2f1>] path_with_deleted+0x6a/0x73
-[168459.057813]  [<ffffffff810dc3a8>] d_path+0xae/0xdc
-[168459.057816]  [<ffffffff81112dba>] proc_pid_readlink+0x6e/0xc4
-[168459.057821]  [<ffffffff810cf93f>] sys_readlinkat+0x71/0x93
-[168459.057823]  [<ffffffff810cf977>] sys_readlink+0x16/0x18
-[168459.057827]  [<ffffffff8100293b>] system_call_fastpath+0x16/0x1b
-[168459.057829] ---[ end trace 6476685f8c0cd3a4 ]---
-
-
-I did a umount -lf /path/to/nfs before, because I suspended and resumed
-with an nfs mount.
-
-Not sure whether this is the reason, but now I'm unable to susepnd.
-
-Cheers,
-
-Nico
-
-
---=20
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-
---0eh6TmSyL6TZE2Uz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk0GBooACgkQ19zI5DGHffCfMwCdFDTkB7egZfKpqWL14hgRKOyK
-BGoAnjJGSjsXE4woTvzEfJ6ouGU18KY3
-=jP3k
------END PGP SIGNATURE-----
-
---0eh6TmSyL6TZE2Uz--
+Thanks,
+Fengguang
