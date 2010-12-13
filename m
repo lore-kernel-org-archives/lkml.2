@@ -1,123 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab0LMHZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 02:25:29 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55134 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab0LMHZ2 (ORCPT
+	id S1755600Ab0LMHbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 02:31:01 -0500
+Received: from mail.karo-electronics.de ([213.146.116.110]:33944 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab0LMHbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 02:25:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=M6c4ApSJ3a5aGASilsWgFyIZo2BcXAMrHgDN/olwYjey8bBwkoN8FgamKm6ZgYPcpl
-         xgf+zsCnTMDOY6i4ilTEhLyp07QjnBNMiqVaGOx8YVGTbHPwOkXXl/MsytLDN+G47WY5
-         wLhsFcX4v+s8tX5/t9zC71bn/BRyQCoV0lfxE=
-Subject: Re: [patch] fs: scale vfsmount refcount (was Re: rcu-walk and
- dcache scaling tree update and status)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101213024217.GC6522@amd>
-References: <20101213023733.GB6522@amd>  <20101213024217.GC6522@amd>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 08:25:13 +0100
-Message-ID: <1292225113.18698.22.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 13 Dec 2010 02:31:00 -0500
+X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 02:30:59 EST
+Message-ID: <19717.51684.567190.925646@ipc1.ka-ro>
+Date: Mon, 13 Dec 2010 08:23:16 +0100
+From: =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
+To: Liu Ying <liu.y.victor@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>, linux-fbdev@vger.kernel.org,
+        Zhang Lily-R58066 <r58066@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 5/9] Add i.MX5 framebuffer driver
+In-Reply-To: <AANLkTikZowDCK4JPiCyEou1ekRuYA1qGnKrBPT5dXB+8@mail.gmail.com>
+References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de>
+	<1291902441-24712-6-git-send-email-s.hauer@pengutronix.de>
+	<AANLkTikZowDCK4JPiCyEou1ekRuYA1qGnKrBPT5dXB+8@mail.gmail.com>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 13 dÃ©cembre 2010 Ã  13:42 +1100, Nick Piggin a Ã©crit :
-> + */
-> +static inline void add_mnt_count(struct vfsmount *mnt, int n)
+Hi,
 
-maybe name it __add_mnt_count() (should be called with preempt off)
-
-> +{
-> +#ifdef CONFIG_SMP
-> +	(*per_cpu_ptr(mnt->mnt_count, smp_processor_id())) += n;
-
-__this_cpu_add(mnt->mnt_count, n);
-
-> +#else
-> +	mnt->mnt_count += n;
-> +#endif
-> +}
-
-and define a preempt safe version :
-
-static inline void __add_mnt_count(struct vfsmount *mnt, int n)
-{
-#ifdef CONFIG_SMP
-	__this_cpu_add(mnt->mnt_count, n);
-#else
-	mnt->mnt_count += n;
-#endif
-}
-
-static inline void add_mnt_count(struct vfsmount *mnt, int n)
-{
-#ifdef CONFIG_SMP
-	this_cpu_add(mnt->mnt_count, n);
-#else
-	preempt_disable();
-	mnt->mnt_count += n;
-	preempt_enable();
-#endif
-}
-
-> +
-> +static inline void set_mnt_count(struct vfsmount *mnt, int n)
-> +{
-> +#ifdef CONFIG_SMP
+Liu Ying writes:
+> 6) I prefer to find the video mode in modedb first, and if we cannot
+> find the video mode in common video mode data base, we can find a
+> video mode in custom video mode data base which is defined in platform
+> data. In this way, we don't need to export common modefb.
+> 
+IMO platform specific video modes should take precedence over generic
+ones, so the platform data should be evaluated first.
 
 
-> +	preempt_disable();
-> +	(*per_cpu_ptr(mnt->mnt_count, smp_processor_id())) = n;
-> +	preempt_enable();
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-last 3 lines can be replaced by :
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-	this_cpu_write(mnt->mnt_count, n);
-
-> +#else
-> +	mnt->mnt_count = n;
-> +#endif
-> +}
-> +
-
->  #ifdef CONFIG_SMP
->  	int __percpu *mnt_writers;
-> +	int __percpu *mnt_count;
->  #else
->  	int mnt_writers;
-> +	int mnt_count;
->  #endif
-
-You could use a struct and one per cpu allocation to use one cache line
-for both objects :
-
-struct mnt_counters {
-	int writers;
-	int count;
-};
-
-...
-
-#ifdef CONFIG_SMP
-	struct mnt_counters __percpu *mnt_counters;
-#else
-	struct mnt_counters mnt_counters;
-#endif
-
-This would use one pointer instead of two in SMP
-
-
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
