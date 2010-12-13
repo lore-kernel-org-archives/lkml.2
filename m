@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab0LMUni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 15:43:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51164 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab0LMUng (ORCPT
+	id S1755401Ab0LMUqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 15:46:09 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63095 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754676Ab0LMUqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 15:43:36 -0500
-Message-ID: <4D06852B.8030409@oracle.com>
-Date: Mon, 13 Dec 2010 12:42:19 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Mon, 13 Dec 2010 15:46:07 -0500
+Message-ID: <4D068600.4030405@metafoo.de>
+Date: Mon, 13 Dec 2010 21:45:52 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andres Salomon <dilinger@collabora.co.uk>
-Subject: Re: [PATCH V2 -next] cs5535: fix printk format warnings
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>	 <20101213114421.3abe0dcb.randy.dunlap@oracle.com> <1292272085.26970.50.camel@Joe-Laptop>
-In-Reply-To: <1292272085.26970.50.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/20] mfd: jz4740-adc: irq_data conversion.
+References: <cover.1292241952.git.buytenh@wantstofly.org> <20101213123043.GR15575@mail.wantstofly.org>
+In-Reply-To: <20101213123043.GR15575@mail.wantstofly.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/10 12:28, Joe Perches wrote:
-> Use vsprintf extension %pR to format resource.
-> 
-> Original-patch-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Hi
+
+There was already a similar patch yesterday:
+https://lkml.org/lkml/2010/12/12/111
+
+Thanks,
+- - Lars
+
+
+On 12/13/2010 01:30 PM, Lennert Buytenhek wrote:
+> Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 > ---
+>  drivers/mfd/jz4740-adc.c |   25 +++++++++++++------------
+>  1 files changed, 13 insertions(+), 12 deletions(-)
 > 
->  drivers/gpio/cs5535-gpio.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
-> index b566fd5e..d7da7a1 100644
-> --- a/drivers/gpio/cs5535-gpio.c
-> +++ b/drivers/gpio/cs5535-gpio.c
-> @@ -266,8 +266,7 @@ static int __devinit cs5535_gpio_probe(struct platform_device *pdev)
->  	cs5535_gpio_chip.pdev = pdev;
->  	spin_lock_init(&cs5535_gpio_chip.lock);
+> diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+> index 9dd1b33..955b0d0 100644
+> --- a/drivers/mfd/jz4740-adc.c
+> +++ b/drivers/mfd/jz4740-adc.c
+> @@ -84,31 +84,32 @@ static inline void jz4740_adc_irq_set_masked(struct jz4740_adc *adc, int irq,
+>  	spin_unlock_irqrestore(&adc->lock, flags);
+>  }
 >  
-> -	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n",
-> -			res->start, res->end);
-> +	dev_info(&pdev->dev, "reserved resource region %pR\n", res);
+> -static void jz4740_adc_irq_mask(unsigned int irq)
+> +static void jz4740_adc_irq_mask(struct irq_data *d)
+>  {
+> -	struct jz4740_adc *adc = get_irq_chip_data(irq);
+> -	jz4740_adc_irq_set_masked(adc, irq, true);
+> +	struct jz4740_adc *adc = irq_data_get_irq_chip_data(d);
+> +	jz4740_adc_irq_set_masked(adc, d->irq, true);
+>  }
 >  
->  	/* mask out reserved pins */
->  	mask &= 0x1F7FFFFF;
-> 
-> 
+> -static void jz4740_adc_irq_unmask(unsigned int irq)
+> +static void jz4740_adc_irq_unmask(struct irq_data *d)
+>  {
+> -	struct jz4740_adc *adc = get_irq_chip_data(irq);
+> -	jz4740_adc_irq_set_masked(adc, irq, false);
+> +	struct jz4740_adc *adc = irq_data_get_irq_chip_data(d);
+> +	jz4740_adc_irq_set_masked(adc, d->irq, false);
+>  }
+>  
+> -static void jz4740_adc_irq_ack(unsigned int irq)
+> +static void jz4740_adc_irq_ack(struct irq_data *d)
+>  {
+> -	struct jz4740_adc *adc = get_irq_chip_data(irq);
+> +	struct jz4740_adc *adc = irq_data_get_irq_chip_data(d);
+> +	unsigned int irq;
+>  
+> -	irq -= adc->irq_base;
+> +	irq = d->irq - adc->irq_base;
+>  	writeb(BIT(irq), adc->base + JZ_REG_ADC_STATUS);
+>  }
+>  
+>  static struct irq_chip jz4740_adc_irq_chip = {
+>  	.name = "jz4740-adc",
+> -	.mask = jz4740_adc_irq_mask,
+> -	.unmask = jz4740_adc_irq_unmask,
+> -	.ack = jz4740_adc_irq_ack,
+> +	.irq_mask = jz4740_adc_irq_mask,
+> +	.irq_unmask = jz4740_adc_irq_unmask,
+> +	.irq_ack = jz4740_adc_irq_ack,
+>  };
+>  
+>  static void jz4740_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-OK.  How about similar patch for the other warnings:
-
-drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
-drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+iEYEARECAAYFAk0Ghf8ACgkQBX4mSR26RiMr4ACeJpqumfCY2TOrQQRTNVW7atwn
+yJAAn37a/pAJl/Gih1quoNuI+tgtje9z
+=QOer
+-----END PGP SIGNATURE-----
