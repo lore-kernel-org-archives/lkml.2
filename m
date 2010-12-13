@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab0LMU5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 15:57:17 -0500
-Received: from mail.perches.com ([173.55.12.10]:2561 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755095Ab0LMU5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 15:57:16 -0500
-Subject: [PATCH V3 -next] cs5535: fix printk format warnings
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D06852B.8030409@oracle.com>
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
-	 <20101213114421.3abe0dcb.randy.dunlap@oracle.com>
-	 <1292272085.26970.50.camel@Joe-Laptop>  <4D06852B.8030409@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 12:57:14 -0800
-Message-ID: <1292273834.26970.58.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756050Ab0LMU7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 15:59:16 -0500
+Received: from relay01.digicable.hu ([92.249.128.189]:44626 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab0LMU7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 15:59:15 -0500
+Message-ID: <4D06891D.3060605@freemail.hu>
+Date: Mon, 13 Dec 2010 21:59:09 +0100
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usbip: remove double giveback of URB
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 78.131.104.28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use vsprintf extension %pR to format resource.
+From: Márton Németh <nm127@freemail.hu>
 
-Original-patch-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Joe Perches <joe@perches.com>
+In the vhci_urb_dequeue() function the TCP connection is checked twice.
+Each time when the TCP connection is closed the URB is unlinked and given
+back. Remove the second attempt of unlinking and giving back of the URB completely.
 
+This patch fixes the bug described at https://bugzilla.kernel.org/show_bug.cgi?id=24872 .
+
+Signed-off-by: Márton Németh <nm127@freemail.hu>
 ---
+--- linux-2.6.37-rc5/drivers/staging/usbip/vhci_hcd.c.orig	2010-12-13 08:21:51.000000000 +0100
++++ linux-2.6.37-rc5/drivers/staging/usbip/vhci_hcd.c	2010-12-13 21:17:30.000000000 +0100
+@@ -799,20 +799,6 @@ static int vhci_urb_dequeue(struct usb_h
+ 		spin_unlock_irqrestore(&vdev->priv_lock, flags2);
+ 	}
 
-V3 - Might as well do both files, thanks Randy...
+-
+-	if (!vdev->ud.tcp_socket) {
+-		/* tcp connection is closed */
+-		usbip_uinfo("vhci_hcd: vhci_urb_dequeue() gives back urb %p\n",
+-									urb);
+-
+-		usb_hcd_unlink_urb_from_ep(hcd, urb);
+-
+-		spin_unlock_irqrestore(&the_controller->lock, flags);
+-		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb,
+-								urb->status);
+-		spin_lock_irqsave(&the_controller->lock, flags);
+-	}
+-
+ 	spin_unlock_irqrestore(&the_controller->lock, flags);
 
-Removed Andres Salomon <dilinger@collabora.co.uk> from cc.
-It seems that he's not there anymore.
-
- drivers/gpio/cs5535-gpio.c  |    3 +--
- drivers/misc/cs5535-mfgpt.c |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
-index b566fd5e..d7da7a1 100644
---- a/drivers/gpio/cs5535-gpio.c
-+++ b/drivers/gpio/cs5535-gpio.c
-@@ -266,8 +266,7 @@ static int __devinit cs5535_gpio_probe(struct platform_device *pdev)
- 	cs5535_gpio_chip.pdev = pdev;
- 	spin_lock_init(&cs5535_gpio_chip.lock);
- 
--	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n",
--			res->start, res->end);
-+	dev_info(&pdev->dev, "reserved resource region %pR\n", res);
- 
- 	/* mask out reserved pins */
- 	mask &= 0x1F7FFFFF;
-diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
-index 2669306..e90506b 100644
---- a/drivers/misc/cs5535-mfgpt.c
-+++ b/drivers/misc/cs5535-mfgpt.c
-@@ -317,8 +317,7 @@ static int __devinit cs5535_mfgpt_probe(struct platform_device *pdev)
- 	cs5535_mfgpt_chip.pdev = pdev;
- 	spin_lock_init(&cs5535_mfgpt_chip.lock);
- 
--	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n", res->start,
--			res->end);
-+	dev_info(&pdev->dev, "reserved resource region %pR\n", res);
- 
- 	/* detect the available timers */
- 	t = scan_timers(&cs5535_mfgpt_chip);
-
-
+ 	usbip_dbg_vhci_hc("leave\n");
