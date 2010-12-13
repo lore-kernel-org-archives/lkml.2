@@ -1,42 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab0LMVer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 16:34:47 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56493 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757177Ab0LMVep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 16:34:45 -0500
-Date: Mon, 13 Dec 2010 13:19:09 -0800
-From: Greg KH <gregkh@suse.de>
-To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbip: remove double giveback of URB
-Message-ID: <20101213211909.GA19972@suse.de>
-References: <4D06891D.3060605@freemail.hu>
+	id S1757390Ab0LMVfg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 16:35:36 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:55503 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755988Ab0LMVfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 16:35:34 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Dmitry V. Levin" <ldv@altlinux.org>, linux-kernel@vger.kernel.org
+References: <1292259913-9911-1-git-send-email-kirill@shutemov.name>
+Date: Mon, 13 Dec 2010 13:35:25 -0800
+In-Reply-To: <1292259913-9911-1-git-send-email-kirill@shutemov.name> (Kirill
+	A. Shutsemov's message of "Mon, 13 Dec 2010 19:05:13 +0200")
+Message-ID: <m1sjy1uzj6.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D06891D.3060605@freemail.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/pKOwkHWl4XacamntfIuJZyVY5q+IiCqA=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Kirill A. Shutsemov" <kirill@shutemov.name>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] netlink: fix gcc -Wconversion compilation warning
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 09:59:09PM +0100, Németh Márton wrote:
-> From: Márton Németh <nm127@freemail.hu>
-> 
-> In the vhci_urb_dequeue() function the TCP connection is checked twice.
-> Each time when the TCP connection is closed the URB is unlinked and given
-> back. Remove the second attempt of unlinking and giving back of the URB completely.
-> 
-> This patch fixes the bug described at https://bugzilla.kernel.org/show_bug.cgi?id=24872 .
-> 
-> Signed-off-by: Márton Németh <nm127@freemail.hu>
+"Kirill A. Shutsemov" <kirill@shutemov.name> writes:
 
-Wow, nice catch, I wonder how it survived this long in working condition
-:)
+> From: Dmitry V. Levin <ldv@altlinux.org>
+>
+> $ cat << EOF | gcc -Wconversion -xc -S -o/dev/null -
+> unsigned f(void) {return NLMSG_HDRLEN;}
+> EOF
+> <stdin>: In function 'f':
+> <stdin>:3:26: warning: negative integer implicitly converted to unsigned type
+>
+This doesn't look like a bad fix, but I believe things will fail if
+we give NLMSG_ALIGN an unsigned long like size_t.  Say like sizeof.
 
-I'll queue this up right away, thanks so much for this patch.
+Admittedly it has to be a huge size but still if we are going
+to go fixing things...
 
-greg k-h
+And then there is the silliness that NLMSG_HDRLEN forces itself
+to be an int, when it start out as a size_t.
+
+So I think NLMSG_ALIGN either needs to operation exclusively
+on unsigned longs aka size_t, or it needs to be type preserving.
+
+Do you have time to look at this a bit more?
+
+
+> Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> ---
+>  include/linux/netlink.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+> index 1235669..e2b9e63 100644
+> --- a/include/linux/netlink.h
+> +++ b/include/linux/netlink.h
+> @@ -70,7 +70,7 @@ struct nlmsghdr {
+>     Check		NLM_F_EXCL
+>   */
+>  
+> -#define NLMSG_ALIGNTO	4
+> +#define NLMSG_ALIGNTO	4U
+>  #define NLMSG_ALIGN(len) ( ((len)+NLMSG_ALIGNTO-1) & ~(NLMSG_ALIGNTO-1) )
+>  #define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
+>  #define NLMSG_LENGTH(len) ((len)+NLMSG_ALIGN(NLMSG_HDRLEN))
