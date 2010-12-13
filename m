@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab0LMVxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 16:53:16 -0500
-Received: from mail.perches.com ([173.55.12.10]:2586 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755831Ab0LMVxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 16:53:15 -0500
-Subject: Re: [PATCH v2] Staging: rt2860: include KERN_* in printk
-From: Joe Perches <joe@perches.com>
-To: Greg KH <greg@kroah.com>,
-        "L. Alberto" =?ISO-8859-1?Q?Gim=E9nez?= <agimenez@sysvalve.es>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <20101213211531.GA19783@kroah.com>
-References: <1292176591-26081-4-git-send-email-agimenez@sysvalve.es>
-	 <1292198324-12072-1-git-send-email-agimenez@sysvalve.es>
-	 <20101213183032.GA6147@kroah.com>
-	 <20101213202429.GA6811@bart.evergreen.loc>
-	 <20101213211531.GA19783@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 13:53:12 -0800
-Message-ID: <1292277192.26970.65.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1757903Ab0LMVx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 16:53:29 -0500
+Received: from web31807.mail.mud.yahoo.com ([68.142.207.70]:39821 "HELO
+	web31807.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757838Ab0LMVxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 16:53:24 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=R18NE6k+enS/LJDTaw59IX+s3d6JJ7xm3mfahayq6+ejwSadGqsWbz/FsuoNB9VIFHiCUpiGsdp+AYyfhos8pGM+fqNf/A9xABMkDgrt3HsFmD/nzvR1V1xt/ieHhqf0KgwU1/EeyKL1kvxbq5tGbgAwoEh/aE7kRNkVzq4mUYk=;
+Message-ID: <506287.35672.qm@web31807.mail.mud.yahoo.com>
+X-YMail-OSG: wmFHiYoVM1l2SrOhA_PSe51ZH3ZdlLhxXwpXUh3CQERzWwE
+ PdCUI0JzC.pHR9lDCOzrXXV60493CFNq1FZbvBb4WgPHM1QJGNtvnrDdj_ip
+ wr5gneikHq_cJioVlkuDh93r93qNoFgfvVwsSmW4Aa5VEBxrdvy1RgJahlu0
+ BZH6go9H3rQU2ue2q81M4iZqVJzGW_ygrY.U4djM2RkxIBF5ykyTFVX2uU8r
+ Z_WgQWd8USe_JtYOTgbuXnJ_rLELnE2g9qF5Jd56rrTWsOoJnmrWeKJ.Q3ve
+ TeWryqNYZ4VXJsSbKF1ENsHvRFzJkik7i8.yKNnzmEcy0zy.hpP7GZwVPGNr
+ Qgtyc.epjKmaaigak40gZ_aajXV6Z08qazbTtHLcWbWgAFvgEBmdxp.uDC41
+ ZXr3JLLt59Rak
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.289296
+Date: Mon, 13 Dec 2010 13:53:22 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH] [USB] UASP: USB Attached SCSI (UAS) protocol driver
+To: Mark Brown <broonie@sirena.org.uk>, Matthias Schniedermeyer <ms@citd.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+In-Reply-To: <20101213194841.GA20997@citd.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 13:15 -0800, Greg KH wrote:
-> On Mon, Dec 13, 2010 at 09:24:30PM +0100, L. Alberto Giménez wrote:
-> > +#define DBGPRINT_ERR(fmt, args...) printk(KERN_ERR fmt, ##args)
-> > Recommended by Joe. I agree that it is cleaner and more compliant.
-> Not really, it should be replaced with dev_err() or some such universal
-> replacement.
+--- On Mon, 12/13/10, Matthias Schniedermeyer <ms@citd.de> wrote:
 
-It's used with and without access to a struct device.
+> As a future user of UASP (The protocol) i'm happy to spend
+> a few more 
+> weeks with UMS if it means the driver for UASP is really
+> ready for 
+> transferring TBs of data when released.
+> (Altough i'm guessing that i will spend some more time with
+> UMS anyway, 
+> as neither the packaging nor the website for my USB 3.0
+> enclosures 
+> mention UASP)
 
-The uses that have a struct device available should be
-dev_<foo> and with a struct net_device should be netdev_<foo>
-though that's a wider change.
+Yes, it is ready. If you have a UAS device, give it a try. The uasp.c driver is in the free-linux branch off of master in my github repo. See the announcement here:
 
-It's also used in consecutive calls without newline where
-KERN_CONT should be used instead.
- 
-Greg, you replied to the list but not the sender.
-Please don't drop the sender.
+http://marc.info/?l=linux-scsi&m=129227488508299&w=2
+
+    Luben
 
