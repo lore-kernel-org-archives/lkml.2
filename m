@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab0LMHAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 02:00:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4455 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346Ab0LMGtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:49:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="867484056"
-Message-Id: <20101213064838.170617763@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:42:59 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/47] writeback: quit throttling when bdi dirty pages dropped low
-References: <20101213064249.648862451@intel.com>
-Content-Disposition: inline; filename=writeback-bdi-throttle-break.patch
+	id S932296Ab0LMHHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 02:07:10 -0500
+Received: from a.relay.invitel.net ([62.77.203.3]:49589 "EHLO
+	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab0LMHHI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 02:07:08 -0500
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 02:07:08 EST
+Date: Mon, 13 Dec 2010 08:01:06 +0100
+From: Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH v2 1/2] video, sm501: add OF binding to support SM501
+In-reply-to: <20101211143454.ccc5e296.rdunlap@xenotime.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
+        Vincent Sanders <vince@simtec.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Reply-to: hs@denx.de
+Message-id: <4D05C4B2.5030005@denx.de>
+Organization: DENX Software Engineering
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+References: <1291451028-22532-1-git-send-email-hs@denx.de>
+ <1292049075-1809-1-git-send-email-hs@denx.de>
+ <20101211143454.ccc5e296.rdunlap@xenotime.net>
+User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tests show that bdi_thresh may take minutes to ramp up on a typical
-desktop. The time should be improvable but cannot be eliminated totally.
-So when (background_thresh + dirty_thresh)/2 is reached and
-balance_dirty_pages() starts to throttle the task, it will suddenly find
-the (still low and ramping up) bdi_thresh is exceeded _excessively_. Here
-we definitely don't want to stall the task for one minute (when it's
-writing to USB stick). So introduce an alternative way to break out of
-the loop when the bdi dirty/write pages has dropped by a reasonable
-amount.
+Hello Randy,
 
-When dirty_background_ratio is set close to dirty_ratio, bdi_thresh may
-also be constantly exceeded due to the task_dirty_limit() gap. This is
-addressed by another patch to lower the background threshold when
-necessary.
+Randy Dunlap wrote:
+> On Sat, 11 Dec 2010 07:31:15 +0100 Heiko Schocher wrote:
+> 
+>> - add commandline options:
+>>   sm501.fb_mode:
+> 
+>     sm501.mode:
 
-It will take at least 100ms before trying to break out.
+Sorry, type, should be "sm501fb.mode", thanks!
 
-Note that this opens the chance that during normal operation, a huge
-number of slow dirtiers writing to a really slow device might manage to
-outrun bdi_thresh. But the risk is pretty low. It takes at least one
-100ms sleep loop to break out, and the global limit is still enforced.
+>>     Specify resolution as "<xres>x<yres>[-<bpp>][@<refresh>]"
+>>   sm501.bpp:
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+Here too, "sm501fb.bpp"
 
---- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:24.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-08 22:44:25.000000000 +0800
-@@ -563,6 +563,7 @@ static void balance_dirty_pages(struct a
- 	long nr_reclaimable;
- 	long nr_dirty;
- 	long bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
-+	long bdi_prev_dirty = 0;
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -615,6 +616,25 @@ static void balance_dirty_pages(struct a
- 				    bdi_stat(bdi, BDI_WRITEBACK);
- 		}
- 
-+		/*
-+		 * bdi_thresh takes time to ramp up from the initial 0,
-+		 * especially for slow devices.
-+		 *
-+		 * It's possible that at the moment dirty throttling starts,
-+		 *	bdi_dirty = nr_dirty
-+		 *		  = (background_thresh + dirty_thresh) / 2
-+		 *		  >> bdi_thresh
-+		 * Then the task could be blocked for a dozen second to flush
-+		 * all the exceeded (bdi_dirty - bdi_thresh) pages. So offer a
-+		 * complementary way to break out of the loop when 250ms worth
-+		 * of dirty pages have been cleaned during our pause time.
-+		 */
-+		if (nr_dirty < dirty_thresh &&
-+		    bdi_prev_dirty - bdi_dirty >
-+		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
-+			break;
-+		bdi_prev_dirty = bdi_dirty;
-+
- 		if (bdi_dirty >= bdi_thresh) {
- 			pause = HZ/10;
- 			goto pause;
+>>     Specify bit-per-pixel if not specified mode
+>>
+>> ---
+>>
+>>  Documentation/kernel-parameters.txt          |    7 +
+>>  Documentation/powerpc/dts-bindings/sm501.txt |   30 +++
+>>  drivers/mfd/sm501.c                          |  141 ++++++++------
+>>  drivers/video/sm501fb.c                      |  264 +++++++++++++++++---------
+>>  include/linux/sm501.h                        |    8 +
+>>  5 files changed, 299 insertions(+), 151 deletions(-)
+>>  create mode 100644 Documentation/powerpc/dts-bindings/sm501.txt
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index cdd2a6e..6341541 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -2301,6 +2301,13 @@ and is between 256 and 4096 characters. It is defined in the file
+>>  			merging on their own.
+>>  			For more information see Documentation/vm/slub.txt.
+>>  
+>> +	sm501.bpp=	SM501 Display driver:
+>> +			Specify bit-per-pixel if not specified mode
+> 
+> 			Specifiy bits-per-pixel if not specified by 'mode'
+> 
+>> +
+>> +	sm501fb.mode=	SM501 Display driver:
+> 
+> Shouldn't that be sm501.mode ?
 
+No, the name of the source file is sm501fb.c -> sm501fb is right here.
+As the sm501 is a multifunction device, the "fb" is more precise here.
 
+>> +			Specify resolution as
+>> +			"<xres>x<yres>[-<bpp>][@<refresh>]"
+>> +
+>>  	smart2=		[HW]
+>>  			Format: <io1>[,<io2>[,...,<io8>]]
+> 
+> 
+> However, I think that these shouldn't be added to Documentation/kernel-parameters.txt
+> but should be added to the Documentation/fb/ sub-directory either by adding to
+> Documentation/fb/modedb.txt or by adding a new file Documentation/fb/sm501.txt.
+
+Ok, do this. Thanks for the review!
+
+bye,
+Heiko
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
