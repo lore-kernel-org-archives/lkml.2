@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab0LMM6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:58:16 -0500
-Received: from compulab.co.il ([67.18.134.219]:58678 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757384Ab0LMM6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:58:15 -0500
-Message-ID: <4D061860.9070203@compulab.co.il>
-Date: Mon, 13 Dec 2010 14:58:08 +0200
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101013 Lightning/1.0b3pre Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 15/20] mfd: tps6586x: irq_data conversion.
-References: <cover.1292241952.git.buytenh@wantstofly.org> <20101213123113.GY15575@mail.wantstofly.org>
-In-Reply-To: <20101213123113.GY15575@mail.wantstofly.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757600Ab0LMNFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 08:05:24 -0500
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:36194 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757561Ab0LMNFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 08:05:22 -0500
+Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
+ taskstats
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20101211173931.GA8084@redhat.com>
+References: <20101129164237.522034198@linux.vnet.ibm.com>
+	 <20101129164435.903722027@linux.vnet.ibm.com>
+	 <20101201185128.GA7656@redhat.com>
+	 <1291307641.1928.125.camel@holzheu-laptop>
+	 <20101208202308.GA1804@redhat.com>
+	 <1291987580.1933.10.camel@holzheu-laptop>
+	 <20101211173931.GA8084@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Mon, 13 Dec 2010 14:05:15 +0100
+Message-ID: <1292245515.2063.168.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/10 14:31, Lennert Buytenhek wrote:
-> Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
-> ---
->  drivers/mfd/tps6586x.c |   28 ++++++++++++++--------------
->  1 files changed, 14 insertions(+), 14 deletions(-)
+Hello Oleg,
 
-Mark Brown has already sent similar patch: :)
-https://lkml.org/lkml/2010/12/12/51
+On Sat, 2010-12-11 at 18:39 +0100, Oleg Nesterov wrote:
+> On 12/10, Michael Holzheu wrote:
+> >
+> > > > When the last thread exits and the process/thread group dies,
+> > > > taskstats_exit() sends an additional taskstats struct to userspace that
+> > > > aggregates the thread accounting data. Currently only the delay
+> > > > accounting data is aggregated (see
+> > > > taskstats_exit->fill_tgid_exit->delayacct_add_tsk). Not sure, why the
+> > > > other information is not aggregated. We perhaps also should include
+> > > > ac_cXtime in the aggregated taskstats.
+> > >
+> > > Not sure I understand... Do you mean
+> > >
+> > > 	if (is_thread_group)
+> > > 		fill_tgid_exit(tsk);
+> > >
+> > > ? Afaics, this is not "When the last thread exits", this is
+> > > "this program is multithreaded, it has (or had) other threads".
+> >
+> > fill_tgid_exit() adds the data of the dying thread to the thread group
+> > data (tsk->signal->stats). Currently only for delay accounting.
+> >
+> > But the accumulated data is sent to userspace only after the last thread
+> > has died:
+> >
+> >         if (!is_thread_group || >>>!group_dead<<<)
+> >                 goto send;
+> 
+> Ah, right you are.
+> 
+> And this looks racy, or I missed something again. group_dead can be
+> true, but this doesn't mean all other threads have already passed
+> taskstats_exit()->fill_tgid_exit()->delayacct_add_tsk().
 
-> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> index b4931ab..7f47b6a 100644
-> --- a/drivers/mfd/tps6586x.c
-> +++ b/drivers/mfd/tps6586x.c
-> @@ -325,37 +325,37 @@ static int tps6586x_remove_subdevs(struct tps6586x *tps6586x)
->  	return device_for_each_child(tps6586x->dev, NULL, __remove_subdev);
->  }
->  
-> -static void tps6586x_irq_lock(unsigned int irq)
-> +static void tps6586x_irq_lock(struct irq_data *d)
->  {
-> -	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +	struct tps6586x *tps6586x = irq_data_get_irq_chip_data(d);
->  
->  	mutex_lock(&tps6586x->irq_lock);
->  }
->  
-> -static void tps6586x_irq_enable(unsigned int irq)
-> +static void tps6586x_irq_enable(struct irq_data *d)
->  {
-> -	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> -	unsigned int __irq = irq - tps6586x->irq_base;
-> +	struct tps6586x *tps6586x = irq_data_get_irq_chip_data(d);
-> +	unsigned int __irq = d->irq - tps6586x->irq_base;
->  	const struct tps6586x_irq_data *data = &tps6586x_irqs[__irq];
->  
->  	tps6586x->mask_reg[data->mask_reg] &= ~data->mask_mask;
->  	tps6586x->irq_en |= (1 << __irq);
->  }
->  
-> -static void tps6586x_irq_disable(unsigned int irq)
-> +static void tps6586x_irq_disable(struct irq_data *d)
->  {
-> -	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +	struct tps6586x *tps6586x = irq_data_get_irq_chip_data(d);
->  
-> -	unsigned int __irq = irq - tps6586x->irq_base;
-> +	unsigned int __irq = d->irq - tps6586x->irq_base;
->  	const struct tps6586x_irq_data *data = &tps6586x_irqs[__irq];
->  
->  	tps6586x->mask_reg[data->mask_reg] |= data->mask_mask;
->  	tps6586x->irq_en &= ~(1 << __irq);
->  }
->  
-> -static void tps6586x_irq_sync_unlock(unsigned int irq)
-> +static void tps6586x_irq_sync_unlock(struct irq_data *d)
->  {
-> -	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +	struct tps6586x *tps6586x = irq_data_get_irq_chip_data(d);
->  	int i;
->  
->  	for (i = 0; i < ARRAY_SIZE(tps6586x->mask_reg); i++) {
-> @@ -421,10 +421,10 @@ static int __devinit tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
->  	tps6586x->irq_base = irq_base;
->  
->  	tps6586x->irq_chip.name = "tps6586x";
-> -	tps6586x->irq_chip.enable = tps6586x_irq_enable;
-> -	tps6586x->irq_chip.disable = tps6586x_irq_disable;
-> -	tps6586x->irq_chip.bus_lock = tps6586x_irq_lock;
-> -	tps6586x->irq_chip.bus_sync_unlock = tps6586x_irq_sync_unlock;
-> +	tps6586x->irq_chip.irq_enable = tps6586x_irq_enable;
-> +	tps6586x->irq_chip.irq_disable = tps6586x_irq_disable;
-> +	tps6586x->irq_chip.irq_bus_lock = tps6586x_irq_lock;
-> +	tps6586x->irq_chip.irq_bus_sync_unlock = tps6586x_irq_sync_unlock;
->  
->  	for (i = 0; i < ARRAY_SIZE(tps6586x_irqs); i++) {
->  		int __irq = i + tps6586x->irq_base;
+I think you are right.
+
+One way to fix that could be to separate the aggregation from the
+sending. We could call fill_tgid_exit()->delayacct_add_tsk() before
+atomic_dec_and_test(&tsk->signal->live) in do_exit() and
+taskstats_exit() with the sender part afterwards.
+
+> And. Why "if (is_thread_group)" does "size *= 2" unconditionally?
+> IOW, perhaps the patch below makes sense?
+
+Yes, I think the patch makes sense. Balbir?
+
+> 
+> Oleg.
+> 
+> --- x/kernel/taskstats.c
+> +++ x/kernel/taskstats.c
+> @@ -576,7 +576,8 @@ void taskstats_exit(struct task_struct *
+>  	is_thread_group = !!taskstats_tgid_alloc(tsk);
+>  	if (is_thread_group) {
+>  		/* PID + STATS + TGID + STATS */
+> -		size = 2 * size;
+> +		if (group_dead)
+> +			size *= 2;
+>  		/* fill the tsk->signal->stats structure */
+>  		fill_tgid_exit(tsk);
+>  	}
+> 
 
 
--- 
-Sincerely yours,
-Mike.
