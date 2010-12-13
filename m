@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0LMTjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:39:14 -0500
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:44642 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab0LMTjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:39:12 -0500
-Date: Mon, 13 Dec 2010 12:39:05 -0700
-From: Eric B Munson <emunson@mgebm.net>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] mm: kswapd: Reset kswapd_max_order and
- classzone_idx after reading
-Message-ID: <20101213193905.GF3401@mgebm.net>
-References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
- <1291995985-5913-5-git-send-email-mel@csn.ul.ie>
+	id S1754240Ab0LMTkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:40:00 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52377 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754162Ab0LMTj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:39:56 -0500
+Date: Mon, 13 Dec 2010 11:36:17 -0800
+From: Greg KH <gregkh@suse.de>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] bind/unbind uevent
+Message-ID: <20101213193617.GA18262@suse.de>
+References: <alpine.LFD.2.02.1012071713500.1897@localhost6.localdomain6>
+ <20101207162755.GA32328@suse.de>
+ <alpine.LFD.2.02.1012071814160.1998@localhost6.localdomain6>
+ <20101207183305.GA21802@suse.de>
+ <AANLkTinmuxDYU9-zGvWB0mDDuXZEfZnuVxtSYGk62c8P@mail.gmail.com>
+ <alpine.LFD.2.02.1012081116530.1909@localhost6.localdomain6>
+ <20101208160255.GB10313@suse.de>
+ <alpine.LFD.2.02.1012132026430.2013@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xkXJwpr35CY/Lc3I"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291995985-5913-5-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <alpine.LFD.2.02.1012132026430.2013@localhost6.localdomain6>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 13, 2010 at 08:27:45PM +0100, Sebastian Ott wrote:
+> On Wed, 8 Dec 2010, Greg KH wrote:
+> > On Wed, Dec 08, 2010 at 11:18:27AM +0100, Sebastian Ott wrote:
+> > > On Tue, 7 Dec 2010, Kay Sievers wrote:
+> > > > On Tue, Dec 7, 2010 at 19:33, Greg KH <gregkh@suse.de> wrote:
+> > > > > On Tue, Dec 07, 2010 at 06:29:37PM +0100, Sebastian Ott wrote:
+> > > > 
+> > > > >> So I'm searching for a trigger when these attributes are created, or
+> > > > >> in other words when the device is useable, which I think translates to
+> > > > >> when a driver is bound to this device.
+> > > > >
+> > > > > Again, KOBJ_ADD is the correct one.
+> > > > >
+> > > > > If your driver is creating sysfs attributes on its own, that's a bug and
+> > > > > should be fixed.
+> > > > 
+> > > > Sounds a bit like the driver should create its own child device with
+> > > > its own properties, instead of mangling around with attributes at a
+> > > > device it binds to.
+> > > 
+> > > Yes, I get that feeling too. But I'm talking about existing drivers
+> > > and I don't think I can change their whole structure.
+> > 
+> > It's just a matter of putting the attributes in a table and passing that
+> > to the bus code the driver registers with.  Only a minor change in the
+> > driver is needed to resolve this.
+> 
+> I don't get it. The current situation is, that our drivers
+> add attributes to the device they are about to bind with, in
+> the probe function.
 
---xkXJwpr35CY/Lc3I
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Don't do that, have your _driver_ register the attributes with the bus
+it is on, then when the binding happens, the attributes will
+automatically get created for the device before the notification is sent
+to userspace.  That is the proper proceedure here.
 
-On Fri, 10 Dec 2010, Mel Gorman wrote:
+> I think we agree that it would be better
+> if those drivers would register a child device and add attributes
+> to this one. But my concern is that this would break userspace
+> which walks the sysfs tree and changes attributes, since it changed
+> from:
+> /sys/devices/$DEV/$ATTR
+> to:
+> /sys/devices/$DEV/$CHILD/$ATTR
 
-> When kswapd wakes up, it reads its order and classzone from pgdat and
-> calls balance_pgdat. While its awake, it potentially reclaimes at a high
-> order and a low classzone index. This might have been a once-off that
-> was not required by subsequent callers. However, because the pgdat
-> values were not reset, they remain artifically high while
-> balance_pgdat() is running and potentially kswapd enters a second
-> unnecessary reclaim cycle. Reset the pgdat order and classzone index
-> after reading.
->=20
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Ick, no, you don't have to do that, just use the functionality the
+driver core provides for you already.
 
-Reviewed-by: Eric B Munson <emunson@mgebm.net>
+thanks,
 
---xkXJwpr35CY/Lc3I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNBnZZAAoJEH65iIruGRnNrHAH/Aw66XlKoMoMRry7tUzLuLU4
-wa7y5Ghdd2A/9i67SCLOfzwOtrjD8eW1fOqIXfUAOG7dG8JxYPPfugB39Ej8bMv8
-6r0Q5h96g7J2v3njEo+AJfqZsxC/v0501oZV3okrUNq2QASRn5mBc6bIFPDes1EE
-UhciwF7rigD9yDuY2C0wDwjNyyoWLxF0Wy+ByTbUwexhLG9P0Ylt5cyAArHLEIUb
-eeD8Vq9NGH1zmDTch9xe5C+/G4zyv+MHykMZ6z2fqS8yA+sjSPAKN6lkY4sH5hEc
-HEjxUjjRa7zoH4nNeiJLHdyGqYPbdU1PM3TvZLF8rE0mjfb6JZhuTO/BBGI4Pyk=
-=iLw9
------END PGP SIGNATURE-----
-
---xkXJwpr35CY/Lc3I--
+greg k-h
