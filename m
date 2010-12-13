@@ -1,61 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab0LMLTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:19:04 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:53273 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756905Ab0LMLTD (ORCPT
+	id S1752952Ab0LMLVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:21:40 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:46701 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab0LMLVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:19:03 -0500
-Date: Mon, 13 Dec 2010 12:19:00 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org, john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [2.6.37-rc5] Timer or ICE1724 issues, HZ=250, NO_HZ=y
-Message-ID: <20101213111900.GA2310@gentoo.trippels.de>
-References: <20101213105440.GA12768@hostway.ca>
-MIME-Version: 1.0
+	Mon, 13 Dec 2010 06:21:39 -0500
+Date: Mon, 13 Dec 2010 12:21:38 +0100
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/30] net/dsa: don't use flush_scheduled_work()
+Message-ID: <20101213112138.GV15575@mail.wantstofly.org>
+References: <1292086307-19211-1-git-send-email-tj@kernel.org> <1292086307-19211-6-git-send-email-tj@kernel.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101213105440.GA12768@hostway.ca>
+In-Reply-To: <1292086307-19211-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010.12.13 at 02:54 -0800, Simon Kirby wrote:
-> With Linus git HEAD just compiled earlier today, I noticed a weird issue
-> just now while in the middle of some coding.  I think this may have
-> happened before (maybe in 2.6.36), but not as obvious as this time.
-> 
-> The music that was playing stopped, and the key I had just pressed did
-> not show up in rxvt.  I figured the machine had hung, but I hit another
-> key and the music played again for another second and my _previous_
-> keystroke output appeared.
-> 
-> Looking at /proc/interrupts, "timer" had completely stopped.  "perf top"
-> showed "snd_pcm_hwsync" was at the top of the profile with about 80%
-> usage.  Spinning in "snd_pcm_stream_lock_irq" from other CPUs, probably..
-> 
-> dmesg showed:
-> 
-> [13995.498393] Clocksource tsc unstable (delta = -8589909196 ns)
-> [13995.511452] Switching to clocksource hpet
-> [14039.525074] NOHZ: local_softirq_pending 100
-> [14039.882183] hrtimer: interrupt took 30800 ns
-> [14134.540724] NOHZ: local_softirq_pending 100
+On Sat, Dec 11, 2010 at 05:51:22PM +0100, Tejun Heo wrote:
 
-Welcome to the club. This is a known problem on newer AMD systems see:
-http://thread.gmane.org/gmane.linux.kernel/1054283
-and the following patch:
-http://thread.gmane.org/gmane.linux.kernel/1069458
+> flush_scheduled_work() is deprecated and scheduled to be removed.
+> Directly flush dst->link_poll_work on remove instead.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
 
-But the real problem is that no patch found its way to Linus yet and
-2.6.37 will be released in a few days. 
-
-I think Thomas' solution (with a hardcoded hpet_min_tick):
-     return res < 128 ? -ETIME : 0;
-is the only sane option left this late in the series.
--- 
-Markus
+Acked-by: Lennert Buytenhek <buytenh@wantstofly.org>
