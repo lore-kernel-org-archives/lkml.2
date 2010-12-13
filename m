@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab0LMPOl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:14:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50490 "EHLO mga01.intel.com"
+	id S1758122Ab0LMPOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:14:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43967 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753483Ab0LMPIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754059Ab0LMPIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Dec 2010 10:08:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="635822656"
-Message-Id: <20101213150330.441472077@intel.com>
+   d="scan'208";a="583219908"
+Message-Id: <20101213150329.592797204@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:47:20 +0800
+Date: Mon, 13 Dec 2010 22:47:13 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Trond Myklebust <Trond.Myklebust@netapp.com>,
@@ -29,108 +29,88 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 34/35] nfs: trace nfs_commit_unstable_pages()
+Subject: [PATCH 27/35] nfs: livelock prevention is now done in VFS
 References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=nfs-trace-write_inode.patch
+Content-Disposition: inline; filename=nfs-revert-livelock-72cb77f4a5ac.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This reverts commit 72cb77f4a5 ("NFS: Throttle page dirtying while we're
+flushing to disk"). The two problems it tries to address
+
+- sync live lock
+- out of order writes
+
+are now all addressed in the VFS
+
+- PAGECACHE_TAG_TOWRITE prevents sync live lock
+- IO-less balance_dirty_pages() avoids concurrent writes
+
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/nfs/write.c             |   10 ++++--
- include/trace/events/nfs.h |   58 +++++++++++++++++++++++++++++++++++
- 2 files changed, 66 insertions(+), 2 deletions(-)
+ fs/nfs/file.c          |    9 ---------
+ fs/nfs/write.c         |   11 -----------
+ include/linux/nfs_fs.h |    1 -
+ 3 files changed, 21 deletions(-)
 
---- linux-next.orig/fs/nfs/write.c	2010-12-13 21:46:22.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2010-12-13 21:46:23.000000000 +0800
-@@ -29,6 +29,9 @@
- #include "nfs4_fs.h"
- #include "fscache.h"
+--- linux-next.orig/fs/nfs/file.c	2010-12-13 21:45:55.000000000 +0800
++++ linux-next/fs/nfs/file.c	2010-12-13 21:46:20.000000000 +0800
+@@ -392,15 +392,6 @@ static int nfs_write_begin(struct file *
+ 			   IOMODE_RW);
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/nfs.h>
-+
- #define NFSDBG_FACILITY		NFSDBG_PAGECACHE
+ start:
+-	/*
+-	 * Prevent starvation issues if someone is doing a consistency
+-	 * sync-to-disk
+-	 */
+-	ret = wait_on_bit(&NFS_I(mapping->host)->flags, NFS_INO_FLUSHING,
+-			nfs_wait_bit_killable, TASK_KILLABLE);
+-	if (ret)
+-		return ret;
+-
+ 	page = grab_cache_page_write_begin(mapping, index, flags);
+ 	if (!page)
+ 		return -ENOMEM;
+--- linux-next.orig/fs/nfs/write.c	2010-12-13 21:45:55.000000000 +0800
++++ linux-next/fs/nfs/write.c	2010-12-13 21:46:20.000000000 +0800
+@@ -337,26 +337,15 @@ static int nfs_writepages_callback(struc
+ int nfs_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ {
+ 	struct inode *inode = mapping->host;
+-	unsigned long *bitlock = &NFS_I(inode)->flags;
+ 	struct nfs_pageio_descriptor pgio;
+ 	int err;
  
- #define MIN_POOL_WRITE		(32)
-@@ -1566,10 +1569,13 @@ static int nfs_commit_unstable_pages(str
+-	/* Stop dirtying of new pages while we sync */
+-	err = wait_on_bit_lock(bitlock, NFS_INO_FLUSHING,
+-			nfs_wait_bit_killable, TASK_KILLABLE);
+-	if (err)
+-		goto out_err;
+-
+ 	nfs_inc_stats(inode, NFSIOS_VFSWRITEPAGES);
  
- 	ret = nfs_commit_inode(inode, flags);
- 	if (ret >= 0)
--		return 0;
-+		goto out;
-+
- out_mark_dirty:
- 	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
--	return ret;
-+out:
-+	trace_nfs_commit_unstable_pages(inode, wbc, flags, ret);
-+	return ret >= 0 ? 0 : ret;
- }
- #else
- static int nfs_commit_unstable_pages(struct inode *inode, struct writeback_control *wbc)
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-next/include/trace/events/nfs.h	2010-12-13 21:46:23.000000000 +0800
-@@ -0,0 +1,58 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM nfs
-+
-+#if !defined(_TRACE_NFS_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_NFS_H
-+
-+#include <linux/nfs_fs.h>
-+
-+
-+TRACE_EVENT(nfs_commit_unstable_pages,
-+
-+	TP_PROTO(struct inode *inode,
-+		 struct writeback_control *wbc,
-+		 int sync,
-+		 int ret
-+	),
-+
-+	TP_ARGS(inode, wbc, sync, ret),
-+
-+	TP_STRUCT__entry(
-+		__array(char, name, 32)
-+		__field(unsigned long,	ino)
-+		__field(unsigned long,	npages)
-+		__field(unsigned long,	in_commit)
-+		__field(unsigned long,	write_chunk)
-+		__field(int,		sync)
-+		__field(int,		ret)
-+	),
-+
-+	TP_fast_assign(
-+		strncpy(__entry->name,
-+			dev_name(inode->i_mapping->backing_dev_info->dev), 32);
-+		__entry->ino		= inode->i_ino;
-+		__entry->npages		= NFS_I(inode)->npages;
-+		__entry->in_commit	=
-+			atomic_long_read(&NFS_SERVER(inode)->in_commit);
-+		__entry->write_chunk	= wbc->per_file_limit;
-+		__entry->sync		= sync;
-+		__entry->ret		= ret;
-+	),
-+
-+	TP_printk("bdi %s: ino=%lu npages=%ld "
-+		  "incommit=%lu write_chunk=%lu sync=%d ret=%d",
-+		  __entry->name,
-+		  __entry->ino,
-+		  __entry->npages,
-+		  __entry->in_commit,
-+		  __entry->write_chunk,
-+		  __entry->sync,
-+		  __entry->ret
-+	)
-+);
-+
-+
-+#endif /* _TRACE_NFS_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
+ 	nfs_pageio_init_write(&pgio, inode, wb_priority(wbc));
+ 	err = write_cache_pages(mapping, wbc, nfs_writepages_callback, &pgio);
+ 	nfs_pageio_complete(&pgio);
+ 
+-	clear_bit_unlock(NFS_INO_FLUSHING, bitlock);
+-	smp_mb__after_clear_bit();
+-	wake_up_bit(bitlock, NFS_INO_FLUSHING);
+-
+ 	if (err < 0)
+ 		goto out_err;
+ 	err = pgio.pg_error;
+--- linux-next.orig/include/linux/nfs_fs.h	2010-12-13 21:45:55.000000000 +0800
++++ linux-next/include/linux/nfs_fs.h	2010-12-13 21:46:20.000000000 +0800
+@@ -216,7 +216,6 @@ struct nfs_inode {
+ #define NFS_INO_STALE		(1)		/* possible stale inode */
+ #define NFS_INO_ACL_LRU_SET	(2)		/* Inode is on the LRU list */
+ #define NFS_INO_MOUNTPOINT	(3)		/* inode is remote mountpoint */
+-#define NFS_INO_FLUSHING	(4)		/* inode is flushing out data */
+ #define NFS_INO_FSCACHE		(5)		/* inode can be cached by FS-Cache */
+ #define NFS_INO_FSCACHE_LOCK	(6)		/* FS-Cache cookie management lock */
+ #define NFS_INO_COMMIT		(7)		/* inode is committing unstable writes */
 
 
