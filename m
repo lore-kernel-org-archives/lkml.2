@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab0LMTe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:34:56 -0500
-Received: from claw.goop.org ([74.207.240.146]:55580 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741Ab0LMTez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:34:55 -0500
-Message-ID: <4D06755C.2050200@goop.org>
-Date: Mon, 13 Dec 2010 11:34:52 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1754084Ab0LMThb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:37:31 -0500
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:58044 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab0LMTha (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:37:30 -0500
+Date: Mon, 13 Dec 2010 12:37:22 -0700
+From: Eric B Munson <emunson@mgebm.net>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order
+ allocations until a percentage of the node is balanced
+Message-ID: <20101213193722.GD3401@mgebm.net>
+References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
+ <1291995985-5913-3-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xensource.com, Jan Beulich <JBeulich@novell.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 4/9] xen: Add support to check if IRQ line is shared with
- other domains.
-References: <1292263303-31680-1-git-send-email-konrad.wilk@oracle.com> <1292263303-31680-5-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1292263303-31680-5-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+B+y8wtTXqdUj1xM"
+Content-Disposition: inline
+In-Reply-To: <1291995985-5913-3-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 10:01 AM, Konrad Rzeszutek Wilk wrote:
-> We do this via the PHYSDEVOP_irq_status_query support hypervisor call.
-> We will get a positive value if another domain has binded its
-> PIRQ to the specified IRQ line.
->
-> [v2: Deal with v2.6.37-rc1 rebase fallout]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/events.c |   13 +++++++++++++
->  include/xen/events.h |    3 +++
->  2 files changed, 16 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 96c93e7..690dfad 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -1398,6 +1398,19 @@ void xen_poll_irq(int irq)
->  	xen_poll_irq_timeout(irq, 0 /* no timeout */);
->  }
->  
-> +/* Check whether the IRQ line is shared with other guests. */
-> +int xen_ignore_irq(int irq)
 
-I think this could do with a better name.  The function actually testing
-for sharing; the fact you might choose to ignore it because its shared
-is by the by (and becomes very misleading if you end up wanting to test
-for sharedness for some other reason).
+--+B+y8wtTXqdUj1xM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +{
-> +	struct irq_info *info = info_for_irq(irq);
-> +	struct physdev_irq_status_query irq_status = { .irq =
-> +							info->u.pirq.gsi };
+On Fri, 10 Dec 2010, Mel Gorman wrote:
 
-That's a pretty awkward linebreak.
+> When reclaiming for high-orders, kswapd is responsible for balancing a
+> node but it should not reclaim excessively. It avoids excessive reclaim by
+> considering if any zone in a node is balanced then the node is balanced. =
+In
+> the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
+> ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
+> one small zone was balanced.
+>=20
+> This alters the sleep logic of kswapd slightly. It counts the number of p=
+ages
+> that make up the balanced zones. If the total number of balanced pages is
+> more than a quarter of the zone, kswapd will go back to sleep. This should
+> keep a node balanced without reclaiming an excessive number of pages.
+>=20
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-    J
+Reviewed-by: Eric B Munson <emunson@mgebm.net>
 
-> +
-> +	if (HYPERVISOR_physdev_op(PHYSDEVOP_irq_status_query, &irq_status))
-> +		return 0;
-> +	return !(irq_status.flags & XENIRQSTAT_shared);
-> +}
-> +EXPORT_SYMBOL_GPL(xen_ignore_irq);
-> +
->  void xen_irq_resume(void)
->  {
->  	unsigned int cpu, irq, evtchn;
-> diff --git a/include/xen/events.h b/include/xen/events.h
-> index 646dd17..553c664 100644
-> --- a/include/xen/events.h
-> +++ b/include/xen/events.h
-> @@ -89,4 +89,7 @@ int xen_vector_from_irq(unsigned pirq);
->  /* Return gsi allocated to pirq */
->  int xen_gsi_from_irq(unsigned pirq);
->  
-> +/* Determine whether to ignore this IRQ if passed to a guest. */
-> +int xen_ignore_irq(int irq);
-> +
->  #endif	/* _XEN_EVENTS_H */
+--+B+y8wtTXqdUj1xM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNBnXyAAoJEH65iIruGRnNtC0H/2UJny4+pkLGMhHc4ukwJNf7
+N0JhCeV5qEfs0nFgcRpgeQEQxDGmYle7M5X/x4yRU3QnNKwuqux4sVEOxuIWLlaE
+r99Ek+Ia/waV6tX31LYTsbdakIHuqTpzJwssg6+6TIqqhcEaB9yHlWMzN1itgfCa
+2L4W9WDac0Xd4lg/m5MXgSCxH4LiLSXcr9VzRNncESBq6AsDQnueW9oDX7M6Y0+T
+Q9PJECL9YI125dsAOAK3rhOS4xQGnlrDSKVwohxAEYI8Ssd+MLrOCJfAnPlbQsQI
++rfHZifHmeyGnGHerXMXcZs24k9jsSoQNP8klvW2FBw5L8pCDKmFRSJqWuvE0jY=
+=z+ui
+-----END PGP SIGNATURE-----
+
+--+B+y8wtTXqdUj1xM--
