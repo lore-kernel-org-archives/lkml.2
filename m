@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab0LMM3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:29:45 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:36123 "EHLO
+	id S1757331Ab0LMM3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:29:51 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:36126 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756858Ab0LMM3n (ORCPT
+	with ESMTP id S1757329Ab0LMM3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:29:43 -0500
-Date: Mon, 13 Dec 2010 13:29:41 +0100
+	Mon, 13 Dec 2010 07:29:48 -0500
+Date: Mon, 13 Dec 2010 13:29:47 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Mattias Wallin <mattias.wallin@stericsson.com>,
+To: Rabin Vincent <rabin.vincent@stericsson.com>,
         Linus Walleij <linus.walleij@stericsson.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/20] mfd: ab3550: irq_data conversion.
-Message-ID: <20101213122941.GL15575@mail.wantstofly.org>
+Subject: [PATCH 03/20] mfd: ab8500: irq_data conversion.
+Message-ID: <20101213122947.GM15575@mail.wantstofly.org>
 References: <cover.1292241952.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,83 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/mfd/ab3550-core.c |   32 +++++++++++++++++---------------
- 1 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/mfd/ab8500-core.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
-index 8a98739..0fefb54 100644
---- a/drivers/mfd/ab3550-core.c
-+++ b/drivers/mfd/ab3550-core.c
-@@ -1159,15 +1159,16 @@ static void ab3550_mask_work(struct work_struct *work)
- 	}
- }
- 
--static void ab3550_mask(unsigned int irq)
-+static void ab3550_mask(struct irq_data *d)
- {
- 	unsigned long flags;
- 	struct ab3550 *ab;
- 	struct ab3550_platform_data *plf_data;
-+	unsigned int irq;
- 
--	ab = get_irq_chip_data(irq);
-+	ab = irq_data_get_irq_chip_data(d);
- 	plf_data = ab->i2c_client[0]->dev.platform_data;
--	irq -= plf_data->irq.base;
-+	irq = d->irq - plf_data->irq.base;
- 
- 	spin_lock_irqsave(&ab->event_lock, flags);
- 	ab->event_mask[irq / 8] |= BIT(irq % 8);
-@@ -1176,15 +1177,16 @@ static void ab3550_mask(unsigned int irq)
- 	schedule_work(&ab->mask_work);
- }
- 
--static void ab3550_unmask(unsigned int irq)
-+static void ab3550_unmask(struct irq_data *d)
- {
- 	unsigned long flags;
- 	struct ab3550 *ab;
- 	struct ab3550_platform_data *plf_data;
-+	unsigned int irq;
- 
--	ab = get_irq_chip_data(irq);
-+	ab = irq_data_get_irq_chip_data(d);
- 	plf_data = ab->i2c_client[0]->dev.platform_data;
--	irq -= plf_data->irq.base;
-+	irq = d->irq - plf_data->irq.base;
- 
- 	spin_lock_irqsave(&ab->event_lock, flags);
- 	ab->event_mask[irq / 8] &= ~BIT(irq % 8);
-@@ -1193,20 +1195,20 @@ static void ab3550_unmask(unsigned int irq)
- 	schedule_work(&ab->mask_work);
- }
- 
--static void noop(unsigned int irq)
-+static void noop(struct irq_data *d)
- {
- }
- 
- static struct irq_chip ab3550_irq_chip = {
- 	.name		= "ab3550-core", /* Keep the same name as the request */
--	.startup	= NULL, /* defaults to enable */
--	.shutdown	= NULL, /* defaults to disable */
--	.enable		= NULL, /* defaults to unmask */
--	.disable	= ab3550_mask, /* No default to mask in chip.c */
--	.ack		= noop,
--	.mask		= ab3550_mask,
--	.unmask		= ab3550_unmask,
--	.end		= NULL,
-+	.irq_startup	= NULL, /* defaults to enable */
-+	.irq_shutdown	= NULL, /* defaults to disable */
-+	.irq_enable	= NULL, /* defaults to unmask */
-+	.irq_disable	= ab3550_mask, /* No default to mask in chip.c */
-+	.irq_ack	= noop,
-+	.irq_mask	= ab3550_mask,
-+	.irq_unmask	= ab3550_unmask,
-+	.irq_end	= NULL,
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index dbe1c93..0e4f17c 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -228,16 +228,16 @@ static struct abx500_ops ab8500_ops = {
+ 	.startup_irq_enabled = NULL,
  };
  
- struct ab_family_id {
+-static void ab8500_irq_lock(unsigned int irq)
++static void ab8500_irq_lock(struct irq_data *d)
+ {
+-	struct ab8500 *ab8500 = get_irq_chip_data(irq);
++	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(d);
+ 
+ 	mutex_lock(&ab8500->irq_lock);
+ }
+ 
+-static void ab8500_irq_sync_unlock(unsigned int irq)
++static void ab8500_irq_sync_unlock(struct irq_data *d)
+ {
+-	struct ab8500 *ab8500 = get_irq_chip_data(irq);
++	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(d);
+ 	int i;
+ 
+ 	for (i = 0; i < AB8500_NUM_IRQ_REGS; i++) {
+@@ -257,20 +257,20 @@ static void ab8500_irq_sync_unlock(unsigned int irq)
+ 	mutex_unlock(&ab8500->irq_lock);
+ }
+ 
+-static void ab8500_irq_mask(unsigned int irq)
++static void ab8500_irq_mask(struct irq_data *d)
+ {
+-	struct ab8500 *ab8500 = get_irq_chip_data(irq);
+-	int offset = irq - ab8500->irq_base;
++	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(d);
++	int offset = d->irq - ab8500->irq_base;
+ 	int index = offset / 8;
+ 	int mask = 1 << (offset % 8);
+ 
+ 	ab8500->mask[index] |= mask;
+ }
+ 
+-static void ab8500_irq_unmask(unsigned int irq)
++static void ab8500_irq_unmask(struct irq_data *d)
+ {
+-	struct ab8500 *ab8500 = get_irq_chip_data(irq);
+-	int offset = irq - ab8500->irq_base;
++	struct ab8500 *ab8500 = irq_data_get_irq_chip_data(d);
++	int offset = d->irq - ab8500->irq_base;
+ 	int index = offset / 8;
+ 	int mask = 1 << (offset % 8);
+ 
+@@ -279,10 +279,10 @@ static void ab8500_irq_unmask(unsigned int irq)
+ 
+ static struct irq_chip ab8500_irq_chip = {
+ 	.name			= "ab8500",
+-	.bus_lock		= ab8500_irq_lock,
+-	.bus_sync_unlock	= ab8500_irq_sync_unlock,
+-	.mask			= ab8500_irq_mask,
+-	.unmask			= ab8500_irq_unmask,
++	.irq_bus_lock		= ab8500_irq_lock,
++	.irq_bus_sync_unlock	= ab8500_irq_sync_unlock,
++	.irq_mask		= ab8500_irq_mask,
++	.irq_unmask		= ab8500_irq_unmask,
+ };
+ 
+ static irqreturn_t ab8500_irq(int irq, void *dev)
 -- 
 1.7.1
 
