@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab0LMPJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:09:07 -0500
-Received: from mga14.intel.com ([143.182.124.37]:51617 "EHLO mga14.intel.com"
+	id S1758062Ab0LMPJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:09:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42159 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757944Ab0LMPJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:09:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="360909735"
-Message-Id: <20101213150328.652123030@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:47:05 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/35] writeback: make nr_to_write a per-file limit
-References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=writeback-single-file-limit.patch
+	id S1758051Ab0LMPJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:09:43 -0500
+Date: Mon, 13 Dec 2010 10:09:09 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: =?iso-8859-1?Q?CS=C9CSY_L=E1szl=F3?= <boobaa@frugalware.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, gorcunov@gmail.com,
+        aris@redhat.com, peterz@infradead.org, Ingo Molnar <mingo@elte.hu>,
+        VAJNA =?iso-8859-1?Q?Mikl=F3s?= <vmiklos@frugalware.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: 2.6.36 does not boot properly
+Message-ID: <20101213150909.GC18577@redhat.com>
+References: <201012130019.41234.boobaa@frugalware.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201012130019.41234.boobaa@frugalware.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This ensures full 4MB (or larger) writeback size for large dirty files.
+On Mon, Dec 13, 2010 at 12:19:40AM +0100, CSÉCSY László wrote:
 
-CC: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c         |   11 +++++++++++
- include/linux/writeback.h |    1 +
- 2 files changed, 12 insertions(+)
+Hell Csecsy,
 
---- linux-next.orig/fs/fs-writeback.c	2010-12-13 21:46:14.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2010-12-13 21:46:17.000000000 +0800
-@@ -330,6 +330,8 @@ static int
- writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- {
- 	struct address_space *mapping = inode->i_mapping;
-+	long per_file_limit = wbc->per_file_limit;
-+	long uninitialized_var(nr_to_write);
- 	unsigned dirty;
- 	int ret;
- 
-@@ -365,8 +367,16 @@ writeback_single_inode(struct inode *ino
- 	inode->i_state &= ~I_DIRTY_PAGES;
- 	spin_unlock(&inode_lock);
- 
-+	if (per_file_limit) {
-+		nr_to_write = wbc->nr_to_write;
-+		wbc->nr_to_write = per_file_limit;
-+	}
-+
- 	ret = do_writepages(mapping, wbc);
- 
-+	if (per_file_limit)
-+		wbc->nr_to_write += nr_to_write - per_file_limit;
-+
- 	/*
- 	 * Make sure to wait on the data before writing out the metadata.
- 	 * This is important for filesystems that modify metadata on data
-@@ -696,6 +706,7 @@ static long wb_writeback(struct bdi_writ
- 
- 		wbc.more_io = 0;
- 		wbc.nr_to_write = write_chunk;
-+		wbc.per_file_limit = write_chunk;
- 		wbc.pages_skipped = 0;
- 
- 		trace_wbc_writeback_start(&wbc, wb->bdi);
---- linux-next.orig/include/linux/writeback.h	2010-12-13 21:46:14.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2010-12-13 21:46:17.000000000 +0800
-@@ -43,6 +43,7 @@ struct writeback_control {
- 					   extra jobs and livelock */
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
-+	long per_file_limit;		/* Write this many pages for one file */
- 	long pages_skipped;		/* Pages which were not written */
- 
- 	/*
+> Additional info:
+> 
+> The first "bad" build while bisecting caused the above-mentioned freeze, but 
+> the latest 4 were all panicking immediately after boot - here is the 
+> "screenshot" I created with my camera:
 
+I find it odd that commit would be the cause of a kernel freeze that early
+in boot.  But I did try to do a git log between your last known good
+commit and bad commit.  The output was just the bad commit.
 
+[dzickus@ihatethathostname upstream]$ git log --oneline
+93736624635235cc5372ffca6d62816d02170724..e40b17208b6805be50ffe891878662b6076206b9
+e40b172 x86: Move notify_die from nmi.c to traps.c
+[dzickus@ihatethathostname upstream]$
+
+Though a git log on the bad commit showed other commits I thought would
+have popped out before the intersection with the good commit.
+
+Just for my sanity could you do a 'git revert
+e40b17208b6805be50ffe891878662b6076206b9' and try that kernel.  I would
+think it would still fail, but if it does boot then I need to do some
+serious head scratching.
+
+Cheers,
+Don
