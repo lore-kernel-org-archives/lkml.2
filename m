@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab0LMTWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:22:49 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59179 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab0LMTWs (ORCPT
+	id S1753783Ab0LMTXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:23:03 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:38859 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428Ab0LMTXB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:22:48 -0500
-Subject: Re: [tip:x86/tsc] x86: Check tsc available/disabled in the delayed
- init function
-From: john stultz <johnstul@us.ibm.com>
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-a8760eca6cf60ed303ad494ef45901f63165d2c8@git.kernel.org>
-References: <tip-a8760eca6cf60ed303ad494ef45901f63165d2c8@git.kernel.org>
+	Mon, 13 Dec 2010 14:23:01 -0500
+Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
+From: Peter Zijlstra <peterz@infradead.org>
+To: "David S. Ahern" <daahern@cisco.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4D0670BF.6050403@cisco.com>
+References: <20101213170923.GB1691@nowhere>
+	 <1292260289.6803.297.camel@twins> <20101213171537.GC1691@nowhere>
+	 <1292260699.6803.305.camel@twins>
+	 <20101213172216.GB7417@ghostprotocols.net>
+	 <1292261716.6803.332.camel@twins> <1292262433.6803.351.camel@twins>
+	 <4D065CB2.7050104@cisco.com> <1292263024.6803.370.camel@twins>
+	 <4D065F69.7080707@cisco.com> <20101213190831.GA7984@ghostprotocols.net>
+	 <4D0670BF.6050403@cisco.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 11:22:42 -0800
-Message-ID: <1292268162.2673.29.camel@work-vm>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Dec 2010 20:22:26 +0100
+Message-ID: <1292268146.6803.492.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 10:37 +0000, tip-bot for Thomas Gleixner wrote:
-> Commit-ID:  a8760eca6cf60ed303ad494ef45901f63165d2c8
-> Gitweb:     http://git.kernel.org/tip/a8760eca6cf60ed303ad494ef45901f63165d2c8
-> Author:     Thomas Gleixner <tglx@linutronix.de>
-> AuthorDate: Mon, 13 Dec 2010 11:28:02 +0100
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Mon, 13 Dec 2010 11:35:05 +0100
+On Mon, 2010-12-13 at 12:15 -0700, David S. Ahern wrote:
+> >   monotonic-clock
 > 
-> x86: Check tsc available/disabled in the delayed init function
-> 
-> The delayed TSC init function does not check whether the system has no
-> TSC or TSC is disabled at the kernel command line, which results in a
-> crash in the work queue based extended calibration due to division by
-> zero because the basic calibration never happened.
-> 
-> Add the missing checks and do not touch TSC when not available or
-> disabled.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <johnstul@us.ibm.com>
+> Name seems off. The 'event' is to grab time-of-day and have the 'time'
+> attribute set which gives the correlation between wall-clock and perf
+> timestamps. 
 
-Thanks for catching this!
+Well, you really want CLOCK_MONOTONIC, not CLOCK_REALTIME (nothing what
+so ever to do with Real-Time computing, just another brilliant POSIX
+misnomer), or possibly even CLOCK_MONOTONIC_RAW.
 
-Acked-by: John Stultz <johnstul@us.ibm.com>
+gettimeofday() usually returns CLOCK_REALTIME  which is subject to both
+NTP and timezone adjustments.
 
+CLOCK_MONOTONIC is only subject to NTP
 
-> ---
->  arch/x86/kernel/tsc.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index dc1393e..356a0d4 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -965,6 +965,9 @@ out:
-> 
->  static int __init init_tsc_clocksource(void)
->  {
-> +	if (!cpu_has_tsc || tsc_disabled > 0)
-> +		return 0;
-> +
->  	if (tsc_clocksource_reliable)
->  		clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
->  	/* lower the rating if we already know its unstable: */
+CLOCK_MONOTONIC_RAW is neither.
+
+At some point we'll try and have CLOCK_TRACING and provide a similar
+time to user-space that we currently use for perf (using the VDSO to
+avoid any actual system-calls).
 
 
