@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab0LMXVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 18:21:45 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:55226 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755602Ab0LMXVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 18:21:43 -0500
-Date: Tue, 14 Dec 2010 10:21:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, Nick Piggin <npiggin@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: rcu-walk and dcache scaling tree update and status
-Message-Id: <20101214102136.2f247814.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTim=XVg8fcbAbVJS1bu-Auw7i70AEEH+hoH7tUgS@mail.gmail.com>
-References: <AANLkTim=XVg8fcbAbVJS1bu-Auw7i70AEEH+hoH7tUgS@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__14_Dec_2010_10_21_36_+1100_JlDnZ1ynn.l+b9tb"
+	id S1756815Ab0LMX3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 18:29:16 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:41225 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752076Ab0LMX3P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 18:29:15 -0500
+Message-ID: <4D06AB66.8090909@euromail.se>
+Date: Tue, 14 Dec 2010 00:25:26 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
+References: <1292001842-5000-1-git-send-email-rydberg@euromail.se> <4D065BDE.5020107@canonical.com> <4D068E3C.8080100@euromail.se> <4D06A60D.7010409@canonical.com>
+In-Reply-To: <4D06A60D.7010409@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PSHlq-0007of-5J.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PSHlq-0007of-5J 05bbcb0b450c278aa530a5b68fe8550f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Dec_2010_10_21_36_+1100_JlDnZ1ynn.l+b9tb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> The envelope contacts serve as a way to detect a small area of fingers or a
 
-Hi Sedat,
+>> large area of fingers. There is nothing inherently problematic with having one
+>> or three or more such contacts.
+> 
+> Then I'm more confused :).
+> 
+> I see one problem: devices that report two touch points, (X1, Y1) and
+> (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
+> instead. Using a rectangle helps resolve this issue for panning and
+> pinching, though not for rotation.
 
-On Mon, 13 Dec 2010 17:48:18 +0100 Sedat Dilek <sedat.dilek@googlemail.com>=
- wrote:
->
-> I will give this new refreshed patchset a try (testing against
-> systemd-v15, vfat problem I reported) with none-BKL-config of course.
->=20
-> If linux-next will be the new base, then please rebase on it (see below).
-> (Last time I solved the CONFLICTs manually).
 
-Nothing released publicly should ever be based on linux-next (unless it
-is a short term testing only tree like -mm) as it is rebuilt every day.
-Thing should really only be based on other publicly released stable trees.
+If panning and pinching and rotation could all be recovered properly, then the
+individual contacts could actually have been reconstructed properly in the first
+place. This is the whole point - there is not enough information available for
+rotation to be recovered properly.
 
-This is especially true of trees that will be included in linux-next
-itself.
-
-> $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-np=
-iggin.git
-> vfs-scale-working:vfs-scale-working
-> remote: Counting objects: 1196, done.
-> remote: Compressing objects: 100% (80/80), done.
-> remote: Total 931 (delta 866), reused 915 (delta 851)
-> Receiving objects: 100% (931/931), 207.90 KiB | 376 KiB/s, done.
-> Resolving deltas: 100% (866/866), completed with 258 local objects.
-> From git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin
->  * [new branch]      vfs-scale-working -> vfs-scale-working
-> CONFLICT (content): Merge conflict in fs/fuse/inode.c
-> CONFLICT (content): Merge conflict in fs/super.c
-
-Thanks for the heads up, though.  When I include Nick's tree in
-linux-next, I will do these merge fixes if necessary (as will Linus when
-it gets to him).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__14_Dec_2010_10_21_36_+1100_JlDnZ1ynn.l+b9tb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNBqqAAAoJEDMEi1NhKgbsktEH+QHg7WVj25idpn3pxaWrAGYg
-UNygg7nxWwL6twSKYxXCK8QbnOtvUSu3n8s4Na+m6+y1h2Hjpwq4zQfZ6jNuM4bk
-oHGZ5vCOAxFvl4P/ST8UjBn0TTUYHjbN2ZJlusOctPivDkIUUoRf84T6UEod8Q0Y
-zxkbHPKZSKq2UtSvpMP1pgUBQ3I2dbkyZWToytXtwf9o320kezeWoX+5ZcPcrwLl
-6wEs9TX+EaQr/S3h3AIaZiQ0vyiIqvYqAU+h6xj3yt/nMgyXaN2/40qU1y7A9sm8
-UFER1AfR3bMKkRNaoSIbQ8zbfZy/pyr9cd8OT+LIgftTEJwuC/+/wJ1xPRzagCw=
-=W1jM
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Dec_2010_10_21_36_+1100_JlDnZ1ynn.l+b9tb--
+Thanks.
+Henrik
