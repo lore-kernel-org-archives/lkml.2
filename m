@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab0LMItn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 03:49:43 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:33567 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab0LMItl (ORCPT
+	id S1755747Ab0LMI5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 03:57:35 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35427 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab0LMI5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 03:49:41 -0500
-Message-ID: <4D05DE18.3060500@canonical.com>
-Date: Mon, 13 Dec 2010 16:49:28 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 13 Dec 2010 03:57:34 -0500
+Message-ID: <4e0d4bb9da2d1b0e1196ae2af4c2ddb8.squirrel@www.firstfloor.org>
+In-Reply-To: <E87738D94A6AD54789B5B8D1BAEB06CC700C2347FF@azsmsx503.amr.corp.intel.com>
+References: <201012131244.547034648@firstfloor.org>
+    <20101212234751.76302B27BF@basil.firstfloor.org>
+    <E87738D94A6AD54789B5B8D1BAEB06CC700C2347FF@azsmsx503.amr.corp.intel.com>
+Date: Mon, 13 Dec 2010 09:57:31 +0100
+Subject: RE: [PATCH] [167/223] ACPI: debugfs custom_method open to non-root
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Brown, Len" <len.brown@intel.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>, "davej@redhat.com" <davej@redhat.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 0/7] ideapad: hotkey enablement
-References: <1291881376-4729-1-git-send-email-ike.pan@canonical.com> <AANLkTimUpXe34tSzvOJ_oo=fyqdAhwkk6xnN10BbdWrH@mail.gmail.com>
-In-Reply-To: <AANLkTimUpXe34tSzvOJ_oo=fyqdAhwkk6xnN10BbdWrH@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2010 04:39 PM, Corentin Chary wrote:
->> acpi_handle is still a global variable becuase we need to pass handle pointer
->> to rfk_set with its opcode but only one data argument available.
-> 
-> Of course there is only one data argument available, but since it's a
-> void *, you
-> can use a struct with your handle and the opcode :).
-> 
+>> 2.6.35-longterm review patch.  If anyone has any objections, please let
+>> me know.
+>
+> is -longterm something that happens after -stable runs out of gas?
 
-I have tried it. It needs to copy the same handle three times to each struture.
-Since we only have an acpi handle, I think to have it global will let driver
-easy read.
+Yes (but not for all kernels)
+
+> Note that this particular patch applies back to 2.6.33.
+
+Paul G. could consider it for his 2.6.34 then.
+-Andi
+
