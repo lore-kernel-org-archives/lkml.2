@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab0LML6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:58:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab0LML6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:58:02 -0500
-Message-ID: <4D060A31.3030606@redhat.com>
-Date: Mon, 13 Dec 2010 13:57:37 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: balbir@linux.vnet.ibm.com
-CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
-References: <20101202144129.4357fe00@annuminas.surriel.com> <20101210050344.GR3158@balbir.in.ibm.com> <4D0328CC.1020809@redhat.com> <20101211135727.GU3158@balbir.in.ibm.com>
-In-Reply-To: <20101211135727.GU3158@balbir.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757321Ab0LMMCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:02:32 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:37186 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab0LMMCb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 07:02:31 -0500
+Date: Mon, 13 Dec 2010 13:02:30 +0100
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 00/10] gpio: irq_data conversion.
+Message-ID: <20101213120230.GY15575@mail.wantstofly.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2010 03:57 PM, Balbir Singh wrote:
-> * Avi Kivity<avi@redhat.com>  [2010-12-11 09:31:24]:
->
-> >  On 12/10/2010 07:03 AM, Balbir Singh wrote:
-> >  >>
-> >  >>   Scheduler people, please flame me with anything I may have done
-> >  >>   wrong, so I can do it right for a next version :)
-> >  >>
-> >  >
-> >  >This is a good problem statement, there are other things to consider
-> >  >as well
-> >  >
-> >  >1. If a hard limit feature is enabled underneath, donating the
-> >  >timeslice would probably not make too much sense in that case
-> >
-> >  What's the alternative?
-> >
-> >  Consider a two vcpu guest with a 50% hard cap.  Suppose the workload
-> >  involves ping-ponging within the guest.  If the scheduler decides to
-> >  schedule the vcpus without any overlap, then the throughput will be
-> >  dictated by the time slice.  If we allow donation, throughput is
-> >  limited by context switch latency.
-> >
->
-> If the vpcu holding the lock runs more and capped, the timeslice
-> transfer is a heuristic that will not help.
+This patch set converts drivers/gpio/ irq_chips and flow handlers over
+to the new struct irq_data based irq_chip functions.
 
-Why not?  as long as we shift the cap as well.
 
--- 
-error compiling committee.c: too many arguments to function
+Lennert Buytenhek (10):
+  gpio: adp5588-gpio: irq_data conversion.
+  gpio: langwell_gpio: irq_data conversion.
+  gpio: max732x: irq_data conversion.
+  gpio: pca953x: irq_data conversion.
+  gpio: pl061: irq_data conversion.
+  gpio: stmpe-gpio: irq_data conversion.
+  gpio: sx150x: irq_data conversion.
+  gpio: tc35892-gpio: irq_data conversion.
+  gpio: timbgpio: irq_data conversion.
+  gpio: vr41xx_giu: irq_data conversion.
 
+ drivers/gpio/adp5588-gpio.c  |   39 +++++++++++++++++----------------
+ drivers/gpio/langwell_gpio.c |   16 +++++++-------
+ drivers/gpio/max732x.c       |   38 ++++++++++++++++----------------
+ drivers/gpio/pca953x.c       |   38 ++++++++++++++++----------------
+ drivers/gpio/pl061.c         |   28 ++++++++++++------------
+ drivers/gpio/stmpe-gpio.c    |   36 +++++++++++++++---------------
+ drivers/gpio/sx150x.c        |   46 ++++++++++++++++++++--------------------
+ drivers/gpio/tc35892-gpio.c  |   36 +++++++++++++++---------------
+ drivers/gpio/timbgpio.c      |   30 +++++++++++++-------------
+ drivers/gpio/vr41xx_giu.c    |   48 +++++++++++++++++++++---------------------
+ 10 files changed, 178 insertions(+), 177 deletions(-)
