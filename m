@@ -1,275 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0LMUy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 15:54:27 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:20468 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755927Ab0LMUyZ (ORCPT
+	id S1755953Ab0LMU4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 15:56:20 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:29345 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab0LMU4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 15:54:25 -0500
-Date: Mon, 13 Dec 2010 21:48:02 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Hank Janssen <hjanssen@microsoft.com>
-cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        Ky Srinivasan <ksrinivasan@novell.com>
-Subject: Re: [PATCH 1/1] hv: Use only one receive buffer per channel and
- kmalloc on initialize
-In-Reply-To: <1292272498-29483-1-git-send-email-hjanssen@microsoft.com>
-Message-ID: <alpine.LNX.2.00.1012132143590.26491@swampdragon.chaosbits.net>
-References: <1292272498-29483-1-git-send-email-hjanssen@microsoft.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 13 Dec 2010 15:56:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=AepaXQXbEo6rAqR/B7wJh7kID7ovw6rCCxfSVxl0zG9WN2hz95W9n8/zTH0ugmFCRe
+         Bd1j34PhhUaMM61j6jzQ==
+Date: Mon, 13 Dec 2010 12:56:13 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@linux.intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [7/7,v8] NUMA Hotplug Emulator: Implement per-node add_memory
+ debugfs interface
+In-Reply-To: <20101213020924.GB19637@shaohui>
+Message-ID: <alpine.DEB.2.00.1012131255580.13478@chino.kir.corp.google.com>
+References: <A24AE1FFE7AEC5489F83450EE98351BF2A40FED20A@shsmsx502.ccr.corp.intel.com> <20101209012124.GD5798@shaohui> <alpine.DEB.2.00.1012091325530.13564@chino.kir.corp.google.com> <20101209235705.GA10674@shaohui> <alpine.DEB.2.00.1012101529190.30039@chino.kir.corp.google.com>
+ <20101213020924.GB19637@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Dec 2010, Hank Janssen wrote:
+On Mon, 13 Dec 2010, Shaohui Zheng wrote:
 
-> Correct issue with not checking kmalloc return value.
-> This fix now only uses one receive buffer for all hv_utils 
-> channels, and will do only one kmalloc on init and will return
-> with a -ENOMEM if kmalloc fails on initialize.
+> For the state transition to N_HIGH_MEMORY, it does not happen on the above too
+> interfaces. It happens when the memory was onlined with sysfs /sys/device/system/memory/memoryXX/online
+> interface.
 > 
-> Thanks to Evgeniy Polyakov <zbr@ioremap.net> for pointing this out.
-> And thanks to Jesper Juhl <jj@chaosbits.net> and Ky Srinivasan 
-> <ksrinivasan@novell.com> for suggesting a better implementation of
-> my original patch.
+> That is the code path:
+> store_mem_state
+> 	->memory_block_change_state
+> 	 	->memory_block_action
+> 			->online_pages
 > 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> Cc: Evgeniy Polyakov <zbr@ioremap.net>
-> Cc: Jesper Juhl <jj@chaosbits.net>
-> Cc: Ky Srinivasan <ksrinivasan@novell.com>
+> 			if (onlined_pages) {
+> 				kswapd_run(zone_to_nid(zone));
+> 				node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+> 			}
 > 
-> ---
->  drivers/staging/hv/hv_utils.c |   84 +++++++++++++++++++++-------------------
->  1 files changed, 44 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
-> index 53e1e29..e0ecc23 100644
-> --- a/drivers/staging/hv/hv_utils.c
-> +++ b/drivers/staging/hv/hv_utils.c
-> @@ -38,12 +38,14 @@
->  #include "vmbus_api.h"
->  #include "utils.h"
->  
-> +static u8 *shut_txf_buf;
-> +static u8 *time_txf_buf;
-> +static u8 *hbeat_txf_buf;
->  
->  static void shutdown_onchannelcallback(void *context)
->  {
->  	struct vmbus_channel *channel = context;
-> -	u8 *buf;
-> -	u32 buflen, recvlen;
-> +	u32 recvlen;
->  	u64 requestid;
->  	u8  execute_shutdown = false;
->  
-> @@ -52,24 +54,23 @@ static void shutdown_onchannelcallback(void *context)
->  	struct icmsg_hdr *icmsghdrp;
->  	struct icmsg_negotiate *negop = NULL;
->  
-> -	buflen = PAGE_SIZE;
-> -	buf = kmalloc(buflen, GFP_ATOMIC);
-> -
-> -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-> +	vmbus_recvpacket(channel, shut_txf_buf,
-> +			 PAGE_SIZE, &recvlen, &requestid);
->  
->  	if (recvlen > 0) {
->  		DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
->  			   recvlen, requestid);
->  
-> -		icmsghdrp = (struct icmsg_hdr *)&buf[
-> +		icmsghdrp = (struct icmsg_hdr *)&shut_txf_buf[
->  			sizeof(struct vmbuspipe_hdr)];
->  
->  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-> -			prep_negotiate_resp(icmsghdrp, negop, buf);
-> +			prep_negotiate_resp(icmsghdrp, negop, shut_txf_buf);
->  		} else {
-> -			shutdown_msg = (struct shutdown_msg_data *)&buf[
-> -				sizeof(struct vmbuspipe_hdr) +
-> -				sizeof(struct icmsg_hdr)];
-> +			shutdown_msg =
-> +				(struct shutdown_msg_data *)&shut_txf_buf[
-> +					sizeof(struct vmbuspipe_hdr) +
-> +					sizeof(struct icmsg_hdr)];
->  
->  			switch (shutdown_msg->flags) {
->  			case 0:
-> @@ -93,13 +94,11 @@ static void shutdown_onchannelcallback(void *context)
->  		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
->  			| ICMSGHDRFLAG_RESPONSE;
->  
-> -		vmbus_sendpacket(channel, buf,
-> +		vmbus_sendpacket(channel, shut_txf_buf,
->  				       recvlen, requestid,
->  				       VmbusPacketTypeDataInBand, 0);
->  	}
->  
-> -	kfree(buf);
-> -
->  	if (execute_shutdown == true)
->  		orderly_poweroff(false);
->  }
-> @@ -150,28 +149,25 @@ static inline void adj_guesttime(u64 hosttime, u8 flags)
->  static void timesync_onchannelcallback(void *context)
->  {
->  	struct vmbus_channel *channel = context;
-> -	u8 *buf;
-> -	u32 buflen, recvlen;
-> +	u32 recvlen;
->  	u64 requestid;
->  	struct icmsg_hdr *icmsghdrp;
->  	struct ictimesync_data *timedatap;
->  
-> -	buflen = PAGE_SIZE;
-> -	buf = kmalloc(buflen, GFP_ATOMIC);
-> -
-> -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-> +	vmbus_recvpacket(channel, time_txf_buf,
-> +			 PAGE_SIZE, &recvlen, &requestid);
->  
->  	if (recvlen > 0) {
->  		DPRINT_DBG(VMBUS, "timesync packet: recvlen=%d, requestid=%lld",
->  			recvlen, requestid);
->  
-> -		icmsghdrp = (struct icmsg_hdr *)&buf[
-> +		icmsghdrp = (struct icmsg_hdr *)&time_txf_buf[
->  				sizeof(struct vmbuspipe_hdr)];
->  
->  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-> -			prep_negotiate_resp(icmsghdrp, NULL, buf);
-> +			prep_negotiate_resp(icmsghdrp, NULL, time_txf_buf);
->  		} else {
-> -			timedatap = (struct ictimesync_data *)&buf[
-> +			timedatap = (struct ictimesync_data *)&time_txf_buf[
->  				sizeof(struct vmbuspipe_hdr) +
->  				sizeof(struct icmsg_hdr)];
->  			adj_guesttime(timedatap->parenttime, timedatap->flags);
-> @@ -180,12 +176,10 @@ static void timesync_onchannelcallback(void *context)
->  		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
->  			| ICMSGHDRFLAG_RESPONSE;
->  
-> -		vmbus_sendpacket(channel, buf,
-> +		vmbus_sendpacket(channel, time_txf_buf,
->  				recvlen, requestid,
->  				VmbusPacketTypeDataInBand, 0);
->  	}
-> -
-> -	kfree(buf);
->  }
->  
->  /*
-> @@ -196,30 +190,28 @@ static void timesync_onchannelcallback(void *context)
->  static void heartbeat_onchannelcallback(void *context)
->  {
->  	struct vmbus_channel *channel = context;
-> -	u8 *buf;
-> -	u32 buflen, recvlen;
-> +	u32 recvlen;
->  	u64 requestid;
->  	struct icmsg_hdr *icmsghdrp;
->  	struct heartbeat_msg_data *heartbeat_msg;
->  
-> -	buflen = PAGE_SIZE;
-> -	buf = kmalloc(buflen, GFP_ATOMIC);
-> -
-> -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-> +	vmbus_recvpacket(channel, hbeat_txf_buf,
-> +			 PAGE_SIZE, &recvlen, &requestid);
->  
->  	if (recvlen > 0) {
->  		DPRINT_DBG(VMBUS, "heartbeat packet: len=%d, requestid=%lld",
->  			   recvlen, requestid);
->  
-> -		icmsghdrp = (struct icmsg_hdr *)&buf[
-> +		icmsghdrp = (struct icmsg_hdr *)&hbeat_txf_buf[
->  				sizeof(struct vmbuspipe_hdr)];
->  
->  		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-> -			prep_negotiate_resp(icmsghdrp, NULL, buf);
-> +			prep_negotiate_resp(icmsghdrp, NULL, hbeat_txf_buf);
->  		} else {
-> -			heartbeat_msg = (struct heartbeat_msg_data *)&buf[
-> -				sizeof(struct vmbuspipe_hdr) +
-> -				sizeof(struct icmsg_hdr)];
-> +			heartbeat_msg =
-> +				(struct heartbeat_msg_data *)&hbeat_txf_buf[
-> +					sizeof(struct vmbuspipe_hdr) +
-> +					sizeof(struct icmsg_hdr)];
->  
->  			DPRINT_DBG(VMBUS, "heartbeat seq = %lld",
->  				   heartbeat_msg->seq_num);
-> @@ -230,12 +222,10 @@ static void heartbeat_onchannelcallback(void *context)
->  		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
->  			| ICMSGHDRFLAG_RESPONSE;
->  
-> -		vmbus_sendpacket(channel, buf,
-> +		vmbus_sendpacket(channel, hbeat_txf_buf,
->  				       recvlen, requestid,
->  				       VmbusPacketTypeDataInBand, 0);
->  	}
-> -
-> -	kfree(buf);
->  }
->  
->  static const struct pci_device_id __initconst
-> @@ -268,6 +258,16 @@ static int __init init_hyperv_utils(void)
->  	if (!dmi_check_system(hv_utils_dmi_table))
->  		return -ENODEV;
->  
-> +	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> +	time_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> +	hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> +
-> +	if (!shut_txf_buf || !time_txf_buf || !hbeat_txf_buf) {
-> +		printk(KERN_INFO
-> +		       "Unable to allocate memory for receive buffer\n");
-> +		return -ENOMEM;
-
-You are leaking memory in the failure path. If for example one or two 
-allocations succeed but one or two fail, then you'll leak the two 
-successful allocations.
-
-I believe this should be 
-
-     if (!shut_txf_buf || !time_txf_buf || !hbeat_txf_buf) {
-             printk(KERN_INFO
-                    "Unable to allocate memory for receive buffer\n");
-             kfree(hbeat_txf_buf);
-             kfree(time_txf_buf);
-             kfree(shut_txf_buf);
-             return -ENOMEM;
-...
-
-
-
-> +	}
-> +
->  	hv_cb_utils[HV_SHUTDOWN_MSG].channel->onchannel_callback =
->  		&shutdown_onchannelcallback;
->  	hv_cb_utils[HV_SHUTDOWN_MSG].callback = &shutdown_onchannelcallback;
-> @@ -298,6 +298,10 @@ static void exit_hyperv_utils(void)
->  	hv_cb_utils[HV_HEARTBEAT_MSG].channel->onchannel_callback =
->  		&chn_cb_negotiate;
->  	hv_cb_utils[HV_HEARTBEAT_MSG].callback = &chn_cb_negotiate;
-> +
-> +	kfree(shut_txf_buf);
-> +	kfree(time_txf_buf);
-> +	kfree(hbeat_txf_buf);
->  }
->  
->  module_init(init_hyperv_utils);
+> does it address your question? thanks.
 > 
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Ok, thanks!
