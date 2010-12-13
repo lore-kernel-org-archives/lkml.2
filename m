@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab0LMGLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:11:44 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:51699 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab0LMGLn (ORCPT
+	id S1752645Ab0LMGWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:22:10 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24486 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752427Ab0LMGWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:11:43 -0500
-From: Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: kamezawa.hiroyu@jp.fujitsu.com, aneesh.kumar@linux.vnet.ibm.com,
-        Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
-Subject: [PATCH v2] Typecasting required for comparing unlike datatypes
-Date: Mon, 13 Dec 2010 11:41:35 +0530
-Message-Id: <1292220695-6578-1-git-send-email-harsh@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1.1
+	Mon, 13 Dec 2010 01:22:06 -0500
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH net-next-2.6 v9 15/20] pch_can: Comment optimization
+Date: Mon, 13 Dec 2010 15:24:21 +0900
+Message-Id: <1292221467-8039-15-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.6.0.6
+In-Reply-To: <1292221467-8039-14-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1292221467-8039-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-2-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-4-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-5-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-6-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-7-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-8-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-9-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-10-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-11-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-12-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-13-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1292221467-8039-14-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing code causes the if condition to pass when it should fail
-on a *64-bit kernel* because of implicit data type conversions. It can
-be observed by passing pos = -1 and count = some positive number.
-This results in function returning EOVERFLOW instead of EINVAL.
+Comment optimization
 
-With this patch, the function returns EINVAL when pos is -1 and count
-is a positive number. This can be tested by calling sendfile with
-offset = -1 and count = some positive number on a 64-bit kernel.
-
-Signed-off-by: Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- fs/read_write.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/can/pch_can.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 431a0ed..a8eabd4 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -38,7 +38,7 @@ __negative_fpos_check(struct file *file, loff_t pos, size_t count)
- 	 * pos or pos+count is negative here, check overflow.
- 	 * too big "count" will be caught in rw_verify_area().
- 	 */
--	if ((pos < 0) && (pos + count < pos))
-+	if ((pos < 0) && ( (loff_t) (pos + count) < pos))
- 		return -EOVERFLOW;
- 	if (file->f_mode & FMODE_UNSIGNED_OFFSET)
- 		return 0;
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index c500b6d..a1fd3be 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_RXIE;
+ 
+-	/* Reading the receive buffer data from RAM to Interface1/2 registers */
++	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ 
+@@ -854,7 +854,7 @@ static int pch_can_open(struct net_device *ndev)
+ 		priv->use_msi = 1;
+ 	}
+ 
+-	/* Regsitering the interrupt. */
++	/* Regstering the interrupt. */
+ 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
+ 			     ndev->name, ndev);
+ 	if (retval) {
+@@ -954,7 +954,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 
+ 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
+ 
+-	/* Updating the size of the data. */
++	/* Set the size of the data. Update if2_mcont */
+ 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
+ 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
+ 
+@@ -1061,8 +1061,8 @@ static int pch_can_get_buffer_status(struct pch_can_priv *priv)
+ 
+ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+-	int i;			/* Counter variable. */
+-	int retval;		/* Return value. */
++	int i;
++	int retval;
+ 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
+ 	int counter = PCH_COUNTER_LIMIT;
+ 
+@@ -1119,8 +1119,8 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+ 
+ static int pch_can_resume(struct pci_dev *pdev)
+ {
+-	int i;			/* Counter variable. */
+-	int retval;		/* Return variable. */
++	int i;
++	int retval;
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct pch_can_priv *priv = netdev_priv(dev);
+ 
 -- 
-1.7.1.1
+1.6.0.6
 
