@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab0LMR5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:57:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56261 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab0LMR5c convert rfc822-to-8bit (ORCPT
+	id S1758570Ab0LMSAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 13:00:41 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57042
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757293Ab0LMSAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:57:32 -0500
-Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
-From: Peter Zijlstra <peterz@infradead.org>
-To: "David S. Ahern" <daahern@cisco.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4D065CB2.7050104@cisco.com>
-References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
-	 <1291773285-16254-2-git-send-email-daahern@cisco.com>
-	 <20101212201613.GA1784@nowhere> <4D06301C.2090309@cisco.com>
-	 <20101213155451.GA1691@nowhere> <20101213164854.GL5407@ghostprotocols.net>
-	 <20101213170923.GB1691@nowhere> <1292260289.6803.297.camel@twins>
-	 <20101213171537.GC1691@nowhere> <1292260699.6803.305.camel@twins>
-	 <20101213172216.GB7417@ghostprotocols.net>
-	 <1292261716.6803.332.camel@twins> <1292262433.6803.351.camel@twins>
-	 <4D065CB2.7050104@cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Dec 2010 18:57:04 +0100
-Message-ID: <1292263024.6803.370.camel@twins>
+	Mon, 13 Dec 2010 13:00:40 -0500
+Date: Mon, 13 Dec 2010 10:01:08 -0800 (PST)
+Message-Id: <20101213.100108.189682494.davem@davemloft.net>
+To: leitao@linux.vnet.ibm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH] ehea: Use the standard logging functions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1292249040-20560-1-git-send-email-leitao@linux.vnet.ibm.com>
+References: <98d5a9b37b40f9733324b0f488522f2d4e990676.1291861915.git.joe@perches.com>
+	<1292249040-20560-1-git-send-email-leitao@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 10:49 -0700, David S. Ahern wrote:
+From: leitao@linux.vnet.ibm.com
+Date: Mon, 13 Dec 2010 09:04:00 -0500
+
+> I fixed some compilation errors and re-generate the patch. Thanks!
 > 
-> On 12/13/10 10:47, Peter Zijlstra wrote:
-> > On Mon, 2010-12-13 at 18:35 +0100, Peter Zijlstra wrote:
-> >>         * this CLOCK_MONOTONIC offset (for what little good that does, since
-> >> our clock isn't strictly sync'ed to CLOCK_MONOTONIC so we can incur
-> >> arbitrary drift). 
-> > 
-> > In fact, the only sane way to do that is by creating a software counter
-> > that represents CLOCK_MONOTONIC and sample that say once a minute (or
-> > more often if you want smaller drift).
-> > 
-> > 
-> 
-> What about creating a PERF_RECORD_TIME and generate an event when the
-> counter is opened? It contains a PERF_SAMPLE_TIME and say
-> PERF_SAMPLE_TOD (time-of-day)? We're not sending rockets to saturn; we
-> just need the timestamps to match other log files.
+> Author: Joe Perches <joe@perches.com>
 
-That's similar to the first thing I proposed. The problem is with long
-record sessions your drift can become quite significant, then when you
-merge sort your other log events stuff can get out of order. Which can
-lead to some serious head-scratching..
+"Author: " is not how you indicate who the author is.  You instead
+simple provide another "From: " line.
 
-Another problem with this approach is things like flight-recorder mode
-where you constantly over-write your old data, you'd have to build some
-trigger to always output a new record before you over-write the old one,
-so there's always one consistent record around. Drift is an even more
-serious problem here since flight-record more could be running for days
-before (if ever) you dump it.
+I'll fix it up while applying this patch, but next time please
+form it properly.
 
-
+Thanks.
