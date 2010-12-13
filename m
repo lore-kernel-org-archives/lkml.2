@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0LMAeZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:34:25 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48381 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932094Ab0LMAeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 19:34:22 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: [RFC][PATCH 4/4] PM: Permit registrarion of parentless devices during system suspend
-Date: Mon, 13 Dec 2010 01:33:51 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201012130128.31243.rjw@sisk.pl>
-In-Reply-To: <201012130128.31243.rjw@sisk.pl>
+	id S932122Ab0LMAeg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:34:36 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:39166 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796Ab0LMAee (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 19:34:34 -0500
+Date: Sun, 12 Dec 2010 18:34:11 -0600
+From: David Fries <david@fries.net>
+To: Florian Mickler <mickler@fzi.de>
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] [correction] load fbcon from drm_kms_helper
+Message-ID: <20101213003411.GM13567@spacedout.fries.net>
+References: <20101212183921.GA25744@spacedout.fries.net>
+ <20101212230128.47c20b10@schatten.dmk.lab>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012130133.52072.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101212230128.47c20b10@schatten.dmk.lab>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sun, 12 Dec 2010 18:34:14 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Sun, Dec 12, 2010 at 11:01:28PM +0100, Florian Mickler wrote:
+> On Sun, 12 Dec 2010 12:39:22 -0600
+> David Fries <david@fries.net> wrote:
+> 
+> > Kconfig says fbcon is required by drm_kms_helper.  If radeon, fbcon,
+> > and drm_kms_helper are all modules, radeon is auto loaded (by PCI id?),
+> > drm_kms_helper is loaded because of the module dependency, but fbcon
+> > isn't loaded leaving the console unusable.  Since fbcon is required
+> > and there isn't an explicit module dependency, request the module
+> > to be loaded from drm_kms_helper.
+> > 
+> > Signed-off-by: David Fries <david@fries.net>
+> > Cc: David Airlie <airlied@linux.ie>
+> > Cc: dri-devel@lists.freedesktop.org
+> > ---
+> > The last patch had a typo 'namue', mental reminder, test again after
+> > running checkpatch.pl.
+> > 
+> > This solves compiling CONFIG_FB=m and being left with a blank screen
+> > because the radeon module is automatically loaded, but fbcon isn't.
+> > If radeon had to be manually loaded, then it would be the user's fault
+> > for
+> > not loading fbcon as well, but as radeon is being loaded
+> > automatically,
+> > there isn't much a user can do from console to even fix it.  More bug
+> > details from here,
+> > https://bugzilla.kernel.org/show_bug.cgi?id=16221
+> 
+> I guess this is reasonable. Maybe _if_ there actually is a usecase for
+> a drm driver without fbcon, the drm could provide a
+> parameter to skip loading fbcon?
 
-The registration of a new parentless device during system suspend
-will not lead to any complications affecting the PM core (the device
-will be effectively seen after the subsequent resume has completed),
-so remove the code used for detection of such events.
+My question was more, is there a usecase for a drm driver with
+the fbcon module available, but not wanting it loaded?
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/main.c |   25 +++----------------------
- 1 file changed, 3 insertions(+), 22 deletions(-)
+> But also the drm Kconfig seems to be bogus? SELECT is not transitiv. 
+> So selecting DRM_KMS_HELPER is not enough, as it will not select FB
+> and FRAMEBUFFER_CONSOLE. Maybe the drm drivers that currently
+> select DRM_KMS_HELPER should instead depend on it.  
 
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -49,12 +49,6 @@ LIST_HEAD(dpm_noirq_list);
- static DEFINE_MUTEX(dpm_list_mtx);
- static pm_message_t pm_transition;
- 
--/*
-- * Set once the preparation of devices for a PM transition has started, reset
-- * before starting to resume devices.  Protected by dpm_list_mtx.
-- */
--static bool transition_started;
--
- static int async_error;
- 
- /**
-@@ -97,19 +91,9 @@ void device_pm_add(struct device *dev)
- 		 dev->bus ? dev->bus->name : "No Bus",
- 		 kobject_name(&dev->kobj));
- 	mutex_lock(&dpm_list_mtx);
--	if (dev->parent) {
--		if (dev->parent->power.in_suspend)
--			dev_warn(dev, "parent %s should not be sleeping\n",
--				 dev_name(dev->parent));
--	} else if (transition_started) {
--		/*
--		 * We refuse to register parentless devices while a PM
--		 * transition is in progress in order to avoid leaving them
--		 * unhandled down the road
--		 */
--		dev_WARN(dev, "Parentless device registered during a PM transaction\n");
--	}
--
-+	if (dev->parent && dev->parent->power.in_suspend)
-+		dev_warn(dev, "parent %s should not be sleeping\n",
-+			dev_name(dev->parent));
- 	list_add_tail(&dev->power.entry, &dpm_list);
- 	mutex_unlock(&dpm_list_mtx);
- }
-@@ -482,7 +466,6 @@ void dpm_resume_noirq(pm_message_t state
- 	ktime_t starttime = ktime_get();
- 
- 	mutex_lock(&dpm_list_mtx);
--	transition_started = false;
- 	while (!list_empty(&dpm_noirq_list)) {
- 		struct device *dev = to_device(dpm_noirq_list.next);
- 		int error;
-@@ -683,7 +666,6 @@ static void dpm_complete(pm_message_t st
- 
- 	INIT_LIST_HEAD(&list);
- 	mutex_lock(&dpm_list_mtx);
--	transition_started = false;
- 	while (!list_empty(&dpm_prepared_list)) {
- 		struct device *dev = to_device(dpm_prepared_list.prev);
- 
-@@ -1020,7 +1002,6 @@ static int dpm_prepare(pm_message_t stat
- 	int error = 0;
- 
- 	mutex_lock(&dpm_list_mtx);
--	transition_started = true;
- 	while (!list_empty(&dpm_list)) {
- 		struct device *dev = to_device(dpm_list.next);
- 
+But the "select FB" and "select FRAMEBUFFER_CONSOLE if !EMBEDDED"
+Kconfig for DRM_KMS_HELPER is the mechanism that cause FB and
+FRAMEBUFFER_CONSOLE to be compiled.  The was the other part of my
+reasoning, if there is a case for drm without fbcon, DRM_KMS_HELPER
+shouldn't force fbcon to be compiled.  But as it does require fbcon to
+be compiled, and things are clearly broken if a drm driver is loaded
+(radeon) but fbcon isn't loaded (no usable console) DRM_KMS_HELPER
+should try to load it, hence the patch.
 
+Just for a check I used `make xconfig` to verify they are
+automatically selected.
+set FB, DRM_RADEON, DRM etc to =n so FRAMEBUFFER_CONSOLE can also be set to =n
+set DRM=m (FRAMEBUFFER_CONSOLE still =n)
+set DRM_RADEON=m (DRM_KMS_HELPER, FB, and FRAMEBUFFER_CONSOLE become =m)
+That's because DRM_RADEON sets DRM_KMS_HELPER, and DRM_KMS_HELPER selects
+FB and FRAMEBUFFER_CONSOLE
+config DRM_RADEON
+	select DRM_KMS_HELPER
+config DRM_KMS_HELPER
+	select FB
+	select FRAMEBUFFER_CONSOLE if !EMBEDDED
+and FRAMEBUFFER_CONSOLE is forced to =m 
+
+-- 
+David Fries <david@fries.net>
+http://fries.net/~david/ (PGP encryption key available)
