@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab0LMTVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:21:35 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35316 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab0LMTVd (ORCPT
+	id S1753627Ab0LMTWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:22:49 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:59179 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388Ab0LMTWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:21:33 -0500
-Date: Mon, 13 Dec 2010 11:20:33 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Subject: [PATCH -next] thermal: depends on NET
-Message-Id: <20101213112033.d0060e6c.randy.dunlap@oracle.com>
-In-Reply-To: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 13 Dec 2010 14:22:48 -0500
+Subject: Re: [tip:x86/tsc] x86: Check tsc available/disabled in the delayed
+ init function
+From: john stultz <johnstul@us.ibm.com>
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-a8760eca6cf60ed303ad494ef45901f63165d2c8@git.kernel.org>
+References: <tip-a8760eca6cf60ed303ad494ef45901f63165d2c8@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Dec 2010 11:22:42 -0800
+Message-ID: <1292268162.2673.29.camel@work-vm>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, 2010-12-13 at 10:37 +0000, tip-bot for Thomas Gleixner wrote:
+> Commit-ID:  a8760eca6cf60ed303ad494ef45901f63165d2c8
+> Gitweb:     http://git.kernel.org/tip/a8760eca6cf60ed303ad494ef45901f63165d2c8
+> Author:     Thomas Gleixner <tglx@linutronix.de>
+> AuthorDate: Mon, 13 Dec 2010 11:28:02 +0100
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Mon, 13 Dec 2010 11:35:05 +0100
+> 
+> x86: Check tsc available/disabled in the delayed init function
+> 
+> The delayed TSC init function does not check whether the system has no
+> TSC or TSC is disabled at the kernel command line, which results in a
+> crash in the work queue based extended calibration due to division by
+> zero because the basic calibration never happened.
+> 
+> Add the missing checks and do not touch TSC when not available or
+> disabled.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <johnstul@us.ibm.com>
 
-ERROR: "genl_register_family" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "genl_unregister_family" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "init_net" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "__alloc_skb" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "netlink_broadcast" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "kfree_skb" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "genl_register_mc_group" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "nla_reserve" [drivers/thermal/thermal_sys.ko] undefined!
-ERROR: "skb_put" [drivers/thermal/thermal_sys.ko] undefined!
+Thanks for catching this!
 
-Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
----
- drivers/thermal/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Acked-by: John Stultz <johnstul@us.ibm.com>
 
---- linux-next-20101213.orig/drivers/thermal/Kconfig
-+++ linux-next-20101213/drivers/thermal/Kconfig
-@@ -4,6 +4,7 @@
- 
- menuconfig THERMAL
- 	tristate "Generic Thermal sysfs driver"
-+	depends on NET
- 	help
- 	  Generic Thermal Sysfs driver offers a generic mechanism for
- 	  thermal management. Usually it's made up of one or more thermal
+
+> ---
+>  arch/x86/kernel/tsc.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index dc1393e..356a0d4 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -965,6 +965,9 @@ out:
+> 
+>  static int __init init_tsc_clocksource(void)
+>  {
+> +	if (!cpu_has_tsc || tsc_disabled > 0)
+> +		return 0;
+> +
+>  	if (tsc_clocksource_reliable)
+>  		clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
+>  	/* lower the rating if we already know its unstable: */
+
+
