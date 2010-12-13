@@ -1,64 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab0LMPMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:12:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60427 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab0LMPMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:12:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BhulXWU41tCOSaLCBK0nCp3ypeg7kCPbv2dxH05rhpxVRJsT2Rng+e4bSwlvAX/nfd
-         VUcSIQVL6NM7ShO3QtQr1QTVzGkEZbcdMl83OOZnNHo/yq6BbUlDNG8+vbHefWTWP1sI
-         T+IpX20/0HxylnvMkVmp1nTVVO4/h3LaE17RE=
-MIME-Version: 1.0
-In-Reply-To: <-1357135968697415881@unknownmsgid>
-References: <1292203221-2609-1-git-send-email-y>
-	<-1357135968697415881@unknownmsgid>
-Date: Mon, 13 Dec 2010 15:12:15 +0000
-X-Google-Sender-Auth: Bj88RHdtape2ji-k_dTqqz1NgQw
-Message-ID: <AANLkTimkUpgPD5BdjL-3aV=miJwbT0OOWAJJ+V7LUhbP@mail.gmail.com>
-Subject: Re: [PATCH v3 4/5] msm: hotplug: support cpu hotplug on msm
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: ykaoua@qualcomm.com
-Cc: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	id S1758082Ab0LMPMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:12:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60066 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756950Ab0LMPIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:08:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
+   d="scan'208";a="635822659"
+Message-Id: <20101213150329.233623422@intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 13 Dec 2010 22:47:10 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Rik van Riel <riel@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 24/35] btrfs: dont call balance_dirty_pages_ratelimited() on already dirty pages
+References: <20101213144646.341970461@intel.com>
+Content-Disposition: inline; filename=btrfs-fix-balance-size.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oBDFCS72000898
 
-On 13 December 2010 01:20,  <ykaoua@qualcomm.com> wrote:
-> --- /dev/null
-> +++ b/arch/arm/mach-msm/hotplug.c
-[...]
-> +static inline void platform_do_lowpower(unsigned int cpu)
-> +{
-> + Â  Â  Â  /* Just enter wfe for now. */
-> + Â  Â  Â  for (;;) {
-> + Â  Â  Â  Â  Â  Â  Â  asm("wfe");
-> + Â  Â  Â  Â  Â  Â  Â  if (pen_release == cpu) {
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  /*
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * OK, proper wakeup, we're done
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â */
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  break;
-> + Â  Â  Â  Â  Â  Â  Â  }
-> + Â  Â  Â  Â  Â  Â  Â  smp_rmb();
+When doing 1KB sequential writes to the same page,
+balance_dirty_pages_ratelimited() should be called once instead of 4
+times. Failing to do so will make all tasks throttled much too heavy.
 
-Do you need some barrier after wfe?
+CC: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/btrfs/file.c       |   11 +++++++----
+ fs/btrfs/ioctl.c      |    6 ++++--
+ fs/btrfs/relocation.c |    6 ++++--
+ 3 files changed, 15 insertions(+), 8 deletions(-)
 
--- 
-Catalin
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--- linux-next.orig/fs/btrfs/file.c	2010-12-13 21:45:55.000000000 +0800
++++ linux-next/fs/btrfs/file.c	2010-12-13 21:46:19.000000000 +0800
+@@ -762,7 +762,8 @@ out:
+ static noinline int prepare_pages(struct btrfs_root *root, struct file *file,
+ 			 struct page **pages, size_t num_pages,
+ 			 loff_t pos, unsigned long first_index,
+-			 unsigned long last_index, size_t write_bytes)
++			 unsigned long last_index, size_t write_bytes,
++			 int *nr_dirtied)
+ {
+ 	struct extent_state *cached_state = NULL;
+ 	int i;
+@@ -825,7 +826,8 @@ again:
+ 				     GFP_NOFS);
+ 	}
+ 	for (i = 0; i < num_pages; i++) {
+-		clear_page_dirty_for_io(pages[i]);
++		if (!clear_page_dirty_for_io(pages[i]))
++			(*nr_dirtied)++;
+ 		set_page_extent_mapped(pages[i]);
+ 		WARN_ON(!PageLocked(pages[i]));
+ 	}
+@@ -966,6 +968,7 @@ static ssize_t btrfs_file_aio_write(stru
+ 					 offset);
+ 		size_t num_pages = (write_bytes + PAGE_CACHE_SIZE - 1) >>
+ 					PAGE_CACHE_SHIFT;
++		int nr_dirtied = 0;
+ 
+ 		WARN_ON(num_pages > nrptrs);
+ 		memset(pages, 0, sizeof(struct page *) * nrptrs);
+@@ -976,7 +979,7 @@ static ssize_t btrfs_file_aio_write(stru
+ 
+ 		ret = prepare_pages(root, file, pages, num_pages,
+ 				    pos, first_index, last_index,
+-				    write_bytes);
++				    write_bytes, &nr_dirtied);
+ 		if (ret) {
+ 			btrfs_delalloc_release_space(inode, write_bytes);
+ 			goto out;
+@@ -1000,7 +1003,7 @@ static ssize_t btrfs_file_aio_write(stru
+ 						 pos + write_bytes - 1);
+ 		} else {
+ 			balance_dirty_pages_ratelimited_nr(inode->i_mapping,
+-							   num_pages);
++							   nr_dirtied);
+ 			if (num_pages <
+ 			    (root->leafsize >> PAGE_CACHE_SHIFT) + 1)
+ 				btrfs_btree_balance_dirty(root, 1);
+--- linux-next.orig/fs/btrfs/ioctl.c	2010-12-13 21:45:55.000000000 +0800
++++ linux-next/fs/btrfs/ioctl.c	2010-12-13 21:46:19.000000000 +0800
+@@ -647,6 +647,7 @@ static int btrfs_defrag_file(struct file
+ 	u64 skip = 0;
+ 	u64 defrag_end = 0;
+ 	unsigned long i;
++	int dirtied;
+ 	int ret;
+ 
+ 	if (inode->i_size == 0)
+@@ -751,7 +752,7 @@ again:
+ 
+ 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
+ 		ClearPageChecked(page);
+-		set_page_dirty(page);
++		dirtied = set_page_dirty(page);
+ 		unlock_extent(io_tree, page_start, page_end, GFP_NOFS);
+ 
+ loop_unlock:
+@@ -759,7 +760,8 @@ loop_unlock:
+ 		page_cache_release(page);
+ 		mutex_unlock(&inode->i_mutex);
+ 
+-		balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
++		if (dirtied)
++			balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
+ 		i++;
+ 	}
+ 
+--- linux-next.orig/fs/btrfs/relocation.c	2010-12-13 21:45:55.000000000 +0800
++++ linux-next/fs/btrfs/relocation.c	2010-12-13 21:46:19.000000000 +0800
+@@ -2894,6 +2894,7 @@ static int relocate_file_extent_cluster(
+ 	struct file_ra_state *ra;
+ 	int nr = 0;
+ 	int ret = 0;
++	int dirtied;
+ 
+ 	if (!cluster->nr)
+ 		return 0;
+@@ -2970,7 +2971,7 @@ static int relocate_file_extent_cluster(
+ 		}
+ 
+ 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
+-		set_page_dirty(page);
++		dirtied = set_page_dirty(page);
+ 
+ 		unlock_extent(&BTRFS_I(inode)->io_tree,
+ 			      page_start, page_end, GFP_NOFS);
+@@ -2978,7 +2979,8 @@ static int relocate_file_extent_cluster(
+ 		page_cache_release(page);
+ 
+ 		index++;
+-		balance_dirty_pages_ratelimited(inode->i_mapping);
++		if (dirtied)
++			balance_dirty_pages_ratelimited(inode->i_mapping);
+ 		btrfs_throttle(BTRFS_I(inode)->root);
+ 	}
+ 	WARN_ON(nr != cluster->nr);
+
+
