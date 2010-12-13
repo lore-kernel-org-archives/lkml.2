@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab0LMGdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:33:08 -0500
-Received: from mga03.intel.com ([143.182.124.21]:24236 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab0LMGdG convert rfc822-to-8bit (ORCPT
+	id S1752470Ab0LMGrC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:47:02 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49486 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab0LMGrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:33:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,334,1288594800"; 
-   d="scan'208";a="360750177"
-From: "Brown, Len" <len.brown@intel.com>
-To: Andi Kleen <andi@firstfloor.org>, "davej@redhat.com" <davej@redhat.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Date: Sun, 12 Dec 2010 23:33:02 -0700
-Subject: RE: [PATCH] [167/223] ACPI: debugfs custom_method open to non-root
-Thread-Topic: [PATCH] [167/223] ACPI: debugfs custom_method open to non-root
-Thread-Index: AcuaVv7ueJfevDlOSnCgiyOLxOJ/gQAOFvCQ
-Message-ID: <E87738D94A6AD54789B5B8D1BAEB06CC700C2347FF@azsmsx503.amr.corp.intel.com>
-References: <201012131244.547034648@firstfloor.org>
- <20101212234751.76302B27BF@basil.firstfloor.org>
-In-Reply-To: <20101212234751.76302B27BF@basil.firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 13 Dec 2010 01:47:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=N5bGARO7IuGu2FMWVP+mNMS1ZMiqQ8tU5MGXlhLNsyFegjVoUGqnohmFq+bDPulTZ7
+         p8tnXjx8poaRcULAQGzC0nBxH/jkiV8EBxVmF10ANDLMWbI7k+uhMtUwEdvJTgMK+iNI
+         JIk5ApjYjnWIjEixtOMkHEKCU57UR+vI+l7ro=
+Subject: [PATCH] backlight: cr_bllcd.c: fix a memory leak
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Thomas Hellstrom <thomas@tungstengraphics.com>,
+        Alan Hourihane <alanh@tungstengraphics.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain
+Date: Mon, 13 Dec 2010 14:53:50 +0800
+Message-Id: <1292223230.3636.3.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/cr_bllcd.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-is -longterm something that happens after -stable runs out of gas?
-Note that this particular patch applies back to 2.6.33.
+diff --git a/drivers/video/backlight/cr_bllcd.c b/drivers/video/backlight/cr_bllcd.c
+index a4f4546..397d15e 100644
+--- a/drivers/video/backlight/cr_bllcd.c
++++ b/drivers/video/backlight/cr_bllcd.c
+@@ -242,6 +242,7 @@ static int cr_backlight_remove(struct platform_device *pdev)
+ 	backlight_device_unregister(crp->cr_backlight_device);
+ 	lcd_device_unregister(crp->cr_lcd_device);
+ 	pci_dev_put(lpc_dev);
++	kfree(crp);
+ 
+ 	return 0;
+ }
+-- 
+1.7.2
 
-thanks,
--Len
 
-> ------------------
-> From: Dave Jones <davej@redhat.com>
-> 
-> commit ed3aada1bf34c5a9e98af167f125f8a740fc726a upstream.
-> 
-> Currently we have:
-> 
->   --w--w--w-. 1 root root 0 2010-11-11 14:56 /sys/kernel/debug/acpi/custom_method
-> 
-> which is just crazy. Change this to --w-------.
-> 
-> Signed-off-by: Dave Jones <davej@redhat.com>
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
-> ---
->  drivers/acpi/debug.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/drivers/acpi/debug.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/debug.c
-> +++ linux/drivers/acpi/debug.c
-> @@ -258,7 +258,7 @@ static int acpi_debugfs_init(void)
->  	if (!acpi_dir)
->  		goto err;
-> 
-> -	cm_dentry = debugfs_create_file("custom_method", S_IWUGO,
-> +	cm_dentry = debugfs_create_file("custom_method", S_IWUSR,
->  					acpi_dir, NULL, &cm_fops);
->  	if (!cm_dentry)
->  		goto err;
+
