@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0LMKIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:08:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18091 "EHLO mx1.redhat.com"
+	id S1756874Ab0LMKLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:11:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab0LMKIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:08:50 -0500
-Date: Mon, 13 Dec 2010 11:08:49 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Maxim Uvarov <muvarov@gmail.com>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101213100848.GA2237@redhat.com>
-References: <20101203111623.GA2741@redhat.com>
- <AANLkTi=Xvbi5M_cNRL=wC+uwksG08SiCyWcqdmwB_5TU@mail.gmail.com>
- <20101203171147.GA2299@redhat.com>
- <20101203175401.GE28603@hmsreliant.think-freely.org>
- <20101207105053.GA2803@redhat.com>
- <4CFE89FE.1090901@kernel.org>
- <20101208141942.GA2335@redhat.com>
- <4D00823A.9050808@kernel.org>
- <20101209124117.GA6032@redhat.com>
- <4D01377B.5070809@kernel.org>
+	id S1752950Ab0LMKLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 05:11:40 -0500
+Date: Mon, 13 Dec 2010 12:10:48 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH v2 0/4] KVM & genirq: Enable adaptive IRQ sharing for
+ passed-through devices
+Message-ID: <20101213101048.GE25590@redhat.com>
+References: <cover.1292152963.git.jan.kiszka@web.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D01377B.5070809@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <cover.1292152963.git.jan.kiszka@web.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 12:09:31PM -0800, Yinghai Lu wrote:
-> On 12/09/2010 04:41 AM, Stanislaw Gruszka wrote:
-> > On Wed, Dec 08, 2010 at 11:16:10PM -0800, Yinghai Lu wrote:
-> >>>> please check debug patches, and boot first kernel and kexec second kernel with "ignore_loglevel debug earlyprintk...."
-> >>>
-> >>> Second kernel does not print anything, so maybe it not even start.
-> >>> Dmesg from primary kernel attached.
-> >>>
-> >>> Stanislaw
-> >>
-> >>
-> >> please try attached debug patch.
-> > 
-> > With debug patch kdump kernel boot. Dmesg's from kdump and 
-> > primary kernel in attachment.
-> > 
-> 
-> thanks.
-> 
-> please check if this one works. it only put crashkernel low.
+On Sun, Dec 12, 2010 at 12:22:40PM +0100, Jan Kiszka wrote:
+> The result may look simpler on first glance than v1, but it comes with
+> more subtle race scenarios IMO. I thought them through, hopefully
+> catching all, but I would appreciate any skeptical review.
 
-Yes, with patch kdump works.
+Thought about the races till my head hurt, and yes, they
+all seem to be handled correctly. FWIW
 
-Thanks
-Stanislaw
+Reviewed-by: Michael S. Tsirkin <mst@redhat.com>
+
