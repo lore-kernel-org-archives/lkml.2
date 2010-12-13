@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0LMTp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:45:29 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57707 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632Ab0LMTp1 (ORCPT
+	id S1754739Ab0LMTrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:47:06 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50253 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab0LMTrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:45:27 -0500
-Date: Mon, 13 Dec 2010 11:44:21 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andres Salomon <dilinger@collabora.co.uk>
-Subject: [PATCH -next] cs5535: fix printk format warnings
-Message-Id: <20101213114421.3abe0dcb.randy.dunlap@oracle.com>
-In-Reply-To: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Dec 2010 14:47:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=jcbYh/jPcIIr2PZjq25xNiBEjIHKEY/d6Uxc6OqyetSouz24caU6bswo29nUeQlrp6
+         ubW4aZvvlaBrH9f19LNW1+pfw4hRG5NrC+LAL1oBozg2n7XYCEMluHOxYLe32zSJVcZY
+         MD/Ai8344IG5o/Sl4y+/nkV+nQYWhAUUnCJes=
+Date: Mon, 13 Dec 2010 22:46:42 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] perf: off by one in perf_swevent_init()
+Message-ID: <20101213194641.GH1620@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20101024195041.GT5985@bicker>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101024195041.GT5985@bicker>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Sun, Oct 24, 2010 at 09:50:42PM +0200, Dan Carpenter wrote:
+> The perf_swevent_enabled[] array has PERF_COUNT_SW_MAX elements.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Fix printk format warnings in cs5535 drivers:
+Ping.
 
-drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
-drivers/gpio/cs5535-gpio.c:269: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
-drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t'
-drivers/misc/cs5535-mfgpt.c:320: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t'
+regards,
+dan carpenter
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andres Salomon <dilinger@collabora.co.uk>
----
- drivers/gpio/cs5535-gpio.c  |    5 +++--
- drivers/misc/cs5535-mfgpt.c |    5 +++--
- 2 files changed, 6 insertions(+), 4 deletions(-)
-
---- linux-next-20101213.orig/drivers/gpio/cs5535-gpio.c
-+++ linux-next-20101213/drivers/gpio/cs5535-gpio.c
-@@ -266,8 +266,9 @@ static int __devinit cs5535_gpio_probe(s
- 	cs5535_gpio_chip.pdev = pdev;
- 	spin_lock_init(&cs5535_gpio_chip.lock);
- 
--	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n",
--			res->start, res->end);
-+	dev_info(&pdev->dev, "region 0x%llx - 0x%llx reserved\n",
-+			(unsigned long long)res->start,
-+			(unsigned long long)res->end);
- 
- 	/* mask out reserved pins */
- 	mask &= 0x1F7FFFFF;
---- linux-next-20101213.orig/drivers/misc/cs5535-mfgpt.c
-+++ linux-next-20101213/drivers/misc/cs5535-mfgpt.c
-@@ -317,8 +317,9 @@ static int __devinit cs5535_mfgpt_probe(
- 	cs5535_mfgpt_chip.pdev = pdev;
- 	spin_lock_init(&cs5535_mfgpt_chip.lock);
- 
--	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n", res->start,
--			res->end);
-+	dev_info(&pdev->dev, "region 0x%llx - 0x%llx reserved\n",
-+			(unsigned long long)res->start,
-+			(unsigned long long)res->end);
- 
- 	/* detect the available timers */
- 	t = scan_timers(&cs5535_mfgpt_chip);
