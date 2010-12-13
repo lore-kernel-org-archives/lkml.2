@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab0LMHHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 02:07:10 -0500
-Received: from a.relay.invitel.net ([62.77.203.3]:49589 "EHLO
-	a.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab0LMHHI (ORCPT
+	id S1755214Ab0LMHOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 02:14:31 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54297 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab0LMHOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 02:07:08 -0500
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 02:07:08 EST
-Date: Mon, 13 Dec 2010 08:01:06 +0100
-From: Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH v2 1/2] video, sm501: add OF binding to support SM501
-In-reply-to: <20101211143454.ccc5e296.rdunlap@xenotime.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
-        Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Reply-to: hs@denx.de
-Message-id: <4D05C4B2.5030005@denx.de>
-Organization: DENX Software Engineering
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-References: <1291451028-22532-1-git-send-email-hs@denx.de>
- <1292049075-1809-1-git-send-email-hs@denx.de>
- <20101211143454.ccc5e296.rdunlap@xenotime.net>
-User-Agent: Thunderbird 2.0.0.6 (X11/20070801)
+	Mon, 13 Dec 2010 02:14:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <1291933475.3271.211.camel@odin>
+References: <AANLkTi=L0fXFnF2-u+zdObs56h-FYgedhe0adxOAuCq=@mail.gmail.com>
+	<1291933475.3271.211.camel@odin>
+Date: Mon, 13 Dec 2010 15:14:29 +0800
+Message-ID: <AANLkTi=Ry7=wofZgHFO6_4TxLs1TPTPbEbH=4JP1cvD_@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Change the register name definitions for mc13783
+From: Yong Shen <yong.shen@linaro.org>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: List Linux Arm Kernel <linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Randy,
+Hi Liam,
 
-Randy Dunlap wrote:
-> On Sat, 11 Dec 2010 07:31:15 +0100 Heiko Schocher wrote:
-> 
->> - add commandline options:
->>   sm501.fb_mode:
-> 
->     sm501.mode:
-
-Sorry, type, should be "sm501fb.mode", thanks!
-
->>     Specify resolution as "<xres>x<yres>[-<bpp>][@<refresh>]"
->>   sm501.bpp:
-
-Here too, "sm501fb.bpp"
-
->>     Specify bit-per-pixel if not specified mode
+On Fri, Dec 10, 2010 at 6:24 AM, Liam Girdwood <lrg@slimlogic.co.uk> wrote:
+> On Thu, 2010-12-02 at 18:43 +0800, Yong Shen wrote:
+>> Hi there,
 >>
->> ---
+>> Please give comments inline and use attached patch for testing.
 >>
->>  Documentation/kernel-parameters.txt          |    7 +
->>  Documentation/powerpc/dts-bindings/sm501.txt |   30 +++
->>  drivers/mfd/sm501.c                          |  141 ++++++++------
->>  drivers/video/sm501fb.c                      |  264 +++++++++++++++++---------
->>  include/linux/sm501.h                        |    8 +
->>  5 files changed, 299 insertions(+), 151 deletions(-)
->>  create mode 100644 Documentation/powerpc/dts-bindings/sm501.txt
+>> Thanks
+>> Yong
 >>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index cdd2a6e..6341541 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2301,6 +2301,13 @@ and is between 256 and 4096 characters. It is defined in the file
->>  			merging on their own.
->>  			For more information see Documentation/vm/slub.txt.
->>  
->> +	sm501.bpp=	SM501 Display driver:
->> +			Specify bit-per-pixel if not specified mode
-> 
-> 			Specifiy bits-per-pixel if not specified by 'mode'
-> 
->> +
->> +	sm501fb.mode=	SM501 Display driver:
-> 
-> Shouldn't that be sm501.mode ?
+>> >From e112153c6f03b49c229a8e3913a0c0459245df20 Mon Sep 17 00:00:00 2001
+>> From: Yong Shen <yong.shen@linaro.org>
+>> Date: Thu, 2 Dec 2010 14:17:02 +0800
+>> Subject: [PATCH 1/2] Change the register name definitions for mc13783
+>>
+>> To make mc13783 and mc13892 share code, the register names should be
+>> changed to fit the new macro definitions in the comming patch.
+>
+> I've just tried to apply this patch and looks like your mailer has
+> mangled parts of it. I repaired it and sadly it still does not apply
+> against the regulator tree.
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git #for-next
+>
+> Can you redo, add the acks received and resubmit.
+Sure, I can redo it.
 
-No, the name of the source file is sm501fb.c -> sm501fb is right here.
-As the sm501 is a multifunction device, the "fb" is more precise here.
+Yong
 
->> +			Specify resolution as
->> +			"<xres>x<yres>[-<bpp>][@<refresh>]"
->> +
->>  	smart2=		[HW]
->>  			Format: <io1>[,<io2>[,...,<io8>]]
-> 
-> 
-> However, I think that these shouldn't be added to Documentation/kernel-parameters.txt
-> but should be added to the Documentation/fb/ sub-directory either by adding to
-> Documentation/fb/modedb.txt or by adding a new file Documentation/fb/sm501.txt.
-
-Ok, do this. Thanks for the review!
-
-bye,
-Heiko
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+>
+> Thanks
+>
+> Liam
+>
+>
