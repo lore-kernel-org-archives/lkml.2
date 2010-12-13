@@ -1,84 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab0LMLai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:30:38 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:34610 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab0LMLah convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:30:37 -0500
-Subject: Re: [PATCH 00/47] IO-less dirty throttling v3
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101213064249.648862451@intel.com>
-References: <20101213064249.648862451@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Dec 2010 12:27:11 +0100
-Message-ID: <1292239631.6803.186.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757257Ab0LMLdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:33:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59066 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757162Ab0LMLdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 06:33:00 -0500
+Message-ID: <4D06051A.8090801@suse.cz>
+Date: Mon, 13 Dec 2010 12:35:54 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] Makefile: add file types to remove with make clean
+References: <1292088460-8734-1-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1292088460-8734-1-git-send-email-tdent48227@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 14:42 +0800, Wu Fengguang wrote:
-> bdi dirty limit fixes
->         [PATCH 01/47] writeback: enabling gate limit for light dirtied bdi
->         [PATCH 02/47] writeback: safety margin for bdi stat error
-> 
-> v2 patches rebased onto the above two fixes
->         [PATCH 03/47] writeback: IO-less balance_dirty_pages()
->         [PATCH 04/47] writeback: consolidate variable names in balance_dirty_pages()
->         [PATCH 05/47] writeback: per-task rate limit on balance_dirty_pages()
->         [PATCH 06/47] writeback: prevent duplicate balance_dirty_pages_ratelimited() calls
->         [PATCH 07/47] writeback: account per-bdi accumulated written pages
->         [PATCH 08/47] writeback: bdi write bandwidth estimation
->         [PATCH 09/47] writeback: show bdi write bandwidth in debugfs
->         [PATCH 10/47] writeback: quit throttling when bdi dirty pages dropped low
->         [PATCH 11/47] writeback: reduce per-bdi dirty threshold ramp up time
->         [PATCH 12/47] writeback: make reasonable gap between the dirty/background thresholds
->         [PATCH 13/47] writeback: scale down max throttle bandwidth on concurrent dirtiers
->         [PATCH 14/47] writeback: add trace event for balance_dirty_pages()
->         [PATCH 15/47] writeback: make nr_to_write a per-file limit
-> 
-> trivial fixes for v2
->         [PATCH 16/47] writeback: make-nr_to_write-a-per-file-limit fix
->         [PATCH 17/47] writeback: do uninterruptible sleep in balance_dirty_pages()
->         [PATCH 18/47] writeback: move BDI_WRITTEN accounting into __bdi_writeout_inc()
->         [PATCH 19/47] writeback: fix increasement of nr_dirtied_pause
->         [PATCH 20/47] writeback: use do_div in bw calculation
->         [PATCH 21/47] writeback: prevent divide error on tiny HZ
->         [PATCH 22/47] writeback: prevent bandwidth calculation overflow
-> 
-> spinlock protected bandwidth estimation, as suggested by Peter
->         [PATCH 23/47] writeback: spinlock protected bdi bandwidth update
-> 
-> algorithm updates
->         [PATCH 24/47] writeback: increase pause time on concurrent dirtiers
->         [PATCH 25/47] writeback: make it easier to break from a dirty exceeded bdi
->         [PATCH 26/47] writeback: start background writeback earlier
->         [PATCH 27/47] writeback: user space think time compensation
->         [PATCH 28/47] writeback: bdi base throttle bandwidth
->         [PATCH 29/47] writeback: smoothed bdi dirty pages
->         [PATCH 30/47] writeback: adapt max balance pause time to memory size
->         [PATCH 31/47] writeback: increase min pause time on concurrent dirtiers 
+Dne 11.12.2010 18:27, Tracey Dent napsal(a):
+> Remove .rej and .orig files when you invoke a make clean.
+> They are unnecessary files which are produced by using the program
+> patch and they prevents you from getting a completely clean directory.
 
-I would think it would be easier for review to fold all this back into
-sensible patches.
+make clean removes files generated by the build system. *.rej, *.orig
+and editor backup files can contain valuable information and should thus
+be skipped. If you want a completely clean directory, have a look at
+make distclean.
 
-Reviewing is lots easier if the patches present logical steps. The
-presented series will have us looking back and forth, review patch, find
-bugs, then scan fwd to see if the bug has been solved, etc..
-
-
+Michal
