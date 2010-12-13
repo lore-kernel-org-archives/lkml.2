@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab0LMPzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:55:08 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:63267 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab0LMPzG (ORCPT
+	id S1757445Ab0LMPz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:55:57 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40438 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab0LMPz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:55:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=g255G+eiNHh1wQVhDlYOXIcsXm74azyRQlQCEnTUSLHfbKcRhqduAwSBq9PzAX7g9Z
-         8v/kfObdwul6ZOcbw0iMG5Nhfts2mlhaodemZJz9gcRWn3B3wA1LkWMD2BYl/ANXbG9T
-         gK3k/dXCViLaUpIu6ysazDc+eorswYF61xcCg=
-Date: Mon, 13 Dec 2010 16:54:56 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "David S. Ahern" <daahern@cisco.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
-Message-ID: <20101213155451.GA1691@nowhere>
-References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
- <1291773285-16254-2-git-send-email-daahern@cisco.com>
- <20101212201613.GA1784@nowhere>
- <4D06301C.2090309@cisco.com>
+	Mon, 13 Dec 2010 10:55:56 -0500
+Message-ID: <4D0641DD.2060303@oracle.com>
+Date: Mon, 13 Dec 2010 07:55:09 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D06301C.2090309@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Don Zickus <dzickus@redhat.com>
+CC: Rakib Mullick <rakib.mullick@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: Re: linux-next: Tree for December 10 (x86 nmi_watchdog)
+References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au> <20101210092533.4f426650.randy.dunlap@oracle.com> <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com> <20101213153719.GD18577@redhat.com>
+In-Reply-To: <20101213153719.GD18577@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 07:39:24AM -0700, David S. Ahern wrote:
+On 12/13/10 07:37, Don Zickus wrote:
+> On Sun, Dec 12, 2010 at 11:27:02AM +0600, Rakib Mullick wrote:
+>> On Fri, Dec 10, 2010 at 11:25 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>> On Fri, 10 Dec 2010 13:57:46 +1100 Stephen Rothwell wrote:
+>>>
+>>>> Hi all,
+>>>>
+>>>> Changes since 20101209:
+>>>
+>>>
+>>> arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of 'touch_nmi_watchdog'
+>>> include/linux/nmi.h:22: note: previous definition of 'touch_nmi_watchdog' was here
+>>>
+>> Hello Randy,
+>>
+>> Please checkout the following patch. Does it work?
 > 
+> This fixes the problem.  Sorry about that.  I need to remember to try more
+> random config options to catch these things.
+> ----8<---
 > 
-> On 12/12/10 13:16, Frederic Weisbecker wrote:
+> From: Don Zickus <dzickus@redhat.com>
+> Date: Mon, 13 Dec 2010 10:31:58 -0500
+> Subject: [PATCH] x86, watchdog: Compile fix when CONFIG_LOCAL_APIC not enabled
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
 > 
-> >>  int perf_session__create_kernel_maps(struct perf_session *self)
-> >>  {
-> >>  	int ret = machine__create_kernel_maps(&self->host_machine);
-> >> @@ -167,6 +190,9 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
-> >>  		 */
-> >>  		if (perf_session__create_kernel_maps(self) < 0)
-> >>  			goto out_delete;
-> >> +
-> >> +		if (perf_session__create_ref_time(self) < 0)
-> >> +			goto out_delete;
-> > 
-> > So, it does record it anytime?
+> When adjusting the code to handle removing the old nmi watchdog,
+> I forgot to consider the compile case when the local apic is not
+> enabled.  This small change fixes the compile warning:
 > 
-> Simplest to always add it the header as it does no harm if not used. To
-> make it conditional means adding an input parameter to
-> perf_session__new() and then updating all the callers.
+> arch/x86/kernel/apic/hw_nmi.c:28:6: error: redefinition of ‘touch_nmi_watchdog’
 > 
-> Is the preference to make it conditional?
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-No, I suspect the overhead is plain unnoticeable. And if it becomes
-any problem one day, we can still make that conditional later.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
 Thanks.
- 
-> David
+
+> ---
+>  arch/x86/kernel/apic/hw_nmi.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> 
-> > 
-> >>  	}
-> >>  
-> >>  	perf_session__update_sample_type(self);
-> > 
-> > 
-> > Other than that, looks good!
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index c558e11..93da91d 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/nmi.h>
+>  #include <linux/module.h>
+>  
+> +#ifdef ARCH_HAS_NMI_WATCHDOG
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  u64 hw_nmi_get_sample_period(void)
+>  {
+> @@ -31,6 +32,8 @@ void touch_nmi_watchdog(void)
+>  }
+>  EXPORT_SYMBOL(touch_nmi_watchdog);
+>  #endif
+> +#endif
+> +
+>  #ifdef arch_trigger_all_cpu_backtrace
+>  /* For reliability, we're prepared to waste bits here. */
+>  static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
