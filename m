@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab0LMM3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:29:15 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:36117 "EHLO
+	id S1752989Ab0LMM3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:29:35 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:36119 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab0LMM3O (ORCPT
+	with ESMTP id S1752164Ab0LMM3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:29:14 -0500
-Date: Mon, 13 Dec 2010 13:29:13 +0100
+	Mon, 13 Dec 2010 07:29:33 -0500
+Date: Mon, 13 Dec 2010 13:29:32 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/20] mfd: irq_data conversion.
-Message-ID: <20101213122913.GJ15575@mail.wantstofly.org>
+To: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/20] mfd: 88pm860x-core: irq_data conversion.
+Message-ID: <20101213122932.GK15575@mail.wantstofly.org>
+References: <cover.1292241952.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1292241952.git.buytenh@wantstofly.org>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set converts drivers/mfd/ irq_chips and flow handlers over
-to the new struct irq_data based irq_chip functions.
+Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
+---
+ drivers/mfd/88pm860x-core.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index 20895e7..5995015 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -388,16 +388,16 @@ static irqreturn_t pm860x_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static void pm860x_irq_lock(unsigned int irq)
++static void pm860x_irq_lock(struct irq_data *d)
+ {
+-	struct pm860x_chip *chip = get_irq_chip_data(irq);
++	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
+ 
+ 	mutex_lock(&chip->irq_lock);
+ }
+ 
+-static void pm860x_irq_sync_unlock(unsigned int irq)
++static void pm860x_irq_sync_unlock(struct irq_data *d)
+ {
+-	struct pm860x_chip *chip = get_irq_chip_data(irq);
++	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
+ 	struct pm860x_irq_data *irq_data;
+ 	struct i2c_client *i2c;
+ 	static unsigned char cached[3] = {0x0, 0x0, 0x0};
+@@ -439,25 +439,25 @@ static void pm860x_irq_sync_unlock(unsigned int irq)
+ 	mutex_unlock(&chip->irq_lock);
+ }
+ 
+-static void pm860x_irq_enable(unsigned int irq)
++static void pm860x_irq_enable(struct irq_data *d)
+ {
+-	struct pm860x_chip *chip = get_irq_chip_data(irq);
+-	pm860x_irqs[irq - chip->irq_base].enable
+-		= pm860x_irqs[irq - chip->irq_base].offs;
++	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
++	pm860x_irqs[d->irq - chip->irq_base].enable
++		= pm860x_irqs[d->irq - chip->irq_base].offs;
+ }
+ 
+-static void pm860x_irq_disable(unsigned int irq)
++static void pm860x_irq_disable(struct irq_data *d)
+ {
+-	struct pm860x_chip *chip = get_irq_chip_data(irq);
+-	pm860x_irqs[irq - chip->irq_base].enable = 0;
++	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
++	pm860x_irqs[d->irq - chip->irq_base].enable = 0;
+ }
+ 
+ static struct irq_chip pm860x_irq_chip = {
+-	.name		= "88pm860x",
+-	.bus_lock	= pm860x_irq_lock,
+-	.bus_sync_unlock = pm860x_irq_sync_unlock,
+-	.enable		= pm860x_irq_enable,
+-	.disable	= pm860x_irq_disable,
++	.name			= "88pm860x",
++	.irq_bus_lock		= pm860x_irq_lock,
++	.irq_bus_sync_unlock	= pm860x_irq_sync_unlock,
++	.irq_enable		= pm860x_irq_enable,
++	.irq_disable		= pm860x_irq_disable,
+ };
+ 
+ static int __devinit device_gpadc_init(struct pm860x_chip *chip,
+-- 
+1.7.1
 
-Lennert Buytenhek (20):
-  mfd: 88pm860x-core: irq_data conversion.
-  mfd: ab3550: irq_data conversion.
-  mfd: ab8500: irq_data conversion.
-  mfd: asic3: irq_data conversion.
-  mfd: ezx-pcap: irq_data conversion.
-  mfd: htc-egpio: irq_data conversion.
-  mfd: htc-i2cpld: irq_data conversion.
-  mfd: jz4740-adc: irq_data conversion.
-  mfd: max8925: irq_data conversion.
-  mfd: max8998: irq_data conversion.
-  mfd: stmpe: irq_data conversion.
-  mfd: t7l66xb: irq_data conversion.
-  mfd: tc35892: irq_data conversion.
-  mfd: tc6393xb: irq_data conversion.
-  mfd: tps6586x: irq_data conversion.
-  mfd: twl4030: irq_data conversion.
-  mfd: twl6030: irq_data conversion.
-  mfd: wm831x: irq_data conversion.
-  mfd: wm8350: irq_data conversion.
-  mfd: wm8994: irq_data conversion.
-
- drivers/mfd/88pm860x-core.c |   32 +++++++++++-----------
- drivers/mfd/ab3550-core.c   |   32 ++++++++++++----------
- drivers/mfd/ab8500-core.c   |   28 ++++++++++----------
- drivers/mfd/asic3.c         |   60 +++++++++++++++++++++---------------------
- drivers/mfd/ezx-pcap.c      |   20 +++++++-------
- drivers/mfd/htc-egpio.c     |   27 ++++++++++---------
- drivers/mfd/htc-i2cpld.c    |   31 +++++++++++----------
- drivers/mfd/jz4740-adc.c    |   25 +++++++++--------
- drivers/mfd/max8925-core.c  |   32 +++++++++++-----------
- drivers/mfd/max8998-irq.c   |   28 ++++++++++----------
- drivers/mfd/stmpe.c         |   28 ++++++++++----------
- drivers/mfd/t7l66xb.c       |   22 ++++++++--------
- drivers/mfd/tc35892.c       |    8 +++---
- drivers/mfd/tc6393xb.c      |   22 ++++++++--------
- drivers/mfd/tps6586x.c      |   28 ++++++++++----------
- drivers/mfd/twl4030-irq.c   |   28 ++++++++++----------
- drivers/mfd/twl6030-irq.c   |    2 +-
- drivers/mfd/wm831x-irq.c    |   37 +++++++++++++-------------
- drivers/mfd/wm8350-irq.c    |   28 ++++++++++----------
- drivers/mfd/wm8994-irq.c    |   28 ++++++++++----------
- 20 files changed, 276 insertions(+), 270 deletions(-)
