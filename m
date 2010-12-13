@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab0LMTEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:04:10 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:43384 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab0LMTEI convert rfc822-to-8bit (ORCPT
+	id S1753036Ab0LMTE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:04:29 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54967 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab0LMTE2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:04:08 -0500
+	Mon, 13 Dec 2010 14:04:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=PDHaqMjRnZuHUsefjPBsx998jJEp/DwGNCgJT/0mrslQC2RiXAs4qY1K67HvlmO4lT
-         imGBtK7ooO2D6LXCCBzA==
+        b=e22M45EOPcm5lJDwX8JYaAAjoFG4Ko62iUkAjX+nKT87t4FGi16Lamf9Oo1gr1mDl5
+         JmxLgi6V4gVVCN3gQqI5wcfuKdQIvW83wK9moGSekZB4a5G2x3ycBky0yZtJHIZerWWM
+         202jkMEB2yfBeWl6gZvrv16fOxcgdx2IaY7O8=
 MIME-Version: 1.0
-In-Reply-To: <20101213165106.GC11449@basil.fritz.box>
-References: <1291267223.2405.314.camel@minggr.sh.intel.com>
-	<1291922467.6803.44.camel@twins>
-	<AANLkTinanAQYQvwtowTzJ0bpLRUvp-5sqF6M9PoMSJR-@mail.gmail.com>
-	<1291978036.6803.95.camel@twins>
-	<AANLkTin7Jd=4boSH8Ge79e5g-j7EwE-AL81+1kHyNSL3@mail.gmail.com>
-	<1292228848.10384.107.camel@minggr.sh.intel.com>
-	<AANLkTimkXFaB2+zB41-OhWDWu=htvm0UJAoLBJhRvEPg@mail.gmail.com>
-	<20101213165106.GC11449@basil.fritz.box>
-Date: Mon, 13 Dec 2010 20:04:05 +0100
-Message-ID: <AANLkTi=TL0SD-RA196+YK7Md9biQf9F2ird-kOHfgoNP@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTinXT6jyr9C=LJA9Y_5v3sWN1fDHF9NRsTLHVXuF@mail.gmail.com>
+References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
+	<AANLkTinXT6jyr9C=LJA9Y_5v3sWN1fDHF9NRsTLHVXuF@mail.gmail.com>
+Date: Mon, 13 Dec 2010 20:04:26 +0100
+Message-ID: <AANLkTikSjXT6xxKyamvE8YEygfpakdDMFt2F1rnkytfN@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 10
+From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Wolfgang Grandegger <wg@grandegger.com>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 5:51 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> If think there you want something like:
->>
->> if (cpu == cpumask_first(topology_core_siblings(cpu)) {
->> Â  Â  Â  rdmsrl(MSR_IA32_DEBUGCTLMSR, val);
->> Â Â  Â  wrmsrl(MSR_IA32_DEBUGCTLMSR, val | DEBUGCTLMSR_ENABLE_UNCORE_PMI);
->> }
->
-> You have to be careful with hotplug. The code would need to be rerun
-> on hotplug. Otherwise the interrupt may end up on a downed CPU.
+Sorry, this should be reported for next-20101213
 
-That is true.
+W dniu 13 grudnia 2010 20:02 u¿ytkownik Zimny Lech
+<napohybelskurwysynom2010@gmail.com> napisa³:
+> Ave,
+>
+> 2010/12/10 Stephen Rothwell <sfr@canb.auug.org.au>:
+>> Hi all,
+>>
+>> Changes since 20101209:
+>>
+>
+> WARNING: modpost: Found 14 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>  GEN     .version
+>  CHK     include/generated/compile.h
+>  UPD     include/generated/compile.h
+>  CC      init/version.o
+>  LD      init/built-in.o
+>  LD      .tmp_vmlinux1
+> arch/x86/built-in.o: In function `kvm_smp_prepare_boot_cpu':
+> kvm.c:(.init.text+0xf446): undefined reference to `kvm_register_clock'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x1087ee): undefined reference to `__alloc_skb'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x108897): undefined reference to `skb_put'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x108930): undefined reference to `kfree_skb'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x108947): undefined reference to `nla_reserve'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x108990): undefined reference to `kfree_skb'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x1089e9): undefined reference to `kfree_skb'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x1089f8): undefined reference to `init_net'
+> drivers/built-in.o: In function `generate_netlink_event':
+> (.text+0x108a0b): undefined reference to `netlink_broadcast'
+> drivers/built-in.o: In function `thermal_init':
+> thermal_sys.c:(.init.text+0xbd00): undefined reference to `genl_register_family'
+> thermal_sys.c:(.init.text+0xbd2f): undefined reference to
+> `genl_register_mc_group'
+> thermal_sys.c:(.init.text+0xbd57): undefined reference to
+> `genl_unregister_family'
+> drivers/built-in.o: In function `thermal_exit':
+> thermal_sys.c:(.exit.text+0x154c): undefined reference to
+> `genl_unregister_family'
+> make[1]: *** [.tmp_vmlinux1] Error 1
+> make: *** [sub-make] Error 2
+>
+>
+> --
+> Slawa!
+> Zimny "Spie dziadu!" Lech z Wawelu
+>
+> Hej, tam!
+> Wydar³em klejnot szans
+> http://www.youtube.com/watch?v=VXWTlYzVFUA
+>
+
+
+
+-- 
+Slawa!
+Zimny "Spie dziadu!" Lech z Wawelu
+
+Hej, tam!
+Wydar³em klejnot szans
+http://www.youtube.com/watch?v=VXWTlYzVFUA
