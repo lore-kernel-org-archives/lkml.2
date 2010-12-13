@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab0LMInT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 03:43:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47412 "EHLO mx1.redhat.com"
+	id S1755634Ab0LMIor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 03:44:47 -0500
+Received: from cantor.suse.de ([195.135.220.2]:54292 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291Ab0LMInS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 03:43:18 -0500
-Message-ID: <4D05DC98.40105@redhat.com>
-Date: Mon, 13 Dec 2010 10:43:04 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751793Ab0LMIoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 03:44:46 -0500
+From: David Sterba <dsterba@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 21/30] pcmcia/ipwireless: don't use flush_scheduled_work()
+Date: Mon, 13 Dec 2010 09:44:43 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+References: <1292086307-19211-1-git-send-email-tj@kernel.org> <1292086307-19211-22-git-send-email-tj@kernel.org>
+In-Reply-To: <1292086307-19211-22-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: mst@redhat.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] [104/223] KVM: Write protect memory after slot swap
-References: <201012131244.547034648@firstfloor.org> <20101212234644.B05DAB27BF@basil.firstfloor.org>
-In-Reply-To: <20101212234644.B05DAB27BF@basil.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201012130944.44424.dsterba@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 01:46 AM, Andi Kleen wrote:
-> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Saturday 11 December 2010 17:51:38 Tejun Heo wrote:
+> flush_scheduled_work() is deprecated and scheduled to be removed.
+> Directly flush the used works instead.
 >
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> Cc: David Sterba <dsterba@suse.cz>
 
-The way kvm stable updates work, Marcelo and I collect the patches, 
-autotest them, and submit them to the stable maintainers.  This way the 
-first stable users don't get to be the first ones to actually test the 
-new fixes.
+Acked-by: David Sterba <dsterba@suse.cz>
 
--- 
-error compiling committee.c: too many arguments to function
 
+Dave
