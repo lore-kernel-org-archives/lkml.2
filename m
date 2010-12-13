@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab0LMLjs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:39:48 -0500
-Received: from mail.atmel.fr ([81.80.104.162]:62865 "EHLO atmel-es2.atmel.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab0LMLjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:39:47 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, avictor.za@gmail.com, plagnioj@jcrosoft.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] dmaengine: at_hdmac: fix buffer transfer size specification
-Date: Mon, 13 Dec 2010 13:48:41 +0100
-Message-Id: <1292244521-20756-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
+	id S1754733Ab0LMLkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:40:20 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:53778 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab0LMLkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 06:40:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=vo2oU+77O5lT9mmaeLOGx772xMfY6YrEx+lrrHMWenzzSMLhsY+u5r6M37eJ6amXGm
+         gegAqTDsbz11QnSE+xuz6HtATgg3srdO0swK8xaBgUSwMh6cHqm3mx15Lh81W8MGG9Zs
+         pFxsZUAQFxwxYjyS+09nv1CUj7EmFwQD+w+N8=
+MIME-Version: 1.0
+Date: Mon, 13 Dec 2010 12:40:17 +0100
+Message-ID: <AANLkTin2Z5XXf-3Gkqj72+FT4rM+hpqehK8Ys=gg++c9@mail.gmail.com>
+Subject: Re: [RFC] persistent store (version 3) (part 1 of 2)
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: tony.luck@intel.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buffer transfer size is the number of transfers to be performed in
-relation with the width of the _source_ interface.
-So in the DMA_FROM_DEVICE case, it should be the register width that
-should be taken into account.
+Hi Tony,
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/dma/at_hdmac.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+could you cc linux fs devel and maybe linux embedded mailing list?
+Currently I try to insert in mainline the pramfs. Maybe we have the
+same goal and we could "merge" our effort. What do you think? Sure the
+kernel from this point of view has got a lack of support, I see
+different approach and solution to this. I saw in the staging tree a
+pmem driver of google guys that it seems to be designed for the same
+goal.
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index a0f3e6a..ea0ee81 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -722,7 +722,7 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 			desc->lli.daddr = mem;
- 			desc->lli.ctrla = ctrla
- 					| ATC_DST_WIDTH(mem_width)
--					| len >> mem_width;
-+					| len >> reg_width;
- 			desc->lli.ctrlb = ctrlb;
- 
- 			if (!first) {
--- 
-1.7.3
+Marco
 
+>Generic code for a "persistent store" file system as an interface
+>to provide a friendly user level ABI to platform specific drivers
+>for that access to some form of non-volatile storage that can be
+>used to save the dying words of an OS instance and make them
+>available after the reset/reboot.
+>
+>Signed-off-by: Tony Luck <tony.luck@intel.com>
