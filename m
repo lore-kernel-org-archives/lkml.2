@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab0LMAj5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:39:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:37217 "EHLO mga02.intel.com"
+	id S932119Ab0LMAlb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:41:31 -0500
+Received: from mga11.intel.com ([192.55.52.93]:46958 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab0LMAjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 19:39:55 -0500
+	id S1754825Ab0LMAla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 19:41:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,333,1288594800"; 
-   d="scan'208";a="686445909"
-Subject: Re: [patch]block cfq: select new workload if priority changed
+   d="scan'208";a="635644391"
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
 From: Shaohua Li <shaohua.li@intel.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>
-In-Reply-To: <x49sjy5ad81.fsf@segfault.boston.devel.redhat.com>
-References: <1291871853.2323.8.camel@sli10-conroe>
-	 <x49sjy5ad81.fsf@segfault.boston.devel.redhat.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+In-Reply-To: <4D0243DD.3090507@gmail.com>
+References: <1291255347.12777.116.camel@sli10-conroe>
+	 <4D0243DD.3090507@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 08:39:52 +0800
-Message-ID: <1292200792.2323.13.camel@sli10-conroe>
+Date: Mon, 13 Dec 2010 08:41:26 +0800
+Message-ID: <1292200886.2323.15.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -27,69 +30,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-10 at 22:56 +0800, Jeff Moyer wrote:
-> Shaohua Li <shaohua.li@intel.com> writes:
+On Fri, 2010-12-10 at 23:14 +0800, Tejun Heo wrote:
+> Hello,
 > 
-> > If priority is changed, continue checking workload_expires and service tree
-> > count of previous workload is meaningless. We should always choose the workload
-> 
-> I'd change that first sentence to:
-> 
->   If priority is changed, continuing to check workload_expires and
->   service tree count of the previous workload does not make sense.
-> 
-> > with lowest key of new priority in such case.
-> >
+> On 12/02/2010 03:02 AM, Shaohua Li wrote:
+> > percpu readmostly section should start and end at address cachline aligned.
+> > Idealy we should change PERCPU_VADDR/PERCPU, but I can't change all arch code, so
+> > I add new macros for x86.
+> > 
 > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 > 
-> This makes sense to me.
-> 
-> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Thanks, modified the the changelog.
+> Why add another set of macros?  Can't you just make the default one
+> aligned?
+how to do it without changing all arch code? There isn't cache line size
+macro for all arch which could be used in vmlinux.lds.h, IIRC.
 
-
-
-
-If priority is changed, continuing to check workload_expires and service tree
-count of the previous workload does not make sense. We should always choose
-the workload with lowest key of new priority in such case.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
----
- block/cfq-iosched.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-Index: linux/block/cfq-iosched.c
-===================================================================
---- linux.orig/block/cfq-iosched.c	2010-12-08 19:39:01.000000000 +0800
-+++ linux/block/cfq-iosched.c	2010-12-09 10:27:24.000000000 +0800
-@@ -2116,6 +2116,7 @@ static void choose_service_tree(struct c
- 	unsigned count;
- 	struct cfq_rb_root *st;
- 	unsigned group_slice;
-+	enum wl_prio_t original_prio = cfqd->serving_prio;
- 
- 	if (!cfqg) {
- 		cfqd->serving_prio = IDLE_WORKLOAD;
-@@ -2134,6 +2135,9 @@ static void choose_service_tree(struct c
- 		return;
- 	}
- 
-+	if (original_prio != cfqd->serving_prio)
-+		goto new_workload;
-+
- 	/*
- 	 * For RT and BE, we have to choose also the type
- 	 * (SYNC, SYNC_NOIDLE, ASYNC), and to compute a workload
-@@ -2148,6 +2152,7 @@ static void choose_service_tree(struct c
- 	if (count && !time_after(jiffies, cfqd->workload_expires))
- 		return;
- 
-+new_workload:
- 	/* otherwise select new workload type */
- 	cfqd->serving_type =
- 		cfq_choose_wl(cfqd, cfqg, cfqd->serving_prio);
-
-
+Thanks,
+Shaohua
 
