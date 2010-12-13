@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab0LMQsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 11:48:20 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51139 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab0LMQsT (ORCPT
+	id S1758240Ab0LMQtD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 11:49:03 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:64354 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab0LMQtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 11:48:19 -0500
+	Mon, 13 Dec 2010 11:49:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=K6lDdy8xJPXJXh8rP1dXxlX+L0J1QLAFbbWEghwcDwv29A5qaGunBvo/JhBKk5ICnf
-         r581w58jjD6url2HT178yVGlCqFEcO9D6r+hYjz+Odezh5bpQJWzKVB39heTY578lMPG
-         BGK9f2TQDHrzbDWtupOwfx7h512ih8rwxbWbE=
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=Sci9v13v4sr+k7217UChlY6QyJRISlwO5/unQ0RQq1mJeI3t3jaUYbFaNNzWvQw3hZ
+         imluO8wdqu5li6oHF5SUhlafSmdAVOXwc/CP+1roOct6TmWoO7AJb9jKrxUuHI/g29B0
+         +CJLIdVVsrpdnu4ld7S0WYr6xejkjCf8IDYIA=
+Date: Mon, 13 Dec 2010 14:48:54 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "David S. Ahern" <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
+Message-ID: <20101213164854.GL5407@ghostprotocols.net>
+References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
+ <1291773285-16254-2-git-send-email-daahern@cisco.com>
+ <20101212201613.GA1784@nowhere>
+ <4D06301C.2090309@cisco.com>
+ <20101213155451.GA1691@nowhere>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Mon, 13 Dec 2010 17:48:18 +0100
-Message-ID: <AANLkTim=XVg8fcbAbVJS1bu-Auw7i70AEEH+hoH7tUgS@mail.gmail.com>
-Subject: Re: rcu-walk and dcache scaling tree update and status
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101213155451.GA1691@nowhere>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Mon, Dec 13, 2010 at 04:54:56PM +0100, Frederic Weisbecker escreveu:
+> On Mon, Dec 13, 2010 at 07:39:24AM -0700, David S. Ahern wrote:
+> > On 12/12/10 13:16, Frederic Weisbecker wrote:
+> > >>  int perf_session__create_kernel_maps(struct perf_session *self)
+> > >>  {
+> > >>  	int ret = machine__create_kernel_maps(&self->host_machine);
+> > >> @@ -167,6 +190,9 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+> > >>  		 */
+> > >>  		if (perf_session__create_kernel_maps(self) < 0)
+> > >>  			goto out_delete;
+> > >> +
+> > >> +		if (perf_session__create_ref_time(self) < 0)
+> > >> +			goto out_delete;
 
-I will give this new refreshed patchset a try (testing against
-systemd-v15, vfat problem I reported) with none-BKL-config of course.
+> > > So, it does record it anytime?
 
-If linux-next will be the new base, then please rebase on it (see below).
-(Last time I solved the CONFLICTs manually).
+> > Simplest to always add it the header as it does no harm if not used.
+> > To make it conditional means adding an input parameter to
+> > perf_session__new() and then updating all the callers.
 
-Regards,
-- Sedat -
+> > Is the preference to make it conditional?
 
-P.S.:
+> No, I suspect the overhead is plain unnoticeable. And if it becomes
+> any problem one day, we can still make that conditional later.
 
-$ cd /mnt/sdb5/linux-kernel/linux-next
+Right, but it just ocurred to me, can't we encode this in the file stat?
+Also, how do we deal with:
 
-$ git log -1 | cat
-commit 455b71004aa0d5cb899dc4df34892265e7486b70
-Author: Stephen Rothwell <sfr@canb.auug.org.au>
-Date:   Mon Dec 13 16:15:19 2010 +1100
+$ perf record --help
+<SNIP>
+       -A, --append
+           Append to the output file to do incremental profiling.
+<SNIP>
 
-    Add linux-next specific files for 20101213
+?
 
-    Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+I now think this should be implemented as a PERF_RECORD_WALL_CLOCK
+synthesized event, to be inserted just before we start collecting the
+other events.
 
-$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
-vfs-scale-working:vfs-scale-working
-remote: Counting objects: 1196, done.
-remote: Compressing objects: 100% (80/80), done.
-remote: Total 931 (delta 866), reused 915 (delta 851)
-Receiving objects: 100% (931/931), 207.90 KiB | 376 KiB/s, done.
-Resolving deltas: 100% (866/866), completed with 258 local objects.
->From git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin
- * [new branch]      vfs-scale-working -> vfs-scale-working
-Auto-merging Documentation/filesystems/Locking
-Removing Documentation/filesystems/dentry-locking.txt
-Auto-merging Documentation/filesystems/vfs.txt
-Auto-merging fs/anon_inodes.c
-Auto-merging fs/ceph/dir.c
-Auto-merging fs/ceph/inode.c
-Auto-merging fs/ceph/mds_client.c
-Auto-merging fs/cifs/cifsfs.c
-Auto-merging fs/cifs/inode.c
-Auto-merging fs/cifs/readdir.c
-Auto-merging fs/coda/inode.c
-Auto-merging fs/ecryptfs/inode.c
-Auto-merging fs/ecryptfs/main.c
-Auto-merging fs/ext3/super.c
-Auto-merging fs/ext4/super.c
-Auto-merging fs/fuse/dir.c
-Auto-merging fs/fuse/inode.c
-CONFLICT (content): Merge conflict in fs/fuse/inode.c
-Auto-merging fs/gfs2/ops_inode.c
-Auto-merging fs/hfsplus/dir.c
-Auto-merging fs/hfsplus/hfsplus_fs.h
-Auto-merging fs/hfsplus/super.c
-Auto-merging fs/namei.c
-Auto-merging fs/nfs/dir.c
-Auto-merging fs/nfs/inode.c
-Auto-merging fs/nfsd/vfs.c
-Auto-merging fs/nilfs2/super.c
-Auto-merging fs/ocfs2/super.c
-Auto-merging fs/proc/base.c
-Auto-merging fs/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-Auto-merging fs/udf/super.c
-Auto-merging include/linux/fs.h
-Auto-merging include/linux/fsnotify.h
-Auto-merging include/linux/fsnotify_backend.h
-Auto-merging include/linux/security.h
-Auto-merging mm/filemap.c
-Auto-merging mm/shmem.c
-Auto-merging mm/slab.c
-Auto-merging mm/slub.c
-Auto-merging net/socket.c
-Auto-merging security/selinux/selinuxfs.c
-Automatic merge failed; fix conflicts and then commit the result.
-- EOT-
+That way, when --appending, we just insert another and use that from
+that point on.
+
+Look at tools/perf/util/event.h, enum perf_user_event_type and look how
+those are synthesized.
+
+Thanks,
+
+- Arnaldo
