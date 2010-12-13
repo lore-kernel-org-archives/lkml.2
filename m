@@ -1,30 +1,29 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab0LMBUr (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 12 Dec 2010 20:20:47 -0500
+	id S1756079Ab0LMBUk (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sun, 12 Dec 2010 20:20:40 -0500
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:38890 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab0LMBUo (ORCPT
+	with ESMTP id S1755859Ab0LMBUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 20:20:44 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6195"; a="66336643"
+	Sun, 12 Dec 2010 20:20:37 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6195"; a="66336626"
 From: ykaoua@qualcomm.com
 X-IronPort-AV: E=Sophos;i="4.59,332,1288594800"; 
-   d="scan'208";a="35903481"
+   d="scan'208";a="35903478"
 To: David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
         Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
         =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH v3 5/5] msm: add SMP support for msm
-Date: Sun, 12 Dec 2010 17:20:20 -0800
-Message-Id: <1292203221-2609-6-git-send-email-y>
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v3 2/5] msm: scm-boot: Support for setting cold/warm boot addresses
+Date: Sun, 12 Dec 2010 17:20:17 -0800
+Message-Id: <1292203221-2609-3-git-send-email-y>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1292203221-2609-1-git-send-email-y>
 References: <1292203221-2609-1-git-send-email-y>
@@ -32,232 +31,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Ohlstein <johlstei@codeaurora.org>
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+Add support for setting the cold boot address of core 1 and
+the warm boot addresses of cores 0 and 1 using a secure
+domain call.
+
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig            |    1 +
- arch/arm/mach-msm/Makefile           |    1 +
- arch/arm/mach-msm/headsmp.S          |   43 ++++++++++++
- arch/arm/mach-msm/include/mach/smp.h |    2 +
- arch/arm/mach-msm/platsmp.c          |  123 ++++++++++++++++++++++++++++++++++
- 5 files changed, 170 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/headsmp.S
- create mode 100644 arch/arm/mach-msm/platsmp.c
+ arch/arm/mach-msm/Makefile   |    2 +-
+ arch/arm/mach-msm/scm-boot.c |   39 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/scm-boot.h |   38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 78 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-msm/scm-boot.c
+ create mode 100644 arch/arm/mach-msm/scm-boot.h
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index ab5338f..8c57425 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -40,6 +40,7 @@ config ARCH_MSM8X60
- 	bool "MSM8X60"
- 	select MACH_MSM8X60_SURF if (!MACH_MSM8X60_RUMI3 && !MACH_MSM8X60_SIM \
- 				  && !MACH_MSM8X60_FFA)
-+	select ARCH_MSM_SCORPIONMP
- 	select ARM_GIC
- 	select CPU_V7
- 	select MSM_V2_TLMM
 diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 7a11b4a..1945f9c 100644
+index eed503b..34cd0a8 100644
 --- a/arch/arm/mach-msm/Makefile
 +++ b/arch/arm/mach-msm/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
- obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
- 
- obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
-+obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+@@ -18,7 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
+ obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
+ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
+-obj-$(CONFIG_MSM_SCM) += scm.o
++obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
  
  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
  obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/headsmp.S b/arch/arm/mach-msm/headsmp.S
+diff --git a/arch/arm/mach-msm/scm-boot.c b/arch/arm/mach-msm/scm-boot.c
 new file mode 100644
-index 0000000..438cfeb
+index 0000000..5671d58
 --- /dev/null
-+++ b/arch/arm/mach-msm/headsmp.S
-@@ -0,0 +1,43 @@
-+/*
-+ *  Copyright (c) 2003 ARM Limited
-+ *  All Rights Reserved
-+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++++ b/arch/arm/mach-msm/scm-boot.c
+@@ -0,0 +1,39 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+
-+/*
-+ * MSM specific entry point for secondary CPUs.  This provides
-+ * a "holding pen" into which all secondary cores are held until we're
-+ * ready for them to initialise.
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
-+ * This is executing in physical space with cache's off.
-+ */
-+ENTRY(msm_secondary_startup)
-+	mrc	p15, 0, r0, c0, c0, 5 	@ MPIDR
-+	and	r0, r0, #15		@ What CPU am I
-+	adr	r4, 1f			@ address of
-+	ldmia	r4, {r5, r6}		@ load curr addr and pen_rel addr
-+	sub	r4, r4, r5		@ determine virtual/phys offsets
-+	add	r6, r6, r4		@ apply
-+pen:
-+	wfe
-+	dsb				@ ensure subsequent access is
-+					@ after event
-+
-+	ldr	r7, [r6]		@ pen_rel has cpu to remove from reset
-+	cmp	r7, r0			@ are we lucky?
-+	bne	pen
-+
-+	/*
-+	 * we've been released from the holding pen: secondary_stack
-+	 * should now contain the SVC stack for this core
-+	 */
-+	b	secondary_startup
-+
-+1:	.long	.
-+	.long	pen_release
-diff --git a/arch/arm/mach-msm/include/mach/smp.h b/arch/arm/mach-msm/include/mach/smp.h
-index a95f7b9..6caadfe 100644
---- a/arch/arm/mach-msm/include/mach/smp.h
-+++ b/arch/arm/mach-msm/include/mach/smp.h
-@@ -36,4 +36,6 @@ static inline void smp_cross_call(const struct cpumask *mask, int ipi)
- 	gic_raise_softirq(mask, ipi);
- }
- 
-+extern int pen_release;
-+extern void msm_secondary_startup(void);
- #endif
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-new file mode 100644
-index 0000000..a94d586
---- /dev/null
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -0,0 +1,123 @@
-+/*
-+ *  Copyright (C) 2002 ARM Ltd.
-+ *  All Rights Reserved
-+ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/cpumask.h>
-+#include <linux/delay.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/slab.h>
 +
-+#include <asm/hardware/gic.h>
-+#include <asm/cacheflush.h>
-+#include <asm/mach-types.h>
-+
-+#include <mach/smp.h>
-+#include <mach/msm_iomap.h>
-+
++#include "scm.h"
 +#include "scm-boot.h"
 +
-+#define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
-+#define SCSS_CPU1CORE_RESET 0xD80
-+#define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
-+
-+int pen_release = -1;
-+
-+/* Initialize the present map (set_cpu_present(i, true)). */
-+void platform_smp_prepare_cpus(unsigned int max_cpus)
++/*
++ * Set the cold/warm boot address for one of the CPU cores.
++ */
++int scm_set_boot_addr(void *addr, int flags)
 +{
-+	int i;
++	struct {
++		unsigned int flags;
++		void *addr;
++	} cmd;
 +
-+	for (i = 0; i < max_cpus; i++)
-+		set_cpu_present(i, true);
++	cmd.addr = addr;
++	cmd.flags = flags;
++	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
++			&cmd, sizeof(cmd), NULL, 0);
 +}
++EXPORT_SYMBOL(scm_set_boot_addr);
+diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+new file mode 100644
+index 0000000..fdc1374
+--- /dev/null
++++ b/arch/arm/mach-msm/scm-boot.h
+@@ -0,0 +1,38 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are
++ * met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above
++ *       copyright notice, this list of conditions and the following
++ *       disclaimer in the documentation and/or other materials provided
++ *       with the distribution.
++ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
++ *       contributors may be used to endorse or promote products derived
++ *       from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
++ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
++ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
++ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
++ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++#ifndef __MACH_SCM_BOOT_H
++#define __MACH_SCM_BOOT_H
 +
-+void smp_init_cpus(void)
-+{
-+	int i;
++#define SCM_BOOT_ADDR			0x1
++#define SCM_FLAG_COLDBOOT_CPU1		0x1
++#define SCM_FLAG_WARMBOOT_CPU1		0x2
++#define SCM_FLAG_WARMBOOT_CPU0		0x4
 +
-+	for (i = 0; i < NR_CPUS; i++)
-+		set_cpu_possible(i, true);
-+}
++int scm_set_boot_addr(void *addr, int flags);
 +
-+static void prepare_cold_cpu(unsigned int cpu)
-+{
-+	int ret;
-+	ret = scm_set_boot_addr((void *)
-+				virt_to_phys(msm_secondary_startup),
-+				SCM_FLAG_COLDBOOT_CPU1);
-+	if (ret == 0) {
-+		void *sc1_base_ptr;
-+		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
-+		if (sc1_base_ptr) {
-+			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
-+			writel(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
-+			writel(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
-+			iounmap(sc1_base_ptr);
-+		}
-+	} else
-+		printk(KERN_DEBUG "Failed to set secondary core boot "
-+				  "address\n");
-+}
-+
-+/* Executed by primary CPU, brings other CPUs out of reset. Called at boot
-+   as well as when a CPU is coming out of shutdown induced by echo 0 >
-+   /sys/devices/.../cpuX.
-+*/
-+int boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	static int cold_boot_done;
-+	unsigned long timeout;
-+	printk(KERN_DEBUG "Starting secondary CPU %d\n", cpu);
-+
-+	if (cold_boot_done == false) {
-+		prepare_cold_cpu(cpu);
-+		cold_boot_done = true;
-+	}
-+
-+	pen_release = cpu;
-+	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
-+	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
-+
-+	/* Use smp_cross_call() to send a soft interrupt to wake up
-+	 * the other core.
-+	 */
-+
-+	timeout = jiffies + (1 * HZ);
-+	while (time_before(jiffies, timeout)) {
-+		smp_rmb();
-+		if (pen_release == -1)
-+			break;
-+
-+		udelay(10);
-+	}
-+
-+	return 0;
-+}
-+
-+/* Mask for edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
-+#define GIC_PPI_EDGE_MASK 0xFFFFD7FF
-+
-+/* Initialization routine for secondary CPUs after they are brought out of
-+ * reset.
-+*/
-+void platform_secondary_init(unsigned int cpu)
-+{
-+	printk(KERN_DEBUG "%s: cpu:%d\n", __func__, cpu);
-+
-+	writel(GIC_PPI_EDGE_MASK, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
-+
-+	/*
-+	 * setup GIC (GIC number NOT CPU number and the base address of the
-+	 * GIC CPU interface
-+	 */
-+	gic_secondary_init(0);
-+	pen_release = -1;
-+	smp_wmb();
-+}
++#endif
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
