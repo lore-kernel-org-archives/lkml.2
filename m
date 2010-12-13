@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab0LMOpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 09:45:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab0LMOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 09:45:07 -0500
-Date: Mon, 13 Dec 2010 09:44:34 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: Re: linux-next: Tree for December 10 (x86 nmi_watchdog)
-Message-ID: <20101213144434.GB18577@redhat.com>
-References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
- <20101210092533.4f426650.randy.dunlap@oracle.com>
- <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
+	id S1756682Ab0LMOpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 09:45:24 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52035 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab0LMOpW (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 13 Dec 2010 09:45:22 -0500
+Date: Mon, 13 Dec 2010 09:44:55 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: linux-next: build failure after merge of the swiotlb-xen tree
+Message-ID: <20101213144454.GA12054@dumpdata.com>
+References: <20101213143322.90c45f81.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101213143322.90c45f81.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 11:27:02AM +0600, Rakib Mullick wrote:
-> On Fri, Dec 10, 2010 at 11:25 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > On Fri, 10 Dec 2010 13:57:46 +1100 Stephen Rothwell wrote:
-> >
-> >> Hi all,
-> >>
-> >> Changes since 20101209:
-> >
-> >
-> > arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of 'touch_nmi_watchdog'
-> > include/linux/nmi.h:22: note: previous definition of 'touch_nmi_watchdog' was here
-
-I'll have to checkout that branch to see what got merged.  I thought I
-fixed all these.  Is there a config I can use to duplicate these?
-
-> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-> index c558e11..2056569 100644
-> --- a/arch/x86/kernel/apic/hw_nmi.c
-> +++ b/arch/x86/kernel/apic/hw_nmi.c
-> @@ -24,7 +24,7 @@ u64 hw_nmi_get_sample_period(void)
->  }
->  #endif
+On Mon, Dec 13, 2010 at 02:33:22PM +1100, Stephen Rothwell wrote:
+> Hi Konrad,
 > 
-> -#ifndef CONFIG_HARDLOCKUP_DETECTOR
-> +#ifdef CONFIG_HARDLOCKUP_DETECTOR
->  void touch_nmi_watchdog(void)
->  {
->  	touch_softlockup_watchdog();
+> After merging the swiotlb-xen tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 
-NAK.  This isn't the right patch.  This chunk is in here because of
-changes to nmi.h.  Something broke in that file.
+Ahh, yes. I knew there was some patch that we forgot. Will fix it up today!
+> 
+> ERROR: "xenbus_dev_is_online" [drivers/xen/pciback/xen-pciback.ko] undefined!
+> ERROR: "__xenbus_register_backend" [drivers/xen/pciback/xen-pciback.ko] undefined!
+> 
+> Caused by commit 443b2aafbdb509f218fcb8f4665f063e3a5e1a92 ("xen-pciback:
+> Initial copy from linux-2.6.18.hg off pciback driver").
+> 
+> I have used the swiotlb-xen tree from next-20101210 for today.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
 
-Cheers,
-Don
 
