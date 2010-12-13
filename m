@@ -1,49 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab0LMX3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 18:29:16 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:41225 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752076Ab0LMX3P (ORCPT
+	id S1756841Ab0LMXq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 18:46:28 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23163 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab0LMXq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 18:29:15 -0500
-Message-ID: <4D06AB66.8090909@euromail.se>
-Date: Tue, 14 Dec 2010 00:25:26 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 13 Dec 2010 18:46:27 -0500
+Date: Tue, 14 Dec 2010 00:40:04 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        Neil Brown <neilb@suse.de>
+Subject: [PATCH][rfc] md: Close mem leak in userspace_ctr()
+Message-ID: <alpine.LNX.2.00.1012140034300.26491@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
-References: <1292001842-5000-1-git-send-email-rydberg@euromail.se> <4D065BDE.5020107@canonical.com> <4D068E3C.8080100@euromail.se> <4D06A60D.7010409@canonical.com>
-In-Reply-To: <4D06A60D.7010409@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PSHlq-0007of-5J.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PSHlq-0007of-5J 05bbcb0b450c278aa530a5b68fe8550f
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The envelope contacts serve as a way to detect a small area of fingers or a
+Hi,
 
->> large area of fingers. There is nothing inherently problematic with having one
->> or three or more such contacts.
-> 
-> Then I'm more confused :).
-> 
-> I see one problem: devices that report two touch points, (X1, Y1) and
-> (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
-> instead. Using a rectangle helps resolve this issue for panning and
-> pinching, though not for rotation.
+There's a small memory leak in 
+drivers/md/dm-log-userspace-base.c::userspace_ctr().
+
+The call to build_constructor_string() dynamically allocates memory for 
+its last argument, but we do not always clean up that allocated memory.
+The patch below closes the leak and also removes some unneeded local 
+variables and some pointless assignments.
+
+If the patch looks good, please consider applying it - if not, please tell 
+me where I messed up.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ dm-log-userspace-base.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+ Compile tested only.
+
+diff --git a/drivers/md/dm-log-userspace-base.c b/drivers/md/dm-log-userspace-base.c
+index 1ed0094..71a3049 100644
+--- a/drivers/md/dm-log-userspace-base.c
++++ b/drivers/md/dm-log-userspace-base.c
+@@ -99,26 +99,22 @@ static int build_constructor_string(struct dm_target *ti,
+ 				    char **ctr_str)
+ {
+ 	int i, str_size;
+-	char *str = NULL;
+-
+-	*ctr_str = NULL;
+ 
+ 	for (i = 0, str_size = 0; i < argc; i++)
+ 		str_size += strlen(argv[i]) + 1; /* +1 for space between args */
+ 
+ 	str_size += 20; /* Max number of chars in a printed u64 number */
+ 
+-	str = kzalloc(str_size, GFP_KERNEL);
+-	if (!str) {
++	*ctr_str = kzalloc(str_size, GFP_KERNEL);
++	if (!*ctr_str) {
+ 		DMWARN("Unable to allocate memory for constructor string");
+ 		return -ENOMEM;
+ 	}
+ 
+-	str_size = sprintf(str, "%llu", (unsigned long long)ti->len);
++	str_size = sprintf(*ctr_str, "%llu", (unsigned long long)ti->len);
+ 	for (i = 0; i < argc; i++)
+-		str_size += sprintf(str + str_size, " %s", argv[i]);
++		str_size += sprintf(*ctr_str + str_size, " %s", argv[i]);
+ 
+-	*ctr_str = str;
+ 	return str_size;
+ }
+ 
+@@ -140,7 +136,7 @@ static int userspace_ctr(struct dm_dirty_log *log, struct dm_target *ti,
+ {
+ 	int r = 0;
+ 	int str_size;
+-	char *ctr_str = NULL;
++	char *ctr_str;
+ 	struct log_c *lc = NULL;
+ 	uint64_t rdata;
+ 	size_t rdata_size = sizeof(rdata);
+@@ -173,6 +169,7 @@ static int userspace_ctr(struct dm_dirty_log *log, struct dm_target *ti,
+ 
+ 	str_size = build_constructor_string(ti, argc - 1, argv + 1, &ctr_str);
+ 	if (str_size < 0) {
++		kfree(ctr_str);
+ 		kfree(lc);
+ 		return str_size;
+ 	}
 
 
-If panning and pinching and rotation could all be recovered properly, then the
-individual contacts could actually have been reconstructed properly in the first
-place. This is the whole point - there is not enough information available for
-rotation to be recovered properly.
 
-Thanks.
-Henrik
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
