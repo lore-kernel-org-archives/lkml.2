@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab0LMKk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:40:59 -0500
-Received: from sd-11162.dedibox.fr ([88.191.70.230]:50238 "EHLO
-	sd-11162.dedibox.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988Ab0LMKk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:40:58 -0500
-Date: Mon, 13 Dec 2010 11:40:55 +0100
-From: Stelian Pop <stelian@popies.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Michael Hanselmann <public@hansmi.ch>, Tejun Heo <tj@kernel.org>,
+	id S1757071Ab0LMKoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:44:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1790 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757049Ab0LMKon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 05:44:43 -0500
+Date: Mon, 13 Dec 2010 12:44:13 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] Remove myself from MAINTAINERS as I no longer have the
- hardware to test.
-Message-ID: <20101213104055.GB2188@calypso>
-Reply-To: Stelian Pop <stelian@popies.net>
-Mail-Followup-To: Stelian Pop <stelian@popies.net>,
-	Jean Delvare <khali@linux-fr.org>,
-	Michael Hanselmann <public@hansmi.ch>, Tejun Heo <tj@kernel.org>,
-	linux-kernel@vger.kernel.org
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
- <1292086307-19211-21-git-send-email-tj@kernel.org>
- <20101211201931.00414518@endymion.delvare>
- <AANLkTinUko5JfbYTOVujXEKqBHfdSXuqAmVcphWZyOrU@mail.gmail.com>
- <20101213101638.GA2188@calypso>
- <20101213111817.1d2087b0@endymion.delvare>
+Subject: [GIT PULL net-next-2.6] vhost-net: tools, cleanups, optimizations
+Message-ID: <20101213104413.GA678@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101213111817.1d2087b0@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AV-Checked: ClamAV using ClamSMTP
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is PPC only, and I can no longer test it.
+Please merge the following tree for 2.6.38.
+Thanks!
 
-Subject: [PATCH] Remove myself from MAINTAINERS as I no longer have the hardware to test.
+The following changes since commit ad1184c6cf067a13e8cb2a4e7ccc407f947027d0:
 
-Signed-off-by: Stelian Pop <stelian@popies.net>
----
- MAINTAINERS |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+  net: au1000_eth: remove unused global variable. (2010-12-11 12:01:48 -0800)
 
-On Mon, Dec 13, 2010 at 11:18:17AM +0100, Jean Delvare wrote:
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
 
-> > > > The AMS driver is maintained by Stelian Pop and Michael Hanselmann
-> > > > according to MAINTAINERS. I am Cc'ing them both.
-> > > 
-> > > Change looks good to me, but can't test due to lack of hardware.
-> > 
-> > Same here. Looks like this driver can be orphaned...
-> 
-> If so, please submit a patch updating MAINTAINERS. Otherwise you'll
-> keep getting patches asking for your acknowledgment.
+Jason Wang (1):
+      vhost: fix typos in comment
 
-Here it is.
+Julia Lawall (1):
+      drivers/vhost/vhost.c: delete double assignment
 
-I'll let Michael remove itself from MAINTAINERS and orphan the
-driver if he no longer has any related hardware.
+Michael S. Tsirkin (9):
+      vhost: put mm after thread stop
+      vhost-net: batch use/unuse mm
+      vhost: copy_to_user -> __copy_to_user
+      vhost: get/put_user -> __get/__put_user
+      vhost: remove unused include
+      vhost: correctly set bits of dirty pages
+      vhost: better variable name in logging
+      vhost test module
+      tools/virtio: virtio_test tool
 
-Thanks,
-
-Stelian.
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1a1c27b..61d8c41 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -429,7 +429,6 @@ S:	Supported
- F:	arch/x86/kernel/microcode_amd.c
- 
- AMS (Apple Motion Sensor) DRIVER
--M:	Stelian Pop <stelian@popies.net>
- M:	Michael Hanselmann <linux-kernel@hansmi.ch>
- S:	Supported
- F:	drivers/macintosh/ams/
--- 
-1.7.1
+ drivers/vhost/net.c                  |    9 +-
+ drivers/vhost/test.c                 |  320 ++++++++++++++++++++++++++++++++++
+ drivers/vhost/test.h                 |    7 +
+ drivers/vhost/vhost.c                |   44 +++---
+ drivers/vhost/vhost.h                |    2 +-
+ tools/virtio/Makefile                |   12 ++
+ tools/virtio/linux/device.h          |    2 +
+ tools/virtio/linux/slab.h            |    2 +
+ tools/virtio/linux/virtio.h          |  223 +++++++++++++++++++++++
+ tools/virtio/vhost_test/Makefile     |    2 +
+ tools/virtio/vhost_test/vhost_test.c |    1 +
+ tools/virtio/virtio_test.c           |  248 ++++++++++++++++++++++++++
+ 12 files changed, 842 insertions(+), 30 deletions(-)
+ create mode 100644 drivers/vhost/test.c
+ create mode 100644 drivers/vhost/test.h
+ create mode 100644 tools/virtio/Makefile
+ create mode 100644 tools/virtio/linux/device.h
+ create mode 100644 tools/virtio/linux/slab.h
+ create mode 100644 tools/virtio/linux/virtio.h
+ create mode 100644 tools/virtio/vhost_test/Makefile
+ create mode 100644 tools/virtio/vhost_test/vhost_test.c
+ create mode 100644 tools/virtio/virtio_test.c
