@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab0LMAVq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 19:21:46 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44881 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab0LLXpy (ORCPT
+	id S1755857Ab0LMAVw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 19:21:52 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:40377 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab0LMAVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 18:45:54 -0500
-From: Andi Kleen <andi@firstfloor.org>
-References: <201012131244.547034648@firstfloor.org>
-In-Reply-To: <201012131244.547034648@firstfloor.org>
-To: Larry.Finger@lwfinger.net, ak@linux.intel.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [55/223] staging: rt2870: Add new USB ID for Belkin F6D4050 v1
-Message-Id: <20101212234552.D2D5CB27BF@basil.firstfloor.org>
-Date: Mon, 13 Dec 2010 00:45:52 +0100 (CET)
+	Sun, 12 Dec 2010 19:21:50 -0500
+Date: Mon, 13 Dec 2010 00:21:38 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: Make sure the FADT is at least rev 2 before
+	using the reset register
+Message-ID: <20101213002138.GA5164@srcf.ucam.org>
+References: <1292003871-13979-1-git-send-email-mjg@redhat.com> <1292199396.1715.143.camel@rui>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292199396.1715.143.camel@rui>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 13, 2010 at 08:16:36AM +0800, Zhang Rui wrote:
+> On Sat, 2010-12-11 at 01:57 +0800, Matthew Garrett wrote:
+> > The reset register was only introduced with version 2 of the FADT, so we
+> > should check that the FADT revision before trusting its contents.
+> > 
+> does the current code break anything?
+> I'm curious about how you found this bug. :)
 
-------------------
-From: Larry Finger <Larry.Finger@lwfinger.net>
-
-commit 705059a670f3af2b37695e82de0ee58e75e656ed upstream.
-
-Add new USB ID for FT2870 for Belkin F6D4050 v1
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reported- and Tested-by: James Long <crogonint@yahoo.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/staging/rt2860/usb_main_dev.c |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux/drivers/staging/rt2860/usb_main_dev.c
-===================================================================
---- linux.orig/drivers/staging/rt2860/usb_main_dev.c
-+++ linux/drivers/staging/rt2860/usb_main_dev.c
-@@ -65,6 +65,7 @@ struct usb_device_id rtusb_usb_id[] = {
- 	{USB_DEVICE(0x14B2, 0x3C07)},	/* AL */
- 	{USB_DEVICE(0x050D, 0x8053)},	/* Belkin */
- 	{USB_DEVICE(0x050D, 0x825B)},	/* Belkin */
-+	{USB_DEVICE(0x050D, 0x935A)},	/* Belkin F6D4050 v1 */
- 	{USB_DEVICE(0x050D, 0x935B)},	/* Belkin F6D4050 v2 */
- 	{USB_DEVICE(0x14B2, 0x3C23)},	/* Airlink */
- 	{USB_DEVICE(0x14B2, 0x3C27)},	/* Airlink */
+No, it just seems to be a sensible sanity check.
