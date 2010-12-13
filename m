@@ -1,134 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab0LMGu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:50:29 -0500
-Received: from mga14.intel.com ([143.182.124.37]:5009 "EHLO mga14.intel.com"
+	id S932251Ab0LMGuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:50:39 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:45262 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932179Ab0LMGtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:49:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="360754631"
-Message-Id: <20101213064838.530772251@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:43:02 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/47] writeback: scale down max throttle bandwidth on concurrent dirtiers
-References: <20101213064249.648862451@intel.com>
-Content-Disposition: inline; filename=writeback-adaptive-throttle-bandwidth.patch
+	id S932179Ab0LMGuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 01:50:35 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: "'Miguel Ojeda'" <miguel.ojeda.sandonis@gmail.com>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <01da01cb9784$d44c0460$7ce40d20$@mprc.pku.edu.cn> <AANLkTimDWHGsL+1H_VSevSjpFW0-h53NzRynANnayTRm@mail.gmail.com> <028901cb9933$4a2bfe10$de83fa30$@mprc.pku.edu.cn> <201012111456.07925.arnd@arndb.de>
+In-Reply-To: <201012111456.07925.arnd@arndb.de>
+Subject: RE: [PATCHv1 008/211] unicore32: new file arch/unicore32/boot/compressed/misc.c
+Date: Mon, 13 Dec 2010 14:50:13 +0800
+Message-ID: <004a01cb9a92$02629930$0727cb90$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQGrmnwbWKliDFzh4nZd2nlW0eIAGgE8uuEQAX56uJoBZxO7GJO822Pw
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will noticeably reduce the fluctuaions of pause time when there are
-100+ concurrent dirtiers.
 
-The more parallel dirtiers (1 dirtier => 4 dirtiers), the smaller
-bandwidth each dirtier will share (bdi_bandwidth => bdi_bandwidth/4),
-the less gap to the dirty limit ((C-A) => (C-B)), the less stable the
-pause time will be (given the same fluctuation of bdi_dirty).
+> > > > +/* Diagnostic functions */
+> > > > +#ifdef DEBUG
+> > > > +#  define Assert(cond, msg)    { if (!(cond)) error(msg); }
+> > > > +#  define Trace(x)             fprintf x
+> > > > +#  define Tracev(x)            { if (verbose)                  fprintf x; }
+> > > > +#  define Tracevv(x)           { if (verbose > 1)              fprintf x; }
+> > > > +#  define Tracec(c, x)         { if (verbose && (c))           fprintf x; }
+> > > > +#  define Tracecv(c, x)                { if ((verbose > 1) && (c))
+> > > > fprintf x; }
+> > >
+> > > Maybe uppercase? Maybe do { ... } while(0)?
+> >
+> > Uppercase  for what? Tracexx to tracexx?
+> 
+> We normally don't have mixed-case identifiers, normally it would be
+> trace() for functions vs. TRACE() for macros, though we also have a
+> lot of lower-case macros as well.
+> 
+> For the debugging macros, I would generally recommend not having
+> any, but simply using the standard pr_debug and dev_dbg macros
+> that everyone knows and understands.
+> 
+> If you really need to do macros, make them so that they work like
+> functions, e.g.
+> 
+> #define foo_tracev(...) do { if (verbose) fprintf(__va_args__); } while (0)
 
-For example, if A drifts to A', its pause time may drift from 5ms to
-6ms, while B to B' may drift from 50ms to 90ms.  It's much larger
-fluctuations in relative ratio as well as absolute time.
+When reviewing misc.c, I find that Tracevv and Tracecv are not used in lib/decompress_inflate.c
+So these macros could be removed directly.
+The same for other architectures, I think.
 
-Fig.1 before patch, gap (C-B) is too low to get smooth pause time
+Guan Xuetao
 
-throttle_bandwidth_A = bdi_bandwidth .........o
-                                              | o <= A'
-                                              |   o
-                                              |     o
-                                              |       o
-                                              |         o
-throttle_bandwidth_B = bdi_bandwidth / 4 .....|...........o
-                                              |           | o <= B'
-----------------------------------------------+-----------+---o
-                                              A           B   C
-
-The solution is to lower the slope of the throttle line accordingly,
-which makes B stabilize at some point more far away from C.
-
-Fig.2 after patch
-
-throttle_bandwidth_A = bdi_bandwidth .........o
-                                              | o <= A'
-                                              |   o
-                                              |     o
-    lowered max throttle bandwidth for B ===> *       o
-                                              |   *     o
-throttle_bandwidth_B = bdi_bandwidth / 4 .............*   o
-                                              |       |   * o
-----------------------------------------------+-------+-------o
-                                              A       B       C
-
-Note that C is actually different points for 1-dirty and 4-dirtiers
-cases, but for easy graphing, we move them together.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:25.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-08 22:44:26.000000000 +0800
-@@ -574,6 +574,7 @@ static void balance_dirty_pages(struct a
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-+	unsigned long task_thresh;
- 	unsigned long bw;
- 	unsigned long pause = 0;
- 	bool dirty_exceeded = false;
-@@ -603,7 +604,7 @@ static void balance_dirty_pages(struct a
- 			break;
- 
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh, nr_dirty);
--		bdi_thresh = task_dirty_limit(current, bdi_thresh);
-+		task_thresh = task_dirty_limit(current, bdi_thresh);
- 
- 		/*
- 		 * In order to avoid the stacked BDI deadlock we need
-@@ -642,14 +643,23 @@ static void balance_dirty_pages(struct a
- 			break;
- 		bdi_prev_dirty = bdi_dirty;
- 
--		if (bdi_dirty >= bdi_thresh) {
-+		if (bdi_dirty >= task_thresh) {
- 			pause = HZ/10;
- 			goto pause;
- 		}
- 
-+		/*
-+		 * When bdi_dirty grows closer to bdi_thresh, it indicates more
-+		 * concurrent dirtiers. Proportionally lower the max throttle
-+		 * bandwidth. This will resist bdi_dirty from approaching to
-+		 * close to task_thresh, and help reduce fluctuations of pause
-+		 * time when there are lots of dirtiers.
-+		 */
- 		bw = bdi->write_bandwidth;
--
- 		bw = bw * (bdi_thresh - bdi_dirty);
-+		bw = bw / (bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
-+
-+		bw = bw * (task_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
- 
- 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
 
 
