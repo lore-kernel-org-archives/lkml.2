@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab0LMHX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 02:23:28 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:60071 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab0LMHX1 (ORCPT
+	id S932401Ab0LMHZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 02:25:29 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55134 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab0LMHZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 02:23:27 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 13 Dec 2010 08:23:00 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH] firewire: ohci: fix build failure
-Message-ID: <20101213082300.122b7152@stein>
-In-Reply-To: <20101213154444.eba34b5d.sfr@canb.auug.org.au>
-References: <20101213154444.eba34b5d.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 13 Dec 2010 02:25:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=M6c4ApSJ3a5aGASilsWgFyIZo2BcXAMrHgDN/olwYjey8bBwkoN8FgamKm6ZgYPcpl
+         xgf+zsCnTMDOY6i4ilTEhLyp07QjnBNMiqVaGOx8YVGTbHPwOkXXl/MsytLDN+G47WY5
+         wLhsFcX4v+s8tX5/t9zC71bn/BRyQCoV0lfxE=
+Subject: Re: [patch] fs: scale vfsmount refcount (was Re: rcu-walk and
+ dcache scaling tree update and status)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101213024217.GC6522@amd>
+References: <20101213023733.GB6522@amd>  <20101213024217.GC6522@amd>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Dec 2010 08:25:13 +0100
+Message-ID: <1292225113.18698.22.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vm_map_ram() needs <linux/vmalloc.h>.
-(And bring the includes back into alphabetical order.)
+Le lundi 13 décembre 2010 à 13:42 +1100, Nick Piggin a écrit :
+> + */
+> +static inline void add_mnt_count(struct vfsmount *mnt, int n)
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/ohci.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+maybe name it __add_mnt_count() (should be called with preempt off)
 
-Index: b/drivers/firewire/ohci.c
-===================================================================
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -18,6 +18,7 @@
-  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  */
- 
-+#include <linux/bitops.h>
- #include <linux/bug.h>
- #include <linux/compiler.h>
- #include <linux/delay.h>
-@@ -40,7 +41,7 @@
- #include <linux/spinlock.h>
- #include <linux/string.h>
- #include <linux/time.h>
--#include <linux/bitops.h>
-+#include <linux/vmalloc.h>
- 
- #include <asm/byteorder.h>
- #include <asm/page.h>
+> +{
+> +#ifdef CONFIG_SMP
+> +	(*per_cpu_ptr(mnt->mnt_count, smp_processor_id())) += n;
+
+__this_cpu_add(mnt->mnt_count, n);
+
+> +#else
+> +	mnt->mnt_count += n;
+> +#endif
+> +}
+
+and define a preempt safe version :
+
+static inline void __add_mnt_count(struct vfsmount *mnt, int n)
+{
+#ifdef CONFIG_SMP
+	__this_cpu_add(mnt->mnt_count, n);
+#else
+	mnt->mnt_count += n;
+#endif
+}
+
+static inline void add_mnt_count(struct vfsmount *mnt, int n)
+{
+#ifdef CONFIG_SMP
+	this_cpu_add(mnt->mnt_count, n);
+#else
+	preempt_disable();
+	mnt->mnt_count += n;
+	preempt_enable();
+#endif
+}
+
+> +
+> +static inline void set_mnt_count(struct vfsmount *mnt, int n)
+> +{
+> +#ifdef CONFIG_SMP
 
 
--- 
-Stefan Richter
--=====-==-=- ==-- -==-=
-http://arcgraph.de/sr/
+> +	preempt_disable();
+> +	(*per_cpu_ptr(mnt->mnt_count, smp_processor_id())) = n;
+> +	preempt_enable();
+
+last 3 lines can be replaced by :
+
+	this_cpu_write(mnt->mnt_count, n);
+
+> +#else
+> +	mnt->mnt_count = n;
+> +#endif
+> +}
+> +
+
+>  #ifdef CONFIG_SMP
+>  	int __percpu *mnt_writers;
+> +	int __percpu *mnt_count;
+>  #else
+>  	int mnt_writers;
+> +	int mnt_count;
+>  #endif
+
+You could use a struct and one per cpu allocation to use one cache line
+for both objects :
+
+struct mnt_counters {
+	int writers;
+	int count;
+};
+
+...
+
+#ifdef CONFIG_SMP
+	struct mnt_counters __percpu *mnt_counters;
+#else
+	struct mnt_counters mnt_counters;
+#endif
+
+This would use one pointer instead of two in SMP
+
+
