@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab0LMMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:30:26 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:36137 "EHLO
+	id S1757459Ab0LMMar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:30:47 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:36140 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757042Ab0LMMaW (ORCPT
+	with ESMTP id S1752449Ab0LMMao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:30:22 -0500
-Date: Mon, 13 Dec 2010 13:30:21 +0100
+	Mon, 13 Dec 2010 07:30:44 -0500
+Date: Mon, 13 Dec 2010 13:30:43 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Cory Maccarrone <darkstar6262@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/20] mfd: htc-i2cpld: irq_data conversion.
-Message-ID: <20101213123021.GQ15575@mail.wantstofly.org>
+Subject: [PATCH 08/20] mfd: jz4740-adc: irq_data conversion.
+Message-ID: <20101213123043.GR15575@mail.wantstofly.org>
 References: <cover.1292241952.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,66 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/mfd/htc-i2cpld.c |   31 ++++++++++++++++---------------
- 1 files changed, 16 insertions(+), 15 deletions(-)
+ drivers/mfd/jz4740-adc.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/mfd/htc-i2cpld.c b/drivers/mfd/htc-i2cpld.c
-index 594c9a8..c4f3fb7 100644
---- a/drivers/mfd/htc-i2cpld.c
-+++ b/drivers/mfd/htc-i2cpld.c
-@@ -82,25 +82,26 @@ struct htcpld_data {
- /* There does not appear to be a way to proactively mask interrupts
-  * on the htcpld chip itself.  So, we simply ignore interrupts that
-  * aren't desired. */
--static void htcpld_mask(unsigned int irq)
-+static void htcpld_mask(struct irq_data *d)
- {
--	struct htcpld_chip *chip = get_irq_chip_data(irq);
--	chip->irqs_enabled &= ~(1 << (irq - chip->irq_start));
--	pr_debug("HTCPLD mask %d %04x\n", irq, chip->irqs_enabled);
-+	struct htcpld_chip *chip = irq_data_get_irq_chip_data(d);
-+	chip->irqs_enabled &= ~(1 << (d->irq - chip->irq_start));
-+	pr_debug("HTCPLD mask %d %04x\n", d->irq, chip->irqs_enabled);
- }
--static void htcpld_unmask(unsigned int irq)
-+
-+static void htcpld_unmask(struct irq_data *d)
- {
--	struct htcpld_chip *chip = get_irq_chip_data(irq);
--	chip->irqs_enabled |= 1 << (irq - chip->irq_start);
--	pr_debug("HTCPLD unmask %d %04x\n", irq, chip->irqs_enabled);
-+	struct htcpld_chip *chip = irq_data_get_irq_chip_data(d);
-+	chip->irqs_enabled |= 1 << (d->irq - chip->irq_start);
-+	pr_debug("HTCPLD unmask %d %04x\n", d->irq, chip->irqs_enabled);
+diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+index 9dd1b33..955b0d0 100644
+--- a/drivers/mfd/jz4740-adc.c
++++ b/drivers/mfd/jz4740-adc.c
+@@ -84,31 +84,32 @@ static inline void jz4740_adc_irq_set_masked(struct jz4740_adc *adc, int irq,
+ 	spin_unlock_irqrestore(&adc->lock, flags);
  }
  
--static int htcpld_set_type(unsigned int irq, unsigned int flags)
-+static int htcpld_set_type(struct irq_data *d, unsigned int flags)
+-static void jz4740_adc_irq_mask(unsigned int irq)
++static void jz4740_adc_irq_mask(struct irq_data *d)
  {
--	struct irq_desc *d = irq_to_desc(irq);
-+	struct irq_desc *d = irq_to_desc(d->irq);
- 
- 	if (!d) {
--		pr_err("HTCPLD invalid IRQ: %d\n", irq);
-+		pr_err("HTCPLD invalid IRQ: %d\n", d->irq);
- 		return -EINVAL;
- 	}
- 
-@@ -118,10 +119,10 @@ static int htcpld_set_type(unsigned int irq, unsigned int flags)
+-	struct jz4740_adc *adc = get_irq_chip_data(irq);
+-	jz4740_adc_irq_set_masked(adc, irq, true);
++	struct jz4740_adc *adc = irq_data_get_irq_chip_data(d);
++	jz4740_adc_irq_set_masked(adc, d->irq, true);
  }
  
- static struct irq_chip htcpld_muxed_chip = {
--	.name     = "htcpld",
--	.mask     = htcpld_mask,
--	.unmask   = htcpld_unmask,
--	.set_type = htcpld_set_type,
-+	.name         = "htcpld",
-+	.irq_mask     = htcpld_mask,
-+	.irq_unmask   = htcpld_unmask,
-+	.irq_set_type = htcpld_set_type,
+-static void jz4740_adc_irq_unmask(unsigned int irq)
++static void jz4740_adc_irq_unmask(struct irq_data *d)
+ {
+-	struct jz4740_adc *adc = get_irq_chip_data(irq);
+-	jz4740_adc_irq_set_masked(adc, irq, false);
++	struct jz4740_adc *adc = irq_data_get_irq_chip_data(d);
++	jz4740_adc_irq_set_masked(adc, d->irq, false);
+ }
+ 
+-static void jz4740_adc_irq_ack(unsigned int irq)
++static void jz4740_adc_irq_ack(struct irq_data *d)
+ {
+-	struct jz4740_adc *adc = get_irq_chip_data(irq);
++	struct jz4740_adc *adc = irq_data_get_irq_chip_data(d);
++	unsigned int irq;
+ 
+-	irq -= adc->irq_base;
++	irq = d->irq - adc->irq_base;
+ 	writeb(BIT(irq), adc->base + JZ_REG_ADC_STATUS);
+ }
+ 
+ static struct irq_chip jz4740_adc_irq_chip = {
+ 	.name = "jz4740-adc",
+-	.mask = jz4740_adc_irq_mask,
+-	.unmask = jz4740_adc_irq_unmask,
+-	.ack = jz4740_adc_irq_ack,
++	.irq_mask = jz4740_adc_irq_mask,
++	.irq_unmask = jz4740_adc_irq_unmask,
++	.irq_ack = jz4740_adc_irq_ack,
  };
  
- /* To properly dispatch IRQ events, we need to read from the
+ static void jz4740_adc_irq_demux(unsigned int irq, struct irq_desc *desc)
 -- 
 1.7.1
 
