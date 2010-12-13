@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab0LMSC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 13:02:27 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47637 "EHLO
+	id S1758625Ab0LMSCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 13:02:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47616 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553Ab0LMSCP (ORCPT
+	with ESMTP id S1758516Ab0LMSCO (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 13 Dec 2010 13:02:15 -0500
+	Mon, 13 Dec 2010 13:02:14 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xensource.com
 Cc: Jan Beulich <JBeulich@novell.com>, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Jan Beulich <JBeulich@novell.com>, linux-kernel@vger.kernel.org,
         Konrad Rzeszutek Wilk <konrad@kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/9] xen/pci: Add xen_[find|register|unregister]_device_domain_owner functions.
-Date: Mon, 13 Dec 2010 13:01:36 -0500
-Message-Id: <1292263303-31680-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 4/9] xen: Add support to check if IRQ line is shared with other domains.
+Date: Mon, 13 Dec 2010 13:01:38 -0500
+Message-Id: <1292263303-31680-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292263303-31680-1-git-send-email-konrad.wilk@oracle.com>
 References: <1292263303-31680-1-git-send-email-konrad.wilk@oracle.com>
@@ -24,128 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen PCI backend performs ownership (MSI/MSI-X) changes on the behalf of
-the guest. This means we need some mechanism to find, set and unset
-the domain id of the guest.
+We do this via the PHYSDEVOP_irq_status_query support hypervisor call.
+We will get a positive value if another domain has binded its
+PIRQ to the specified IRQ line.
 
+[v2: Deal with v2.6.37-rc1 rebase fallout]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/pci.h |   16 +++++++++
- arch/x86/pci/xen.c             |   73 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 89 insertions(+), 0 deletions(-)
+ drivers/xen/events.c |   13 +++++++++++++
+ include/xen/events.h |    3 +++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/pci.h b/arch/x86/include/asm/xen/pci.h
-index 2329b3e..8474b4b 100644
---- a/arch/x86/include/asm/xen/pci.h
-+++ b/arch/x86/include/asm/xen/pci.h
-@@ -15,10 +15,26 @@ static inline int pci_xen_hvm_init(void)
- #endif
- #if defined(CONFIG_XEN_DOM0)
- void __init xen_setup_pirqs(void);
-+int xen_find_device_domain_owner(struct pci_dev *dev);
-+int xen_register_device_domain_owner(struct pci_dev *dev, uint16_t domain);
-+int xen_unregister_device_domain_owner(struct pci_dev *dev);
- #else
- static inline void __init xen_setup_pirqs(void)
- {
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 96c93e7..690dfad 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1398,6 +1398,19 @@ void xen_poll_irq(int irq)
+ 	xen_poll_irq_timeout(irq, 0 /* no timeout */);
  }
-+static inline int xen_find_device_domain_owner(struct pci_dev *dev)
-+{
-+	return -1;
-+}
-+static inline int xen_register_device_domain_owner(struct pci_dev *dev,
-+ 						   uint16_t domain)
-+{
-+	return -1;
-+}
-+static inline int xen_unregister_device_domain_owner(struct pci_dev *dev)
-+{
-+	return -1;
-+}
- #endif
  
- #if defined(CONFIG_PCI_MSI)
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 117f5b8..6d2a986 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -412,3 +412,76 @@ void __init xen_setup_pirqs(void)
- 	}
- }
- #endif
-+
-+struct xen_device_domain_owner {
-+	domid_t domain;
-+	struct pci_dev *dev;
-+	struct list_head list;
-+};
-+
-+static DEFINE_SPINLOCK(dev_domain_list_spinlock);
-+static struct list_head dev_domain_list = LIST_HEAD_INIT(dev_domain_list);
-+
-+static struct xen_device_domain_owner *find_device(struct pci_dev *dev)
++/* Check whether the IRQ line is shared with other guests. */
++int xen_ignore_irq(int irq)
 +{
-+	struct xen_device_domain_owner *owner;
++	struct irq_info *info = info_for_irq(irq);
++	struct physdev_irq_status_query irq_status = { .irq =
++							info->u.pirq.gsi };
 +
-+	list_for_each_entry(owner, &dev_domain_list, list) {
-+		if (owner->dev == dev)
-+			return owner;
-+	}
-+	return NULL;
++	if (HYPERVISOR_physdev_op(PHYSDEVOP_irq_status_query, &irq_status))
++		return 0;
++	return !(irq_status.flags & XENIRQSTAT_shared);
 +}
++EXPORT_SYMBOL_GPL(xen_ignore_irq);
 +
-+int xen_find_device_domain_owner(struct pci_dev *dev)
-+{
-+	struct xen_device_domain_owner *owner;
-+	int domain = -ENODEV;
+ void xen_irq_resume(void)
+ {
+ 	unsigned int cpu, irq, evtchn;
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 646dd17..553c664 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -89,4 +89,7 @@ int xen_vector_from_irq(unsigned pirq);
+ /* Return gsi allocated to pirq */
+ int xen_gsi_from_irq(unsigned pirq);
+ 
++/* Determine whether to ignore this IRQ if passed to a guest. */
++int xen_ignore_irq(int irq);
 +
-+	spin_lock(&dev_domain_list_spinlock);
-+	owner = find_device(dev);
-+	if (owner)
-+		domain = owner->domain;
-+	spin_unlock(&dev_domain_list_spinlock);
-+	return domain;
-+}
-+EXPORT_SYMBOL(xen_find_device_domain_owner);
-+
-+int xen_register_device_domain_owner(struct pci_dev *dev, uint16_t domain)
-+{
-+	struct xen_device_domain_owner *owner;
-+
-+	owner = kzalloc(sizeof(struct xen_device_domain_owner), GFP_KERNEL);
-+	if (!owner)
-+		return -ENODEV;
-+
-+	spin_lock(&dev_domain_list_spinlock);
-+	if (find_device(dev)) {
-+		spin_unlock(&dev_domain_list_spinlock);
-+		kfree(owner);
-+		return -EEXIST;
-+	}
-+	owner->domain = domain;
-+	owner->dev = dev;
-+	list_add_tail(&owner->list, &dev_domain_list);
-+	spin_unlock(&dev_domain_list_spinlock);
-+	return 0;
-+}
-+EXPORT_SYMBOL(xen_register_device_domain_owner);
-+
-+int xen_unregister_device_domain_owner(struct pci_dev *dev)
-+{
-+	struct xen_device_domain_owner *owner;
-+
-+	spin_lock(&dev_domain_list_spinlock);
-+	owner = find_device(dev);
-+	if (!owner) {
-+		spin_unlock(&dev_domain_list_spinlock);
-+		return -ENODEV;
-+	}
-+	list_del(&owner->list);
-+	spin_unlock(&dev_domain_list_spinlock);
-+	kfree(owner);
-+	return 0;
-+}
-+EXPORT_SYMBOL(xen_unregister_device_domain_owner);
+ #endif	/* _XEN_EVENTS_H */
 -- 
 1.7.1
 
