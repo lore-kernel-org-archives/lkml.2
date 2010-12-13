@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab0LMPSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:18:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24424 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab0LMPIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:08:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="583219895"
-Message-Id: <20101213150326.733656527@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:46:49 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 03/35] writeback: prevent duplicate balance_dirty_pages_ratelimited() calls
-References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=writeback-fix-duplicate-bdp-calls.patch
+	id S1753324Ab0LMPTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:19:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38335 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab0LMPTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:19:30 -0500
+X-Greylist: delayed 1405 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 10:19:30 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=XPWGahP1KrcuEmjI2PB3CYvVG76PQgLXWsZphpg49TSa29pe9Bm0V44QO3oMH3iBoA
+         Njoa9eevYWANQCMBzOdIhVs24647FmXF0/0lvmNltmRi0c88yPxxq7BKE0L3sop4uWGk
+         FJmDAtDgoyzBWP11IiUXza8YbuHXF7GW3w13o=
+MIME-Version: 1.0
+In-Reply-To: <-5043037405149418685@unknownmsgid>
+References: <-5043037405149418685@unknownmsgid>
+Date: Mon, 13 Dec 2010 14:56:04 +0000
+X-Google-Sender-Auth: k5uppge3vCEjm9ZYzlztQQjO2YA
+Message-ID: <AANLkTi=LZJiEP2rfQ_gL096A1GbCW+FBBmfG2eSdFY5W@mail.gmail.com>
+Subject: Re: [PATCH v3 5/5] msm: add SMP support for msm
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: ykaoua@qualcomm.com
+Cc: David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Steve Muckle <smuckle@codeaurora.org>,
+        Jeff Ohlstein <johlstei@codeaurora.org>,
+        Brian Swetland <swetland@google.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oBDFJfrP001019
 
-When dd in 512bytes, balance_dirty_pages_ratelimited() used to be called
-8 times for the same page, even if the page is only dirtied once. Fix it
-with a (slightly racy) PageDirty() test.
+On 13 December 2010 01:20,  <ykaoua@qualcomm.com> wrote:
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/headsmp.S
+[...]
+> +ENTRY(msm_secondary_startup)
+> + Â  Â  Â  mrc Â  Â  p15, 0, r0, c0, c0, 5 Â  @ MPIDR
+> + Â  Â  Â  and Â  Â  r0, r0, #15 Â  Â  Â  Â  Â  Â  @ What CPU am I
+> + Â  Â  Â  adr Â  Â  r4, 1f Â  Â  Â  Â  Â  Â  Â  Â  Â @ address of
+> + Â  Â  Â  ldmia Â  r4, {r5, r6} Â  Â  Â  Â  Â  Â @ load curr addr and pen_rel addr
+> + Â  Â  Â  sub Â  Â  r4, r4, r5 Â  Â  Â  Â  Â  Â  Â @ determine virtual/phys offsets
+> + Â  Â  Â  add Â  Â  r6, r6, r4 Â  Â  Â  Â  Â  Â  Â @ apply
+> +pen:
+> + Â  Â  Â  wfe
+> + Â  Â  Â  dsb Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  @ ensure subsequent access is
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  @ after event
+> +
+> + Â  Â  Â  ldr Â  Â  r7, [r6] Â  Â  Â  Â  Â  Â  Â  Â @ pen_rel has cpu to remove from reset
+> + Â  Â  Â  cmp Â  Â  r7, r0 Â  Â  Â  Â  Â  Â  Â  Â  Â @ are we lucky?
+> + Â  Â  Â  bne Â  Â  pen
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/filemap.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Is the primary CPU using SEV to wake the secondary from the WFE? I may
+have missed it.
 
---- linux-next.orig/mm/filemap.c	2010-12-13 21:45:57.000000000 +0800
-+++ linux-next/mm/filemap.c	2010-12-13 21:46:11.000000000 +0800
-@@ -2244,6 +2244,7 @@ static ssize_t generic_perform_write(str
- 	long status = 0;
- 	ssize_t written = 0;
- 	unsigned int flags = 0;
-+	unsigned int dirty;
- 
- 	/*
- 	 * Copies from kernel address space cannot fail (NFSD is a big user).
-@@ -2292,6 +2293,7 @@ again:
- 		pagefault_enable();
- 		flush_dcache_page(page);
- 
-+		dirty = PageDirty(page);
- 		mark_page_accessed(page);
- 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
- 						page, fsdata);
-@@ -2318,7 +2320,8 @@ again:
- 		pos += copied;
- 		written += copied;
- 
--		balance_dirty_pages_ratelimited(mapping);
-+		if (!dirty)
-+			balance_dirty_pages_ratelimited(mapping);
- 
- 	} while (iov_iter_count(i));
- 
-
-
+-- 
+Catalin
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
