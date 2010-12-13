@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab0LMNcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 08:32:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60501 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757791Ab0LMNce (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 08:32:34 -0500
-Subject: Re: [PATCH 09/30] sound: don't use flush_scheduled_work()
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Olaya, Margarita" <magi.olaya@ti.com>
-Cc: Tejun Heo <tj@kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>
-In-Reply-To: <20101212190035.GA21207@opensource.wolfsonmicro.com>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
-	 <1292086307-19211-10-git-send-email-tj@kernel.org>
-	 <s5hk4jfbc94.wl%tiwai@suse.de> <4D0492CB.2010702@kernel.org>
-	 <s5hhbejb1yr.wl%tiwai@suse.de>
-	 <20101212124041.GD15189@opensource.wolfsonmicro.com>
-	 <4D04F211.6080602@kernel.org>
-	 <20101212184733.GB20358@opensource.wolfsonmicro.com>
-	 <4D05195A.8070107@kernel.org>
-	 <20101212190035.GA21207@opensource.wolfsonmicro.com>
+	id S1757854Ab0LMNcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 08:32:48 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:46633 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757843Ab0LMNcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 08:32:46 -0500
+X-ASG-Debug-ID: 1292247164-0853c63a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D06207B.9090702@fusionio.com>
+Date: Mon, 13 Dec 2010 14:32:43 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Jeff Moyer <jmoyer@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        "czoccolo@gmail.com" <czoccolo@gmail.com>
+Subject: Re: [patch]block cfq: select new workload if priority changed
+References: <1291871853.2323.8.camel@sli10-conroe>	 <x49sjy5ad81.fsf@segfault.boston.devel.redhat.com> <1292200792.2323.13.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: [patch]block cfq: select new workload if priority changed
+In-Reply-To: <1292200792.2323.13.camel@sli10-conroe>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 13:32:29 +0000
-Message-ID: <1292247149.3320.64.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1292247164
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.49310
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-12 at 19:00 +0000, Mark Brown wrote:
-> On Sun, Dec 12, 2010 at 07:50:02PM +0100, Tejun Heo wrote:
-> 
-> > > For future reference please note that sound/soc is maintained as a
-> > > subtree of ALSA - if you could send patches to that separately to myself
-> > > and Liam as well as Takashi and Jaroslav that'd make life a little
-> > > easier.
-> 
-> > I can resplit and resend if necessary.  Takashi, do you wanna take the
-> > patch as-is or resplit?  Or shall I route it through wq tree?
-> 
-> No need, just merge it along with the rest of the patch however that's
-> going.  I was mentioning this for future reference rather than for the
-> present patch.
-> 
-> Liam, will the TWL6040 updates Magi posted the other day also be
-> affected?  I seem to remember they added the same pattern as WM835x has.
+On 2010-12-13 01:39, Shaohua Li wrote:
+> On Fri, 2010-12-10 at 22:56 +0800, Jeff Moyer wrote:
+>> Shaohua Li <shaohua.li@intel.com> writes:
+>>
+>>> If priority is changed, continue checking workload_expires and service tree
+>>> count of previous workload is meaningless. We should always choose the workload
+>>
+>> I'd change that first sentence to:
+>>
+>>   If priority is changed, continuing to check workload_expires and
+>>   service tree count of the previous workload does not make sense.
+>>
+>>> with lowest key of new priority in such case.
+>>>
+>>> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+>>
+>> This makes sense to me.
+>>
+>> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+> Thanks, modified the the changelog.
 
-Not sure myself.
+Thanks, applied to for-2.6.38/core
 
-Magi, could you check your patch queue for any use of
-flush_scheduled_work() here ?
-
-Thanks
-
-Liam
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Jens Axboe
 
