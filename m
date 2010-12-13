@@ -1,206 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab0LMXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 18:00:56 -0500
-Received: from fmmailgate01.web.de ([217.72.192.221]:50208 "EHLO
-	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571Ab0LMXAN (ORCPT
+	id S1757041Ab0LMXBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 18:01:41 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:39926 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754620Ab0LMXBj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 18:00:13 -0500
-From: Jan Kiszka <jan.kiszka@web.de>
-To: Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
-        Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [PATCH v3 2/4] genirq: Inform handler about line sharing state
-Date: Mon, 13 Dec 2010 23:59:44 +0100
-Message-Id: <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1292281184.git.jan.kiszka@web.de>
-References: <cover.1292281184.git.jan.kiszka@web.de>
-In-Reply-To: <cover.1292281184.git.jan.kiszka@web.de>
-References: <cover.1292281184.git.jan.kiszka@web.de>
-X-Provags-ID: V01U2FsdGVkX19Y97tMd6bE2Z+wJPh8OXNRIdlUouCI9dDUOW4a
-	sSXX+q0Fz0I7U7U/4OtRhlen4z0PEJJnmUp02WYxzGajgekuCm
-	WfmMF/LR0=
+	Mon, 13 Dec 2010 18:01:39 -0500
+X-IronPort-AV: E=Sophos;i="4.59,338,1288594800"; 
+   d="scan'208";a="494472506"
+Subject: Re: [PATCH] [38/223] SUNRPC: After calling xprt_release(), we must
+ restart from call_reserve
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+In-Reply-To: <20101212234534.D3DFCB27BF@basil.firstfloor.org>
+References: <201012131244.547034648@firstfloor.org>
+	 <20101212234534.D3DFCB27BF@basil.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 13 Dec 2010 18:01:34 -0500
+Message-ID: <1292281294.13943.2.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 13 Dec 2010 23:01:35.0344 (UTC) FILETIME=[B0D52F00:01CB9B19]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+On Mon, 2010-12-13 at 00:45 +0100, Andi Kleen wrote:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-This enabled interrupt handlers to retrieve the current line sharing state via
-the new interrupt status word so that they can adapt to it.
+Hi Andi,
 
-The switch from shared to exclusive is generally uncritical and can thus be
-performed on demand. However, preparing a line for shared mode may require
-preparational steps of the currently registered handler. It can therefore
-request an ahead-of-time notification via IRQF_ADAPTIVE. The notification
-consists of an exceptional handler invocation with IRQS_MAKE_SHAREABLE set in
-the status word.
+This patch isn't strictly needed for kernels 2.6.35.x or older: the Oops
+only appears in 2.6.36.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- include/linux/interrupt.h |   10 +++++++++
- kernel/irq/manage.c       |   47 ++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 54 insertions(+), 3 deletions(-)
+Cheers
+  Trond
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 4c1aa72..12e5fc0 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -55,6 +55,7 @@
-  *                Used by threaded interrupts which need to keep the
-  *                irq line disabled until the threaded handler has been run.
-  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-+ * IRQF_ADAPTIVE - Request notification about upcoming interrupt line sharing
-  *
-  */
- #define IRQF_DISABLED		0x00000020
-@@ -67,6 +68,7 @@
- #define IRQF_IRQPOLL		0x00001000
- #define IRQF_ONESHOT		0x00002000
- #define IRQF_NO_SUSPEND		0x00004000
-+#define IRQF_ADAPTIVE		0x00008000
- 
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
- 
-@@ -126,6 +128,14 @@ struct irqaction {
- 
- extern irqreturn_t no_action(int cpl, void *dev_id);
- 
-+/*
-+ * Driver-readable IRQ line status flags:
-+ * IRQS_SHARED - line is shared between multiple handlers
-+ * IRQS_MAKE_SHAREABLE - in the process of making an exclusive line shareable
-+ */
-+#define IRQS_SHARED		0x00000001
-+#define IRQS_MAKE_SHAREABLE	0x00000002
-+
- extern unsigned long get_irq_status(unsigned int irq);
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 2ea0d30..2dd4eef 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -14,9 +14,12 @@
- #include <linux/interrupt.h>
- #include <linux/slab.h>
- #include <linux/sched.h>
-+#include <linux/mutex.h>
- 
- #include "internals.h"
- 
-+static DEFINE_MUTEX(register_lock);
-+
- /**
-  *	synchronize_irq - wait for pending IRQ handlers (on other CPUs)
-  *	@irq: interrupt number to wait for
-@@ -754,6 +757,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			old = *old_ptr;
- 		} while (old);
- 		shared = 1;
-+
-+		desc->irq_data.drv_status |= IRQS_SHARED;
- 	}
- 
- 	if (!shared) {
-@@ -883,6 +888,7 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	struct irqaction *action, **action_ptr;
-+	bool single_handler = false;
- 	unsigned long flags;
- 
- 	WARN(in_interrupt(), "Trying to free IRQ %d from IRQ context!\n", irq);
-@@ -928,7 +934,8 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 			desc->irq_data.chip->irq_shutdown(&desc->irq_data);
- 		else
- 			desc->irq_data.chip->irq_disable(&desc->irq_data);
--	}
-+	} else if (!desc->action->next)
-+		single_handler = true;
- 
- #ifdef CONFIG_SMP
- 	/* make sure affinity_hint is cleaned up */
-@@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 	/* Make sure it's not being used on another CPU: */
- 	synchronize_irq(irq);
- 
-+	if (single_handler)
-+		desc->irq_data.drv_status &= ~IRQS_SHARED;
-+
- #ifdef CONFIG_DEBUG_SHIRQ
- 	/*
- 	 * It's a shared IRQ -- the driver ought to be prepared for an IRQ
-@@ -1002,9 +1012,13 @@ void free_irq(unsigned int irq, void *dev_id)
- 	if (!desc)
- 		return;
- 
-+	mutex_lock(&register_lock);
-+
- 	chip_bus_lock(desc);
- 	kfree(__free_irq(irq, dev_id));
- 	chip_bus_sync_unlock(desc);
-+
-+	mutex_unlock(&register_lock);
- }
- EXPORT_SYMBOL(free_irq);
- 
-@@ -1055,7 +1069,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
- 			 irq_handler_t thread_fn, unsigned long irqflags,
- 			 const char *devname, void *dev_id)
- {
--	struct irqaction *action;
-+	struct irqaction *action, *old_action;
- 	struct irq_desc *desc;
- 	int retval;
- 
-@@ -1091,12 +1105,39 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
- 	action->name = devname;
- 	action->dev_id = dev_id;
- 
-+	mutex_lock(&register_lock);
-+
-+	old_action = desc->action;
-+	if (old_action && (old_action->flags & IRQF_ADAPTIVE) &&
-+	    !(desc->irq_data.drv_status & IRQS_SHARED)) {
-+		/*
-+		 * Signal the old handler that is has to switch to shareable
-+		 * handling mode. Disable the line to avoid any conflict with
-+		 * a real IRQ.
-+		 */
-+		disable_irq(irq);
-+		local_irq_disable();
-+
-+		desc->irq_data.drv_status |= IRQS_SHARED | IRQS_MAKE_SHAREABLE;
-+		old_action->handler(irq, old_action->dev_id);
-+		desc->irq_data.drv_status &= ~IRQS_MAKE_SHAREABLE;
-+
-+		local_irq_enable();
-+		enable_irq(irq);
-+		
-+	}
-+
- 	chip_bus_lock(desc);
- 	retval = __setup_irq(irq, desc, action);
- 	chip_bus_sync_unlock(desc);
- 
--	if (retval)
-+	if (retval) {
-+		if (desc->action && !desc->action->next)
-+			desc->irq_data.drv_status &= ~IRQS_SHARED;
- 		kfree(action);
-+	}
-+
-+	mutex_unlock(&register_lock);
- 
- #ifdef CONFIG_DEBUG_SHIRQ
- 	if (!retval && (irqflags & IRQF_SHARED)) {
+> ------------------
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
+> commit 118df3d17f11733b294ea2cd988d56ee376ef9fd upstream.
+> 
+> Rob Leslie reports seeing the following Oops after his Kerberos session
+> expired.
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 00000058
+> IP: [<e186ed94>] rpcauth_refreshcred+0x11/0x12c [sunrpc]
+> *pde = 00000000
+> Oops: 0000 [#1]
+> last sysfs file: /sys/devices/platform/pc87360.26144/temp3_input
+> Modules linked in: autofs4 authenc esp4 xfrm4_mode_transport ipt_LOG ipt_REJECT xt_limit xt_state ipt_REDIRECT xt_owner xt_HL xt_hl xt_tcpudp xt_mark cls_u32 cls_tcindex sch_sfq sch_htb sch_dsmark geodewdt deflate ctr twofish_generic twofish_i586 twofish_common camellia serpent blowfish cast5 cbc xcbc rmd160 sha512_generic sha1_generic hmac crypto_null af_key rpcsec_gss_krb5 nfsd exportfs nfs lockd fscache nfs_acl auth_rpcgss sunrpc ip_gre sit tunnel4 dummy ext3 jbd nf_nat_irc nf_conntrack_irc nf_nat_ftp nf_conntrack_ftp iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables pc8736x_gpio nsc_gpio pc87360 hwmon_vid loop aes_i586 aes_generic sha256_generic dm_crypt cs5535_gpio serio_raw cs5535_mfgpt hifn_795x des_generic geode_rng rng_core led_class ext4 mbcache jbd2 crc16 dm_mirror dm_region_hash dm_log dm_snapshot dm_mod sd_mod crc_t10dif ide_pci_generic cs5536 amd74xx ide_core pata_cs5536 ata_generic libata usb_stora
+>  ge via_rhine mii scsi_mod btrfs zlib_deflate crc32c libcrc32c [last unloaded: scsi_wait_scan]
+> 
+> Pid: 12875, comm: sudo Not tainted 2.6.36-net5501 #1 /
+> EIP: 0060:[<e186ed94>] EFLAGS: 00010292 CPU: 0
+> EIP is at rpcauth_refreshcred+0x11/0x12c [sunrpc]
+> EAX: 00000000 EBX: defb13a0 ECX: 00000006 EDX: e18683b8
+> ESI: defb13a0 EDI: 00000000 EBP: 00000000 ESP: de571d58
+>  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> Process sudo (pid: 12875, ti=de570000 task=decd1430 task.ti=de570000)
+> Stack:
+>  e186e008 00000000 defb13a0 0000000d deda6000 e1868f22 e196f12b defb13a0
+> <0> defb13d8 00000000 00000000 e186e0aa 00000000 defb13a0 de571dac 00000000
+> <0> e186956c de571e34 debea5c0 de571dc8 e186967a 00000000 debea5c0 de571e34
+> Call Trace:
+>  [<e186e008>] ? rpc_wake_up_next+0x114/0x11b [sunrpc]
+>  [<e1868f22>] ? call_decode+0x24a/0x5af [sunrpc]
+>  [<e196f12b>] ? nfs4_xdr_dec_access+0x0/0xa2 [nfs]
+>  [<e186e0aa>] ? __rpc_execute+0x62/0x17b [sunrpc]
+>  [<e186956c>] ? rpc_run_task+0x91/0x97 [sunrpc]
+>  [<e186967a>] ? rpc_call_sync+0x40/0x5b [sunrpc]
+>  [<e1969ca2>] ? nfs4_proc_access+0x10a/0x176 [nfs]
+>  [<e19572fa>] ? nfs_do_access+0x2b1/0x2c0 [nfs]
+>  [<e186ed61>] ? rpcauth_lookupcred+0x62/0x84 [sunrpc]
+>  [<e19573b6>] ? nfs_permission+0xad/0x13b [nfs]
+>  [<c0177824>] ? exec_permission+0x15/0x4b
+>  [<c0177fbd>] ? link_path_walk+0x4f/0x456
+>  [<c017867d>] ? path_walk+0x4c/0xa8
+>  [<c0179678>] ? do_path_lookup+0x1f/0x68
+>  [<c017a3fb>] ? user_path_at+0x37/0x5f
+>  [<c016359c>] ? handle_mm_fault+0x229/0x55b
+>  [<c0170a2d>] ? sys_faccessat+0x93/0x146
+>  [<c0170aef>] ? sys_access+0xf/0x13
+>  [<c02cf615>] ? syscall_call+0x7/0xb
+> Code: 0f 94 c2 84 d2 74 09 8b 44 24 0c e8 6a e9 8b de 83 c4 14 89 d8 5b 5e 5f 5d c3 55 57 56 53 83 ec 1c fc 89 c6 8b 40 10 89 44 24 04 <8b> 58 58 85 db 0f 85 d4 00 00 00 0f b7 46 70 8b 56 20 89 c5 83
+> EIP: [<e186ed94>] rpcauth_refreshcred+0x11/0x12c [sunrpc] SS:ESP 0068:de571d58
+> CR2: 0000000000000058
+> 
+> This appears to be caused by the function rpc_verify_header() first
+> calling xprt_release(), then doing a call_refresh. If we release the
+> transport slot, we should _always_ jump back to call_reserve before
+> calling anything else.
+> 
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> ---
+>  net/sunrpc/clnt.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux/net/sunrpc/clnt.c
+> ===================================================================
+> --- linux.orig/net/sunrpc/clnt.c
+> +++ linux/net/sunrpc/clnt.c
+> @@ -1593,7 +1593,7 @@ rpc_verify_header(struct rpc_task *task)
+>  			rpcauth_invalcred(task);
+>  			/* Ensure we obtain a new XID! */
+>  			xprt_release(task);
+> -			task->tk_action = call_refresh;
+> +			task->tk_action = call_reserve;
+>  			goto out_retry;
+>  		case RPC_AUTH_BADCRED:
+>  		case RPC_AUTH_BADVERF:
+
 -- 
-1.7.1
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
