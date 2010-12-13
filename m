@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab0LMDN4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 22:13:56 -0500
-Received: from mail.perches.com ([173.55.12.10]:2542 "EHLO mail.perches.com"
+	id S1756695Ab0LMD0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 22:26:14 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:47991 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab0LMDNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 22:13:55 -0500
-Subject: Re: [PATCH 3/3] Staging: rt2860: include KERN_* in printk
-From: Joe Perches <joe@perches.com>
-To: "L. Alberto" =?ISO-8859-1?Q?Gim=E9nez?= <agimenez@sysvalve.es>
-Cc: devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101213000106.GA2049@bart.evergreen.loc>
-References: <1292176591-26081-1-git-send-email-agimenez@sysvalve.es>
-	 <1292176591-26081-4-git-send-email-agimenez@sysvalve.es>
-	 <1292180668.18202.43.camel@Joe-Laptop>
-	 <20101212192554.GA32583@bart.evergreen.loc>
-	 <1292183170.18202.56.camel@Joe-Laptop>
-	 <20101213000106.GA2049@bart.evergreen.loc>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 12 Dec 2010 19:13:53 -0800
-Message-ID: <1292210033.18202.81.camel@Joe-Laptop>
+	id S1756649Ab0LMD0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 22:26:13 -0500
+Date: Mon, 13 Dec 2010 14:26:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gerd Hoffmann <kraxel@redhat.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: linux-next: manual merge of the swiotlb-xen tree with the xen tree
+Message-Id: <20101213142609.3ad004cf.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 01:01 +0100, L. Alberto Giménez wrote:
-> On Sun, Dec 12, 2010 at 11:46:09AM -0800, Joe Perches wrote:
-> > On Sun, 2010-12-12 at 20:25 +0100, L. Alberto Giménez wrote:
-> > > On Sun, Dec 12, 2010 at 11:04:28AM -0800, Joe Perches wrote:
-> > > > On Sun, 2010-12-12 at 18:56 +0100, L. Alberto Giménez wrote:
-> > > > > diff --git a/drivers/staging/rt2860/pci_main_dev.c b/drivers/staging/rt2860/pci_main_dev.c
-> > > > > @@ -601,15 +600,15 @@ void hex_dump(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen)
-> > > > >[...]
-> > > > This should use print_hex_dump
-> > > Ok, but I'll have to figure out how to translate the arguments without losing
-> > > the original developers intended format.
-> > 
-> > I think you can change the format without concern.
-> > 
-> > print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 1,
-> > 	       pSrcBufVA, SrcBufLen, true);
-> 
-> Hi Joe,
-> 
-> If you don't mind, I will send this as a separate patch, since including it in
-> the KERN_* cleanup would clobber the patch and I'd prefer to make an standalone
-> patch for the hex_dump -> print_hex_dump modifications (many files in the source
-> do use the function).
+Hi Konrad,
 
-It's fine to keep the hex_dump function, just change
-the function itself to use print_hex_dump.
+Today's linux-next merge of the swiotlb-xen tree got a conflict in
+drivers/xen/Kconfig drivers/xen/Makefile between commit
+56385560d6d8fd4c89c4f328d3ff0ecc9c44c52d ("xen/gntdev: allow usermode to
+map granted pages") from the xen tree and commits
+06acb015d341946c83ab127f5ab9ba291678d226 ("xen: separate out frontend
+xenbus") and 721657d92623cfcf2f6f68c14abf97eb40fa6b20 ("xen-pciback:
+Enable Xen-PCI-back to be compiled") from the swiotlb-xen tree.
 
-Changing all the callers will simply increase the code
-without any other value.
+I fixed then up (see below) and can carry the fixes as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Something simple like this should work:
-
- drivers/staging/rt2860/rt_linux.c |   16 +++-------------
- 1 files changed, 3 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/staging/rt2860/rt_linux.c
-b/drivers/staging/rt2860/rt_linux.c
-index abfeea1..5b081ce 100644
---- a/drivers/staging/rt2860/rt_linux.c
-+++ b/drivers/staging/rt2860/rt_linux.c
-@@ -594,22 +594,12 @@ rt_get_sg_list_from_packet(void *pPacket, struct rt_rtmp_sg_list *sg)
- 
- void hex_dump(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen)
- {
--	unsigned char *pt;
--	int x;
--
- 	if (RTDebugLevel < RT_DEBUG_TRACE)
- 		return;
- 
--	pt = pSrcBufVA;
--	printk("%s: %p, len = %d\n", str, pSrcBufVA, SrcBufLen);
--	for (x = 0; x < SrcBufLen; x++) {
--		if (x % 16 == 0)
--			printk("0x%04x : ", x);
--		printk("%02x ", ((unsigned char)pt[x]));
--		if (x % 16 == 15)
--			printk("\n");
--	}
--	printk("\n");
-+	printk(KERN_DEBUG "%s: %p, len = %d\n", str, pSrcBufVA, SrcBufLen);
-+	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 1,
-+		       pSrcBufVA, SrcBufLen, true);
- }
- 
- /*
-
-
+diff --cc drivers/xen/Kconfig
+index 0c6d2a1,9b61561..0000000
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@@ -62,13 -134,9 +134,16 @@@ config XEN_SYS_HYPERVISO
+  	 virtual environment, /sys/hypervisor will still be present,
+  	 but will have no xen contents.
+  
+ +config XEN_GNTDEV
+ +	tristate "userspace grant access device driver"
+ +	depends on XEN
+ +	select MMU_NOTIFIER
+ +	help
+ +	  Allows userspace processes use grants.
+ +	  
++ config XEN_XENBUS_FRONTEND
++        tristate
++ 
+  config XEN_PLATFORM_PCI
+  	tristate "xen platform pci device driver"
+  	depends on XEN_PVHVM
+diff --cc drivers/xen/Makefile
+index 674fdb5,b813d46..0000000
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@@ -9,7 -9,7 +9,8 @@@ obj-$(CONFIG_HOTPLUG_CPU)	+= cpu_hotplu
+  obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
+  obj-$(CONFIG_XEN_BALLOON)	+= balloon.o
+  obj-$(CONFIG_XEN_DEV_EVTCHN)	+= xen-evtchn.o
+ +obj-$(CONFIG_XEN_GNTDEV)	+= xen-gntdev.o
++ obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= pciback/
+  obj-$(CONFIG_XENFS)		+= xenfs/
+  obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
+  obj-$(CONFIG_XEN_PLATFORM_PCI)	+= platform-pci.o
