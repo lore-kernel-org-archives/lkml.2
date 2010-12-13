@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab0LMI5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 03:57:35 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35427 "EHLO
+	id S1756039Ab0LMI6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 03:58:38 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35445 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab0LMI5e (ORCPT
+	with ESMTP id S1752311Ab0LMI6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 03:57:34 -0500
-Message-ID: <4e0d4bb9da2d1b0e1196ae2af4c2ddb8.squirrel@www.firstfloor.org>
-In-Reply-To: <E87738D94A6AD54789B5B8D1BAEB06CC700C2347FF@azsmsx503.amr.corp.intel.com>
+	Mon, 13 Dec 2010 03:58:37 -0500
+Message-ID: <044a861a2279c7e3e328c73e6694fbf3.squirrel@www.firstfloor.org>
+In-Reply-To: <4D05DC98.40105@redhat.com>
 References: <201012131244.547034648@firstfloor.org>
-    <20101212234751.76302B27BF@basil.firstfloor.org>
-    <E87738D94A6AD54789B5B8D1BAEB06CC700C2347FF@azsmsx503.amr.corp.intel.com>
-Date: Mon, 13 Dec 2010 09:57:31 +0100
-Subject: RE: [PATCH] [167/223] ACPI: debugfs custom_method open to non-root
+    <20101212234644.B05DAB27BF@basil.firstfloor.org>
+    <4D05DC98.40105@redhat.com>
+Date: Mon, 13 Dec 2010 09:58:35 +0100
+Subject: Re: [PATCH] [104/223] KVM: Write protect memory after slot swap
 From: "Andi Kleen" <andi@firstfloor.org>
-To: "Brown, Len" <len.brown@intel.com>
-Cc: "Andi Kleen" <andi@firstfloor.org>, "davej@redhat.com" <davej@redhat.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
+To: "Avi Kivity" <avi@redhat.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>, mst@redhat.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
 User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -32,15 +28,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On 12/13/2010 01:46 AM, Andi Kleen wrote:
 >> 2.6.35-longterm review patch.  If anyone has any objections, please let
 >> me know.
+>>
 >
-> is -longterm something that happens after -stable runs out of gas?
+> The way kvm stable updates work, Marcelo and I collect the patches,
+> autotest them, and submit them to the stable maintainers.  This way the
+> first stable users don't get to be the first ones to actually test the
+> new fixes.
 
-Yes (but not for all kernels)
+This should be the (nearly) end point of this process for 2.6.35.
 
-> Note that this particular patch applies back to 2.6.33.
-
-Paul G. could consider it for his 2.6.34 then.
 -Andi
-
