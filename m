@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab0LMCpE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 21:45:04 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:58452 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab0LMCpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 21:45:02 -0500
-Date: Mon, 13 Dec 2010 13:44:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>
-Subject: linux-next: manual merge of the trivial tree with the omap tree
-Message-Id: <20101213134457.d0fb1e13.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932141Ab0LMCuZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 21:50:25 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62003 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab0LMCuX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 21:50:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NyVNpACkBs357yEOC8RLZasB+Y3mqcqRbFPk+oNwSsnI+qDT7+uNFe13WNfSL/u3Co
+         0KLcomZauy/EXq6TnTYazdU/sVMnDLh6pRRQp1OWtsUuVle/Io+i1NZDTmEm0z+1WEzS
+         nOH2QDVYHkgf8VQNjVquhhhWSjUdmOWnpScm4=
+Date: Sun, 12 Dec 2010 18:50:16 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pingc@wacom.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] input: mt: Add button support for five fingers
+Message-ID: <20101213025016.GC21401@core.coreip.homeip.net>
+References: <1292063308-15327-1-git-send-email-rydberg@euromail.se>
+ <1292063308-15327-2-git-send-email-rydberg@euromail.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292063308-15327-2-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Sat, Dec 11, 2010 at 11:28:28AM +0100, Henrik Rydberg wrote:
+> This patch adds BTN_TOOL_QUINTAP to be used by hardware reporting
+> finger counts different from the number of MT contacts.
 
-Today's linux-next merge of the trivial tree got a conflict in
-arch/arm/mach-omap2/pm24xx.c between commit
-e83df17f178360a8e7874441bca04a710c869e42 ("OMAP2+: PM/serial: fix console
-semaphore acquire during suspend") from the omap tree and commit
-2f55ac072f5344519348c0c94b3d2f4cca46847b ("suspend: constify
-platform_suspend_ops") from the trivial tree.
+I must say this is quite ugly, but so is introducing ABS_CONTACT_COUNT
+or similar, except that the latter is more extensible so if
+manufacturers decide to report 6, 7, 8 fingers (but not their
+coordinates) we won't have to breed BTN_TOOL_xxxTAPs...
 
-I fixed it up (see below) and can carry the fix as necessary.
+But let me ask you this: do we know what to do with 5 fingers? How do we
+plan to react to such gestures? Maybe the best option is simply ignore
+it and don't report anything if there are no userspace consumers?
+
+Thanks.
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-omap2/pm24xx.c
-index aaeea49,aa9764e..0000000
---- a/arch/arm/mach-omap2/pm24xx.c
-+++ b/arch/arm/mach-omap2/pm24xx.c
-@@@ -354,13 -326,7 +354,13 @@@ static void omap2_pm_finish(void
-  	enable_hlt();
-  }
-  
- +static void omap2_pm_end(void)
- +{
- +	suspend_state = PM_SUSPEND_ON;
- +}
- +
-- static struct platform_suspend_ops omap_pm_ops = {
-+ static const struct platform_suspend_ops omap_pm_ops = {
- +	.begin		= omap2_pm_begin,
-  	.prepare	= omap2_pm_prepare,
-  	.enter		= omap2_pm_enter,
-  	.finish		= omap2_pm_finish,
+Dmitry
