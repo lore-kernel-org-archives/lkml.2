@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab0LMXGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 18:06:31 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52463 "EHLO ogre.sisk.pl"
+	id S1753768Ab0LMXJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 18:09:00 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60125 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab0LMXGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 18:06:30 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH 4/4] PM: Permit registrarion of parentless devices during system suspend
-Date: Tue, 14 Dec 2010 00:05:49 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <Pine.LNX.4.44L0.1012122253120.4379-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1012122253120.4379-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012140005.49193.rjw@sisk.pl>
+	id S1750825Ab0LMXI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 18:08:58 -0500
+Date: Tue, 14 Dec 2010 10:08:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: Re: linux-next: Tree for December 10 (x86 nmi_watchdog)
+Message-Id: <20101214100849.52374e25.sfr@canb.auug.org.au>
+In-Reply-To: <20101213144434.GB18577@redhat.com>
+References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
+	<20101210092533.4f426650.randy.dunlap@oracle.com>
+	<AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
+	<20101213144434.GB18577@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__14_Dec_2010_10_08_49_+1100_+Y7oVtVCrm7LUoQM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 13, 2010, Alan Stern wrote:
-> On Mon, 13 Dec 2010, Rafael J. Wysocki wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > The registration of a new parentless device during system suspend
-> > will not lead to any complications affecting the PM core (the device
-> > will be effectively seen after the subsequent resume has completed),
-> > so remove the code used for detection of such events.
-> 
-> Actually the tests you're changing were never as strong as they should
-> have been.  Drivers are supposed to avoid registering new children
-> beneath a device as soon as the device has gone through the "prepare"
-> stage, not just after the device is suspended.  Should there be a 
-> "prepared" bitflag to help implement this stronger test?
+--Signature=_Tue__14_Dec_2010_10_08_49_+1100_+Y7oVtVCrm7LUoQM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The in_suspend flag introduced by [3/4] works like this, actually.
+Hi Don,
 
-> In principle the same idea applies to parentless devices, since they
-> can be considered children of the "system device" (a fictitious node at
-> the root of the device tree).  The "system" goes into the prepared
-> state before all the real devices; that's what the transition_started
-> variable was all about.  It's nothing more than the "prepared" bitflag
-> for the "system device".
+On Mon, 13 Dec 2010 09:44:34 -0500 Don Zickus <dzickus@redhat.com> wrote:
+>
+> On Sun, Dec 12, 2010 at 11:27:02AM +0600, Rakib Mullick wrote:
+> > On Fri, Dec 10, 2010 at 11:25 PM, Randy Dunlap <randy.dunlap@oracle.com=
+> wrote:
+> > > On Fri, 10 Dec 2010 13:57:46 +1100 Stephen Rothwell wrote:
+> > >
+> > >> Hi all,
+> > >>
+> > >> Changes since 20101209:
+> > >
+> > >
+> > > arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of 'touch_nmi_w=
+atchdog'
+> > > include/linux/nmi.h:22: note: previous definition of 'touch_nmi_watch=
+dog' was here
+>=20
+> I'll have to checkout that branch to see what got merged.  I thought I
+> fixed all these.  Is there a config I can use to duplicate these?
 
-It has never worked like this, because it was cleared as early as at the
-_noirq() stage.
+Randy's original post had the config attached.
 
-Hmm.  It looks like I should modify [3/4] to clear the in_suspend flag earlier
-to follow the current behavior (if a device is DPM_RESUMING, registration of
-new children doesn't trigger the warning).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> I guess it's okay to be lenient and not check for this.  But should we
-> then change the documentation to match?  (Note that the warning won't
-> be triggered if a new child is registered _as_ the parent is
-> suspending.  Not to mention the possibilities for mischief when devices
-> are suspended asynchronously.  But as you say, these complications
-> don't affect the PM core.)
+--Signature=_Tue__14_Dec_2010_10_08_49_+1100_+Y7oVtVCrm7LUoQM
+Content-Type: application/pgp-signature
 
-The documentation is fine, I think, as it says what people are not supposed to
-do and that doesn't really change. :-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Thanks,
-Rafael
+iQEcBAEBAgAGBQJNBqeBAAoJEDMEi1NhKgbsdBQH/3BZZrNUUd6k6bPVU0ZBKC7O
+sgwreDECjXleRQ4ouM0/qdPM/gkoKdmq9Un1cIcEMXGMAx40CJrEKD6pfhDUYl4i
+u6BTf0l7onv8JU2OvN3iYeQoJr7oe0IG+sGkf0/XoChEp4OkMNtyx2/E25+mLUKK
+akkRvBiUihQ6LON0/hIsXkHwJuBkL9jiWqEnRNjt90avqRSing3UQjSL3i0tBmgY
+ypGZa9loMW6jiJ10vVoOejyCzF45J5DztUsxkujF/FDw9ymvrgsLuSmNPQuBb0Bv
+YbhqkQ5q+iBUt4bNwG9grG8H7dWlPEzhjpRfOA7TJD8hi5BxK70MW5fSevNCtDk=
+=vmON
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_Dec_2010_10_08_49_+1100_+Y7oVtVCrm7LUoQM--
