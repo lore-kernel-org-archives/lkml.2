@@ -1,204 +1,438 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0LMBXw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 20:23:52 -0500
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:36395 "EHLO
+	id S1756532Ab0LMBXy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 20:23:54 -0500
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:56089 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755716Ab0LMBXu (ORCPT
+	with ESMTP id S1755866Ab0LMBXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 20:23:50 -0500
+	Sun, 12 Dec 2010 20:23:52 -0500
 From: Dave Chinner <david@fromorbit.com>
 To: xfs@oss.sgi.com
 Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: =?UTF-8?q?=5BPATCH=201/3=5D=20lib=3A=20percpu=20counter=20add=20unless=20less=20than=20functionality?=
-Date: Mon, 13 Dec 2010 12:21:51 +1100
-Message-Id: <1292203313-15570-2-git-send-email-david@fromorbit.com>
+Subject: [PATCH 3/3] xfs: demultiplex xfs_icsb_modify_counters()
+Date: Mon, 13 Dec 2010 12:21:53 +1100
+Message-Id: <1292203313-15570-4-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1292203313-15570-1-git-send-email-david@fromorbit.com>
 References: <1292203313-15570-1-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-To use the generic percpu counter infrastructure for counters that
-require conditional addition based on a threshold value we need
-special handling of the counter. Further, the caller needs to know
-the status of the conditional addition to determine what action to
-take depending on whether the addition occurred or not.  Examples of
-this sort of usage are resource counters that cannot go below zero
-(e.g. filesystem free blocks).
-
-To allow XFS to replace it's complex roll-your-own per-cpu
-superblock counters, a single generic conditional function is
-required: percpu_counter_add_unless_lt(). This will add the amount
-to the counter unless the result would be less than the given
-threshold. A caller supplied threshold is required because XFS does
-not necessarily use the same threshold for every counter.
-
-percpu_counter_add_unless_lt() attempts to minimise counter lock
-traversals by only taking the counter lock when the threshold is
-within the error range of the current counter value. Hence when the
-threshold is not within the counter error range, the counter will
-still have the same scalability characteristics as the normal
-percpu_counter_add() function.
-
-Adding this functionality to the generic percpu counters allows us
-to remove the much more complex and less efficient XFS percpu
-counter code (~700 lines of code) and replace it with generic
-percpu counters.
+With the conversion to percpu counters, xfs_icsb_modify_counters() really does
+not need to exist. Convert the inode counter modifications to use a common
+helper function for the one place that calls them, and add another function for
+the free block modification and convert all the callers to use that.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- include/linux/percpu_counter.h |   27 ++++++++++++++
- lib/percpu_counter.c           |   79 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 106 insertions(+), 0 deletions(-)
+ fs/xfs/xfs_bmap.c  |   34 +++++-------
+ fs/xfs/xfs_fsops.c |    3 +-
+ fs/xfs/xfs_mount.c |  160 ++++++++++++++++++++++++---------------------------
+ fs/xfs/xfs_mount.h |    5 +-
+ fs/xfs/xfs_trans.c |   23 +++----
+ 5 files changed, 102 insertions(+), 123 deletions(-)
 
-diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-index 46f6ba5..ad18779 100644
---- a/include/linux/percpu_counter.h
-+++ b/include/linux/percpu_counter.h
-@@ -41,12 +41,21 @@ void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
- void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
- s64 __percpu_counter_sum(struct percpu_counter *fbc);
- int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs);
-+int __percpu_counter_add_unless_lt(struct percpu_counter *fbc, s64 amount,
-+						s64 threshold, s32 batch);
- 
- static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
- {
- 	__percpu_counter_add(fbc, amount, percpu_counter_batch);
+diff --git a/fs/xfs/xfs_bmap.c b/fs/xfs/xfs_bmap.c
+index 4111cd3..6a47556 100644
+--- a/fs/xfs/xfs_bmap.c
++++ b/fs/xfs/xfs_bmap.c
+@@ -614,8 +614,8 @@ xfs_bmap_add_extent(
+ 			nblks += cur->bc_private.b.allocated;
+ 		ASSERT(nblks <= da_old);
+ 		if (nblks < da_old)
+-			xfs_icsb_modify_counters(ip->i_mount, XFS_SBS_FDBLOCKS,
+-				(int64_t)(da_old - nblks), rsvd);
++			xfs_icsb_modify_free_blocks(ip->i_mount,
++					(int64_t)(da_old - nblks), rsvd);
+ 	}
+ 	/*
+ 	 * Clear out the allocated field, done with it now in any case.
+@@ -1079,7 +1079,7 @@ xfs_bmap_add_extent_delay_real(
+ 		diff = (int)(temp + temp2 - startblockval(PREV.br_startblock) -
+ 			(cur ? cur->bc_private.b.allocated : 0));
+ 		if (diff > 0 &&
+-		    xfs_icsb_modify_counters(ip->i_mount, XFS_SBS_FDBLOCKS,
++		    xfs_icsb_modify_free_blocks(ip->i_mount,
+ 					     -((int64_t)diff), rsvd)) {
+ 			/*
+ 			 * Ick gross gag me with a spoon.
+@@ -1090,8 +1090,7 @@ xfs_bmap_add_extent_delay_real(
+ 					temp--;
+ 					diff--;
+ 					if (!diff ||
+-					    !xfs_icsb_modify_counters(ip->i_mount,
+-						    XFS_SBS_FDBLOCKS,
++					    !xfs_icsb_modify_free_blocks(ip->i_mount,
+ 						    -((int64_t)diff), rsvd))
+ 						break;
+ 				}
+@@ -1099,8 +1098,7 @@ xfs_bmap_add_extent_delay_real(
+ 					temp2--;
+ 					diff--;
+ 					if (!diff ||
+-					    !xfs_icsb_modify_counters(ip->i_mount,
+-						    XFS_SBS_FDBLOCKS,
++					    !xfs_icsb_modify_free_blocks(ip->i_mount,
+ 						    -((int64_t)diff), rsvd))
+ 						break;
+ 				}
+@@ -1769,8 +1767,8 @@ xfs_bmap_add_extent_hole_delay(
+ 	}
+ 	if (oldlen != newlen) {
+ 		ASSERT(oldlen > newlen);
+-		xfs_icsb_modify_counters(ip->i_mount, XFS_SBS_FDBLOCKS,
+-			(int64_t)(oldlen - newlen), rsvd);
++		xfs_icsb_modify_free_blocks(ip->i_mount,
++					(int64_t)(oldlen - newlen), rsvd);
+ 		/*
+ 		 * Nothing to do for disk quota accounting here.
+ 		 */
+@@ -3114,10 +3112,9 @@ xfs_bmap_del_extent(
+ 	 * Nothing to do for disk quota accounting here.
+ 	 */
+ 	ASSERT(da_old >= da_new);
+-	if (da_old > da_new) {
+-		xfs_icsb_modify_counters(mp, XFS_SBS_FDBLOCKS,
+-			(int64_t)(da_old - da_new), rsvd);
+-	}
++	if (da_old > da_new)
++		xfs_icsb_modify_free_blocks(ip->i_mount,
++					(int64_t)(da_old - da_new), rsvd);
+ done:
+ 	*logflagsp = flags;
+ 	return error;
+@@ -4530,14 +4527,12 @@ xfs_bmapi(
+ 							-((int64_t)extsz), (flags &
+ 							XFS_BMAPI_RSVBLOCKS));
+ 				} else {
+-					error = xfs_icsb_modify_counters(mp,
+-							XFS_SBS_FDBLOCKS,
++					error = xfs_icsb_modify_free_blocks(mp,
+ 							-((int64_t)alen), (flags &
+ 							XFS_BMAPI_RSVBLOCKS));
+ 				}
+ 				if (!error) {
+-					error = xfs_icsb_modify_counters(mp,
+-							XFS_SBS_FDBLOCKS,
++					error = xfs_icsb_modify_free_blocks(mp,
+ 							-((int64_t)indlen), (flags &
+ 							XFS_BMAPI_RSVBLOCKS));
+ 					if (error && rt)
+@@ -4546,8 +4541,7 @@ xfs_bmapi(
+ 							(int64_t)extsz, (flags &
+ 							XFS_BMAPI_RSVBLOCKS));
+ 					else if (error)
+-						xfs_icsb_modify_counters(mp,
+-							XFS_SBS_FDBLOCKS,
++						xfs_icsb_modify_free_blocks(mp,
+ 							(int64_t)alen, (flags &
+ 							XFS_BMAPI_RSVBLOCKS));
+ 				}
+@@ -5210,7 +5204,7 @@ xfs_bunmapi(
+ 					ip, -((long)del.br_blockcount), 0,
+ 					XFS_QMOPT_RES_RTBLKS);
+ 			} else {
+-				xfs_icsb_modify_counters(mp, XFS_SBS_FDBLOCKS,
++				xfs_icsb_modify_free_blocks(mp,
+ 						(int64_t)del.br_blockcount, rsvd);
+ 				(void)xfs_trans_reserve_quota_nblks(NULL,
+ 					ip, -((long)del.br_blockcount), 0,
+diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
+index fb9a9c8..be34ff2 100644
+--- a/fs/xfs/xfs_fsops.c
++++ b/fs/xfs/xfs_fsops.c
+@@ -596,8 +596,7 @@ out:
+ 		 * the extra reserve blocks from the reserve.....
+ 		 */
+ 		int error;
+-		error = xfs_icsb_modify_counters(mp, XFS_SBS_FDBLOCKS,
+-						 fdblks_delta, 0);
++		error = xfs_icsb_modify_free_blocks(mp, fdblks_delta, 0);
+ 		if (error == ENOSPC)
+ 			goto retry;
+ 	}
+diff --git a/fs/xfs/xfs_mount.c b/fs/xfs/xfs_mount.c
+index 16be1b1..5e41ef3 100644
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -332,6 +332,80 @@ xfs_icsb_sync_counters(
+ 		percpu_counter_sum_positive(&mp->m_icsb[XFS_ICSB_FDBLOCKS]);
  }
  
-+static inline int percpu_counter_add_unless_lt(struct percpu_counter *fbc,
-+					s64 amount, s64 threshold)
++int
++xfs_icsb_modify_inodes(
++	struct xfs_mount	*mp,
++	int			cntr,
++	int64_t			delta)
 +{
-+	return __percpu_counter_add_unless_lt(fbc, amount, threshold,
-+					percpu_counter_batch);
-+}
++	int			ret;
 +
- static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
- {
- 	s64 ret = __percpu_counter_sum(fbc);
-@@ -153,6 +162,24 @@ static inline int percpu_counter_initialized(struct percpu_counter *fbc)
- 	return 1;
- }
- 
-+static inline int percpu_counter_add_unless_lt(struct percpu_counter *fbc, s64 amount,
-+							s64 threshold)
-+{
-+	s64 count;
-+	int ret = ‐1;
++	ASSERT(cntr == XFS_ICSB_ICOUNT || cntr == XFS_ICSB_IFREE);
 +
-+	preempt_disable();
-+	count = fbc->count + amount;
-+	if (count < threshold)
-+		goto out;
-+	fbc->count = count;
-+	ret = count == threshold ? 0 : 1;
-+out:
-+	preempt_enable();
++	ret = percpu_counter_add_unless_lt(&mp->m_icsb[cntr],
++							delta, 0);
++	if (likely(ret >= 0))
++		return 0;
 +	return ret;
 +}
 +
-+
- #endif	/* CONFIG_SMP */
- 
- static inline void percpu_counter_inc(struct percpu_counter *fbc)
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index 604678d..eacccb7 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -213,6 +213,85 @@ int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
- }
- EXPORT_SYMBOL(percpu_counter_compare);
- 
-+/**
-+ * __percpu_counter_add_unless_lt - add to a counter avoiding underruns
-+ * @fbc:	counter
-+ * @amount:	amount to add
-+ * @threshold:	underrun threshold
-+ * @batch:	percpu counter batch size.
-+ *
-+ * Add @amount to @fdc if and only if result of addition is greater than or
-+ * equal to @threshold  Return 1 if greater and added, 0 if equal and added
-+ * and -1 if and underrun would have occured.
-+ *
-+ * This is useful for operations that must accurately and atomically only add a
-+ * delta to a counter if the result is greater than a given (e.g. for freespace
-+ * accounting with ENOSPC checking in filesystems).
-+ */
-+int __percpu_counter_add_unless_lt(struct percpu_counter *fbc, s64 amount,
-+						s64 threshold, s32 batch)
++int
++xfs_icsb_modify_free_blocks(
++	struct xfs_mount	*mp,
++	int64_t			delta,
++	int			rsvd)
 +{
-+	s64	count;
-+	s64	error = 2 * batch * num_online_cpus();
-+	int	cpu;
-+	int	ret = -1;
-+
-+	preempt_disable();
-+
-+	/* Check to see if rough count will be sufficient for comparison */
-+	count = percpu_counter_read(fbc);
-+	if (count + amount < threshold - error)
-+		goto out;
++	int64_t			lcounter;
++	int64_t			res_used;
++	int			ret;
 +
 +	/*
-+	 * If the counter is over the threshold and the change is less than the
-+	 * batch size, we might be able to avoid locking.
++	 * if we are putting blocks back, put them into the reserve
++	 * block pool first.
 +	 */
-+	if (count > threshold + error && abs(amount) < batch) {
-+		__percpu_counter_add(fbc, amount, batch);
-+		ret = 1;
-+		goto out;
++	if (unlikely(mp->m_resblks != mp->m_resblks_avail) && delta > 0) {
++		spin_lock(&mp->m_sb_lock);
++		res_used = (int64_t)(mp->m_resblks -
++					mp->m_resblks_avail);
++		if (res_used > delta) {
++			mp->m_resblks_avail += delta;
++			delta = 0;
++		} else {
++			delta -= res_used;
++			mp->m_resblks_avail = mp->m_resblks;
++		}
++		spin_unlock(&mp->m_sb_lock);
++		if (!delta)
++			return 0;
 +	}
 +
-+	/*
-+	 * If the result is over the error threshold, we can just add it
-+	 * into the global counter ignoring what is in the per-cpu counters
-+	 * as they will not change the result of the calculation.
-+	 */
-+	spin_lock(&fbc->lock);
-+	if (fbc->count + amount > threshold + error) {
-+		fbc->count += amount;
-+		ret = 1;
-+		goto out_unlock;
-+	}
++	/* try the change */
++	ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_ICSB_FDBLOCKS],
++						delta, XFS_ALLOC_SET_ASIDE(mp));
++	if (likely(ret >= 0))
++		return 0;
 +
-+	/*
-+	 * Result is withing the error margin. Run an open-coded sum of the
-+	 * per-cpu counters to get the exact value at this point in time,
-+	 * and if the result greater than the threshold, add the amount to
-+	 * the global counter.
-+	 */
-+	count = fbc->count;
-+	for_each_online_cpu(cpu) {
-+		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
-+		count += *pcount;
-+	}
-+	WARN_ON(count < threshold);
++	/* ENOSPC */
++	ASSERT(delta < 0);
 +
-+	if (count + amount >= threshold) {
-+		ret = 0;
-+		if (count + amount > threshold)
-+			ret = 1;
-+		fbc->count += amount;
++	if (!rsvd)
++		return XFS_ERROR(ENOSPC);
++
++	spin_lock(&mp->m_sb_lock);
++	lcounter = (int64_t)mp->m_resblks_avail + delta;
++	if (lcounter >= 0) {
++		mp->m_resblks_avail = lcounter;
++		spin_unlock(&mp->m_sb_lock);
++		return 0;
 +	}
-+out_unlock:
-+	spin_unlock(&fbc->lock);
-+out:
-+	preempt_enable();
-+	return ret;
++	spin_unlock(&mp->m_sb_lock);
++	printk_once(KERN_WARNING
++		"Filesystem \"%s\": reserve blocks depleted! "
++		"Consider increasing reserve pool size.",
++		mp->m_fsname);
++	return XFS_ERROR(ENOSPC);
 +}
-+EXPORT_SYMBOL(percpu_counter_add_unless_lt);
 +
- static int __init percpu_counter_startup(void)
- {
- 	compute_batch_value();
+ /*
+  * Check size of device based on the (data/realtime) block count.
+  * Note: this check is used by the growfs code as well as mount.
+@@ -1857,7 +1931,7 @@ xfs_mod_incore_sb(
+  *
+  * Note that this function may not be used for the superblock values that
+  * are tracked with the in-memory per-cpu counters - a direct call to
+- * xfs_icsb_modify_counters is required for these.
++ * xfs_icsb_modify_xxx is required for these.
+  */
+ int
+ xfs_mod_incore_sb_batch(
+@@ -1898,90 +1972,6 @@ unwind:
+ 	return error;
+ }
+ 
+-int
+-xfs_icsb_modify_counters(
+-	xfs_mount_t	*mp,
+-	xfs_sb_field_t	field,
+-	int64_t		delta,
+-	int		rsvd)
+-{
+-	int64_t		lcounter;
+-	int64_t		res_used;
+-	int		ret = 0;
+-
+-
+-	switch (field) {
+-	case XFS_SBS_ICOUNT:
+-		ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_SBS_ICOUNT],
+-							delta, 0);
+-		if (ret < 0) {
+-			ASSERT(0);
+-			return XFS_ERROR(EINVAL);
+-		}
+-		return 0;
+-
+-	case XFS_SBS_IFREE:
+-		ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_SBS_IFREE],
+-							delta, 0);
+-		if (ret < 0) {
+-			ASSERT(0);
+-			return XFS_ERROR(EINVAL);
+-		}
+-		return 0;
+-
+-	case XFS_SBS_FDBLOCKS:
+-		/*
+-		 * if we are putting blocks back, put them into the reserve
+-		 * block pool first.
+-		 */
+-		if (mp->m_resblks != mp->m_resblks_avail && delta > 0) {
+-			spin_lock(&mp->m_sb_lock);
+-			res_used = (int64_t)(mp->m_resblks -
+-						mp->m_resblks_avail);
+-			if (res_used > delta) {
+-				mp->m_resblks_avail += delta;
+-				delta = 0;
+-			} else {
+-				delta -= res_used;
+-				mp->m_resblks_avail = mp->m_resblks;
+-			}
+-			spin_unlock(&mp->m_sb_lock);
+-			if (!delta)
+-				return 0;
+-		}
+-
+-		/* try the change */
+-		ret = percpu_counter_add_unless_lt(&mp->m_icsb[XFS_ICSB_FDBLOCKS],
+-						delta, XFS_ALLOC_SET_ASIDE(mp));
+-		if (likely(ret >= 0))
+-			return 0;
+-
+-		/* ENOSPC */
+-		ASSERT(delta < 0);
+-
+-		if (!rsvd)
+-			return XFS_ERROR(ENOSPC);
+-
+-		spin_lock(&mp->m_sb_lock);
+-		lcounter = (int64_t)mp->m_resblks_avail + delta;
+-		if (lcounter >= 0) {
+-			mp->m_resblks_avail = lcounter;
+-			spin_unlock(&mp->m_sb_lock);
+-			return 0;
+-		}
+-		spin_unlock(&mp->m_sb_lock);
+-		printk_once(KERN_WARNING
+-			"Filesystem \"%s\": reserve blocks depleted! "
+-			"Consider increasing reserve pool size.",
+-			mp->m_fsname);
+-		return XFS_ERROR(ENOSPC);
+-	default:
+-		ASSERT(0);
+-		return XFS_ERROR(EINVAL);
+-	}
+-	return 0;
+-}
+-
+ /*
+  * xfs_getsb() is called to obtain the buffer for the superblock.
+  * The buffer is returned locked and read in from disk.
+diff --git a/fs/xfs/xfs_mount.h b/fs/xfs/xfs_mount.h
+index 42d31df..03ad25c6 100644
+--- a/fs/xfs/xfs_mount.h
++++ b/fs/xfs/xfs_mount.h
+@@ -75,9 +75,6 @@ enum {
+ 	XFS_ICSB_MAX,
+ };
+ 
+-extern int	xfs_icsb_modify_counters(struct xfs_mount *, xfs_sb_field_t,
+-						int64_t, int);
+-
+ typedef struct xfs_mount {
+ 	struct super_block	*m_super;
+ 	xfs_tid_t		m_tid;		/* next unused tid for fs */
+@@ -333,6 +330,8 @@ extern int	xfs_icsb_init_counters(struct xfs_mount *);
+ extern void	xfs_icsb_reinit_counters(struct xfs_mount *);
+ extern void	xfs_icsb_destroy_counters(struct xfs_mount *);
+ extern void	xfs_icsb_sync_counters(struct xfs_mount *);
++extern int	xfs_icsb_modify_inodes(struct xfs_mount *, int, int64_t);
++extern int	xfs_icsb_modify_free_blocks(struct xfs_mount *, int64_t, int);
+ 
+ #endif	/* __KERNEL__ */
+ 
+diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
+index f6d956b..8139a2e 100644
+--- a/fs/xfs/xfs_trans.c
++++ b/fs/xfs/xfs_trans.c
+@@ -696,7 +696,7 @@ xfs_trans_reserve(
+ 	 * fail if the count would go below zero.
+ 	 */
+ 	if (blocks > 0) {
+-		error = xfs_icsb_modify_counters(tp->t_mountp, XFS_SBS_FDBLOCKS,
++		error = xfs_icsb_modify_free_blocks(tp->t_mountp,
+ 					  -((int64_t)blocks), rsvd);
+ 		if (error != 0) {
+ 			current_restore_flags_nested(&tp->t_pflags, PF_FSTRANS);
+@@ -767,8 +767,8 @@ undo_log:
+ 
+ undo_blocks:
+ 	if (blocks > 0) {
+-		xfs_icsb_modify_counters(tp->t_mountp, XFS_SBS_FDBLOCKS,
+-					 (int64_t)blocks, rsvd);
++		xfs_icsb_modify_free_blocks(tp->t_mountp,
++						(int64_t)blocks, rsvd);
+ 		tp->t_blk_res = 0;
+ 	}
+ 
+@@ -1045,22 +1045,19 @@ xfs_trans_unreserve_and_mod_sb(
+ 
+ 	/* apply the per-cpu counters */
+ 	if (blkdelta) {
+-		error = xfs_icsb_modify_counters(mp, XFS_SBS_FDBLOCKS,
+-						 blkdelta, rsvd);
++		error = xfs_icsb_modify_free_blocks(mp, blkdelta, rsvd);
+ 		if (error)
+ 			goto out;
+ 	}
+ 
+ 	if (idelta) {
+-		error = xfs_icsb_modify_counters(mp, XFS_SBS_ICOUNT,
+-						 idelta, rsvd);
++		error = xfs_icsb_modify_inodes(mp, XFS_ICSB_ICOUNT, idelta);
+ 		if (error)
+ 			goto out_undo_fdblocks;
+ 	}
+ 
+ 	if (ifreedelta) {
+-		error = xfs_icsb_modify_counters(mp, XFS_SBS_IFREE,
+-						 ifreedelta, rsvd);
++		error = xfs_icsb_modify_inodes(mp, XFS_ICSB_IFREE, ifreedelta);
+ 		if (error)
+ 			goto out_undo_icount;
+ 	}
+@@ -1129,15 +1126,15 @@ xfs_trans_unreserve_and_mod_sb(
+ 
+ out_undo_ifreecount:
+ 	if (ifreedelta)
+-		xfs_icsb_modify_counters(mp, XFS_SBS_IFREE, -ifreedelta, rsvd);
++		xfs_icsb_modify_inodes(mp, XFS_ICSB_IFREE, -ifreedelta);
+ out_undo_icount:
+ 	if (idelta)
+-		xfs_icsb_modify_counters(mp, XFS_SBS_ICOUNT, -idelta, rsvd);
++		xfs_icsb_modify_inodes(mp, XFS_ICSB_ICOUNT, -idelta);
+ out_undo_fdblocks:
+ 	if (blkdelta)
+-		xfs_icsb_modify_counters(mp, XFS_SBS_FDBLOCKS, -blkdelta, rsvd);
++		xfs_icsb_modify_free_blocks(mp, -blkdelta, rsvd);
+ out:
+-	ASSERT(error = 0);
++	ASSERT(error == 0);
+ 	return;
+ }
+ 
 -- 
 1.7.2.3
 
