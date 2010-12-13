@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab0LMPJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:09:55 -0500
-Received: from mga14.intel.com ([143.182.124.37]:34864 "EHLO mga14.intel.com"
+	id S1758068Ab0LMPKR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:10:17 -0500
+Received: from mga14.intel.com ([143.182.124.37]:51617 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758011Ab0LMPJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:09:05 -0500
+	id S1758010Ab0LMPJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:09:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="360909746"
-Message-Id: <20101213150329.831955132@intel.com>
+   d="scan'208";a="360909751"
+Message-Id: <20101213150327.936117931@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:47:15 +0800
+Date: Mon, 13 Dec 2010 22:46:59 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
@@ -29,176 +29,177 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 29/35] nfs: in-commit pages accounting and wait queue
+Subject: [PATCH 13/35] writeback: bdi base throttle bandwidth
 References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=writeback-nfs-in-commit.patch
+Content-Disposition: inline; filename=writeback-bw-for-concurrent-dirtiers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing 10+ concurrent dd's, I observed very bumpy commits submission
-(partly because the dd's are started at the same time, and hence reached
-4MB to-commit pages at the same time). Basically we rely on the server
-to complete and return write/commit requests, and want both to progress
-smoothly and not consume too many pages. The write request wait queue is
-not enough as it's mainly network bounded. So add another commit request
-wait queue. Only async writes need to sleep on this queue.
+This basically does
 
-cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+-	task_bw = linear_function(task_weight, bdi_dirty, bdi->write_bandwidth)
++	task_bw = linear_function(task_weight, bdi_dirty, bdi->throttle_bandwidth)
+
+where
+                                    adapt to
+	bdi->throttle_bandwidth ================> bdi->write_bandwidth / N
+	                        stabilize around
+
+	N = number of concurrent heavy dirtier tasks
+	    (light dirtiers will have little effect)
+
+It offers two great benefits:
+
+1) in many configurations (eg. NFS), bdi->write_bandwidth fluctuates a lot
+   (more than 100%) by nature. bdi->throttle_bandwidth will be much more
+   stable.  It will normally be a flat line in the time-bw graph.
+
+2) bdi->throttle_bandwidth will be close to the final task_bw in stable state.
+   In contrast, bdi->write_bandwidth is N times larger than task_bw.
+   Given N=4, bdi_dirty will float around A before patch, and we want it
+   stabilize around B by lowering the slope of the control line, so that
+   when bdi_dirty fluctuates for the same delta (to points A'/B'), the
+   corresponding fluctuation of task_bw is reduced to 1/4. The benefit
+   is obvious: when there are 1000 concurrent dirtiers, the fluctuations
+   quickly go out of control; with this patch, the max fluctuations
+   virtually are the same as the single dirtier case. In this way, the
+   control system can scale to whatever huge number of dirtiers.
+
+fig.1 before patch
+
+               bdi->write_bandwidth   ........o
+                                               o
+                                                o
+                                                 o
+                                                  o
+                                                   o
+                                                    o
+                                                     o
+                                                      o
+                                                       o
+                                                        o
+                                                         o
+   task_bw = bdi->write_bandwidth / 4 ....................o
+                                                          |o
+                                                          | o
+                                                          |  o <= A'
+----------------------------------------------------------+---o
+                                                          A   C
+
+fig.2 after patch
+
+task_bw = bdi->throttle_bandwidth     ........o
+        = bdi->write_bandwidth / 4            |   o <= B'
+                                              |       o
+                                              |           o
+----------------------------------------------+---------------o
+                                              B               C
+
+The added complexity is, it will take some time for
+bdi->throttle_bandwidth to adapt to the workload:
+
+- 2 seconds to scale to 10 times more dirtier tasks
+- 10 seconds to 10 times less dirtier tasks
+
+The slower adapt time to reduced tasks is not a big problem. Because
+the control line is not linear. At worst, bdi_dirty will drop below the
+15% throttle threshold where the tasks won't be throttled at all.
+
+When the system has dirtiers of different speed, bdi->throttle_bandwidth
+will adapt to around the most fast speed.
+
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/nfs/client.c           |    1 
- fs/nfs/write.c            |   51 ++++++++++++++++++++++++++++++------
- include/linux/nfs_fs_sb.h |    2 +
- 3 files changed, 46 insertions(+), 8 deletions(-)
+ include/linux/backing-dev.h |    1 
+ mm/backing-dev.c            |    1 
+ mm/page-writeback.c         |   42 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 43 insertions(+), 1 deletion(-)
 
---- linux-next.orig/fs/nfs/write.c	2010-12-13 21:46:21.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2010-12-13 21:46:21.000000000 +0800
-@@ -516,7 +516,7 @@ nfs_mark_request_commit(struct nfs_page 
+--- linux-next.orig/include/linux/backing-dev.h	2010-12-13 21:46:14.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2010-12-13 21:46:15.000000000 +0800
+@@ -78,6 +78,7 @@ struct backing_dev_info {
+ 	unsigned long bw_time_stamp;
+ 	unsigned long written_stamp;
+ 	unsigned long write_bandwidth;
++	unsigned long throttle_bandwidth;
+ 
+ 	struct prop_local_percpu completions;
+ 	int dirty_exceeded;
+--- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:15.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-13 21:46:15.000000000 +0800
+@@ -521,6 +521,45 @@ out:
+ 	return 1 + int_sqrt(dirty_thresh - dirty_pages);
  }
  
- static int
--nfs_clear_request_commit(struct nfs_page *req)
-+nfs_clear_request_commit(struct inode *inode, struct nfs_page *req)
- {
- 	struct page *page = req->wb_page;
- 
-@@ -554,7 +554,7 @@ nfs_mark_request_commit(struct nfs_page 
- }
- 
- static inline int
--nfs_clear_request_commit(struct nfs_page *req)
-+nfs_clear_request_commit(struct inode *inode, struct nfs_page *req)
- {
- 	return 0;
- }
-@@ -599,8 +599,10 @@ nfs_scan_commit(struct inode *inode, str
- 		return 0;
- 
- 	ret = nfs_scan_list(nfsi, dst, idx_start, npages, NFS_PAGE_TAG_COMMIT);
--	if (ret > 0)
-+	if (ret > 0) {
- 		nfsi->ncommit -= ret;
-+		atomic_long_add(ret, &NFS_SERVER(inode)->in_commit);
-+	}
- 	if (nfs_need_commit(NFS_I(inode)))
- 		__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
- 	return ret;
-@@ -668,7 +670,7 @@ static struct nfs_page *nfs_try_to_updat
- 		spin_lock(&inode->i_lock);
- 	}
- 
--	if (nfs_clear_request_commit(req) &&
-+	if (nfs_clear_request_commit(inode, req) &&
- 			radix_tree_tag_clear(&NFS_I(inode)->nfs_page_tree,
- 				req->wb_index, NFS_PAGE_TAG_COMMIT) != NULL)
- 		NFS_I(inode)->ncommit--;
-@@ -1271,6 +1273,34 @@ int nfs_writeback_done(struct rpc_task *
- 
- 
- #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
-+static void nfs_commit_wait(struct nfs_server *nfss)
++/*
++ * The bdi throttle bandwidth is introduced for resisting bdi_dirty from
++ * getting too close to task_thresh. It allows scaling up to 1000+ concurrent
++ * dirtier tasks while keeping the fluctuation level flat.
++ */
++static void __bdi_update_throttle_bandwidth(struct backing_dev_info *bdi,
++					    unsigned long dirty,
++					    unsigned long thresh)
 +{
-+	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
-+	DEFINE_WAIT(wait);
++	unsigned long gap = thresh / TASK_SOFT_DIRTY_LIMIT + 1;
++	unsigned long bw = bdi->throttle_bandwidth;
 +
-+	if (atomic_long_read(&nfss->in_commit) < limit)
++	if (dirty > thresh)
 +		return;
 +
-+	for (;;) {
-+		prepare_to_wait(&nfss->in_commit_wait, &wait,
-+				TASK_UNINTERRUPTIBLE);
-+		if (atomic_long_read(&nfss->in_commit) < limit)
-+			break;
-+
-+		io_schedule();
++	/* adapt to concurrent dirtiers */
++	if (dirty > thresh - gap) {
++		bw -= bw >> (3 + 4 * (thresh - dirty) / gap);
++		goto out;
 +	}
-+	finish_wait(&nfss->in_commit_wait, &wait);
++
++	/* adapt to one single dirtier */
++	if (dirty > thresh - gap * 2 + gap / 4 &&
++	    bw > bdi->write_bandwidth + bdi->write_bandwidth / 2) {
++		bw -= bw >> (3 + 4 * (thresh - dirty - gap) / gap);
++		goto out;
++	}
++
++	if (dirty <= thresh - gap * 2 - gap / 2 &&
++	    bw < bdi->write_bandwidth - bdi->write_bandwidth / 2) {
++		bw += (bw >> 4) + 1;
++		goto out;
++	}
++
++	return;
++out:
++	bdi->throttle_bandwidth = bw;
 +}
 +
-+static void nfs_commit_wakeup(struct nfs_server *nfss)
-+{
-+	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
-+
-+	if (atomic_long_read(&nfss->in_commit) < limit - limit / 8 &&
-+	    waitqueue_active(&nfss->in_commit_wait))
-+		wake_up(&nfss->in_commit_wait);
-+}
-+
- static int nfs_commit_set_lock(struct nfs_inode *nfsi, int may_wait)
- {
- 	if (!test_and_set_bit(NFS_INO_COMMIT, &nfsi->flags))
-@@ -1376,6 +1406,7 @@ nfs_commit_list(struct inode *inode, str
- 		req = nfs_list_entry(head->next);
- 		nfs_list_remove_request(req);
- 		nfs_mark_request_commit(req);
-+		atomic_long_dec(&NFS_SERVER(inode)->in_commit);
- 		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
- 		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
- 				BDI_RECLAIMABLE);
-@@ -1409,7 +1440,8 @@ static void nfs_commit_release(void *cal
- 	while (!list_empty(&data->pages)) {
- 		req = nfs_list_entry(data->pages.next);
- 		nfs_list_remove_request(req);
--		nfs_clear_request_commit(req);
-+		nfs_clear_request_commit(data->inode, req);
-+		atomic_long_dec(&NFS_SERVER(data->inode)->in_commit);
+ static void __bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+ 					 unsigned long elapsed,
+ 					 unsigned long written)
+@@ -563,6 +602,7 @@ void bdi_update_bandwidth(struct backing
+ 		goto unlock;
  
- 		dprintk("NFS:       commit (%s/%lld %d@%lld)",
- 			req->wb_context->path.dentry->d_inode->i_sb->s_id,
-@@ -1438,6 +1470,7 @@ static void nfs_commit_release(void *cal
- 		nfs_clear_page_tag_locked(req);
- 	}
- 	nfs_commit_clear_lock(NFS_I(data->inode));
-+	nfs_commit_wakeup(NFS_SERVER(data->inode));
- 	nfs_commitdata_release(calldata);
- }
+ 	__bdi_update_write_bandwidth(bdi, elapsed, written);
++	__bdi_update_throttle_bandwidth(bdi, bdi_dirty, bdi_thresh);
  
-@@ -1452,11 +1485,13 @@ static const struct rpc_call_ops nfs_com
- int nfs_commit_inode(struct inode *inode, int how)
- {
- 	LIST_HEAD(head);
--	int may_wait = how & FLUSH_SYNC;
-+	int sync = how & FLUSH_SYNC;
- 	int res = 0;
+ snapshot:
+ 	bdi->written_stamp = written;
+@@ -651,7 +691,7 @@ static void balance_dirty_pages(struct a
+ 		 * close to task_thresh, and help reduce fluctuations of pause
+ 		 * time when there are lots of dirtiers.
+ 		 */
+-		bw = bdi->write_bandwidth;
++		bw = bdi->throttle_bandwidth;
+ 		bw = bw * (bdi_thresh - bdi_dirty);
+ 		do_div(bw, bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
  
--	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
-+	if (!nfs_commit_set_lock(NFS_I(inode), sync))
- 		goto out_mark_dirty;
-+	if (!sync)
-+		nfs_commit_wait(NFS_SERVER(inode));
- 	spin_lock(&inode->i_lock);
- 	res = nfs_scan_commit(inode, &head, 0, 0);
- 	spin_unlock(&inode->i_lock);
-@@ -1464,7 +1499,7 @@ int nfs_commit_inode(struct inode *inode
- 		int error = nfs_commit_list(inode, &head, how);
- 		if (error < 0)
- 			return error;
--		if (may_wait)
-+		if (sync)
- 			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
- 					nfs_wait_bit_killable,
- 					TASK_KILLABLE);
---- linux-next.orig/include/linux/nfs_fs_sb.h	2010-12-13 21:46:21.000000000 +0800
-+++ linux-next/include/linux/nfs_fs_sb.h	2010-12-13 21:46:21.000000000 +0800
-@@ -107,6 +107,8 @@ struct nfs_server {
- 	struct backing_dev_info	backing_dev_info;
- 	atomic_long_t		writeback;	/* number of writeback pages */
- 	wait_queue_head_t	writeback_wait[2];
-+	atomic_long_t		in_commit;	/* number of in-commit pages */
-+	wait_queue_head_t	in_commit_wait;
- 	int			flags;		/* various flags */
- 	unsigned int		caps;		/* server capabilities */
- 	unsigned int		rsize;		/* read size */
---- linux-next.orig/fs/nfs/client.c	2010-12-13 21:46:21.000000000 +0800
-+++ linux-next/fs/nfs/client.c	2010-12-13 21:46:21.000000000 +0800
-@@ -1008,6 +1008,7 @@ static struct nfs_server *nfs_alloc_serv
- 	atomic_set(&server->active, 0);
- 	init_waitqueue_head(&server->writeback_wait[BLK_RW_SYNC]);
- 	init_waitqueue_head(&server->writeback_wait[BLK_RW_ASYNC]);
-+	init_waitqueue_head(&server->in_commit_wait);
+--- linux-next.orig/mm/backing-dev.c	2010-12-13 21:46:14.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-12-13 21:46:15.000000000 +0800
+@@ -664,6 +664,7 @@ int bdi_init(struct backing_dev_info *bd
  
- 	server->io_stats = nfs_alloc_iostats();
- 	if (!server->io_stats) {
+ 	spin_lock_init(&bdi->bw_lock);
+ 	bdi->write_bandwidth = 100 << (20 - PAGE_SHIFT);  /* 100 MB/s */
++	bdi->throttle_bandwidth = 100 << (20 - PAGE_SHIFT);
+ 
+ 	bdi->dirty_exceeded = 0;
+ 	err = prop_local_init_percpu(&bdi->completions);
 
 
