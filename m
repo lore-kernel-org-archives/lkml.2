@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab0LML21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:28:27 -0500
+	id S1757267Ab0LML2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:28:45 -0500
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:61457 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757171Ab0LML1G (ORCPT
+	with ESMTP id S1753967Ab0LML1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Dec 2010 06:27:06 -0500
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Mon, 13 Dec 2010 12:26:51 +0100
+Date: Mon, 13 Dec 2010 12:26:46 +0100
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv7 10/10] ARM: cma: Added CMA to Aquila,
- Goni and c210 universal boards
+Subject: [PATCHv7 05/10] mm: alloc_contig_free_pages() added
 In-reply-to: <cover.1292004520.git.m.nazarewicz@samsung.com>
 To: Michal Nazarewicz <mina86@mina86.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
@@ -28,177 +27,106 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
         Michal Nazarewicz <m.nazarewicz@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <cb1df81fb822b99ff00d2f4387525f8b07f05e57.1292004520.git.m.nazarewicz@samsung.com>
+Message-id: <f94d1c5a7b4265c4cf537226e584f48583c82c67.1292004520.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.2.3
 References: <cover.1292004520.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds CMA memory reservation code to Aquila, Goni and c210
-universal boards.
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+This commit introduces alloc_contig_free_pages() function
+which allocates (ie. removes from buddy system) free pages
+in range.  Caller has to guarantee that all pages in range
+are in buddy system.
+
+Along with alloc_contig_free_pages(), a free_contig_pages()
+function is provided which frees (or a subset of) pages
+allocated with alloc_contig_free_pages().
+
+I, Michal Nazarewicz, have modified the
+alloc_contig_free_pages() function slightly from the original
+version, mostly to make it easier to allocate note MAX_ORDER
+aligned pages.  This is done by making the function return
+a pfn of a page one past the one allocated which may be
+further then caller requested.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-s5pv210/mach-aquila.c         |    2 +
- arch/arm/mach-s5pv210/mach-goni.c           |    2 +
- arch/arm/mach-s5pv310/mach-universal_c210.c |    2 +
- arch/arm/plat-s5p/Makefile                  |    2 +
- arch/arm/plat-s5p/cma-stub.c                |   49 +++++++++++++++++++++++++++
- arch/arm/plat-s5p/include/plat/cma-stub.h   |   21 +++++++++++
- 6 files changed, 78 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/plat-s5p/cma-stub.c
- create mode 100644 arch/arm/plat-s5p/include/plat/cma-stub.h
+ include/linux/page-isolation.h |    3 ++
+ mm/page_alloc.c                |   42 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
-index 28677ca..8608a16 100644
---- a/arch/arm/mach-s5pv210/mach-aquila.c
-+++ b/arch/arm/mach-s5pv210/mach-aquila.c
-@@ -39,6 +39,7 @@
- #include <plat/fb.h>
- #include <plat/fimc-core.h>
- #include <plat/sdhci.h>
-+#include <plat/cma-stub.h>
+diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+index 58cdbac..f1417ed 100644
+--- a/include/linux/page-isolation.h
++++ b/include/linux/page-isolation.h
+@@ -32,6 +32,9 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
+  */
+ extern int set_migratetype_isolate(struct page *page);
+ extern void unset_migratetype_isolate(struct page *page);
++extern unsigned long alloc_contig_freed_pages(unsigned long start,
++					      unsigned long end, gfp_t flag);
++extern void free_contig_pages(struct page *page, int nr_pages);
  
- /* Following are default values for UCON, ULCON and UFCON UART registers */
- #define AQUILA_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
-@@ -690,4 +691,5 @@ MACHINE_START(AQUILA, "Aquila")
- 	.map_io		= aquila_map_io,
- 	.init_machine	= aquila_machine_init,
- 	.timer		= &s3c24xx_timer,
-+	.reserve	= cma_mach_reserve,
- MACHINE_END
-diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
-index b1dcf96..b1bf079 100644
---- a/arch/arm/mach-s5pv210/mach-goni.c
-+++ b/arch/arm/mach-s5pv210/mach-goni.c
-@@ -45,6 +45,7 @@
- #include <plat/keypad.h>
- #include <plat/sdhci.h>
- #include <plat/clock.h>
-+#include <plat/cma-stub.h>
+ /*
+  * For migration.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 826ba69..997f6c8 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5425,6 +5425,48 @@ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ }
  
- /* Following are default values for UCON, ULCON and UFCON UART registers */
- #define GONI_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
-@@ -865,4 +866,5 @@ MACHINE_START(GONI, "GONI")
- 	.map_io		= goni_map_io,
- 	.init_machine	= goni_machine_init,
- 	.timer		= &s3c24xx_timer,
-+	.reserve	= cma_mach_reserve,
- MACHINE_END
-diff --git a/arch/arm/mach-s5pv310/mach-universal_c210.c b/arch/arm/mach-s5pv310/mach-universal_c210.c
-index 16d8fc0..d65703a 100644
---- a/arch/arm/mach-s5pv310/mach-universal_c210.c
-+++ b/arch/arm/mach-s5pv310/mach-universal_c210.c
-@@ -21,6 +21,7 @@
- #include <plat/s5pv310.h>
- #include <plat/cpu.h>
- #include <plat/devs.h>
-+#include <plat/cma-stub.h>
- 
- #include <mach/map.h>
- 
-@@ -152,6 +153,7 @@ MACHINE_START(UNIVERSAL_C210, "UNIVERSAL_C210")
- 	.boot_params	= S5P_PA_SDRAM + 0x100,
- 	.init_irq	= s5pv310_init_irq,
- 	.map_io		= universal_map_io,
-+	.reserve	= cma_mach_reserve,
- 	.init_machine	= universal_machine_init,
- 	.timer		= &s5pv310_timer,
- MACHINE_END
-diff --git a/arch/arm/plat-s5p/Makefile b/arch/arm/plat-s5p/Makefile
-index de65238..6fdb6ce 100644
---- a/arch/arm/plat-s5p/Makefile
-+++ b/arch/arm/plat-s5p/Makefile
-@@ -28,3 +28,5 @@ obj-$(CONFIG_S5P_DEV_FIMC0)	+= dev-fimc0.o
- obj-$(CONFIG_S5P_DEV_FIMC1)	+= dev-fimc1.o
- obj-$(CONFIG_S5P_DEV_FIMC2)	+= dev-fimc2.o
- obj-$(CONFIG_S5P_DEV_ONENAND)	+= dev-onenand.o
-+
-+obj-$(CONFIG_CMA) += cma-stub.o
-diff --git a/arch/arm/plat-s5p/cma-stub.c b/arch/arm/plat-s5p/cma-stub.c
-new file mode 100644
-index 0000000..716e56d
---- /dev/null
-+++ b/arch/arm/plat-s5p/cma-stub.c
-@@ -0,0 +1,49 @@
-+/*
-+ * This file is just a quick and dirty hack to get CMA testing device
-+ * working.  The cma_mach_reserve() should be called as mach's reserve
-+ * callback.  CMA testing device will use cma_ctx for allocations.
-+ */
-+
-+#include <plat/cma-stub.h>
-+
-+#include <linux/cma.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+
-+struct cma *cma_ctx;
-+
-+#define cma_size (32UL << 20) /* 32 MiB */
-+
-+static unsigned long cma_start __initdata;
-+
-+void __init cma_mach_reserve(void)
++unsigned long alloc_contig_freed_pages(unsigned long start,
++				       unsigned long end, gfp_t flag)
 +{
-+	unsigned long start = cma_reserve(0, cma_size, 0);
-+	if (IS_ERR_VALUE(start))
-+		printk(KERN_WARNING "cma: unable to reserve %lu for CMA: %d\n",
-+		       cma_size >> 20, (int)start);
-+	else
-+		cma_start = start;
-+}
++	unsigned long pfn = start, count;
++	struct page *page;
++	struct zone *zone;
++	int order;
 +
-+static int __init cma_mach_init(void)
-+{
-+	int ret = -ENOMEM;
++	VM_BUG_ON(!pfn_valid(pfn));
++	page = pfn_to_page(pfn);
 +
-+	if (cma_start) {
-+		struct cma *ctx = cma_create(cma_start, cma_size);
-+		if (IS_ERR(ctx)) {
-+			ret = PTR_ERR(ctx);
-+			printk(KERN_WARNING
-+			       "cma: cma_create(%p, %p) failed: %d\n",
-+			       (void *)cma_start, (void *)cma_size, ret);
-+		} else {
-+			cma_ctx = ctx;
-+			ret = 0;
-+		}
++	zone = page_zone(page);
++	spin_lock_irq(&zone->lock);
++	for (;;) {
++		VM_BUG_ON(page_count(page) || !PageBuddy(page));
++		list_del(&page->lru);
++		order = page_order(page);
++		zone->free_area[order].nr_free--;
++		rmv_page_order(page);
++		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
++		pfn  += 1 << order;
++		if (pfn >= end)
++			break;
++		VM_BUG_ON(!pfn_valid(pfn));
++		page += 1 << order;
 +	}
++	spin_unlock_irq(&zone->lock);
 +
-+	return ret;
++	/* After this, pages in the range can be freed one be one */
++	page = pfn_to_page(start);
++	for (count = pfn - start; count; --count, ++page)
++		prep_new_page(page, 0, flag);
++
++	return pfn;
 +}
-+device_initcall(cma_mach_init);
-diff --git a/arch/arm/plat-s5p/include/plat/cma-stub.h b/arch/arm/plat-s5p/include/plat/cma-stub.h
-new file mode 100644
-index 0000000..a24a03b
---- /dev/null
-+++ b/arch/arm/plat-s5p/include/plat/cma-stub.h
-@@ -0,0 +1,21 @@
-+/*
-+ * This file is just a quick and dirty hack to get CMA testing device
-+ * working.  The cma_mach_reserve() should be called as mach's reserve
-+ * callback.  CMA testing device will use cma_ctx for allocations.
-+ */
 +
-+struct cma;
++void free_contig_pages(struct page *page, int nr_pages)
++{
++	for (; nr_pages; --nr_pages, ++page)
++		__free_page(page);
++}
 +
-+#ifdef CONFIG_CMA
-+
-+extern struct cma *cma_ctx;
-+
-+void cma_mach_reserve(void);
-+
-+#else
-+
-+#define cma_ctx ((struct cma *)NULL)
-+
-+#define cma_mach_reserve NULL
-+
-+#endif
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ /*
+  * All pages in the range must be isolated before calling this.
 -- 
 1.7.2.3
 
