@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab0LMTSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:18:34 -0500
-Received: from claw.goop.org ([74.207.240.146]:42358 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346Ab0LMTSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:18:33 -0500
-Message-ID: <4D067186.9090009@goop.org>
-Date: Mon, 13 Dec 2010 11:18:30 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel@lists.xensource.com, Jan Beulich <JBeulich@novell.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 6/9] pci/xen: Make xen_[find|register|unregister]_domain_owner
- be _GPL
-References: <1292263303-31680-1-git-send-email-konrad.wilk@oracle.com> <1292263303-31680-7-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1292263303-31680-7-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1753547Ab0LMTVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:21:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35316 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab0LMTVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:21:33 -0500
+Date: Mon, 13 Dec 2010 11:20:33 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Subject: [PATCH -next] thermal: depends on NET
+Message-Id: <20101213112033.d0060e6c.randy.dunlap@oracle.com>
+In-Reply-To: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
+References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 10:01 AM, Konrad Rzeszutek Wilk wrote:
-> EXPORT_SYMBOL -> EXPORT_SYMBOL_GPL.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-You should fold this into the base patch.
+ERROR: "genl_register_family" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "genl_unregister_family" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "init_net" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "__alloc_skb" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "netlink_broadcast" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "kfree_skb" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "genl_register_mc_group" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "nla_reserve" [drivers/thermal/thermal_sys.ko] undefined!
+ERROR: "skb_put" [drivers/thermal/thermal_sys.ko] undefined!
 
-    J
+Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/thermal/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/pci/xen.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> index 6d2a986..0fa23c8 100644
-> --- a/arch/x86/pci/xen.c
-> +++ b/arch/x86/pci/xen.c
-> @@ -445,7 +445,7 @@ int xen_find_device_domain_owner(struct pci_dev *dev)
->  	spin_unlock(&dev_domain_list_spinlock);
->  	return domain;
->  }
-> -EXPORT_SYMBOL(xen_find_device_domain_owner);
-> +EXPORT_SYMBOL_GPL(xen_find_device_domain_owner);
->  
->  int xen_register_device_domain_owner(struct pci_dev *dev, uint16_t domain)
->  {
-> @@ -467,7 +467,7 @@ int xen_register_device_domain_owner(struct pci_dev *dev, uint16_t domain)
->  	spin_unlock(&dev_domain_list_spinlock);
->  	return 0;
->  }
-> -EXPORT_SYMBOL(xen_register_device_domain_owner);
-> +EXPORT_SYMBOL_GPL(xen_register_device_domain_owner);
->  
->  int xen_unregister_device_domain_owner(struct pci_dev *dev)
->  {
-> @@ -484,4 +484,4 @@ int xen_unregister_device_domain_owner(struct pci_dev *dev)
->  	kfree(owner);
->  	return 0;
->  }
-> -EXPORT_SYMBOL(xen_unregister_device_domain_owner);
-> +EXPORT_SYMBOL_GPL(xen_unregister_device_domain_owner);
-
+--- linux-next-20101213.orig/drivers/thermal/Kconfig
++++ linux-next-20101213/drivers/thermal/Kconfig
+@@ -4,6 +4,7 @@
+ 
+ menuconfig THERMAL
+ 	tristate "Generic Thermal sysfs driver"
++	depends on NET
+ 	help
+ 	  Generic Thermal Sysfs driver offers a generic mechanism for
+ 	  thermal management. Usually it's made up of one or more thermal
