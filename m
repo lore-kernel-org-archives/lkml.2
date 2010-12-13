@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab0LMOIs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 09:08:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39835 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757825Ab0LMOIr (ORCPT
+	id S1757942Ab0LMOJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 09:09:22 -0500
+Received: from mail2.charite.de ([193.175.72.31]:57328 "EHLO
+	mail-ausfall.charite.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757634Ab0LMOJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 09:08:47 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Use NULL to initialise NULL pointers in ab8500-debugfs
-Date: Mon, 13 Dec 2010 14:08:40 +0000
-Message-Id: <1292249320-17633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 13 Dec 2010 09:09:21 -0500
+Date: Mon, 13 Dec 2010 15:00:52 +0100
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Costly Context Switches
+Message-ID: <20101213140052.GQ11368@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <20101212151112.GE26583@charite.de>
+ <201012122007.07372.andres@anarazel.de>
+ <20101213135104.GE5407@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101213135104.GE5407@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Partly for coding style reasons, but mostly because sparse warns on it.
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net>:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/ab8500-debugfs.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+> Better to record just "cs" (Context Switches) events and also to collect
+> callchains when those events take place:
+> 
+> [acme@felicio ~]$ perf record -e cs -g chromium-browser
 
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index dfdc76e..3c1541a 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -189,7 +189,7 @@ static struct ab8500_i2c_ranges debug_ranges[AB8500_NUM_BANKS] = {
- 	},
- 	[AB8500_DBI] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[AB8500_ECI_AV_ACC] = {
- 		.num_ranges = 1,
-@@ -202,7 +202,7 @@ static struct ab8500_i2c_ranges debug_ranges[AB8500_NUM_BANKS] = {
- 	},
- 	[0x9] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[AB8500_GPADC] = {
- 		.num_ranges = 1,
-@@ -278,7 +278,7 @@ static struct ab8500_i2c_ranges debug_ranges[AB8500_NUM_BANKS] = {
- 	},
- 	[AB8500_INTERRUPT] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[AB8500_RTC] = {
- 		.num_ranges = 1,
-@@ -328,19 +328,19 @@ static struct ab8500_i2c_ranges debug_ranges[AB8500_NUM_BANKS] = {
- 	},
- 	[0x11] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[0x12] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[0x13] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[0x14] = {
- 		.num_ranges = 0,
--		.range = 0,
-+		.range = NULL,
- 	},
- 	[AB8500_OTP_EMUL] = {
- 		.num_ranges = 1,
+
+OK, I will try this. The application is dovecot-2.0, so I need to perf
+record it and all it's children (imap, pop3, auth, etc). 
+
+Is this done by default?
+
 -- 
-1.7.1
-
+Ralf Hildebrandt
+  Geschäftsbereich IT | Abteilung Netzwerk
+  Charité - Universitätsmedizin Berlin
+  Campus Benjamin Franklin
+  Hindenburgdamm 30 | D-12203 Berlin
+  Tel. +49 30 450 570 155 | Fax: +49 30 450 570 962
+  ralf.hildebrandt@charite.de | http://www.charite.de
+	    
