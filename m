@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758500Ab0LMRZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:25:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48026 "EHLO mx1.redhat.com"
+	id S1758518Ab0LMR2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:28:34 -0500
+Received: from smtpeu1.atmel.com ([195.65.72.27]:45021 "EHLO bagnes.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab0LMRZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:25:16 -0500
-Date: Mon, 13 Dec 2010 19:24:47 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [GIT PULL net-next-2.6] vhost-net: tools, cleanups, optimizations
-Message-ID: <20101213172447.GA8560@redhat.com>
-References: <20101213104413.GA678@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101213104413.GA678@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758452Ab0LMR2d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 12:28:33 -0500
+Subject: Re: [PATCH v2] avr32: Fix build failure conflicting types for
+ 'sys_execve'
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Peter =?ISO-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+In-Reply-To: <201012131812.03487.PeterHuewe@gmx.de>
+References: <20101209182132.GB24175@kroah.com>
+	 <201012122037.59016.PeterHuewe@gmx.de>
+	 <1292227973.18008.53.camel@hcegtvedt>
+	 <201012131812.03487.PeterHuewe@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Mon, 13 Dec 2010 18:27:46 +0100
+Message-ID: <1292261266.18008.72.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 13 Dec 2010 17:27:50.0725 (UTC) FILETIME=[113ACF50:01CB9AEB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 12:44:13PM +0200, Michael S. Tsirkin wrote:
-> Please merge the following tree for 2.6.38.
-> Thanks!
+On Mon, 2010-12-13 at 18:12 +0100, Peter Hüwe wrote: 
+> Am Montag 13 Dezember 2010, 09:12:53 schrieb Hans-Christian Egtvedt:
+> > > (but it still failed for quite a while longer due to other issues ;)
+> > What other issues?
+> 
+> There's a linker error at the end:
+> 
+>   CC      init/version.o
+>   LD      init/built-in.o
+>   LD      vmlinux
+> lib/lib.a(vsprintf.o): In function `resource_string':
+> vsprintf.c:(.text+0x149e): relocation truncated to fit: R_AVR32_9UW_PCREL 
+> against `.text'+16a8
+> vsprintf.c:(.text+0x14ae): relocation truncated to fit: R_AVR32_9UW_PCREL 
+> against `.text'+16ac
+> 
+> which seems to exist since May 26th in Linus' tree.
+> See 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/2631302/
+> http://kisskb.ellerman.id.au/kisskb/target/664/
+> for more details.
+> 
+> Unfortunately I wasn't able to locate the offending commit using git bisect :/
 
-Um, I sent this out before I noticed the mail from Rusty
-with some questions on the test code. I missed that and
-assumed no comments -> no issues, perhaps wrongly.
+Hmm, I haven't seen that, which toolchain and which configuration do you
+use?
 
-Rusty - I tried answering the questions there - any issues
-with merging this? It's just a test so won't be hard to remove
-later if it's not helpful ...
+-- 
+Hans-Christian Egtvedt
 
-> The following changes since commit ad1184c6cf067a13e8cb2a4e7ccc407f947027d0:
-> 
->   net: au1000_eth: remove unused global variable. (2010-12-11 12:01:48 -0800)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
-> 
-> Jason Wang (1):
->       vhost: fix typos in comment
-> 
-> Julia Lawall (1):
->       drivers/vhost/vhost.c: delete double assignment
-> 
-> Michael S. Tsirkin (9):
->       vhost: put mm after thread stop
->       vhost-net: batch use/unuse mm
->       vhost: copy_to_user -> __copy_to_user
->       vhost: get/put_user -> __get/__put_user
->       vhost: remove unused include
->       vhost: correctly set bits of dirty pages
->       vhost: better variable name in logging
->       vhost test module
->       tools/virtio: virtio_test tool
-> 
->  drivers/vhost/net.c                  |    9 +-
->  drivers/vhost/test.c                 |  320 ++++++++++++++++++++++++++++++++++
->  drivers/vhost/test.h                 |    7 +
->  drivers/vhost/vhost.c                |   44 +++---
->  drivers/vhost/vhost.h                |    2 +-
->  tools/virtio/Makefile                |   12 ++
->  tools/virtio/linux/device.h          |    2 +
->  tools/virtio/linux/slab.h            |    2 +
->  tools/virtio/linux/virtio.h          |  223 +++++++++++++++++++++++
->  tools/virtio/vhost_test/Makefile     |    2 +
->  tools/virtio/vhost_test/vhost_test.c |    1 +
->  tools/virtio/virtio_test.c           |  248 ++++++++++++++++++++++++++
->  12 files changed, 842 insertions(+), 30 deletions(-)
->  create mode 100644 drivers/vhost/test.c
->  create mode 100644 drivers/vhost/test.h
->  create mode 100644 tools/virtio/Makefile
->  create mode 100644 tools/virtio/linux/device.h
->  create mode 100644 tools/virtio/linux/slab.h
->  create mode 100644 tools/virtio/linux/virtio.h
->  create mode 100644 tools/virtio/vhost_test/Makefile
->  create mode 100644 tools/virtio/vhost_test/vhost_test.c
->  create mode 100644 tools/virtio/virtio_test.c
