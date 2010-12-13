@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab0LMWFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 17:05:17 -0500
-Received: from novprvoes0310.provo.novell.com ([137.65.248.74]:46134 "EHLO
+	id S1757595Ab0LMWH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 17:07:28 -0500
+Received: from novprvoes0310.provo.novell.com ([137.65.248.74]:46171 "EHLO
 	novprvoes0310.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756206Ab0LMWFQ convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1755994Ab0LMWH1 convert rfc822-to-8bit
 	(ORCPT <rfc822;groupwise-ksrinivasan@novell.com:7:1>);
-	Mon, 13 Dec 2010 17:05:16 -0500
-Message-Id: <4D0636270200003000091D23@novprvoes0310.provo.novell.com>
+	Mon, 13 Dec 2010 17:07:27 -0500
+Message-Id: <4D0636AC0200003000091D33@novprvoes0310.provo.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 13 Dec 2010 15:05:11 -0700
+Date: Mon, 13 Dec 2010 15:07:24 -0700
 From: "Ky Srinivasan" <ksrinivasan@novell.com>
 To: <devel@linuxdriverproject.org>, <virtualization@lists.osdl.org>,
         <hjanssen@microsoft.com>, <gregkh@suse.de>,
@@ -84,6 +84,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > -	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
 > +	vmbus_recvpacket(channel, shut_txf_buf,
 > +			 PAGE_SIZE, &recvlen, &requestid);
+Even if vmbus_recvpacket were to fail, why don't we just shut the guest down; after all we already know that is the intent of the host.
+
+Regards,
+
+K. Y
 >  
 >  	if (recvlen > 0) {
 >  		DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
@@ -233,11 +238,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > +	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
 > +	time_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
 > +	hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-Why are these allocations GFP_ATOMIC. Clearly this is in module loading context and you can afford to sleep. GFP_KERNEL should be fine.
-
-Regards,
-
-K. Y
 > +
 > +	if (!shut_txf_buf || !time_txf_buf || !hbeat_txf_buf) {
 > +		printk(KERN_INFO
