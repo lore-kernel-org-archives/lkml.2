@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0LMPPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:15:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36467 "EHLO mga02.intel.com"
+	id S1758193Ab0LMPQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:16:42 -0500
+Received: from mga11.intel.com ([192.55.52.93]:38714 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab0LMPIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:08:49 -0500
+	id S1752306Ab0LMPIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:08:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="686646816"
-Message-Id: <20101213150328.407612632@intel.com>
+   d="scan'208";a="867612931"
+Message-Id: <20101213150329.002158963@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:47:03 +0800
+Date: Mon, 13 Dec 2010 22:47:08 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -29,74 +29,114 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/35] writeback: quit throttling when bdi dirty pages dropped low
+Subject: [PATCH 22/35] writeback: trace global dirty page states
 References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=writeback-bdi-throttle-break.patch
+Content-Disposition: inline; filename=writeback-trace-global-dirty-states.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tests show that bdi_thresh may take minutes to ramp up on a typical
-desktop. The time should be improvable but cannot be eliminated totally.
-So when (background_thresh + dirty_thresh)/2 is reached and
-balance_dirty_pages() starts to throttle the task, it will suddenly find
-the (still low and ramping up) bdi_thresh is exceeded _excessively_. Here
-we definitely don't want to stall the task for one minute (when it's
-writing to USB stick). So introduce an alternative way to break out of
-the loop when the bdi dirty/write pages has dropped by a reasonable
-amount.
-
-It will at least pause for one loop before trying to break out.
-
-The break is designed mainly to help the single task case. The break
-threshold is time for writing 125ms data, so that when the task slept
-for MAX_PAUSE=200ms, it will have good chance to break out. For NFS
-there may be only 1-2 completions of large COMMIT per second, in which
-case the task may still get stuck for 1s.
-
-Note that this opens the chance that during normal operation, a huge
-number of slow dirtiers writing to a really slow device might manage to
-outrun bdi_thresh. But the risk is pretty low.
+Add trace balance_dirty_state for showing the global dirty page counts
+and thresholds at each balance_dirty_pages() loop.
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ include/trace/events/writeback.h |   57 +++++++++++++++++++++++++++++
+ mm/page-writeback.c              |   15 ++++++-
+ 2 files changed, 69 insertions(+), 3 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:16.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-13 21:46:16.000000000 +0800
-@@ -693,6 +693,7 @@ static void balance_dirty_pages(struct a
- 	long nr_dirty;
- 	long bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
- 	long avg_dirty;  /* smoothed bdi_dirty */
-+	long bdi_prev_dirty = 0;
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -749,6 +750,24 @@ static void balance_dirty_pages(struct a
+--- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:18.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-13 21:46:18.000000000 +0800
+@@ -713,12 +713,21 @@ static void balance_dirty_pages(struct a
+ 		 * written to the server's write cache, but has not yet
+ 		 * been flushed to permanent storage.
+ 		 */
+-		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+-					global_page_state(NR_UNSTABLE_NFS);
+-		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
++		nr_reclaimable = global_page_state(NR_FILE_DIRTY);
++		bdi_dirty = global_page_state(NR_UNSTABLE_NFS);
++		nr_dirty = global_page_state(NR_WRITEBACK);
  
- 		bdi_update_bandwidth(bdi, start_time, bdi_dirty, bdi_thresh);
+ 		global_dirty_limits(&background_thresh, &dirty_thresh);
  
-+		/*
-+		 * bdi_thresh takes time to ramp up from the initial 0,
-+		 * especially for slow devices.
-+		 *
-+		 * It's possible that at the moment dirty throttling starts,
-+		 *	bdi_dirty = nr_dirty
-+		 *		  = (background_thresh + dirty_thresh) / 2
-+		 *		  >> bdi_thresh
-+		 * Then the task could be blocked for many seconds to flush all
-+		 * the exceeded (bdi_dirty - bdi_thresh) pages. So offer a
-+		 * complementary way to break out of the loop when 125ms worth
-+		 * of dirty pages have been cleaned during our pause time.
-+		 */
-+		if (nr_dirty <= dirty_thresh &&
-+		    bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 8)
-+			break;
-+		bdi_prev_dirty = bdi_dirty;
++		trace_balance_dirty_state(mapping,
++					  nr_reclaimable,
++					  nr_dirty,
++					  bdi_dirty,
++					  background_thresh,
++					  dirty_thresh);
++		nr_reclaimable += bdi_dirty;
++		nr_dirty += nr_reclaimable;
 +
- 		avg_dirty = bdi->avg_dirty;
- 		if (avg_dirty < bdi_dirty || avg_dirty > task_thresh)
- 			avg_dirty = bdi_dirty;
+ 		/*
+ 		 * Throttle it only when the background writeback cannot
+ 		 * catch-up. This avoids (excessively) small writeouts
+--- linux-next.orig/include/trace/events/writeback.h	2010-12-13 21:46:18.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2010-12-13 21:46:18.000000000 +0800
+@@ -149,6 +149,63 @@ DEFINE_WBC_EVENT(wbc_writeback_written);
+ DEFINE_WBC_EVENT(wbc_writeback_wait);
+ DEFINE_WBC_EVENT(wbc_writepage);
+ 
++TRACE_EVENT(balance_dirty_state,
++
++	TP_PROTO(struct address_space *mapping,
++		 unsigned long nr_dirty,
++		 unsigned long nr_writeback,
++		 unsigned long nr_unstable,
++		 unsigned long background_thresh,
++		 unsigned long dirty_thresh
++	),
++
++	TP_ARGS(mapping,
++		nr_dirty,
++		nr_writeback,
++		nr_unstable,
++		background_thresh,
++		dirty_thresh
++	),
++
++	TP_STRUCT__entry(
++		__array(char,		bdi, 32)
++		__field(unsigned long,	ino)
++		__field(unsigned long,	nr_dirty)
++		__field(unsigned long,	nr_writeback)
++		__field(unsigned long,	nr_unstable)
++		__field(unsigned long,	background_thresh)
++		__field(unsigned long,	dirty_thresh)
++		__field(unsigned long,	task_dirtied_pause)
++	),
++
++	TP_fast_assign(
++		strlcpy(__entry->bdi,
++			dev_name(mapping->backing_dev_info->dev), 32);
++		__entry->ino			= mapping->host->i_ino;
++		__entry->nr_dirty		= nr_dirty;
++		__entry->nr_writeback		= nr_writeback;
++		__entry->nr_unstable		= nr_unstable;
++		__entry->background_thresh	= background_thresh;
++		__entry->dirty_thresh		= dirty_thresh;
++		__entry->task_dirtied_pause	= current->nr_dirtied_pause;
++	),
++
++	TP_printk("bdi %s: dirty=%lu wb=%lu unstable=%lu "
++		  "bg_thresh=%lu thresh=%lu gap=%ld "
++		  "poll_thresh=%lu ino=%lu",
++		  __entry->bdi,
++		  __entry->nr_dirty,
++		  __entry->nr_writeback,
++		  __entry->nr_unstable,
++		  __entry->background_thresh,
++		  __entry->dirty_thresh,
++		  __entry->dirty_thresh - __entry->nr_dirty -
++		  __entry->nr_writeback - __entry->nr_unstable,
++		  __entry->task_dirtied_pause,
++		  __entry->ino
++	)
++);
++
+ #define KBps(x)			((x) << (PAGE_SHIFT - 10))
+ #define BDP_PERCENT(a, b, c)	(((__entry->a) - (__entry->b)) * 100 * (c) + \
+ 				  __entry->bdi_limit/2) / (__entry->bdi_limit|1)
 
 
