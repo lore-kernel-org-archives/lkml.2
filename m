@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab0LMPZV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:25:21 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:51487 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab0LMPZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:25:19 -0500
-Date: Mon, 13 Dec 2010 16:25:13 +0100
-From: Florian Mickler <florian@mickler.org>
-To: David Fries <david@fries.net>
-Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] [correction] load fbcon from drm_kms_helper
-Message-ID: <20101213162513.6281f5af@schatten.dmk.lab>
-In-Reply-To: <20101213003411.GM13567@spacedout.fries.net>
-References: <20101212183921.GA25744@spacedout.fries.net>
-	<20101212230128.47c20b10@schatten.dmk.lab>
-	<20101213003411.GM13567@spacedout.fries.net>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753227Ab0LMP0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:26:33 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:33011 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab0LMP0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:26:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=opobSnnRG8obZcAVZH5RUHpAfVHh9dTl+YwhR9gxx53KL4jP2doSsS/HnRI7L4fuG5
+         dB75tvO+lpHncIEs9ukUbWgM/cd/9SpKBbNl1fB8jEHUq1Ye01B3D8EBIqB7o/8tooHN
+         icFEwVIwqIe6XZt85Qy8Yqb1V1bQf4OZWwIpw=
+MIME-Version: 1.0
+In-Reply-To: <4D045692.4050607@codeaurora.org>
+References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org>
+	<20101202221909.GK29347@n2100.arm.linux.org.uk>
+	<4CF94DDD.8000409@codeaurora.org>
+	<20101203203653.GB10245@n2100.arm.linux.org.uk>
+	<4CFDD297.4020600@codeaurora.org>
+	<15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
+	<20101209103835.GA31465@n2100.arm.linux.org.uk>
+	<4D017B45.4000805@codeaurora.org>
+	<AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
+	<4D045692.4050607@codeaurora.org>
+Date: Mon, 13 Dec 2010 15:26:29 +0000
+X-Google-Sender-Auth: zz3tZH_lP4gjJp2FLklov23QgSA
+Message-ID: <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
+Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to early_initcall
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, Nicolas Pitre <nico@marvell.com>,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
+        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Dec 2010 18:34:11 -0600
-David Fries <david@fries.net> wrote:
+On 12 December 2010 04:58, Saravana Kannan <skannan@codeaurora.org> wrote:
+> As you and James suggested, having the NS bit set by the secure world is
+> definitely a solution that would work. But IMHO, the explicit cache
+> flush/invalidate approach keeps the design simple and easy to maintain.
 
-> On Sun, Dec 12, 2010 at 11:01:28PM +0100, Florian Mickler wrote:
-> > On Sun, 12 Dec 2010 12:39:22 -0600
-> > David Fries <david@fries.net> wrote:
-> > 
-> > > Kconfig says fbcon is required by drm_kms_helper.  If radeon, fbcon,
-> > > and drm_kms_helper are all modules, radeon is auto loaded (by PCI id?),
-> > > drm_kms_helper is loaded because of the module dependency, but fbcon
-> > > isn't loaded leaving the console unusable.  Since fbcon is required
-> > > and there isn't an explicit module dependency, request the module
-> > > to be loaded from drm_kms_helper.
-> > > 
-> > > Signed-off-by: David Fries <david@fries.net>
-> > > Cc: David Airlie <airlied@linux.ie>
-> > > Cc: dri-devel@lists.freedesktop.org
-> > > ---
-> > > The last patch had a typo 'namue', mental reminder, test again after
-> > > running checkpatch.pl.
-> > > 
-> > > This solves compiling CONFIG_FB=m and being left with a blank screen
-> > > because the radeon module is automatically loaded, but fbcon isn't.
-> > > If radeon had to be manually loaded, then it would be the user's fault
-> > > for
-> > > not loading fbcon as well, but as radeon is being loaded
-> > > automatically,
-> > > there isn't much a user can do from console to even fix it.  More bug
-> > > details from here,
-> > > https://bugzilla.kernel.org/show_bug.cgi?id=16221
-> > 
-> > I guess this is reasonable. Maybe _if_ there actually is a usecase for
-> > a drm driver without fbcon, the drm could provide a
-> > parameter to skip loading fbcon?
-> 
-> My question was more, is there a usecase for a drm driver with
-> the fbcon module available, but not wanting it loaded?
+That is indeed an approach to the problem. But it depends on whether
+we consider the DMA API appropriate for this. We can view the secure
+world as a non-coherent agent accessing the memory and could try to
+justify the use of the DMA API in Linux.
 
-Isn't that the same question? I intended it to be in any case.  :)
+At some point we'll probably have platforms supporting cacheable DMA
+(e.g. via the ARM coherency port) and the DMA API would no longer give
+you what you need. But it is also possible that platforms with ACP
+would only have 1 or 2 devices on that port (some HD LCD controller
+for example) and the rest of devices non-coherent. In this case, we
+need to have different DMA operations depending on the bus/device (via
+get_dma_ops) and thus we can allow your scenario via dedicated DMA
+ops.
 
-
-> 
-> > But also the drm Kconfig seems to be bogus? SELECT is not transitiv. 
-> > So selecting DRM_KMS_HELPER is not enough, as it will not select FB
-> > and FRAMEBUFFER_CONSOLE. Maybe the drm drivers that currently
-> > select DRM_KMS_HELPER should instead depend on it.  
-> 
-> But the "select FB" and "select FRAMEBUFFER_CONSOLE if !EMBEDDED"
-> Kconfig for DRM_KMS_HELPER is the mechanism that cause FB and
-> FRAMEBUFFER_CONSOLE to be compiled.  The was the other part of my
-> reasoning, if there is a case for drm without fbcon, DRM_KMS_HELPER
-> shouldn't force fbcon to be compiled.  But as it does require fbcon to
-> be compiled, and things are clearly broken if a drm driver is loaded
-> (radeon) but fbcon isn't loaded (no usable console) DRM_KMS_HELPER
-> should try to load it, hence the patch.
-> 
-> Just for a check I used `make xconfig` to verify they are
-> automatically selected.
-> set FB, DRM_RADEON, DRM etc to =n so FRAMEBUFFER_CONSOLE can also be set to =n
-> set DRM=m (FRAMEBUFFER_CONSOLE still =n)
-> set DRM_RADEON=m (DRM_KMS_HELPER, FB, and FRAMEBUFFER_CONSOLE become =m)
-> That's because DRM_RADEON sets DRM_KMS_HELPER, and DRM_KMS_HELPER selects
-> FB and FRAMEBUFFER_CONSOLE
-> config DRM_RADEON
-> 	select DRM_KMS_HELPER
-> config DRM_KMS_HELPER
-> 	select FB
-> 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
-> and FRAMEBUFFER_CONSOLE is forced to =m 
-> 
-
-You are right. Sorry for the confusion. select is indeed
-transitive. (I could have sworn... bah..)
-
-
+-- 
+Catalin
