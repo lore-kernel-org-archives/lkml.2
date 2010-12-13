@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab0LMIZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 03:25:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55204 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab0LMIZH (ORCPT
+	id S1754855Ab0LMI3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 03:29:53 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:48132 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751793Ab0LMI3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 03:25:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=EY+kJu+TkKtFteX+gB04V8YnJ8gEEzNxW4/Cc7dkonXw6UiQ8xcMcaoGV0QvXNLPtS
-         tSyZxB34BVTA0XYYnnUOwJ9IZcOdYy4ScVdHe18z9Hjjq57qkQT/HOKwduw6AmtEjDeg
-         NuXFBqTo4JcdHQduTqwNKDjKHmnXzry5F1xyo=
+	Mon, 13 Dec 2010 03:29:51 -0500
+Message-ID: <4D05D966.5080104@euromail.se>
+Date: Mon, 13 Dec 2010 09:29:26 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <9580.1292225351@jrobl>
-References: <20101209070938.GA3949@amd>
-	<19324.1291990997@jrobl>
-	<20101213014553.GA6522@amd>
-	<9580.1292225351@jrobl>
-Date: Mon, 13 Dec 2010 19:25:05 +1100
-Message-ID: <AANLkTimeWSEUU6EYa4yWY11OyAVQqNu5eoBZc5ddqHQL@mail.gmail.com>
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-From: Nick Piggin <npiggin@gmail.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] input: mt updates for 2.6.38
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PS3mm-0006HA-B6.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PS3mm-0006HA-B6 1549b01eee17ebf2ddc23be30a95a8b5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 6:29 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->
-> Nick Piggin:
->> It's not scaling but just single threaded performance. gcc turns memcmp
->> into rep cmp, which has quite a long latency, so it's not appripriate
->> for short strings.
->
-> Honestly speaking I doubt how this 'long *' approach is effective
-> (Of course it never means that your result (by 'char *') is doubtful).
+Dmitry,
 
-Well, let's see what turns up. We certainly can try the long *
-approach. I suspect on architectures where byte loads are
-very slow, gcc will block the loop into larger loads, so it should
-be no worse than a normal memcmp call, but if we do explicit
-padding we can avoid all the problems associated with tail
-handling.
+Please pull from
 
-Doing name padding and long * comparison will be practically
-free (because slab allocator will align out to sizeof(long long)
-anyway), so if any architecture prefers to do the long loads, I'd
-be interested to hear and we could whip up a patch.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
 
-> But is the "rep cmp has quite a long latency" issue generic for all x86
-> architecture, or Westmere system specific?
+to receive input-mt updates for 2.6.38.
 
-I don't believe it is Westmere specific. Intel and AMD have
-been improving these instructions in the past few years, so
-Westmere is probably as good or better than any.
-
-That said, rep cmp may not be as heavily optimized as the
-set and copy string instructions.
-
-In short, I think the change should be suitable for all x86 CPUs,
-but I would like to hear more opinions or see numbers for other
-cores.
+The changes have all been discussed on the list, and are mostly janitory in nature.
 
 Thanks,
-Nick
+Henrik
+
+Dmitry Torokhov (2):
+      Input: include MT library as source for kerneldoc
+      Input: document new trkid field in struct input_dev
+
+Henrik Rydberg (3):
+      input: mt: Move input MT header inside input directory
+      input: mt: Interface and MT_TOOL documentation updates
+      input: mt: Support separate contact and finger count reports
+
+ Documentation/DocBook/device-drivers.tmpl    |    4 ++
+ Documentation/input/multi-touch-protocol.txt |   39 ++++++++++++++++++--------
+ drivers/hid/hid-3m-pct.c                     |    4 +-
+ drivers/hid/hid-egalax.c                     |    4 +-
+ drivers/input/input-mt.c                     |   35 +++++++++++++++++------
+ drivers/input/input.c                        |    2 +-
+ drivers/input/misc/uinput.c                  |    2 +-
+ drivers/input/tablet/wacom_wac.c             |    4 +-
+ drivers/input/touchscreen/wacom_w8001.c      |    2 +-
+ include/linux/input.h                        |    7 ++--
+ include/linux/{input-mt.h => input/mt.h}     |    3 +-
+ 11 files changed, 72 insertions(+), 34 deletions(-)
+ rename include/linux/{input-mt.h => input/mt.h} (89%)
