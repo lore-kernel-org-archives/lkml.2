@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0LMG6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:58:16 -0500
-Received: from mga03.intel.com ([143.182.124.21]:35379 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab0LMGtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753609Ab0LMGtl (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 13 Dec 2010 01:49:41 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10971 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751162Ab0LMGti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 01:49:38 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="360754652"
-Message-Id: <20101213064839.291896969@intel.com>
+   d="scan'208";a="686523108"
+Message-Id: <20101213064837.670473401@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:43:08 +0800
+Date: Mon, 13 Dec 2010 14:42:55 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -29,35 +29,49 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/47] writeback: fix increasement of nr_dirtied_pause
+Subject: [PATCH 06/47] writeback: prevent duplicate balance_dirty_pages_ratelimited() calls
 References: <20101213064249.648862451@intel.com>
-Content-Disposition: inline; filename=writeback-fix-increase-nr_dirtied_pause.patch
+Content-Disposition: inline; filename=writeback-fix-duplicate-bdp-calls.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a bug that
-
-	current->nr_dirtied_pause += current->nr_dirtied_pause >> 5;
-
-does not effectively increase nr_dirtied_pause when it's less than 32.
-Thus nr_dirtied_pause may never grow up.
+When dd in 512bytes, balance_dirty_pages_ratelimited() used to be called
+8 times for the same page, even if the page is only dirtied once. Fix it
+with a (slightly racy) PageDirty() test.
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/filemap.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:27.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-08 22:44:28.000000000 +0800
-@@ -700,7 +700,7 @@ pause:
- 	if (pause == 0 && nr_dirty < background_thresh)
- 		current->nr_dirtied_pause = ratelimit_pages(bdi);
- 	else if (pause == 1)
--		current->nr_dirtied_pause += current->nr_dirtied_pause >> 5;
-+		current->nr_dirtied_pause += current->nr_dirtied_pause / 32 + 1;
- 	else if (pause >= HZ/10)
- 		/*
- 		 * when repeated, writing 1 page per 100ms on slow devices,
+--- linux-next.orig/mm/filemap.c	2010-12-08 22:43:58.000000000 +0800
++++ linux-next/mm/filemap.c	2010-12-08 22:44:23.000000000 +0800
+@@ -2244,6 +2244,7 @@ static ssize_t generic_perform_write(str
+ 	long status = 0;
+ 	ssize_t written = 0;
+ 	unsigned int flags = 0;
++	unsigned int dirty;
+ 
+ 	/*
+ 	 * Copies from kernel address space cannot fail (NFSD is a big user).
+@@ -2292,6 +2293,7 @@ again:
+ 		pagefault_enable();
+ 		flush_dcache_page(page);
+ 
++		dirty = PageDirty(page);
+ 		mark_page_accessed(page);
+ 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
+ 						page, fsdata);
+@@ -2318,7 +2320,8 @@ again:
+ 		pos += copied;
+ 		written += copied;
+ 
+-		balance_dirty_pages_ratelimited(mapping);
++		if (!dirty)
++			balance_dirty_pages_ratelimited(mapping);
+ 
+ 	} while (iov_iter_count(i));
+ 
 
 
