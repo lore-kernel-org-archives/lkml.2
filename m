@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab0LMKTv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:19:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756934Ab0LMKTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:19:48 -0500
-Message-ID: <4D05F337.3000701@redhat.com>
-Date: Mon, 13 Dec 2010 12:19:35 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1756923Ab0LMKXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:23:09 -0500
+Received: from sd-11162.dedibox.fr ([88.191.70.230]:37144 "EHLO
+	sd-11162.dedibox.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab0LMKXH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 05:23:07 -0500
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 05:23:07 EST
+Date: Mon, 13 Dec 2010 11:16:38 +0100
+From: Stelian Pop <stelian@popies.net>
+To: Michael Hanselmann <public@hansmi.ch>
+Cc: Jean Delvare <khali@linux-fr.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 20/30] macintosh/ams: don't use flush_scheduled_work()
+Message-ID: <20101213101638.GA2188@calypso>
+Reply-To: Stelian Pop <stelian@popies.net>
+Mail-Followup-To: Stelian Pop <stelian@popies.net>,
+	Michael Hanselmann <public@hansmi.ch>,
+	Jean Delvare <khali@linux-fr.org>, Tejun Heo <tj@kernel.org>,
+	linux-kernel@vger.kernel.org
+References: <1292086307-19211-1-git-send-email-tj@kernel.org>
+ <1292086307-19211-21-git-send-email-tj@kernel.org>
+ <20101211201931.00414518@endymion.delvare>
+ <AANLkTinUko5JfbYTOVujXEKqBHfdSXuqAmVcphWZyOrU@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH v2 4/4] KVM: Allow host IRQ sharing for passed-through
- PCI 2.3 devices
-References: <cover.1292152963.git.jan.kiszka@web.de> <5a8f3388ba70d018510fa75f42ef677ad0765e69.1292152963.git.jan.kiszka@web.de>
-In-Reply-To: <5a8f3388ba70d018510fa75f42ef677ad0765e69.1292152963.git.jan.kiszka@web.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinUko5JfbYTOVujXEKqBHfdSXuqAmVcphWZyOrU@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2010 01:22 PM, Jan Kiszka wrote:
-> From: Jan Kiszka<jan.kiszka@siemens.com>
->
-> PCI 2.3 allows to generically disable IRQ sources at device level. This
-> enables us to share IRQs of such devices on the host side when passing
-> them to a guest.
->
-> However, IRQ disabling via the PCI config space is more costly than
-> masking the line via disable_irq. Therefore we register the IRQ in adaptive
-> mode and switch between line and device level disabling on demand.
->
-> This feature is optional, user space has to request it explicitly as it
-> also has to inform us about its view of PCI_COMMAND_INTX_DISABLE. That
-> way, we can avoid unmasking the interrupt and signaling it if the guest
-> masked it via the PCI config space.
->
+On Sun, Dec 12, 2010 at 02:37:28PM +0100, Michael Hanselmann wrote:
 
-Looks fine.
+> On Sat, Dec 11, 2010 at 8:19 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> > On Sat, 11 Dec 2010 17:51:37 +0100, Tejun Heo wrote:
+> >> flush_scheduled_work() is deprecated and scheduled to be removed.
+> >> Directly flush ams_info.worker on detach instead.
+> >
+> > The AMS driver is maintained by Stelian Pop and Michael Hanselmann
+> > according to MAINTAINERS. I am Cc'ing them both.
+> 
+> Change looks good to me, but can't test due to lack of hardware.
 
-> +		ret =IRQ_NONE;
-> +
+Same here. Looks like this driver can be orphaned...
 
-Danger, whitespace error detected.  Initiating self-destruct sequence.
-
+Stelian.
 -- 
-error compiling committee.c: too many arguments to function
-
+Stelian Pop <stelian@popies.net>
