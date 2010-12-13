@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab0LMMll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:41:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43641 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855Ab0LMMlk convert rfc822-to-8bit (ORCPT
+	id S1757342Ab0LMMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:42:56 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43943 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855Ab0LMMmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:41:40 -0500
-Subject: Re: perf monitoring triggers Was: Re: [tip:perf/core] perf bench:
- Print both of prefaulted and no prefaulted results by default
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>, mingo@redhat.com,
-        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, yakui.zhao@intel.com, fweisbec@gmail.com,
-        ling.ma@intel.com, rostedt@goodmis.org, miaox@cn.fujitsu.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101213123810.GA5407@ghostprotocols.net>
-References: <1290668693-27068-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-	 <tip-49ce8fc651794878189fd5f273228832cdfb5be9@git.kernel.org>
-	 <4D03B1AD.7000606@dcl.info.waseda.ac.jp>
-	 <20101212134657.GA19166@ghostprotocols.net>
-	 <1292238873.6803.183.camel@twins>
-	 <20101213123810.GA5407@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Dec 2010 13:40:59 +0100
-Message-ID: <1292244059.6803.203.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 13 Dec 2010 07:42:55 -0500
+Date: Mon, 13 Dec 2010 13:42:54 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] clk: Generic support for fixed-rate clocks
+Message-ID: <20101213124254.GI6017@pengutronix.de>
+References: <1291774094.269634.503532219345.0.gpush@pororo> <1291774094.270492.31002734529.2.gpush@pororo> <20101213121413.GA29833@pengutronix.de> <201012132035.41371.jeremy.kerr@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012132035.41371.jeremy.kerr@canonical.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 13:42:19 up 163 days,  3:53, 33 users,  load average: 0.63, 0.35,
+	0.55
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 10:38 -0200, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 13, 2010 at 12:14:33PM +0100, Peter Zijlstra escreveu:
-> > On Sun, 2010-12-12 at 11:46 -0200, Arnaldo Carvalho de Melo wrote:
-> > > Looks interesting, and also interesting would be to be able to place
-> > > probes that would wake up it too, for unmodified binaries to have
-> > > something similar.
+On Mon, Dec 13, 2010 at 08:35:37PM +0800, Jeremy Kerr wrote:
+> Hi Sascha,
 > 
-> > > Other kinds of triggers may be to hook on syscalls and when some
-> > > expression matches, like connecting to host 1.2.3.4, start monitoring,
-> > > stop when the socket is closed, i.e. monitor a connection lifetime, etc.
->  
-> > Sounds to me like you want something like a library with self-monitoring
-> > stuff.
+> > > +extern struct clk_ops clk_fixed_ops;
+> > > +
+> > > +#define INIT_CLK_FIXED(name, r) { \
+> > > +	.clk = INIT_CLK(name.clk, clk_fixed_ops), \
+> > > +	.rate = (r) \
+> > > +}
+> > 
+> > Is there any other valid usecase for this other than
+> > 
+> > struct clk_fixed bla = INIT_CLK_FIXED(bla, rate);
+> > 
+> > Otherwise I suggest to convert the macro to:
+> > 
+> > #define INIT_CLK_FIXED(name, r) \
+> > 	struct clk_fixed name = { \
+> > 		.clk = INIT_CLK(name.clk, clk_fixed_ops), \
+> > 		.rate = (r) \
+> > 	}
+> > 
+> > This way we do not have to specify the same name twice (and it has
+> > to be exactly the same name, otherwise it won't compile).
 > 
-> Yeah, that could be a way, an LD_PRELOAD thingy that would intercept
-> library calls, setup counters, start a monitoring thread, etc.
+> For the system-wide INIT_CLK* macros, I've intentionally made them initalisers 
+> rather than declarators, so that we can use them in other declarators (ie, the 
+> usage of INIT_CLK() above). This would be relevant if someone is using 
+> clk_fixed in their struct - probably not likely, but good to be consistent.
 > 
-> Along the lines of:
+> But yes, it would be good to avoid having to specify the name twice - how 
+> about adding a:
 > 
-> http://git.kernel.org/?p=linux/kernel/git/acme/libautocork.git;a=blob;f=libautocork.c
+> #define DEFINE_CLK_FIXED(name, r) \
+> 	struct clk_fixed name = INIT_CLK_FIXED(name, r)
 > 
-> This one just intercepts calls, but the __init function could do the
-> rest.
-> 
-> To make it easier we could move the counter setup we have in record/top
-> to a library, etc.
+> - just like DEFINE_MUTEX and MUTEX_INITIALIZER.
 
-Nah, I was more thinking of something along the lines of libPAPI and
-libpfmon. A library that contains the needed building blocks for apps to
-profile themselves.
+Jup, sounds good.
 
+Sascha
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
