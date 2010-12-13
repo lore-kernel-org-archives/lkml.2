@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab0LMTGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:06:47 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35823 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab0LMTGq convert rfc822-to-8bit (ORCPT
+	id S1752738Ab0LMTIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:08:39 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36556 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab0LMTIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:06:46 -0500
+	Mon, 13 Dec 2010 14:08:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uJnNKXlV4egxmkVs3sN/8cD6Zayvnv7yJ/NJOnn7i18XB4d6wIu9WqgsqF33XVehZv
-         kTUKVLnWBrUDexDohHw4rA4hd8RPRWapZuIpy+kCLU8pOVLnXGEp8IksGmsn/hc6UVKj
-         0Tpk/WxtByARez0KF0BZi2UJaAOH8KKHAIN44=
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=v6OBYJ95by306mI5HfyunEFRNx+rNGRJSdxdwra4AsZYAwVrC/UrKwV3QlGFvLJYeB
+         rT3kD77CW7V+DVgEwZPNGhi5ogxbDg//6eWvPnDGL3Twe5aYBwr+VuquyTHq/TJad3XW
+         OTPve+R7F/DjLnh3RdGltU1B3FKIYsqtoSeuc=
+Date: Mon, 13 Dec 2010 17:08:31 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: "David S. Ahern" <daahern@cisco.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
+Message-ID: <20101213190831.GA7984@ghostprotocols.net>
+References: <20101213170923.GB1691@nowhere>
+ <1292260289.6803.297.camel@twins>
+ <20101213171537.GC1691@nowhere>
+ <1292260699.6803.305.camel@twins>
+ <20101213172216.GB7417@ghostprotocols.net>
+ <1292261716.6803.332.camel@twins>
+ <1292262433.6803.351.camel@twins>
+ <4D065CB2.7050104@cisco.com>
+ <1292263024.6803.370.camel@twins>
+ <4D065F69.7080707@cisco.com>
 MIME-Version: 1.0
-In-Reply-To: <20101213140421.GA2826@darkstar>
-References: <20101212131550.GA2608@darkstar>
-	<AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
-	<20101213140421.GA2826@darkstar>
-Date: Mon, 13 Dec 2010 20:06:45 +0100
-Message-ID: <AANLkTin7-hSi9mhzU13ekW3ybKt6khCFnofePcw3a3tU@mail.gmail.com>
-Subject: Re: [PATCH] bttv: fix mutex use before init
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Clayton <chris2553@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D065F69.7080707@cisco.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 3:04 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Sun, Dec 12, 2010 at 05:13:47PM +0100, Torsten Kaiser wrote:
->> On Sun, Dec 12, 2010 at 2:15 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->> > oops happen in bttv_open while locking uninitialized mutex fh->cap.vb_lock
->> > add mutex_init before usage
->>
->> I have seen the same problem twice since I switched of the BKL in
->> 2.6.37-rc2, but only had the time today to search for the cause.
->> (It only happend on two boots out of probably more then 50, so I only
->> investigated after it happened a second time with -rc5)
->>
->> The cause was making this change to bttv_open() and radio_open() to
->> remove the BKL from them:
->> +     mutex_lock(&fh->cap.vb_lock);
->>       *fh = btv->init;
->> +     mutex_unlock(&fh->cap.vb_lock);
->>
->> This is wrong because of two things:
->> First: The fh->cap.vb_lock has not been initialised, as you noted.
->> Second: The middle line will overwrite the mutex!
->>
->> Just adding mutex_init() will not really help the second problem and
->> seems to be wrong from the point that cap.vb_lock already has a
->> mutex_init() via videobuf_queue_sg_init().
->
-> Yes, you are right. I wonder if the above lock code in bttv_open and radio_open can be removed or just use btv->lock.
+Em Mon, Dec 13, 2010 at 11:01:13AM -0700, David S. Ahern escreveu:
+> On 12/13/10 10:57, Peter Zijlstra wrote:
+> >> What about creating a PERF_RECORD_TIME and generate an event when the
+> >> counter is opened? It contains a PERF_SAMPLE_TIME and say
+> >> PERF_SAMPLE_TOD (time-of-day)? We're not sending rockets to saturn; we
+> >> just need the timestamps to match other log files.
 
-In bttv_open there is a comment directly above this lock/unlock
-sequence that explains why cap.vb_lock was used. As that comment
-sounded correct, I did not look further into changing it.
-Hmmh: I'm not sure, if I understand how this locking should work. It
-looks like each bttv_open() call will create a bttv_fh structure with
-its own cap.vb_lock. So if there ever is more then one bttv_fh for one
-btv, there is nothing that prevents concurrent access to btv->init,
-because there are two different cap.vb_lock. But if there always is
-only one bttv_fh, then why allocate it at all and not exclusively use
-btv->init, as that one will always be there already.
-Disclaimer: I only started looking into bttv-driver.c yesterday when I
-was trying to find out, why I got these OOPSes. I probably missed
-something there...
+> > That's similar to the first thing I proposed. The problem is with long
+> > record sessions your drift can become quite significant, then when you
+> > merge sort your other log events stuff can get out of order. Which can
+> > lead to some serious head-scratching..
 
->> I'm not sure what the correct fix is, but I would rather suggest this:
->>
->>  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
->> &btv->init.cap.vb_lock
->>  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
->
-> I will test this when the bttv card is available for me tommorrow.
+> Gotcha. Missed that in the flury of emails.
 
-I do have a bttv card, so if you want me to test something, I could do this.
-Although: the current version of the code works for me. Even after the
-OOPS during bootup, I was later able to watch TV with that card.
+> Arnaldo: Are you ok with this option? This should append mode as well.
 
->> > Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
->> > Tested-by: Chris Clayton <chris2553@googlemail.com>
->> > ---
->> >  drivers/media/video/bt8xx/bttv-driver.c |    2 ++
->> >  1 file changed, 2 insertions(+)
->> >
->> > --- linux-2.6.orig/drivers/media/video/bt8xx/bttv-driver.c      2010-11-27 11:21:30.000000000 +0800
->> > +++ linux-2.6/drivers/media/video/bt8xx/bttv-driver.c   2010-12-12 16:31:39.633333338 +0800
->> > @@ -3291,6 +3291,8 @@ static int bttv_open(struct file *file)
->> >        fh = kmalloc(sizeof(*fh), GFP_KERNEL);
->> >        if (unlikely(!fh))
->> >                return -ENOMEM;
->> > +
->> > +       mutex_init(&fh->cap.vb_lock);
->> >        file->private_data = fh;
->> >
->> >        /*
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> >
->
+What option, this one:
+
+-----------------------------------------------------------------------
+Peter Zijlstra wrote:
+
+> In fact, the only sane way to do that is by creating a software counter
+> that represents CLOCK_MONOTONIC and sample that say once a minute (or
+> more often if you want smaller drift).
+-----------------------------------------------------------------------
+
+?
+
+Yes, that looks the best option. I.e. no changes on headers, no new
+user fake events, a new software event that may be useful for other
+usecases.
+
+We have:
+
+[acme@mica linux]$ perf list | grep -- -clock
+  cpu-clock                                  [Software event]
+  task-clock                                 [Software event]
+[acme@mica linux]$ 
+
+So we would have a new one:
+
+  monotonic-clock
+
+Peter, agreed? I'll try to implement it now, good opportunity to learn a
+bit more about soft pmus, I'd have to do that anyway for NIC stats, etc.
+
+- Arnaldo
