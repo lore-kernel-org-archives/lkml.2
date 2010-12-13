@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab0LMKcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:32:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756950Ab0LMKcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:32:19 -0500
-Message-ID: <4D05F62D.9040308@redhat.com>
-Date: Mon, 13 Dec 2010 12:32:13 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1757029Ab0LMKk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:40:59 -0500
+Received: from sd-11162.dedibox.fr ([88.191.70.230]:50238 "EHLO
+	sd-11162.dedibox.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753988Ab0LMKk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 05:40:58 -0500
+Date: Mon, 13 Dec 2010 11:40:55 +0100
+From: Stelian Pop <stelian@popies.net>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Michael Hanselmann <public@hansmi.ch>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Remove myself from MAINTAINERS as I no longer have the
+ hardware to test.
+Message-ID: <20101213104055.GB2188@calypso>
+Reply-To: Stelian Pop <stelian@popies.net>
+Mail-Followup-To: Stelian Pop <stelian@popies.net>,
+	Jean Delvare <khali@linux-fr.org>,
+	Michael Hanselmann <public@hansmi.ch>, Tejun Heo <tj@kernel.org>,
+	linux-kernel@vger.kernel.org
+References: <1292086307-19211-1-git-send-email-tj@kernel.org>
+ <1292086307-19211-21-git-send-email-tj@kernel.org>
+ <20101211201931.00414518@endymion.delvare>
+ <AANLkTinUko5JfbYTOVujXEKqBHfdSXuqAmVcphWZyOrU@mail.gmail.com>
+ <20101213101638.GA2188@calypso>
+ <20101213111817.1d2087b0@endymion.delvare>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: MMU: don't make direct sp read-only if !map_writable
-References: <4D05F5F6.3070909@cn.fujitsu.com>
-In-Reply-To: <4D05F5F6.3070909@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101213111817.1d2087b0@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 12:31 PM, Xiao Guangrong wrote:
-> Currently, if the page is not allowed to write, then it can drop
-> ACC_WRITE_MASK in pte_access, and the direct sp's access is:
-> 	gw->pt_access&  gw->pte_access
-> so, it also removes the write access in the direct sp.
->
-> There is a problem: if the access of those pages which map thought the same
-> mapping in guest is different in host, it causes host switch direct sp very
-> frequently.
+This driver is PPC only, and I can no longer test it.
 
-I just sent a patch to fix this in a different way, please review it.
+Subject: [PATCH] Remove myself from MAINTAINERS as I no longer have the hardware to test.
 
+Signed-off-by: Stelian Pop <stelian@popies.net>
+---
+ MAINTAINERS |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+On Mon, Dec 13, 2010 at 11:18:17AM +0100, Jean Delvare wrote:
+
+> > > > The AMS driver is maintained by Stelian Pop and Michael Hanselmann
+> > > > according to MAINTAINERS. I am Cc'ing them both.
+> > > 
+> > > Change looks good to me, but can't test due to lack of hardware.
+> > 
+> > Same here. Looks like this driver can be orphaned...
+> 
+> If so, please submit a patch updating MAINTAINERS. Otherwise you'll
+> keep getting patches asking for your acknowledgment.
+
+Here it is.
+
+I'll let Michael remove itself from MAINTAINERS and orphan the
+driver if he no longer has any related hardware.
+
+Thanks,
+
+Stelian.
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1a1c27b..61d8c41 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -429,7 +429,6 @@ S:	Supported
+ F:	arch/x86/kernel/microcode_amd.c
+ 
+ AMS (Apple Motion Sensor) DRIVER
+-M:	Stelian Pop <stelian@popies.net>
+ M:	Michael Hanselmann <linux-kernel@hansmi.ch>
+ S:	Supported
+ F:	drivers/macintosh/ams/
 -- 
-error compiling committee.c: too many arguments to function
-
+1.7.1
