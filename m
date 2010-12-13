@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab0LMGu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:50:27 -0500
+	id S932192Ab0LMGuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:50:25 -0500
 Received: from mga14.intel.com ([143.182.124.37]:38898 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab0LMGtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:49:49 -0500
+	id S932194Ab0LMGtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 01:49:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="360754637"
-Message-Id: <20101213064839.785105287@intel.com>
+   d="scan'208";a="360754641"
+Message-Id: <20101213064838.654882390@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:43:12 +0800
+Date: Mon, 13 Dec 2010 14:43:03 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -29,222 +29,146 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 23/47] writeback: spinlock protected bdi bandwidth update
+Subject: [PATCH 14/47] writeback: add trace event for balance_dirty_pages()
 References: <20101213064249.648862451@intel.com>
-Content-Disposition: inline; filename=writeback-trylock.patch
+Content-Disposition: inline; filename=writeback-trace-balance_dirty_pages.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original plan is to use per-cpu vars for bdi->write_bandwidth.
-However Peter suggested that it opens the window that some CPU see
-outdated values. So switch to use spinlock protected global vars.
+Here is an interesting test to verify the theory with balance_dirty_pages()
+tracing. On a partition that can do ~60MB/s, a sparse file is created and
+4 rsync tasks with different write bandwidth started:
 
-It tries to update the bandwidth only when disk is fully utilized.
-Any inactive period of more than 500ms will be skipped.
+	dd if=/dev/zero of=/mnt/1T bs=1M count=1 seek=1024000
+	echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
 
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	rsync localhost:/mnt/1T /mnt/a --bwlimit 10000&
+	rsync localhost:/mnt/1T /mnt/A --bwlimit 10000&
+	rsync localhost:/mnt/1T /mnt/b --bwlimit 20000&
+	rsync localhost:/mnt/1T /mnt/c --bwlimit 30000&
+
+Trace outputs within 0.1 second, grouped by tasks:
+
+rsync-3824  [004] 15002.076447: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130876 gap=5340 dirtied=192 pause=20
+
+rsync-3822  [003] 15002.091701: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130777 gap=5113 dirtied=192 pause=20
+
+rsync-3821  [006] 15002.004667: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129570 gap=3714 dirtied=64 pause=8
+rsync-3821  [006] 15002.012654: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129589 gap=3733 dirtied=64 pause=8
+rsync-3821  [006] 15002.021838: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129604 gap=3748 dirtied=64 pause=8
+rsync-3821  [004] 15002.091193: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129583 gap=3983 dirtied=64 pause=8
+rsync-3821  [004] 15002.102729: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129594 gap=3802 dirtied=64 pause=8
+rsync-3821  [000] 15002.109252: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129619 gap=3827 dirtied=64 pause=8
+
+rsync-3823  [002] 15002.009029: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128762 gap=2842 dirtied=64 pause=12
+rsync-3823  [002] 15002.021598: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128813 gap=3021 dirtied=64 pause=12
+rsync-3823  [003] 15002.032973: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128805 gap=2885 dirtied=64 pause=12
+rsync-3823  [003] 15002.048800: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128823 gap=2967 dirtied=64 pause=12
+rsync-3823  [003] 15002.060728: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128821 gap=3221 dirtied=64 pause=12
+rsync-3823  [000] 15002.073152: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128825 gap=3225 dirtied=64 pause=12
+rsync-3823  [005] 15002.090111: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128782 gap=3214 dirtied=64 pause=12
+rsync-3823  [004] 15002.102520: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128764 gap=3036 dirtied=64 pause=12
+
+The data vividly show that
+
+- the heaviest writer is throttled a bit (weight=39%)
+
+- the lighter writers run at full speed (weight=15%,15%,30%)
+  rsync is smart enough to compensate for the in-kernel pause time
+
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c           |    7 +--
- include/linux/backing-dev.h |    4 +
- include/linux/writeback.h   |   13 ++++-
- mm/backing-dev.c            |    4 +
- mm/page-writeback.c         |   74 +++++++++++++++++++---------------
- 5 files changed, 62 insertions(+), 40 deletions(-)
+ include/trace/events/writeback.h |   61 +++++++++++++++++++++++++++--
+ mm/page-writeback.c              |    6 ++
+ 2 files changed, 64 insertions(+), 3 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:29.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-08 22:44:29.000000000 +0800
-@@ -523,41 +523,54 @@ out:
- 	return 1 + int_sqrt(dirty_thresh - dirty_pages);
- }
+--- linux-next.orig/include/trace/events/writeback.h	2010-12-08 22:44:20.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2010-12-08 22:44:26.000000000 +0800
+@@ -147,11 +147,66 @@ DEFINE_EVENT(wbc_class, name, \
+ DEFINE_WBC_EVENT(wbc_writeback_start);
+ DEFINE_WBC_EVENT(wbc_writeback_written);
+ DEFINE_WBC_EVENT(wbc_writeback_wait);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_start);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_written);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
+ DEFINE_WBC_EVENT(wbc_writepage);
  
--void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
--				unsigned long *bw_time,
--				s64 *bw_written)
-+static void __bdi_update_write_bandwidth(struct backing_dev_info *bdi,
-+					 unsigned long elapsed,
-+					 unsigned long written)
-+{
-+	const unsigned long period = roundup_pow_of_two(HZ);
-+	u64 bw;
++#define BDP_PERCENT(a, b, c)	((__entry->a - __entry->b) * 100 * c + \
++				  __entry->bdi_limit/2) / (__entry->bdi_limit|1)
++TRACE_EVENT(balance_dirty_pages,
 +
-+	bw = written - bdi->written_stamp;
-+	bw *= HZ;
-+	if (elapsed > period / 2) {
-+		do_div(bw, elapsed);
-+		elapsed = period / 2;
-+		bw *= elapsed;
-+	}
-+	bw += (u64)bdi->write_bandwidth * (period - elapsed);
-+	bdi->write_bandwidth = bw >> ilog2(period);
-+}
++	TP_PROTO(struct backing_dev_info *bdi,
++		 long bdi_dirty,
++		 long bdi_limit,
++		 long task_limit,
++		 long pages_dirtied,
++		 long pause),
 +
-+void bdi_update_bandwidth(struct backing_dev_info *bdi,
-+			  unsigned long start_time,
-+			  unsigned long bdi_dirty,
-+			  unsigned long bdi_thresh)
- {
--	const unsigned long unit_time = max(HZ/100, 1);
--	unsigned long written;
- 	unsigned long elapsed;
--	unsigned long bw;
--	unsigned long long w;
--
--	if (*bw_written == 0)
--		goto snapshot;
-+	unsigned long written;
- 
--	elapsed = jiffies - *bw_time;
--	if (elapsed < unit_time)
-+	if (!spin_trylock(&bdi->bw_lock))
- 		return;
- 
--	/*
--	 * When there lots of tasks throttled in balance_dirty_pages(), they
--	 * will each try to update the bandwidth for the same period, making
--	 * the bandwidth drift much faster than the desired rate (as in the
--	 * single dirtier case). So do some rate limiting.
--	 */
--	if (jiffies - bdi->write_bandwidth_update_time < elapsed)
-+	elapsed = jiffies - bdi->bw_time_stamp;
-+	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]);
++	TP_ARGS(bdi, bdi_dirty, bdi_limit, task_limit,
++		pages_dirtied, pause),
 +
-+	/* skip quiet periods when disk bandwidth is under-utilized */
-+	if (elapsed > HZ/2 &&
-+	    elapsed > jiffies - start_time)
- 		goto snapshot;
- 
--	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
--	bw = (HZ * written + elapsed / 2) / elapsed;
--	w = min(elapsed / unit_time, 128UL);
--	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) +
--				bw * w + 1023) >> 10;
--	bdi->write_bandwidth_update_time = jiffies;
-+	/* rate-limit, only update once every 100ms */
-+	if (elapsed <= HZ/10)
-+		goto unlock;
++	TP_STRUCT__entry(
++		__array(char,	bdi, 32)
++		__field(long,	bdi_dirty)
++		__field(long,	bdi_limit)
++		__field(long,	task_limit)
++		__field(long,	pages_dirtied)
++		__field(long,	pause)
++	),
 +
-+	__bdi_update_write_bandwidth(bdi, elapsed, written);
++	TP_fast_assign(
++		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
++		__entry->bdi_dirty	= bdi_dirty;
++		__entry->bdi_limit	= bdi_limit;
++		__entry->task_limit	= task_limit;
++		__entry->pages_dirtied	= pages_dirtied;
++		__entry->pause		= pause * 1000 / HZ;
++	),
 +
- snapshot:
--	*bw_written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]);
--	*bw_time = jiffies;
-+	bdi->written_stamp = written;
-+	bdi->bw_time_stamp = jiffies;
-+unlock:
-+	spin_unlock(&bdi->bw_lock);
- }
- 
- /*
-@@ -582,8 +595,7 @@ static void balance_dirty_pages(struct a
- 	unsigned long pause = 0;
- 	bool dirty_exceeded = false;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
--	unsigned long bw_time;
--	s64 bw_written = 0;
-+	unsigned long start_time = jiffies;
- 
- 	for (;;) {
- 		/*
-@@ -645,6 +657,8 @@ static void balance_dirty_pages(struct a
- 			break;
- 		bdi_prev_dirty = bdi_dirty;
- 
-+		bdi_update_bandwidth(bdi, start_time, bdi_dirty, bdi_thresh);
 +
- 		if (bdi_dirty >= task_thresh) {
- 			pause = HZ/10;
- 			goto pause;
-@@ -674,10 +688,8 @@ pause:
- 					  task_thresh,
- 					  pages_dirtied,
- 					  pause);
--		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
++	/*
++	 *            [..............soft throttling range............]
++	 *            ^               |<=========== bdi_gap =========>|
++	 * (background+dirty)/2       |<== task_gap ==>|
++	 * -------------------|-------+----------------|--------------|
++	 *   (bdi_limit * 7/8)^       ^bdi_dirty       ^task_limit    ^bdi_limit
++	 *
++	 * Reasonable large gaps help produce smooth pause times.
++	 */
++	TP_printk("bdi=%s bdi_dirty=%lu bdi_limit=%lu task_limit=%lu "
++		  "task_weight=%ld%% task_gap=%ld%% bdi_gap=%ld%% "
++		  "pages_dirtied=%lu pause=%lu",
++		  __entry->bdi,
++		  __entry->bdi_dirty,
++		  __entry->bdi_limit,
++		  __entry->task_limit,
++		  /* task weight: proportion of recent dirtied pages */
++		  BDP_PERCENT(bdi_limit, task_limit, TASK_SOFT_DIRTY_LIMIT),
++		  BDP_PERCENT(task_limit, bdi_dirty, TASK_SOFT_DIRTY_LIMIT),
++		  BDP_PERCENT(bdi_limit, bdi_dirty, BDI_SOFT_DIRTY_LIMIT),
++		  __entry->pages_dirtied,
++		  __entry->pause
++		  )
++);
++
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
+ 
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+--- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:26.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-08 22:44:26.000000000 +0800
+@@ -666,6 +666,12 @@ static void balance_dirty_pages(struct a
+ 		pause = clamp_val(pause, 1, HZ/10);
+ 
+ pause:
++		trace_balance_dirty_pages(bdi,
++					  bdi_dirty,
++					  bdi_thresh,
++					  task_thresh,
++					  pages_dirtied,
++					  pause);
+ 		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
+ 		__set_current_state(TASK_INTERRUPTIBLE);
  		io_schedule_timeout(pause);
--		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
- 
- 		/*
- 		 * The bdi thresh is somehow "soft" limit derived from the
---- linux-next.orig/include/linux/backing-dev.h	2010-12-08 22:44:29.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2010-12-08 22:44:29.000000000 +0800
-@@ -74,8 +74,10 @@ struct backing_dev_info {
- 
- 	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
- 
-+	spinlock_t bw_lock;
-+	unsigned long bw_time_stamp;
-+	unsigned long written_stamp;
- 	unsigned long write_bandwidth;
--	unsigned long write_bandwidth_update_time;
- 
- 	struct prop_local_percpu completions;
- 	int dirty_exceeded;
---- linux-next.orig/mm/backing-dev.c	2010-12-08 22:44:29.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-12-08 22:44:29.000000000 +0800
-@@ -662,7 +662,9 @@ int bdi_init(struct backing_dev_info *bd
- 			goto err;
- 	}
- 
--	bdi->write_bandwidth = (100 << 20) / PAGE_CACHE_SIZE;
-+	spin_lock_init(&bdi->bw_lock);
-+	bdi->write_bandwidth = 100 << (20 - PAGE_SHIFT);  /* 100 MB/s */
-+
- 	bdi->dirty_exceeded = 0;
- 	err = prop_local_init_percpu(&bdi->completions);
- 
---- linux-next.orig/fs/fs-writeback.c	2010-12-08 22:44:27.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2010-12-08 22:44:29.000000000 +0800
-@@ -645,8 +645,6 @@ static long wb_writeback(struct bdi_writ
- 		.range_cyclic		= work->range_cyclic,
- 	};
- 	unsigned long oldest_jif;
--	unsigned long bw_time;
--	s64 bw_written = 0;
- 	long wrote = 0;
- 	long write_chunk;
- 	struct inode *inode;
-@@ -680,7 +678,7 @@ static long wb_writeback(struct bdi_writ
- 		write_chunk = LONG_MAX;
- 
- 	wbc.wb_start = jiffies; /* livelock avoidance */
--	bdi_update_write_bandwidth(wb->bdi, &bw_time, &bw_written);
-+	bdi_update_write_bandwidth(wb->bdi, wbc.wb_start);
- 
- 	for (;;) {
- 		/*
-@@ -717,7 +715,8 @@ static long wb_writeback(struct bdi_writ
- 		else
- 			writeback_inodes_wb(wb, &wbc);
- 		trace_wbc_writeback_written(&wbc, wb->bdi);
--		bdi_update_write_bandwidth(wb->bdi, &bw_time, &bw_written);
-+
-+		bdi_update_write_bandwidth(wb->bdi, wbc.wb_start);
- 
- 		work->nr_pages -= write_chunk - wbc.nr_to_write;
- 		wrote += write_chunk - wbc.nr_to_write;
---- linux-next.orig/include/linux/writeback.h	2010-12-08 22:44:26.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2010-12-08 22:44:29.000000000 +0800
-@@ -139,9 +139,16 @@ void global_dirty_limits(unsigned long *
- unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
- 			       unsigned long dirty,
- 			       unsigned long dirty_pages);
--void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
--				unsigned long *bw_time,
--				s64 *bw_written);
-+
-+void bdi_update_bandwidth(struct backing_dev_info *bdi,
-+			  unsigned long start_time,
-+			  unsigned long bdi_dirty,
-+			  unsigned long bdi_thresh);
-+static inline void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
-+					      unsigned long start_time)
-+{
-+	bdi_update_bandwidth(bdi, start_time, 0, 0);
-+}
- 
- void page_writeback_init(void);
- void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
 
 
