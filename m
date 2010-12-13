@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab0LMOlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 09:41:16 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63722 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0LMOlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 09:41:14 -0500
-Subject: Re: [PATCH] regulator: Call into regulator driver only when
- voltage min/max really changes.
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
-References: <1292151342-12970-1-git-send-email-skannan@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Dec 2010 14:41:10 +0000
-Message-ID: <1292251270.3320.79.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755018Ab0LMOpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 09:45:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753280Ab0LMOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 09:45:07 -0500
+Date: Mon, 13 Dec 2010 09:44:34 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: Re: linux-next: Tree for December 10 (x86 nmi_watchdog)
+Message-ID: <20101213144434.GB18577@redhat.com>
+References: <20101210135746.0cf6cbcd.sfr@canb.auug.org.au>
+ <20101210092533.4f426650.randy.dunlap@oracle.com>
+ <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=bw8EcxEffbVV6CfdAPVdM25ZMxHqAmz1yukq3@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-12-12 at 02:55 -0800, Saravana Kannan wrote:
-> Even in cases where the consumer driver calls the regulator core with
-> different voltage min/max values, the application of the various
-> voltage constraints could result in the min/max voltage values passed
-> to the regulator driver to be unchanged since the previous invocation.
+On Sun, Dec 12, 2010 at 11:27:02AM +0600, Rakib Mullick wrote:
+> On Fri, Dec 10, 2010 at 11:25 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > On Fri, 10 Dec 2010 13:57:46 +1100 Stephen Rothwell wrote:
+> >
+> >> Hi all,
+> >>
+> >> Changes since 20101209:
+> >
+> >
+> > arch/x86/kernel/apic/hw_nmi.c:28: error: redefinition of 'touch_nmi_watchdog'
+> > include/linux/nmi.h:22: note: previous definition of 'touch_nmi_watchdog' was here
+
+I'll have to checkout that branch to see what got merged.  I thought I
+fixed all these.  Is there a config I can use to duplicate these?
+
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index c558e11..2056569 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -24,7 +24,7 @@ u64 hw_nmi_get_sample_period(void)
+>  }
+>  #endif
 > 
-> Optimize these cases by not calling into the regulator driver and not
-> sending incorrect/unnecessary voltage change notifications.
-> 
-> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> -#ifndef CONFIG_HARDLOCKUP_DETECTOR
+> +#ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  void touch_nmi_watchdog(void)
+>  {
+>  	touch_softlockup_watchdog();
 
-This doesn't apply. Any chance you could regenerate against the
-regulator for-next branch ?
+NAK.  This isn't the right patch.  This chunk is in here because of
+changes to nmi.h.  Something broke in that file.
 
-Thanks
-
-Liam  
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Cheers,
+Don
 
