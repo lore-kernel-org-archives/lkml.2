@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab0LMPMs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:12:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60066 "EHLO mga01.intel.com"
+	id S932333Ab0LMPMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:12:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60080 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756950Ab0LMPIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755218Ab0LMPIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Dec 2010 10:08:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="635822659"
-Message-Id: <20101213150329.233623422@intel.com>
+   d="scan'208";a="867612941"
+Message-Id: <20101213150326.604451840@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:47:10 +0800
+Date: Mon, 13 Dec 2010 22:46:48 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+CC: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Chris Mason <chris.mason@oracle.com>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -29,130 +29,72 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 24/35] btrfs: dont call balance_dirty_pages_ratelimited() on already dirty pages
+Subject: [PATCH 02/35] writeback: safety margin for bdi stat error
 References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=btrfs-fix-balance-size.patch
+Content-Disposition: inline; filename=writeback-bdi-error.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing 1KB sequential writes to the same page,
-balance_dirty_pages_ratelimited() should be called once instead of 4
-times. Failing to do so will make all tasks throttled much too heavy.
+In a simple dd test on a 8p system with "mem=256M", I find all light
+dirtier tasks on the root fs are get heavily throttled. That happens
+because the global limit is exceeded. It's unbelievable at first sight,
+because the test fs doing the heavy dd is under its bdi limit.  After
+doing some tracing, it's discovered that
 
-CC: Chris Mason <chris.mason@oracle.com>
+        bdi_dirty < bdi_dirty_limit() < global_dirty_limit() < nr_dirty
+
+So the root cause is, the bdi_dirty is well under the global nr_dirty
+due to accounting errors. This can be fixed by using bdi_stat_sum(),
+however that's costly on large NUMA machines. So do a less costly fix
+of lowering the bdi limit, so that the accounting errors won't lead to
+the absurd situation "global limit exceeded but bdi limit not exceeded".
+
+This provides guarantee when there is only 1 heavily dirtied bdi, and
+works by opportunity for 2+ heavy dirtied bdi's (hopefully they won't
+reach big error _and_ exceed their bdi limit at the same time).
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/btrfs/file.c       |   11 +++++++----
- fs/btrfs/ioctl.c      |    6 ++++--
- fs/btrfs/relocation.c |    6 ++++--
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ mm/page-writeback.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- linux-next.orig/fs/btrfs/file.c	2010-12-13 21:45:55.000000000 +0800
-+++ linux-next/fs/btrfs/file.c	2010-12-13 21:46:19.000000000 +0800
-@@ -762,7 +762,8 @@ out:
- static noinline int prepare_pages(struct btrfs_root *root, struct file *file,
- 			 struct page **pages, size_t num_pages,
- 			 loff_t pos, unsigned long first_index,
--			 unsigned long last_index, size_t write_bytes)
-+			 unsigned long last_index, size_t write_bytes,
-+			 int *nr_dirtied)
- {
- 	struct extent_state *cached_state = NULL;
- 	int i;
-@@ -825,7 +826,8 @@ again:
- 				     GFP_NOFS);
- 	}
- 	for (i = 0; i < num_pages; i++) {
--		clear_page_dirty_for_io(pages[i]);
-+		if (!clear_page_dirty_for_io(pages[i]))
-+			(*nr_dirtied)++;
- 		set_page_extent_mapped(pages[i]);
- 		WARN_ON(!PageLocked(pages[i]));
- 	}
-@@ -966,6 +968,7 @@ static ssize_t btrfs_file_aio_write(stru
- 					 offset);
- 		size_t num_pages = (write_bytes + PAGE_CACHE_SIZE - 1) >>
- 					PAGE_CACHE_SHIFT;
-+		int nr_dirtied = 0;
+--- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:10.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-13 21:46:11.000000000 +0800
+@@ -434,10 +434,16 @@ void global_dirty_limits(unsigned long *
+ 	*pdirty = dirty;
+ }
  
- 		WARN_ON(num_pages > nrptrs);
- 		memset(pages, 0, sizeof(struct page *) * nrptrs);
-@@ -976,7 +979,7 @@ static ssize_t btrfs_file_aio_write(stru
+-/*
++/**
+  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
++ * @bdi: the backing_dev_info to query
++ * @dirty: global dirty limit in pages
++ * @dirty_pages: current number of dirty pages
+  *
+- * Allocate high/low dirty limits to fast/slow devices, in order to prevent
++ * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
++ * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
++ *
++ * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+  * - piling up dirty pages (that will take long time to sync) on slow devices
+  *
+@@ -458,6 +464,14 @@ unsigned long bdi_dirty_limit(struct bac
+ 	long numerator, denominator;
  
- 		ret = prepare_pages(root, file, pages, num_pages,
- 				    pos, first_index, last_index,
--				    write_bytes);
-+				    write_bytes, &nr_dirtied);
- 		if (ret) {
- 			btrfs_delalloc_release_space(inode, write_bytes);
- 			goto out;
-@@ -1000,7 +1003,7 @@ static ssize_t btrfs_file_aio_write(stru
- 						 pos + write_bytes - 1);
- 		} else {
- 			balance_dirty_pages_ratelimited_nr(inode->i_mapping,
--							   num_pages);
-+							   nr_dirtied);
- 			if (num_pages <
- 			    (root->leafsize >> PAGE_CACHE_SHIFT) + 1)
- 				btrfs_btree_balance_dirty(root, 1);
---- linux-next.orig/fs/btrfs/ioctl.c	2010-12-13 21:45:55.000000000 +0800
-+++ linux-next/fs/btrfs/ioctl.c	2010-12-13 21:46:19.000000000 +0800
-@@ -647,6 +647,7 @@ static int btrfs_defrag_file(struct file
- 	u64 skip = 0;
- 	u64 defrag_end = 0;
- 	unsigned long i;
-+	int dirtied;
- 	int ret;
- 
- 	if (inode->i_size == 0)
-@@ -751,7 +752,7 @@ again:
- 
- 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
- 		ClearPageChecked(page);
--		set_page_dirty(page);
-+		dirtied = set_page_dirty(page);
- 		unlock_extent(io_tree, page_start, page_end, GFP_NOFS);
- 
- loop_unlock:
-@@ -759,7 +760,8 @@ loop_unlock:
- 		page_cache_release(page);
- 		mutex_unlock(&inode->i_mutex);
- 
--		balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
-+		if (dirtied)
-+			balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
- 		i++;
- 	}
- 
---- linux-next.orig/fs/btrfs/relocation.c	2010-12-13 21:45:55.000000000 +0800
-+++ linux-next/fs/btrfs/relocation.c	2010-12-13 21:46:19.000000000 +0800
-@@ -2894,6 +2894,7 @@ static int relocate_file_extent_cluster(
- 	struct file_ra_state *ra;
- 	int nr = 0;
- 	int ret = 0;
-+	int dirtied;
- 
- 	if (!cluster->nr)
- 		return 0;
-@@ -2970,7 +2971,7 @@ static int relocate_file_extent_cluster(
- 		}
- 
- 		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
--		set_page_dirty(page);
-+		dirtied = set_page_dirty(page);
- 
- 		unlock_extent(&BTRFS_I(inode)->io_tree,
- 			      page_start, page_end, GFP_NOFS);
-@@ -2978,7 +2979,8 @@ static int relocate_file_extent_cluster(
- 		page_cache_release(page);
- 
- 		index++;
--		balance_dirty_pages_ratelimited(inode->i_mapping);
-+		if (dirtied)
-+			balance_dirty_pages_ratelimited(inode->i_mapping);
- 		btrfs_throttle(BTRFS_I(inode)->root);
- 	}
- 	WARN_ON(nr != cluster->nr);
+ 	/*
++	 * try to prevent "global limit exceeded but bdi limit not exceeded"
++	 */
++	if (likely(dirty > bdi_stat_error(bdi)))
++		dirty -= bdi_stat_error(bdi);
++	else
++		return 0;
++
++	/*
+ 	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
+ 	 */
+ 	dirty -= min(dirty / 128, 32768UL >> (PAGE_SHIFT-10));
 
 
