@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab0LMRDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:03:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42515 "EHLO mx1.redhat.com"
+	id S932286Ab0LMRFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:05:35 -0500
+Received: from shutemov.name ([188.40.19.243]:54682 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758369Ab0LMRDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:03:16 -0500
-Message-ID: <4D0651BB.9040609@redhat.com>
-Date: Mon, 13 Dec 2010 12:02:51 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: balbir@linux.vnet.ibm.com
-CC: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
-References: <20101202144129.4357fe00@annuminas.surriel.com> <20101210050344.GR3158@balbir.in.ibm.com> <4D0328CC.1020809@redhat.com> <20101211135727.GU3158@balbir.in.ibm.com>
-In-Reply-To: <20101211135727.GU3158@balbir.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932138Ab0LMRFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 12:05:33 -0500
+From: "Kirill A. Shutsemov" <kirill@shutemov.name>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Dmitry V. Levin" <ldv@altlinux.org>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH] netlink: fix gcc -Wconversion compilation warning
+Date: Mon, 13 Dec 2010 19:05:13 +0200
+Message-Id: <1292259913-9911-1-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2010 08:57 AM, Balbir Singh wrote:
+From: Dmitry V. Levin <ldv@altlinux.org>
 
-> If the vpcu holding the lock runs more and capped, the timeslice
-> transfer is a heuristic that will not help.
+$ cat << EOF | gcc -Wconversion -xc -S -o/dev/null -
+unsigned f(void) {return NLMSG_HDRLEN;}
+EOF
+<stdin>: In function 'f':
+<stdin>:3:26: warning: negative integer implicitly converted to unsigned type
 
-That indicates you really need the cap to be per guest, and
-not per VCPU.
+Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ include/linux/netlink.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Having one VCPU spin on a lock (and achieve nothing), because
-the other one cannot give up the lock due to hitting its CPU
-cap could lead to showstoppingly bad performance.
-
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 1235669..e2b9e63 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -70,7 +70,7 @@ struct nlmsghdr {
+    Check		NLM_F_EXCL
+  */
+ 
+-#define NLMSG_ALIGNTO	4
++#define NLMSG_ALIGNTO	4U
+ #define NLMSG_ALIGN(len) ( ((len)+NLMSG_ALIGNTO-1) & ~(NLMSG_ALIGNTO-1) )
+ #define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
+ #define NLMSG_LENGTH(len) ((len)+NLMSG_ALIGN(NLMSG_HDRLEN))
 -- 
-All rights reversed
+1.7.3.3
+
