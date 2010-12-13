@@ -1,148 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab0LMLXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:23:50 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49006 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab0LMLXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:23:48 -0500
-Date: Mon, 13 Dec 2010 12:23:45 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Liu Ying <liu.y.victor@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Zhang Lily-R58066 <r58066@freescale.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Subject: Re: [PATCH 3/9] Add a mfd IPUv3 driver
-Message-ID: <20101213112345.GD6017@pengutronix.de>
-References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-4-git-send-email-s.hauer@pengutronix.de> <AANLkTine90yN=e-J_zr03GmGCXekEWTPKv0pB5-EhA1v@mail.gmail.com>
+	id S1753438Ab0LMLZF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:25:05 -0500
+Received: from www.tglx.de ([62.245.132.106]:44562 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab0LMLZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 06:25:03 -0500
+Date: Mon, 13 Dec 2010 12:24:02 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+cc: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org,
+        john stultz <johnstul@us.ibm.com>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [2.6.37-rc5] Timer or ICE1724 issues, HZ=250, NO_HZ=y
+In-Reply-To: <20101213111900.GA2310@gentoo.trippels.de>
+Message-ID: <alpine.LFD.2.00.1012131222420.2653@localhost6.localdomain6>
+References: <20101213105440.GA12768@hostway.ca> <20101213111900.GA2310@gentoo.trippels.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTine90yN=e-J_zr03GmGCXekEWTPKv0pB5-EhA1v@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:00:41 up 163 days,  2:11, 45 users,  load average: 1.18, 0.93,
-	0.69
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liu Ying,
-
-Thanks for looking at the patches.
-
-On Sun, Dec 12, 2010 at 01:21:57PM +0800, Liu Ying wrote:
-> Hello, Sascha,
+On Mon, 13 Dec 2010, Markus Trippelsdorf wrote:
+> On 2010.12.13 at 02:54 -0800, Simon Kirby wrote:
+> > With Linus git HEAD just compiled earlier today, I noticed a weird issue
+> > just now while in the middle of some coding.  I think this may have
+> > happened before (maybe in 2.6.36), but not as obvious as this time.
+> > 
+> > The music that was playing stopped, and the key I had just pressed did
+> > not show up in rxvt.  I figured the machine had hung, but I hit another
+> > key and the music played again for another second and my _previous_
+> > keystroke output appeared.
+> > 
+> > Looking at /proc/interrupts, "timer" had completely stopped.  "perf top"
+> > showed "snd_pcm_hwsync" was at the top of the profile with about 80%
+> > usage.  Spinning in "snd_pcm_stream_lock_irq" from other CPUs, probably..
+> > 
+> > dmesg showed:
+> > 
+> > [13995.498393] Clocksource tsc unstable (delta = -8589909196 ns)
+> > [13995.511452] Switching to clocksource hpet
+> > [14039.525074] NOHZ: local_softirq_pending 100
+> > [14039.882183] hrtimer: interrupt took 30800 ns
+> > [14134.540724] NOHZ: local_softirq_pending 100
 > 
-> IPU is not embedded in i,MX50 SoC, but in i.MX51/53 SoCs, please
-> modify the commit message.
+> Welcome to the club. This is a known problem on newer AMD systems see:
+> http://thread.gmane.org/gmane.linux.kernel/1054283
+> and the following patch:
+> http://thread.gmane.org/gmane.linux.kernel/1069458
 > 
-> I have the following comments for the files editted respectively:
-> 1) ipu-common.c
->     - ipu_idmac_get()/ipu_idmac_put() need a mechanism to protect IPU
-> IDMAC resources, namely, get rid of potential race condition issue. As
-> only framebuffer support is added in your patches, there should be no
-> race condition issue now. After IC channels are supported(maybe as DMA
-> engine), perhaps, there will be such kind of issue.
-
-ok.
-
->     - ipu_idmac_select_buffer() need to add spinlock to protect
-> IPU_CHA_BUFx_RDY registers.
-
-ok.
-
->     - It looks that ipu_uninit_channel() only clears
-> IPU_CHA_DB_MODE_SEL register, so why not put it in
-> ipu_idmac_disable_channel()?
-
-ok.
-
->     - It looks that ipu_add_client_devices() and your framebuffer
-> patch assume /dev/fb0 uses DP_BG, /dev/fb1 uses DP_FG and /dev/fb2
-> uses DC.
->       But fb1_platform_data->ipu_channel_bg is
-> MX51_IPU_CHANNEL_MEM_DC_SYNC, this may make confusion for driver
-> readers and it is not easy for code maintenance.
-
-Do you have a better suggestion? fb2 becomes fb1 when overlay support
-is not used.
-
->     - It also looks that ipu_add_client_devices() and your framebuffer
-> driver assume DP_BG/DP_FG are bound with DI0 and DC is bound with DI1.
->       It is ok for babbage board to support this kind of
-> configuration, but it may bring some limitation. For example, TVE(TV
-> encoder) module embedded in MX51 SoC can only connected with DI1 and
-> users may like to use TV as the primary device(support HW overlay),
-> and FSL Android BSP does support to use DI1 with LCD as the primary
-> device on babbage board.
-
-SO we need to put the display number into the platform data, right?
-
+> But the real problem is that no patch found its way to Linus yet and
+> 2.6.37 will be released in a few days. 
 > 
-> 2) ipu-cpmem.c
->     - In order to improve performance, maybe writing
-> ipu_ch_param_addr(ch) directly will be fine, but not using memset()
-> and memcpy() in ipu_ch_param_init().
+> I think Thomas' solution (with a hardcoded hpet_min_tick):
+>      return res < 128 ? -ETIME : 0;
+> is the only sane option left this late in the series.
 
-I don't see this function in any performance critical path.
+Yeah. I push that out to Linus. At some point we might hopefully get
+some reliable information from the HW folks.
 
-> 
-> 3) ipu-dc.c
->     - Looks '#include <asm/atomic.h>' and '#include
-> <linux/spinlock.h>' are unnecessary.
->     - Need to call 'ipu_module_disable(IPU_CONF_DC_EN);' somewhere.
+Thanks,
 
-ok.
-
-> 
-> 4) ipu-di.c
->     - Looks '#include <asm/atomic.h>' and '#include <linux/delay.h>'
-> are unnecessary.
-
-ok.
-
-> 
-> 5) ipu-dmfc.c
->     - Looks '#include <linux/delay.h>' are unnecessary.
-
-ok.
-
-> 
-> 6) ipu-dp.c
->     - Looks '#include <asm/atomic.h>' and '#include <linux/delay.h>'
-> are unnecessary.
-
-ok.
-
-> 
-> 7) ipu-prv.h
->     - Looks '#include <linux/interrupt.h>' is unnecessary.
->     - Please rename 'MX51_IPU_CHANNEL_xxxx' to be 'IPU_CHANNEL_xxxx',
-> IPUv3 channel names do not depend on SoC name.
-
-I was proven wrong each time I believed this.
-
-> 
-> 8) include/linux/mfd/imx-ipu-v3.h
->    - Looks '#include <linux/slab.h>' and '#include
-> <linux/interrupt.h>' are unnecessary.
-
-ok.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+	tglx
