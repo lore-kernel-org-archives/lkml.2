@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab0LMBoO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 20:44:14 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55975 "EHLO song.cn.fujitsu.com"
+	id S1756572Ab0LMBo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 20:44:26 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:49265 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755929Ab0LMBoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 20:44:10 -0500
-Message-ID: <4D057A81.1000901@cn.fujitsu.com>
-Date: Mon, 13 Dec 2010 09:44:33 +0800
+	id S1754346Ab0LMBoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 20:44:22 -0500
+Message-ID: <4D057A8D.1020704@cn.fujitsu.com>
+Date: Mon, 13 Dec 2010 09:44:45 +0800
 From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
@@ -17,352 +17,402 @@ CC: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
         Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
         Divyesh Shah <dpshah@google.com>,
         linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/8 v2] cfq-iosched: Introduce cfq_entity for CFQ group
+Subject: [PATCH 3/8 v2] cfq-iosched: Introduce vdisktime and io weight for
+ CFQ queue
 References: <4CDF7BC5.9080803@cn.fujitsu.com> <4CDF9CC6.2040106@cn.fujitsu.com> <20101115165319.GI30792@redhat.com> <4CE2718C.6010406@kernel.dk> <4D01C6AB.9040807@cn.fujitsu.com>
 In-Reply-To: <4D01C6AB.9040807@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-13 09:44:08,
+ 2010-12-13 09:44:21,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-13 09:44:09,
-	Serialize complete at 2010-12-13 09:44:09
+ 2010-12-13 09:44:21,
+	Serialize complete at 2010-12-13 09:44:21
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce cfq_entity for CFQ group
+Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
+maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
+use the same scheduling algorithm as CFQ group does. But it still give newly added
+cfqq a small vdisktime jump according to its ioprio. This patch will help to make
+CFQ queue and group schedule on a same service tree.
 
 Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
 ---
- block/cfq-iosched.c |  113 ++++++++++++++++++++++++++++++--------------------
- 1 files changed, 68 insertions(+), 45 deletions(-)
+ block/cfq-iosched.c |  196 ++++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 139 insertions(+), 57 deletions(-)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 9b07a24..91e9833 100644
+index 91e9833..30d19c0 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -1,5 +1,5 @@
- /*
-- *  CFQ, or complete fairness queueing, disk scheduler.
-+ *  Cfq, or complete fairness queueing, disk scheduler.
-  *
-  *  Based on ideas from a previously unfinished io
-  *  scheduler (round robin per-process disk scheduling) and Andrea Arcangeli.
-@@ -73,7 +73,8 @@ static DEFINE_IDA(cic_index_ida);
- #define cfq_class_rt(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_RT)
- 
- #define sample_valid(samples)	((samples) > 80)
--#define rb_entry_cfqg(node)	rb_entry((node), struct cfq_group, rb_node)
-+#define rb_entry_entity(node)	rb_entry((node), struct cfq_entity,\
-+					 rb_node)
- 
- /*
-  * Most of our rbtree usage is for sorting with min extraction, so
-@@ -102,6 +103,11 @@ struct cfq_entity {
+@@ -101,10 +101,7 @@ struct cfq_entity {
+ 	struct cfq_rb_root *service_tree;
+ 	/* service_tree member */
  	struct rb_node rb_node;
- 	/* service_tree key, represent the position on the tree */
- 	unsigned long rb_key;
-+
-+	/* group service_tree key */
-+	u64 vdisktime;
-+	bool is_group_entity;
-+	unsigned int weight;
- };
- 
- /*
-@@ -183,12 +189,8 @@ enum wl_type_t {
- 
- /* This is per cgroup per device grouping structure */
- struct cfq_group {
--	/* group service_tree member */
--	struct rb_node rb_node;
+-	/* service_tree key, represent the position on the tree */
+-	unsigned long rb_key;
 -
 -	/* group service_tree key */
--	u64 vdisktime;
--	unsigned int weight;
-+	/* cfq group sched entity */
-+	struct cfq_entity cfqe;
++	/* service_tree key */
+ 	u64 vdisktime;
+ 	bool is_group_entity;
+ 	unsigned int weight;
+@@ -116,6 +113,8 @@ struct cfq_entity {
+ struct cfq_queue {
+ 	/* The schedule entity */
+ 	struct cfq_entity cfqe;
++	/* Reposition time */
++	unsigned long reposition_time;
+ 	/* reference count */
+ 	atomic_t ref;
+ 	/* various state flags, see below */
+@@ -314,6 +313,22 @@ struct cfq_data {
+ 	struct rcu_head rcu;
+ };
  
- 	/* number of cfqq currently on this group */
- 	int nr_cfqq;
-@@ -315,12 +317,21 @@ struct cfq_data {
++/*
++ * Map io priority(7 ~ 0) to io weight(100 ~ 1000)
++ */
++static inline unsigned int cfq_prio_to_weight(unsigned short ioprio)
++{
++	unsigned int step;
++
++	BUG_ON(ioprio >= IOPRIO_BE_NR);
++
++	step = (BLKIO_WEIGHT_MAX - BLKIO_WEIGHT_MIN) / (IOPRIO_BE_NR - 1);
++	if (ioprio == 0)
++		return BLKIO_WEIGHT_MAX;
++
++	return BLKIO_WEIGHT_MIN + (IOPRIO_BE_NR - ioprio - 1) * step;
++}
++
  static inline struct cfq_queue *
  cfqq_of_entity(struct cfq_entity *cfqe)
  {
--	if (cfqe)
-+	if (cfqe && !cfqe->is_group_entity)
- 		return container_of(cfqe, struct cfq_queue,
- 				    cfqe);
- 	return NULL;
+@@ -841,16 +856,6 @@ cfq_find_next_rq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	return cfq_choose_req(cfqd, next, prev, blk_rq_pos(last));
  }
  
-+static inline struct cfq_group *
-+cfqg_of_entity(struct cfq_entity *cfqe)
+-static unsigned long cfq_slice_offset(struct cfq_data *cfqd,
+-				      struct cfq_queue *cfqq)
+-{
+-	/*
+-	 * just an approximation, should be ok.
+-	 */
+-	return (cfqq->cfqg->nr_cfqq - 1) * (cfq_prio_slice(cfqd, 1, 0) -
+-		       cfq_prio_slice(cfqd, cfq_cfqq_sync(cfqq), cfqq->ioprio));
+-}
+-
+ static inline s64
+ entity_key(struct cfq_rb_root *st, struct cfq_entity *entity)
+ {
+@@ -1199,6 +1204,16 @@ static inline void cfq_put_cfqg(struct cfq_group *cfqg) {}
+ 
+ #endif /* GROUP_IOSCHED */
+ 
++static inline u64 cfq_get_boost(struct cfq_data *cfqd,
++				 struct cfq_entity *cfqe)
 +{
-+	if (cfqe && cfqe->is_group_entity)
-+		return container_of(cfqe, struct cfq_group,
-+				    cfqe);
-+	return NULL;
++	u64 d = cfqd->cfq_slice[1] << CFQ_SERVICE_SHIFT;
++
++	d = d * BLKIO_WEIGHT_DEFAULT;
++	do_div(d, BLKIO_WEIGHT_MAX - cfqe->weight + BLKIO_WEIGHT_MIN);
++	return d;
 +}
 +
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+ /*
+  * The cfqd->service_trees holds all pending cfq_queue's that have
+  * requests waiting to be processed. It is sorted in the order that
+@@ -1210,13 +1225,14 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	struct cfq_entity *cfqe;
+ 	struct rb_node **p, *parent;
+ 	struct cfq_entity *__cfqe;
+-	unsigned long rb_key;
+-	struct cfq_rb_root *service_tree;
++	struct cfq_rb_root *service_tree, *orig_st;
+ 	int left;
+ 	int new_cfqq = 1;
+ 	int group_changed = 0;
++	s64 key;
  
- static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
-@@ -548,12 +559,12 @@ cfq_prio_to_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 	return cfq_prio_slice(cfqd, cfq_cfqq_sync(cfqq), cfqq->ioprio);
- }
- 
--static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_group *cfqg)
-+static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_entity *cfqe)
- {
- 	u64 d = delta << CFQ_SERVICE_SHIFT;
- 
- 	d = d * BLKIO_WEIGHT_DEFAULT;
--	do_div(d, cfqg->weight);
-+	do_div(d, cfqe->weight);
- 	return d;
- }
- 
-@@ -578,11 +589,11 @@ static inline u64 min_vdisktime(u64 min_vdisktime, u64 vdisktime)
- static void update_min_vdisktime(struct cfq_rb_root *st)
- {
- 	u64 vdisktime = st->min_vdisktime;
--	struct cfq_group *cfqg;
-+	struct cfq_entity *cfqe;
- 
- 	if (st->left) {
--		cfqg = rb_entry_cfqg(st->left);
--		vdisktime = min_vdisktime(vdisktime, cfqg->vdisktime);
-+		cfqe = rb_entry_entity(st->left);
-+		vdisktime = min_vdisktime(vdisktime, cfqe->vdisktime);
- 	}
- 
- 	st->min_vdisktime = max_vdisktime(st->min_vdisktime, vdisktime);
-@@ -613,8 +624,9 @@ static inline unsigned
- cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
-+	struct cfq_entity *cfqe = &cfqg->cfqe;
- 
--	return cfq_target_latency * cfqg->weight / st->total_weight;
-+	return cfq_target_latency * cfqe->weight / st->total_weight;
- }
- 
- static inline void
-@@ -777,13 +789,13 @@ static struct cfq_entity *cfq_rb_first(struct cfq_rb_root *root)
- 	return NULL;
- }
- 
--static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
-+static struct cfq_entity *cfq_rb_first_entity(struct cfq_rb_root *root)
- {
- 	if (!root->left)
- 		root->left = rb_first(&root->rb);
- 
- 	if (root->left)
--		return rb_entry_cfqg(root->left);
-+		return rb_entry_entity(root->left);
- 
- 	return NULL;
- }
-@@ -840,9 +852,9 @@ static unsigned long cfq_slice_offset(struct cfq_data *cfqd,
- }
- 
- static inline s64
--cfqg_key(struct cfq_rb_root *st, struct cfq_group *cfqg)
-+entity_key(struct cfq_rb_root *st, struct cfq_entity *entity)
- {
--	return cfqg->vdisktime - st->min_vdisktime;
-+	return entity->vdisktime - st->min_vdisktime;
- }
- 
- static void
-@@ -850,15 +862,16 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- {
- 	struct rb_node **node = &st->rb.rb_node;
- 	struct rb_node *parent = NULL;
--	struct cfq_group *__cfqg;
--	s64 key = cfqg_key(st, cfqg);
-+	struct cfq_entity *__cfqe;
-+	struct cfq_entity *cfqe = &cfqg->cfqe;
-+	s64 key = entity_key(st, cfqe);
- 	int left = 1;
- 
- 	while (*node != NULL) {
- 		parent = *node;
--		__cfqg = rb_entry_cfqg(parent);
-+		__cfqe = rb_entry_entity(parent);
- 
--		if (key < cfqg_key(st, __cfqg))
-+		if (key < entity_key(st, __cfqe))
- 			node = &parent->rb_left;
- 		else {
- 			node = &parent->rb_right;
-@@ -867,21 +880,22 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- 	}
- 
- 	if (left)
--		st->left = &cfqg->rb_node;
-+		st->left = &cfqe->rb_node;
- 
--	rb_link_node(&cfqg->rb_node, parent, node);
--	rb_insert_color(&cfqg->rb_node, &st->rb);
-+	rb_link_node(&cfqe->rb_node, parent, node);
-+	rb_insert_color(&cfqe->rb_node, &st->rb);
- }
- 
- static void
- cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
--	struct cfq_group *__cfqg;
-+	struct cfq_entity *cfqe = &cfqg->cfqe;
-+	struct cfq_entity *__cfqe;
- 	struct rb_node *n;
- 
- 	cfqg->nr_cfqq++;
--	if (!RB_EMPTY_NODE(&cfqg->rb_node))
-+	if (!RB_EMPTY_NODE(&cfqe->rb_node))
- 		return;
- 
- 	/*
-@@ -891,19 +905,20 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	 */
- 	n = rb_last(&st->rb);
- 	if (n) {
--		__cfqg = rb_entry_cfqg(n);
--		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
-+		__cfqe = rb_entry_entity(n);
-+		cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
- 	} else
--		cfqg->vdisktime = st->min_vdisktime;
-+		cfqe->vdisktime = st->min_vdisktime;
- 
- 	__cfq_group_service_tree_add(st, cfqg);
--	st->total_weight += cfqg->weight;
-+	st->total_weight += cfqe->weight;
- }
- 
- static void
- cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
-+	struct cfq_entity *cfqe = &cfqg->cfqe;
- 
- 	BUG_ON(cfqg->nr_cfqq < 1);
- 	cfqg->nr_cfqq--;
-@@ -913,9 +928,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 		return;
- 
- 	cfq_log_cfqg(cfqd, cfqg, "del_from_rr group");
--	st->total_weight -= cfqg->weight;
--	if (!RB_EMPTY_NODE(&cfqg->rb_node))
--		cfq_rb_erase(&cfqg->rb_node, st);
-+	st->total_weight -= cfqe->weight;
-+	if (!RB_EMPTY_NODE(&cfqe->rb_node))
-+		cfq_rb_erase(&cfqe->rb_node, st);
- 	cfqg->saved_workload_slice = 0;
- 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
- }
-@@ -953,6 +968,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 	unsigned int used_sl, charge;
- 	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
- 			- cfqg->service_tree_idle.count;
-+	struct cfq_entity *cfqe = &cfqg->cfqe;
- 
- 	BUG_ON(nr_sync < 0);
- 	used_sl = charge = cfq_cfqq_slice_usage(cfqq);
-@@ -963,8 +979,8 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 		charge = cfqq->allocated_slice;
- 
- 	/* Can't update vdisktime while group is on service tree */
--	cfq_rb_erase(&cfqg->rb_node, st);
--	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
-+	cfq_rb_erase(&cfqe->rb_node, st);
-+	cfqe->vdisktime += cfq_scale_slice(charge, cfqe);
- 	__cfq_group_service_tree_add(st, cfqg);
- 
- 	/* This group is being expired. Save the context */
-@@ -976,8 +992,8 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 	} else
- 		cfqg->saved_workload_slice = 0;
- 
--	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
--					st->min_vdisktime);
-+	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu",
-+		     cfqe->vdisktime, st->min_vdisktime);
- 	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
- 			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
- 			iops_mode(cfqd), cfqq->nr_sectors);
-@@ -996,7 +1012,7 @@ static inline struct cfq_group *cfqg_of_blkg(struct blkio_group *blkg)
- void cfq_update_blkio_group_weight(void *key, struct blkio_group *blkg,
- 					unsigned int weight)
- {
--	cfqg_of_blkg(blkg)->weight = weight;
-+	cfqg_of_blkg(blkg)->cfqe.weight = weight;
- }
- 
- static struct cfq_group *
-@@ -1025,7 +1041,9 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
- 
- 	for_each_cfqg_st(cfqg, i, j, st)
- 		*st = CFQ_RB_ROOT;
--	RB_CLEAR_NODE(&cfqg->rb_node);
-+	RB_CLEAR_NODE(&cfqg->cfqe.rb_node);
-+
-+	cfqg->cfqe.is_group_entity = true;
- 
- 	/*
- 	 * Take the initial reference that will be released on destroy
-@@ -1049,7 +1067,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
- 		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
- 					0);
- 
--	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
-+	cfqg->cfqe.weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
- 
- 	/* Add group on cfqd list */
- 	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
-@@ -2216,10 +2234,13 @@ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
- 	struct cfq_group *cfqg;
-+	struct cfq_entity *cfqe;
- 
- 	if (RB_EMPTY_ROOT(&st->rb))
- 		return NULL;
--	cfqg = cfq_rb_first_group(st);
-+	cfqe = cfq_rb_first_entity(st);
-+	cfqg = cfqg_of_entity(cfqe);
-+	BUG_ON(!cfqg);
- 	update_min_vdisktime(st);
- 	return cfqg;
- }
-@@ -2877,6 +2898,7 @@ static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	RB_CLEAR_NODE(&cfqq->p_node);
- 	INIT_LIST_HEAD(&cfqq->fifo);
- 
-+	cfqe->is_group_entity = false;
- 	atomic_set(&cfqq->ref, 0);
- 	cfqq->cfqd = cfqd;
- 
-@@ -3909,10 +3931,11 @@ static void *cfq_init_queue(struct request_queue *q)
- 	cfqg = &cfqd->root_group;
- 	for_each_cfqg_st(cfqg, i, j, st)
- 		*st = CFQ_RB_ROOT;
--	RB_CLEAR_NODE(&cfqg->rb_node);
-+	RB_CLEAR_NODE(&cfqg->cfqe.rb_node);
- 
- 	/* Give preference to root group over other groups */
--	cfqg->weight = 2*BLKIO_WEIGHT_DEFAULT;
-+	cfqg->cfqe.weight = 2*BLKIO_WEIGHT_DEFAULT;
-+	cfqg->cfqe.is_group_entity = true;
+ 	cfqe = &cfqq->cfqe;
++	orig_st = cfqe->service_tree;
  
  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+ 	if (!cfqd->cfq_group_isolation
+@@ -1224,8 +1240,15 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	    && cfqq->cfqg && cfqq->cfqg != &cfqd->root_group) {
+ 		/* Move this cfq to root group */
+ 		cfq_log_cfqq(cfqd, cfqq, "moving to root group");
+-		if (!RB_EMPTY_NODE(&cfqe->rb_node))
++		if (!RB_EMPTY_NODE(&cfqe->rb_node)) {
+ 			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
++			/*
++			 * Group changed, dequeue this CFQ queue from the
++			 * original service tree.
++			 */
++			cfq_rb_erase(&cfqe->rb_node, cfqe->service_tree);
++			orig_st->total_weight -= cfqe->weight;
++		}
+ 		cfqq->orig_cfqg = cfqq->cfqg;
+ 		cfqq->cfqg = &cfqd->root_group;
+ 		atomic_inc(&cfqd->root_group.ref);
+@@ -1234,8 +1257,15 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		   && cfqq_type(cfqq) == SYNC_WORKLOAD && cfqq->orig_cfqg) {
+ 		/* cfqq is sequential now needs to go to its original group */
+ 		BUG_ON(cfqq->cfqg != &cfqd->root_group);
+-		if (!RB_EMPTY_NODE(&cfqe->rb_node))
++		if (!RB_EMPTY_NODE(&cfqe->rb_node)) {
+ 			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
++			/*
++			 * Group changed, dequeue this CFQ queue from the
++			 * original service tree.
++			 */
++			cfq_rb_erase(&cfqe->rb_node, cfqe->service_tree);
++			orig_st->total_weight -= cfqe->weight;
++		}
+ 		cfq_put_cfqg(cfqq->cfqg);
+ 		cfqq->cfqg = cfqq->orig_cfqg;
+ 		cfqq->orig_cfqg = NULL;
+@@ -1246,50 +1276,73 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 
+ 	service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
+ 						cfqq_type(cfqq));
++	/*
++	 * For the time being, put the newly added CFQ queue at the end of the
++	 * service tree.
++	 */
++	if (RB_EMPTY_NODE(&cfqe->rb_node)) {
++		/*
++		 * If this CFQ queue moves to another group, the original
++		 * vdisktime makes no sense any more, reset the vdisktime
++		 * here.
++		 */
++		parent = rb_last(&service_tree->rb);
++		if (parent) {
++			u64 boost;
++			s64 __vdisktime;
++
++			__cfqe = rb_entry_entity(parent);
++			cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
++
++			/* Give some vdisktime boost according to its weight */
++			boost = cfq_get_boost(cfqd, cfqe);
++			__vdisktime = cfqe->vdisktime - boost;
++			if (__vdisktime)
++				cfqe->vdisktime = __vdisktime;
++			else
++				cfqe->vdisktime = 0;
++		} else
++			cfqe->vdisktime = service_tree->min_vdisktime;
++
++		goto insert;
++	}
++	/*
++	 * Ok, we get here, this CFQ queue is on the service tree, dequeue it
++	 * firstly.
++	 */
++	cfq_rb_erase(&cfqe->rb_node, cfqe->service_tree);
++	orig_st->total_weight -= cfqe->weight;
++
++	new_cfqq = 0;
++
+ 	if (cfq_class_idle(cfqq)) {
+-		rb_key = CFQ_IDLE_DELAY;
+ 		parent = rb_last(&service_tree->rb);
+ 		if (parent && parent != &cfqe->rb_node) {
+ 			__cfqe = rb_entry(parent,
+-						  struct cfq_entity,
+-						  rb_node);
+-			rb_key += __cfqe->rb_key;
++					  struct cfq_entity,
++					  rb_node);
++			cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
+ 		} else
+-			rb_key += jiffies;
++			cfqe->vdisktime = service_tree->min_vdisktime;
+ 	} else if (!add_front) {
+ 		/*
+-		 * Get our rb key offset. Subtract any residual slice
+-		 * value carried from last service. A negative resid
+-		 * count indicates slice overrun, and this should position
+-		 * the next service time further away in the tree.
++		 * We charge the CFQ queue by the time this queue runs, and
++		 * repsition it on the service tree.
+ 		 */
+-		rb_key = cfq_slice_offset(cfqd, cfqq) + jiffies;
+-		rb_key -= cfqq->slice_resid;
+-		cfqq->slice_resid = 0;
+-	} else {
+-		rb_key = -HZ;
+-		__cfqe = cfq_rb_first(service_tree);
+-		rb_key += __cfqe ? __cfqe->rb_key : jiffies;
+-	}
++		unsigned int used_sl;
+ 
+-	if (!RB_EMPTY_NODE(&cfqe->rb_node)) {
+-		new_cfqq = 0;
+-		/*
+-		 * same position, nothing more to do
+-		 */
+-		if (rb_key == cfqe->rb_key &&
+-		    cfqe->service_tree == service_tree)
+-			return;
+-
+-		cfq_rb_erase(&cfqe->rb_node,
+-			     cfqe->service_tree);
+-		cfqe->service_tree = NULL;
++		used_sl = cfq_cfqq_slice_usage(cfqq);
++		cfqe->vdisktime += cfq_scale_slice(used_sl, cfqe);
++	} else {
++		cfqe->vdisktime = service_tree->min_vdisktime;
+ 	}
+ 
++insert:
+ 	left = 1;
+ 	parent = NULL;
+ 	cfqe->service_tree = service_tree;
+ 	p = &service_tree->rb.rb_node;
++	key = entity_key(service_tree, cfqe);
+ 	while (*p) {
+ 		struct rb_node **n;
+ 
+@@ -1300,7 +1353,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		/*
+ 		 * sort by key, that represents service time.
+ 		 */
+-		if (time_before(rb_key, __cfqe->rb_key))
++		if (key < entity_key(service_tree, __cfqe))
+ 			n = &(*p)->rb_left;
+ 		else {
+ 			n = &(*p)->rb_right;
+@@ -1313,10 +1366,12 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	if (left)
+ 		service_tree->left = &cfqe->rb_node;
+ 
+-	cfqe->rb_key = rb_key;
+ 	rb_link_node(&cfqe->rb_node, parent, p);
+ 	rb_insert_color(&cfqe->rb_node, &service_tree->rb);
++	update_min_vdisktime(service_tree);
+ 	service_tree->count++;
++	service_tree->total_weight += cfqe->weight;
++	cfqq->reposition_time = jiffies;
+ 	if ((add_front || !new_cfqq) && !group_changed)
+ 		return;
+ 	cfq_group_service_tree_add(cfqd, cfqq->cfqg);
+@@ -1418,15 +1473,19 @@ static void cfq_add_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ static void cfq_del_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ {
+ 	struct cfq_entity *cfqe;
++	struct cfq_rb_root *service_tree;
++
+ 	cfq_log_cfqq(cfqd, cfqq, "del_from_rr");
+ 	BUG_ON(!cfq_cfqq_on_rr(cfqq));
+ 	cfq_clear_cfqq_on_rr(cfqq);
+ 
+ 	cfqe = &cfqq->cfqe;
++	service_tree = cfqe->service_tree;
+ 
+ 	if (!RB_EMPTY_NODE(&cfqe->rb_node)) {
+ 		cfq_rb_erase(&cfqe->rb_node,
+ 			     cfqe->service_tree);
++		service_tree->total_weight -= cfqe->weight;
+ 		cfqe->service_tree = NULL;
+ 	}
+ 	if (cfqq->p_root) {
+@@ -2125,24 +2184,34 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+ 	}
+ }
+ 
++/*
++ * The time when a CFQ queue is put onto a service tree is recoreded in
++ * cfqq->reposition_time. Currently, we check the first priority CFQ queues
++ * on each service tree, and select the workload type that contain the lowest
++ * reposition_time CFQ queue among them.
++ */
+ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+ 				struct cfq_group *cfqg, enum wl_prio_t prio)
+ {
+ 	struct cfq_entity *cfqe;
++	struct cfq_queue *cfqq;
++	unsigned long lowest_start_time;
+ 	int i;
+-	bool key_valid = false;
+-	unsigned long lowest_key = 0;
++	bool time_valid = false;
+ 	enum wl_type_t cur_best = SYNC_NOIDLE_WORKLOAD;
+ 
++	/*
++	 * TODO: We may take io priority into account when choosing a workload
++	 * type. But for the time being just make use of reposition_time only.
++	 */
+ 	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
+-		/* select the one with lowest rb_key */
+ 		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
+-		if (cfqe &&
+-		    (!key_valid ||
+-		     time_before(cfqe->rb_key, lowest_key))) {
+-			lowest_key = cfqe->rb_key;
++		cfqq = cfqq_of_entity(cfqe);
++		if (cfqe && (!time_valid ||
++			     cfqq->reposition_time < lowest_start_time)) {
++			lowest_start_time = cfqq->reposition_time;
+ 			cur_best = i;
+-			key_valid = true;
++			time_valid = true;
+ 		}
+ 	}
+ 
+@@ -2814,10 +2883,13 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq, struct io_context *ioc)
+ {
+ 	struct task_struct *tsk = current;
+ 	int ioprio_class;
++	struct cfq_entity *cfqe;
+ 
+ 	if (!cfq_cfqq_prio_changed(cfqq))
+ 		return;
+ 
++	cfqe = &cfqq->cfqe;
++
+ 	ioprio_class = IOPRIO_PRIO_CLASS(ioc->ioprio);
+ 	switch (ioprio_class) {
+ 	default:
+@@ -2844,6 +2916,8 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq, struct io_context *ioc)
+ 		break;
+ 	}
+ 
++	cfqe->weight = cfq_prio_to_weight(cfqq->ioprio);
++
  	/*
+ 	 * keep track of original prio settings in case we have to temporarily
+ 	 * elevate the priority of this queue
+@@ -3578,6 +3652,9 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+  */
+ static void cfq_prio_boost(struct cfq_queue *cfqq)
+ {
++	struct cfq_entity *cfqe;
++
++	cfqe = &cfqq->cfqe;
+ 	if (has_fs_excl()) {
+ 		/*
+ 		 * boost idle prio on transactions that would lock out other
+@@ -3594,6 +3671,11 @@ static void cfq_prio_boost(struct cfq_queue *cfqq)
+ 		cfqq->ioprio_class = cfqq->org_ioprio_class;
+ 		cfqq->ioprio = cfqq->org_ioprio;
+ 	}
++
++	/*
++	 * update the io weight if io priority gets changed.
++	 */
++	cfqe->weight = cfq_prio_to_weight(cfqq->ioprio);
+ }
+ 
+ static inline int __cfq_may_queue(struct cfq_queue *cfqq)
 -- 
 1.6.5.2
+
 
 
 
