@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0LMIor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 03:44:47 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54292 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751793Ab0LMIoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 03:44:46 -0500
-From: David Sterba <dsterba@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 21/30] pcmcia/ipwireless: don't use flush_scheduled_work()
-Date: Mon, 13 Dec 2010 09:44:43 +0100
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org> <1292086307-19211-22-git-send-email-tj@kernel.org>
-In-Reply-To: <1292086307-19211-22-git-send-email-tj@kernel.org>
+	id S1756228Ab0LMItn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 03:49:43 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:33567 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab0LMItl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 03:49:41 -0500
+Message-ID: <4D05DE18.3060500@canonical.com>
+Date: Mon, 13 Dec 2010 16:49:28 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+To: Corentin Chary <corentin.chary@gmail.com>
+CC: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 0/7] ideapad: hotkey enablement
+References: <1291881376-4729-1-git-send-email-ike.pan@canonical.com> <AANLkTimUpXe34tSzvOJ_oo=fyqdAhwkk6xnN10BbdWrH@mail.gmail.com>
+In-Reply-To: <AANLkTimUpXe34tSzvOJ_oo=fyqdAhwkk6xnN10BbdWrH@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201012130944.44424.dsterba@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 11 December 2010 17:51:38 Tejun Heo wrote:
-> flush_scheduled_work() is deprecated and scheduled to be removed.
-> Directly flush the used works instead.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Cc: David Sterba <dsterba@suse.cz>
+On 12/09/2010 04:39 PM, Corentin Chary wrote:
+>> acpi_handle is still a global variable becuase we need to pass handle pointer
+>> to rfk_set with its opcode but only one data argument available.
+> 
+> Of course there is only one data argument available, but since it's a
+> void *, you
+> can use a struct with your handle and the opcode :).
+> 
 
-Acked-by: David Sterba <dsterba@suse.cz>
-
-
-Dave
+I have tried it. It needs to copy the same handle three times to each struture.
+Since we only have an acpi handle, I think to have it global will let driver
+easy read.
