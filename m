@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab0LMKoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:44:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1790 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757049Ab0LMKon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:44:43 -0500
-Date: Mon, 13 Dec 2010 12:44:13 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL net-next-2.6] vhost-net: tools, cleanups, optimizations
-Message-ID: <20101213104413.GA678@redhat.com>
+	id S1757113Ab0LMKvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:51:47 -0500
+Received: from sd-11162.dedibox.fr ([88.191.70.230]:60160 "EHLO
+	sd-11162.dedibox.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757002Ab0LMKvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 05:51:46 -0500
+Date: Mon, 13 Dec 2010 11:51:43 +0100
+From: Stelian Pop <stelian@popies.net>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Orphan the meye driver since I no longer have the hardware.
+Message-ID: <20101213105143.GC2188@calypso>
+Reply-To: Stelian Pop <stelian@popies.net>
+Mail-Followup-To: Stelian Pop <stelian@popies.net>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please merge the following tree for 2.6.38.
-Thanks!
+I don't even remember when it was that I sold this laptop, but
+it has been a few years...
 
-The following changes since commit ad1184c6cf067a13e8cb2a4e7ccc407f947027d0:
+---
+ MAINTAINERS |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-  net: au1000_eth: remove unused global variable. (2010-12-11 12:01:48 -0800)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 61d8c41..ca8ea6f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3962,9 +3962,8 @@ F:	include/linux/module.h
+ F:	kernel/module.c
+ 
+ MOTION EYE VAIO PICTUREBOOK CAMERA DRIVER
+-M:	Stelian Pop <stelian@popies.net>
+ W:	http://popies.net/meye/
+-S:	Maintained
++S:	Orphan
+ F:	Documentation/video4linux/meye.txt
+ F:	drivers/media/video/meye.*
+ F:	include/linux/meye.h
+-- 
+1.7.1
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
-
-Jason Wang (1):
-      vhost: fix typos in comment
-
-Julia Lawall (1):
-      drivers/vhost/vhost.c: delete double assignment
-
-Michael S. Tsirkin (9):
-      vhost: put mm after thread stop
-      vhost-net: batch use/unuse mm
-      vhost: copy_to_user -> __copy_to_user
-      vhost: get/put_user -> __get/__put_user
-      vhost: remove unused include
-      vhost: correctly set bits of dirty pages
-      vhost: better variable name in logging
-      vhost test module
-      tools/virtio: virtio_test tool
-
- drivers/vhost/net.c                  |    9 +-
- drivers/vhost/test.c                 |  320 ++++++++++++++++++++++++++++++++++
- drivers/vhost/test.h                 |    7 +
- drivers/vhost/vhost.c                |   44 +++---
- drivers/vhost/vhost.h                |    2 +-
- tools/virtio/Makefile                |   12 ++
- tools/virtio/linux/device.h          |    2 +
- tools/virtio/linux/slab.h            |    2 +
- tools/virtio/linux/virtio.h          |  223 +++++++++++++++++++++++
- tools/virtio/vhost_test/Makefile     |    2 +
- tools/virtio/vhost_test/vhost_test.c |    1 +
- tools/virtio/virtio_test.c           |  248 ++++++++++++++++++++++++++
- 12 files changed, 842 insertions(+), 30 deletions(-)
- create mode 100644 drivers/vhost/test.c
- create mode 100644 drivers/vhost/test.h
- create mode 100644 tools/virtio/Makefile
- create mode 100644 tools/virtio/linux/device.h
- create mode 100644 tools/virtio/linux/slab.h
- create mode 100644 tools/virtio/linux/virtio.h
- create mode 100644 tools/virtio/vhost_test/Makefile
- create mode 100644 tools/virtio/vhost_test/vhost_test.c
- create mode 100644 tools/virtio/virtio_test.c
+-- 
+Stelian Pop <stelian@popies.net>
