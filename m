@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab0LMMD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:03:58 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:37208 "EHLO
+	id S1757450Ab0LMMDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:03:35 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:37221 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757374Ab0LMMDA (ORCPT
+	with ESMTP id S1757417Ab0LMMDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:03:00 -0500
-Date: Mon, 13 Dec 2010 13:02:59 +0100
+	Mon, 13 Dec 2010 07:03:20 -0500
+Date: Mon, 13 Dec 2010 13:03:19 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Rabin Vincent <rabin.vincent@stericsson.com>,
-        Luotao Fu <l.fu@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>
+To: Yoichi Yuasa <yuasa@linux-mips.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/10] gpio: stmpe-gpio: irq_data conversion.
-Message-ID: <20101213120259.GE15575@mail.wantstofly.org>
+Subject: [PATCH 10/10] gpio: vr41xx_giu: irq_data conversion.
+Message-ID: <20101213120319.GI15575@mail.wantstofly.org>
 References: <cover.1292240053.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,92 +25,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/gpio/stmpe-gpio.c |   36 ++++++++++++++++++------------------
- 1 files changed, 18 insertions(+), 18 deletions(-)
+ drivers/gpio/vr41xx_giu.c |   48 ++++++++++++++++++++++----------------------
+ 1 files changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/gpio/stmpe-gpio.c b/drivers/gpio/stmpe-gpio.c
-index 7c9e6a0..eb2901f 100644
---- a/drivers/gpio/stmpe-gpio.c
-+++ b/drivers/gpio/stmpe-gpio.c
-@@ -122,10 +122,10 @@ static struct gpio_chip template_chip = {
- 	.can_sleep		= 1,
+diff --git a/drivers/gpio/vr41xx_giu.c b/drivers/gpio/vr41xx_giu.c
+index b16c9a8..cffa3bd 100644
+--- a/drivers/gpio/vr41xx_giu.c
++++ b/drivers/gpio/vr41xx_giu.c
+@@ -111,69 +111,69 @@ static inline u16 giu_clear(u16 offset, u16 clear)
+ 	return data;
+ }
+ 
+-static void ack_giuint_low(unsigned int irq)
++static void ack_giuint_low(struct irq_data *d)
+ {
+-	giu_write(GIUINTSTATL, 1 << GPIO_PIN_OF_IRQ(irq));
++	giu_write(GIUINTSTATL, 1 << GPIO_PIN_OF_IRQ(d->irq));
+ }
+ 
+-static void mask_giuint_low(unsigned int irq)
++static void mask_giuint_low(struct irq_data *d)
+ {
+-	giu_clear(GIUINTENL, 1 << GPIO_PIN_OF_IRQ(irq));
++	giu_clear(GIUINTENL, 1 << GPIO_PIN_OF_IRQ(d->irq));
+ }
+ 
+-static void mask_ack_giuint_low(unsigned int irq)
++static void mask_ack_giuint_low(struct irq_data *d)
+ {
+ 	unsigned int pin;
+ 
+-	pin = GPIO_PIN_OF_IRQ(irq);
++	pin = GPIO_PIN_OF_IRQ(d->irq);
+ 	giu_clear(GIUINTENL, 1 << pin);
+ 	giu_write(GIUINTSTATL, 1 << pin);
+ }
+ 
+-static void unmask_giuint_low(unsigned int irq)
++static void unmask_giuint_low(struct irq_data *d)
+ {
+-	giu_set(GIUINTENL, 1 << GPIO_PIN_OF_IRQ(irq));
++	giu_set(GIUINTENL, 1 << GPIO_PIN_OF_IRQ(d->irq));
+ }
+ 
+ static struct irq_chip giuint_low_irq_chip = {
+ 	.name		= "GIUINTL",
+-	.ack		= ack_giuint_low,
+-	.mask		= mask_giuint_low,
+-	.mask_ack	= mask_ack_giuint_low,
+-	.unmask		= unmask_giuint_low,
++	.irq_ack	= ack_giuint_low,
++	.irq_mask	= mask_giuint_low,
++	.irq_mask_ack	= mask_ack_giuint_low,
++	.irq_unmask	= unmask_giuint_low,
  };
  
--static int stmpe_gpio_irq_set_type(unsigned int irq, unsigned int type)
-+static int stmpe_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+-static void ack_giuint_high(unsigned int irq)
++static void ack_giuint_high(struct irq_data *d)
  {
--	struct stmpe_gpio *stmpe_gpio = get_irq_chip_data(irq);
--	int offset = irq - stmpe_gpio->irq_base;
-+	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
-+	int offset = d->irq - stmpe_gpio->irq_base;
- 	int regoffset = offset / 8;
- 	int mask = 1 << (offset % 8);
- 
-@@ -145,16 +145,16 @@ static int stmpe_gpio_irq_set_type(unsigned int irq, unsigned int type)
- 	return 0;
+ 	giu_write(GIUINTSTATH,
+-		  1 << (GPIO_PIN_OF_IRQ(irq) - GIUINT_HIGH_OFFSET));
++		  1 << (GPIO_PIN_OF_IRQ(d->irq) - GIUINT_HIGH_OFFSET));
  }
  
--static void stmpe_gpio_irq_lock(unsigned int irq)
-+static void stmpe_gpio_irq_lock(struct irq_data *d)
+-static void mask_giuint_high(unsigned int irq)
++static void mask_giuint_high(struct irq_data *d)
  {
--	struct stmpe_gpio *stmpe_gpio = get_irq_chip_data(irq);
-+	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
- 
- 	mutex_lock(&stmpe_gpio->irq_lock);
+-	giu_clear(GIUINTENH, 1 << (GPIO_PIN_OF_IRQ(irq) - GIUINT_HIGH_OFFSET));
++	giu_clear(GIUINTENH, 1 << (GPIO_PIN_OF_IRQ(d->irq) - GIUINT_HIGH_OFFSET));
  }
  
--static void stmpe_gpio_irq_sync_unlock(unsigned int irq)
-+static void stmpe_gpio_irq_sync_unlock(struct irq_data *d)
+-static void mask_ack_giuint_high(unsigned int irq)
++static void mask_ack_giuint_high(struct irq_data *d)
  {
--	struct stmpe_gpio *stmpe_gpio = get_irq_chip_data(irq);
-+	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
- 	struct stmpe *stmpe = stmpe_gpio->stmpe;
- 	int num_banks = DIV_ROUND_UP(stmpe->num_gpios, 8);
- 	static const u8 regmap[] = {
-@@ -180,20 +180,20 @@ static void stmpe_gpio_irq_sync_unlock(unsigned int irq)
- 	mutex_unlock(&stmpe_gpio->irq_lock);
+ 	unsigned int pin;
+ 
+-	pin = GPIO_PIN_OF_IRQ(irq) - GIUINT_HIGH_OFFSET;
++	pin = GPIO_PIN_OF_IRQ(d->irq) - GIUINT_HIGH_OFFSET;
+ 	giu_clear(GIUINTENH, 1 << pin);
+ 	giu_write(GIUINTSTATH, 1 << pin);
  }
  
--static void stmpe_gpio_irq_mask(unsigned int irq)
-+static void stmpe_gpio_irq_mask(struct irq_data *d)
+-static void unmask_giuint_high(unsigned int irq)
++static void unmask_giuint_high(struct irq_data *d)
  {
--	struct stmpe_gpio *stmpe_gpio = get_irq_chip_data(irq);
--	int offset = irq - stmpe_gpio->irq_base;
-+	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
-+	int offset = d->irq - stmpe_gpio->irq_base;
- 	int regoffset = offset / 8;
- 	int mask = 1 << (offset % 8);
- 
- 	stmpe_gpio->regs[REG_IE][regoffset] &= ~mask;
+-	giu_set(GIUINTENH, 1 << (GPIO_PIN_OF_IRQ(irq) - GIUINT_HIGH_OFFSET));
++	giu_set(GIUINTENH, 1 << (GPIO_PIN_OF_IRQ(d->irq) - GIUINT_HIGH_OFFSET));
  }
  
--static void stmpe_gpio_irq_unmask(unsigned int irq)
-+static void stmpe_gpio_irq_unmask(struct irq_data *d)
- {
--	struct stmpe_gpio *stmpe_gpio = get_irq_chip_data(irq);
--	int offset = irq - stmpe_gpio->irq_base;
-+	struct stmpe_gpio *stmpe_gpio = irq_data_get_irq_chip_data(d);
-+	int offset = d->irq - stmpe_gpio->irq_base;
- 	int regoffset = offset / 8;
- 	int mask = 1 << (offset % 8);
- 
-@@ -202,11 +202,11 @@ static void stmpe_gpio_irq_unmask(unsigned int irq)
- 
- static struct irq_chip stmpe_gpio_irq_chip = {
- 	.name			= "stmpe-gpio",
--	.bus_lock		= stmpe_gpio_irq_lock,
--	.bus_sync_unlock	= stmpe_gpio_irq_sync_unlock,
--	.mask			= stmpe_gpio_irq_mask,
--	.unmask			= stmpe_gpio_irq_unmask,
--	.set_type		= stmpe_gpio_irq_set_type,
-+	.irq_bus_lock		= stmpe_gpio_irq_lock,
-+	.irq_bus_sync_unlock	= stmpe_gpio_irq_sync_unlock,
-+	.irq_mask		= stmpe_gpio_irq_mask,
-+	.irq_unmask		= stmpe_gpio_irq_unmask,
-+	.irq_set_type		= stmpe_gpio_irq_set_type,
+ static struct irq_chip giuint_high_irq_chip = {
+ 	.name		= "GIUINTH",
+-	.ack		= ack_giuint_high,
+-	.mask		= mask_giuint_high,
+-	.mask_ack	= mask_ack_giuint_high,
+-	.unmask		= unmask_giuint_high,
++	.irq_ack	= ack_giuint_high,
++	.irq_mask	= mask_giuint_high,
++	.irq_mask_ack	= mask_ack_giuint_high,
++	.irq_unmask	= unmask_giuint_high,
  };
  
- static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
+ static int giu_get_irq(unsigned int irq)
 -- 
 1.7.1
-
