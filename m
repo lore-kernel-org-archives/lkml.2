@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab0LMGtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:49:49 -0500
-Received: from mga03.intel.com ([143.182.124.21]:55946 "EHLO mga03.intel.com"
+	id S932236Ab0LMGu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:50:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:5009 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755236Ab0LMGto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:49:44 -0500
+	id S932179Ab0LMGtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 01:49:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="360754665"
-Message-Id: <20101213064841.798403700@intel.com>
+   d="scan'208";a="360754631"
+Message-Id: <20101213064838.530772251@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:43:28 +0800
+Date: Mon, 13 Dec 2010 14:43:02 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
@@ -29,88 +29,106 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 39/47] nfs: livelock prevention is now done in VFS
+Subject: [PATCH 13/47] writeback: scale down max throttle bandwidth on concurrent dirtiers
 References: <20101213064249.648862451@intel.com>
-Content-Disposition: inline; filename=nfs-revert-livelock-72cb77f4a5ac.patch
+Content-Disposition: inline; filename=writeback-adaptive-throttle-bandwidth.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 72cb77f4a5 ("NFS: Throttle page dirtying while we're
-flushing to disk"). The two problems it tries to address
+This will noticeably reduce the fluctuaions of pause time when there are
+100+ concurrent dirtiers.
 
-- sync live lock
-- out of order writes
+The more parallel dirtiers (1 dirtier => 4 dirtiers), the smaller
+bandwidth each dirtier will share (bdi_bandwidth => bdi_bandwidth/4),
+the less gap to the dirty limit ((C-A) => (C-B)), the less stable the
+pause time will be (given the same fluctuation of bdi_dirty).
 
-are now all addressed in the VFS
+For example, if A drifts to A', its pause time may drift from 5ms to
+6ms, while B to B' may drift from 50ms to 90ms.  It's much larger
+fluctuations in relative ratio as well as absolute time.
 
-- PAGECACHE_TAG_TOWRITE prevents sync live lock
-- IO-less balance_dirty_pages() avoids concurrent writes
+Fig.1 before patch, gap (C-B) is too low to get smooth pause time
 
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+throttle_bandwidth_A = bdi_bandwidth .........o
+                                              | o <= A'
+                                              |   o
+                                              |     o
+                                              |       o
+                                              |         o
+throttle_bandwidth_B = bdi_bandwidth / 4 .....|...........o
+                                              |           | o <= B'
+----------------------------------------------+-----------+---o
+                                              A           B   C
+
+The solution is to lower the slope of the throttle line accordingly,
+which makes B stabilize at some point more far away from C.
+
+Fig.2 after patch
+
+throttle_bandwidth_A = bdi_bandwidth .........o
+                                              | o <= A'
+                                              |   o
+                                              |     o
+    lowered max throttle bandwidth for B ===> *       o
+                                              |   *     o
+throttle_bandwidth_B = bdi_bandwidth / 4 .............*   o
+                                              |       |   * o
+----------------------------------------------+-------+-------o
+                                              A       B       C
+
+Note that C is actually different points for 1-dirty and 4-dirtiers
+cases, but for easy graphing, we move them together.
+
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/nfs/file.c          |    9 ---------
- fs/nfs/write.c         |   11 -----------
- include/linux/nfs_fs.h |    1 -
- 3 files changed, 21 deletions(-)
+ mm/page-writeback.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- linux-next.orig/fs/nfs/file.c	2010-12-09 12:21:03.000000000 +0800
-+++ linux-next/fs/nfs/file.c	2010-12-09 12:25:01.000000000 +0800
-@@ -392,15 +392,6 @@ static int nfs_write_begin(struct file *
- 			   IOMODE_RW);
+--- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:25.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-08 22:44:26.000000000 +0800
+@@ -574,6 +574,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
++	unsigned long task_thresh;
+ 	unsigned long bw;
+ 	unsigned long pause = 0;
+ 	bool dirty_exceeded = false;
+@@ -603,7 +604,7 @@ static void balance_dirty_pages(struct a
+ 			break;
  
- start:
--	/*
--	 * Prevent starvation issues if someone is doing a consistency
--	 * sync-to-disk
--	 */
--	ret = wait_on_bit(&NFS_I(mapping->host)->flags, NFS_INO_FLUSHING,
--			nfs_wait_bit_killable, TASK_KILLABLE);
--	if (ret)
--		return ret;
+ 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh, nr_dirty);
+-		bdi_thresh = task_dirty_limit(current, bdi_thresh);
++		task_thresh = task_dirty_limit(current, bdi_thresh);
+ 
+ 		/*
+ 		 * In order to avoid the stacked BDI deadlock we need
+@@ -642,14 +643,23 @@ static void balance_dirty_pages(struct a
+ 			break;
+ 		bdi_prev_dirty = bdi_dirty;
+ 
+-		if (bdi_dirty >= bdi_thresh) {
++		if (bdi_dirty >= task_thresh) {
+ 			pause = HZ/10;
+ 			goto pause;
+ 		}
+ 
++		/*
++		 * When bdi_dirty grows closer to bdi_thresh, it indicates more
++		 * concurrent dirtiers. Proportionally lower the max throttle
++		 * bandwidth. This will resist bdi_dirty from approaching to
++		 * close to task_thresh, and help reduce fluctuations of pause
++		 * time when there are lots of dirtiers.
++		 */
+ 		bw = bdi->write_bandwidth;
 -
- 	page = grab_cache_page_write_begin(mapping, index, flags);
- 	if (!page)
- 		return -ENOMEM;
---- linux-next.orig/fs/nfs/write.c	2010-12-09 12:21:03.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2010-12-09 12:25:01.000000000 +0800
-@@ -337,26 +337,15 @@ static int nfs_writepages_callback(struc
- int nfs_writepages(struct address_space *mapping, struct writeback_control *wbc)
- {
- 	struct inode *inode = mapping->host;
--	unsigned long *bitlock = &NFS_I(inode)->flags;
- 	struct nfs_pageio_descriptor pgio;
- 	int err;
+ 		bw = bw * (bdi_thresh - bdi_dirty);
++		bw = bw / (bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
++
++		bw = bw * (task_thresh - bdi_dirty);
+ 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
  
--	/* Stop dirtying of new pages while we sync */
--	err = wait_on_bit_lock(bitlock, NFS_INO_FLUSHING,
--			nfs_wait_bit_killable, TASK_KILLABLE);
--	if (err)
--		goto out_err;
--
- 	nfs_inc_stats(inode, NFSIOS_VFSWRITEPAGES);
- 
- 	nfs_pageio_init_write(&pgio, inode, wb_priority(wbc));
- 	err = write_cache_pages(mapping, wbc, nfs_writepages_callback, &pgio);
- 	nfs_pageio_complete(&pgio);
- 
--	clear_bit_unlock(NFS_INO_FLUSHING, bitlock);
--	smp_mb__after_clear_bit();
--	wake_up_bit(bitlock, NFS_INO_FLUSHING);
--
- 	if (err < 0)
- 		goto out_err;
- 	err = pgio.pg_error;
---- linux-next.orig/include/linux/nfs_fs.h	2010-12-09 12:21:03.000000000 +0800
-+++ linux-next/include/linux/nfs_fs.h	2010-12-09 12:25:01.000000000 +0800
-@@ -216,7 +216,6 @@ struct nfs_inode {
- #define NFS_INO_STALE		(1)		/* possible stale inode */
- #define NFS_INO_ACL_LRU_SET	(2)		/* Inode is on the LRU list */
- #define NFS_INO_MOUNTPOINT	(3)		/* inode is remote mountpoint */
--#define NFS_INO_FLUSHING	(4)		/* inode is flushing out data */
- #define NFS_INO_FSCACHE		(5)		/* inode can be cached by FS-Cache */
- #define NFS_INO_FSCACHE_LOCK	(6)		/* FS-Cache cookie management lock */
- #define NFS_INO_COMMIT		(7)		/* inode is committing unstable writes */
+ 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
 
 
