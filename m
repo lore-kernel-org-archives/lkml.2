@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab0LMLu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:50:58 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:33370 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184Ab0LMLu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:50:57 -0500
-Date: Mon, 13 Dec 2010 19:50:51 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: tadeusz.struk@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        akpm@linux-foundation.org, aidan.o.mahony@intel.com,
-        gabriele.paoloni@intel.com, adrian.hoban@intel.com
-Subject: Re: [PATCH 2/3 v2] RFC4106 AES-GCM Driver Using Intel New
-	Instructions - fixed build with binutils 2.16
-Message-ID: <20101213115051.GA1697@gondor.apana.org.au>
-References: <4d021e3f.GLP/bq7kQUH5U6yI%tadeusz.struk@intel.com>
+	id S1757298Ab0LML6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:58:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751894Ab0LML6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 06:58:02 -0500
+Message-ID: <4D060A31.3030606@redhat.com>
+Date: Mon, 13 Dec 2010 13:57:37 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4d021e3f.GLP/bq7kQUH5U6yI%tadeusz.struk@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: balbir@linux.vnet.ibm.com
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101210050344.GR3158@balbir.in.ibm.com> <4D0328CC.1020809@redhat.com> <20101211135727.GU3158@balbir.in.ibm.com>
+In-Reply-To: <20101211135727.GU3158@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 12:34:07PM +0000, tadeusz.struk@intel.com wrote:
-> >From tadeusz.struk@intel.com Mon Sep 17 00:00:00 2001
-> From: root <root@tweedle-dum.ir.intel.com>
-> Date: Fri, 10 Dec 2010 12:10:57 +0000
-> Subject: [PATCH 2/3 v2] RFC4106 AES-GCM Driver Using Intel New Instructions - fixed build with binutils 2.16
-> 
-> Hi Herbert,
-> This patch fixes the problem with 2.16 binutils.
-> Regards,
-> Tadeusz
-> 
-> Signed-off-by: Aidan O'Mahony <aidan.o.mahony@intel.com>
-> Signed-off-by: Adrian Hoban <adrian.hoban@intel.com>
-> Signed-off-by: Gabriele Paoloni <gabriele.paoloni@intel.com>
-> Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+On 12/11/2010 03:57 PM, Balbir Singh wrote:
+> * Avi Kivity<avi@redhat.com>  [2010-12-11 09:31:24]:
+>
+> >  On 12/10/2010 07:03 AM, Balbir Singh wrote:
+> >  >>
+> >  >>   Scheduler people, please flame me with anything I may have done
+> >  >>   wrong, so I can do it right for a next version :)
+> >  >>
+> >  >
+> >  >This is a good problem statement, there are other things to consider
+> >  >as well
+> >  >
+> >  >1. If a hard limit feature is enabled underneath, donating the
+> >  >timeslice would probably not make too much sense in that case
+> >
+> >  What's the alternative?
+> >
+> >  Consider a two vcpu guest with a 50% hard cap.  Suppose the workload
+> >  involves ping-ponging within the guest.  If the scheduler decides to
+> >  schedule the vcpus without any overlap, then the throughput will be
+> >  dictated by the time slice.  If we allow donation, throughput is
+> >  limited by context switch latency.
+> >
+>
+> If the vpcu holding the lock runs more and capped, the timeslice
+> transfer is a heuristic that will not help.
 
-Patch applied.  Thanks a lot!
+Why not?  as long as we shift the cap as well.
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+error compiling committee.c: too many arguments to function
+
