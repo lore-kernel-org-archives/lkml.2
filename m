@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666Ab0LMSYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 13:24:53 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47332 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757706Ab0LMSYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 13:24:51 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/35] writeback: increase min pause time on concurrent dirtiers
-In-Reply-To: Your message of "Mon, 13 Dec 2010 22:47:02 +0800."
-             <20101213150328.284979629@intel.com>
-From: Valdis.Kletnieks@vt.edu
-References: <20101213144646.341970461@intel.com>
-            <20101213150328.284979629@intel.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1292264611_4828P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 13 Dec 2010 13:23:31 -0500
-Message-ID: <15881.1292264611@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4D0664A6.00E7,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1757920Ab0LMSbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 13:31:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754260Ab0LMSbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 13:31:46 -0500
+Date: Mon, 13 Dec 2010 13:31:28 -0500
+From: Jarod Wilson <jarod@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Linux Input <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
+Subject: Re: [RFC] Input: define separate EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2
+Message-ID: <20101213183128.GE2531@redhat.com>
+References: <20101209093948.GD8821@core.coreip.homeip.net>
+ <4D012844.3020009@euromail.se>
+ <20101209191647.GC23781@core.coreip.homeip.net>
+ <20101213090559.GH21401@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101213090559.GH21401@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1292264611_4828P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Dec 13, 2010 at 01:06:00AM -0800, Dmitry Torokhov wrote:
+> On Thu, Dec 09, 2010 at 11:16:47AM -0800, Dmitry Torokhov wrote:
+> > On Thu, Dec 09, 2010 at 08:04:36PM +0100, Henrik Rydberg wrote:
+> > > On 12/09/2010 10:39 AM, Dmitry Torokhov wrote:
+> > > 
+> > > > The desire to keep old names for the EVIOCGKEYCODE/EVIOCSKEYCODE while
+> > > > extending them to support large scancodes was a mistake. While we tried
+> > > > to keep ABI intact (and we succeeded in doing that, programs compiled
+> > > > on older kernels will work on newer ones) there is still a problem with
+> > > > recompiling existing software with newer kernel headers.
+> > > > 
+> > > > New kernel headers will supply updated ioctl numbers and kernel will
+> > > > expect that userspace will use struct input_keymap_entry to set and
+> > > > retrieve keymap data. But since the names of ioctls are still the same
+> > > > userspace will happily compile even if not adjusted to make use of the
+> > > > new structure and will start miraculously fail in the field.
+> > > > 
+> > > > To avoid this issue let's revert EVIOCGKEYCODE/EVIOCSKEYCODE definitions
+> > > > and add EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2 so that userspace can explicitly
+> > > > select the style of ioctls it wants to employ.
+> > > > 
+> > > > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> > > > ---
+> > > 
+> > > 
+> > > Would the header change suffice in itself?
+> > 
+> > We still need to change evdev to return -EINVAL on wrong sizes but yes,
+> > the amount of change there could be more limited. I just thought that
+> > splitting it up explicitly shows the differences in handling better. If
+> > people prefer the previos version we could leave it, I am 50/50 between
+> > them.
+> > 
+> 
+> *ping*
+> 
+> Mauro, Jarod, do you have an opinion on this? I think we need to settle
+> on a solution before 2.6.37 is out.
 
-On Mon, 13 Dec 2010 22:47:02 +0800, Wu Fengguang said:
-> Target for >60ms pause time when there are 100+ heavy dirtiers per bdi.
-> (will average around 100ms given 200ms max pause time)
+Sorry, been meaning to reply, just been quite tied up with other work...
+I'm of two minds on this as well, but probably leaning slightly in favor
+of going ahead with an explicit _V2 so as to not break existing userspace
+in new and unexpected ways. There presumably isn't much in the way of
+userspace already adapted to the new interface, and its simple to do
+another rev of those that have been. Okay, yeah, this is probably the best
+way to go about it.
 
-> --- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:16.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-12-13 21:46:16.000000000 +0800
-> @@ -659,6 +659,27 @@ static unsigned long max_pause(unsigned 
->  }
->  
->  /*
-> + * Scale up pause time for concurrent dirtiers in order to reduce CPU overheads.
-> + * But ensure reasonably large [min_pause, max_pause] range size, so that
-> + * nr_dirtied_pause (and hence future pause time) can stay reasonably stable.
-> + */
-> +static unsigned long min_pause(struct backing_dev_info *bdi,
-> +			       unsigned long max)
-> +{
-> +	unsigned long hi = ilog2(bdi->write_bandwidth);
-> +	unsigned long lo = ilog2(bdi->throttle_bandwidth);
-> +	unsigned long t;
-> +
-> +	if (lo >= hi)
-> +		return 1;
-> +
-> +	/* (N * 10ms) on 2^N concurrent tasks */
-> +	t = (hi - lo) * (10 * HZ) / 1024;
+Acked-by: Jarod Wilson <jarod@redhat.com>
 
-Either I need more caffeine, or the comment doesn't match the code
-if HZ != 1000?
 
---==_Exmh_1292264611_4828P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNBmSjcC3lWbTT17ARAhaGAJ4hO1vSUX2dOFYhTxtx4nolhPInvQCg+b7T
-10xDTpJ05qAcw1zJI4oYpr0=
-=JhtH
------END PGP SIGNATURE-----
-
---==_Exmh_1292264611_4828P--
+-- 
+Jarod Wilson
+jarod@redhat.com
 
