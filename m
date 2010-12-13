@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab0LMG7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:59:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10971 "EHLO mga09.intel.com"
+	id S932376Ab0LMG7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:59:37 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15822 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab0LMGtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752728Ab0LMGtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Dec 2010 01:49:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="686523118"
-Message-Id: <20101213064838.036491874@intel.com>
+   d="scan'208";a="686523116"
+Message-Id: <20101213064838.285412238@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:42:58 +0800
+Date: Mon, 13 Dec 2010 14:43:00 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+CC: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
         Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
@@ -29,65 +30,57 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/47] writeback: show bdi write bandwidth in debugfs
+Subject: [PATCH 11/47] writeback: reduce per-bdi dirty threshold ramp up time
 References: <20101213064249.648862451@intel.com>
-Content-Disposition: inline; filename=writeback-bandwidth-show.patch
+Content-Disposition: inline; filename=writeback-speedup-per-bdi-threshold-ramp-up.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a "BdiWriteBandwidth" entry (and indent others) in /debug/bdi/*/stats.
+Reduce the dampening for the control system, yielding faster
+convergence.
 
-btw increase digital field width to 10, for keeping the possibly
-huge BdiWritten number aligned at least for desktop systems.
+Currently it converges at a snail's pace for slow devices (in order of
+minutes).  For really fast storage, the convergence speed should be fine.
 
-This will break user space tools if they are dumb enough to depend on
-the number of white spaces.
+It makes sense to make it reasonably fast for typical desktops.
 
-CC: Theodore Ts'o <tytso@mit.edu>
-CC: Jan Kara <jack@suse.cz>
+After patch, it converges in ~10 seconds for 60MB/s writes and 4GB mem.
+So expect ~1s for a fast 600MB/s storage under 4GB mem, or ~4s under
+16GB mem, which seems reasonable.
+
+$ while true; do grep BdiDirtyThresh /debug/bdi/8:0/stats; sleep 1; done
+BdiDirtyThresh:            0 kB
+BdiDirtyThresh:       118748 kB
+BdiDirtyThresh:       214280 kB
+BdiDirtyThresh:       303868 kB
+BdiDirtyThresh:       376528 kB
+BdiDirtyThresh:       411180 kB
+BdiDirtyThresh:       448636 kB
+BdiDirtyThresh:       472260 kB
+BdiDirtyThresh:       490924 kB
+BdiDirtyThresh:       499596 kB
+BdiDirtyThresh:       507068 kB
+...
+DirtyThresh:          530392 kB
+
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Richard Kennedy <richard@rsk.demon.co.uk>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/backing-dev.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ mm/page-writeback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next.orig/mm/backing-dev.c	2010-12-08 22:44:24.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-12-08 22:44:24.000000000 +0800
-@@ -87,21 +87,23 @@ static int bdi_debug_stats_show(struct s
+--- linux-next.orig/mm/page-writeback.c	2010-12-08 22:44:25.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-08 22:44:25.000000000 +0800
+@@ -125,7 +125,7 @@ static int calc_period_shift(void)
+ 	else
+ 		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+ 				100;
+-	return 2 + ilog2(dirty_total - 1);
++	return ilog2(dirty_total - 1) - 1;
+ }
  
- #define K(x) ((x) << (PAGE_SHIFT - 10))
- 	seq_printf(m,
--		   "BdiWriteback:     %8lu kB\n"
--		   "BdiReclaimable:   %8lu kB\n"
--		   "BdiDirtyThresh:   %8lu kB\n"
--		   "DirtyThresh:      %8lu kB\n"
--		   "BackgroundThresh: %8lu kB\n"
--		   "BdiWritten:       %8lu kB\n"
--		   "b_dirty:          %8lu\n"
--		   "b_io:             %8lu\n"
--		   "b_more_io:        %8lu\n"
--		   "bdi_list:         %8u\n"
--		   "state:            %8lx\n",
-+		   "BdiWriteback:       %10lu kB\n"
-+		   "BdiReclaimable:     %10lu kB\n"
-+		   "BdiDirtyThresh:     %10lu kB\n"
-+		   "DirtyThresh:        %10lu kB\n"
-+		   "BackgroundThresh:   %10lu kB\n"
-+		   "BdiWritten:         %10lu kB\n"
-+		   "BdiWriteBandwidth:  %10lu kBps\n"
-+		   "b_dirty:            %10lu\n"
-+		   "b_io:               %10lu\n"
-+		   "b_more_io:          %10lu\n"
-+		   "bdi_list:           %10u\n"
-+		   "state:              %10lx\n",
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
- 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
-+		   (unsigned long) bdi->write_bandwidth >> 10,
- 		   nr_dirty, nr_io, nr_more_io,
- 		   !list_empty(&bdi->bdi_list), bdi->state);
- #undef K
+ /*
 
 
