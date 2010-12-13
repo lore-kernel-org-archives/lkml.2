@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab0LMMjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:39:12 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:51093 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab0LMMjK (ORCPT
+	id S1757405Ab0LMMjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:39:40 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33063 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756768Ab0LMMji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:39:10 -0500
-Date: Mon, 13 Dec 2010 10:38:10 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>, mingo@redhat.com,
-        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, yakui.zhao@intel.com, fweisbec@gmail.com,
-        ling.ma@intel.com, rostedt@goodmis.org, miaox@cn.fujitsu.com,
-        tglx@linutronix.de, mingo@elte.hu
-Subject: Re: perf monitoring triggers Was: Re: [tip:perf/core] perf bench:
- Print both of prefaulted and no prefaulted results by default
-Message-ID: <20101213123810.GA5407@ghostprotocols.net>
-References: <1290668693-27068-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <tip-49ce8fc651794878189fd5f273228832cdfb5be9@git.kernel.org>
- <4D03B1AD.7000606@dcl.info.waseda.ac.jp>
- <20101212134657.GA19166@ghostprotocols.net>
- <1292238873.6803.183.camel@twins>
+	Mon, 13 Dec 2010 07:39:38 -0500
+Date: Mon, 13 Dec 2010 12:39:35 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/20] mfd: wm831x: irq_data conversion.
+Message-ID: <20101213123935.GB21535@rakim.wolfsonmicro.main>
+References: <cover.1292241952.git.buytenh@wantstofly.org>
+ <20101213123121.GB15575@mail.wantstofly.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292238873.6803.183.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20101213123121.GB15575@mail.wantstofly.org>
+X-Cookie: Leave no stone unturned.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 13, 2010 at 12:14:33PM +0100, Peter Zijlstra escreveu:
-> On Sun, 2010-12-12 at 11:46 -0200, Arnaldo Carvalho de Melo wrote:
-> > Looks interesting, and also interesting would be to be able to place
-> > probes that would wake up it too, for unmodified binaries to have
-> > something similar.
+On Mon, Dec 13, 2010 at 01:31:21PM +0100, Lennert Buytenhek wrote:
+> Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 
-> > Other kinds of triggers may be to hook on syscalls and when some
-> > expression matches, like connecting to host 1.2.3.4, start monitoring,
-> > stop when the socket is closed, i.e. monitor a connection lifetime, etc.
- 
-> Sounds to me like you want something like a library with self-monitoring
-> stuff.
+If you're doing this sort of work you really need to work against -next
+or the individual development tree rather than Linus' tree.  The Wolfson
+drivers have been converted in -next for a while now.
 
-Yeah, that could be a way, an LD_PRELOAD thingy that would intercept
-library calls, setup counters, start a monitoring thread, etc.
+I also posted patches for everything in MFD except ezx-pcap over the
+weekend - I pushed a branch up to a git tree earlier today with these
+changes in, I'll try to keep it up to date with the acks I'm getting.
+I'll add Lennart's ezx-pcap patch to that.
 
-Along the lines of:
+The following changes since commit 3ec93fcb34a97a9806a7280b136a7af20edf61f1:
 
-http://git.kernel.org/?p=linux/kernel/git/acme/libautocork.git;a=blob;f=libautocork.c
+  mfd: Fix twl_probe section mismatch warning in mfd/twl-core.c (2010-12-10 20:59:59 +0100)
 
-This one just intercepts calls, but the __init function could do the
-rest.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc-2.6.git mfd-irq
 
-To make it easier we could move the counter setup we have in record/top
-to a library, etc.
+Mark Brown (20):
+      mfd: Staticise unexported symbols in ASIC3
+      mfd: Correct ASIC3 IRQ_OWM resource setup
+      mfd: Remove ARCH_U8500 dependency from AB8500
+      mfd: Staticise internal functions in HTC I2CCPLD driver
+      mfd: Convert 88PM860x driver to new irq_ APIs
+      mfd: Convert ASIC3 to new irq_ APIs
+      mfd: Convert AB3500 to new irq_ APIs
+      mfd: Convert AB8500 to new irq_ methods
+      mfd: Convert HTC EGPIO driver to irq_ API
+      mfd: Convert HTC I2C CPLD driver to irq_ API
+      mfd: Convert jz4740-adc to new irq_ methods
+      mfd: Convert max8925 to new irq_ API
+      mfd: Convert MAX8998 driver to irq_ API
+      mfd: Convert SMTPE driver to new irq_ APIs
+      mfd: Convert t7166xb driver to new irq_ API
+      mfd: Convert tc35892 to new irq_ APIs
+      mfd: Convert tc6393xb driver to new irq_ APIs
+      mfd: Convert tps6586x driver to new irq_ API
+      mfd: Convert TWL4030 to new irq_ APIs
+      mfd: Convert Wolfson MFD drivers to use irq_data accessor function
 
-- Arnaldo
+ drivers/mfd/88pm860x-core.c |   36 ++++++++++--------------
+ drivers/mfd/Kconfig         |    2 +-
+ drivers/mfd/ab3550-core.c   |   28 +++++++++----------
+ drivers/mfd/ab8500-core.c   |   28 +++++++++---------
+ drivers/mfd/asic3.c         |   62 +++++++++++++++++++++---------------------
+ drivers/mfd/htc-egpio.c     |   27 +++++++++---------
+ drivers/mfd/htc-i2cpld.c    |   40 ++++++++++++++--------------
+ drivers/mfd/jz4740-adc.c    |   25 ++++++++---------
+ drivers/mfd/max8925-core.c  |   30 ++++++++++----------
+ drivers/mfd/max8998-irq.c   |   30 +++++++++++---------
+ drivers/mfd/stmpe.c         |   28 +++++++++---------
+ drivers/mfd/t7l66xb.c       |   20 +++++++-------
+ drivers/mfd/tc35892.c       |    8 +++---
+ drivers/mfd/tc6393xb.c      |   22 +++++++-------
+ drivers/mfd/tps6586x.c      |   28 +++++++++---------
+ drivers/mfd/twl4030-irq.c   |   28 +++++++++---------
+ drivers/mfd/wm831x-irq.c    |   10 +++---
+ drivers/mfd/wm8350-irq.c    |    8 +++---
+ drivers/mfd/wm8994-irq.c    |    8 +++---
+ 19 files changed, 231 insertions(+), 237 deletions(-)
