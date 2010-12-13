@@ -1,217 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab0LMQmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 11:42:25 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:10140 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab0LMQmX convert rfc822-to-8bit (ORCPT
+	id S1758181Ab0LMQmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 11:42:31 -0500
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:44634 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab0LMQm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 11:42:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Dc+l+16Cs3jKgVXeIvlp+cYnG0Z+22NLXhCLicPNqnKaWAuLNFKuR9EOD4BRkaZ8V8
-         TAew9PK5okqNvCNcuz3A==
-MIME-Version: 1.0
-In-Reply-To: <1292228848.10384.107.camel@minggr.sh.intel.com>
-References: <1291267223.2405.314.camel@minggr.sh.intel.com>
-	<1291922467.6803.44.camel@twins>
-	<AANLkTinanAQYQvwtowTzJ0bpLRUvp-5sqF6M9PoMSJR-@mail.gmail.com>
-	<1291978036.6803.95.camel@twins>
-	<AANLkTin7Jd=4boSH8Ge79e5g-j7EwE-AL81+1kHyNSL3@mail.gmail.com>
-	<1292228848.10384.107.camel@minggr.sh.intel.com>
-Date: Mon, 13 Dec 2010 17:42:19 +0100
-Message-ID: <AANLkTimkXFaB2+zB41-OhWDWu=htvm0UJAoLBJhRvEPg@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 13 Dec 2010 11:42:28 -0500
+Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
+ taskstats
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20101213143306.GA22840@redhat.com>
+References: <20101129164237.522034198@linux.vnet.ibm.com>
+	 <20101129164435.903722027@linux.vnet.ibm.com>
+	 <20101201185128.GA7656@redhat.com>
+	 <1291307641.1928.125.camel@holzheu-laptop>
+	 <20101208202308.GA1804@redhat.com>
+	 <1291987580.1933.10.camel@holzheu-laptop>
+	 <20101211173931.GA8084@redhat.com>
+	 <1292245515.2063.168.camel@holzheu-laptop>
+	 <1292246456.2063.179.camel@holzheu-laptop>
+	 <20101213143306.GA22840@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Mon, 13 Dec 2010 17:42:24 +0100
+Message-ID: <1292258544.2063.189.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 9:27 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Sat, 2010-12-11 at 13:49 +0800, Stephane Eranian wrote:
->> Hi,
->>
->> Ok, so I have an explanation for what we are seeing. In fact, what
->> bothered me in all
->> of this is that I did not recall ever running into this problem of
->> double-interrupt with HT
->> when I implemented the perfmon support for uncore sampling. The reason
->> is in fact
->> real simple.
->>
->> You are getting interrupts on both threads because you have enabled uncore PMU
->> on all CPUs, in uncore_cpu_starting():
->> +       rdmsrl(MSR_IA32_DEBUGCTLMSR, val);
->> +       wrmsrl(MSR_IA32_DEBUGCTLMSR, val | DEBUGCTLMSR_ENABLE_UNCORE_PMI);
->
-> Yeah! Thanks for the catch.
->
-If think there you want something like:
+On Mon, 2010-12-13 at 15:33 +0100, Oleg Nesterov wrote:
+> > --- a/include/linux/taskstats_kern.h
+> > +++ b/include/linux/taskstats_kern.h
+> > @@ -21,7 +21,8 @@ static inline void taskstats_tgid_free(s
+> >  		kmem_cache_free(taskstats_cache, sig->stats);
+> >  }
+> >  
+> > -extern void taskstats_exit(struct task_struct *, int group_dead);
+> > +extern void taskstats_exit_notify(struct task_struct *, int group_dead);
+> > +extern void taskstats_exit_add_thread(struct task_struct *);
+> You forgot to update the !CONFIG_TASKSTATS case ;)
 
-if (cpu == cpumask_first(topology_core_siblings(cpu)) {
-      rdmsrl(MSR_IA32_DEBUGCTLMSR, val);
-     wrmsrl(MSR_IA32_DEBUGCTLMSR, val | DEBUGCTLMSR_ENABLE_UNCORE_PMI);
-}
-I have verified that with something like that in place, you get only
-one interrupt.
-But it seems there may be some initialization of counters missing somewhere
-because running perf stat, I got bogus counts back with the uncore
-fixed counter.
+... of course, thanks!
 
->>
->> You need to do that only on ONE of the two siblings. In fact, you want
->> that only ONCE
->> per socket. You can do this on the first CPU to  use the uncore to add
->> something a bit
->> more dynamic and to make sure you have some control over where the
->> overhead is applied.
->> Once you do that, only one CPU/socket will get the interrupt and all
->> will be fine.
->
-> I'll update the patches.
->
-> Thanks,
-> Lin Ming
->
->>
->>
->>
->> On Fri, Dec 10, 2010 at 11:47 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > On Fri, 2010-12-10 at 00:46 +0100, Stephane Eranian wrote:
->> >> Hi,
->> >>
->> >> So I have tested this patch a bit on WSM and as I expected there
->> >> are issues with sampling.
->> >>
->> >> When HT is on, both siblings CPUs get the interrupt. The HW does not
->> >> allow you to only point interrupts to a single HT thread (CPU).
->> >
->> > Egads, how ugly :/
->> >
->> >> I did verify that indeed both threads get the interrupt and that you have a
->> >> race condition. Both sibling CPUs stop uncore, get the status. They may get
->> >> the same overflow status. Both will pass the uncore->active_mask because
->> >> it's shared among siblings cores. Thus,  you have a race for the whole
->> >> interrupt handler execution.
->> >>
->> >> You need some serialization in there. But the patch does not address this.
->> >> The problem is different from the back-to-back interrupt issue that
->> >> Don worked on.
->> >> The per-cpu marked/handled trick cannot work to avoid this problem.
->> >>
->> >> You cannot simply say "the lowest indexed" CPU of a sibling pair
->> >> handles the interrupt
->> >> because you don't know if this in an uncore intr, core interrupt or
->> >> something else. You
->> >> need to check. That means each HT thread needs to check uncore
->> >> ovfl_status. IF the
->> >> status is zero, then return. Otherwise, you need to do a 2nd level
->> >> check before you can
->> >> execute the handler. You need to know if the sibling CPU has already
->> >> "consumed" that
->> >> interrupt.
->> >>
->> >> I think you need some sort of generation counter per physical core and
->> >> per HT thread.
->> >> On interrupt, you could do something along the line of:
->> >>       if (mycpu->intr_count == mysibling->intr_count) {
->> >>           then mycpu->intr_count++
->> >>           execute intr_handler()
->> >>       } else {
->> >>           mycpu->intr_count++
->> >>           return;
->> >>       }
->> >> Of course, the above needs some atomicity and ad locking
->> >
->> > Does that guarantee that the same sibling handles all interrupts? Since
->> > a lot of the infrastructure uses local*_t we're not good with cross-cpu
->> > stuff.
->> >
->> > Damn what a mess.. we need to serialize enough for both cpus to at least
->> > see the overflow bit.. maybe something like:
->> >
->> >
->> > struct intel_percore {
->> >   ...
->> >   atomic_t uncore_barrier;
->> > };
->> >
->> > void uncore_barrier(void)
->> > {
->> >        struct intel_percore *percore = this_cpu_ptr(cpu_hw_events)->percore;
->> >        int armed;
->> >
->> >        armed = atomic_cmpxchg(&percore->uncore_barrier, 0, 1) == 0;
->> >        if (armed) {
->> >                /* we armed, it, now wait for completion */
->> >                while (atomic_read(&percore->uncore_barrier))
->> >                        cpu_relax();
->> >        } else {
->> >                /* our sibling must have, decrement it */
->> >                if (atomic_cmpxchg(&percore->uncore_barrier, 1, 0) != 1)
->> >                        BUG();
->> >        }
->> > }
->> >
->> > Then have something like:
->> >
->> > handle_uncore_interrupt()
->> > {
->> >        u64 overflow = rdmsrl(MSR_UNCORE_PERF_GLOBAL_OVF_STATUS);
->> >        int cpu;
->> >
->> >        if (!overflow)
->> >                return 0; /* not our interrupt to handle */
->> >
->> >        uncore_barrier(); /* wait so our sibling will also observe the overflow */
->> >
->> >        cpu = smp_processor_id();
->> >        if (cpu != cpumask_first(topology_thread_cpumask(cpu)))
->> >                return 1; /* our sibling will handle it, eat the NMI */
->> >
->> >        /* OK, we've got an overflow and we're the first CPU in the thread mask */
->> >
->> >        ... do fancy stuff ...
->> >
->> >        return 1; /* we handled it, eat the NMI */
->> > }
->> >
->> >
->> >> (but I don't think you can use locks in NMI context).
->> >
->> > You can, as long as they're never used from !NMI, its icky, but it
->> > works.
->> >
->> >> This makes me wonder if vectoring uncore to NMI is really needed,
->> >> given you cannot
->> >> correlated to an IP, incl. a kernel IP. If we were to vector to a
->> >> dedicated (lower prio)
->> >> vector, then we could use the trick of saying the lowest indexed CPU in a pair
->> >> handles the interrupt (because we would already know this is an uncore
->> >> interrupt).
->> >> This would be much simpler. Price: not samples in kernel's critical
->> >> section. But those
->> >> are useless anyway with uncore events.
->> >
->> > But the uncore uses the same PMI line, right? You cannot point the
->> > uncore to another vector. /me goes find the docs -- ok, its too early in
->> > the morning to clearly parse that...
->> >
->> > Besides, people asked for the sampling thing didn't they (also we need
->> > it to fold the count to avoid overflow on 48bit). Also the PAPI people
->> > even want per-task uncore counters because that's the only thing PAPI
->> > can do.
->> >
->
->
->
+[snip]
+
+> Well. I do not like the fact we take ->siglock unconditionally.
+> And _irqsave is not needed. And we take it twice if sig->stats == NULL.
+> And "if (!tsk->signal->stats)" under ->siglock in
+> taskstats_exit_add_thread() looks a bit ugly...
+
+Yes I also saw that, but I didn't want to change too much. In fact your
+code is much better. I added it to the patch and also replaced
+_add_thread with _add_task, because task seems to be the term for thread
+used in the taskstats code. I also did some testing. Everything still
+seems to work well.
+
+The new patch is attached below. Balbir, do you agree?
+
+Michael
+---
+ include/linux/taskstats_kern.h |    8 +++-
+ kernel/exit.c                  |    3 +
+ kernel/taskstats.c             |   67 ++++++++++++++---------------------------
+ 3 files changed, 32 insertions(+), 46 deletions(-)
+
+--- a/include/linux/taskstats_kern.h
++++ b/include/linux/taskstats_kern.h
+@@ -21,10 +21,14 @@ static inline void taskstats_tgid_free(s
+ 		kmem_cache_free(taskstats_cache, sig->stats);
+ }
+ 
+-extern void taskstats_exit(struct task_struct *, int group_dead);
++extern void taskstats_exit_notify(struct task_struct *tsk, int group_dead);
++extern void taskstats_exit_add_task(struct task_struct *tsk);
+ extern void taskstats_init_early(void);
+ #else
+-static inline void taskstats_exit(struct task_struct *tsk, int group_dead)
++static inline void taskstats_exit_notify(struct task_struct *tsk,
++					 int group_dead)
++{}
++static inline void taskstats_exit_add_task(struct task_struct *tsk);
+ {}
+ static inline void taskstats_tgid_free(struct signal_struct *sig)
+ {}
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1030,6 +1030,7 @@ NORET_TYPE void do_exit(long code)
+ 	/* sync mm's RSS info before statistics gathering */
+ 	if (tsk->mm)
+ 		sync_mm_rss(tsk, tsk->mm);
++	taskstats_exit_add_task(tsk);
+ 	group_dead = atomic_dec_and_test(&tsk->signal->live);
+ 	if (group_dead) {
+ 		struct cdata *tcd = &tsk->signal->cdata_threads;
+@@ -1045,7 +1046,7 @@ NORET_TYPE void do_exit(long code)
+ 		audit_free(tsk);
+ 
+ 	tsk->exit_code = code;
+-	taskstats_exit(tsk, group_dead);
++	taskstats_exit_notify(tsk, group_dead);
+ 
+ 	exit_mm(tsk);
+ 
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -263,24 +263,35 @@ out:
+ 	return rc;
+ }
+ 
+-static void fill_tgid_exit(struct task_struct *tsk)
++void taskstats_exit_add_task(struct task_struct *tsk)
+ {
+-	unsigned long flags;
++	struct taskstats *stats = NULL;
+ 
+-	spin_lock_irqsave(&tsk->sighand->siglock, flags);
+-	if (!tsk->signal->stats)
+-		goto ret;
++	if (!tsk->signal->stats) {
++		if (thread_group_empty(tsk))
++			return;
+ 
++		stats = kmem_cache_zalloc(taskstats_cache, GFP_KERNEL);
++		if (!stats)
++			return; /* Bad luck, we will loose this task */
++	}
++
++	spin_lock_irq(&tsk->sighand->siglock);
++	if (!tsk->signal->stats) {
++		tsk->signal->stats = stats;
++		stats = NULL;
++	}
+ 	/*
+ 	 * Each accounting subsystem calls its functions here to
+ 	 * accumalate its per-task stats for tsk, into the per-tgid structure
+ 	 *
+-	 *	per-task-foo(tsk->signal->stats, tsk);
++	 *      per-task-foo(tsk->signal->stats, tsk);
+ 	 */
+ 	delayacct_add_tsk(tsk->signal->stats, tsk);
+-ret:
+-	spin_unlock_irqrestore(&tsk->sighand->siglock, flags);
+-	return;
++	spin_unlock_irq(&tsk->sighand->siglock);
++
++	if (unlikely(stats))
++		kmem_cache_free(taskstats_cache, stats);
+ }
+ 
+ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+@@ -530,39 +541,14 @@ static int taskstats_user_cmd(struct sk_
+ 		return -EINVAL;
+ }
+ 
+-static struct taskstats *taskstats_tgid_alloc(struct task_struct *tsk)
+-{
+-	struct signal_struct *sig = tsk->signal;
+-	struct taskstats *stats;
+-
+-	if (sig->stats || thread_group_empty(tsk))
+-		goto ret;
+-
+-	/* No problem if kmem_cache_zalloc() fails */
+-	stats = kmem_cache_zalloc(taskstats_cache, GFP_KERNEL);
+-
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	if (!sig->stats) {
+-		sig->stats = stats;
+-		stats = NULL;
+-	}
+-	spin_unlock_irq(&tsk->sighand->siglock);
+-
+-	if (stats)
+-		kmem_cache_free(taskstats_cache, stats);
+-ret:
+-	return sig->stats;
+-}
+-
+ /* Send pid data out on exit */
+-void taskstats_exit(struct task_struct *tsk, int group_dead)
++void taskstats_exit_notify(struct task_struct *tsk, int group_dead)
+ {
+ 	int rc;
+ 	struct listener_list *listeners;
+ 	struct taskstats *stats;
+ 	struct sk_buff *rep_skb;
+ 	size_t size;
+-	int is_thread_group;
+ 
+ 	if (!family_registered)
+ 		return;
+@@ -573,13 +559,8 @@ void taskstats_exit(struct task_struct *
+ 	size = nla_total_size(sizeof(u32)) +
+ 		nla_total_size(sizeof(struct taskstats)) + nla_total_size(0);
+ 
+-	is_thread_group = !!taskstats_tgid_alloc(tsk);
+-	if (is_thread_group) {
+-		/* PID + STATS + TGID + STATS */
+-		size = 2 * size;
+-		/* fill the tsk->signal->stats structure */
+-		fill_tgid_exit(tsk);
+-	}
++	if (group_dead && tsk->signal->stats)
++		size = 2 * size; /* PID + STATS + TGID + STATS */
+ 
+ 	listeners = &__raw_get_cpu_var(listener_array);
+ 	if (list_empty(&listeners->list))
+@@ -598,7 +579,7 @@ void taskstats_exit(struct task_struct *
+ 	/*
+ 	 * Doesn't matter if tsk is the leader or the last group member leaving
+ 	 */
+-	if (!is_thread_group || !group_dead)
++	if (!group_dead || tsk->signal->stats == NULL)
+ 		goto send;
+ 
+ 	stats = mk_reply(rep_skb, TASKSTATS_TYPE_TGID, tsk->tgid);
+
+
