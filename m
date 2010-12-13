@@ -1,141 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab0LMMe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:34:26 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:41614 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab0LMMeY (ORCPT
+	id S1755482Ab0LMMf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:35:57 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:38715 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab0LMMf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:34:24 -0500
-Date: Mon, 13 Dec 2010 13:34:23 +0100
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Florian Fainelli <florian@openwrt.org>, openwrt-devel@lists.openwrt.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] vlynq: irq_data conversion.
-Message-ID: <20101213123423.GE15575@mail.wantstofly.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	Mon, 13 Dec 2010 07:35:56 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 2/2] clk: Generic support for fixed-rate clocks
+Date: Mon, 13 Dec 2010 20:35:37 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1291774094.269634.503532219345.0.gpush@pororo> <1291774094.270492.31002734529.2.gpush@pororo> <20101213121413.GA29833@pengutronix.de>
+In-Reply-To: <20101213121413.GA29833@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012132035.41371.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
----
- drivers/vlynq/vlynq.c |   44 ++++++++++++++++++++++----------------------
- 1 files changed, 22 insertions(+), 22 deletions(-)
+Hi Sascha,
 
-diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
-index f885c86..c9f22c8 100644
---- a/drivers/vlynq/vlynq.c
-+++ b/drivers/vlynq/vlynq.c
-@@ -135,40 +135,40 @@ static void vlynq_reset(struct vlynq_device *dev)
- 	msleep(5);
- }
- 
--static void vlynq_irq_unmask(unsigned int irq)
-+static void vlynq_irq_unmask(struct irq_data *d)
- {
- 	u32 val;
--	struct vlynq_device *dev = get_irq_chip_data(irq);
-+	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
- 	int virq;
- 
- 	BUG_ON(!dev);
--	virq = irq - dev->irq_start;
-+	virq = d->irq - dev->irq_start;
- 	val = readl(&dev->remote->int_device[virq >> 2]);
- 	val |= (VINT_ENABLE | virq) << VINT_OFFSET(virq);
- 	writel(val, &dev->remote->int_device[virq >> 2]);
- }
- 
--static void vlynq_irq_mask(unsigned int irq)
-+static void vlynq_irq_mask(struct irq_data *d)
- {
- 	u32 val;
--	struct vlynq_device *dev = get_irq_chip_data(irq);
-+	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
- 	int virq;
- 
- 	BUG_ON(!dev);
--	virq = irq - dev->irq_start;
-+	virq = d->irq - dev->irq_start;
- 	val = readl(&dev->remote->int_device[virq >> 2]);
- 	val &= ~(VINT_ENABLE << VINT_OFFSET(virq));
- 	writel(val, &dev->remote->int_device[virq >> 2]);
- }
- 
--static int vlynq_irq_type(unsigned int irq, unsigned int flow_type)
-+static int vlynq_irq_type(struct irq_data *d, unsigned int flow_type)
- {
- 	u32 val;
--	struct vlynq_device *dev = get_irq_chip_data(irq);
-+	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
- 	int virq;
- 
- 	BUG_ON(!dev);
--	virq = irq - dev->irq_start;
-+	virq = d->irq - dev->irq_start;
- 	val = readl(&dev->remote->int_device[virq >> 2]);
- 	switch (flow_type & IRQ_TYPE_SENSE_MASK) {
- 	case IRQ_TYPE_EDGE_RISING:
-@@ -192,9 +192,9 @@ static int vlynq_irq_type(unsigned int irq, unsigned int flow_type)
- 	return 0;
- }
- 
--static void vlynq_local_ack(unsigned int irq)
-+static void vlynq_local_ack(struct irq_data *d)
- {
--	struct vlynq_device *dev = get_irq_chip_data(irq);
-+	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
- 
- 	u32 status = readl(&dev->local->status);
- 
-@@ -203,9 +203,9 @@ static void vlynq_local_ack(unsigned int irq)
- 	writel(status, &dev->local->status);
- }
- 
--static void vlynq_remote_ack(unsigned int irq)
-+static void vlynq_remote_ack(struct irq_data *d)
- {
--	struct vlynq_device *dev = get_irq_chip_data(irq);
-+	struct vlynq_device *dev = irq_data_get_irq_chip_data(d);
- 
- 	u32 status = readl(&dev->remote->status);
- 
-@@ -238,23 +238,23 @@ static irqreturn_t vlynq_irq(int irq, void *dev_id)
- 
- static struct irq_chip vlynq_irq_chip = {
- 	.name = "vlynq",
--	.unmask = vlynq_irq_unmask,
--	.mask = vlynq_irq_mask,
--	.set_type = vlynq_irq_type,
-+	.irq_unmask = vlynq_irq_unmask,
-+	.irq_mask = vlynq_irq_mask,
-+	.irq_set_type = vlynq_irq_type,
- };
- 
- static struct irq_chip vlynq_local_chip = {
- 	.name = "vlynq local error",
--	.unmask = vlynq_irq_unmask,
--	.mask = vlynq_irq_mask,
--	.ack = vlynq_local_ack,
-+	.irq_unmask = vlynq_irq_unmask,
-+	.irq_mask = vlynq_irq_mask,
-+	.irq_ack = vlynq_local_ack,
- };
- 
- static struct irq_chip vlynq_remote_chip = {
- 	.name = "vlynq local error",
--	.unmask = vlynq_irq_unmask,
--	.mask = vlynq_irq_mask,
--	.ack = vlynq_remote_ack,
-+	.irq_unmask = vlynq_irq_unmask,
-+	.irq_mask = vlynq_irq_mask,
-+	.irq_ack = vlynq_remote_ack,
- };
- 
- static int vlynq_setup_irq(struct vlynq_device *dev)
--- 
-1.7.1
+> > +extern struct clk_ops clk_fixed_ops;
+> > +
+> > +#define INIT_CLK_FIXED(name, r) { \
+> > +	.clk = INIT_CLK(name.clk, clk_fixed_ops), \
+> > +	.rate = (r) \
+> > +}
+> 
+> Is there any other valid usecase for this other than
+> 
+> struct clk_fixed bla = INIT_CLK_FIXED(bla, rate);
+> 
+> Otherwise I suggest to convert the macro to:
+> 
+> #define INIT_CLK_FIXED(name, r) \
+> 	struct clk_fixed name = { \
+> 		.clk = INIT_CLK(name.clk, clk_fixed_ops), \
+> 		.rate = (r) \
+> 	}
+> 
+> This way we do not have to specify the same name twice (and it has
+> to be exactly the same name, otherwise it won't compile).
+
+For the system-wide INIT_CLK* macros, I've intentionally made them initalisers 
+rather than declarators, so that we can use them in other declarators (ie, the 
+usage of INIT_CLK() above). This would be relevant if someone is using 
+clk_fixed in their struct - probably not likely, but good to be consistent.
+
+But yes, it would be good to avoid having to specify the name twice - how 
+about adding a:
+
+#define DEFINE_CLK_FIXED(name, r) \
+	struct clk_fixed name = INIT_CLK_FIXED(name, r)
+
+- just like DEFINE_MUTEX and MUTEX_INITIALIZER.
+
+Cheers,
+
+
+Jeremy
