@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999Ab0LMPI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:08:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60850 "EHLO mga02.intel.com"
+	id S1758048Ab0LMPJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:09:09 -0500
+Received: from mga14.intel.com ([143.182.124.37]:51617 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757947Ab0LMPIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:08:51 -0500
+	id S1757664Ab0LMPJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:09:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="686646838"
-Message-Id: <20101213150328.049382192@intel.com>
+   d="scan'208";a="360909730"
+Message-Id: <20101213150327.453495823@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:47:00 +0800
+Date: Mon, 13 Dec 2010 22:46:55 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -29,131 +29,72 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 14/35] writeback: smoothed bdi dirty pages
+Subject: [PATCH 09/35] writeback: account per-bdi accumulated written pages
 References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=writeback-smoothed-bdi_dirty.patch
+Content-Disposition: inline; filename=writeback-bdi-written.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This basically does
+From: Jan Kara <jack@suse.cz>
 
--	task_bw = linear_function(task_weight, bdi_dirty, bdi->throttle_bandwidth)
-+	task_bw = linear_function(task_weight, avg_dirty, bdi->throttle_bandwidth)
+Introduce the BDI_WRITTEN counter. It will be used for estimating the
+bdi's write bandwidth.
 
-So that the fluctuations of bdi_dirty can be filtered by half.
+Peter Zijlstra <a.p.zijlstra@chello.nl>:
+Move BDI_WRITTEN accounting into __bdi_writeout_inc().
+This will cover and fix fuse, which only calls bdi_writeout_inc().
 
-The main problem is, bdi_dirty regularly drops low suddenly for dozens
-of megabytes in NFS on the completion of COMMIT requests.  The same
-problem, though less severe, exists for btrfs, xfs and maybe some types
-of storages. avg_dirty can help filter out such downwards spikes.
-
-Upwards spikes are also possible, and if does happen, should better be
-fixed in the FS code.  To avoid exceeding the dirty limits, once
-bdi_dirty exceeds avg_dirty, the higher value will instantly be used as
-the feedback to the control system. So the control system cannot filter
-out upwards spikes for the sake of safety.
-
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/backing-dev.h |    2 +
- mm/page-writeback.c         |   44 ++++++++++++++++++++++++++++++----
- 2 files changed, 42 insertions(+), 4 deletions(-)
+ include/linux/backing-dev.h |    1 +
+ mm/backing-dev.c            |    6 ++++--
+ mm/page-writeback.c         |    1 +
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
---- linux-next.orig/include/linux/backing-dev.h	2010-12-13 21:46:15.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2010-12-13 21:46:15.000000000 +0800
-@@ -79,6 +79,8 @@ struct backing_dev_info {
- 	unsigned long written_stamp;
- 	unsigned long write_bandwidth;
- 	unsigned long throttle_bandwidth;
-+	unsigned long avg_dirty;
-+	unsigned long old_dirty;
+--- linux-next.orig/include/linux/backing-dev.h	2010-12-13 21:45:57.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2010-12-13 21:46:13.000000000 +0800
+@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
+ enum bdi_stat_item {
+ 	BDI_RECLAIMABLE,
+ 	BDI_WRITEBACK,
++	BDI_WRITTEN,
+ 	NR_BDI_STAT_ITEMS
+ };
  
- 	struct prop_local_percpu completions;
- 	int dirty_exceeded;
---- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:15.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-13 21:46:15.000000000 +0800
-@@ -521,6 +521,36 @@ out:
- 	return 1 + int_sqrt(dirty_thresh - dirty_pages);
+--- linux-next.orig/mm/backing-dev.c	2010-12-13 21:46:10.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-12-13 21:46:13.000000000 +0800
+@@ -92,6 +92,7 @@ static int bdi_debug_stats_show(struct s
+ 		   "BdiDirtyThresh:   %8lu kB\n"
+ 		   "DirtyThresh:      %8lu kB\n"
+ 		   "BackgroundThresh: %8lu kB\n"
++		   "BdiWritten:       %8lu kB\n"
+ 		   "b_dirty:          %8lu\n"
+ 		   "b_io:             %8lu\n"
+ 		   "b_more_io:        %8lu\n"
+@@ -99,8 +100,9 @@ static int bdi_debug_stats_show(struct s
+ 		   "state:            %8lx\n",
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+-		   K(bdi_thresh), K(dirty_thresh),
+-		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
++		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
++		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
++		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
+ 
+--- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:13.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-13 21:46:13.000000000 +0800
+@@ -204,6 +204,7 @@ int dirty_bytes_handler(struct ctl_table
+  */
+ static inline void __bdi_writeout_inc(struct backing_dev_info *bdi)
+ {
++	__inc_bdi_stat(bdi, BDI_WRITTEN);
+ 	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
+ 			      bdi->max_prop_frac);
  }
- 
-+static void __bdi_update_dirty_smooth(struct backing_dev_info *bdi,
-+				      unsigned long dirty,
-+				      unsigned long thresh)
-+{
-+	unsigned long avg = bdi->avg_dirty;
-+	unsigned long old = bdi->old_dirty;
-+
-+	/* skip call from the flusher */
-+	if (!thresh)
-+		return;
-+
-+	if (avg > thresh) {
-+		avg = dirty;
-+		goto update;
-+	}
-+
-+	if (dirty <= avg && dirty >= old)
-+		goto out;
-+
-+	if (dirty >= avg && dirty <= old)
-+		goto out;
-+
-+	avg = (avg * 15 + dirty) / 16;
-+
-+update:
-+	bdi->avg_dirty = avg;
-+out:
-+	bdi->old_dirty = dirty;
-+}
-+
- /*
-  * The bdi throttle bandwidth is introduced for resisting bdi_dirty from
-  * getting too close to task_thresh. It allows scaling up to 1000+ concurrent
-@@ -601,8 +631,9 @@ void bdi_update_bandwidth(struct backing
- 	if (elapsed <= HZ/10)
- 		goto unlock;
- 
-+	__bdi_update_dirty_smooth(bdi, bdi_dirty, bdi_thresh);
- 	__bdi_update_write_bandwidth(bdi, elapsed, written);
--	__bdi_update_throttle_bandwidth(bdi, bdi_dirty, bdi_thresh);
-+	__bdi_update_throttle_bandwidth(bdi, bdi->avg_dirty, bdi_thresh);
- 
- snapshot:
- 	bdi->written_stamp = written;
-@@ -624,6 +655,7 @@ static void balance_dirty_pages(struct a
- 	long nr_reclaimable;
- 	long nr_dirty;
- 	long bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
-+	long avg_dirty;  /* smoothed bdi_dirty */
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -679,7 +711,11 @@ static void balance_dirty_pages(struct a
- 
- 		bdi_update_bandwidth(bdi, start_time, bdi_dirty, bdi_thresh);
- 
--		if (bdi_dirty >= task_thresh || nr_dirty > dirty_thresh) {
-+		avg_dirty = bdi->avg_dirty;
-+		if (avg_dirty < bdi_dirty || avg_dirty > task_thresh)
-+			avg_dirty = bdi_dirty;
-+
-+		if (avg_dirty >= task_thresh || nr_dirty > dirty_thresh) {
- 			pause = MAX_PAUSE;
- 			goto pause;
- 		}
-@@ -692,10 +728,10 @@ static void balance_dirty_pages(struct a
- 		 * time when there are lots of dirtiers.
- 		 */
- 		bw = bdi->throttle_bandwidth;
--		bw = bw * (bdi_thresh - bdi_dirty);
-+		bw = bw * (bdi_thresh - avg_dirty);
- 		do_div(bw, bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
- 
--		bw = bw * (task_thresh - bdi_dirty);
-+		bw = bw * (task_thresh - avg_dirty);
- 		do_div(bw, bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
- 
- 		period = HZ * pages_dirtied / ((unsigned long)bw + 1) + 1;
 
 
