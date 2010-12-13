@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab0LMMDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:03:07 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:37212 "EHLO
+	id S1757424Ab0LMMDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:03:20 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:37218 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757381Ab0LMMDE (ORCPT
+	with ESMTP id S1757309Ab0LMMDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:03:04 -0500
-Date: Mon, 13 Dec 2010 13:03:02 +0100
+	Mon, 13 Dec 2010 07:03:17 -0500
+Date: Mon, 13 Dec 2010 13:03:15 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Gregory Bean <gbean@codeaurora.org>
+To: Richard =?iso-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@mocean-labs.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] gpio: sx150x: irq_data conversion.
-Message-ID: <20101213120302.GF15575@mail.wantstofly.org>
+Subject: [PATCH 09/10] gpio: timbgpio: irq_data conversion.
+Message-ID: <20101213120315.GH15575@mail.wantstofly.org>
 References: <cover.1292240053.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,118 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/gpio/sx150x.c |   46 +++++++++++++++++++++++-----------------------
- 1 files changed, 23 insertions(+), 23 deletions(-)
+ drivers/gpio/timbgpio.c |   30 +++++++++++++++---------------
+ 1 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
-index 823559a..e60be00 100644
---- a/drivers/gpio/sx150x.c
-+++ b/drivers/gpio/sx150x.c
-@@ -304,36 +304,36 @@ static int sx150x_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
- 	return chip->irq_base + offset;
- }
- 
--static void sx150x_irq_mask(unsigned int irq)
-+static void sx150x_irq_mask(struct irq_data *d)
+diff --git a/drivers/gpio/timbgpio.c b/drivers/gpio/timbgpio.c
+index 4529366..349131e 100644
+--- a/drivers/gpio/timbgpio.c
++++ b/drivers/gpio/timbgpio.c
+@@ -109,10 +109,10 @@ static int timbgpio_to_irq(struct gpio_chip *gpio, unsigned offset)
+ /*
+  * GPIO IRQ
+  */
+-static void timbgpio_irq_disable(unsigned irq)
++static void timbgpio_irq_disable(struct irq_data *d)
  {
--	struct irq_chip *ic = get_irq_chip(irq);
-+	struct irq_chip *ic = irq_data_get_irq_chip(d);
- 	struct sx150x_chip *chip;
- 	unsigned n;
+-	struct timbgpio *tgpio = get_irq_chip_data(irq);
+-	int offset = irq - tgpio->irq_base;
++	struct timbgpio *tgpio = irq_data_get_irq_chip_data(d);
++	int offset = d->irq - tgpio->irq_base;
+ 	unsigned long flags;
  
- 	chip = container_of(ic, struct sx150x_chip, irq_chip);
--	n = irq - chip->irq_base;
-+	n = d->irq - chip->irq_base;
- 
- 	sx150x_write_cfg(chip, n, 1, chip->dev_cfg->reg_irq_mask, 1);
- 	sx150x_write_cfg(chip, n, 2, chip->dev_cfg->reg_sense, 0);
+ 	spin_lock_irqsave(&tgpio->lock, flags);
+@@ -121,10 +121,10 @@ static void timbgpio_irq_disable(unsigned irq)
+ 	spin_unlock_irqrestore(&tgpio->lock, flags);
  }
  
--static void sx150x_irq_unmask(unsigned int irq)
-+static void sx150x_irq_unmask(struct irq_data *d)
+-static void timbgpio_irq_enable(unsigned irq)
++static void timbgpio_irq_enable(struct irq_data *d)
  {
--	struct irq_chip *ic = get_irq_chip(irq);
-+	struct irq_chip *ic = irq_data_get_irq_chip(d);
- 	struct sx150x_chip *chip;
- 	unsigned n;
+-	struct timbgpio *tgpio = get_irq_chip_data(irq);
+-	int offset = irq - tgpio->irq_base;
++	struct timbgpio *tgpio = irq_data_get_irq_chip_data(d);
++	int offset = d->irq - tgpio->irq_base;
+ 	unsigned long flags;
  
- 	chip = container_of(ic, struct sx150x_chip, irq_chip);
--	n = irq - chip->irq_base;
-+	n = d->irq - chip->irq_base;
- 
- 	sx150x_write_cfg(chip, n, 1, chip->dev_cfg->reg_irq_mask, 0);
- 	sx150x_write_cfg(chip, n, 2, chip->dev_cfg->reg_sense,
- 			 chip->irq_sense >> (n * 2));
+ 	spin_lock_irqsave(&tgpio->lock, flags);
+@@ -133,10 +133,10 @@ static void timbgpio_irq_enable(unsigned irq)
+ 	spin_unlock_irqrestore(&tgpio->lock, flags);
  }
  
--static int sx150x_irq_set_type(unsigned int irq, unsigned int flow_type)
-+static int sx150x_irq_set_type(struct irq_data *d, unsigned int flow_type)
+-static int timbgpio_irq_type(unsigned irq, unsigned trigger)
++static int timbgpio_irq_type(struct irq_data *d, unsigned trigger)
  {
--	struct irq_chip *ic = get_irq_chip(irq);
-+	struct irq_chip *ic = irq_data_get_irq_chip(d);
- 	struct sx150x_chip *chip;
- 	unsigned n, val = 0;
- 
-@@ -341,7 +341,7 @@ static int sx150x_irq_set_type(unsigned int irq, unsigned int flow_type)
- 		return -EINVAL;
- 
- 	chip = container_of(ic, struct sx150x_chip, irq_chip);
--	n = irq - chip->irq_base;
-+	n = d->irq - chip->irq_base;
- 
- 	if (flow_type & IRQ_TYPE_EDGE_RISING)
- 		val |= 0x1;
-@@ -386,9 +386,9 @@ static irqreturn_t sx150x_irq_thread_fn(int irq, void *dev_id)
- 	return (nhandled > 0 ? IRQ_HANDLED : IRQ_NONE);
+-	struct timbgpio *tgpio = get_irq_chip_data(irq);
+-	int offset = irq - tgpio->irq_base;
++	struct timbgpio *tgpio = irq_data_get_irq_chip_data(d);
++	int offset = d->irq - tgpio->irq_base;
+ 	unsigned long flags;
+ 	u32 lvr, flr, bflr = 0;
+ 	u32 ver;
+@@ -193,13 +193,13 @@ out:
+ 	return ret;
  }
  
--static void sx150x_irq_bus_lock(unsigned int irq)
-+static void sx150x_irq_bus_lock(struct irq_data *d)
+-static void timbgpio_irq(unsigned int irq, struct irq_desc *desc)
++static void timbgpio_irq(struct irq_data *d, struct irq_desc *desc)
  {
--	struct irq_chip *ic = get_irq_chip(irq);
-+	struct irq_chip *ic = irq_data_get_irq_chip(d);
- 	struct sx150x_chip *chip;
+-	struct timbgpio *tgpio = get_irq_data(irq);
++	struct timbgpio *tgpio = irq_data_get_irq_data(d);
+ 	unsigned long ipr;
+ 	int offset;
  
- 	chip = container_of(ic, struct sx150x_chip, irq_chip);
-@@ -396,9 +396,9 @@ static void sx150x_irq_bus_lock(unsigned int irq)
- 	mutex_lock(&chip->lock);
- }
+-	desc->chip->ack(irq);
++	desc->irq_data.chip->ack(irq_get_irq_data(d));
+ 	ipr = ioread32(tgpio->membase + TGPIO_IPR);
+ 	iowrite32(ipr, tgpio->membase + TGPIO_ICR);
  
--static void sx150x_irq_bus_sync_unlock(unsigned int irq)
-+static void sx150x_irq_bus_sync_unlock(struct irq_data *d)
- {
--	struct irq_chip *ic = get_irq_chip(irq);
-+	struct irq_chip *ic = irq_data_get_irq_chip(d);
- 	struct sx150x_chip *chip;
- 	unsigned n;
+@@ -217,9 +217,9 @@ static void timbgpio_irq(unsigned int irq, struct irq_desc *desc)
  
-@@ -437,16 +437,16 @@ static void sx150x_init_chip(struct sx150x_chip *chip,
- 	if (pdata->oscio_is_gpo)
- 		++chip->gpio_chip.ngpio;
+ static struct irq_chip timbgpio_irqchip = {
+ 	.name		= "GPIO",
+-	.enable		= timbgpio_irq_enable,
+-	.disable	= timbgpio_irq_disable,
+-	.set_type	= timbgpio_irq_type,
++	.irq_enable	= timbgpio_irq_enable,
++	.irq_disable	= timbgpio_irq_disable,
++	.irq_set_type	= timbgpio_irq_type,
+ };
  
--	chip->irq_chip.name            = client->name;
--	chip->irq_chip.mask            = sx150x_irq_mask;
--	chip->irq_chip.unmask          = sx150x_irq_unmask;
--	chip->irq_chip.set_type        = sx150x_irq_set_type;
--	chip->irq_chip.bus_lock        = sx150x_irq_bus_lock;
--	chip->irq_chip.bus_sync_unlock = sx150x_irq_bus_sync_unlock;
--	chip->irq_summary              = -1;
--	chip->irq_base                 = -1;
--	chip->irq_sense                = 0;
--	chip->irq_set_type_pending     = 0;
-+	chip->irq_chip.name                = client->name;
-+	chip->irq_chip.irq_mask            = sx150x_irq_mask;
-+	chip->irq_chip.irq_unmask          = sx150x_irq_unmask;
-+	chip->irq_chip.irq_set_type        = sx150x_irq_set_type;
-+	chip->irq_chip.irq_bus_lock        = sx150x_irq_bus_lock;
-+	chip->irq_chip.irq_bus_sync_unlock = sx150x_irq_bus_sync_unlock;
-+	chip->irq_summary                  = -1;
-+	chip->irq_base                     = -1;
-+	chip->irq_sense                    = 0;
-+	chip->irq_set_type_pending         = 0;
- }
- 
- static int sx150x_init_io(struct sx150x_chip *chip, u8 base, u16 cfg)
+ static int __devinit timbgpio_probe(struct platform_device *pdev)
 -- 
 1.7.1
 
