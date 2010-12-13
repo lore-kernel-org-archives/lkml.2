@@ -1,51 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab0LMQfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 11:35:18 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:55426 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758212Ab0LMQfN (ORCPT
+	id S1758158Ab0LMQfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 11:35:04 -0500
+Received: from nwd2mail10.analog.com ([137.71.25.55]:26298 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab0LMQfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 11:35:13 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6195"; a="66623205"
-Date: Mon, 13 Dec 2010 08:35:11 -0800
-From: David Brown <davidb@codeaurora.org>
-To: ykaoua@qualcomm.com, Jeff Ohlstein <johlstei@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>
-Subject: Re: [PATCH 0/5 v3] SMP support for msm
-Message-ID: <20101213163511.GA10659@huya.qualcomm.com>
-References: <1292203221-2609-1-git-send-email-y>
+	Mon, 13 Dec 2010 11:35:00 -0500
+X-IronPort-AV: E=Sophos;i="4.59,336,1288584000"; 
+   d="scan'208";a="26123850"
+From: <michael.hennerich@analog.com>
+To: linux-iio@vger.kernel.org, jic23@cam.ac.uk
+CC: linux-kernel@vger.kernel.org, drivers@analog.com,
+        device-drivers-devel@blackfin.uclinux.org,
+        Michael Hennerich <michael.hennerich@analog.com>
+Subject: [PATCH 1/3] IIO: Direct digital synthesis abi documentation
+Date: Mon, 13 Dec 2010 17:27:22 +0100
+Message-ID: <1292257644-26477-1-git-send-email-michael.hennerich@analog.com>
+X-Mailer: git-send-email 1.6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292203221-2609-1-git-send-email-y>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 12, 2010 at 05:20:15PM -0800, ykaoua@qualcomm.com wrote:
-> From: Jeff Ohlstein <johlstei@codeaurora.org>
-> 
-> This series adds support for SMP on msm targets, and specifically adds
-> support for SMP on the msm8x60. This version is rebased on top of
-> Russell's SMP and gic patches, and doesn't need to change dma-mapping.
+From: Michael Hennerich <michael.hennerich@analog.com>
 
-Heh.  These are supposed to be from Jeff Ohlstein, not ykaoua.  Jeff,
-when you incorporate fixes, please make sure the series gets sent from
-your address.
+Changes since RFC/v1:
+IIO: Apply list review feedback:
 
-Yvonne, apologies that you'll be getting all of the replies to this
-thread, please ignore them.
+Apply list review feedback:
+	Restructure documentation according to list feedback.
+	Rename attributes to fit IIO convention used in other drivers.
+	Fix typos.
+	Provide ddsX_out_enable as opposed to ddsX_out_disable
 
-As far as I can tell, what happened is that 'git send-email' asks to
-confirm the email address.  It's not a question, so if you type 'y',
-it happily sends the email from 'y', which in our case expands to the
-ykaoua user.
+Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+Reviewed-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ .../staging/iio/Documentation/sysfs-bus-iio-dds    |   94 ++++++++++++++++++++
+ 1 files changed, 94 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-dds
 
-David
+diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
+new file mode 100644
+index 0000000..6791174
+--- /dev/null
++++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
+@@ -0,0 +1,94 @@
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_freqY
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Stores frequency into tuning word register Y.
++		There can be more than one ddsX_freqY file, which allows for
++		pin controlled FSK Frequency Shift Keying
++		(ddsX_pincontrol_freq_en is active) or the user can control
++		the desired active tuning word by writing Y to the
++		ddsX_freqsymbol file.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_freqY_scale
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Scale to be applied to ddsX_freqY in order to obtain the
++		desired value in Hz. If shared across all frequency registers
++		Y is not present. It is also possible X is not present if
++		shared across all channels.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_freqsymbol
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Specifies the active output frequency tuning word. The value
++		corresponds to the Y in ddsX_freqY. To exit this mode the user
++		can write ddsX_pincontrol_freq_en or ddsX_out_disable file.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_phaseY
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Stores phase into phase register Y.
++		There can be more than one ddsX_phaseY file, which allows for
++		pin controlled PSK Phase Shift Keying
++		(ddsX_pincontrol_phase_en is active) or the user can
++		control the desired phase Y which is added to the phase
++		accumulator output by writing Y to the en_phase file.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_phaseY_scale
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Scale to be applied to ddsX_phaseY in order to obtain the
++		desired value in rad. If shared across all phase registers
++		Y is not present. It is also possible X is not present if
++		shared across all channels.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_phasesymbol
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Specifies the active phase Y which is added to the phase
++		accumulator output. The value corresponds to the Y in
++		ddsX_phaseY. To exit this mode the user can write
++		ddsX_pincontrol_phase_en or disable file.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
++What:		/sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
++What:		/sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		ddsX_pincontrol_en: Both, the active frequency and phase is
++		controlled by the respective phase and frequency control inputs.
++		In case the device in question allows to independent controls,
++		then there are dedicated files (ddsX_pincontrol_freq_en,
++		ddsX_pincontrol_phase_en).
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_out_enable
++What:		/sys/bus/iio/devices/device[n]/ddsX_outY_enable
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		ddsX_out_enable: Enables signal generation on all outputs
++		of channel X.
++		ddsX_outY_enable: Enables signal generation on output Y,
++		of channel X.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Specifies the output waveform.
++		(sine, triangle, ramp, square, ...)
++		For a list of available output waveform options read
++		available_output_modes.
++
++What:		/sys/bus/iio/devices/device[n]/ddsX_outY_wavetype_available
++KernelVersion:	2.6.37
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Lists all available output waveform options.
+--
+1.6.0.2
+
