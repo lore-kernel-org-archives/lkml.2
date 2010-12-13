@@ -1,129 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab0LMXBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 18:01:41 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:39926 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754620Ab0LMXBj convert rfc822-to-8bit (ORCPT
+	id S1756117Ab0LMXCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 18:02:48 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:51794 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754951Ab0LMXCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 18:01:39 -0500
-X-IronPort-AV: E=Sophos;i="4.59,338,1288594800"; 
-   d="scan'208";a="494472506"
-Subject: Re: [PATCH] [38/223] SUNRPC: After calling xprt_release(), we must
- restart from call_reserve
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-In-Reply-To: <20101212234534.D3DFCB27BF@basil.firstfloor.org>
-References: <201012131244.547034648@firstfloor.org>
-	 <20101212234534.D3DFCB27BF@basil.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 13 Dec 2010 18:01:34 -0500
-Message-ID: <1292281294.13943.2.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 13 Dec 2010 23:01:35.0344 (UTC) FILETIME=[B0D52F00:01CB9B19]
+	Mon, 13 Dec 2010 18:02:46 -0500
+Message-ID: <4D06A60D.7010409@canonical.com>
+Date: Mon, 13 Dec 2010 15:02:37 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
+References: <1292001842-5000-1-git-send-email-rydberg@euromail.se> <4D065BDE.5020107@canonical.com> <4D068E3C.8080100@euromail.se>
+In-Reply-To: <4D068E3C.8080100@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 00:45 +0100, Andi Kleen wrote:
-> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On 12/13/2010 01:21 PM, Henrik Rydberg wrote:
+> On 12/13/2010 06:46 PM, Chase Douglas wrote:
+>> On 12/10/2010 09:24 AM, Henrik Rydberg wrote:
+>>> +- The MT_TOOL_ENVELOPE type is used to indicate that the contact position
+>>> +is not well-defined, and is only used for legacy hardware. The real contact
+>>> +positions are to be found within the bounding rectangle formed by the
+>>> +envelope contact positions.
+>>
+>> By definition, this only covers rectangles with two coordinates to
+>> define the shape and location. Why do we want to call it envelope? It's
+>> just extra confusion to me. Why not call it MT_TOOL_RECT?
+> 
+> 
+> The envelope contacts serve as a way to detect a small area of fingers or a
+> large area of fingers. There is nothing inherently problematic with having one
+> or three or more such contacts.
 
-Hi Andi,
+Then I'm more confused :).
 
-This patch isn't strictly needed for kernels 2.6.35.x or older: the Oops
-only appears in 2.6.36.
+I see one problem: devices that report two touch points, (X1, Y1) and
+(X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
+instead. Using a rectangle helps resolve this issue for panning and
+pinching, though not for rotation.
 
-Cheers
-  Trond
+Now, you're telling me that the envelope tool may be used for more
+points than two. If I had more than two touch points, wouldn't it be on
+a device that had full MT capabilities, and thus did not need envelope/rect?
 
-> ------------------
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> 
-> commit 118df3d17f11733b294ea2cd988d56ee376ef9fd upstream.
-> 
-> Rob Leslie reports seeing the following Oops after his Kerberos session
-> expired.
-> 
-> BUG: unable to handle kernel NULL pointer dereference at 00000058
-> IP: [<e186ed94>] rpcauth_refreshcred+0x11/0x12c [sunrpc]
-> *pde = 00000000
-> Oops: 0000 [#1]
-> last sysfs file: /sys/devices/platform/pc87360.26144/temp3_input
-> Modules linked in: autofs4 authenc esp4 xfrm4_mode_transport ipt_LOG ipt_REJECT xt_limit xt_state ipt_REDIRECT xt_owner xt_HL xt_hl xt_tcpudp xt_mark cls_u32 cls_tcindex sch_sfq sch_htb sch_dsmark geodewdt deflate ctr twofish_generic twofish_i586 twofish_common camellia serpent blowfish cast5 cbc xcbc rmd160 sha512_generic sha1_generic hmac crypto_null af_key rpcsec_gss_krb5 nfsd exportfs nfs lockd fscache nfs_acl auth_rpcgss sunrpc ip_gre sit tunnel4 dummy ext3 jbd nf_nat_irc nf_conntrack_irc nf_nat_ftp nf_conntrack_ftp iptable_mangle iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables pc8736x_gpio nsc_gpio pc87360 hwmon_vid loop aes_i586 aes_generic sha256_generic dm_crypt cs5535_gpio serio_raw cs5535_mfgpt hifn_795x des_generic geode_rng rng_core led_class ext4 mbcache jbd2 crc16 dm_mirror dm_region_hash dm_log dm_snapshot dm_mod sd_mod crc_t10dif ide_pci_generic cs5536 amd74xx ide_core pata_cs5536 ata_generic libata usb_stora
->  ge via_rhine mii scsi_mod btrfs zlib_deflate crc32c libcrc32c [last unloaded: scsi_wait_scan]
-> 
-> Pid: 12875, comm: sudo Not tainted 2.6.36-net5501 #1 /
-> EIP: 0060:[<e186ed94>] EFLAGS: 00010292 CPU: 0
-> EIP is at rpcauth_refreshcred+0x11/0x12c [sunrpc]
-> EAX: 00000000 EBX: defb13a0 ECX: 00000006 EDX: e18683b8
-> ESI: defb13a0 EDI: 00000000 EBP: 00000000 ESP: de571d58
->  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-> Process sudo (pid: 12875, ti=de570000 task=decd1430 task.ti=de570000)
-> Stack:
->  e186e008 00000000 defb13a0 0000000d deda6000 e1868f22 e196f12b defb13a0
-> <0> defb13d8 00000000 00000000 e186e0aa 00000000 defb13a0 de571dac 00000000
-> <0> e186956c de571e34 debea5c0 de571dc8 e186967a 00000000 debea5c0 de571e34
-> Call Trace:
->  [<e186e008>] ? rpc_wake_up_next+0x114/0x11b [sunrpc]
->  [<e1868f22>] ? call_decode+0x24a/0x5af [sunrpc]
->  [<e196f12b>] ? nfs4_xdr_dec_access+0x0/0xa2 [nfs]
->  [<e186e0aa>] ? __rpc_execute+0x62/0x17b [sunrpc]
->  [<e186956c>] ? rpc_run_task+0x91/0x97 [sunrpc]
->  [<e186967a>] ? rpc_call_sync+0x40/0x5b [sunrpc]
->  [<e1969ca2>] ? nfs4_proc_access+0x10a/0x176 [nfs]
->  [<e19572fa>] ? nfs_do_access+0x2b1/0x2c0 [nfs]
->  [<e186ed61>] ? rpcauth_lookupcred+0x62/0x84 [sunrpc]
->  [<e19573b6>] ? nfs_permission+0xad/0x13b [nfs]
->  [<c0177824>] ? exec_permission+0x15/0x4b
->  [<c0177fbd>] ? link_path_walk+0x4f/0x456
->  [<c017867d>] ? path_walk+0x4c/0xa8
->  [<c0179678>] ? do_path_lookup+0x1f/0x68
->  [<c017a3fb>] ? user_path_at+0x37/0x5f
->  [<c016359c>] ? handle_mm_fault+0x229/0x55b
->  [<c0170a2d>] ? sys_faccessat+0x93/0x146
->  [<c0170aef>] ? sys_access+0xf/0x13
->  [<c02cf615>] ? syscall_call+0x7/0xb
-> Code: 0f 94 c2 84 d2 74 09 8b 44 24 0c e8 6a e9 8b de 83 c4 14 89 d8 5b 5e 5f 5d c3 55 57 56 53 83 ec 1c fc 89 c6 8b 40 10 89 44 24 04 <8b> 58 58 85 db 0f 85 d4 00 00 00 0f b7 46 70 8b 56 20 89 c5 83
-> EIP: [<e186ed94>] rpcauth_refreshcred+0x11/0x12c [sunrpc] SS:ESP 0068:de571d58
-> CR2: 0000000000000058
-> 
-> This appears to be caused by the function rpc_verify_header() first
-> calling xprt_release(), then doing a call_refresh. If we release the
-> transport slot, we should _always_ jump back to call_reserve before
-> calling anything else.
-> 
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
-> ---
->  net/sunrpc/clnt.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/net/sunrpc/clnt.c
-> ===================================================================
-> --- linux.orig/net/sunrpc/clnt.c
-> +++ linux/net/sunrpc/clnt.c
-> @@ -1593,7 +1593,7 @@ rpc_verify_header(struct rpc_task *task)
->  			rpcauth_invalcred(task);
->  			/* Ensure we obtain a new XID! */
->  			xprt_release(task);
-> -			task->tk_action = call_refresh;
-> +			task->tk_action = call_reserve;
->  			goto out_retry;
->  		case RPC_AUTH_BADCRED:
->  		case RPC_AUTH_BADVERF:
+The only purpose I can think of for this would be if you had up to four
+fingers down that the device reported as (X1, Y1) through (X4, Y4). If
+you can trust the coordinate pairs as they are, then you have full MT
+and don't need this. Or, you can find the bounding rectangle defined as
+the min and max of each axis. You could provide that bounding rectangle
+by providing all the coordinates, but that includes potentially
+incorrect data. A cleaner approach would tell userspace of the bounding
+rectangle and how many fingers are down.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+I'm beginning to feel that this isn't really MT at all. Instead of
+fitting this into MT slots, we could define ABS_RECT_MIN and
+ABS_RECT_MAX to provide the min and max X and Y values, and then use
+BTN_TOOL_*TAP as usual to tell how many touches are within the
+rectangle. I think this will mirror what userspace would have to
+extrapolate from the MT_TOOL_ENVELOPE data anyways, so why not provide
+it up front, without any MT protocol complications?
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+>> Please describe how to use this tool type. Its usage is different than
+>> any tool type usage before, so an explanation would be helpful. Must the
+>> value of the tool on the first touch be 0 until a second touch can
+>> define the rect? Or, can touches always default the value to 1 since
+>> we're talking about devices that only support two fingers?
+> 
+> 
+> For a dual-touch driver sending the lower-left and upper-right corners as
+> contacts, nothing really has to be done in user space. The contacts will look
+> weird in a drawing program, because the actual fingers and the ones on the
+> screen may diverge. The tool type indicates that this may be the case, so the
+> application can take measures if it wants to. This is the primary intended usage.
 
+Is it a requirement that the coordinates will be lower-left and
+upper-right? If so, that needs to be documented somewhere. If it's not a
+requirement, then userspace will likely transform the data to be
+uniform, in which case we might as well make it a requirement in evdev.
+
+This still hasn't answered the question though. Suppose I have a device
+that supports two finger touches, but only in this rectangular fashion.
+Can I leave MT_TOOL_ENVELOPE as 1 all the time? Or does it need to turn
+on and off when two touches go down and up?
+
+We're going to be adding support for all this to X and other display
+managers. The lack of documentation for even simple things like
+BTN_TOOL_DOUBLETAP has been an issue in the past. Let's do it right this
+time by providing real documentation for a complex issue like this.
+
+> A driver can use MT_TOOL_ENVELOPE also for one finger.
+
+Isn't this what blobs are for?
+
+>> If this is really to remedy only poor two finger devices, would it be
+>> better to flag the device itself somehow to say "don't trust this
+>> device's coordinate positions" (or something more elegant)? This would
+>> prevent an extrapolation of tool types to multiple fingers at a time.
+> 
+> 
+> Maybe the device also has a pen, for which the coordinates should be trusted.
+
+The driver could specify which tools are accurate and which tools are
+not, if this was the route taken to resolve this issue. However, I like
+the approach outlined above better.
+
+>> Lastly, using tool types for this seems odd since this does not signify
+>> a physical tool. It merely signifies that the device coordinates cannot
+>> be trusted literally. Maybe we should use some other namespace for
+>> binding information across multiple touches, like MT_BIND_RECT?
+> 
+> 
+> The envelope coordinates can be trusted to yield a smoothly moving bounding
+> area, similar to tracked contacts. Completely untrusted contacts would first
+> have to be processed somewhere in order to be useful, which is less desirable.
+
+We're not talking about completely untrusted contacts. I'm also not sure
+how this answers the question :).
+
+-- Chase
