@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab0LMDd3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 22:33:29 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52356 "EHLO smtps.tip.net.au"
+	id S1756722Ab0LMDdy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 22:33:54 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36991 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756671Ab0LMDd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 22:33:28 -0500
-Date: Mon, 13 Dec 2010 14:33:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: linux-next: build failure after merge of the swiotlb-xen tree
-Message-Id: <20101213143322.90c45f81.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__13_Dec_2010_14_33_22_+1100_W.AiBGWP2H0RHynC"
+	id S1756685Ab0LMDdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 22:33:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,334,1288594800"; 
+   d="scan'208";a="583080646"
+Date: Mon, 13 Dec 2010 10:09:25 +0800
+From: Shaohui Zheng <shaohui.zheng@linux.intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [7/7,v8] NUMA Hotplug Emulator: Implement per-node add_memory
+ debugfs interface
+Message-ID: <20101213020924.GB19637@shaohui>
+References: <A24AE1FFE7AEC5489F83450EE98351BF2A40FED20A@shsmsx502.ccr.corp.intel.com>
+ <20101209012124.GD5798@shaohui>
+ <alpine.DEB.2.00.1012091325530.13564@chino.kir.corp.google.com>
+ <20101209235705.GA10674@shaohui>
+ <alpine.DEB.2.00.1012101529190.30039@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1012101529190.30039@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Dec_2010_14_33_22_+1100_W.AiBGWP2H0RHynC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Dec 10, 2010 at 03:30:38PM -0800, David Rientjes wrote:
+> On Fri, 10 Dec 2010, Shaohui Zheng wrote:
+> 
+> > > That doesn't address the question.  My question is whether or not adding 
+> > > memory to a memoryless node in this way transitions its state to 
+> > > N_HIGH_MEMORY in the VM?
+> > I guess that you are talking about memory hotplug on x86_32, memory hotplug is
+> > NOT supported well for x86_32, and the function add_memory does not consider
+> > this situlation.
+> > 
+> > For 64bit, N_HIGH_MEMORY == N_NORMAL_MEMORY, so we need not to do the transition.
+> > 
+> 
+> One more time :)  Memoryless nodes do not have their bit set in 
+> N_HIGH_MEMORY.  When memory is added to a memoryless node with this new 
+> interface, does the bit get set?
 
-Hi Konrad,
+When we use debugfs add_node interface to add a fake node, the node was created, 
+and memory sections were created, but the state of the memory section is still 
+__offline__, so the new added node is still memoryless node. the result of debugfs
+add_memory interface doing the similar thing with add_node, it just add memory
+to an exists node.
 
-After merging the swiotlb-xen tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+For the state transition to N_HIGH_MEMORY, it does not happen on the above too
+interfaces. It happens when the memory was onlined with sysfs /sys/device/system/memory/memoryXX/online
+interface.
 
-ERROR: "xenbus_dev_is_online" [drivers/xen/pciback/xen-pciback.ko] undefine=
-d!
-ERROR: "__xenbus_register_backend" [drivers/xen/pciback/xen-pciback.ko] und=
-efined!
+That is the code path:
+store_mem_state
+	->memory_block_change_state
+	 	->memory_block_action
+			->online_pages
 
-Caused by commit 443b2aafbdb509f218fcb8f4665f063e3a5e1a92 ("xen-pciback:
-Initial copy from linux-2.6.18.hg off pciback driver").
+			if (onlined_pages) {
+				kswapd_run(zone_to_nid(zone));
+				node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+			}
 
-I have used the swiotlb-xen tree from next-20101210 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+does it address your question? thanks.
 
---Signature=_Mon__13_Dec_2010_14_33_22_+1100_W.AiBGWP2H0RHynC
-Content-Type: application/pgp-signature
+-- 
+Thanks & Regards,
+Shaohui
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNBZQCAAoJEDMEi1NhKgbsTnYH/3kwWg1ecz0Vva4GMd3nAxrG
-qU891SouvmqVP8pZjyQcYKGaKsN9QXalU+kvpS3OZWyhozcIdqBjjF8MNILoVuaO
-7jH2kaZQe0EKmiqBjWTbocFRPSWTgNDW7wvBTrQhq0D5mPw+cbmTEhR14rWMElWX
-HNwb9IDldblEOa1pPOt6V7ixLwjs3muPdeVNuTLOK18u4UdiEl+q6dLSg1HOCXwP
-Wuw1dP2Wercc0+GxLGiEFb7XxaM+UjWW4Wl+vDI2BC2dqdCWH0sK/x9cDJGpm8IX
-7ceU5uA+O67ptLxmXQz4ZyuV90CbRmuuFu40ZY/pe9iGktVc0j2q50KjkqQVceo=
-=7suH
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Dec_2010_14_33_22_+1100_W.AiBGWP2H0RHynC--
