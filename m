@@ -1,229 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab0LMNR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 08:17:26 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51395 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757757Ab0LMNRX (ORCPT
+	id S1757726Ab0LMNVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 08:21:06 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:42552 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757682Ab0LMNVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 08:17:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BHo3oln2nV43aSUzypcTe6tWVTRJy/XI76uqe5anXmfGiMyJs9B/On8/p3nGMtsJSC
-         O+v783dXWSb5KdhTag4SD28yxLrAaZ6W8DKK6+f9108+CSuZzlf5D+9rZD0NkBj/XmwZ
-         odUeoPEQ9lqlH8qCSxhIyOLsW6xn1yDd/H2pU=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] Staging: vme_ca91cx42: make functions static
-Date: Mon, 13 Dec 2010 22:16:33 +0900
-Message-Id: <1292246196-2332-5-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.3.400.g93cef
-In-Reply-To: <1292246196-2332-1-git-send-email-namhyung@gmail.com>
-References: <1292246196-2332-1-git-send-email-namhyung@gmail.com>
+	Mon, 13 Dec 2010 08:21:03 -0500
+Subject: Re: [patch v2 4/4] taskstats: Export "cdata_wait" CPU times with
+ taskstats
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <1292245515.2063.168.camel@holzheu-laptop>
+References: <20101129164237.522034198@linux.vnet.ibm.com>
+	 <20101129164435.903722027@linux.vnet.ibm.com>
+	 <20101201185128.GA7656@redhat.com>
+	 <1291307641.1928.125.camel@holzheu-laptop>
+	 <20101208202308.GA1804@redhat.com>
+	 <1291987580.1933.10.camel@holzheu-laptop>
+	 <20101211173931.GA8084@redhat.com>
+	 <1292245515.2063.168.camel@holzheu-laptop>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Mon, 13 Dec 2010 14:20:56 +0100
+Message-ID: <1292246456.2063.179.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Declare internal functions static.
+On Mon, 2010-12-13 at 14:05 +0100, Michael Holzheu wrote:
+> > And this looks racy, or I missed something again. group_dead can be
+> > true, but this doesn't mean all other threads have already passed
+> > taskstats_exit()->fill_tgid_exit()->delayacct_add_tsk().
+> 
+> I think you are right.
+> 
+> One way to fix that could be to separate the aggregation from the
+> sending. We could call fill_tgid_exit()->delayacct_add_tsk() before
+> atomic_dec_and_test(&tsk->signal->live) in do_exit() and
+> taskstats_exit() with the sender part afterwards.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Something like the following patch...
 ---
- drivers/staging/vme/bridges/vme_ca91cx42.c |   54 ++++++++++++++--------------
- 1 files changed, 27 insertions(+), 27 deletions(-)
+ include/linux/taskstats_kern.h |    3 +
+ kernel/exit.c                  |    3 +
+ kernel/taskstats.c             |   62 +++++++++++++++++------------------------
+ 3 files changed, 31 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 1052a6d101cd..cfac1f128dea 100644
---- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-@@ -260,8 +260,8 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
- /*
-  * Set up an VME interrupt
-  */
--void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
--	int sync)
-+static void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level,
-+	int state, int sync)
- 
- {
- 	struct pci_dev *pdev;
-@@ -288,8 +288,8 @@ void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
- 	}
+--- a/include/linux/taskstats_kern.h
++++ b/include/linux/taskstats_kern.h
+@@ -21,7 +21,8 @@ static inline void taskstats_tgid_free(s
+ 		kmem_cache_free(taskstats_cache, sig->stats);
  }
  
--int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
--	int statid)
-+static int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge,
-+	int level, int statid)
- {
- 	u32 tmp;
- 	struct ca91cx42_driver *bridge;
-@@ -324,7 +324,7 @@ int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
- 	return 0;
+-extern void taskstats_exit(struct task_struct *, int group_dead);
++extern void taskstats_exit_notify(struct task_struct *, int group_dead);
++extern void taskstats_exit_add_thread(struct task_struct *);
+ extern void taskstats_init_early(void);
+ #else
+ static inline void taskstats_exit(struct task_struct *tsk, int group_dead)
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1030,6 +1030,7 @@ NORET_TYPE void do_exit(long code)
+ 	/* sync mm's RSS info before statistics gathering */
+ 	if (tsk->mm)
+ 		sync_mm_rss(tsk, tsk->mm);
++	taskstats_exit_add_thread(tsk);
+ 	group_dead = atomic_dec_and_test(&tsk->signal->live);
+ 	if (group_dead) {
+ 		struct cdata *tcd = &tsk->signal->cdata_threads;
+@@ -1045,7 +1046,7 @@ NORET_TYPE void do_exit(long code)
+ 		audit_free(tsk);
+ 
+ 	tsk->exit_code = code;
+-	taskstats_exit(tsk, group_dead);
++	taskstats_exit_notify(tsk, group_dead);
+ 
+ 	exit_mm(tsk);
+ 
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -263,10 +263,32 @@ out:
+ 	return rc;
  }
  
--int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
-+static int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
- 	unsigned long long vme_base, unsigned long long size,
- 	dma_addr_t pci_base, vme_address_t aspace, vme_cycle_t cycle)
+-static void fill_tgid_exit(struct task_struct *tsk)
++static void alloc_signal_stats(struct task_struct *tsk)
++{
++	struct signal_struct *sig = tsk->signal;
++	struct taskstats *stats;
++
++	/* No problem if kmem_cache_zalloc() fails */
++	stats = kmem_cache_zalloc(taskstats_cache, GFP_KERNEL);
++
++	spin_lock_irq(&tsk->sighand->siglock);
++	if (!sig->stats) {
++		sig->stats = stats;
++		stats = NULL;
++	}
++	spin_unlock_irq(&tsk->sighand->siglock);
++
++	if (stats)
++		kmem_cache_free(taskstats_cache, stats);
++}
++
++void taskstats_exit_add_thread(struct task_struct *tsk)
  {
-@@ -430,7 +430,7 @@ int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
- 	return 0;
+ 	unsigned long flags;
+ 
++	if (tsk->signal->stats == NULL && !thread_group_empty(tsk))
++		alloc_signal_stats(tsk);
++
+ 	spin_lock_irqsave(&tsk->sighand->siglock, flags);
+ 	if (!tsk->signal->stats)
+ 		goto ret;
+@@ -530,39 +552,14 @@ static int taskstats_user_cmd(struct sk_
+ 		return -EINVAL;
  }
  
--int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
-+static int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	dma_addr_t *pci_base, vme_address_t *aspace, vme_cycle_t *cycle)
+-static struct taskstats *taskstats_tgid_alloc(struct task_struct *tsk)
+-{
+-	struct signal_struct *sig = tsk->signal;
+-	struct taskstats *stats;
+-
+-	if (sig->stats || thread_group_empty(tsk))
+-		goto ret;
+-
+-	/* No problem if kmem_cache_zalloc() fails */
+-	stats = kmem_cache_zalloc(taskstats_cache, GFP_KERNEL);
+-
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	if (!sig->stats) {
+-		sig->stats = stats;
+-		stats = NULL;
+-	}
+-	spin_unlock_irq(&tsk->sighand->siglock);
+-
+-	if (stats)
+-		kmem_cache_free(taskstats_cache, stats);
+-ret:
+-	return sig->stats;
+-}
+-
+ /* Send pid data out on exit */
+-void taskstats_exit(struct task_struct *tsk, int group_dead)
++void taskstats_exit_notify(struct task_struct *tsk, int group_dead)
  {
-@@ -582,7 +582,7 @@ static void ca91cx42_free_resource(struct vme_master_resource *image)
- }
+ 	int rc;
+ 	struct listener_list *listeners;
+ 	struct taskstats *stats;
+ 	struct sk_buff *rep_skb;
+ 	size_t size;
+-	int is_thread_group;
  
+ 	if (!family_registered)
+ 		return;
+@@ -573,13 +570,8 @@ void taskstats_exit(struct task_struct *
+ 	size = nla_total_size(sizeof(u32)) +
+ 		nla_total_size(sizeof(struct taskstats)) + nla_total_size(0);
  
--int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
-+static int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
- 	unsigned long long vme_base, unsigned long long size,
- 	vme_address_t aspace, vme_cycle_t cycle, vme_width_t dwidth)
- {
-@@ -739,8 +739,8 @@ err_window:
- 	return retval;
- }
+-	is_thread_group = !!taskstats_tgid_alloc(tsk);
+-	if (is_thread_group) {
+-		/* PID + STATS + TGID + STATS */
+-		size = 2 * size;
+-		/* fill the tsk->signal->stats structure */
+-		fill_tgid_exit(tsk);
+-	}
++	if (group_dead && tsk->signal->stats)
++		size = 2 * size; /* PID + STATS + TGID + STATS */
  
--int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
--	unsigned long long *vme_base, unsigned long long *size,
-+static int __ca91cx42_master_get(struct vme_master_resource *image,
-+	int *enabled, unsigned long long *vme_base, unsigned long long *size,
- 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
- {
- 	unsigned int i, ctl;
-@@ -826,7 +826,7 @@ int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	return 0;
- }
+ 	listeners = &__raw_get_cpu_var(listener_array);
+ 	if (list_empty(&listeners->list))
+@@ -598,7 +590,7 @@ void taskstats_exit(struct task_struct *
+ 	/*
+ 	 * Doesn't matter if tsk is the leader or the last group member leaving
+ 	 */
+-	if (!is_thread_group || !group_dead)
++	if (!group_dead || tsk->signal->stats == NULL)
+ 		goto send;
  
--int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
-+static int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
- {
-@@ -844,8 +844,8 @@ int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 
- #define check_aligned(addr, align)	((unsigned long)addr & align)
- 
--ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
--	size_t count, loff_t offset)
-+static ssize_t ca91cx42_master_read(struct vme_master_resource *image,
-+	void *buf, size_t count, loff_t offset)
- {
- 	ssize_t retval;
- 	void __iomem *addr = image->kern_base + offset;
-@@ -904,8 +904,8 @@ out:
- 	return retval;
- }
- 
--ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
--	size_t count, loff_t offset)
-+static ssize_t ca91cx42_master_write(struct vme_master_resource *image,
-+	void *buf, size_t count, loff_t offset)
- {
- 	ssize_t retval;
- 	void __iomem *addr = image->kern_base + offset;
-@@ -958,7 +958,7 @@ out:
- 	return retval;
- }
- 
--unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
-+static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
- 	unsigned int mask, unsigned int compare, unsigned int swap,
- 	loff_t offset)
- {
-@@ -1014,8 +1014,8 @@ out:
- 	return result;
- }
- 
--int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
--	struct vme_dma_attr *dest, size_t count)
-+static int ca91cx42_dma_list_add(struct vme_dma_list *list,
-+	struct vme_dma_attr *src, struct vme_dma_attr *dest, size_t count)
- {
- 	struct ca91cx42_dma_entry *entry, *prev;
- 	struct vme_dma_pci *pci_attr;
-@@ -1175,7 +1175,7 @@ static int ca91cx42_dma_busy(struct vme_bridge *ca91cx42_bridge)
- 		return 1;
- }
- 
--int ca91cx42_dma_list_exec(struct vme_dma_list *list)
-+static int ca91cx42_dma_list_exec(struct vme_dma_list *list)
- {
- 	struct vme_dma_resource *ctrlr;
- 	struct ca91cx42_dma_entry *entry;
-@@ -1257,7 +1257,7 @@ int ca91cx42_dma_list_exec(struct vme_dma_list *list)
- 
- }
- 
--int ca91cx42_dma_list_empty(struct vme_dma_list *list)
-+static int ca91cx42_dma_list_empty(struct vme_dma_list *list)
- {
- 	struct list_head *pos, *temp;
- 	struct ca91cx42_dma_entry *entry;
-@@ -1279,8 +1279,8 @@ int ca91cx42_dma_list_empty(struct vme_dma_list *list)
-  * This does not enable the LM monitor - that should be done when the first
-  * callback is attached and disabled when the last callback is removed.
-  */
--int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
--	vme_address_t aspace, vme_cycle_t cycle)
-+static int ca91cx42_lm_set(struct vme_lm_resource *lm,
-+	unsigned long long lm_base, vme_address_t aspace, vme_cycle_t cycle)
- {
- 	u32 temp_base, lm_ctl = 0;
- 	int i;
-@@ -1347,8 +1347,8 @@ int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
- /* Get configuration of the callback monitor and return whether it is enabled
-  * or disabled.
-  */
--int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
--	vme_address_t *aspace, vme_cycle_t *cycle)
-+static int ca91cx42_lm_get(struct vme_lm_resource *lm,
-+	unsigned long long *lm_base, vme_address_t *aspace, vme_cycle_t *cycle)
- {
- 	u32 lm_ctl, enabled = 0;
- 	struct ca91cx42_driver *bridge;
-@@ -1390,7 +1390,7 @@ int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
-  *
-  * Callback will be passed the monitor triggered.
-  */
--int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
-+static int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
- 	void (*callback)(int))
- {
- 	u32 lm_ctl, tmp;
-@@ -1439,7 +1439,7 @@ int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
- /*
-  * Detach a callback function forn a specific location monitor.
-  */
--int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
-+static int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
- {
- 	u32 tmp;
- 	struct ca91cx42_driver *bridge;
-@@ -1472,7 +1472,7 @@ int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
- 	return 0;
- }
- 
--int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
-+static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
- {
- 	u32 slot = 0;
- 	struct ca91cx42_driver *bridge;
-@@ -1832,7 +1832,7 @@ err_struct:
- 
- }
- 
--void __devexit ca91cx42_remove(struct pci_dev *pdev)
-+static void __devexit ca91cx42_remove(struct pci_dev *pdev)
- {
- 	struct list_head *pos = NULL;
- 	struct vme_master_resource *master_image;
--- 
-1.7.3.3.400.g93cef
+ 	stats = mk_reply(rep_skb, TASKSTATS_TYPE_TGID, tsk->tgid);
+
+
 
