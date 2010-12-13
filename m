@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750940Ab0LMJhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 04:37:03 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:59042 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab0LMJhA (ORCPT
+	id S1751319Ab0LMJqF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 04:46:05 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:45725 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab0LMJqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 04:37:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=RRvXzknMT9mUO7dEOphpyilIZDODKxS1totiC3dFQ7ja1mF80vHrRpieSbbIAppEWK
-         MEhj9xgJslEBiktlJ2QIvJ1LIDDeDahYRggc24vU7rHfH2A5eXpDiXILJP8+adXHvQHY
-         6+KlUOvF+zxG15OxOZR95Lb9sZZpgdLjBPuPg=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH] staging: ft1000: Always extract device number from netdev name.
-Date: Mon, 13 Dec 2010 10:39:20 +0100
-Message-Id: <1292233160-2687-1-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 13 Dec 2010 04:46:03 -0500
+Date: Mon, 13 Dec 2010 10:45:59 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, mst@redhat.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] [104/223] KVM: Write protect memory after slot swap
+Message-ID: <20101213094559.GD999@basil.fritz.box>
+References: <201012131244.547034648@firstfloor.org>
+ <20101212234644.B05DAB27BF@basil.firstfloor.org>
+ <4D05DC98.40105@redhat.com>
+ <044a861a2279c7e3e328c73e6694fbf3.squirrel@www.firstfloor.org>
+ <4D05E096.6060307@redhat.com>
+ <74ff92a8c4cf72e42e7559de72e77b52.squirrel@www.firstfloor.org>
+ <4D05E2A5.8070204@redhat.com>
+ <20101213091254.GA999@basil.fritz.box>
+ <4D05E483.1000106@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D05E483.1000106@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using gCardIndex as global variable was not correctly used because
-for every plugged device was set to 0 in init_ft1000_netdev.
+> >Do you want to do the autotest explicitely for .35 too and no automatic
+> >backports and do the same procedure as for newer kernels?
+> >
+> >I can do that, but you would need to do it for a long time.
+> 
+> Yes.  In fact it gets more important as time goes by, since as time
+> goes by patches are more likely to cause regressions due to changes
+> in the code base.
 
-Remove global definition. Use it locally and for every plugged
-device extract number from net device name.
+Ok. But this requires that you do this regularly for .35 too.
+If you do that that's great. 
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
+I will not automatically backport KVM patches anymore,
+but wait/ping you instead.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 7456787..643a637 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -41,7 +41,6 @@ static int ft1000_chkcard (struct ft1000_device *dev);
- //Jim
- 
- static u8 tempbuffer[1600];
--static unsigned long gCardIndex;
- 
- #define MAX_RCV_LOOP   100
- 
-@@ -773,8 +772,7 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
- 	int i, ret_val;
- 	struct list_head *cur, *tmp;
- 	char card_nr[2];
--
--	gCardIndex=0; //mbelian
-+	unsigned long gCardIndex = 0;
- 
-     DEBUG("Enter init_ft1000_netdev...\n");
- 
-@@ -794,9 +792,6 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
- 
-     dev_alloc_name(netdev, netdev->name);
- 
--    //for the first inserted card, decide the card index beginning number, in case there are existing network interfaces
--    if ( gCardIndex == 0 )
--    {
-         DEBUG("init_ft1000_netdev: network device name is %s\n", netdev->name);
- 
- 	if ( strncmp(netdev->name,"eth", 3) == 0) {
-@@ -816,13 +811,6 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
- 		ret_val = -ENXIO;
- 		goto err_net;
-         }
--    }
--    else
--    {
--        //not the first inserted card, increase card number by 1
--        pInfo->CardNumber = gCardIndex;
--        /*DEBUG("card number = %d\n", pInfo->CardNumber);*/ //mbelian
--    }
- 
-     memset(&pInfo->stats, 0, sizeof(struct net_device_stats) );
- 
+-Andi
 -- 
-1.7.1
-
+ak@linux.intel.com -- Speaking for myself only.
