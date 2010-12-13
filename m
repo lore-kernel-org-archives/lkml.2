@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413Ab0LMRMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:12:01 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44898 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab0LMRMA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:12:00 -0500
-Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Ahern" <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101213170923.GB1691@nowhere>
-References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
-	 <1291773285-16254-2-git-send-email-daahern@cisco.com>
-	 <20101212201613.GA1784@nowhere> <4D06301C.2090309@cisco.com>
-	 <20101213155451.GA1691@nowhere> <20101213164854.GL5407@ghostprotocols.net>
-	 <20101213170923.GB1691@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Dec 2010 18:11:29 +0100
-Message-ID: <1292260289.6803.297.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932195Ab0LMRMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:12:18 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:35969 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1758438Ab0LMRMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 12:12:14 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19fD/AjUVRfuzUxF/jSQwtrfhjxFKlHFdk2716eco
+	gT1om+9A+UxAmD
+From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
+To: "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>
+Subject: Re: [PATCH v2] avr32: Fix build failure conflicting types for 'sys_execve'
+Date: Mon, 13 Dec 2010 18:12:01 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+References: <20101209182132.GB24175@kroah.com> <201012122037.59016.PeterHuewe@gmx.de> <1292227973.18008.53.camel@hcegtvedt>
+In-Reply-To: <1292227973.18008.53.camel@hcegtvedt>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012131812.03487.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 18:09 +0100, Frederic Weisbecker wrote:
-> 
-> 
-> Right, but Peter wanted us to get rid of these user events types.
+Am Montag 13 Dezember 2010, 09:12:53 schrieb Hans-Christian Egtvedt:
+> > (but it still failed for quite a while longer due to other issues ;)
+> What other issues?
 
-Yes they suck.
+There's a linker error at the end:
 
-> I guess we can't really do this as new perf tools must be able
-> to support old perf files.
+  CC      init/version.o
+  LD      init/built-in.o
+  LD      vmlinux
+lib/lib.a(vsprintf.o): In function `resource_string':
+vsprintf.c:(.text+0x149e): relocation truncated to fit: R_AVR32_9UW_PCREL 
+against `.text'+16a8
+vsprintf.c:(.text+0x14ae): relocation truncated to fit: R_AVR32_9UW_PCREL 
+against `.text'+16ac
 
-Preferably, yes, but I don't see why we can't break the data file format
-if we've got good reasons to.
+which seems to exist since May 26th in Linus' tree.
+See 
+http://kisskb.ellerman.id.au/kisskb/buildresult/2631302/
+http://kisskb.ellerman.id.au/kisskb/target/664/
+for more details.
 
-> So this should be the last one to add. Something like PERF_RECORD_GEN_EVT
-> that has a field in its headers containing a sub-type which can be this
-> wall clock but can also host about everything in the future.
-> 
-> This way we don't propagate more the possible overlap with the kernel. 
+Unfortunately I wasn't able to locate the offending commit using git bisect :/
 
-I don't see why we should add more, that's going the wrong direction.
+
+
+Reported-by: Peter Huewe <peterhuewe@gmx.de>
+
+> > (a reported by on the patch would have been nice ;)
+> Of course, I'll rebase and add you're name to it. Does the same go for
+> David Howells?
+Great, thanks. - although I'm not sure wether an ack, reported-by or signed-
+off by fits best ;)
+I did get an ack from him:
+> Acked-by: David Howells <dhowells@redhat.com>
+
+
+Thanks,
+Peter
+
+
+
+
