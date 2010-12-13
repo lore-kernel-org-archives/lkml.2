@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab0LMKZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:25:45 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45984 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab0LMKZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:25:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rMf6V6bm2s0jKQCdtzcidvQjo77CrZRAw5YIliMxOhADS4st7A8z4fa1hSoMlNT3Xf
-         Bl/TQbS6Td9Jyhg44CUDI9GTqfsMUhdP7tvjvtjcSQ5X21KrJI5oHUYH4s+JJmuHgkiO
-         brUNiqBccxbwnZOkzen3vCUKWzhwc4k1ZCXHM=
-Date: Mon, 13 Dec 2010 18:25:29 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Maxim Uvarov <muvarov@gmail.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101213102529.GA10907@cr0.nay.redhat.com>
-References: <20101203111623.GA2741@redhat.com>
- <AANLkTi=Xvbi5M_cNRL=wC+uwksG08SiCyWcqdmwB_5TU@mail.gmail.com>
- <20101203171147.GA2299@redhat.com>
- <20101203175401.GE28603@hmsreliant.think-freely.org>
- <20101207105053.GA2803@redhat.com>
- <4CFE89FE.1090901@kernel.org>
- <20101208141942.GA2335@redhat.com>
- <4D00823A.9050808@kernel.org>
- <20101209124117.GA6032@redhat.com>
- <4D01377B.5070809@kernel.org>
+	id S1756970Ab0LMK0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:26:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:49210 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753200Ab0LMK0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 05:26:48 -0500
+Message-ID: <4D05F5F6.3070909@cn.fujitsu.com>
+Date: Mon, 13 Dec 2010 18:31:18 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D01377B.5070809@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 1/2] KVM: MMU: don't make direct sp read-only if !map_writable
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-13 18:26:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-13 18:26:47,
+	Serialize complete at 2010-12-13 18:26:47
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 12:09:31PM -0800, Yinghai Lu wrote:
->On 12/09/2010 04:41 AM, Stanislaw Gruszka wrote:
->> On Wed, Dec 08, 2010 at 11:16:10PM -0800, Yinghai Lu wrote:
->>>>> please check debug patches, and boot first kernel and kexec second kernel with "ignore_loglevel debug earlyprintk...."
->>>>
->>>> Second kernel does not print anything, so maybe it not even start.
->>>> Dmesg from primary kernel attached.
->>>>
->>>> Stanislaw
->>>
->>>
->>> please try attached debug patch.
->> 
->> With debug patch kdump kernel boot. Dmesg's from kdump and 
->> primary kernel in attachment.
->> 
->
->thanks.
->
->please check if this one works. it only put crashkernel low.
->
+Currently, if the page is not allowed to write, then it can drop
+ACC_WRITE_MASK in pte_access, and the direct sp's access is:
+	gw->pt_access & gw->pte_access
+so, it also removes the write access in the direct sp. 
 
-Yinghai, is it possible to add the debug patch to upstream too? For debugging
-future kdump issues like this.
+There is a problem: if the access of those pages which map thought the same
+mapping in guest is different in host, it causes host switch direct sp very
+frequently.
 
-Thanks.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c         |    4 ++--
+ arch/x86/kvm/paging_tmpl.h |   11 ++---------
+ 2 files changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 1a953ac..0c5cad0 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1987,6 +1987,8 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 
+ 	if (host_writable)
+ 		spte |= SPTE_HOST_WRITEABLE;
++	else
++		pte_access &= ~ACC_WRITE_MASK;
+ 
+ 	spte |= (u64)pfn << PAGE_SHIFT;
+ 
+@@ -2226,8 +2228,6 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 		if (iterator.level == level) {
+ 			unsigned pte_access = ACC_ALL;
+ 
+-			if (!map_writable)
+-				pte_access &= ~ACC_WRITE_MASK;
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
+ 				     0, write, 1, &pt_write,
+ 				     level, gfn, pfn, prefault, map_writable);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 146b681..6ed2c5e 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -593,9 +593,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	if (is_error_pfn(pfn))
+ 		return kvm_handle_bad_page(vcpu->kvm, walker.gfn, pfn);
+ 
+-	if (!map_writable)
+-		walker.pte_access &= ~ACC_WRITE_MASK;
+-
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (mmu_notifier_retry(vcpu, mmu_seq))
+ 		goto out_unlock;
+@@ -809,12 +806,8 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 
+ 		nr_present++;
+ 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
+-		if (!(sp->spt[i] & SPTE_HOST_WRITEABLE)) {
+-			pte_access &= ~ACC_WRITE_MASK;
+-			host_writable = 0;
+-		} else {
+-			host_writable = 1;
+-		}
++		host_writable = !!(sp->spt[i] & SPTE_HOST_WRITEABLE);
++
+ 		set_spte(vcpu, &sp->spt[i], pte_access, 0, 0,
+ 			 is_dirty_gpte(gpte), PT_PAGE_TABLE_LEVEL, gfn,
+ 			 spte_to_pfn(sp->spt[i]), true, false,
+-- 
+1.7.0.4
