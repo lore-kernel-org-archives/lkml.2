@@ -1,29 +1,28 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab0LMBUk (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 12 Dec 2010 20:20:40 -0500
+	id S1756517Ab0LMBVJ (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sun, 12 Dec 2010 20:21:09 -0500
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:38890 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859Ab0LMBUh (ORCPT
+	with ESMTP id S1754349Ab0LMBUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 20:20:37 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6195"; a="66336626"
+	Sun, 12 Dec 2010 20:20:42 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6195"; a="66336636"
 From: ykaoua@qualcomm.com
 X-IronPort-AV: E=Sophos;i="4.59,332,1288594800"; 
-   d="scan'208";a="35903478"
+   d="scan'208";a="35903480"
 To: David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
         Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
         =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v3 2/5] msm: scm-boot: Support for setting cold/warm boot addresses
-Date: Sun, 12 Dec 2010 17:20:17 -0800
-Message-Id: <1292203221-2609-3-git-send-email-y>
+Subject: [PATCH v3 4/5] msm: hotplug: support cpu hotplug on msm
+Date: Sun, 12 Dec 2010 17:20:19 -0800
+Message-Id: <1292203221-2609-5-git-send-email-y>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1292203221-2609-1-git-send-email-y>
 References: <1292203221-2609-1-git-send-email-y>
@@ -31,123 +30,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
+From: Jeff Ohlstein <johlstei@codeaurora.org>
 
-Add support for setting the cold boot address of core 1 and
-the warm boot addresses of cores 0 and 1 using a secure
-domain call.
-
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
 ---
- arch/arm/mach-msm/Makefile   |    2 +-
- arch/arm/mach-msm/scm-boot.c |   39 +++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/scm-boot.h |   38 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 78 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-msm/scm-boot.c
- create mode 100644 arch/arm/mach-msm/scm-boot.h
+ arch/arm/mach-msm/Makefile  |    2 +
+ arch/arm/mach-msm/hotplug.c |   88 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/hotplug.c
 
 diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index eed503b..34cd0a8 100644
+index 34cd0a8..7a11b4a 100644
 --- a/arch/arm/mach-msm/Makefile
 +++ b/arch/arm/mach-msm/Makefile
-@@ -18,7 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
- obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+@@ -20,6 +20,8 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
  obj-$(CONFIG_MSM_SMD) += last_radio_log.o
--obj-$(CONFIG_MSM_SCM) += scm.o
-+obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
  
++obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
++
  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
  obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/scm-boot.c b/arch/arm/mach-msm/scm-boot.c
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
 new file mode 100644
-index 0000000..5671d58
+index 0000000..087da2d
 --- /dev/null
-+++ b/arch/arm/mach-msm/scm-boot.c
-@@ -0,0 +1,39 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -0,0 +1,88 @@
++/*
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/smp.h>
++#include <linux/completion.h>
++#include <linux/irq.h>
 +
-+#include "scm.h"
-+#include "scm-boot.h"
++#include <asm/cacheflush.h>
++
++#include <mach/smp.h>
++
++static inline void cpu_enter_lowpower(void)
++{
++	flush_cache_all();
++}
++
++static inline void cpu_leave_lowpower(void)
++{
++	pen_release = -1;
++	smp_wmb();
++}
++
++static inline void platform_do_lowpower(unsigned int cpu)
++{
++	/* Just enter wfe for now. */
++	for (;;) {
++		asm("wfe");
++		if (pen_release == cpu) {
++			/*
++			 * OK, proper wakeup, we're done
++			 */
++			break;
++		}
++		smp_rmb();
++
++		/*
++		 * getting here, means that we have come out of WFI without
++		 * having been woken up - this shouldn't happen
++		 *
++		 * The trouble is, letting people know about this is not really
++		 * possible, since we are currently running incoherently, and
++		 * therefore cannot safely call printk() or anything else
++		*/
++		pr_debug("CPU%u: spurious wakeup call\n", cpu);
++	}
++}
++
++int platform_cpu_kill(unsigned int cpu)
++{
++	return 1;
++}
 +
 +/*
-+ * Set the cold/warm boot address for one of the CPU cores.
++ * platform-specific code to shutdown a CPU
++ *
++ * Called with IRQs disabled
 + */
-+int scm_set_boot_addr(void *addr, int flags)
++void platform_cpu_die(unsigned int cpu)
 +{
-+	struct {
-+		unsigned int flags;
-+		void *addr;
-+	} cmd;
++	/*
++	 * we're ready for shutdown now, so do it
++	 */
++	cpu_enter_lowpower();
++	platform_do_lowpower(cpu);
 +
-+	cmd.addr = addr;
-+	cmd.flags = flags;
-+	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
-+			&cmd, sizeof(cmd), NULL, 0);
++	/*
++	 * bring this CPU back into the world of cache
++	 * coherency, and then restore interrupts
++	 */
++	cpu_leave_lowpower();
 +}
-+EXPORT_SYMBOL(scm_set_boot_addr);
-diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
-new file mode 100644
-index 0000000..fdc1374
---- /dev/null
-+++ b/arch/arm/mach-msm/scm-boot.h
-@@ -0,0 +1,38 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are
-+ * met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above
-+ *       copyright notice, this list of conditions and the following
-+ *       disclaimer in the documentation and/or other materials provided
-+ *       with the distribution.
-+ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
-+ *       contributors may be used to endorse or promote products derived
-+ *       from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
-+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
-+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+#ifndef __MACH_SCM_BOOT_H
-+#define __MACH_SCM_BOOT_H
 +
-+#define SCM_BOOT_ADDR			0x1
-+#define SCM_FLAG_COLDBOOT_CPU1		0x1
-+#define SCM_FLAG_WARMBOOT_CPU1		0x2
-+#define SCM_FLAG_WARMBOOT_CPU0		0x4
-+
-+int scm_set_boot_addr(void *addr, int flags);
-+
-+#endif
++int platform_cpu_disable(unsigned int cpu)
++{
++	/*
++	 * we don't allow CPU 0 to be shutdown (it is still too special
++	 * e.g. clock tick interrupts)
++	 */
++	return cpu == 0 ? -EPERM : 0;
++}
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
