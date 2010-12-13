@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758411Ab0LMRKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:10:52 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:45239 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab0LMRKu (ORCPT
+	id S1758413Ab0LMRMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:12:01 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44898 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab0LMRMA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:10:50 -0500
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Am=C3=A9rico=20Wang?= <xiyou.wangcong@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH, RESEND 2/2] kbuild: export linux/{a.out,kvm,kvm_para}.h on headers_install_all
-Date: Mon, 13 Dec 2010 19:10:29 +0200
-Message-Id: <1292260229-10008-2-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1292260229-10008-1-git-send-email-kirill@shutemov.name>
-References: <1292260229-10008-1-git-send-email-kirill@shutemov.name>
+	Mon, 13 Dec 2010 12:12:00 -0500
+Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "David S. Ahern" <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101213170923.GB1691@nowhere>
+References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
+	 <1291773285-16254-2-git-send-email-daahern@cisco.com>
+	 <20101212201613.GA1784@nowhere> <4D06301C.2090309@cisco.com>
+	 <20101213155451.GA1691@nowhere> <20101213164854.GL5407@ghostprotocols.net>
+	 <20101213170923.GB1691@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Dec 2010 18:11:29 +0100
+Message-ID: <1292260289.6803.297.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On Mon, 2010-12-13 at 18:09 +0100, Frederic Weisbecker wrote:
+> 
+> 
+> Right, but Peter wanted us to get rid of these user events types.
 
-Export linux/a.out.h, linux/kvm.h and linux/kvm_para.h on
-headers_install_all if at least one architecture has appropriate files
-in arch-dependent headers.
+Yes they suck.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- include/linux/Kbuild |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+> I guess we can't really do this as new perf tools must be able
+> to support old perf files.
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 97319a8..ae31f95 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -20,15 +20,18 @@ header-y += wimax/
- objhdr-y += version.h
- 
- ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
--		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
-+		  $(srctree)/include/asm-$(SRCARCH)/a.out.h \
-+		  $(INSTALL_HDR_PATH)/include/asm-*/a.out.h),)
- header-y += a.out.h
- endif
- ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
--		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
-+		  $(srctree)/include/asm-$(SRCARCH)/kvm.h \
-+		  $(INSTALL_HDR_PATH)/include/asm-*/kvm.h),)
- header-y += kvm.h
- endif
- ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
--		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
-+		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h \
-+		  $(INSTALL_HDR_PATH)/include/asm-*/kvm_para.h),)
- header-y += kvm_para.h
- endif
- 
--- 
-1.7.3.3
+Preferably, yes, but I don't see why we can't break the data file format
+if we've got good reasons to.
 
+> So this should be the last one to add. Something like PERF_RECORD_GEN_EVT
+> that has a field in its headers containing a sub-type which can be this
+> wall clock but can also host about everything in the future.
+> 
+> This way we don't propagate more the possible overlap with the kernel. 
+
+I don't see why we should add more, that's going the wrong direction.
