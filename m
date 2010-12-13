@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab0LMG5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:57:37 -0500
-Received: from mga11.intel.com ([192.55.52.93]:10948 "EHLO mga11.intel.com"
+	id S1756627Ab0LMG5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:57:31 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20028 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab0LMGtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753670Ab0LMGtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Dec 2010 01:49:42 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,335,1288594800"; 
-   d="scan'208";a="635713512"
-Message-Id: <20101213064249.648862451@intel.com>
+   d="scan'208";a="360754657"
+Message-Id: <20101213064842.061076093@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 14:42:49 +0800
+Date: Mon, 13 Dec 2010 14:43:30 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>
+CC: Jan Kara <jack@suse.cz>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 CC: Dave Chinner <david@fromorbit.com>
 CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
@@ -26,271 +26,179 @@ CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 CC: Greg Thelen <gthelen@google.com>
 CC: Minchan Kim <minchan.kim@gmail.com>
-CC: Wu Fengguang <fengguang.wu@intel.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/47] IO-less dirty throttling v3
+Subject: [PATCH 41/47] nfs: in-commit pages accounting and wait queue
+References: <20101213064249.648862451@intel.com>
+Content-Disposition: inline; filename=writeback-nfs-in-commit.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+When doing 10+ concurrent dd's, I observed very bumpy commits submission
+(partly because the dd's are started at the same time, and hence reached
+4MB to-commit pages at the same time). Basically we rely on the server
+to complete and return write/commit requests, and want both to progress
+smoothly and not consume too many pages. The write request wait queue is
+not enough as it's mainly network bounded. So add another commit request
+wait queue. Only async writes need to sleep on this queue.
 
-I'm glad to release this extensively tested v3 IO-less dirty throttling
-patchset. It's based on 2.6.37-rc5 and Jan's sync livelock patches.
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/nfs/client.c           |    1 
+ fs/nfs/write.c            |   51 ++++++++++++++++++++++++++++++------
+ include/linux/nfs_fs_sb.h |    2 +
+ 3 files changed, 46 insertions(+), 8 deletions(-)
 
-Given its trickiness and possibility of side effects, independent tests
-are highly welcome. Here is the git tree for easy access
+--- linux-next.orig/fs/nfs/write.c	2010-12-09 12:25:01.000000000 +0800
++++ linux-next/fs/nfs/write.c	2010-12-09 12:25:02.000000000 +0800
+@@ -516,7 +516,7 @@ nfs_mark_request_commit(struct nfs_page 
+ }
+ 
+ static int
+-nfs_clear_request_commit(struct nfs_page *req)
++nfs_clear_request_commit(struct inode *inode, struct nfs_page *req)
+ {
+ 	struct page *page = req->wb_page;
+ 
+@@ -554,7 +554,7 @@ nfs_mark_request_commit(struct nfs_page 
+ }
+ 
+ static inline int
+-nfs_clear_request_commit(struct nfs_page *req)
++nfs_clear_request_commit(struct inode *inode, struct nfs_page *req)
+ {
+ 	return 0;
+ }
+@@ -599,8 +599,10 @@ nfs_scan_commit(struct inode *inode, str
+ 		return 0;
+ 
+ 	ret = nfs_scan_list(nfsi, dst, idx_start, npages, NFS_PAGE_TAG_COMMIT);
+-	if (ret > 0)
++	if (ret > 0) {
+ 		nfsi->ncommit -= ret;
++		atomic_long_add(ret, &NFS_SERVER(inode)->in_commit);
++	}
+ 	if (nfs_need_commit(NFS_I(inode)))
+ 		__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
+ 	return ret;
+@@ -668,7 +670,7 @@ static struct nfs_page *nfs_try_to_updat
+ 		spin_lock(&inode->i_lock);
+ 	}
+ 
+-	if (nfs_clear_request_commit(req) &&
++	if (nfs_clear_request_commit(inode, req) &&
+ 			radix_tree_tag_clear(&NFS_I(inode)->nfs_page_tree,
+ 				req->wb_index, NFS_PAGE_TAG_COMMIT) != NULL)
+ 		NFS_I(inode)->ncommit--;
+@@ -1271,6 +1273,34 @@ int nfs_writeback_done(struct rpc_task *
+ 
+ 
+ #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
++static void nfs_commit_wait(struct nfs_server *nfss)
++{
++	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
++	DEFINE_WAIT(wait);
++
++	if (atomic_long_read(&nfss->in_commit) < limit)
++		return;
++
++	for (;;) {
++		prepare_to_wait(&nfss->in_commit_wait, &wait,
++				TASK_UNINTERRUPTIBLE);
++		if (atomic_long_read(&nfss->in_commit) < limit)
++			break;
++
++		io_schedule();
++	}
++	finish_wait(&nfss->in_commit_wait, &wait);
++}
++
++static void nfs_commit_wakeup(struct nfs_server *nfss)
++{
++	long limit = nfs_congestion_kb >> (PAGE_SHIFT - 10);
++
++	if (atomic_long_read(&nfss->in_commit) < limit - limit / 8 &&
++	    waitqueue_active(&nfss->in_commit_wait))
++		wake_up(&nfss->in_commit_wait);
++}
++
+ static int nfs_commit_set_lock(struct nfs_inode *nfsi, int may_wait)
+ {
+ 	if (!test_and_set_bit(NFS_INO_COMMIT, &nfsi->flags))
+@@ -1376,6 +1406,7 @@ nfs_commit_list(struct inode *inode, str
+ 		req = nfs_list_entry(head->next);
+ 		nfs_list_remove_request(req);
+ 		nfs_mark_request_commit(req);
++		atomic_long_dec(&NFS_SERVER(inode)->in_commit);
+ 		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+ 		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
+ 				BDI_RECLAIMABLE);
+@@ -1409,7 +1440,8 @@ static void nfs_commit_release(void *cal
+ 	while (!list_empty(&data->pages)) {
+ 		req = nfs_list_entry(data->pages.next);
+ 		nfs_list_remove_request(req);
+-		nfs_clear_request_commit(req);
++		nfs_clear_request_commit(data->inode, req);
++		atomic_long_dec(&NFS_SERVER(data->inode)->in_commit);
+ 
+ 		dprintk("NFS:       commit (%s/%lld %d@%lld)",
+ 			req->wb_context->path.dentry->d_inode->i_sb->s_id,
+@@ -1438,6 +1470,7 @@ static void nfs_commit_release(void *cal
+ 		nfs_clear_page_tag_locked(req);
+ 	}
+ 	nfs_commit_clear_lock(NFS_I(data->inode));
++	nfs_commit_wakeup(NFS_SERVER(data->inode));
+ 	nfs_commitdata_release(calldata);
+ }
+ 
+@@ -1452,11 +1485,13 @@ static const struct rpc_call_ops nfs_com
+ int nfs_commit_inode(struct inode *inode, int how)
+ {
+ 	LIST_HEAD(head);
+-	int may_wait = how & FLUSH_SYNC;
++	int sync = how & FLUSH_SYNC;
+ 	int res = 0;
+ 
+-	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
++	if (!nfs_commit_set_lock(NFS_I(inode), sync))
+ 		goto out_mark_dirty;
++	if (!sync)
++		nfs_commit_wait(NFS_SERVER(inode));
+ 	spin_lock(&inode->i_lock);
+ 	res = nfs_scan_commit(inode, &head, 0, 0);
+ 	spin_unlock(&inode->i_lock);
+@@ -1464,7 +1499,7 @@ int nfs_commit_inode(struct inode *inode
+ 		int error = nfs_commit_list(inode, &head, how);
+ 		if (error < 0)
+ 			return error;
+-		if (may_wait)
++		if (sync)
+ 			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
+ 					nfs_wait_bit_killable,
+ 					TASK_KILLABLE);
+--- linux-next.orig/include/linux/nfs_fs_sb.h	2010-12-09 12:25:01.000000000 +0800
++++ linux-next/include/linux/nfs_fs_sb.h	2010-12-09 12:25:02.000000000 +0800
+@@ -107,6 +107,8 @@ struct nfs_server {
+ 	struct backing_dev_info	backing_dev_info;
+ 	atomic_long_t		writeback;	/* number of writeback pages */
+ 	wait_queue_head_t	writeback_wait[2];
++	atomic_long_t		in_commit;	/* number of in-commit pages */
++	wait_queue_head_t	in_commit_wait;
+ 	int			flags;		/* various flags */
+ 	unsigned int		caps;		/* server capabilities */
+ 	unsigned int		rsize;		/* read size */
+--- linux-next.orig/fs/nfs/client.c	2010-12-09 12:25:01.000000000 +0800
++++ linux-next/fs/nfs/client.c	2010-12-09 12:25:02.000000000 +0800
+@@ -1008,6 +1008,7 @@ static struct nfs_server *nfs_alloc_serv
+ 	atomic_set(&server->active, 0);
+ 	init_waitqueue_head(&server->writeback_wait[BLK_RW_SYNC]);
+ 	init_waitqueue_head(&server->writeback_wait[BLK_RW_ASYNC]);
++	init_waitqueue_head(&server->in_commit_wait);
+ 
+ 	server->io_stats = nfs_alloc_iostats();
+ 	if (!server->io_stats) {
 
-git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v3
-
-Andrew, I followed your suggestion to add some trace points, and goes further
-to write scripts to do automated tests and to visualize the collected trace,
-iostat and vmstat data. The help is tremendous. The tests and data analyzes
-pave way to many fixes and algorithm improvements.
-
-It still took long time. The most challenging tasks are the fluctuations on
-100+ dd and on NFS, and various imperfections in the control system and in
-many filesystems. I'd say I won't be able to go this far without the help of
-the pretty graphs. And I believe they'll continue to make future maintenance
-easy. To identify problems reported by the end users, just ask for the traces,
-I'll then turn them into graphs and quickly get an overview of the problem.
-
-The most up-to-date graphs and the corresponding scripts are uploaded to
-
-	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests
-
-Here you may find and compare test results for this patchset (2.6.37-rc5+) and
-for vanilla kernel (2.6.37-rc5). Filesystem developers may be interested
-to take a look at the dynamics.
-
-The control algorithms are generally doing good in the recent graphs.
-There are regular fluctuations of the dirty pages number, however they
-are mostly originated from underneath: the low level is reporting IO
-completion in units of 1MB, 32MB or even more, leading to sudden drops
-of the dirty pages.
-
-The tests cover the common scenarios
-
-- ext2, ext3, ext4, xfs, btrfs, nfs
-- 256M, 512M, 3G, 16G memory sizes
-- single disk and 12-disk array
-- 1, 2, 10, 100, 1000 concurrent dd's
-
-They disclose lots of imperfections and bugs of
-1) this patchset
-2) file system not working well with the new paradigm 
-3) file system problems also exist in vanilla kernel
-
-I managed to fix case (1) and most of (2) and report (3).
-Below are some interesting graphs illustrating the problems.
-
-BTRFS
-
-case (3) problem, nr_dirty going all the way down to 0, fixed by
-[PATCH 38/47] btrfs: wait on too many nr_async_bios
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1K-8p-2953M-2.6.37-rc3+-2010-11-30-17/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1M-8p-2952M-2.6.37-rc5-2010-12-10-21-23/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-08-21-30/vmstat-dirty-300.png                                                                                                                      
-after fix
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-08-21-14/vmstat-dirty-300.png                                                                                                                      
-
-case (3) problem, not good looking but otherwise harmless, not fixed yet
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1K-8p-2953M-2.6.37-rc3+-2010-11-30-14/vmstat-written.png
-root cause is btrfs always clear page dirty in the end of prepare_pages() and
-then to set it dirty again in dirty_and_release_pages(). This leads to
-duplicate dirty accounting on 1KB-size writes.
-
-case (3) problem, bdi limit exceeded on 10+ concurrent dd's, fixed by
-[PATCH 37/47] btrfs: lower the dirty balacing rate limit
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-02-20/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-02-20/dirty-pages.png
-
-case (2) problem, not root caused yet
-
-in vanilla kernel, the dirty/writeback pages are interesting
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/btrfs-1000dd-1M-24p-15976M-2.6.37-rc5-2010-12-10-14-37/vmstat-dirty.png
-
-but performance is still excellent
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/btrfs-1000dd-1M-24p-15976M-2.6.37-rc5-2010-12-10-14-37/iostat-bw.png
-
-with IO-less balance_dirty_pages(), it's much more slow
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/btrfs-1000dd-1M-24p-15976M-2.6.37-rc5+-2010-12-10-03-54/iostat-bw.png
-
-dirty pages go very low
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/btrfs-1000dd-1M-24p-15976M-2.6.37-rc5+-2010-12-10-03-54/vmstat-dirty.png
-
-with only 20% disk util
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/btrfs-1000dd-1M-24p-15976M-2.6.37-rc5+-2010-12-10-03-54/iostat-util.png
-
-EXT4
-
-case (3) problem, maybe memory leak, not root caused yet
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/ext4-100dd-1M-24p-15976M-2.6.37-rc5+-2010-12-09-23-40/dirty-pages.png
-
-case (3) problem, burst-of-redirty, known issue with data=ordered, would be non-trivial to fix
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages-3000.png
-the workaround now is to mount with data=writeback
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4_wb-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-12-13-40/dirty-pages.png
-
-NFS
-
-There are some hard problems
-- large fluctuations of everything
-- writeback/unstable pages squeezing dirty pages
-- sometimes it may stall the dirtiers for 1-2 seconds because no COMMITs return
-  during the time, hard to fix in the client side
-
-before the patches
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-1dd-1M-8p-2952M-2.6.37-rc5-2010-12-11-10-31/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2952M-2.6.37-rc5-2010-12-10-12-40/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-1dd-4K-8p-2953M-2.6.37-rc3+-2010-11-29-10/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-1dd-4K-8p-2953M-2.6.37-rc3+-2010-11-29-10/dirty-bandwidth.png
-
-after patches
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-04/vmstat-dirty.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-04/dirty-bandwidth-3000.png
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-23/vmstat-dirty.png
-
-burst of commit submits/returns
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-03-01/nfs-commit-1000.png
-after fix
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-04/nfs-commit-300.png
-
-The 1-second stall happens at around 317s and 321s. Fortunately it only
-happens for 10+ concurrent dd's, which is not typical NFS client workloads.
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-23/nfs-commit-300.png
-
-
-XFS
-
-performs mostly ideal, except for some trivial imperfections: somewhere
-the lines are not straight.
-
-dirty/writeback pages
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/xfs-1000dd-1M-24p-15976M-2.6.37-rc5-2010-12-10-18-18/vmstat-dirty.png
-
-avg queue size and wait time
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/xfs-1000dd-1M-24p-15976M-2.6.37-rc5+-2010-12-10-02-53/iostat-misc.png
-
-bandwidth
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/16G-12HDD-RAID0/xfs-1000dd-1M-24p-15976M-2.6.37-rc5+-2010-12-10-02-53/dirty-bandwidth.png
-
-
-Changes from v2 <http://lkml.org/lkml/2010/11/16/728>
-
-- lock protected bdi bandwidth estimation
-- user space think time compensation
-- raise max pause time to 200ms for lower CPU overheads on concurrent dirtiers
-- control system enhancements to handle large pause time and huge number of tasks
-- concurrent dd test suite and a lot of tests
-- adaptive scale up writeback chunk size
-- make it right for small memory systems
-- various bug fixes
-- new trace points
-
-Changes from initial RFC <http://thread.gmane.org/gmane.linux.kernel.mm/52966>
-
-- adaptive rate limiting, to reduce overheads when under throttle threshold
-- prevent overrunning dirty limit on lots of concurrent dirtiers
-- add Documentation/filesystems/writeback-throttling-design.txt
-- lower max pause time from 200ms to 100ms; min pause time from 10ms to 1jiffy
-- don't drop the laptop mode code
-- update and comment the trace event
-- benchmarks on concurrent dd and fs_mark covering both large and tiny files
-- bdi->write_bandwidth updates should be rate limited on concurrent dirtiers,
-  otherwise it will drift fast and fluctuate
-- don't call balance_dirty_pages_ratelimit() when writing to already dirtied
-  pages, otherwise the task will be throttled too much
-
-bdi dirty limit fixes
-	[PATCH 01/47] writeback: enabling gate limit for light dirtied bdi
-	[PATCH 02/47] writeback: safety margin for bdi stat error
-
-v2 patches rebased onto the above two fixes
-	[PATCH 03/47] writeback: IO-less balance_dirty_pages()
-	[PATCH 04/47] writeback: consolidate variable names in balance_dirty_pages()
-	[PATCH 05/47] writeback: per-task rate limit on balance_dirty_pages()
-	[PATCH 06/47] writeback: prevent duplicate balance_dirty_pages_ratelimited() calls
-	[PATCH 07/47] writeback: account per-bdi accumulated written pages
-	[PATCH 08/47] writeback: bdi write bandwidth estimation
-	[PATCH 09/47] writeback: show bdi write bandwidth in debugfs
-	[PATCH 10/47] writeback: quit throttling when bdi dirty pages dropped low
-	[PATCH 11/47] writeback: reduce per-bdi dirty threshold ramp up time
-	[PATCH 12/47] writeback: make reasonable gap between the dirty/background thresholds
-	[PATCH 13/47] writeback: scale down max throttle bandwidth on concurrent dirtiers
-	[PATCH 14/47] writeback: add trace event for balance_dirty_pages()
-	[PATCH 15/47] writeback: make nr_to_write a per-file limit
-
-trivial fixes for v2
-	[PATCH 16/47] writeback: make-nr_to_write-a-per-file-limit fix
-	[PATCH 17/47] writeback: do uninterruptible sleep in balance_dirty_pages()
-	[PATCH 18/47] writeback: move BDI_WRITTEN accounting into __bdi_writeout_inc()
-	[PATCH 19/47] writeback: fix increasement of nr_dirtied_pause
-	[PATCH 20/47] writeback: use do_div in bw calculation
-	[PATCH 21/47] writeback: prevent divide error on tiny HZ
-	[PATCH 22/47] writeback: prevent bandwidth calculation overflow
-
-spinlock protected bandwidth estimation, as suggested by Peter
-	[PATCH 23/47] writeback: spinlock protected bdi bandwidth update
-
-algorithm updates
-	[PATCH 24/47] writeback: increase pause time on concurrent dirtiers
-	[PATCH 25/47] writeback: make it easier to break from a dirty exceeded bdi
-	[PATCH 26/47] writeback: start background writeback earlier
-	[PATCH 27/47] writeback: user space think time compensation
-	[PATCH 28/47] writeback: bdi base throttle bandwidth
-	[PATCH 29/47] writeback: smoothed bdi dirty pages
-	[PATCH 30/47] writeback: adapt max balance pause time to memory size
-	[PATCH 31/47] writeback: increase min pause time on concurrent dirtiers
-
-trace points
-	[PATCH 32/47] writeback: extend balance_dirty_pages() trace event
-	[PATCH 33/47] writeback: trace global dirty page states
-	[PATCH 34/47] writeback: trace writeback_single_inode()
-
-larger writeback chunk size
-	[PATCH 35/47] writeback: scale IO chunk size up to device bandwidth
-
-btrfs fixes
-	[PATCH 36/47] btrfs: dont call balance_dirty_pages_ratelimited() on already dirty pages
-	[PATCH 37/47] btrfs: lower the dirty balacing rate limit
-	[PATCH 38/47] btrfs: wait on too many nr_async_bios
-
-nfs fixes
-	[PATCH 39/47] nfs: livelock prevention is now done in VFS
-	[PATCH 40/47] NFS: writeback pages wait queue
-	[PATCH 41/47] nfs: in-commit pages accounting and wait queue
-	[PATCH 42/47] nfs: heuristics to avoid commit
-	[PATCH 43/47] nfs: dont change wbc->nr_to_write in write_inode()
-	[PATCH 44/47] nfs: limit the range of commits
-	[PATCH 45/47] nfs: adapt congestion threshold to dirty threshold
-	[PATCH 46/47] nfs: trace nfs_commit_unstable_pages()
-	[PATCH 47/47] nfs: trace nfs_commit_release()
-
- Documentation/filesystems/writeback-throttling-design.txt |  210 ++++
- fs/btrfs/disk-io.c                                        |    7 
- fs/btrfs/file.c                                           |   16 
- fs/btrfs/ioctl.c                                          |    6 
- fs/btrfs/relocation.c                                     |    6 
- fs/fs-writeback.c                                         |   85 +
- fs/nfs/client.c                                           |    3 
- fs/nfs/file.c                                             |    9 
- fs/nfs/write.c                                            |  241 +++-
- include/linux/backing-dev.h                               |    9 
- include/linux/nfs_fs.h                                    |    1 
- include/linux/nfs_fs_sb.h                                 |    3 
- include/linux/sched.h                                     |    8 
- include/linux/writeback.h                                 |   26 
- include/trace/events/nfs.h                                |   89 +
- include/trace/events/writeback.h                          |  195 +++
- mm/backing-dev.c                                          |   32 
- mm/filemap.c                                              |    5 
- mm/memory_hotplug.c                                       |    3 
- mm/page-writeback.c                                       |  518 +++++++---
- 20 files changed, 1212 insertions(+), 260 deletions(-)
-
-Thanks,
-Fengguang
 
