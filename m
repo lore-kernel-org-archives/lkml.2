@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab0LMIAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 03:00:40 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:56160 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752828Ab0LMIAj (ORCPT
+	id S1754176Ab0LMINX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 03:13:23 -0500
+Received: from smtpeu1.atmel.com ([195.65.72.27]:50777 "EHLO bagnes.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab0LMINW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 03:00:39 -0500
-Message-ID: <4D05D299.60106@euromail.se>
-Date: Mon, 13 Dec 2010 09:00:25 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pingc@wacom.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] input: mt: Add button support for five fingers
-References: <1292063308-15327-1-git-send-email-rydberg@euromail.se> <1292063308-15327-2-git-send-email-rydberg@euromail.se> <20101213025016.GC21401@core.coreip.homeip.net>
-In-Reply-To: <20101213025016.GC21401@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PS3Kl-0000B4-83.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PS3Kl-0000B4-83 80e6cf1434576809cb26c972f5993bd4
+	Mon, 13 Dec 2010 03:13:22 -0500
+Subject: Re: [PATCH v2] avr32: Fix build failure conflicting types for
+ 'sys_execve'
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Peter =?ISO-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+In-Reply-To: <201012122037.59016.PeterHuewe@gmx.de>
+References: <20101209182132.GB24175@kroah.com>
+	 <1291929328-30551-1-git-send-email-peterhuewe@gmx.de>
+	 <1291976741.18008.37.camel@hcegtvedt>
+	 <201012122037.59016.PeterHuewe@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Mon, 13 Dec 2010 09:12:53 +0100
+Message-ID: <1292227973.18008.53.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 13 Dec 2010 08:12:57.0703 (UTC) FILETIME=[8D0ACF70:01CB9A9D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 03:50 AM, Dmitry Torokhov wrote:
-
-> On Sat, Dec 11, 2010 at 11:28:28AM +0100, Henrik Rydberg wrote:
->> This patch adds BTN_TOOL_QUINTAP to be used by hardware reporting
->> finger counts different from the number of MT contacts.
+On Sun, 2010-12-12 at 20:37 +0100, Peter Hüwe wrote: 
+> Am Freitag 10 Dezember 2010, 11:25:41 schrieb Hans-Christian Egtvedt:
+> > Nack, I've piped up a patch in
+> > http://git.kernel.org/?p=linux/kernel/git/egtvedt/avr32-2.6.git;a=shortlog;
+> > h=refs/heads/next that does this and more. The syscalls.h header file needs
+> > a bit more cleanup.
+> > 
+> > I'll also notify stable to get it backported. Do you have an idea how
+> > far back it should go?
 > 
-> I must say this is quite ugly, but so is introducing ABS_CONTACT_COUNT
-> or similar, except that the latter is more extensible so if
-> manufacturers decide to report 6, 7, 8 fingers (but not their
-> coordinates) we won't have to breed BTN_TOOL_xxxTAPs...
+> Hi,
 > 
-> But let me ask you this: do we know what to do with 5 fingers? How do we
-> plan to react to such gestures? Maybe the best option is simply ignore
-> it and don't report anything if there are no userspace consumers?
+> Linus' tree fails since August 19th due to this issue, so it falls into the 
+> 2.6.36 merge window only.
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3059836/
 
+Thanks for digging that up. The patch will only need to be applied to
+v2.6.36 and beyond then.
 
-I agree - let's put the bar at four fingers for special solutions. Dropped.
+> (but it still failed for quite a while longer due to other issues ;)
 
-Thanks,
-Henrik
+What other issues?
+
+> Thanks,
+> Peter
+> (a reported by on the patch would have been nice ;)
+
+Of course, I'll rebase and add you're name to it. Does the same go for
+David Howells?
+
+-- 
+Hans-Christian Egtvedt
+
