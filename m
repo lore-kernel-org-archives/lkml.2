@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab0LMTk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:40:57 -0500
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:38818 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab0LMTk4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:40:56 -0500
-Date: Mon, 13 Dec 2010 12:40:47 -0700
-From: Eric B Munson <emunson@mgebm.net>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] mm: kswapd: Treat zone->all_unreclaimable in
- sleeping_prematurely similar to balance_pgdat()
-Message-ID: <20101213194047.GG3401@mgebm.net>
-References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
- <1291995985-5913-6-git-send-email-mel@csn.ul.ie>
+	id S1754620Ab0LMTmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:42:10 -0500
+Received: from kroah.org ([198.145.64.141]:32868 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563Ab0LMTmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:42:07 -0500
+Date: Mon, 13 Dec 2010 11:42:03 -0800
+From: Greg KH <greg@kroah.com>
+To: Henry Ptasinski <henryp@broadcom.com>
+Cc: Dave Hansen <dave@sr71.net>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Rapoport <mike.rapoport@gmail.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: brcm80211 hangs when disabling wireless
+Message-ID: <20101213194203.GB18431@kroah.com>
+References: <1291930010.7960.30.camel@nimitz>
+ <20101209214347.GA15172@suse.de>
+ <1291931678.7960.32.camel@nimitz>
+ <20101213193111.GK2576@broadcom.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RMedoP2+Pr6Rq0N2"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1291995985-5913-6-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <20101213193111.GK2576@broadcom.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 13, 2010 at 11:31:11AM -0800, Henry Ptasinski wrote:
+> On Thu, Dec 09, 2010 at 01:54:38PM -0800, Dave Hansen wrote:
+> > On Thu, 2010-12-09 at 13:43 -0800, Greg KH wrote:
+> > > On Thu, Dec 09, 2010 at 01:26:50PM -0800, Dave Hansen wrote:
+> > > > I've been getting hard hangs when I toggle the wireless on a Lenovo
+> > > > S10-3.  It happens both with the physical switch and the Fn-F5 key
+> > > > combo.  It's quite repeatable.  The system is quite stable when I'm not
+> > > > trying to disable the wireless, though.
+> > > 
+> > > What kernel version is this?
+> > > 
+> > > Linus's latest tree has a known bug when the wireless is suspended and
+> > > then resumed.  Broadcom is working on it but no patch is forthcoming
+> > > yet.  Perhaps this is the same issue.
+> > 
+> > Yeah, it's 2.6.37-rc5 plus a pull from:
+> > 
+> > 	http://kernel.ubuntu.com/git?p=ikepanhc/ideapad-laptop.git;a=summary
+> > 
+> > That could easily be it.  Thanks, Greg.
+> 
+> Actually, I think it's the rfkill support (or lack thereof) that's causing you
+> trouble.  But we're looking at that as well.
+> 
+> The outstanding reported issues that I'm aware of are:
+> 	- 43224 crashes
+> 	- missing rfkill support
+> 	- suspend/resume problems
+> 	- 4313 infinite loop in some cases
+> 
+> In terms of process, should these all get filed in bugzilla.kernel.org (or
+> somewhere else), or just track them via email and our TODO list?
 
---RMedoP2+Pr6Rq0N2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Where ever you feel comfortable putting them, some like email, some like
+bugzilla.kernel.org.  The TODO list might be a bit tougher as it doesn't
+always propagate to Linus fast enough (look at the differences between
+it already in Linus's tree and linux-next, right?)
 
-On Fri, 10 Dec 2010, Mel Gorman wrote:
+thanks,
 
-> After DEF_PRIORITY, balance_pgdat() considers all_unreclaimable zones to
-> be balanced but sleeping_prematurely does not. This can force kswapd to
-> stay awake longer than it should. This patch fixes it.
->=20
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-
-Reviewed-by: Eric B Munson <emunson@mgebm.net>
-
---RMedoP2+Pr6Rq0N2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNBna/AAoJEH65iIruGRnNUC8IAIv/gHOr5hMbbr+j2VeoaBDp
-WZAv+whu//uAGrEYjo6aa+KNouBwvn+xnlpy3FFKZa42tiHduO8o1PT3WN5/6WPL
-Sj2Am3NveFf1HomT59+Zu8cSNje0xP297erigL+fxQqLpy18R35xEkirkgDjEl8y
-W00r3kJ5EK1NDyckpWdlreCqoC+dCpz/AgfQ3U9PXiRRR1kGikju45rT2njf5N20
-AX6RXiLQNR/4+VJIVhFBgn/AiqWM5x8U6+HQxQD7Yy8EFN4I0pcdEPiohjIci98e
-LCma82tDgQAjgSDRRx9+DsXlftgV9UXa7kxW3PpEeBufaGJ4ui1FKxPhKSvLpd4=
-=XzDQ
------END PGP SIGNATURE-----
-
---RMedoP2+Pr6Rq0N2--
+greg k-h
