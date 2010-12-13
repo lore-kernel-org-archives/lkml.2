@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab0LMMCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:02:47 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:37193 "EHLO
+	id S1757315Ab0LMMC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:02:58 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:37203 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab0LMMCo (ORCPT
+	with ESMTP id S1757374Ab0LMMCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:02:44 -0500
-Date: Mon, 13 Dec 2010 13:02:43 +0100
+	Mon, 13 Dec 2010 07:02:55 -0500
+Date: Mon, 13 Dec 2010 13:02:54 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Alan Cox <alan@linux.intel.com>, Yin Kangkai <kangkai.yin@intel.com>,
-        Alek Du <alek.du@intel.com>
+To: Alek Du <alek.du@intel.com>, Alan Cox <alan@linux.intel.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/10] gpio: langwell_gpio: irq_data conversion.
-Message-ID: <20101213120243.GA15575@mail.wantstofly.org>
+Subject: [PATCH 04/10] gpio: pca953x: irq_data conversion.
+Message-ID: <20101213120254.GC15575@mail.wantstofly.org>
 References: <cover.1292240053.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,52 +25,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/gpio/langwell_gpio.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/gpio/pca953x.c |   38 +++++++++++++++++++-------------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index 64db9dc..d81cc74 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -134,10 +134,10 @@ static int lnw_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 	return lnw->irq_base + offset;
+diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+index 5018666..a261972 100644
+--- a/drivers/gpio/pca953x.c
++++ b/drivers/gpio/pca953x.c
+@@ -228,30 +228,30 @@ static int pca953x_gpio_to_irq(struct gpio_chip *gc, unsigned off)
+ 	return chip->irq_base + off;
  }
  
--static int lnw_irq_type(unsigned irq, unsigned type)
-+static int lnw_irq_type(struct irq_data *d, unsigned type)
+-static void pca953x_irq_mask(unsigned int irq)
++static void pca953x_irq_mask(struct irq_data *d)
  {
--	struct lnw_gpio *lnw = get_irq_chip_data(irq);
--	u32 gpio = irq - lnw->irq_base;
-+	struct lnw_gpio *lnw = irq_data_get_irq_chip_data(d);
-+	u32 gpio = d->irq - lnw->irq_base;
- 	unsigned long flags;
- 	u32 value;
- 	void __iomem *grer = gpio_reg(&lnw->chip, gpio, GRER);
-@@ -162,19 +162,19 @@ static int lnw_irq_type(unsigned irq, unsigned type)
- 	return 0;
+-	struct pca953x_chip *chip = get_irq_chip_data(irq);
++	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
+ 
+-	chip->irq_mask &= ~(1 << (irq - chip->irq_base));
++	chip->irq_mask &= ~(1 << (d->irq - chip->irq_base));
  }
  
--static void lnw_irq_unmask(unsigned irq)
-+static void lnw_irq_unmask(struct irq_data *d)
+-static void pca953x_irq_unmask(unsigned int irq)
++static void pca953x_irq_unmask(struct irq_data *d)
  {
+-	struct pca953x_chip *chip = get_irq_chip_data(irq);
++	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
+ 
+-	chip->irq_mask |= 1 << (irq - chip->irq_base);
++	chip->irq_mask |= 1 << (d->irq - chip->irq_base);
  }
  
--static void lnw_irq_mask(unsigned irq)
-+static void lnw_irq_mask(struct irq_data *d)
+-static void pca953x_irq_bus_lock(unsigned int irq)
++static void pca953x_irq_bus_lock(struct irq_data *d)
  {
+-	struct pca953x_chip *chip = get_irq_chip_data(irq);
++	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
+ 
+ 	mutex_lock(&chip->irq_lock);
  }
  
- static struct irq_chip lnw_irqchip = {
- 	.name		= "LNW-GPIO",
--	.mask		= lnw_irq_mask,
--	.unmask		= lnw_irq_unmask,
--	.set_type	= lnw_irq_type,
-+	.irq_mask	= lnw_irq_mask,
-+	.irq_unmask	= lnw_irq_unmask,
-+	.irq_set_type	= lnw_irq_type,
+-static void pca953x_irq_bus_sync_unlock(unsigned int irq)
++static void pca953x_irq_bus_sync_unlock(struct irq_data *d)
+ {
+-	struct pca953x_chip *chip = get_irq_chip_data(irq);
++	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
+ 	uint16_t new_irqs;
+ 	uint16_t level;
+ 
+@@ -268,15 +268,15 @@ static void pca953x_irq_bus_sync_unlock(unsigned int irq)
+ 	mutex_unlock(&chip->irq_lock);
+ }
+ 
+-static int pca953x_irq_set_type(unsigned int irq, unsigned int type)
++static int pca953x_irq_set_type(struct irq_data *d, unsigned int type)
+ {
+-	struct pca953x_chip *chip = get_irq_chip_data(irq);
+-	uint16_t level = irq - chip->irq_base;
++	struct pca953x_chip *chip = irq_data_get_irq_chip_data(d);
++	uint16_t level = d->irq - chip->irq_base;
+ 	uint16_t mask = 1 << level;
+ 
+ 	if (!(type & IRQ_TYPE_EDGE_BOTH)) {
+ 		dev_err(&chip->client->dev, "irq %d: unsupported type %d\n",
+-			irq, type);
++			d->irq, type);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -295,11 +295,11 @@ static int pca953x_irq_set_type(unsigned int irq, unsigned int type)
+ 
+ static struct irq_chip pca953x_irq_chip = {
+ 	.name			= "pca953x",
+-	.mask			= pca953x_irq_mask,
+-	.unmask			= pca953x_irq_unmask,
+-	.bus_lock		= pca953x_irq_bus_lock,
+-	.bus_sync_unlock	= pca953x_irq_bus_sync_unlock,
+-	.set_type		= pca953x_irq_set_type,
++	.irq_mask		= pca953x_irq_mask,
++	.irq_unmask		= pca953x_irq_unmask,
++	.irq_bus_lock		= pca953x_irq_bus_lock,
++	.irq_bus_sync_unlock	= pca953x_irq_bus_sync_unlock,
++	.irq_set_type		= pca953x_irq_set_type,
  };
  
- static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {   /* pin number */
+ static uint16_t pca953x_irq_pending(struct pca953x_chip *chip)
 -- 
 1.7.1
 
