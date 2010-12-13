@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab0LMQ4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 11:56:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39232 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab0LMQ4e convert rfc822-to-8bit (ORCPT
+	id S1758281Ab0LMQ6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 11:58:23 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:64961 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758135Ab0LMQ6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 11:56:34 -0500
+	Mon, 13 Dec 2010 11:58:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Ee0BRFSaxVl2mHuJWU+VS5tEhhuHSV3sL1afmLixOiRs7+/zk7OBQKVQGflT0VnOdL
-         cZ8c0BKLibZ7DR49cf59/X0cVEZPkbDnnnhK5SFNTvfPcqjXO6OQ+uQ/aN8FqvLGC4v2
-         MpsYFiTw1Sw23iLZl3x5eFYHHpVwFrEz33rGE=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=sKR5ijBPyDBibTwQHED2Y/HvPYVNIhPZy6k4exofIgk31Qa3SHPpQew09VeKYDEphI
+         r06QGNFHmSShNt2PNa7sKKcKi3qAa48kH1xEnOB683o/dn2QuKWkKKQwzDLIGDDCLGUy
+         WS191IkOJUNGuij+j3pzSCmgNoUkjUz8jZHvo=
+Date: Mon, 13 Dec 2010 14:58:15 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Ahern <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
+Message-ID: <20101213165815.GN5407@ghostprotocols.net>
+References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
+ <1291773285-16254-2-git-send-email-daahern@cisco.com>
+ <20101212201613.GA1784@nowhere>
+ <20101213131557.GD5407@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <4D05E483.1000106@redhat.com>
-References: <201012131244.547034648@firstfloor.org>
-	<20101212234644.B05DAB27BF@basil.firstfloor.org>
-	<4D05DC98.40105@redhat.com>
-	<044a861a2279c7e3e328c73e6694fbf3.squirrel@www.firstfloor.org>
-	<4D05E096.6060307@redhat.com>
-	<74ff92a8c4cf72e42e7559de72e77b52.squirrel@www.firstfloor.org>
-	<4D05E2A5.8070204@redhat.com>
-	<20101213091254.GA999@basil.fritz.box>
-	<4D05E483.1000106@redhat.com>
-Date: Mon, 13 Dec 2010 11:56:33 -0500
-X-Google-Sender-Auth: UiqgKGzui9wcAErD2N3janH6E-E
-Message-ID: <AANLkTinOWHcyjXsY3Xhe6pxi3gyQ3tJMr2qCpRPuyBW4@mail.gmail.com>
-Subject: Re: [PATCH] [104/223] KVM: Write protect memory after slot swap
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mst@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101213131557.GD5407@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 4:16 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 12/13/2010 11:12 AM, Andi Kleen wrote:
->>
->> >  - Greg rejects kvm patches (but not virtio etc) pointing submitters
->> >  to the kvm maintainers
->> >  - The kvm maintainers collect stable kvm patches and autotest them
->>
->> As I understand this patch came in this way for .36
->> (I took it from .36-stable)
->
-> The patch was autotested for .36-stable, it wasn't autotested for
-> .35-stable.  It will very likely work (this isn't code that changes a lot),
-> but still.
->
->> >  - They then submit the patches to stable@
->>
->> Do you want to do the autotest explicitely for .35 too and no automatic
->> backports and do the same procedure as for newer kernels?
->>
->> I can do that, but you would need to do it for a long time.
->
-> Yes.  In fact it gets more important as time goes by, since as time goes by
-> patches are more likely to cause regressions due to changes in the code
-> base.
+Em Mon, Dec 13, 2010 at 11:15:57AM -0200, Arnaldo Carvalho de Melo escreveu:
+> Em Sun, Dec 12, 2010 at 09:16:16PM +0100, Frederic Weisbecker escreveu:
+> > On Tue, Dec 07, 2010 at 06:54:44PM -0700, David Ahern wrote:
+> > > +++ b/tools/perf/util/header.c
+> > > @@ -191,6 +191,40 @@ static int write_padded(int fd, const void *bf, size_t count,
+> > > +static int perf_header__read_ref_time(struct perf_header *header,
+> > > +			int fd, u64 offset, u64 size)
+> > > +{
+> > > +	size_t sz_nsec = sizeof(header->nsec_ref);
+> > > +	size_t sz_tv   = sizeof(header->tv_ref);
+> > > +	int err = -1;
+> > > +
+> > > +	if (((size - offset) < (sz_nsec + sz_tv)) ||
+> > > +	    (read(fd, &header->nsec_ref, sz_nsec) != (ssize_t) sz_nsec) ||
+> > > +	    (read(fd, &header->tv_ref, sz_tv) != (ssize_t) sz_tv))
+> > > +		goto out;
+> > 
+> > Hmm, could we have endianness related troubles if we write the timespec on
+> > an arch and cross read from another, or other cross read issues?
+> 
+> Well spotted, it needs to use perf_header__getbuffer64 and make sure
+> that nsec_ref, etc are u64 fields.
 
-My workflow is largely the same as Andi's -- in that I'm using patches that
-have already been nominated for other stable releases and putting them
-on the 34-lt (longterm) as appropriate.  Are you interested in also doing the
-same thing for 34-lt (i.e. you generating a 34 specific, pre-tested patchset
-instead of me doing the backports from other stable trees?)
+When implemented as a PERF_RECORD_REF_TIME or PERF_RECORD_WALL_CLOCK
+this will be handled in perf_session__process_event, implementing a
+event__ref_time_swap routine, etc.
 
-Thanks,
-Paul.
-
->
-> --
-> error compiling committee.c: too many arguments to function
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+- Arnaldo
