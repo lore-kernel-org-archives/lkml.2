@@ -1,228 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513Ab0LMRlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:41:51 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:34114
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757859Ab0LMRlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:41:50 -0500
-From: Hank Janssen <hjanssen@microsoft.com>
-To: hjanssen@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] hv: Use only one receive buffer and kmalloc on initialize
-Date: Mon, 13 Dec 2010 09:45:50 -0800
-Message-Id: <1292262350-29001-1-git-send-email-hjanssen@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1758537Ab0LMRnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:43:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46672 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757910Ab0LMRm7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 12:42:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=H69bEZFYhHs1DIWUgK0Uyh9/6ACiwnjrj/IfzQEamj0wxlTEzqQoqAp6FGaoNuQCnS
+         tuUa39L1OzSzexKm+HllNVaLVcSnPXitU11wkoiJ0Gh73ZwEAAVHxheUrWTkvDuuKtEM
+         t/k58x3rlJECSnZjCToVV0C6qrfhcKZJaVemY=
+MIME-Version: 1.0
+In-Reply-To: <4D0652FB.2090208@redhat.com>
+References: <201012131244.547034648@firstfloor.org>
+	<20101212234644.B05DAB27BF@basil.firstfloor.org>
+	<4D05DC98.40105@redhat.com>
+	<044a861a2279c7e3e328c73e6694fbf3.squirrel@www.firstfloor.org>
+	<4D05E096.6060307@redhat.com>
+	<74ff92a8c4cf72e42e7559de72e77b52.squirrel@www.firstfloor.org>
+	<4D05E2A5.8070204@redhat.com>
+	<20101213091254.GA999@basil.fritz.box>
+	<4D05E483.1000106@redhat.com>
+	<AANLkTinOWHcyjXsY3Xhe6pxi3gyQ3tJMr2qCpRPuyBW4@mail.gmail.com>
+	<4D0652FB.2090208@redhat.com>
+Date: Mon, 13 Dec 2010 12:36:13 -0500
+X-Google-Sender-Auth: yyb0wwNSCJbk7rFQwKmYie9PQPs
+Message-ID: <AANLkTikNp=mOBK9JNiNj2BC6eg=X13N-85+VWL-wiWh4@mail.gmail.com>
+Subject: Re: [PATCH] [104/223] KVM: Write protect memory after slot swap
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, mst@redhat.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct issue with not checking kmalloc return value.
-This fix now only uses one receive buffer for all hv_utils 
-channels, and will do only one kmalloc on init and will return
-with a -ENOMEM if kmalloc fails on initialize.
+On Mon, Dec 13, 2010 at 12:08 PM, Avi Kivity <avi@redhat.com> wrote:
+> On 12/13/2010 06:56 PM, Paul Gortmaker wrote:
+>>
+>> On Mon, Dec 13, 2010 at 4:16 AM, Avi Kivity<avi@redhat.com>  wrote:
+>> >  On 12/13/2010 11:12 AM, Andi Kleen wrote:
+>> >>
+>> >>  >    - Greg rejects kvm patches (but not virtio etc) pointing
+>> >> submitters
+>> >>  >    to the kvm maintainers
+>> >>  >    - The kvm maintainers collect stable kvm patches and autotest
+>> >> them
+>> >>
+>> >>  As I understand this patch came in this way for .36
+>> >>  (I took it from .36-stable)
+>> >
+>> >  The patch was autotested for .36-stable, it wasn't autotested for
+>> >  .35-stable.  It will very likely work (this isn't code that changes a
+>> > lot),
+>> >  but still.
+>> >
+>> >>  >    - They then submit the patches to stable@
+>> >>
+>> >>  Do you want to do the autotest explicitely for .35 too and no
+>> >> automatic
+>> >>  backports and do the same procedure as for newer kernels?
+>> >>
+>> >>  I can do that, but you would need to do it for a long time.
+>> >
+>> >  Yes.  In fact it gets more important as time goes by, since as time
+>> > goes by
+>> >  patches are more likely to cause regressions due to changes in the code
+>> >  base.
+>>
+>> My workflow is largely the same as Andi's -- in that I'm using patches
+>> that
+>> have already been nominated for other stable releases and putting them
+>> on the 34-lt (longterm) as appropriate.  Are you interested in also doing
+>> the
+>> same thing for 34-lt (i.e. you generating a 34 specific, pre-tested
+>> patchset
+>> instead of me doing the backports from other stable trees?)
+>
+> Wait, there's a 34-lt too?
 
-Thanks to Evgeniy Polyakov <zbr@ioremap.net> for pointing this out.
-And thanks to Jesper Juhl <jj@chaosbits.net> and Ky Srinivasan 
-<ksrinivasan@novell.com> for suggesting a better implementation of
-my original patch.
+There is also a 32-lt.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-Cc:Evgeniy Polyakov <zbr@ioremap.net>
-Cc:Jesper Juhl <jj@chaosbits.net>
-Cc:Ky Srinivasan <ksrinivasan@novell.com>
+>
+> I'd like to have all stable kvms pass some minimum acceptance test, but
+> that's quiet a lot of trees to maintain.  Why do we have to have both 34-lt
+> and 35-lt?
 
----
- drivers/staging/hv/hv_utils.c |   68 +++++++++++++++++++---------------------
- 1 files changed, 32 insertions(+), 36 deletions(-)
+Well, ideally we'd all be aligned on one release, but that requires that it be
+chosen somewhat in advance and communicated well, so that people have
+time to align to it.  Without getting into details, different people had already
+based projects and products off of 34, many months ago, at a point where
+35 was not yet even being considered for extended maintenance.
 
-diff --git a/drivers/staging/hv/hv_utils.c b/drivers/staging/hv/hv_utils.c
-index 53e1e29..4ed4ab8 100644
---- a/drivers/staging/hv/hv_utils.c
-+++ b/drivers/staging/hv/hv_utils.c
-@@ -38,12 +38,15 @@
- #include "vmbus_api.h"
- #include "utils.h"
- 
-+/*
-+ * Buffer used to receive packets from Hyper-V
-+ */
-+static u8 *chan_buf;
- 
- static void shutdown_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
--	u8 *buf;
--	u32 buflen, recvlen;
-+	u32 recvlen;
- 	u64 requestid;
- 	u8  execute_shutdown = false;
- 
-@@ -52,22 +55,19 @@ static void shutdown_onchannelcallback(void *context)
- 	struct icmsg_hdr *icmsghdrp;
- 	struct icmsg_negotiate *negop = NULL;
- 
--	buflen = PAGE_SIZE;
--	buf = kmalloc(buflen, GFP_ATOMIC);
--
--	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-+	vmbus_recvpacket(channel, chan_buf, PAGE_SIZE, &recvlen, &requestid);
- 
- 	if (recvlen > 0) {
- 		DPRINT_DBG(VMBUS, "shutdown packet: len=%d, requestid=%lld",
- 			   recvlen, requestid);
- 
--		icmsghdrp = (struct icmsg_hdr *)&buf[
-+		icmsghdrp = (struct icmsg_hdr *)&chan_buf[
- 			sizeof(struct vmbuspipe_hdr)];
- 
- 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
--			prep_negotiate_resp(icmsghdrp, negop, buf);
-+			prep_negotiate_resp(icmsghdrp, negop, chan_buf);
- 		} else {
--			shutdown_msg = (struct shutdown_msg_data *)&buf[
-+			shutdown_msg = (struct shutdown_msg_data *)&chan_buf[
- 				sizeof(struct vmbuspipe_hdr) +
- 				sizeof(struct icmsg_hdr)];
- 
-@@ -93,13 +93,11 @@ static void shutdown_onchannelcallback(void *context)
- 		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
- 			| ICMSGHDRFLAG_RESPONSE;
- 
--		vmbus_sendpacket(channel, buf,
-+		vmbus_sendpacket(channel, chan_buf,
- 				       recvlen, requestid,
- 				       VmbusPacketTypeDataInBand, 0);
- 	}
- 
--	kfree(buf);
--
- 	if (execute_shutdown == true)
- 		orderly_poweroff(false);
- }
-@@ -150,28 +148,24 @@ static inline void adj_guesttime(u64 hosttime, u8 flags)
- static void timesync_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
--	u8 *buf;
--	u32 buflen, recvlen;
-+	u32 recvlen;
- 	u64 requestid;
- 	struct icmsg_hdr *icmsghdrp;
- 	struct ictimesync_data *timedatap;
- 
--	buflen = PAGE_SIZE;
--	buf = kmalloc(buflen, GFP_ATOMIC);
--
--	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-+	vmbus_recvpacket(channel, chan_buf, PAGE_SIZE, &recvlen, &requestid);
- 
- 	if (recvlen > 0) {
- 		DPRINT_DBG(VMBUS, "timesync packet: recvlen=%d, requestid=%lld",
- 			recvlen, requestid);
- 
--		icmsghdrp = (struct icmsg_hdr *)&buf[
-+		icmsghdrp = (struct icmsg_hdr *)&chan_buf[
- 				sizeof(struct vmbuspipe_hdr)];
- 
- 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
--			prep_negotiate_resp(icmsghdrp, NULL, buf);
-+			prep_negotiate_resp(icmsghdrp, NULL, chan_buf);
- 		} else {
--			timedatap = (struct ictimesync_data *)&buf[
-+			timedatap = (struct ictimesync_data *)&chan_buf[
- 				sizeof(struct vmbuspipe_hdr) +
- 				sizeof(struct icmsg_hdr)];
- 			adj_guesttime(timedatap->parenttime, timedatap->flags);
-@@ -180,12 +174,10 @@ static void timesync_onchannelcallback(void *context)
- 		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
- 			| ICMSGHDRFLAG_RESPONSE;
- 
--		vmbus_sendpacket(channel, buf,
-+		vmbus_sendpacket(channel, chan_buf,
- 				recvlen, requestid,
- 				VmbusPacketTypeDataInBand, 0);
- 	}
--
--	kfree(buf);
- }
- 
- /*
-@@ -196,28 +188,24 @@ static void timesync_onchannelcallback(void *context)
- static void heartbeat_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
--	u8 *buf;
--	u32 buflen, recvlen;
-+	u32 recvlen;
- 	u64 requestid;
- 	struct icmsg_hdr *icmsghdrp;
- 	struct heartbeat_msg_data *heartbeat_msg;
- 
--	buflen = PAGE_SIZE;
--	buf = kmalloc(buflen, GFP_ATOMIC);
--
--	vmbus_recvpacket(channel, buf, buflen, &recvlen, &requestid);
-+	vmbus_recvpacket(channel, chan_buf, PAGE_SIZE, &recvlen, &requestid);
- 
- 	if (recvlen > 0) {
- 		DPRINT_DBG(VMBUS, "heartbeat packet: len=%d, requestid=%lld",
- 			   recvlen, requestid);
- 
--		icmsghdrp = (struct icmsg_hdr *)&buf[
-+		icmsghdrp = (struct icmsg_hdr *)&chan_buf[
- 				sizeof(struct vmbuspipe_hdr)];
- 
- 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
--			prep_negotiate_resp(icmsghdrp, NULL, buf);
-+			prep_negotiate_resp(icmsghdrp, NULL, chan_buf);
- 		} else {
--			heartbeat_msg = (struct heartbeat_msg_data *)&buf[
-+			heartbeat_msg = (struct heartbeat_msg_data *)&chan_buf[
- 				sizeof(struct vmbuspipe_hdr) +
- 				sizeof(struct icmsg_hdr)];
- 
-@@ -230,12 +218,10 @@ static void heartbeat_onchannelcallback(void *context)
- 		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
- 			| ICMSGHDRFLAG_RESPONSE;
- 
--		vmbus_sendpacket(channel, buf,
-+		vmbus_sendpacket(channel, chan_buf,
- 				       recvlen, requestid,
- 				       VmbusPacketTypeDataInBand, 0);
- 	}
--
--	kfree(buf);
- }
- 
- static const struct pci_device_id __initconst
-@@ -268,6 +254,14 @@ static int __init init_hyperv_utils(void)
- 	if (!dmi_check_system(hv_utils_dmi_table))
- 		return -ENODEV;
- 
-+	chan_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-+
-+	if (!chan_buf) {
-+		printk(KERN_INFO
-+		       "Unable to allocate memory for receive buffer\n");
-+		return -ENOMEM;
-+	}
-+
- 	hv_cb_utils[HV_SHUTDOWN_MSG].channel->onchannel_callback =
- 		&shutdown_onchannelcallback;
- 	hv_cb_utils[HV_SHUTDOWN_MSG].callback = &shutdown_onchannelcallback;
-@@ -298,6 +292,8 @@ static void exit_hyperv_utils(void)
- 	hv_cb_utils[HV_HEARTBEAT_MSG].channel->onchannel_callback =
- 		&chn_cb_negotiate;
- 	hv_cb_utils[HV_HEARTBEAT_MSG].callback = &chn_cb_negotiate;
-+
-+	kfree(chan_buf);
- }
- 
- module_init(init_hyperv_utils);
--- 
-1.6.0.2
+Or you can go with Greg's shorter justification.  It is harder to
+argue against. :)
 
+P.
+
+>
+> --
+> error compiling committee.c: too many arguments to function
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
