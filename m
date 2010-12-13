@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab0LMM3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:29:35 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:36119 "EHLO
+	id S1757326Ab0LMM3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:29:45 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:36123 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab0LMM3d (ORCPT
+	with ESMTP id S1756858Ab0LMM3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:29:33 -0500
-Date: Mon, 13 Dec 2010 13:29:32 +0100
+	Mon, 13 Dec 2010 07:29:43 -0500
+Date: Mon, 13 Dec 2010 13:29:41 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
+To: Mattias Wallin <mattias.wallin@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/20] mfd: 88pm860x-core: irq_data conversion.
-Message-ID: <20101213122932.GK15575@mail.wantstofly.org>
+Subject: [PATCH 02/20] mfd: ab3550: irq_data conversion.
+Message-ID: <20101213122941.GL15575@mail.wantstofly.org>
 References: <cover.1292241952.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,72 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/mfd/88pm860x-core.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/mfd/ab3550-core.c |   32 +++++++++++++++++---------------
+ 1 files changed, 17 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index 20895e7..5995015 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -388,16 +388,16 @@ static irqreturn_t pm860x_irq(int irq, void *data)
- 	return IRQ_HANDLED;
+diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
+index 8a98739..0fefb54 100644
+--- a/drivers/mfd/ab3550-core.c
++++ b/drivers/mfd/ab3550-core.c
+@@ -1159,15 +1159,16 @@ static void ab3550_mask_work(struct work_struct *work)
+ 	}
  }
  
--static void pm860x_irq_lock(unsigned int irq)
-+static void pm860x_irq_lock(struct irq_data *d)
+-static void ab3550_mask(unsigned int irq)
++static void ab3550_mask(struct irq_data *d)
  {
--	struct pm860x_chip *chip = get_irq_chip_data(irq);
-+	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
+ 	unsigned long flags;
+ 	struct ab3550 *ab;
+ 	struct ab3550_platform_data *plf_data;
++	unsigned int irq;
  
- 	mutex_lock(&chip->irq_lock);
+-	ab = get_irq_chip_data(irq);
++	ab = irq_data_get_irq_chip_data(d);
+ 	plf_data = ab->i2c_client[0]->dev.platform_data;
+-	irq -= plf_data->irq.base;
++	irq = d->irq - plf_data->irq.base;
+ 
+ 	spin_lock_irqsave(&ab->event_lock, flags);
+ 	ab->event_mask[irq / 8] |= BIT(irq % 8);
+@@ -1176,15 +1177,16 @@ static void ab3550_mask(unsigned int irq)
+ 	schedule_work(&ab->mask_work);
  }
  
--static void pm860x_irq_sync_unlock(unsigned int irq)
-+static void pm860x_irq_sync_unlock(struct irq_data *d)
+-static void ab3550_unmask(unsigned int irq)
++static void ab3550_unmask(struct irq_data *d)
  {
--	struct pm860x_chip *chip = get_irq_chip_data(irq);
-+	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
- 	struct pm860x_irq_data *irq_data;
- 	struct i2c_client *i2c;
- 	static unsigned char cached[3] = {0x0, 0x0, 0x0};
-@@ -439,25 +439,25 @@ static void pm860x_irq_sync_unlock(unsigned int irq)
- 	mutex_unlock(&chip->irq_lock);
+ 	unsigned long flags;
+ 	struct ab3550 *ab;
+ 	struct ab3550_platform_data *plf_data;
++	unsigned int irq;
+ 
+-	ab = get_irq_chip_data(irq);
++	ab = irq_data_get_irq_chip_data(d);
+ 	plf_data = ab->i2c_client[0]->dev.platform_data;
+-	irq -= plf_data->irq.base;
++	irq = d->irq - plf_data->irq.base;
+ 
+ 	spin_lock_irqsave(&ab->event_lock, flags);
+ 	ab->event_mask[irq / 8] &= ~BIT(irq % 8);
+@@ -1193,20 +1195,20 @@ static void ab3550_unmask(unsigned int irq)
+ 	schedule_work(&ab->mask_work);
  }
  
--static void pm860x_irq_enable(unsigned int irq)
-+static void pm860x_irq_enable(struct irq_data *d)
+-static void noop(unsigned int irq)
++static void noop(struct irq_data *d)
  {
--	struct pm860x_chip *chip = get_irq_chip_data(irq);
--	pm860x_irqs[irq - chip->irq_base].enable
--		= pm860x_irqs[irq - chip->irq_base].offs;
-+	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
-+	pm860x_irqs[d->irq - chip->irq_base].enable
-+		= pm860x_irqs[d->irq - chip->irq_base].offs;
  }
  
--static void pm860x_irq_disable(unsigned int irq)
-+static void pm860x_irq_disable(struct irq_data *d)
- {
--	struct pm860x_chip *chip = get_irq_chip_data(irq);
--	pm860x_irqs[irq - chip->irq_base].enable = 0;
-+	struct pm860x_chip *chip = irq_data_get_irq_chip_data(d);
-+	pm860x_irqs[d->irq - chip->irq_base].enable = 0;
- }
- 
- static struct irq_chip pm860x_irq_chip = {
--	.name		= "88pm860x",
--	.bus_lock	= pm860x_irq_lock,
--	.bus_sync_unlock = pm860x_irq_sync_unlock,
--	.enable		= pm860x_irq_enable,
--	.disable	= pm860x_irq_disable,
-+	.name			= "88pm860x",
-+	.irq_bus_lock		= pm860x_irq_lock,
-+	.irq_bus_sync_unlock	= pm860x_irq_sync_unlock,
-+	.irq_enable		= pm860x_irq_enable,
-+	.irq_disable		= pm860x_irq_disable,
+ static struct irq_chip ab3550_irq_chip = {
+ 	.name		= "ab3550-core", /* Keep the same name as the request */
+-	.startup	= NULL, /* defaults to enable */
+-	.shutdown	= NULL, /* defaults to disable */
+-	.enable		= NULL, /* defaults to unmask */
+-	.disable	= ab3550_mask, /* No default to mask in chip.c */
+-	.ack		= noop,
+-	.mask		= ab3550_mask,
+-	.unmask		= ab3550_unmask,
+-	.end		= NULL,
++	.irq_startup	= NULL, /* defaults to enable */
++	.irq_shutdown	= NULL, /* defaults to disable */
++	.irq_enable	= NULL, /* defaults to unmask */
++	.irq_disable	= ab3550_mask, /* No default to mask in chip.c */
++	.irq_ack	= noop,
++	.irq_mask	= ab3550_mask,
++	.irq_unmask	= ab3550_unmask,
++	.irq_end	= NULL,
  };
  
- static int __devinit device_gpadc_init(struct pm860x_chip *chip,
+ struct ab_family_id {
 -- 
 1.7.1
 
