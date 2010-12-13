@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab0LMGWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:22:10 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24486 "EHLO
+	id S1752386Ab0LMGWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:22:05 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24402 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752427Ab0LMGWG (ORCPT
+	by vger.kernel.org with ESMTP id S1752157Ab0LMGWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:22:06 -0500
+	Mon, 13 Dec 2010 01:22:03 -0500
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 To: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
         21cnbao@gmail.com, sameo@linux.intel.com,
@@ -15,11 +15,11 @@ To: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com,
         Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH net-next-2.6 v9 15/20] pch_can: Comment optimization
-Date: Mon, 13 Dec 2010 15:24:21 +0900
-Message-Id: <1292221467-8039-15-git-send-email-tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH net-next-2.6 v9 10/20] pch_can: Replace netdev_dbg instead of dev_dbg partly
+Date: Mon, 13 Dec 2010 15:24:16 +0900
+Message-Id: <1292221467-8039-10-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.6.0.6
-In-Reply-To: <1292221467-8039-14-git-send-email-tomoya-linux@dsn.okisemi.com>
+In-Reply-To: <1292221467-8039-9-git-send-email-tomoya-linux@dsn.okisemi.com>
 References: <1292221467-8039-1-git-send-email-tomoya-linux@dsn.okisemi.com>
  <1292221467-8039-2-git-send-email-tomoya-linux@dsn.okisemi.com>
  <1292221467-8039-3-git-send-email-tomoya-linux@dsn.okisemi.com>
@@ -29,74 +29,86 @@ References: <1292221467-8039-1-git-send-email-tomoya-linux@dsn.okisemi.com>
  <1292221467-8039-7-git-send-email-tomoya-linux@dsn.okisemi.com>
  <1292221467-8039-8-git-send-email-tomoya-linux@dsn.okisemi.com>
  <1292221467-8039-9-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1292221467-8039-10-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1292221467-8039-11-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1292221467-8039-12-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1292221467-8039-13-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1292221467-8039-14-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment optimization
+For easy to readable, use netdev_dbg instead of dev_dbg partly
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/can/pch_can.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index c500b6d..a1fd3be 100644
+index 293be51..0093a01 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
- 	else
- 		ie = PCH_IF_MCONT_RXIE;
+@@ -222,7 +222,7 @@ static void pch_can_set_run_mode(struct pch_can_priv *priv,
+ 		break;
  
--	/* Reading the receive buffer data from RAM to Interface1/2 registers */
-+	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
- 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
- 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ 	default:
+-		dev_err(&priv->ndev->dev, "%s -> Invalid Mode.\n", __func__);
++		netdev_err(priv->ndev, "%s -> Invalid Mode.\n", __func__);
+ 		break;
+ 	}
+ }
+@@ -275,7 +275,7 @@ static void pch_can_set_int_enables(struct pch_can_priv *priv,
+ 		break;
  
-@@ -854,7 +854,7 @@ static int pch_can_open(struct net_device *ndev)
+ 	default:
+-		dev_err(&priv->ndev->dev, "Invalid interrupt number.\n");
++		netdev_err(priv->ndev, "Invalid interrupt number.\n");
+ 		break;
+ 	}
+ }
+@@ -528,7 +528,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
+ 			cf->data[1] |= CAN_ERR_CRTL_RX_WARNING;
+ 		if ((errc & PCH_TEC) > 96)
+ 			cf->data[1] |= CAN_ERR_CRTL_TX_WARNING;
+-		dev_warn(&ndev->dev,
++		netdev_dbg(ndev,
+ 			"%s -> Error Counter is more than 96.\n", __func__);
+ 	}
+ 	/* Error passive interrupt. */
+@@ -540,7 +540,7 @@ static void pch_can_error(struct net_device *ndev, u32 status)
+ 			cf->data[1] |= CAN_ERR_CRTL_RX_PASSIVE;
+ 		if ((errc & PCH_TEC) > 127)
+ 			cf->data[1] |= CAN_ERR_CRTL_TX_PASSIVE;
+-		dev_err(&ndev->dev,
++		netdev_dbg(ndev,
+ 			"%s -> CAN controller is ERROR PASSIVE .\n", __func__);
+ 	}
+ 
+@@ -859,10 +859,10 @@ static int pch_can_open(struct net_device *ndev)
+ 
+ 	retval = pci_enable_msi(priv->dev);
+ 	if (retval) {
+-		dev_info(&ndev->dev, "PCH CAN opened without MSI\n");
++		netdev_err(ndev, "PCH CAN opened without MSI\n");
+ 		priv->use_msi = 0;
+ 	} else {
+-		dev_info(&ndev->dev, "PCH CAN opened with MSI\n");
++		netdev_err(ndev, "PCH CAN opened with MSI\n");
  		priv->use_msi = 1;
  	}
  
--	/* Regsitering the interrupt. */
-+	/* Regstering the interrupt. */
+@@ -870,14 +870,14 @@ static int pch_can_open(struct net_device *ndev)
  	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
  			     ndev->name, ndev);
  	if (retval) {
-@@ -954,7 +954,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+-		dev_err(&ndev->dev, "request_irq failed.\n");
++		netdev_err(ndev, "request_irq failed.\n");
+ 		goto req_irq_err;
+ 	}
  
- 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
- 
--	/* Updating the size of the data. */
-+	/* Set the size of the data. Update if2_mcont */
- 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
- 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
- 
-@@ -1061,8 +1061,8 @@ static int pch_can_get_buffer_status(struct pch_can_priv *priv)
- 
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return value. */
-+	int i;
-+	int retval;
- 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
- 	int counter = PCH_COUNTER_LIMIT;
- 
-@@ -1119,8 +1119,8 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- 
- static int pch_can_resume(struct pci_dev *pdev)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return variable. */
-+	int i;
-+	int retval;
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct pch_can_priv *priv = netdev_priv(dev);
+ 	/* Open common can device */
+ 	retval = open_candev(ndev);
+ 	if (retval) {
+-		dev_err(ndev->dev.parent, "open_candev() failed %d\n", retval);
++		netdev_err(ndev, "open_candev() failed %d\n", retval);
+ 		goto err_open_candev;
+ 	}
  
 -- 
 1.6.0.6
