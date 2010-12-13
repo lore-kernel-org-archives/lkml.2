@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab0LMTmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:42:09 -0500
-Received: from kroah.org ([198.145.64.141]:32863 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab0LMTmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:42:07 -0500
-Date: Mon, 13 Dec 2010 11:41:01 -0800
-From: Greg KH <greg@kroah.com>
-To: Hank Janssen <hjanssen@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/1] hv: Use only one receive buffer and kmalloc on
- initialize
-Message-ID: <20101213194101.GA18431@kroah.com>
-References: <1292262350-29001-1-git-send-email-hjanssen@microsoft.com>
- <20101213183448.GA11745@kroah.com>
- <8AFC7968D54FB448A30D8F38F259C5622C0BB71F@TK5EX14MBXC116.redmond.corp.microsoft.com>
+	id S1753733Ab0LMTnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:43:49 -0500
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:53489 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab0LMTns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:43:48 -0500
+Date: Mon, 13 Dec 2010 12:43:41 -0700
+From: Eric B Munson <emunson@mgebm.net>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] mm: kswapd: Use the classzone idx that kswapd was
+ using for sleeping_prematurely()
+Message-ID: <20101213194341.GH3401@mgebm.net>
+References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
+ <1291995985-5913-7-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zq44+AAfm4giZpo5"
 Content-Disposition: inline
-In-Reply-To: <8AFC7968D54FB448A30D8F38F259C5622C0BB71F@TK5EX14MBXC116.redmond.corp.microsoft.com>
+In-Reply-To: <1291995985-5913-7-git-send-email-mel@csn.ul.ie>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 07:31:42PM +0000, Hank Janssen wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Monday, December 13, 2010 10:35 AM
-> > > ---
-> > >  drivers/staging/hv/hv_utils.c |   68 +++++++++++++++++++------------------
-> > ---
-> > >  1 files changed, 32 insertions(+), 36 deletions(-)
-> > >
-> > > diff --git a/drivers/staging/hv/hv_utils.c
-> > > b/drivers/staging/hv/hv_utils.c index 53e1e29..4ed4ab8 100644
-> > > --- a/drivers/staging/hv/hv_utils.c
-> > > +++ b/drivers/staging/hv/hv_utils.c
-> > > @@ -38,12 +38,15 @@
-> > >  #include "vmbus_api.h"
-> > >  #include "utils.h"
-> > >
-> > > +/*
-> > > + * Buffer used to receive packets from Hyper-V  */ static u8
-> > > +*chan_buf;
-> > 
-> > One buffer is nicer, yes, but what's controlling access to this buffer?
-> > You use it in multiple functions, and what's to say those functions can't be
-> > called at the same time on different cpus?  So, shouldn't you either have
-> > some locking for access to the buffer, or have a per-function buffer instead?
-> > 
-> > And if you have a per-function buffer, again, you might need to control
-> > access to it as the functions could be called multiple times at the same time,
-> > right?
-> > 
-> 
-> The current versions of Hyper-V support interrupt handling on CPU0 only.
-> I can make multiple buffers per channel, but because of Hyper-V implementation
-> It does not really make a difference.
 
-Then put a big fat note in there saying this, and that it will have to
-change if the hyperv channel ever changes.
+--zq44+AAfm4giZpo5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hm, how will you handle things if the hyperv core changes and an old
-kernel is running this code where things were "assumed" about the
-reentrancy happening here?
+On Fri, 10 Dec 2010, Mel Gorman wrote:
 
-thanks,
+> When kswapd is woken up for a high-order allocation, it takes account of
+> the highest usable zone by the caller (the classzone idx). During
+> allocation, this index is used to select the lowmem_reserve[] that
+> should be applied to the watermark calculation in zone_watermark_ok().
+>=20
+> When balancing a node, kswapd considers the highest unbalanced zone to be=
+ the
+> classzone index. This will always be at least be the callers classzone_idx
+> and can be higher. However, sleeping_prematurely() always considers the
+> lowest zone (e.g. ZONE_DMA) to be the classzone index. This means that
+> sleeping_prematurely() can consider a zone to be balanced that is unusable
+> by the allocation request that originally woke kswapd. This patch changes
+> sleeping_prematurely() to use a classzone_idx matching the value it used
+> in balance_pgdat().
+>=20
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-greg k-h
+Reviewed-by: Eric B Munson <emunson@mgebm.net>
+
+--zq44+AAfm4giZpo5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNBndtAAoJEH65iIruGRnNAR4IAJ0ppy0Hk9MvbVhCmaMHT07l
+DcwjFis/RFmu2Zpzrjn3pmfahkkCOesSBeplehiqGnzEW+E8hKeyQ3KgGtlscTDb
+CWyVgjgMihb4L7MWv5+lfrjL8/JBUQy0415m0Ea0bIoqwI9zDtl5mHVugVs6R+wL
+QwNMriEr0C0ov4N2t3OxvL9FmYLVmf8hdgAebMHoq0pICtPHRx2zcIyXmREc42ow
+DOC1QZgeGu5B0DXK9eBeEpf53NHynUHYN74o9FIhnnyBDxrtvD7QksJJRGc2DtkC
+KYrHfrHuqhLEX/cZBh0VPGemHPpIBs06ejt6DhjpPdpsGgkNZ04qmkTyPUQtvLk=
+=ieDW
+-----END PGP SIGNATURE-----
+
+--zq44+AAfm4giZpo5--
