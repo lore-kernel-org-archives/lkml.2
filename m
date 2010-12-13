@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758465Ab0LMRX7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:23:59 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:57344 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab0LMRX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:23:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bsm/IdArO7MFEpT6c9TuizaGhaS8Tq6R7L+faxqLtzLbZmXtcMLZict1Lk/CDaMmOE
-         xPbJ7IrBuHFNK2dtyct/aFzYn1ogewLOnUh6B+h3hNb7vf/qo34UtMKUABXN4SnHfb+w
-         ktTxID+nUBlEOgXE7hIA9mXaSA1IobBNRVA8w=
-Date: Mon, 13 Dec 2010 18:23:52 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Ahern" <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
-Message-ID: <20101213172349.GD1691@nowhere>
-References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
- <1291773285-16254-2-git-send-email-daahern@cisco.com>
- <20101212201613.GA1784@nowhere>
- <4D06301C.2090309@cisco.com>
- <20101213155451.GA1691@nowhere>
- <20101213164854.GL5407@ghostprotocols.net>
- <20101213170923.GB1691@nowhere>
- <1292260289.6803.297.camel@twins>
- <1292260419.6803.300.camel@twins>
+	id S1758500Ab0LMRZT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:25:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752611Ab0LMRZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 12:25:16 -0500
+Date: Mon, 13 Dec 2010 19:24:47 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [GIT PULL net-next-2.6] vhost-net: tools, cleanups, optimizations
+Message-ID: <20101213172447.GA8560@redhat.com>
+References: <20101213104413.GA678@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292260419.6803.300.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101213104413.GA678@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 06:13:39PM +0100, Peter Zijlstra wrote:
-> On Mon, 2010-12-13 at 18:11 +0100, Peter Zijlstra wrote:
-> > 
-> > Preferably, yes, but I don't see why we can't break the data file format
-> > if we've got good reasons to. 
+On Mon, Dec 13, 2010 at 12:44:13PM +0200, Michael S. Tsirkin wrote:
+> Please merge the following tree for 2.6.38.
+> Thanks!
+
+Um, I sent this out before I noticed the mail from Rusty
+with some questions on the test code. I missed that and
+assumed no comments -> no issues, perhaps wrongly.
+
+Rusty - I tried answering the questions there - any issues
+with merging this? It's just a test so won't be hard to remove
+later if it's not helpful ...
+
+> The following changes since commit ad1184c6cf067a13e8cb2a4e7ccc407f947027d0:
 > 
-> I mean, we pretty much _have_ to break data file format when we want to
-> do splice() support.
-
-Because we'll have one file per-cpu?
-
-But perf.data on UP will be sensibly the same as today so I suspect
-we won't need to be compatible.
-
-But I guess I am missing something, in which case that probably doesn't
-change much the picture. It's not because one day we'll need to break
-the format that we can happily do so everyday. Backward compatibility
-is important and we should preserve it when it's possible.
+>   net: au1000_eth: remove unused global variable. (2010-12-11 12:01:48 -0800)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
+> 
+> Jason Wang (1):
+>       vhost: fix typos in comment
+> 
+> Julia Lawall (1):
+>       drivers/vhost/vhost.c: delete double assignment
+> 
+> Michael S. Tsirkin (9):
+>       vhost: put mm after thread stop
+>       vhost-net: batch use/unuse mm
+>       vhost: copy_to_user -> __copy_to_user
+>       vhost: get/put_user -> __get/__put_user
+>       vhost: remove unused include
+>       vhost: correctly set bits of dirty pages
+>       vhost: better variable name in logging
+>       vhost test module
+>       tools/virtio: virtio_test tool
+> 
+>  drivers/vhost/net.c                  |    9 +-
+>  drivers/vhost/test.c                 |  320 ++++++++++++++++++++++++++++++++++
+>  drivers/vhost/test.h                 |    7 +
+>  drivers/vhost/vhost.c                |   44 +++---
+>  drivers/vhost/vhost.h                |    2 +-
+>  tools/virtio/Makefile                |   12 ++
+>  tools/virtio/linux/device.h          |    2 +
+>  tools/virtio/linux/slab.h            |    2 +
+>  tools/virtio/linux/virtio.h          |  223 +++++++++++++++++++++++
+>  tools/virtio/vhost_test/Makefile     |    2 +
+>  tools/virtio/vhost_test/vhost_test.c |    1 +
+>  tools/virtio/virtio_test.c           |  248 ++++++++++++++++++++++++++
+>  12 files changed, 842 insertions(+), 30 deletions(-)
+>  create mode 100644 drivers/vhost/test.c
+>  create mode 100644 drivers/vhost/test.h
+>  create mode 100644 tools/virtio/Makefile
+>  create mode 100644 tools/virtio/linux/device.h
+>  create mode 100644 tools/virtio/linux/slab.h
+>  create mode 100644 tools/virtio/linux/virtio.h
+>  create mode 100644 tools/virtio/vhost_test/Makefile
+>  create mode 100644 tools/virtio/vhost_test/vhost_test.c
+>  create mode 100644 tools/virtio/virtio_test.c
