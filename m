@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab0LMRrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:47:43 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43043 "EHLO
+	id S1758582Ab0LMRs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:48:56 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43079 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757626Ab0LMRrl convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1758497Ab0LMRsy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:47:41 -0500
+	Mon, 13 Dec 2010 12:48:54 -0500
 Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -24,8 +24,8 @@ References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
 	 <1292261716.6803.332.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Dec 2010 18:47:13 +0100
-Message-ID: <1292262433.6803.351.camel@twins>
+Date: Mon, 13 Dec 2010 18:48:27 +0100
+Message-ID: <1292262507.6803.355.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,12 +33,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2010-12-13 at 18:35 +0100, Peter Zijlstra wrote:
->         * this CLOCK_MONOTONIC offset (for what little good that does, since
-> our clock isn't strictly sync'ed to CLOCK_MONOTONIC so we can incur
-> arbitrary drift). 
+> 
+>  - extend the existing header infrastructure to write a new header in
+> front of the new stream. The main header already has a data section that
+> points to the end of the stream, add a continuation header section that
+> points to a continuation-header used to appends and record the clock
+> offset data in there. 
 
-In fact, the only sane way to do that is by creating a software counter
-that represents CLOCK_MONOTONIC and sample that say once a minute (or
-more often if you want smaller drift).
-
+Also, if you want to add perf-stat functionality to perf-record you
+could use something similar, a tail-header, and write the stat values in
+there.
 
