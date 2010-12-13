@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab0LMP6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:58:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18123 "EHLO mx1.redhat.com"
+	id S1757552Ab0LMP70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:59:26 -0500
+Received: from smtp.ispras.ru ([83.149.198.201]:36692 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab0LMP6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 10:58:16 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aio: check return value of create_workqueue()
-References: <1292252785-3683-1-git-send-email-namhyung@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 13 Dec 2010 10:58:08 -0500
-In-Reply-To: <1292252785-3683-1-git-send-email-namhyung@gmail.com> (Namhyung
-	Kim's message of "Tue, 14 Dec 2010 00:06:25 +0900")
-Message-ID: <x4962uxd5rj.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1750917Ab0LMP7Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 10:59:24 -0500
+X-Greylist: delayed 1141 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 10:59:24 EST
+From: Alexander Strakh <strakh@ispras.ru>
+Organization: ISP RAS
+To: linux-kernel@vger.kernel.org, kangyong@telegent.com, xbzhang@telegent.com,
+        zyziii@telegent.com, shijie8@gmail.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+Subject: BUG: double mutex_unlock in drivers/media/video/tlg2300/pd-video.c
+Date: Mon, 13 Dec 2010 18:59:14 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201012131859.15152.strakh@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim <namhyung@gmail.com> writes:
+        KERNEL_VERSION: 2.6.36
+        SUBJECT: double mutex_lock in drivers/media/video/tlg2300/pd-video.c 
+in function vidioc_s_fmt
+        SUBSCRIBE:
+	First mutex_unlock in function pd_vidioc_s_fmt in line 767:
 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  fs/aio.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 8c8f6c5b6d79..c56153f5f73e 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -87,7 +87,7 @@ static int __init aio_setup(void)
->  
->  	aio_wq = create_workqueue("aio");
->  	abe_pool = mempool_create_kmalloc_pool(1, sizeof(struct aio_batch_entry));
-> -	BUG_ON(!abe_pool);
-> +	BUG_ON(!aio_wq || !abe_pool);
->  
->  	pr_debug("aio_setup: sizeof(struct page) = %d\n", (int)sizeof(struct page));
+ 764        ret |= send_set_req(pd, VIDEO_ROSOLU_SEL,
+ 765                                vid_resol, &cmd_status);
+ 766        if (ret || cmd_status) {
+ 767                mutex_unlock(&pd->lock);
+ 768                return -EBUSY;
+ 769        }
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+	Second mutex_unlock in function vidioc_s_fmt in line 806:
+
+ 805        pd_vidioc_s_fmt(pd, &f->fmt.pix);
+ 806        mutex_unlock(&pd->lock);
+
+Found by Linux Device Drivers Verification Project
+
+Сhecks the return code of pd_vidioc_s_fm before mutex_unlocking.
+
+Signed-off-by: Alexander Strakh <strakh@ispras.ru>
+
+---
+diff --git a/drivers/media/video/tlg2300/pd-video.c 
+b/drivers/media/video/tlg2300/pd-video.c
+index a1ffe18..fe6bd2b 100644
+--- a/drivers/media/video/tlg2300/pd-video.c
++++ b/drivers/media/video/tlg2300/pd-video.c
+@@ -802,8 +802,8 @@ static int vidioc_s_fmt(struct file *file, void *fh, 
+struct v4l2_format *f)
+ 		return -EINVAL;
+ 	}
+ 
+-	pd_vidioc_s_fmt(pd, &f->fmt.pix);
+-	mutex_unlock(&pd->lock);
++	if(!pd_vidioc_s_fmt(pd, &f->fmt.pix)) 
++		mutex_unlock(&pd->lock);
+ 	return 0;
+ }
+ 
+
