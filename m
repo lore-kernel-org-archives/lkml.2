@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab0LMKvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:51:47 -0500
-Received: from sd-11162.dedibox.fr ([88.191.70.230]:60160 "EHLO
+	id S1757121Ab0LMKxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:53:38 -0500
+Received: from sd-11162.dedibox.fr ([88.191.70.230]:60511 "EHLO
 	sd-11162.dedibox.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757002Ab0LMKvq (ORCPT
+	with ESMTP id S1752877Ab0LMKxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:51:46 -0500
-Date: Mon, 13 Dec 2010 11:51:43 +0100
+	Mon, 13 Dec 2010 05:53:37 -0500
+Date: Mon, 13 Dec 2010 11:53:34 +0100
 From: Stelian Pop <stelian@popies.net>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Orphan the meye driver since I no longer have the hardware.
-Message-ID: <20101213105143.GC2188@calypso>
+Subject: [PATCH] Fix my CREDITS entry
+Message-ID: <20101213105334.GD2188@calypso>
 Reply-To: Stelian Pop <stelian@popies.net>
 Mail-Followup-To: Stelian Pop <stelian@popies.net>,
 	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
@@ -24,30 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't even remember when it was that I sold this laptop, but
-it has been a few years...
+Signed-off-by: Stelian Pop <stelian@popies.net>
 
 ---
- MAINTAINERS |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ CREDITS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 61d8c41..ca8ea6f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3962,9 +3962,8 @@ F:	include/linux/module.h
- F:	kernel/module.c
+diff --git a/CREDITS b/CREDITS
+index 41d8e63..bc70d46 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -2813,8 +2813,8 @@ D: CDROM driver "sonycd535" (Sony CDU-535/531)
+ N: Stelian Pop
+ E: stelian@popies.net
+ P: 1024D/EDBB6147 7B36 0E07 04BC 11DC A7A0  D3F7 7185 9E7A EDBB 6147
+-D: sonypi, meye drivers, mct_u232 usb serial hacks
+-S: Paris, France
++D: random kernel hacks
++S: Paimpont, France
  
- MOTION EYE VAIO PICTUREBOOK CAMERA DRIVER
--M:	Stelian Pop <stelian@popies.net>
- W:	http://popies.net/meye/
--S:	Maintained
-+S:	Orphan
- F:	Documentation/video4linux/meye.txt
- F:	drivers/media/video/meye.*
- F:	include/linux/meye.h
+ N: Pete Popov
+ E: pete_popov@yahoo.com
 -- 
 1.7.1
-
--- 
-Stelian Pop <stelian@popies.net>
