@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab0LMKBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 05:01:20 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:35276 "EHLO
+	id S1756882Ab0LMKB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 05:01:27 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:35377 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab0LMKBR (ORCPT
+	with ESMTP id S1754049Ab0LMKBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 05:01:17 -0500
+	Mon, 13 Dec 2010 05:01:24 -0500
 From: Ike Panhc <ike.pan@canonical.com>
 To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
         linux-acpi@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: Matthew Garrett <mjg@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Corentin Chary <corentin.chary@gmail.com>
-Subject: [PATCH 5/6] ideapad: pass ideapad_priv as argument (part 1)
-Date: Mon, 13 Dec 2010 18:01:01 +0800
-Message-Id: <1292234461-2744-1-git-send-email-ike.pan@canonical.com>
+Subject: [PATCH 6/6] ideapad: pass ideapad_priv as argument (part 2)
+Date: Mon, 13 Dec 2010 18:01:12 +0800
+Message-Id: <1292234472-2773-1-git-send-email-ike.pan@canonical.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292234384-2599-1-git-send-email-ike.pan@canonical.com>
 References: <1292234384-2599-1-git-send-email-ike.pan@canonical.com>
@@ -25,168 +25,184 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Passing ideapad_priv as argument and try not to using too much global variable.
-This is part 1 for platform driver and input device.
+This is part 2 for rfkill.
 
 Signed-off-by: Ike Panhc <ike.pan@canonical.com>
 ---
- drivers/platform/x86/ideapad-laptop.c |   54 +++++++++++++++++----------------
- 1 files changed, 28 insertions(+), 26 deletions(-)
+ drivers/platform/x86/ideapad-laptop.c |   71 +++++++++++++-------------------
+ 1 files changed, 29 insertions(+), 42 deletions(-)
 
 diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-index 3c6c5b5..37fe0d0 100644
+index 37fe0d0..114d952 100644
 --- a/drivers/platform/x86/ideapad-laptop.c
 +++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -301,37 +301,37 @@ static struct attribute_group ideapad_attribute_group = {
- 	.attrs = ideapad_attributes
- };
+@@ -31,32 +31,15 @@
+ #include <linux/input.h>
+ #include <linux/input/sparse-keymap.h>
  
--static int __devinit ideapad_platform_init(void)
-+static int __devinit ideapad_platform_init(struct ideapad_private *priv)
- {
- 	int result;
+-#define IDEAPAD_DEV_CAMERA	0
+-#define IDEAPAD_DEV_WLAN	1
+-#define IDEAPAD_DEV_BLUETOOTH	2
+-#define IDEAPAD_DEV_3G		3
+-#define IDEAPAD_DEV_KILLSW	4
++#define IDEAPAD_RFKILL_DEV_NUM	(3)
  
--	ideapad_priv->platform_device = platform_device_alloc("ideapad", -1);
--	if (!ideapad_priv->platform_device)
-+	priv->platform_device = platform_device_alloc("ideapad", -1);
-+	if (!priv->platform_device)
- 		return -ENOMEM;
--	platform_set_drvdata(ideapad_priv->platform_device, ideapad_priv);
-+	platform_set_drvdata(priv->platform_device, priv);
- 
--	result = platform_device_add(ideapad_priv->platform_device);
-+	result = platform_device_add(priv->platform_device);
- 	if (result)
- 		goto fail_platform_device;
- 
--	result = sysfs_create_group(&ideapad_priv->platform_device->dev.kobj,
-+	result = sysfs_create_group(&priv->platform_device->dev.kobj,
- 				    &ideapad_attribute_group);
- 	if (result)
- 		goto fail_sysfs;
- 	return 0;
- 
- fail_sysfs:
--	platform_device_del(ideapad_priv->platform_device);
-+	platform_device_del(priv->platform_device);
- fail_platform_device:
--	platform_device_put(ideapad_priv->platform_device);
-+	platform_device_put(priv->platform_device);
- 	return result;
- }
- 
--static void ideapad_platform_exit(void)
-+static void ideapad_platform_exit(struct ideapad_private *priv)
- {
--	sysfs_remove_group(&ideapad_priv->platform_device->dev.kobj,
-+	sysfs_remove_group(&priv->platform_device->dev.kobj,
- 			   &ideapad_attribute_group);
--	platform_device_unregister(ideapad_priv->platform_device);
-+	platform_device_unregister(priv->platform_device);
- }
- 
- /*
-@@ -343,7 +343,7 @@ static const struct key_entry ideapad_keymap[] = {
- 	{ KE_END, 0 },
- };
- 
--static int __devinit ideapad_input_init(void)
-+static int __devinit ideapad_input_init(struct ideapad_private *priv)
- {
+ struct ideapad_private {
+-	acpi_handle handle;
+-	struct rfkill *rfk[5];
++	struct rfkill *rfk[IDEAPAD_RFKILL_DEV_NUM];
+ 	struct platform_device *platform_device;
  	struct input_dev *inputdev;
- 	int error;
-@@ -357,7 +357,7 @@ static int __devinit ideapad_input_init(void)
- 	inputdev->name = "Ideapad extra buttons";
- 	inputdev->phys = "ideapad/input0";
- 	inputdev->id.bustype = BUS_HOST;
--	inputdev->dev.parent = &ideapad_priv->platform_device->dev;
-+	inputdev->dev.parent = &priv->platform_device->dev;
+-} *ideapad_priv;
+-
+-static struct {
+-	char *name;
+-	int cfgbit;
+-	int opcode;
+-	int type;
+-} ideapad_rfk_data[] = {
+-	{ "ideapad_camera",	19, 0x1E, NUM_RFKILL_TYPES },
+-	{ "ideapad_wlan",	18, 0x15, RFKILL_TYPE_WLAN },
+-	{ "ideapad_bluetooth",	16, 0x17, RFKILL_TYPE_BLUETOOTH },
+-	{ "ideapad_3g",		17, 0x20, RFKILL_TYPE_WWAN },
+-	{ "ideapad_killsw",	0,  0,    RFKILL_TYPE_WLAN }
+ };
  
- 	error = sparse_keymap_setup(inputdev, ideapad_keymap, NULL);
- 	if (error) {
-@@ -371,7 +371,7 @@ static int __devinit ideapad_input_init(void)
- 		goto err_free_keymap;
- 	}
- 
--	ideapad_priv->inputdev = inputdev;
-+	priv->inputdev = inputdev;
- 	return 0;
- 
- err_free_keymap:
-@@ -381,16 +381,17 @@ err_free_dev:
- 	return error;
- }
- 
--static void __devexit ideapad_input_exit(void)
-+static void __devexit ideapad_input_exit(struct ideapad_private *priv)
++static acpi_handle ideapad_handle;
+ static bool no_bt_rfkill;
+ module_param(no_bt_rfkill, bool, 0444);
+ MODULE_PARM_DESC(no_bt_rfkill, "No rfkill for bluetooth.");
+@@ -176,11 +159,9 @@ static ssize_t show_ideapad_cam(struct device *dev,
+ 				struct device_attribute *attr,
+ 				char *buf)
  {
--	sparse_keymap_free(ideapad_priv->inputdev);
--	input_unregister_device(ideapad_priv->inputdev);
--	ideapad_priv->inputdev = NULL;
-+	sparse_keymap_free(priv->inputdev);
-+	input_unregister_device(priv->inputdev);
-+	priv->inputdev = NULL;
- }
+-	struct ideapad_private *priv = dev_get_drvdata(dev);
+-	acpi_handle handle = priv->handle;
+ 	unsigned long result;
  
--static void ideapad_input_report(unsigned long scancode)
-+static void ideapad_input_report(struct ideapad_private *priv,
-+				 unsigned long scancode)
+-	if (read_ec_data(handle, 0x1D, &result))
++	if (read_ec_data(ideapad_handle, 0x1D, &result))
+ 		return sprintf(buf, "-1\n");
+ 	return sprintf(buf, "%lu\n", result);
+ }
+@@ -189,15 +170,13 @@ static ssize_t store_ideapad_cam(struct device *dev,
+ 				 struct device_attribute *attr,
+ 				 const char *buf, size_t count)
  {
--	sparse_keymap_report_event(ideapad_priv->inputdev, scancode, 1, true);
-+	sparse_keymap_report_event(priv->inputdev, scancode, 1, true);
- }
+-	struct ideapad_private *priv = dev_get_drvdata(dev);
+-	acpi_handle handle = priv->handle;
+ 	int ret, state;
  
+ 	if (!count)
+ 		return 0;
+ 	if (sscanf(buf, "%i", &state) != 1)
+ 		return -EINVAL;
+-	ret = write_ec_cmd(handle, 0x1E, state);
++	ret = write_ec_cmd(ideapad_handle, 0x1E, state);
+ 	if (ret < 0)
+ 		return ret;
+ 	return count;
+@@ -208,16 +187,24 @@ static DEVICE_ATTR(camera_power, 0644, show_ideapad_cam, store_ideapad_cam);
  /*
-@@ -417,11 +418,11 @@ static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
- 	priv->handle = adevice->handle;
+  * Rfkill
+  */
++struct ideapad_rfk_data {
++	char *name;
++	int cfgbit;
++	int opcode;
++	int type;
++};
++
++const struct ideapad_rfk_data ideapad_rfk_data[] = {
++	{ "ideapad_wlan",	18, 0x15, RFKILL_TYPE_WLAN },
++	{ "ideapad_bluetooth",	16, 0x17, RFKILL_TYPE_BLUETOOTH },
++	{ "ideapad_3g",		17, 0x20, RFKILL_TYPE_WWAN },
++};
++
+ static int ideapad_rfk_set(void *data, bool blocked)
+ {
+-	int device = (unsigned long)data;
+-
+-	if (device == IDEAPAD_DEV_KILLSW)
+-		return -EINVAL;
++	unsigned long opcode = (unsigned long)data;
+ 
+-	return write_ec_cmd(ideapad_priv->handle,
+-			    ideapad_rfk_data[device].opcode,
+-			    !blocked);
++	return write_ec_cmd(ideapad_handle, opcode, !blocked);
+ }
+ 
+ static struct rfkill_ops ideapad_rfk_ops = {
+@@ -227,15 +214,14 @@ static struct rfkill_ops ideapad_rfk_ops = {
+ static void ideapad_sync_rfk_state(struct acpi_device *adevice)
+ {
+ 	struct ideapad_private *priv = dev_get_drvdata(&adevice->dev);
+-	acpi_handle handle = priv->handle;
+ 	unsigned long hw_blocked;
+ 	int i;
+ 
+-	if (read_ec_data(handle, 0x23, &hw_blocked))
++	if (read_ec_data(ideapad_handle, 0x23, &hw_blocked))
+ 		return;
+ 	hw_blocked = !hw_blocked;
+ 
+-	for (i = IDEAPAD_DEV_WLAN; i <= IDEAPAD_DEV_KILLSW; i++)
++	for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
+ 		if (priv->rfk[i])
+ 			rfkill_set_hw_state(priv->rfk[i], hw_blocked);
+ }
+@@ -250,7 +236,7 @@ static int __devinit ideapad_register_rfkill(struct acpi_device *adevice,
+ 	if (no_bt_rfkill &&
+ 	    (ideapad_rfk_data[dev].type == RFKILL_TYPE_BLUETOOTH)) {
+ 		/* Force to enable bluetooth when no_bt_rfkill=1 */
+-		write_ec_cmd(ideapad_priv->handle,
++		write_ec_cmd(ideapad_handle,
+ 			     ideapad_rfk_data[dev].opcode, 1);
+ 		return 0;
+ 	}
+@@ -261,7 +247,7 @@ static int __devinit ideapad_register_rfkill(struct acpi_device *adevice,
+ 	if (!priv->rfk[dev])
+ 		return -ENOMEM;
+ 
+-	if (read_ec_data(ideapad_priv->handle, ideapad_rfk_data[dev].opcode-1,
++	if (read_ec_data(ideapad_handle, ideapad_rfk_data[dev].opcode-1,
+ 			 &sw_blocked)) {
+ 		rfkill_init_sw_state(priv->rfk[dev], 0);
+ 	} else {
+@@ -414,9 +400,8 @@ static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+-	ideapad_priv = priv;
+-	priv->handle = adevice->handle;
  	dev_set_drvdata(&adevice->dev, priv);
++	ideapad_handle = adevice->handle;
  
--	ret = ideapad_platform_init();
-+	ret = ideapad_platform_init(priv);
+ 	ret = ideapad_platform_init(priv);
  	if (ret)
- 		goto platform_failed;
- 
--	ret = ideapad_input_init();
-+	ret = ideapad_input_init(priv);
+@@ -426,9 +411,11 @@ static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
  	if (ret)
  		goto input_failed;
  
-@@ -434,7 +435,7 @@ static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
- 	return 0;
- 
- input_failed:
--	ideapad_platform_exit();
-+	ideapad_platform_exit(priv);
- platform_failed:
- 	kfree(priv);
- 	return ret;
-@@ -447,8 +448,8 @@ static int __devexit ideapad_acpi_remove(struct acpi_device *adevice, int type)
- 
- 	for (i = IDEAPAD_DEV_WLAN; i < IDEAPAD_DEV_KILLSW; i++)
- 		ideapad_unregister_rfkill(adevice, i);
--	ideapad_input_exit();
--	ideapad_platform_exit();
-+	ideapad_input_exit(priv);
-+	ideapad_platform_exit(priv);
- 	dev_set_drvdata(&adevice->dev, NULL);
- 	kfree(priv);
- 
-@@ -457,6 +458,7 @@ static int __devexit ideapad_acpi_remove(struct acpi_device *adevice, int type)
- 
- static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
- {
-+	struct ideapad_private *priv = dev_get_drvdata(&adevice->dev);
- 	acpi_handle handle = adevice->handle;
- 	unsigned long vpc1, vpc2, vpc_bit;
- 
-@@ -471,7 +473,7 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
- 			if (vpc_bit == 9)
- 				ideapad_sync_rfk_state(adevice);
- 			else
--				ideapad_input_report(vpc_bit);
-+				ideapad_input_report(priv, vpc_bit);
- 		}
+-	for (i = IDEAPAD_DEV_WLAN; i < IDEAPAD_DEV_KILLSW; i++) {
++	for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++) {
+ 		if (test_bit(ideapad_rfk_data[i].cfgbit, (unsigned long *)&cfg))
+ 			ideapad_register_rfkill(adevice, i);
++		else
++			priv->rfk[i] = NULL;
  	}
- }
+ 	ideapad_sync_rfk_state(adevice);
+ 
+@@ -446,7 +433,7 @@ static int __devexit ideapad_acpi_remove(struct acpi_device *adevice, int type)
+ 	struct ideapad_private *priv = dev_get_drvdata(&adevice->dev);
+ 	int i;
+ 
+-	for (i = IDEAPAD_DEV_WLAN; i < IDEAPAD_DEV_KILLSW; i++)
++	for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
+ 		ideapad_unregister_rfkill(adevice, i);
+ 	ideapad_input_exit(priv);
+ 	ideapad_platform_exit(priv);
 -- 
 1.7.1
 
