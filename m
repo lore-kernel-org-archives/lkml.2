@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab0LMPQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 10:16:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36467 "EHLO mga02.intel.com"
+	id S1758178Ab0LMPQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 10:16:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:50490 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab0LMPIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752163Ab0LMPIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Dec 2010 10:08:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,336,1288594800"; 
-   d="scan'208";a="686646806"
-Message-Id: <20101213150327.090779080@intel.com>
+   d="scan'208";a="867612937"
+Message-Id: <20101213150327.344665065@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 22:46:52 +0800
+Date: Mon, 13 Dec 2010 22:46:54 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -29,102 +29,111 @@ CC: Minchan Kim <minchan.kim@gmail.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/35] writeback: consolidate variable names in balance_dirty_pages()
+Subject: [PATCH 08/35] writeback: user space think time compensation
 References: <20101213144646.341970461@intel.com>
-Content-Disposition: inline; filename=writeback-cleanup-name-merge.patch
+Content-Disposition: inline; filename=writeback-task-last-dirty-time.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lots of lengthy tests.. Let's compact the names
+Take the task's think time into account when computing the final pause time.
+This will make accurate throttle bandwidth. In the rare case that the task
+slept longer than the period time, the extra sleep time will also be
+compensated in next period if it's not too big (<100ms).  Accumulated
+errors are carefully avoided as long as the task don't sleep for too
+long time.
 
-	nr_dirty = NR_FILE_DIRTY + NR_WRITEBACK + NR_UNSTABLE_NFS
+case 1: period > think
 
-balance_dirty_pages() only cares about the above dirty sum except
-in one place -- on starting background writeback.
+		pause = period - think
+		paused_when += pause
+
+			     period time
+	      |======================================>|
+		  think time
+	      |===============>|
+	------|----------------|----------------------|-----------
+	paused_when         jiffies
+
+
+case 2: period <= think
+
+		don't pause and reduce future pause time by:
+		paused_when += period
+
+		       period time
+	      |=========================>|
+			     think time
+	      |======================================>|
+	------|--------------------------+------------|-----------
+	paused_when                                jiffies
+
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+ include/linux/sched.h |    1 +
+ mm/page-writeback.c   |   22 ++++++++++++++++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:12.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-13 21:46:12.000000000 +0800
-@@ -502,8 +502,9 @@ unsigned long bdi_dirty_limit(struct bac
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long pages_dirtied)
- {
--	long nr_reclaimable, bdi_nr_reclaimable;
--	long nr_writeback, bdi_nr_writeback;
-+	long nr_reclaimable;
-+	long nr_dirty;
-+	long bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
- 	unsigned long background_thresh;
+--- linux-next.orig/include/linux/sched.h	2010-12-13 21:46:13.000000000 +0800
++++ linux-next/include/linux/sched.h	2010-12-13 21:46:13.000000000 +0800
+@@ -1477,6 +1477,7 @@ struct task_struct {
+ 	 */
+ 	int nr_dirtied;
+ 	int nr_dirtied_pause;
++	unsigned long paused_when;	/* start of a write-and-pause period */
+ 
+ #ifdef CONFIG_LATENCYTOP
+ 	int latency_record_count;
+--- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:13.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-13 21:46:13.000000000 +0800
+@@ -537,6 +537,7 @@ static void balance_dirty_pages(struct a
  	unsigned long dirty_thresh;
  	unsigned long bdi_thresh;
-@@ -521,7 +522,7 @@ static void balance_dirty_pages(struct a
- 		 */
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_writeback = global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
- 
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
- 
-@@ -530,12 +531,10 @@ static void balance_dirty_pages(struct a
- 		 * catch-up. This avoids (excessively) small writeouts
- 		 * when the bdi limits are ramping up.
- 		 */
--		if (nr_reclaimable + nr_writeback <=
--				(background_thresh + dirty_thresh) / 2)
-+		if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
- 			break;
- 
--		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh,
--					     nr_reclaimable + nr_writeback);
-+		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh, nr_dirty);
- 		bdi_thresh = task_dirty_limit(current, bdi_thresh);
- 
- 		/*
-@@ -549,21 +548,21 @@ static void balance_dirty_pages(struct a
- 		 * deltas.
- 		 */
- 		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
--			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_stat_sum(bdi, BDI_RECLAIMABLE) +
-+				    bdi_stat_sum(bdi, BDI_WRITEBACK);
- 		} else {
--			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_stat(bdi, BDI_RECLAIMABLE) +
-+				    bdi_stat(bdi, BDI_WRITEBACK);
+ 	unsigned long bw;
++	unsigned long period;
+ 	unsigned long pause = 0;
+ 	bool dirty_exceeded = false;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+@@ -583,7 +584,7 @@ static void balance_dirty_pages(struct a
+ 				    bdi_stat(bdi, BDI_WRITEBACK);
  		}
  
--		if (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh) {
-+		if (bdi_dirty >= bdi_thresh) {
+-		if (bdi_dirty >= bdi_thresh) {
++		if (bdi_dirty >= bdi_thresh || nr_dirty > dirty_thresh) {
  			pause = MAX_PAUSE;
  			goto pause;
  		}
- 
- 		bw = 100 << 20; /* use static 100MB/s for the moment */
- 
--		bw = bw * (bdi_thresh - (bdi_nr_reclaimable + bdi_nr_writeback));
-+		bw = bw * (bdi_thresh - bdi_dirty);
+@@ -593,12 +594,29 @@ static void balance_dirty_pages(struct a
+ 		bw = bw * (bdi_thresh - bdi_dirty);
  		do_div(bw, bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
  
- 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-@@ -579,9 +578,8 @@ pause:
- 		 * bdi or process from holding back light ones; The latter is
- 		 * the last resort safeguard.
- 		 */
--		dirty_exceeded =
--			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
--			|| (nr_reclaimable + nr_writeback > dirty_thresh);
-+		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-+				  (nr_dirty > dirty_thresh);
+-		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
++		period = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1) + 1;
++		pause = current->paused_when + period - jiffies;
++		/*
++		 * Take it as long think time if pause falls into (-10s, 0).
++		 * If it's less than 100ms, try to compensate it in future by
++		 * updating the virtual time; otherwise just reset the time, as
++		 * it may be a light dirtier.
++		 */
++		if (unlikely(-pause < HZ*10)) {
++			if (-pause <= HZ/10)
++				current->paused_when += period;
++			else
++				current->paused_when = jiffies;
++			pause = 1;
++			break;
++		}
+ 		pause = clamp_val(pause, 1, MAX_PAUSE);
  
- 		if (!dirty_exceeded)
- 			break;
+ pause:
++		current->paused_when = jiffies;
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
++		current->paused_when += pause;
+ 
+ 		/*
+ 		 * The bdi thresh is somehow "soft" limit derived from the
 
 
