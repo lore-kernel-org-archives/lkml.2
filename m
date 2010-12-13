@@ -1,125 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab0LMBpE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Dec 2010 20:45:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56501 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab0LMBpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Dec 2010 20:45:00 -0500
-Message-ID: <4D057AB2.7010405@cn.fujitsu.com>
-Date: Mon, 13 Dec 2010 09:45:22 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1756592Ab0LMBqI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Dec 2010 20:46:08 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:3306 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752272Ab0LMBqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Dec 2010 20:46:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAN/mBE15LdLl/2dsb2JhbACkBHnAZIVKBA
+Date: Mon, 13 Dec 2010 12:45:53 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Nick Piggin <npiggin@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+Message-ID: <20101213014553.GA6522@amd>
+References: <20101209070938.GA3949@amd>
+ <19324.1291990997@jrobl>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>
-CC: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/8] blkio-cgroup: Document for blkio.use_hierarchy.
-References: <4CDF7BC5.9080803@cn.fujitsu.com> <4CDF9CC6.2040106@cn.fujitsu.com> <20101115165319.GI30792@redhat.com> <4CE2718C.6010406@kernel.dk> <4D01C6AB.9040807@cn.fujitsu.com>
-In-Reply-To: <4D01C6AB.9040807@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-13 09:44:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-13 09:45:00,
-	Serialize complete at 2010-12-13 09:45:00
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <19324.1291990997@jrobl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document for blkio.use_hierarchy.
+On Fri, Dec 10, 2010 at 11:23:17PM +0900, J. R. Okajima wrote:
+> 
+> Nick Piggin:
+> > The standard memcmp function on a Westmere system shows up hot in
+> > profiles in the `git diff` workload (both parallel and single threaded),
+> > and it is likely due to the costs associated with trapping into
+> > microcode, and little opportunity to improve memory access (dentry
+> > name is not likely to take up more than a cacheline).
+> 
+> Let me make sure.
+> What you are pointing out is
+> - asm("repe; cmpsb") may grab CPU long time, and can be a hazard for
+>   scaling.
+> - by breaking it into pieces, the chances to scale will increase.
+> Right?
 
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
----
- Documentation/cgroups/blkio-controller.txt |   58 +++++++++++++++++++---------
- 1 files changed, 39 insertions(+), 19 deletions(-)
+It's not scaling but just single threaded performance. gcc turns memcmp
+into rep cmp, which has quite a long latency, so it's not appripriate
+for short strings.
 
-diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
-index 4ed7b5c..9c6dc9e 100644
---- a/Documentation/cgroups/blkio-controller.txt
-+++ b/Documentation/cgroups/blkio-controller.txt
-@@ -91,30 +91,44 @@ Throttling/Upper Limit policy
  
- Hierarchical Cgroups
- ====================
--- Currently none of the IO control policy supports hierarhical groups. But
--  cgroup interface does allow creation of hierarhical cgroups and internally
--  IO policies treat them as flat hierarchy.
-+- Cgroup interface allows creation of hierarchical cgroups. Currently,
-+  internally IO policies are able to treat them as flat hierarchy or
-+  hierarchical hierarchy. Both hierarchical bandwidth division and flat
-+  bandwidth division are supported. "blkio.use_hierarchy" can be used to
-+  switch between flat mode and hierarchical mode.
- 
--  So this patch will allow creation of cgroup hierarhcy but at the backend
--  everything will be treated as flat. So if somebody created a hierarchy like
--  as follows.
-+  Consider the following CGroup hierarchy:
- 
--			root
--			/  \
--		     test1 test2
--			|
--		     test3
-+			  Root
-+			/  |   \
-+		     Grp1  Grp2 tsk1
-+	            /  \
-+		 Grp3 tsk2
- 
--  CFQ and throttling will practically treat all groups at same level.
-+  If flat mode is enabled, CFQ and throttling will practically treat all
-+  groups at the same level.
- 
--				pivot
--			     /  |   \  \
--			root  test1 test2  test3
-+			     Pivot tree
-+			    /  |   |   \
-+			Root Grp1 Grp2 Grp3
-+			 /     |
-+			tsk1   tsk2
- 
--  Down the line we can implement hierarchical accounting/control support
--  and also introduce a new cgroup file "use_hierarchy" which will control
--  whether cgroup hierarchy is viewed as flat or hierarchical by the policy..
--  This is how memory controller also has implemented the things.
-+  If hierarchical mode is enabled, CFQ will treat groups and tasks as the same
-+  view in CGroup hierarchy.
-+
-+			  Root
-+		        /  |   \
-+		    Grp1  Grp2 tsk1
-+		    /  \
-+		  Grp3 tsk2
-+
-+  Grp1, Grp2 and tsk1 are treated at the same level under Root group. Grp3 and
-+  tsk2 are treated at the same level under Grp1. Below is the mapping between
-+  task io priority and io weight:
-+
-+	    prio       0    1     2    3    4    5    6     7
-+	    weight  1000  868   740  612  484  356  228   100
- 
- Various user visible config options
- ===================================
-@@ -169,6 +183,12 @@ Proportional weight policy files
- 	  dev     weight
- 	  8:16    300
- 
-+- blkio.use_hierarchy
-+	- Switch between hierarchical mode and flat mode as stated above.
-+	  blkio.use_hierarchy == 1 means hierarchical mode is enabled.
-+	  blkio.use_hierarchy == 0 means flat mode is enabled.
-+	  The default mode is flat mode.
-+
- - blkio.time
- 	- disk time allocated to cgroup per device in milliseconds. First
- 	  two fields specify the major and minor number of the device and
--- 
-1.6.5.2
+> Anyway this appraoch replacing smallest code by larger but faster code
+> is interesting.
+> How about mixing 'unsigned char *' and 'unsigned long *' in referencing
+> the given strings?
+> For example,
+> 
+> int f(const unsigned char *cs, const unsigned char *ct, size_t count)
+> {
+> 	int ret;
+> 	union {
+> 		const unsigned long *l;
+> 		const unsigned char *c;
+> 	} s, t;
+> 
+> /* this macro is your dentry_memcmp() actually */
+> #define cmp(s, t, c, step)		      \
+> 	do {				      \
+> 		while ((c) >= (step)) {	      \
+> 			ret = (*(s) != *(t)); \
+> 			if (ret)	      \
+> 				return ret;   \
+> 			(s)++;		      \
+> 			(t)++;		      \
+> 			(c) -= (step);	      \
+> 		}			      \
+> 	} while (0)
+> 
+> 	s.c = cs;
+> 	t.c = ct;
+> 	cmp(s.l, t.l, count, sizeof(*s.l));
+> 	cmp(s.c, t.c, count, sizeof(*s.c));
+> 	return 0;
+> }
+> 
+> What I am thinking here is,
+> - in load and compare, there is no difference between 'char*' and
+>   'long*', probably.
+> - obviously 'step by sizeof(long)' will reduce the number of repeats.
+> - but I am not sure whether the length of string is generally longer
+>   than 4 (or 8) or not.
+
+The comparison is no longer an issue, so I think the added complexity
+is not going to be worth it -- think about average length of directory
+entry name, the average is maybe 12? In the kernel tree it's 11.
+
+If we really wanted to do this, we'd round name lengths up to nearest
+sizeof(long) (which should be the case already, but we'd do it
+explicitly), zero fill the last bytes, and do a long compare loop. I
+doubt it would be noticable though.
+
 
 
