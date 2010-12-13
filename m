@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab0LMMCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:02:53 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:37197 "EHLO
+	id S1757412Ab0LMMDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:03:07 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:37212 "EHLO
 	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab0LMMCv (ORCPT
+	with ESMTP id S1757381Ab0LMMDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:02:51 -0500
-Date: Mon, 13 Dec 2010 13:02:50 +0100
+	Mon, 13 Dec 2010 07:03:04 -0500
+Date: Mon, 13 Dec 2010 13:03:02 +0100
 From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Marc Zyngier <maz@misterjones.org>, Eric Miao <eric.y.miao@gmail.com>
+To: Gregory Bean <gbean@codeaurora.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/10] gpio: max732x: irq_data conversion.
-Message-ID: <20101213120250.GB15575@mail.wantstofly.org>
+Subject: [PATCH 07/10] gpio: sx150x: irq_data conversion.
+Message-ID: <20101213120302.GF15575@mail.wantstofly.org>
 References: <cover.1292240053.git.buytenh@wantstofly.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,93 +25,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
 ---
- drivers/gpio/max732x.c |   38 +++++++++++++++++++-------------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/gpio/sx150x.c |   46 +++++++++++++++++++++++-----------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/gpio/max732x.c b/drivers/gpio/max732x.c
-index 9cad60f..9e1d01f 100644
---- a/drivers/gpio/max732x.c
-+++ b/drivers/gpio/max732x.c
-@@ -327,40 +327,40 @@ static int max732x_gpio_to_irq(struct gpio_chip *gc, unsigned off)
- 	return chip->irq_base + off;
+diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
+index 823559a..e60be00 100644
+--- a/drivers/gpio/sx150x.c
++++ b/drivers/gpio/sx150x.c
+@@ -304,36 +304,36 @@ static int sx150x_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+ 	return chip->irq_base + offset;
  }
  
--static void max732x_irq_mask(unsigned int irq)
-+static void max732x_irq_mask(struct irq_data *d)
+-static void sx150x_irq_mask(unsigned int irq)
++static void sx150x_irq_mask(struct irq_data *d)
  {
--	struct max732x_chip *chip = get_irq_chip_data(irq);
-+	struct max732x_chip *chip = irq_data_get_irq_chip_data(d);
+-	struct irq_chip *ic = get_irq_chip(irq);
++	struct irq_chip *ic = irq_data_get_irq_chip(d);
+ 	struct sx150x_chip *chip;
+ 	unsigned n;
  
--	chip->irq_mask_cur &= ~(1 << (irq - chip->irq_base));
-+	chip->irq_mask_cur &= ~(1 << (d->irq - chip->irq_base));
+ 	chip = container_of(ic, struct sx150x_chip, irq_chip);
+-	n = irq - chip->irq_base;
++	n = d->irq - chip->irq_base;
+ 
+ 	sx150x_write_cfg(chip, n, 1, chip->dev_cfg->reg_irq_mask, 1);
+ 	sx150x_write_cfg(chip, n, 2, chip->dev_cfg->reg_sense, 0);
  }
  
--static void max732x_irq_unmask(unsigned int irq)
-+static void max732x_irq_unmask(struct irq_data *d)
+-static void sx150x_irq_unmask(unsigned int irq)
++static void sx150x_irq_unmask(struct irq_data *d)
  {
--	struct max732x_chip *chip = get_irq_chip_data(irq);
-+	struct max732x_chip *chip = irq_data_get_irq_chip_data(d);
+-	struct irq_chip *ic = get_irq_chip(irq);
++	struct irq_chip *ic = irq_data_get_irq_chip(d);
+ 	struct sx150x_chip *chip;
+ 	unsigned n;
  
--	chip->irq_mask_cur |= 1 << (irq - chip->irq_base);
-+	chip->irq_mask_cur |= 1 << (d->irq - chip->irq_base);
+ 	chip = container_of(ic, struct sx150x_chip, irq_chip);
+-	n = irq - chip->irq_base;
++	n = d->irq - chip->irq_base;
+ 
+ 	sx150x_write_cfg(chip, n, 1, chip->dev_cfg->reg_irq_mask, 0);
+ 	sx150x_write_cfg(chip, n, 2, chip->dev_cfg->reg_sense,
+ 			 chip->irq_sense >> (n * 2));
  }
  
--static void max732x_irq_bus_lock(unsigned int irq)
-+static void max732x_irq_bus_lock(struct irq_data *d)
+-static int sx150x_irq_set_type(unsigned int irq, unsigned int flow_type)
++static int sx150x_irq_set_type(struct irq_data *d, unsigned int flow_type)
  {
--	struct max732x_chip *chip = get_irq_chip_data(irq);
-+	struct max732x_chip *chip = irq_data_get_irq_chip_data(d);
+-	struct irq_chip *ic = get_irq_chip(irq);
++	struct irq_chip *ic = irq_data_get_irq_chip(d);
+ 	struct sx150x_chip *chip;
+ 	unsigned n, val = 0;
  
- 	mutex_lock(&chip->irq_lock);
- 	chip->irq_mask_cur = chip->irq_mask;
- }
- 
--static void max732x_irq_bus_sync_unlock(unsigned int irq)
-+static void max732x_irq_bus_sync_unlock(struct irq_data *d)
- {
--	struct max732x_chip *chip = get_irq_chip_data(irq);
-+	struct max732x_chip *chip = irq_data_get_irq_chip_data(d);
- 
- 	max732x_irq_update_mask(chip);
- 	mutex_unlock(&chip->irq_lock);
- }
- 
--static int max732x_irq_set_type(unsigned int irq, unsigned int type)
-+static int max732x_irq_set_type(struct irq_data *d, unsigned int type)
- {
--	struct max732x_chip *chip = get_irq_chip_data(irq);
--	uint16_t off = irq - chip->irq_base;
-+	struct max732x_chip *chip = irq_data_get_irq_chip_data(d);
-+	uint16_t off = d->irq - chip->irq_base;
- 	uint16_t mask = 1 << off;
- 
- 	if (!(mask & chip->dir_input)) {
-@@ -371,7 +371,7 @@ static int max732x_irq_set_type(unsigned int irq, unsigned int type)
- 
- 	if (!(type & IRQ_TYPE_EDGE_BOTH)) {
- 		dev_err(&chip->client->dev, "irq %d: unsupported type %d\n",
--			irq, type);
-+			d->irq, type);
+@@ -341,7 +341,7 @@ static int sx150x_irq_set_type(unsigned int irq, unsigned int flow_type)
  		return -EINVAL;
- 	}
  
-@@ -390,11 +390,11 @@ static int max732x_irq_set_type(unsigned int irq, unsigned int type)
+ 	chip = container_of(ic, struct sx150x_chip, irq_chip);
+-	n = irq - chip->irq_base;
++	n = d->irq - chip->irq_base;
  
- static struct irq_chip max732x_irq_chip = {
- 	.name			= "max732x",
--	.mask			= max732x_irq_mask,
--	.unmask			= max732x_irq_unmask,
--	.bus_lock		= max732x_irq_bus_lock,
--	.bus_sync_unlock	= max732x_irq_bus_sync_unlock,
--	.set_type		= max732x_irq_set_type,
-+	.irq_mask		= max732x_irq_mask,
-+	.irq_unmask		= max732x_irq_unmask,
-+	.irq_bus_lock		= max732x_irq_bus_lock,
-+	.irq_bus_sync_unlock	= max732x_irq_bus_sync_unlock,
-+	.irq_set_type		= max732x_irq_set_type,
- };
+ 	if (flow_type & IRQ_TYPE_EDGE_RISING)
+ 		val |= 0x1;
+@@ -386,9 +386,9 @@ static irqreturn_t sx150x_irq_thread_fn(int irq, void *dev_id)
+ 	return (nhandled > 0 ? IRQ_HANDLED : IRQ_NONE);
+ }
  
- static uint8_t max732x_irq_pending(struct max732x_chip *chip)
+-static void sx150x_irq_bus_lock(unsigned int irq)
++static void sx150x_irq_bus_lock(struct irq_data *d)
+ {
+-	struct irq_chip *ic = get_irq_chip(irq);
++	struct irq_chip *ic = irq_data_get_irq_chip(d);
+ 	struct sx150x_chip *chip;
+ 
+ 	chip = container_of(ic, struct sx150x_chip, irq_chip);
+@@ -396,9 +396,9 @@ static void sx150x_irq_bus_lock(unsigned int irq)
+ 	mutex_lock(&chip->lock);
+ }
+ 
+-static void sx150x_irq_bus_sync_unlock(unsigned int irq)
++static void sx150x_irq_bus_sync_unlock(struct irq_data *d)
+ {
+-	struct irq_chip *ic = get_irq_chip(irq);
++	struct irq_chip *ic = irq_data_get_irq_chip(d);
+ 	struct sx150x_chip *chip;
+ 	unsigned n;
+ 
+@@ -437,16 +437,16 @@ static void sx150x_init_chip(struct sx150x_chip *chip,
+ 	if (pdata->oscio_is_gpo)
+ 		++chip->gpio_chip.ngpio;
+ 
+-	chip->irq_chip.name            = client->name;
+-	chip->irq_chip.mask            = sx150x_irq_mask;
+-	chip->irq_chip.unmask          = sx150x_irq_unmask;
+-	chip->irq_chip.set_type        = sx150x_irq_set_type;
+-	chip->irq_chip.bus_lock        = sx150x_irq_bus_lock;
+-	chip->irq_chip.bus_sync_unlock = sx150x_irq_bus_sync_unlock;
+-	chip->irq_summary              = -1;
+-	chip->irq_base                 = -1;
+-	chip->irq_sense                = 0;
+-	chip->irq_set_type_pending     = 0;
++	chip->irq_chip.name                = client->name;
++	chip->irq_chip.irq_mask            = sx150x_irq_mask;
++	chip->irq_chip.irq_unmask          = sx150x_irq_unmask;
++	chip->irq_chip.irq_set_type        = sx150x_irq_set_type;
++	chip->irq_chip.irq_bus_lock        = sx150x_irq_bus_lock;
++	chip->irq_chip.irq_bus_sync_unlock = sx150x_irq_bus_sync_unlock;
++	chip->irq_summary                  = -1;
++	chip->irq_base                     = -1;
++	chip->irq_sense                    = 0;
++	chip->irq_set_type_pending         = 0;
+ }
+ 
+ static int sx150x_init_io(struct sx150x_chip *chip, u8 base, u16 cfg)
 -- 
 1.7.1
 
