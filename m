@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab0LMM0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:26:23 -0500
-Received: from mx1.sophos.com ([195.166.81.52]:56459 "EHLO mx1.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754715Ab0LMM0W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:26:22 -0500
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Eric Paris <eparis@redhat.com>
-Subject: Re: Polling(2) /proc/mounts is broken?
-Date: Mon, 13 Dec 2010 12:26:18 +0000
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5; KDE/4.4.4; x86_64; ; )
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <d8aa5094-8042-4172-8e1d-7d2c7f2299a7@us-col-exch1.green.sophos>
-In-Reply-To: <d8aa5094-8042-4172-8e1d-7d2c7f2299a7@us-col-exch1.green.sophos>
+	id S1756943Ab0LMM0r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:26:47 -0500
+Received: from mps-he6cjsj5.helium.vde.net.au ([113.20.6.129]:34970 "EHLO
+	MPS-HE6CJSJ5.helium.vde.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754715Ab0LMM0q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 07:26:46 -0500
+X-Greylist: delayed 32972 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 07:26:46 EST
+Message-ID: <20101213140209.j4vzhb6jok0okwgc@webmail.seaenglishacademy.com>
+Date: Mon, 13 Dec 2010 14:02:09 +1100
+From: Tetsuya Koike <info@maillondon.co.uk>
+Reply-to: ma.da20022002@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: Re Your Urgent Response
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-ID: <201012131226.19265.tvrtko.ursulin@sophos.com>
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - MPS-HE6CJSJ5.helium.vde.net.au
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - maillondon.co.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 Dec 2010 15:32:48 Tvrtko Ursulin wrote:
-> Hi all,
->
-> So since we cannot get fanotify global mode we were told to poll(2) on
-> /proc/mounts and set up new mount marks dynamically.
->
-> Is the attached C program roughly how it should work?
->
-> Because on 2.6.37-rc5 it busy loops for me (POLLIN always reported), even
-> though if I remove the seek it gets EOF immediately after POLLIN.
->
-> Under 2.6.32 (Ubuntu flavour) I see the same behaviour.
->
-> Going further back to 2.6.24 (again Ubuntu flavour) and there it works, but
-> it set POLLERR instead of POLLIN in revents.
->
-> So I guess it regressed somewhere in between. I'll look to provide a fix
-> unless someone more familiar with this area beats me to it.
+Mr. Tetsuya Koike
+Chiba Bank Ltd
+3rd Floor, Atlas House 1 King Street,
+London EC2V 8AU,
+U.K.
 
-It hasn't regressed but was fixed in 2.6.30. :)
+Dear Friend,
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+I am Mr. Tetsuya Koike the Manager, Branch Support Division of Chiba  
+Bank Ltd of
+3rd Floor, Atlas House 1 King Street, London EC2V 8AU, U.K.
 
-So it is incorrect to poll for POLLIN. In case of /proc/mounts POLLPRI should
-be used and will be returned together with POLLERR.
+I have a very confidential business proposition for you; I will need you to
+execute a project on behalf of my late client which amount to GBP£25 MILLION
+POUNDS in my bank. Please, indicate your interest to enable me furnish  
+you with
+full detail of this transaction.
 
-Tvrtko
+Your urgent response will highly Appreciated and Provide Me with the  
+following;
+1. Full Name
+2. Your Telephone Number and Fax Number
+3. Your Contact Address.
 
-Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 991 2418 08.
+Regards
+Mr. Tetsuya Koike.
+
