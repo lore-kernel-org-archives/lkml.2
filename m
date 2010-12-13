@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab0LMU4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 15:56:20 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:29345 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab0LMU4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 15:56:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=AepaXQXbEo6rAqR/B7wJh7kID7ovw6rCCxfSVxl0zG9WN2hz95W9n8/zTH0ugmFCRe
-         Bd1j34PhhUaMM61j6jzQ==
-Date: Mon, 13 Dec 2010 12:56:13 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shaohui Zheng <shaohui.zheng@linux.intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [7/7,v8] NUMA Hotplug Emulator: Implement per-node add_memory
- debugfs interface
-In-Reply-To: <20101213020924.GB19637@shaohui>
-Message-ID: <alpine.DEB.2.00.1012131255580.13478@chino.kir.corp.google.com>
-References: <A24AE1FFE7AEC5489F83450EE98351BF2A40FED20A@shsmsx502.ccr.corp.intel.com> <20101209012124.GD5798@shaohui> <alpine.DEB.2.00.1012091325530.13564@chino.kir.corp.google.com> <20101209235705.GA10674@shaohui> <alpine.DEB.2.00.1012101529190.30039@chino.kir.corp.google.com>
- <20101213020924.GB19637@shaohui>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1756164Ab0LMU5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 15:57:17 -0500
+Received: from mail.perches.com ([173.55.12.10]:2561 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755095Ab0LMU5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 15:57:16 -0500
+Subject: [PATCH V3 -next] cs5535: fix printk format warnings
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D06852B.8030409@oracle.com>
+References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
+	 <20101213114421.3abe0dcb.randy.dunlap@oracle.com>
+	 <1292272085.26970.50.camel@Joe-Laptop>  <4D06852B.8030409@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Dec 2010 12:57:14 -0800
+Message-ID: <1292273834.26970.58.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Dec 2010, Shaohui Zheng wrote:
+Use vsprintf extension %pR to format resource.
 
-> For the state transition to N_HIGH_MEMORY, it does not happen on the above too
-> interfaces. It happens when the memory was onlined with sysfs /sys/device/system/memory/memoryXX/online
-> interface.
-> 
-> That is the code path:
-> store_mem_state
-> 	->memory_block_change_state
-> 	 	->memory_block_action
-> 			->online_pages
-> 
-> 			if (onlined_pages) {
-> 				kswapd_run(zone_to_nid(zone));
-> 				node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-> 			}
-> 
-> does it address your question? thanks.
-> 
+Original-patch-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 
-Ok, thanks!
+---
+
+V3 - Might as well do both files, thanks Randy...
+
+Removed Andres Salomon <dilinger@collabora.co.uk> from cc.
+It seems that he's not there anymore.
+
+ drivers/gpio/cs5535-gpio.c  |    3 +--
+ drivers/misc/cs5535-mfgpt.c |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
+index b566fd5e..d7da7a1 100644
+--- a/drivers/gpio/cs5535-gpio.c
++++ b/drivers/gpio/cs5535-gpio.c
+@@ -266,8 +266,7 @@ static int __devinit cs5535_gpio_probe(struct platform_device *pdev)
+ 	cs5535_gpio_chip.pdev = pdev;
+ 	spin_lock_init(&cs5535_gpio_chip.lock);
+ 
+-	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n",
+-			res->start, res->end);
++	dev_info(&pdev->dev, "reserved resource region %pR\n", res);
+ 
+ 	/* mask out reserved pins */
+ 	mask &= 0x1F7FFFFF;
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index 2669306..e90506b 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -317,8 +317,7 @@ static int __devinit cs5535_mfgpt_probe(struct platform_device *pdev)
+ 	cs5535_mfgpt_chip.pdev = pdev;
+ 	spin_lock_init(&cs5535_mfgpt_chip.lock);
+ 
+-	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n", res->start,
+-			res->end);
++	dev_info(&pdev->dev, "reserved resource region %pR\n", res);
+ 
+ 	/* detect the available timers */
+ 	t = scan_timers(&cs5535_mfgpt_chip);
+
+
