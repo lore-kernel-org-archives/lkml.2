@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab0LMGV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 01:21:59 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24354 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751096Ab0LMGV6 (ORCPT
+	id S1753990Ab0LMG0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 01:26:45 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:43243 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752768Ab0LMG0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 01:21:58 -0500
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
-        21cnbao@gmail.com, sameo@linux.intel.com,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH net-next-2.6 v9 01/20] pch_can: Add flow control processing
-Date: Mon, 13 Dec 2010 15:24:07 +0900
-Message-Id: <1292221467-8039-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.6.0.6
+	Mon, 13 Dec 2010 01:26:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=xbSm+q5V0G5l277zxkZoa93LLVjILdr0wYtvqH3vo2KPymQd3xUK51yxzCyvi+gfFY
+         q5wR3idS4j/efXoQ1B06131FU3b274cvw/BssoB94nu4hl4cxI5YgDBO8cBZTJeUvK/M
+         VXCFdVunfuKCkLU93gQsJHP8w5RTESvzVXQ30=
+Subject: Re: [PATCH v4] mach-at91: Support for gsia18s board added
+From: Igor Plyatov <plyatov@gmail.com>
+Reply-To: plyatov@gmail.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@maxim.org.za, nicolas.ferre@atmel.com, costa.antonior@gmail.com,
+        ryan@bluewatersys.com, christian.glindkamp@taskit.de,
+        pgsellmann@portner-elektronik.at
+In-Reply-To: <20101212233905.GJ8665@n2100.arm.linux.org.uk>
+References: <1292000411-6691-1-git-send-email-plyatov@gmail.com>
+	 <20101212005048.GH19897@game.jcrosoft.org>
+	 <1292135848.2456.19.camel@homepc>
+	 <20101212140727.GI19897@game.jcrosoft.org>
+	 <20101212142200.GG8665@n2100.arm.linux.org.uk>
+	 <1292183570.8737.33.camel@homepc>
+	 <20101212233905.GJ8665@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Dec 2010 09:26:34 +0300
+Message-ID: <1292221594.4117.1.camel@homepc>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there is no flow control processing.
-Thus, Add flow control processing as
-when there is no empty of tx buffer,
-netif_stop_queue is called.
-When there is empty buffer, netif_wake_queue is called.
+Dear Russell,
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |   31 ++++++++++++-------------------
- 1 files changed, 12 insertions(+), 19 deletions(-)
+> Fixed, inspite of the spelling error above.  Grr.
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index a9b6a65..f0f1404 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -102,6 +102,10 @@
- 
- #define PCH_FIFO_THRESH		16
- 
-+/* TxRqst2 show status of MsgObjNo.17~32 */
-+#define PCH_TREQ2_TX_MASK	(((1 << PCH_TX_OBJ_NUM) - 1) <<\
-+							(PCH_RX_OBJ_END - 16))
-+
- enum pch_ifreg {
- 	PCH_RX_IFREG,
- 	PCH_TX_IFREG,
-@@ -871,6 +875,8 @@ MSG_OBJ:
- 			dlc = 8;
- 		stats->tx_bytes += dlc;
- 		stats->tx_packets++;
-+		if (int_stat == PCH_TX_OBJ_END)
-+			netif_wake_queue(ndev);
- 	}
- 
- 	int_stat = pch_can_int_pending(priv);
-@@ -1009,18 +1015,6 @@ static int pch_close(struct net_device *ndev)
- 	return 0;
- }
- 
--static int pch_get_msg_obj_sts(struct net_device *ndev, u32 obj_id)
--{
--	u32 buffer_status = 0;
--	struct pch_can_priv *priv = netdev_priv(ndev);
--
--	/* Getting the message object status. */
--	buffer_status = (u32) pch_can_get_buffer_status(priv);
--
--	return buffer_status & obj_id;
--}
--
--
- static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- {
- 	int i, j;
-@@ -1031,17 +1025,16 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	if (can_dropped_invalid_skb(ndev, skb))
- 		return NETDEV_TX_OK;
- 
--	if (priv->tx_obj == PCH_TX_OBJ_END) { /* Point tail Obj */
--		while (pch_get_msg_obj_sts(ndev, (((1 << PCH_TX_OBJ_NUM)-1) <<
--					   PCH_RX_OBJ_NUM)))
--			udelay(500);
-+	if (priv->tx_obj == PCH_TX_OBJ_END) {
-+		if (ioread32(&priv->regs->treq2) & PCH_TREQ2_TX_MASK)
-+			netif_stop_queue(ndev);
- 
--		priv->tx_obj = PCH_TX_OBJ_START; /* Point head of Tx Obj ID */
--		tx_buffer_avail = priv->tx_obj; /* Point Tail of Tx Obj */
-+		tx_buffer_avail = priv->tx_obj;
-+		priv->tx_obj = PCH_TX_OBJ_START;
- 	} else {
- 		tx_buffer_avail = priv->tx_obj;
-+		priv->tx_obj++;
- 	}
--	priv->tx_obj++;
- 
- 	/* Reading the Msg Obj from the Msg RAM to the Interface register. */
- 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[1].cmask);
--- 
-1.6.0.6
+Thank you!
+
+I'm sorry for typo.
+
+Best regards!
+--
+Igor Plyatov
 
