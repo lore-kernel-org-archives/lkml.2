@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab0LMMjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:39:40 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33063 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756768Ab0LMMji (ORCPT
+	id S1757480Ab0LMMj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:39:56 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40359 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757407Ab0LMMjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:39:38 -0500
-Date: Mon, 13 Dec 2010 12:39:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/20] mfd: wm831x: irq_data conversion.
-Message-ID: <20101213123935.GB21535@rakim.wolfsonmicro.main>
-References: <cover.1292241952.git.buytenh@wantstofly.org>
- <20101213123121.GB15575@mail.wantstofly.org>
+	Mon, 13 Dec 2010 07:39:53 -0500
+Date: Mon, 13 Dec 2010 18:09:44 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
+Message-ID: <20101213123944.GA14178@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+ <20101210050344.GR3158@balbir.in.ibm.com>
+ <4D0328CC.1020809@redhat.com>
+ <20101211135727.GU3158@balbir.in.ibm.com>
+ <4D060A31.3030606@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101213123121.GB15575@mail.wantstofly.org>
-X-Cookie: Leave no stone unturned.
+In-Reply-To: <4D060A31.3030606@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 01:31:21PM +0100, Lennert Buytenhek wrote:
-> Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
+* Avi Kivity <avi@redhat.com> [2010-12-13 13:57:37]:
 
-If you're doing this sort of work you really need to work against -next
-or the individual development tree rather than Linus' tree.  The Wolfson
-drivers have been converted in -next for a while now.
+> On 12/11/2010 03:57 PM, Balbir Singh wrote:
+> >* Avi Kivity<avi@redhat.com>  [2010-12-11 09:31:24]:
+> >
+> >>  On 12/10/2010 07:03 AM, Balbir Singh wrote:
+> >>  >>
+> >>  >>   Scheduler people, please flame me with anything I may have done
+> >>  >>   wrong, so I can do it right for a next version :)
+> >>  >>
+> >>  >
+> >>  >This is a good problem statement, there are other things to consider
+> >>  >as well
+> >>  >
+> >>  >1. If a hard limit feature is enabled underneath, donating the
+> >>  >timeslice would probably not make too much sense in that case
+> >>
+> >>  What's the alternative?
+> >>
+> >>  Consider a two vcpu guest with a 50% hard cap.  Suppose the workload
+> >>  involves ping-ponging within the guest.  If the scheduler decides to
+> >>  schedule the vcpus without any overlap, then the throughput will be
+> >>  dictated by the time slice.  If we allow donation, throughput is
+> >>  limited by context switch latency.
+> >>
+> >
+> >If the vpcu holding the lock runs more and capped, the timeslice
+> >transfer is a heuristic that will not help.
+> 
+> Why not?  as long as we shift the cap as well.
+>
 
-I also posted patches for everything in MFD except ezx-pcap over the
-weekend - I pushed a branch up to a git tree earlier today with these
-changes in, I'll try to keep it up to date with the acks I'm getting.
-I'll add Lennart's ezx-pcap patch to that.
+Shifting the cap would break it, no? Anyway, that is something for us
+to keep track of as we add additional heuristics, not a show stopper. 
 
-The following changes since commit 3ec93fcb34a97a9806a7280b136a7af20edf61f1:
-
-  mfd: Fix twl_probe section mismatch warning in mfd/twl-core.c (2010-12-10 20:59:59 +0100)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc-2.6.git mfd-irq
-
-Mark Brown (20):
-      mfd: Staticise unexported symbols in ASIC3
-      mfd: Correct ASIC3 IRQ_OWM resource setup
-      mfd: Remove ARCH_U8500 dependency from AB8500
-      mfd: Staticise internal functions in HTC I2CCPLD driver
-      mfd: Convert 88PM860x driver to new irq_ APIs
-      mfd: Convert ASIC3 to new irq_ APIs
-      mfd: Convert AB3500 to new irq_ APIs
-      mfd: Convert AB8500 to new irq_ methods
-      mfd: Convert HTC EGPIO driver to irq_ API
-      mfd: Convert HTC I2C CPLD driver to irq_ API
-      mfd: Convert jz4740-adc to new irq_ methods
-      mfd: Convert max8925 to new irq_ API
-      mfd: Convert MAX8998 driver to irq_ API
-      mfd: Convert SMTPE driver to new irq_ APIs
-      mfd: Convert t7166xb driver to new irq_ API
-      mfd: Convert tc35892 to new irq_ APIs
-      mfd: Convert tc6393xb driver to new irq_ APIs
-      mfd: Convert tps6586x driver to new irq_ API
-      mfd: Convert TWL4030 to new irq_ APIs
-      mfd: Convert Wolfson MFD drivers to use irq_data accessor function
-
- drivers/mfd/88pm860x-core.c |   36 ++++++++++--------------
- drivers/mfd/Kconfig         |    2 +-
- drivers/mfd/ab3550-core.c   |   28 +++++++++----------
- drivers/mfd/ab8500-core.c   |   28 +++++++++---------
- drivers/mfd/asic3.c         |   62 +++++++++++++++++++++---------------------
- drivers/mfd/htc-egpio.c     |   27 +++++++++---------
- drivers/mfd/htc-i2cpld.c    |   40 ++++++++++++++--------------
- drivers/mfd/jz4740-adc.c    |   25 ++++++++---------
- drivers/mfd/max8925-core.c  |   30 ++++++++++----------
- drivers/mfd/max8998-irq.c   |   30 +++++++++++---------
- drivers/mfd/stmpe.c         |   28 +++++++++---------
- drivers/mfd/t7l66xb.c       |   20 +++++++-------
- drivers/mfd/tc35892.c       |    8 +++---
- drivers/mfd/tc6393xb.c      |   22 +++++++-------
- drivers/mfd/tps6586x.c      |   28 +++++++++---------
- drivers/mfd/twl4030-irq.c   |   28 +++++++++---------
- drivers/mfd/wm831x-irq.c    |   10 +++---
- drivers/mfd/wm8350-irq.c    |    8 +++---
- drivers/mfd/wm8994-irq.c    |    8 +++---
- 19 files changed, 231 insertions(+), 237 deletions(-)
+-- 
+	Three Cheers,
+	Balbir
