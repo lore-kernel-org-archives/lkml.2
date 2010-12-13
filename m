@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab0LMU1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 15:27:40 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33552
+	id S1756332Ab0LMU1G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 15:27:06 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33495
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756695Ab0LMU1i (ORCPT
+	by vger.kernel.org with ESMTP id S1756271Ab0LMU1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 15:27:38 -0500
-Date: Mon, 13 Dec 2010 12:28:05 -0800 (PST)
-Message-Id: <20101213.122805.233706639.davem@davemloft.net>
+	Mon, 13 Dec 2010 15:27:02 -0500
+Date: Mon, 13 Dec 2010 12:27:31 -0800 (PST)
+Message-Id: <20101213.122731.242127622.davem@davemloft.net>
 To: tomoya-linux@dsn.okisemi.com
 Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
         21cnbao@gmail.com, sameo@linux.intel.com,
@@ -16,13 +16,13 @@ Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
         linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
         andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: Re: [PATCH net-next-2.6 v9 17/20] pch_can: Fix incorrect return
- processing
+Subject: Re: [PATCH net-next-2.6 v9 12/20] pch_can: Delete
+ unnecessary/redundant code
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1292221467-8039-17-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1292221467-8039-15-git-send-email-tomoya-linux@dsn.okisemi.com>
-	<1292221467-8039-16-git-send-email-tomoya-linux@dsn.okisemi.com>
-	<1292221467-8039-17-git-send-email-tomoya-linux@dsn.okisemi.com>
+In-Reply-To: <1292221467-8039-12-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1292221467-8039-10-git-send-email-tomoya-linux@dsn.okisemi.com>
+	<1292221467-8039-11-git-send-email-tomoya-linux@dsn.okisemi.com>
+	<1292221467-8039-12-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -32,9 +32,9 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Date: Mon, 13 Dec 2010 15:24:23 +0900
+Date: Mon, 13 Dec 2010 15:24:18 +0900
 
-> Fix incorrect return processing.
+> Delete unnecessary/redundant code
 > 
 > Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
