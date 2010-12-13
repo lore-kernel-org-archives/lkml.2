@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab0LMLXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 06:23:21 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:50249 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823Ab0LMLXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 06:23:19 -0500
-Date: Mon, 13 Dec 2010 22:23:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        Lionel Debroux <lionel_debroux@yahoo.fr>
-Subject: Re: linux-next: manual merge of the trivial tree with the omap tree
-Message-Id: <20101213222307.64c6510e.sfr@canb.auug.org.au>
-In-Reply-To: <alpine.LNX.2.00.1012131101140.15140@pobox.suse.cz>
-References: <20101213134457.d0fb1e13.sfr@canb.auug.org.au>
-	<alpine.LNX.2.00.1012131101140.15140@pobox.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__13_Dec_2010_22_23_07_+1100_WfoWLg.U3=zvMk6e"
+	id S1752929Ab0LMLXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 06:23:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49006 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab0LMLXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 06:23:48 -0500
+Date: Mon, 13 Dec 2010 12:23:45 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Liu Ying <liu.y.victor@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Zhang Lily-R58066 <r58066@freescale.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Subject: Re: [PATCH 3/9] Add a mfd IPUv3 driver
+Message-ID: <20101213112345.GD6017@pengutronix.de>
+References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-4-git-send-email-s.hauer@pengutronix.de> <AANLkTine90yN=e-J_zr03GmGCXekEWTPKv0pB5-EhA1v@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTine90yN=e-J_zr03GmGCXekEWTPKv0pB5-EhA1v@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:00:41 up 163 days,  2:11, 45 users,  load average: 1.18, 0.93,
+	0.69
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Dec_2010_22_23_07_+1100_WfoWLg.U3=zvMk6e
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Liu Ying,
 
-Hi Jiri,
+Thanks for looking at the patches.
 
-On Mon, 13 Dec 2010 11:01:59 +0100 (CET) Jiri Kosina <jkosina@suse.cz> wrot=
-e:
->
-> Thank you Stephen. If you could carry this fixup patch, then it seems bes=
-t=20
-> option for me. This conflict is trivial enough to be resolved later durin=
-g=20
-> merge.
+On Sun, Dec 12, 2010 at 01:21:57PM +0800, Liu Ying wrote:
+> Hello, Sascha,
+> 
+> IPU is not embedded in i,MX50 SoC, but in i.MX51/53 SoCs, please
+> modify the commit message.
+> 
+> I have the following comments for the files editted respectively:
+> 1) ipu-common.c
+>     - ipu_idmac_get()/ipu_idmac_put() need a mechanism to protect IPU
+> IDMAC resources, namely, get rid of potential race condition issue. As
+> only framebuffer support is added in your patches, there should be no
+> race condition issue now. After IC channels are supported(maybe as DMA
+> engine), perhaps, there will be such kind of issue.
 
-Yep, no worries.
+ok.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>     - ipu_idmac_select_buffer() need to add spinlock to protect
+> IPU_CHA_BUFx_RDY registers.
 
---Signature=_Mon__13_Dec_2010_22_23_07_+1100_WfoWLg.U3=zvMk6e
-Content-Type: application/pgp-signature
+ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+>     - It looks that ipu_uninit_channel() only clears
+> IPU_CHA_DB_MODE_SEL register, so why not put it in
+> ipu_idmac_disable_channel()?
 
-iQEcBAEBAgAGBQJNBgIbAAoJEDMEi1NhKgbs7l8H/2SHBQMdqPH0LcuQffoIUB88
-ss7TY4VkBFXyM9TFw83sCWIEVzFR73krag6JmyNZC2j4iYkYvNE3EgNBMpKo8B7U
-fHGB3LpcWYNuK8FOY90hhLfgBMsWqAEsJGGH09+vieyC4hFAmCl1sdOZ4C0IMzqc
-uBUcb8W/reV+tpHUkHccZeNlu5MK/936k5Zzx2Thnb8ZoElqTMAbMPRQmfh48KRd
-ZG6Mh5VgdBxuizFUtjIzYws7vQtBKa+4ZwGEfE2RtppwC6+n6u7sdZDHZXM0UBl3
-OP9LABD78d7vh/90U25xWlUYP7qfeLESi+yD7kwRsTQdSvFRqhOSA1MVeqJBPoQ=
-=pyYc
------END PGP SIGNATURE-----
+ok.
 
---Signature=_Mon__13_Dec_2010_22_23_07_+1100_WfoWLg.U3=zvMk6e--
+>     - It looks that ipu_add_client_devices() and your framebuffer
+> patch assume /dev/fb0 uses DP_BG, /dev/fb1 uses DP_FG and /dev/fb2
+> uses DC.
+>       But fb1_platform_data->ipu_channel_bg is
+> MX51_IPU_CHANNEL_MEM_DC_SYNC, this may make confusion for driver
+> readers and it is not easy for code maintenance.
+
+Do you have a better suggestion? fb2 becomes fb1 when overlay support
+is not used.
+
+>     - It also looks that ipu_add_client_devices() and your framebuffer
+> driver assume DP_BG/DP_FG are bound with DI0 and DC is bound with DI1.
+>       It is ok for babbage board to support this kind of
+> configuration, but it may bring some limitation. For example, TVE(TV
+> encoder) module embedded in MX51 SoC can only connected with DI1 and
+> users may like to use TV as the primary device(support HW overlay),
+> and FSL Android BSP does support to use DI1 with LCD as the primary
+> device on babbage board.
+
+SO we need to put the display number into the platform data, right?
+
+> 
+> 2) ipu-cpmem.c
+>     - In order to improve performance, maybe writing
+> ipu_ch_param_addr(ch) directly will be fine, but not using memset()
+> and memcpy() in ipu_ch_param_init().
+
+I don't see this function in any performance critical path.
+
+> 
+> 3) ipu-dc.c
+>     - Looks '#include <asm/atomic.h>' and '#include
+> <linux/spinlock.h>' are unnecessary.
+>     - Need to call 'ipu_module_disable(IPU_CONF_DC_EN);' somewhere.
+
+ok.
+
+> 
+> 4) ipu-di.c
+>     - Looks '#include <asm/atomic.h>' and '#include <linux/delay.h>'
+> are unnecessary.
+
+ok.
+
+> 
+> 5) ipu-dmfc.c
+>     - Looks '#include <linux/delay.h>' are unnecessary.
+
+ok.
+
+> 
+> 6) ipu-dp.c
+>     - Looks '#include <asm/atomic.h>' and '#include <linux/delay.h>'
+> are unnecessary.
+
+ok.
+
+> 
+> 7) ipu-prv.h
+>     - Looks '#include <linux/interrupt.h>' is unnecessary.
+>     - Please rename 'MX51_IPU_CHANNEL_xxxx' to be 'IPU_CHANNEL_xxxx',
+> IPUv3 channel names do not depend on SoC name.
+
+I was proven wrong each time I believed this.
+
+> 
+> 8) include/linux/mfd/imx-ipu-v3.h
+>    - Looks '#include <linux/slab.h>' and '#include
+> <linux/interrupt.h>' are unnecessary.
+
+ok.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
