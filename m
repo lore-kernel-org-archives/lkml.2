@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab0LMTbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:31:20 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1317 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab0LMTbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:31:18 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Date: Mon, 13 Dec 2010 11:31:11 -0800
-From: "Henry Ptasinski" <henryp@broadcom.com>
-To: "Dave Hansen" <dave@sr71.net>
-cc: "Greg KH" <gregkh@suse.de>, "John W. Linville" <linville@tuxdriver.com>,
-        "Johannes Berg" <johannes@sipsolutions.net>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "Jason Cooper" <jason@lakedaemon.net>,
-        "Mike Rapoport" <mike.rapoport@gmail.com>,
-        "Andy Shevchenko" <andy.shevchenko@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+	id S1753993Ab0LMTb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:31:56 -0500
+Received: from smtp.microsoft.com ([131.107.115.215]:34922 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab0LMTby convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:31:54 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Henry Ptasinski" <henryp@broadcom.com>, arend@broadcom.com,
-        rvossen@broadcom.com
-Subject: Re: brcm80211 hangs when disabling wireless
-Message-ID: <20101213193111.GK2576@broadcom.com>
-References: <1291930010.7960.30.camel@nimitz>
- <20101209214347.GA15172@suse.de> <1291931678.7960.32.camel@nimitz>
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] hv: Use only one receive buffer and kmalloc on
+ initialize
+Thread-Topic: [PATCH 1/1] hv: Use only one receive buffer and kmalloc on
+ initialize
+Thread-Index: AQHLmu0aQ+svDewugEOir2/SbGE0mJOfORkA//+JKnA=
+Date: Mon, 13 Dec 2010 19:31:42 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C5622C0BB71F@TK5EX14MBXC116.redmond.corp.microsoft.com>
+References: <1292262350-29001-1-git-send-email-hjanssen@microsoft.com>
+ <20101213183448.GA11745@kroah.com>
+In-Reply-To: <20101213183448.GA11745@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1291931678.7960.32.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 6118AB2D3P040780762-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 09, 2010 at 01:54:38PM -0800, Dave Hansen wrote:
-> On Thu, 2010-12-09 at 13:43 -0800, Greg KH wrote:
-> > On Thu, Dec 09, 2010 at 01:26:50PM -0800, Dave Hansen wrote:
-> > > I've been getting hard hangs when I toggle the wireless on a Lenovo
-> > > S10-3.  It happens both with the physical switch and the Fn-F5 key
-> > > combo.  It's quite repeatable.  The system is quite stable when I'm not
-> > > trying to disable the wireless, though.
-> > 
-> > What kernel version is this?
-> > 
-> > Linus's latest tree has a known bug when the wireless is suspended and
-> > then resumed.  Broadcom is working on it but no patch is forthcoming
-> > yet.  Perhaps this is the same issue.
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Monday, December 13, 2010 10:35 AM
+> > ---
+> >  drivers/staging/hv/hv_utils.c |   68 +++++++++++++++++++------------------
+> ---
+> >  1 files changed, 32 insertions(+), 36 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/hv_utils.c
+> > b/drivers/staging/hv/hv_utils.c index 53e1e29..4ed4ab8 100644
+> > --- a/drivers/staging/hv/hv_utils.c
+> > +++ b/drivers/staging/hv/hv_utils.c
+> > @@ -38,12 +38,15 @@
+> >  #include "vmbus_api.h"
+> >  #include "utils.h"
+> >
+> > +/*
+> > + * Buffer used to receive packets from Hyper-V  */ static u8
+> > +*chan_buf;
 > 
-> Yeah, it's 2.6.37-rc5 plus a pull from:
+> One buffer is nicer, yes, but what's controlling access to this buffer?
+> You use it in multiple functions, and what's to say those functions can't be
+> called at the same time on different cpus?  So, shouldn't you either have
+> some locking for access to the buffer, or have a per-function buffer instead?
 > 
-> 	http://kernel.ubuntu.com/git?p=ikepanhc/ideapad-laptop.git;a=summary
+> And if you have a per-function buffer, again, you might need to control
+> access to it as the functions could be called multiple times at the same time,
+> right?
 > 
-> That could easily be it.  Thanks, Greg.
 
-Actually, I think it's the rfkill support (or lack thereof) that's causing you
-trouble.  But we're looking at that as well.
+The current versions of Hyper-V support interrupt handling on CPU0 only.
+I can make multiple buffers per channel, but because of Hyper-V implementation
+It does not really make a difference.
 
-The outstanding reported issues that I'm aware of are:
-	- 43224 crashes
-	- missing rfkill support
-	- suspend/resume problems
-	- 4313 infinite loop in some cases
-
-In terms of process, should these all get filed in bugzilla.kernel.org (or
-somewhere else), or just track them via email and our TODO list?
-
-Thanks,
-- Henry
-
+Hank.
 
