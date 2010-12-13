@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab0LMM0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:26:47 -0500
-Received: from mps-he6cjsj5.helium.vde.net.au ([113.20.6.129]:34970 "EHLO
-	MPS-HE6CJSJ5.helium.vde.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754715Ab0LMM0q convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:26:46 -0500
-X-Greylist: delayed 32972 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 07:26:46 EST
-Message-ID: <20101213140209.j4vzhb6jok0okwgc@webmail.seaenglishacademy.com>
-Date: Mon, 13 Dec 2010 14:02:09 +1100
-From: Tetsuya Koike <info@maillondon.co.uk>
-Reply-to: ma.da20022002@yahoo.com.hk
-To: undisclosed-recipients:;
-Subject: Re Your Urgent Response
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+	id S1757171Ab0LMM3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:29:15 -0500
+Received: from fw.wantstofly.org ([80.101.37.227]:36117 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab0LMM3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 07:29:14 -0500
+Date: Mon, 13 Dec 2010 13:29:13 +0100
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/20] mfd: irq_data conversion.
+Message-ID: <20101213122913.GJ15575@mail.wantstofly.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - MPS-HE6CJSJ5.helium.vde.net.au
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - maillondon.co.uk
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mr. Tetsuya Koike
-Chiba Bank Ltd
-3rd Floor, Atlas House 1 King Street,
-London EC2V 8AU,
-U.K.
+This patch set converts drivers/mfd/ irq_chips and flow handlers over
+to the new struct irq_data based irq_chip functions.
 
-Dear Friend,
 
-I am Mr. Tetsuya Koike the Manager, Branch Support Division of Chiba  
-Bank Ltd of
-3rd Floor, Atlas House 1 King Street, London EC2V 8AU, U.K.
+Lennert Buytenhek (20):
+  mfd: 88pm860x-core: irq_data conversion.
+  mfd: ab3550: irq_data conversion.
+  mfd: ab8500: irq_data conversion.
+  mfd: asic3: irq_data conversion.
+  mfd: ezx-pcap: irq_data conversion.
+  mfd: htc-egpio: irq_data conversion.
+  mfd: htc-i2cpld: irq_data conversion.
+  mfd: jz4740-adc: irq_data conversion.
+  mfd: max8925: irq_data conversion.
+  mfd: max8998: irq_data conversion.
+  mfd: stmpe: irq_data conversion.
+  mfd: t7l66xb: irq_data conversion.
+  mfd: tc35892: irq_data conversion.
+  mfd: tc6393xb: irq_data conversion.
+  mfd: tps6586x: irq_data conversion.
+  mfd: twl4030: irq_data conversion.
+  mfd: twl6030: irq_data conversion.
+  mfd: wm831x: irq_data conversion.
+  mfd: wm8350: irq_data conversion.
+  mfd: wm8994: irq_data conversion.
 
-I have a very confidential business proposition for you; I will need you to
-execute a project on behalf of my late client which amount to GBP£25 MILLION
-POUNDS in my bank. Please, indicate your interest to enable me furnish  
-you with
-full detail of this transaction.
-
-Your urgent response will highly Appreciated and Provide Me with the  
-following;
-1. Full Name
-2. Your Telephone Number and Fax Number
-3. Your Contact Address.
-
-Regards
-Mr. Tetsuya Koike.
-
+ drivers/mfd/88pm860x-core.c |   32 +++++++++++-----------
+ drivers/mfd/ab3550-core.c   |   32 ++++++++++++----------
+ drivers/mfd/ab8500-core.c   |   28 ++++++++++----------
+ drivers/mfd/asic3.c         |   60 +++++++++++++++++++++---------------------
+ drivers/mfd/ezx-pcap.c      |   20 +++++++-------
+ drivers/mfd/htc-egpio.c     |   27 ++++++++++---------
+ drivers/mfd/htc-i2cpld.c    |   31 +++++++++++----------
+ drivers/mfd/jz4740-adc.c    |   25 +++++++++--------
+ drivers/mfd/max8925-core.c  |   32 +++++++++++-----------
+ drivers/mfd/max8998-irq.c   |   28 ++++++++++----------
+ drivers/mfd/stmpe.c         |   28 ++++++++++----------
+ drivers/mfd/t7l66xb.c       |   22 ++++++++--------
+ drivers/mfd/tc35892.c       |    8 +++---
+ drivers/mfd/tc6393xb.c      |   22 ++++++++--------
+ drivers/mfd/tps6586x.c      |   28 ++++++++++----------
+ drivers/mfd/twl4030-irq.c   |   28 ++++++++++----------
+ drivers/mfd/twl6030-irq.c   |    2 +-
+ drivers/mfd/wm831x-irq.c    |   37 +++++++++++++-------------
+ drivers/mfd/wm8350-irq.c    |   28 ++++++++++----------
+ drivers/mfd/wm8994-irq.c    |   28 ++++++++++----------
+ 20 files changed, 276 insertions(+), 270 deletions(-)
