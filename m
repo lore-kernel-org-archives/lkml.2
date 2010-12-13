@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab0LMMm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 07:42:56 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43943 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855Ab0LMMmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 07:42:55 -0500
-Date: Mon, 13 Dec 2010 13:42:54 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] clk: Generic support for fixed-rate clocks
-Message-ID: <20101213124254.GI6017@pengutronix.de>
-References: <1291774094.269634.503532219345.0.gpush@pororo> <1291774094.270492.31002734529.2.gpush@pororo> <20101213121413.GA29833@pengutronix.de> <201012132035.41371.jeremy.kerr@canonical.com>
+	id S1757439Ab0LMMnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 07:43:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab0LMMnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 07:43:16 -0500
+Message-ID: <4D0614CC.5060900@redhat.com>
+Date: Mon, 13 Dec 2010 14:42:52 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012132035.41371.jeremy.kerr@canonical.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:42:19 up 163 days,  3:53, 33 users,  load average: 0.63, 0.35,
-	0.55
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: balbir@linux.vnet.ibm.com
+CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
+References: <20101202144129.4357fe00@annuminas.surriel.com> <20101210050344.GR3158@balbir.in.ibm.com> <4D0328CC.1020809@redhat.com> <20101211135727.GU3158@balbir.in.ibm.com> <4D060A31.3030606@redhat.com> <20101213123944.GA14178@balbir.in.ibm.com>
+In-Reply-To: <20101213123944.GA14178@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 08:35:37PM +0800, Jeremy Kerr wrote:
-> Hi Sascha,
-> 
-> > > +extern struct clk_ops clk_fixed_ops;
-> > > +
-> > > +#define INIT_CLK_FIXED(name, r) { \
-> > > +	.clk = INIT_CLK(name.clk, clk_fixed_ops), \
-> > > +	.rate = (r) \
-> > > +}
-> > 
-> > Is there any other valid usecase for this other than
-> > 
-> > struct clk_fixed bla = INIT_CLK_FIXED(bla, rate);
-> > 
-> > Otherwise I suggest to convert the macro to:
-> > 
-> > #define INIT_CLK_FIXED(name, r) \
-> > 	struct clk_fixed name = { \
-> > 		.clk = INIT_CLK(name.clk, clk_fixed_ops), \
-> > 		.rate = (r) \
-> > 	}
-> > 
-> > This way we do not have to specify the same name twice (and it has
-> > to be exactly the same name, otherwise it won't compile).
-> 
-> For the system-wide INIT_CLK* macros, I've intentionally made them initalisers 
-> rather than declarators, so that we can use them in other declarators (ie, the 
-> usage of INIT_CLK() above). This would be relevant if someone is using 
-> clk_fixed in their struct - probably not likely, but good to be consistent.
-> 
-> But yes, it would be good to avoid having to specify the name twice - how 
-> about adding a:
-> 
-> #define DEFINE_CLK_FIXED(name, r) \
-> 	struct clk_fixed name = INIT_CLK_FIXED(name, r)
-> 
-> - just like DEFINE_MUTEX and MUTEX_INITIALIZER.
+On 12/13/2010 02:39 PM, Balbir Singh wrote:
+> * Avi Kivity<avi@redhat.com>  [2010-12-13 13:57:37]:
+>
+> >  On 12/11/2010 03:57 PM, Balbir Singh wrote:
+> >  >* Avi Kivity<avi@redhat.com>   [2010-12-11 09:31:24]:
+> >  >
+> >  >>   On 12/10/2010 07:03 AM, Balbir Singh wrote:
+> >  >>   >>
+> >  >>   >>    Scheduler people, please flame me with anything I may have done
+> >  >>   >>    wrong, so I can do it right for a next version :)
+> >  >>   >>
+> >  >>   >
+> >  >>   >This is a good problem statement, there are other things to consider
+> >  >>   >as well
+> >  >>   >
+> >  >>   >1. If a hard limit feature is enabled underneath, donating the
+> >  >>   >timeslice would probably not make too much sense in that case
+> >  >>
+> >  >>   What's the alternative?
+> >  >>
+> >  >>   Consider a two vcpu guest with a 50% hard cap.  Suppose the workload
+> >  >>   involves ping-ponging within the guest.  If the scheduler decides to
+> >  >>   schedule the vcpus without any overlap, then the throughput will be
+> >  >>   dictated by the time slice.  If we allow donation, throughput is
+> >  >>   limited by context switch latency.
+> >  >>
+> >  >
+> >  >If the vpcu holding the lock runs more and capped, the timeslice
+> >  >transfer is a heuristic that will not help.
+> >
+> >  Why not?  as long as we shift the cap as well.
+> >
+>
+> Shifting the cap would break it, no?
 
-Jup, sounds good.
+The total cap for the guest would remain.
 
-Sascha
+> Anyway, that is something for us
+> to keep track of as we add additional heuristics, not a show stopper.
+
+Sure, as long as we see a way to fix it eventually.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+error compiling committee.c: too many arguments to function
+
