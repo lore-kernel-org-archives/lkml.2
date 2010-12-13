@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab0LMRIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 12:08:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab0LMRIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 12:08:43 -0500
-Message-ID: <4D0652FB.2090208@redhat.com>
-Date: Mon, 13 Dec 2010 19:08:11 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1758375Ab0LMRJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 12:09:33 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:38036 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab0LMRJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 12:09:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VVl8EzbeMRiO5Z0WpIJvtvqRrU9PpZ/4dqCSPgbbmZgWhpbGUC3y8xT79RTLwRYLry
+         rgdArPdgbb2fOBKMdpkmPgIBQQVAceEQLKBPa1RQdONgpfs/oXRg3qlMqCVaiJr0OR1w
+         JXHAGyeFSWAjgdsoxlV/5eHcAxIewfstTfhl8=
+Date: Mon, 13 Dec 2010 18:09:26 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "David S. Ahern" <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf tools: Add reference timestamp to perf header
+Message-ID: <20101213170923.GB1691@nowhere>
+References: <1291773285-16254-1-git-send-email-daahern@cisco.com>
+ <1291773285-16254-2-git-send-email-daahern@cisco.com>
+ <20101212201613.GA1784@nowhere>
+ <4D06301C.2090309@cisco.com>
+ <20101213155451.GA1691@nowhere>
+ <20101213164854.GL5407@ghostprotocols.net>
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Andi Kleen <andi@firstfloor.org>, mst@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] [104/223] KVM: Write protect memory after slot swap
-References: <201012131244.547034648@firstfloor.org>	<20101212234644.B05DAB27BF@basil.firstfloor.org>	<4D05DC98.40105@redhat.com>	<044a861a2279c7e3e328c73e6694fbf3.squirrel@www.firstfloor.org>	<4D05E096.6060307@redhat.com>	<74ff92a8c4cf72e42e7559de72e77b52.squirrel@www.firstfloor.org>	<4D05E2A5.8070204@redhat.com>	<20101213091254.GA999@basil.fritz.box>	<4D05E483.1000106@redhat.com> <AANLkTinOWHcyjXsY3Xhe6pxi3gyQ3tJMr2qCpRPuyBW4@mail.gmail.com>
-In-Reply-To: <AANLkTinOWHcyjXsY3Xhe6pxi3gyQ3tJMr2qCpRPuyBW4@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101213164854.GL5407@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 06:56 PM, Paul Gortmaker wrote:
-> On Mon, Dec 13, 2010 at 4:16 AM, Avi Kivity<avi@redhat.com>  wrote:
-> >  On 12/13/2010 11:12 AM, Andi Kleen wrote:
-> >>
-> >>  >    - Greg rejects kvm patches (but not virtio etc) pointing submitters
-> >>  >    to the kvm maintainers
-> >>  >    - The kvm maintainers collect stable kvm patches and autotest them
-> >>
-> >>  As I understand this patch came in this way for .36
-> >>  (I took it from .36-stable)
-> >
-> >  The patch was autotested for .36-stable, it wasn't autotested for
-> >  .35-stable.  It will very likely work (this isn't code that changes a lot),
-> >  but still.
-> >
-> >>  >    - They then submit the patches to stable@
-> >>
-> >>  Do you want to do the autotest explicitely for .35 too and no automatic
-> >>  backports and do the same procedure as for newer kernels?
-> >>
-> >>  I can do that, but you would need to do it for a long time.
-> >
-> >  Yes.  In fact it gets more important as time goes by, since as time goes by
-> >  patches are more likely to cause regressions due to changes in the code
-> >  base.
->
-> My workflow is largely the same as Andi's -- in that I'm using patches that
-> have already been nominated for other stable releases and putting them
-> on the 34-lt (longterm) as appropriate.  Are you interested in also doing the
-> same thing for 34-lt (i.e. you generating a 34 specific, pre-tested patchset
-> instead of me doing the backports from other stable trees?)
+On Mon, Dec 13, 2010 at 02:48:54PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Dec 13, 2010 at 04:54:56PM +0100, Frederic Weisbecker escreveu:
+> > On Mon, Dec 13, 2010 at 07:39:24AM -0700, David S. Ahern wrote:
+> > > On 12/12/10 13:16, Frederic Weisbecker wrote:
+> > > >>  int perf_session__create_kernel_maps(struct perf_session *self)
+> > > >>  {
+> > > >>  	int ret = machine__create_kernel_maps(&self->host_machine);
+> > > >> @@ -167,6 +190,9 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+> > > >>  		 */
+> > > >>  		if (perf_session__create_kernel_maps(self) < 0)
+> > > >>  			goto out_delete;
+> > > >> +
+> > > >> +		if (perf_session__create_ref_time(self) < 0)
+> > > >> +			goto out_delete;
+> 
+> > > > So, it does record it anytime?
+> 
+> > > Simplest to always add it the header as it does no harm if not used.
+> > > To make it conditional means adding an input parameter to
+> > > perf_session__new() and then updating all the callers.
+> 
+> > > Is the preference to make it conditional?
+> 
+> > No, I suspect the overhead is plain unnoticeable. And if it becomes
+> > any problem one day, we can still make that conditional later.
+> 
+> Right, but it just ocurred to me, can't we encode this in the file stat?
+> Also, how do we deal with:
+> 
+> $ perf record --help
+> <SNIP>
+>        -A, --append
+>            Append to the output file to do incremental profiling.
+> <SNIP>
+> 
+> ?
+> 
+> I now think this should be implemented as a PERF_RECORD_WALL_CLOCK
+> synthesized event, to be inserted just before we start collecting the
+> other events.
+> 
+> That way, when --appending, we just insert another and use that from
+> that point on.
+> 
+> Look at tools/perf/util/event.h, enum perf_user_event_type and look how
+> those are synthesized.
+> 
+> Thanks,
+> 
+> - Arnaldo
 
-Wait, there's a 34-lt too?
+(Adding peterz)
 
-I'd like to have all stable kvms pass some minimum acceptance test, but 
-that's quiet a lot of trees to maintain.  Why do we have to have both 
-34-lt and 35-lt?
+Right, but Peter wanted us to get rid of these user events types.
+I guess we can't really do this as new perf tools must be able
+to support old perf files.
 
--- 
-error compiling committee.c: too many arguments to function
+So this should be the last one to add. Something like PERF_RECORD_GEN_EVT
+that has a field in its headers containing a sub-type which can be this
+wall clock but can also host about everything in the future.
 
+This way we don't propagate more the possible overlap with the kernel.
+
+Hm?
