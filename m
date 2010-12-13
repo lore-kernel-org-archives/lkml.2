@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab0LMTrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 14:47:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54170 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754687Ab0LMTrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 14:47:42 -0500
-Message-ID: <4D06783C.6040009@zytor.com>
-Date: Mon, 13 Dec 2010 11:47:08 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S1754769Ab0LMTyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 14:54:12 -0500
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:48507 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab0LMTyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 14:54:10 -0500
+Date: Mon, 13 Dec 2010 12:38:18 -0700
+From: Eric B Munson <emunson@mgebm.net>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] mm: kswapd: Use the order that kswapd was
+ reclaiming at for sleeping_prematurely()
+Message-ID: <20101213193818.GE3401@mgebm.net>
+References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
+ <1291995985-5913-4-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Stanislaw Gruszka <sgruszka@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101203111623.GA2741@redhat.com> <AANLkTi=Xvbi5M_cNRL=wC+uwksG08SiCyWcqdmwB_5TU@mail.gmail.com> <20101203171147.GA2299@redhat.com> <20101203175401.GE28603@hmsreliant.think-freely.org> <20101207105053.GA2803@redhat.com> <4CFE89FE.1090901@kernel.org> <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org>
-In-Reply-To: <4D0663F0.2060103@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ns7jmDPpOpCD+GE/"
+Content-Disposition: inline
+In-Reply-To: <1291995985-5913-4-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 10:20 AM, Yinghai Lu wrote:
-> 
-> it seems 32bit kdump need crashkernel much low than we expect...
-> 
-> Maybe we have to find_in_range_low() to make 32bit kdump happy.
-> 
 
-Not this garbage again... sigh.  Once again, I will want to know what
-the actual constraint is... not just "oh, this seems to work on this one
-system."
+--Ns7jmDPpOpCD+GE/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I realize that the kdump interfaces are probably beyond saving -- we
-have had this discussion enough times -- but I'm not happy about it and
-I will really want to know what the heck the real issue is.
+On Fri, 10 Dec 2010, Mel Gorman wrote:
 
-Furthermore, such a function should NOT be private to x86 core; if it's
-needed at all it should live in the memblock core.
+> Before kswapd goes to sleep, it uses sleeping_prematurely() to check if
+> there was a race pushing a zone below its watermark. If the race happened,
+> it stays awake. However, balance_pgdat() can decide to reclaim at order-0
+> if it decides that high-order reclaim is not working as expected. This
+> information is not passed back to sleeping_prematurely().  The impact is
+> that kswapd remains awake reclaiming pages long after it should have gone
+> to sleep. This patch passes the adjusted order to sleeping_prematurely and
+> uses the same logic as balance_pgdat to decide if it's ok to go to sleep.
+>=20
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-	-hpa
+Reviewed-by: Eric B Munson <emunson@mgebm.net>
+
+--Ns7jmDPpOpCD+GE/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNBnYqAAoJEH65iIruGRnNDvgIAKt6gxTnJrGvkVEjA9EtUBKR
+m+hOcsCQlzxCz4KSCgxOutFx9NsqO7eFmhCeSFeul77DQlfi/a8lD2jWYtDynmZn
+aR39vSQwYhQFb1sFdWTaerNpkbcmqwIYGFTG7/0F9EguDrnGSiP2tKx+ujHlfUC9
+b3mKY57WwtG8tRqheIXOs+qplzeVwe5LEvHslArfX4g61P3JT1uXPabeuZiFhTyz
+V/lAATt+Qc+WVHhh6HfFG9sP8FnL36TAsnU3NStyIP3wM0b0kNV0O+p3oyKpTrWU
+uLOHK0UDGKrFXr1iTYCgwDWsf5NQ3nP1485EAi6RdETovfvOFyLFzWI1M/lnPik=
+=w/zD
+-----END PGP SIGNATURE-----
+
+--Ns7jmDPpOpCD+GE/--
