@@ -1,123 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab0LMNuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 08:50:11 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:40737 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757586Ab0LMNuJ (ORCPT
+	id S1757883Ab0LMNvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 08:51:17 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:64936 "EHLO
+	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab0LMNvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 08:50:09 -0500
+	Mon, 13 Dec 2010 08:51:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=rgYPtvtxjHjI0lOeeW9OCNQpO3fYGEvcRh2S3Tlz/ROc2Pk8Owa8DVv0oNOCs/AAHv
-         yJjjWi2/J9rhUkAlwl2VvDPRlM2GHG1h+rOI+nO20G++j9skBD4ZxBDrmaY7f8I/DyXZ
-         YVDs9bKLbtlTRooCzlC8nrkHczxrQ/x8fKJpo=
-Message-ID: <4D06248C.7010904@gmail.com>
-Date: Mon, 13 Dec 2010 14:50:04 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=SoSg3lL14CcsCbhKMV3S7rQePbzvFgZr5d64XP7XXC9VXpUOOQTJHOGr/C0iqL8cjS
+         wdejxGeX7IffCEv+4TlkFWcTKApoHwlwi5o7pFn9dCZpS80rPNkO5CnrO13V89TAf0gX
+         Pd5SK2wVTfnDTohw5a874/HCEHiN9vYDtbTkw=
+Date: Mon, 13 Dec 2010 11:51:04 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andres Freund <andres@anarazel.de>
+Cc: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Costly Context Switches
+Message-ID: <20101213135104.GE5407@ghostprotocols.net>
+References: <20101212151112.GE26583@charite.de>
+ <201012122007.07372.andres@anarazel.de>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] Staging: vme_ca91cx42: fix compiler warning on 64-bit
- build
-References: <1292246196-2332-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1292246196-2332-1-git-send-email-namhyung@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012122007.07372.andres@anarazel.de>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 02:16 PM, Namhyung Kim wrote:
-> The gcc complains about the cast pointer to int on 64-bit as follows.
-> Use unsigned long instead and wrap it up in new macro.
-> 
->   CC [M]  drivers/staging/vme/bridges/vme_ca91cx42.o
-> drivers/staging/vme/bridges/vme_ca91cx42.c: In function ‘ca91cx42_master_read’:
-> drivers/staging/vme/bridges/vme_ca91cx42.c:870: warning: cast from pointer to integer of different size
-> drivers/staging/vme/bridges/vme_ca91cx42.c:876: warning: cast from pointer to integer of different size
-> drivers/staging/vme/bridges/vme_ca91cx42.c: In function ‘ca91cx42_master_write’:
-> drivers/staging/vme/bridges/vme_ca91cx42.c:924: warning: cast from pointer to integer of different size
-> drivers/staging/vme/bridges/vme_ca91cx42.c:930: warning: cast from pointer to integer of different size
-> drivers/staging/vme/bridges/vme_ca91cx42.c: In function ‘ca91cx42_master_rmw’:
-> drivers/staging/vme/bridges/vme_ca91cx42.c:983: warning: cast from pointer to integer of different size
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
-> I'm not sure about the name. Suggestions?
-> 
->  drivers/staging/vme/bridges/vme_ca91cx42.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-> index d1df7d12f504..cb72a5d1eeca 100644
-> --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-> +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-> @@ -845,6 +845,8 @@ int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
->  	return retval;
->  }
->  
-> +#define check_aligned(addr, align)	((unsigned long)addr & align)
-> +
->  ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
->  	size_t count, loff_t offset)
->  {
-> @@ -867,13 +869,13 @@ ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
->  	 * maximal configured data cycle is used and splits it
->  	 * automatically for non-aligned addresses.
->  	 */
-> -	if ((int)addr & 0x1) {
-> +	if (check_aligned(addr, 0x1)) {
->  		*(u8 *)buf = ioread8(addr);
->  		done += 1;
->  		if (done == count)
->  			goto out;
->  	}
-> -	if ((int)addr & 0x2) {
-> +	if (check_aligned(addr, 0x2)) {
+Em Sun, Dec 12, 2010 at 08:07:07PM +0100, Andres Freund escreveu:
+> On Sunday 12 December 2010 16:11:12 Ralf Hildebrandt wrote:
+> > I recently made a parallel installation of dovecot-2.0 on my mailbox
+> > server, which is running dovecot-1.2 without any problems whatsoever.
 
-It should be IS_ALIGNED(addr, 2) and IS_ALIGNED(addr, 4) respectively
-anyway...
+> > Using dovecot-2.0 on the same hardware, same kernel, with the same
+> > users and same mailboxes and usage behaviour results in an immense
+> > increase in the load numbers.
 
->  		if ((count - done) < 2) {
->  			*(u8 *)(buf + done) = ioread8(addr + done);
->  			done += 1;
-> @@ -921,13 +923,13 @@ ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
->  	/* Here we apply for the same strategy we do in master_read
->  	 * function in order to assure D16 cycle when required.
->  	 */
-> -	if ((int)addr & 0x1) {
-> +	if (check_aligned(addr, 0x1)) {
->  		iowrite8(*(u8 *)buf, addr);
->  		done += 1;
->  		if (done == count)
->  			goto out;
->  	}
-> -	if ((int)addr & 0x2) {
-> +	if (check_aligned(addr, 0x2)) {
->  		if ((count - done) < 2) {
->  			iowrite8(*(u8 *)(buf + done), addr + done);
->  			done += 1;
-> @@ -980,7 +982,7 @@ unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
->  	/* Lock image */
->  	spin_lock(&(image->lock));
->  
-> -	pci_addr = (u32)image->kern_base + offset;
-> +	pci_addr = (u32)(unsigned long)image->kern_base + offset;
+> > Switching back to 1.2 results in a immediate decrease of the load back
+> > to "normal" numbers.
 
-No, do not hide bugs here. I see no reason why address returned from
-ioremap couldn't be larger than 32 bits. Actually it is always on 64bit.
+> > This is mainly due to a 10-20 fold increase of the number of context
+> > switches. The same problem has been reported independently by Cor
+> > Bosman of XS4All, on different hardware (64bit instead of 32bit,
+> > real hardware instead of virtual hardware).
 
-Actually what this code tries to do? Shouldn't it be physical address of
-the PCI resource instead?
+> > So, now the kernel related question: How can I find out WHY the
+> > context switches are happening? Are there any "in kernel" statistics
+> > I could look at?
 
-regards,
--- 
-js
+> "strace" or "perf trace syscall-counts" would be a good start.
+
+Better to record just "cs" (Context Switches) events and also to collect
+callchains when those events take place:
+
+[acme@felicio ~]$ perf record -e cs -g chromium-browser
+^C
+[acme@felicio ~]$ perf report
+# Overhead          Command      Shared Object  Symbol
+# ........  ...............  .................  ......
+#
+    91.32%  chromium-browse  [kernel.kallsyms]  [k] perf_event_task_sched_out
+            |
+            --- perf_event_task_sched_out
+               |          
+               |--37.80%-- sysret_careful
+               |          |          
+               |          |--85.11%-- 0x365300e42d
+               |          |          
+               |           --14.89%-- 0x365300e24a
+               |          
+               |--30.29%-- retint_careful
+               |          |          
+               |          |--29.20%-- 0x3652809658
+               |          |          
+               |          |--28.32%-- 0x7fcb90463603
+               |          |          
+               |          |--15.04%-- 0x7fcb8bca2e20
+               |          |          
+               |          |--14.16%-- 0x7fcb903ff36e
+               |          |          
+               |           --13.27%-- 0x3652809d2f
+               |          
+               |--23.86%-- schedule_timeout
+               |          |          
+               |          |--83.15%-- sys_epoll_wait
+               |          |          system_call_fastpath
+               |          |          0x3652ce5013
+               |          |          
+               |           --16.85%-- __skb_recv_datagram
+               |                     skb_recv_datagram
+               |                     unix_dgram_recvmsg
+               |                     __sock_recvmsg
+               |                     sock_recvmsg
+               |                     __sys_recvmsg
+               |                     sys_recvmsg
+               |                     system_call_fastpath
+               |                     __recvmsg
+               |          
+               |--4.02%-- __cond_resched
+               |          _cond_resched
+               |          might_fault
+               |          memcpy_toiovec
+               |          unix_stream_recvmsg
+               |          __sock_recvmsg
+
+               |          sock_aio_read
+               |          do_sync_read
+               |          vfs_read
+               |          sys_read
+               |          system_call_fastpath
+               |          0x365300e48d
+               |          (nil)
+               |          
+                --4.02%-- futex_wait_queue_me
+                          futex_wait
+                          do_futex
+                          sys_futex
+                          system_call_fastpath
+                          __pthread_cond_timedwait
+
+     7.05%   chrome-sandbox  [kernel.kallsyms]  [k] perf_event_task_sched_out
+             |
+             --- perf_event_task_sched_out
+                 __cond_resched
+                 _cond_resched
+                 might_fault
+                 filldir
+                 proc_fill_cache
+                 proc_readfd_common
+                 proc_readfd
+                 vfs_readdir
+                 sys_getdents
+                 system_call_fastpath
+                 __getdents64
+
+     1.34%      gconftool-2  [kernel.kallsyms]  [k] perf_event_task_sched_out
+                |
+                --- perf_event_task_sched_out
+                    sysret_careful
+                   |          
+                   |--51.61%-- __recv
+                   |          
+                    --48.39%-- __recvmsg
+
+
+- Arnaldo
