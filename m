@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab0LNVbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:31:53 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:28676 "EHLO
+	id S932576Ab0LNVcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:32:01 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:28810 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab0LNVbs (ORCPT
+	with ESMTP id S932521Ab0LNVb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:31:48 -0500
+	Tue, 14 Dec 2010 16:31:58 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=RUIatEWCWiEbr9jiIulfuJNw+0S+Bwaj5gRATTkNWPtI53sebPBD1TP+UbxC6sBsd
-	WtG/uyngg1jWUlu3pJ8lw==
-Subject: [PATCH v3 20/22] netoops: Add x86 specific bits to packet headers
+	b=JGBMYanmiThYmWFt7cC3vjfnYHlVsyK83+4A6wBujHA+347LXCIozIkCN7CjSt77h
+	Ua4YjJZn03rP3UI+IA5UQ==
+Subject: [PATCH v3 22/22] netoops: Add a user programmable blob to the netoops
+	packet.
 To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
         Matt Mackall <mpm@selenic.com>
 From: Mike Waychison <mikew@google.com>
@@ -21,8 +22,8 @@ Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
         Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
         =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
         akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Tue, 14 Dec 2010 13:30:43 -0800
-Message-ID: <20101214213043.17022.66195.stgit@mike.mtv.corp.google.com>
+Date: Tue, 14 Dec 2010 13:30:55 -0800
+Message-ID: <20101214213054.17022.64736.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -34,85 +35,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to be able to gather information about the CPUs that caused the
-crash.  Rather than hope that the data is available in the dmesg
-recieved, and is still parsable, send a binary representation in each
-packet.  This allows us to quickly identify crashes even in cases where
-we crash and burn as part of the netoops process (or if we timeout
-asynchronously on a hardware watchdog).
+In our environment, it is important for us to capture motherboard name
+and firmware version for consideration when analyzing netoops dumps.
 
-This commit only handles x86, but it should be easy to add any
-per-architecture specific information going forward in a compatible way.
+We would like to collect this information in userland at system startup
+(in platform specific ways) and plug this information into the netoops
+driver via /sys/kernel/netoops/netoops_user_blob.
+
+Files introduced:
+  /sys/kernel/netoops/netoops_user_blob
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
 Changelog:
 - v3
-  - Added x86 vendor to the packet header.
-  - Split out the arch specific data into its own data structure.  Only
-    x86 is available at the moment.  This data will want to transition
-    into per-arch code at some point.
+  - Rewritten to support an opaque user blob, rather than fw_version and
+    board_name specifically.
 ---
- drivers/net/netoops.c |   26 +++++++++++++++++++++++---
- 1 files changed, 23 insertions(+), 3 deletions(-)
+ drivers/net/netoops.c |   28 ++++++++++++++++++++++++----
+ 1 files changed, 24 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/netoops.c b/drivers/net/netoops.c
-index 1940ea5..f7665ad 100644
+index 6c4c0f2..036e4d8 100644
 --- a/drivers/net/netoops.c
 +++ b/drivers/net/netoops.c
-@@ -52,8 +52,25 @@ __setup("netoops=", option_setup);
- #if defined(__i386__) || defined(__x86_64__)
- #define NETOOPS_ARCH 2
- struct netoops_arch_data {
--
-+	u8 x86_vendor;
-+	u8 x86_family;
-+	u8 x86_model;
-+	u8 x86_stepping;
-+	/* NOTE: regs is 60 or 168 bytes */
-+	struct pt_regs regs;
- } __attribute__((packed));
-+
-+static void setup_packet_arch_data(struct netoops_arch_data *arch_data,
-+				   struct pt_regs *regs) {
-+	arch_data->x86_vendor   = current_cpu_data.x86_vendor;
-+	arch_data->x86_family   = current_cpu_data.x86;
-+	arch_data->x86_model    = current_cpu_data.x86_model;
-+	arch_data->x86_stepping = current_cpu_data.x86_mask;
-+	if (regs != NULL)
-+		memcpy(&arch_data->regs, regs, sizeof(arch_data->regs));
-+	else
-+		memset(&arch_data->regs, 0, sizeof(arch_data->regs));
-+}
- #else
- #error "unsupported architecture"
- #endif
-@@ -86,7 +103,8 @@ struct netoops_msg {
+@@ -29,6 +29,7 @@
+ #define NETOOPS_VERSION 0x0003
+ #define NETOOPS_PORT 2004
+ #define NETOOPS_RETRANSMIT_COUNT 3
++#define NETOOPS_BLOB_BYTES (size_t)128
+ 
+ static DEFINE_NETPOLL_TARGETS(targets);
+ 
+@@ -97,6 +98,11 @@ struct netoops_msg {
+ 		 * termination not required.
+ 		 */
+ 		char kernel_version[64];
++		/*
++		 * Data that comes from userland.  Can be anything, but
++		 * is currently capped at NETOOPS_BLOB_BYTES.
++		 */
++		char user_blob[NETOOPS_BLOB_BYTES];
+ 	} __attribute__ ((packed)) header;
+ 	struct netoops_arch_data arch_data;
+ 	char data[NETOOPS_DATA_BYTES];
+@@ -104,6 +110,8 @@ struct netoops_msg {
  
  static struct netoops_msg msg;
  
--static void setup_packet_header(int packet_count, int soft_dump)
-+static void setup_packet_header(int packet_count, struct pt_regs *regs,
-+				int soft_dump)
- {
- 	typeof(msg.header) *h = &msg.header;
++static size_t netoops_user_blob_length;
++static char netoops_user_blob[NETOOPS_BLOB_BYTES];
+ static u32 netoops_boot_id;
  
-@@ -101,6 +119,8 @@ static void setup_packet_header(int packet_count, int soft_dump)
+ static void setup_packet_header(int packet_count, struct pt_regs *regs,
+@@ -120,6 +128,7 @@ static void setup_packet_header(int packet_count, struct pt_regs *regs,
+ 					  NETOOPS_TYPE_PRINTK_BUFFER);
+ 	h->packet_count = cpu_to_le32(packet_count);
+ 	h->boot_id = cpu_to_le32(netoops_boot_id);
++	memcpy(h->user_blob, netoops_user_blob, netoops_user_blob_length);
  	strncpy(h->kernel_version, utsname()->release,
  		min(sizeof(msg.header.kernel_version),
  		    sizeof(utsname()->release)));
-+
-+	setup_packet_arch_data(&msg.arch_data, regs);
+@@ -224,10 +233,15 @@ static void netoops(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
+ static ssize_t netoops_show(struct kobject *kobj,
+ 			    struct kobj_attribute *attr,
+ 			    char *buf) {
+-	if (!strcmp(attr->attr.name, "netoops_boot_id"))
++	if (!strcmp(attr->attr.name, "netoops_user_blob")) {
++		memcpy(buf, netoops_user_blob, netoops_user_blob_length);
++		return netoops_user_blob_length;
++	}
++	if (!strcmp(attr->attr.name, "netoops_boot_id")) {
+ 		snprintf(buf, PAGE_SIZE, "%d\n", netoops_boot_id);
+-	buf[PAGE_SIZE - 1] = '\0';
+-	return strnlen(buf, PAGE_SIZE);
++		return strnlen(buf, PAGE_SIZE);
++	}
++	return -EINVAL;
  }
  
- static int packet_count_from_length(unsigned long l)
-@@ -185,7 +205,7 @@ static void netoops(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
+ static ssize_t netoops_store(struct kobject *kobj,
+@@ -237,7 +251,10 @@ static ssize_t netoops_store(struct kobject *kobj,
+ 	if (!count)
+ 		return count;
  
- 	/* setup the non varying parts of the message */
- 	memset(&msg, 0, sizeof(msg));
--	setup_packet_header(packet_count_1 + packet_count_2, soft_dump);
-+	setup_packet_header(packet_count_1 + packet_count_2, regs, soft_dump);
+-	if (!strcmp(attr->attr.name, "netoops_boot_id")) {
++	if (!strcmp(attr->attr.name, "netoops_user_blob")) {
++		count = min(count, NETOOPS_BLOB_BYTES);
++		memcpy(netoops_user_blob, buf, count);
++	} else if (!strcmp(attr->attr.name, "netoops_boot_id")) {
+ 		unsigned long tmp;
+ 		if (strict_strtoul(buf, 0, &tmp))
+ 			return -EINVAL;
+@@ -250,10 +267,13 @@ static ssize_t netoops_store(struct kobject *kobj,
+ 	return count;
+ }
  
- 	/* Transmission loop */
- 	for (i = 0; i < NETOOPS_RETRANSMIT_COUNT; i++) {
++static struct kobj_attribute netoops_user_blob_attribute =
++	__ATTR(netoops_user_blob, 0644, netoops_show, netoops_store);
+ static struct kobj_attribute netoops_boot_number_attribute =
+ 	__ATTR(netoops_boot_id, 0666, netoops_show, netoops_store);
+ 
+ static struct attribute *attrs[] = {
++	&netoops_user_blob_attribute.attr,
+ 	&netoops_boot_number_attribute.attr,
+ 	NULL,
+ };
 
