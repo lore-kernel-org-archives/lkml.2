@@ -1,146 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759975Ab0LNUat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 15:30:49 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55844 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759759Ab0LNUar convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 15:30:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101214094040.GA2790@liondog.tnic>
-References: <20101214094040.GA2790@liondog.tnic>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 14 Dec 2010 12:29:52 -0800
-Message-ID: <AANLkTikj1bUvwAi5deZQ5M7kZN1gnsgTPETbuH4CWiHZ@mail.gmail.com>
-Subject: Re: BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1081
-To: Borislav Petkov <bp@alien8.de>, Alex Deucher <alexdeucher@gmail.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759913Ab0LNUez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 15:34:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42740 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754493Ab0LNUew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 15:34:52 -0500
+From: Rene Sapiens <rene.sapiens@ti.com>
+To: omar.ramirez@ti.com
+Cc: felipe.contreras@gmail.com, x0095840@ti.com, ernesto@ti.com, nm@ti.com,
+        ohad@wizery.com, ameya.palande@nokia.com, x0095078@ti.com,
+        ionut.nicu@mindbit.ro, ivan.gomez@ti.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Rene Sapiens <rene.sapiens@ti.com>
+Subject: [PATCH 00/12]staging:tidspbridge - Remove hungarian notation from structures
+Date: Tue, 14 Dec 2010 14:33:06 -0600
+Message-Id: <1292358798-25875-1-git-send-email-rene.sapiens@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 1:40 AM, Borislav Petkov <bp@alien8.de> wrote:
->
-> The oops below happened today with v2.6.37-rc5-62-g6313e3c with the
-> following hpet oneline fix which should be unrelated (tglx has an
-> equivalent one in -tip/urgent already):
+This series of patches remove the hungarian notation from the structure's elements.
 
-The "sleeping function called from invalid context" part is
-uninteresting - it's just a result of the real bug, which is the oops.
-The oops gets printed out later, because the might_sleep() test just
-happens to trigger first in the page faulting path.
+The words to be renamed are:
 
-So ignore the early part of the dmesg, the only thing relevant is the
-kernel paging request in __lock_acquire.
+Original                Replacement:
+----------------        ----------------
+dw_api_reg_base          api_reg_base
+dw_brd_state             brd_state
+dw_chnl_buf_size         chnl_buf_size
+dw_chnl_offset           chnl_offset
+dw_cmd                   cmd
+dw_core_pm_base          core_pm_base
+dw_dsp_base              dsp_base
+dw_dsp_base_va           dsp_base_va
+dw_dsp_bufs              dsp_bufs
+dw_dsp_buf_size          dsp_buf_size
+dw_dsp_clk_m2_base       dsp_clk_m2_base
+dw_dsp_ext_base_addr     dsp_ext_base_addr
+dw_dsp_phys_addr_offset  dsp_phys_addr_offset
+dw_dsp_start_add         dsp_start_add
+dw_err_mask              err_mask
+dw_gpp_base_pa           gpp_base_pa
+dw_api_clk_base          api_clk_base
+dw_api_reg_base          api_reg_base
+dw_arg                   arg
+dw_arg1                  arg1
+dw_arg2                  arg2
+dw_chnl_buf_size         chnl_buf_size
+dw_dsp_base_addr         dsp_base_addr
+dw_dmmu_base             dmmu_base
+dw_index                 index
+dw_int_addr              int_addr
+dw_internal_size         internal_size
+dw_last_output           last_output
+dw_mem_base              mem_base
+dw_mem_length            mem_length
+dw_mem_phys              mem_phys
+dw_mode                  mode
+dw_num_chnls             num_chnls
+dw_offset_for_monitor    offset_for_monitor
+dw_output_mask           output_mask
+dw_page_size             page_size
+dw_pa                    pa
+dw_per_base              per_base
+dw_per_pm_base           per_pm_base
+dw_public_rhea           public_rhea
+dw_seg_base_pa           seg_base_pa
+dw_seg_base_va           seg_base_va
+dw_self_loop             self_loop
+dw_state                 state
+dw_tc_endianism          tc_endianism
+dw_test_base             test_base
+dw_type                  type
+dw_val1                  val1
+dw_val2                  val2
+dw_val3                  val3
+dw_va                    va
+dw_virt_base             virt_base
+dw_vm_base               vm_base
+dw_vm_size               vm_size
+pfn_allocate             allocate
+pfn_brd_mem_copy         brd_mem_copy
+pfn_brd_mem_map          brd_mem_map
+pfn_brd_mem_un_map       brd_mem_un_map
+pfn_brd_mem_write        brd_mem_write
+pfn_brd_monitor          brd_monitor
+pfn_brd_read             brd_read
+pfn_brd_set_state        brd_set_state
+pfn_brd_start            brd_start
+pfn_brd_status           brd_status
+pfn_brd_stop             brd_stop
+pfn_brd_write            brd_write
+pfn_chnl_add_io_req      chnl_add_io_req
+pfn_chnl_cancel_io       chnl_cancel_io
+pfn_chnl_close           chnl_close
+pfn_chnl_create          chnl_create
+pfn_chnl_destroy         chnl_destroy
+pfn_chnl_flush_io        chnl_flush_io
+pfn_chnl_get_info        chnl_get_info
+pfn_chnl_get_ioc         chnl_get_ioc
+pfn_chnl_get_mgr_info    chnl_get_mgr_info
+pfn_chnl_idle            chnl_idle
+pfn_chnl_open            chnl_open
+pfn_chnl_register_notify chnl_register_notify
+pfn_create		 create
+pfn_delete		 delete
+pfn_dev_cntrl		 dev_cntrl
+pfn_dev_create           by dev_create
+pfn_dev_destroy          dev_destroy
+pfn_exit                 exit
+pfn_get_fxn_addr         get_fxn_addr
+pfn_init                 init
+pfn_io_create            io_create
+pfn_io_destroy           io_destroy
+pfn_io_get_proc_load     io_get_proc_load
+pfn_io_on_loaded         io_on_loaded
+pfn_load                 load
+pfn_msg_create           msg_create
+pfn_msg_create_queue     msg_create_queue
+pfn_msg_delete           msg_delete
+pfn_msg_delete_queue     msg_delete_queue
+pfn_msg_get              msg_get
+pfn_msg_put              msg_put
+pfn_msg_register_notify  msg_register_notify
+pfn_msg_set_queue_id     msg_set_queue_id
+pfn_ovly                 ovly
+pfn_unload               unload
+pfn_write                write
+pf_phase_split           phase_split
+ul_alignment             alignment
+ul_bufsize               bufsize
+ul_bufsize_rms           bufsize_rms
+ul_chnl_buf_size         chnl_buf_size
+ul_chnl_offset           chnl_offset
+ul_code_mem_seg_mask     code_mem_seg_mask
+ul_dais_arg              dais_arg
+ul_data1                 data1
+ul_data_mem_seg_mask     data_mem_seg_mask
+ul_dsp_addr              dsp_addr
+ul_dsp_res_addr          dsp_res_addr
+ul_dsp_size              dsp_size
+ul_dsp_va                dsp_va
+ul_dsp_virt              dsp_virt
+ul_entry                 entry
+ul_external_mem_size     external_mem_size
+ul_fxn_addrs             fxn_addrs
+ul_gpp_pa                gpp_pa
+ul_gpp_phys              gpp_phys
+ul_gpp_read_pointer      gpp_read_pointer
+ul_gpp_size              gpp_size
+ul_gpp_va                gpp_va
+ul_heap_size             heap_size
+ul_internal_mem_size     internal_mem_size
+ul_in_use_cnt            in_use_cnt
+ul_len_max_free_block    len_max_free_block
+ul_max                   max
+ul_min_block_size        min_block_size
+ul_min                   min
+ul_mpu_addr              mpu_addr
+ul_n_bytes               bytes
+ul_num_alloc_blocks      num_alloc_blocks
+ul_number_bytes          number_bytes
+ul_num_chnls             num_chnls
+ul_num_free_blocks       num_free_blocks
+ul_num_gppsm_segs        num_gppsm_segs
+ul_pos                   pos
+ul_reserved              reserved
+hbridge_context          bridge_context
+hchnl_mgr                chnl_mgr
+hcmm_mgr                 cmm_mgr
+hdcd_mgr                 dcd_mgr
+hdeh_mgr                 deh_mgr
+hdev_obj                 dev_obj
+hdrv_obj                 drv_obj
+hmgr_obj                 mgr_obj
+hmsg_mgr                 msg_mgr
+hnode_mgr                node_mgr
+psz_last_coff            last_coff
+ul_resource              resource
+ul_seg_id                seg_id
+ul_size                  size
+ul_sm_size               sm_size
+ul_total_free_size       total_free_size
+ul_total_in_use_cnt      total_in_use_cnt
+ul_total_seg_size        total_seg_size
+ul_trace_buffer_begin    trace_buffer_begin
+ul_trace_buffer_current  trace_buffer_current
+ul_trace_buffer_end      trace_buffer_end
+ul_unit                  unit
+ul_virt_size             virt_size
+us_dsp_mau_size          dsp_mau_size
+us_dsp_word_size         dsp_word_size
+hprocessor               processor
+udma_priority            dma_priority
+udsp_data_mau_size       dsp_data_mau_size
+udsp_heap_addr           dsp_heap_addr
+udsp_heap_res_addr       dsp_heap_res_addr
+udsp_heap_virt_addr      dsp_heap_virt_addr
+udsp_mau_size            dsp_mau_size
+udsp_word_size           dsp_word_size
+ugpp_heap_addr           gpp_heap_addr
+ugpp_heap_virt_addr      gpp_heap_virt_addr
+us_data2                 data2
+us_data3                 data3
+uc_data4                 data4
+uc_data5                 data5
+uc_data6                 data6
+us_load_type             load_type
+usm_length               sm_length
+utimeout                 timeout
+uwc_deadline             wc_deadline
+uwc_execution_time       wc_execution_time
+uwc_period               wc_period
+hnext                    next
+hnode                    node
+hprev                    prev
+hroot                    root
+hstream                  stream
+pbuf                     buf
+pcb_arg                  cb_arg
+pdspheap_list            dspheap_list
+pmsg                     msg
+ps_name                  name
+pstr_create_phase_fxn    str_create_phase_fxn
+pstr_delete_phase_fxn    str_delete_phase_fxn
+pstr_dev_name            str_dev_name
+pstr_event_name          str_event_name
+pstr_execute_phase_fxn   str_execute_phase_fxn
+pstr_i_alg_name          str_i_alg_name
+udma_chnl_id             dma_chnl_id
+un_bufs_in_strm          bufs_in_strm
+usm_buf_size             sm_buf_size
+hio_mgr                  io_mgr
+dw_api_reg_base          api_reg_base
+dw_api_clk_base          api_clk_base
+ap_channel               channels
+pio_requests             io_requests
+pio_completions          io_completions
+pndb_props               ndb_props
+pndb_props_size          ndb_props_size
+pu_num_nodes             num_nodes
+pu_num_procs             num_procs
+psz_path_name            sz_path_name
+pu_index                 index
+pargs                    args
+pu_allocated             allocated
+psize                    size
+hnotification            notification
+pp_rsv_addr              rsv_addr
+prsv_addr                rsv_addr
+pmpu_addr                mpu_addr
+pp_map_addr              map_addr
+ul_map_attr              map_attr
+undb_props_size          ndb_props_size
+dw_buf_size              buf_size
+dw_bytes                 bytes
+pattr                    attr
+pdw_arg                  arg
+ph_cmm_mgr               cmm_mgr
+ph_event                 event
+ph_node                  node
+ph_stream                stream
+pmask                    mask
+pp_argv                  argv
+pp_buf_va                buf_va
+pstatus                  status
+ul_flags                 flags
+ul_seg_id                seg_id
+usize                    size 
 
-Of course, that one is then followed rather closely by a GP fault in
-the radeon driver, which I don't know is real or not. It could easily
-be some bad interaction with the kmsg_dump() thing (a result of the
-first page fault) interacting badly with the X server getting killed
-by that bogus page fault. So it's hard to tell whether the GP fault is
-real and maybe relevant for the discussion, or whether it's a result
-of the earlier oops.
+Rene Sapiens (12):
+  staging:tidspbridge - set1 remove hungarian from structs
+  staging:tidspbridge - set2 remove hungarian from structs
+  staging:tidspbridge - set3 remove hungarian from structs
+  staging:tidspbridge - set4 remove hungarian from structs
+  staging:tidspbridge - set5 remove hungarian from structs
+  staging:tidspbridge - set6 remove hungarian from structs
+  staging:tidspbridge - set7 remove hungarian from structs
+  staging:tidspbridge - set8 remove hungarian from structs
+  staging:tidspbridge - set9 remove hungarian from structs
+  staging:tidspbridge - set10 remove hungarian from structs
+  staging:tidspbridge - set11 remove hungarian from structs
+  staging:tidspbridge - set12 remove hungarian from structs
 
-> Dec 14 10:17:26 liondog kernel: [12312.144509] BUG: unable to handle kernel paging request at 00000110850fc085
-> Dec 14 10:17:26 liondog kernel: [12312.144512] IP: [<ffffffff8106d1da>] __lock_acquire+0x19d/0x173f
-> Dec 14 10:17:26 liondog kernel: [12312.144516] PGD 0
-> Dec 14 10:17:26 liondog kernel: [12312.144518] Oops: 0000 [#1] PREEMPT SMP
-> Dec 14 10:17:26 liondog kernel: [12312.144521] last sysfs file: /sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq
-> Dec 14 10:17:26 liondog kernel: [12312.144524] CPU 1
-> Dec 14 10:17:26 liondog kernel: [12312.144526] Modules linked in: tun ip6table_filter ip6_tables iptable_filter ip_tables x_tables powernow_k8 mperf cpufreq_ondemand cpufreq_powersave cpufreq_userspace cpufreq_conservative cpufreq_stats freq_table binfmt_misc kvm_amd kvm fuse ipv6 vfat fat 8250_pnp 8250 serial_core ohci_hcd edac_core k10temp
-> Dec 14 10:17:26 liondog kernel: [12312.144548]
-> Dec 14 10:17:26 liondog kernel: [12312.144551] Pid: 1930, comm: Xorg Not tainted 2.6.37-rc5-00063-g779049f #1 M3A78 PRO/System Product Name
-> Dec 14 10:17:26 liondog kernel: [12312.144553] RIP: 0010:[<ffffffff8106d1da>]  [<ffffffff8106d1da>] __lock_acquire+0x19d/0x173f
-> Dec 14 10:17:26 liondog kernel: [12312.144557] RSP: 0000:ffff88022d1b3cb8  EFLAGS: 00013087
-> Dec 14 10:17:26 liondog kernel: [12312.144559] RAX: ffffffff819bb000 RBX: ffff88022d09da00 RCX: ffffffff821c6b40
-> Dec 14 10:17:26 liondog kernel: [12312.144561] RDX: 00000110850fc085 RSI: 0000000000000000 RDI: 8000000000000000
-> Dec 14 10:17:26 liondog kernel: [12312.144563] RBP: ffff88022d1b3d88 R08: 0000000000000002 R09: 0000000000000000
-> Dec 14 10:17:26 liondog kernel: [12312.144564] R10: ffffffff8124f16c R11: 0000000000001128 R12: ffff88022f445b90
-> Dec 14 10:17:26 liondog kernel: [12312.144566] R13: 0000000000000000 R14: 00000110850fc085 R15: 0000000000000002
-> Dec 14 10:17:26 liondog kernel: [12312.144569] FS:  00007f2fe2941700(0000) GS:ffff8800cf000000(0000) knlGS:00000000f6a4c740
-> Dec 14 10:17:26 liondog kernel: [12312.144571] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> Dec 14 10:17:26 liondog kernel: [12312.144572] CR2: 00000110850fc085 CR3: 000000022b965000 CR4: 00000000000006e0
-> Dec 14 10:17:26 liondog kernel: [12312.144574] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> Dec 14 10:17:26 liondog kernel: [12312.144576] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Dec 14 10:17:26 liondog kernel: [12312.144578] Process Xorg (pid: 1930, threadinfo ffff88022d1b2000, task ffff88022f445b90)
-> Dec 14 10:17:26 liondog kernel: [12312.144580] Stack:
-> Dec 14 10:17:26 liondog kernel: [12312.144581]  0000000000000046 0000000000000001 ffff88022d1b3ce8 0000000081032b75
-> Dec 14 10:17:26 liondog kernel: [12312.144585]  ffff880200000001 0000000000000001 ffff88022d1b3cf8 ffffffff81069d4a
-> Dec 14 10:17:26 liondog kernel: [12312.144589]  ffff88022d1b3d18 ffff88022f445b90 ffff88022f445b90 ffffffff8144c1ea
-> Dec 14 10:17:26 liondog kernel: [12312.144593] Call Trace:
-> Dec 14 10:17:26 liondog kernel: [12312.144596]  [<ffffffff81069d4a>] ? put_lock_stats+0xe/0x29
-> Dec 14 10:17:26 liondog kernel: [12312.144599]  [<ffffffff8144c1ea>] ? __mutex_unlock_slowpath+0x105/0x129
-> Dec 14 10:17:26 liondog kernel: [12312.144602]  [<ffffffff8106b29d>] ? trace_hardirqs_on+0xd/0xf
-> Dec 14 10:17:26 liondog kernel: [12312.144605]  [<ffffffff81021e19>] ? do_page_fault+0x170/0x3a7
-> Dec 14 10:17:26 liondog kernel: [12312.144608]  [<ffffffff8106e8c9>] lock_acquire+0x14d/0x192
-> Dec 14 10:17:26 liondog kernel: [12312.144610]  [<ffffffff81021e19>] ? do_page_fault+0x170/0x3a7
-> Dec 14 10:17:26 liondog kernel: [12312.144613]  [<ffffffff8124f16c>] ? radeon_cp_idle+0x0/0xa6
-> Dec 14 10:17:26 liondog kernel: [12312.144616]  [<ffffffff8105ea37>] down_read_trylock+0x56/0x5f
-> Dec 14 10:17:26 liondog kernel: [12312.144619]  [<ffffffff81021e19>] ? do_page_fault+0x170/0x3a7
-> Dec 14 10:17:26 liondog kernel: [12312.144621]  [<ffffffff81021e19>] do_page_fault+0x170/0x3a7
-> Dec 14 10:17:26 liondog kernel: [12312.144624]  [<ffffffff810f6159>] ? do_vfs_ioctl+0x4d0/0x51f
-> Dec 14 10:17:26 liondog kernel: [12312.144627]  [<ffffffff8144f403>] ? error_sti+0x5/0x6
-> Dec 14 10:17:26 liondog kernel: [12312.144630]  [<ffffffff8144dbfb>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> Dec 14 10:17:26 liondog kernel: [12312.144632]  [<ffffffff8144f21f>] page_fault+0x1f/0x30
-> Dec 14 10:17:26 liondog kernel: [12312.144634] Code: 01 00 00 74 33 80 3d 25 1b c7 00 01 74 2a be a6 02 00 00 48 c7 c7 d1 8b 5e 81 e8 af dc fc ff c6 05 0b 1b c7 00 01 eb 10 49 89 d6 <49> 8b 16 49 39 ce 0f 18 0a 75 bc eb 09 4d 85 f6 0f 85 2e 03 00
-> Dec 14 10:17:26 liondog kernel: [12312.144671] RIP  [<ffffffff8106d1da>] __lock_acquire+0x19d/0x173f
-> Dec 14 10:17:26 liondog kernel: [12312.144674]  RSP <ffff88022d1b3cb8>
-> Dec 14 10:17:26 liondog kernel: [12312.144676] CR2: 00000110850fc085
-> Dec 14 10:17:26 liondog kernel: [12312.144678] ---[ end trace b215ad3559f4bac0 ]---
+ drivers/staging/tidspbridge/core/_deh.h            |    2 +-
+ drivers/staging/tidspbridge/core/_msg_sm.h         |    4 +-
+ drivers/staging/tidspbridge/core/_tiomap.h         |   30 +-
+ drivers/staging/tidspbridge/core/chnl_sm.c         |  120 +++---
+ drivers/staging/tidspbridge/core/io_sm.c           |  384 +++++++++---------
+ drivers/staging/tidspbridge/core/msg_sm.c          |   22 +-
+ drivers/staging/tidspbridge/core/tiomap3430.c      |  194 +++++-----
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |  108 +++---
+ drivers/staging/tidspbridge/core/tiomap_io.c       |   92 +++---
+ drivers/staging/tidspbridge/core/ue_deh.c          |   28 +-
+ drivers/staging/tidspbridge/dynload/cload.c        |   42 +-
+ .../staging/tidspbridge/dynload/dload_internal.h   |    6 +-
+ drivers/staging/tidspbridge/gen/uuidutil.c         |   22 +-
+ .../tidspbridge/include/dspbridge/_chnl_sm.h       |   22 +-
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |   34 +-
+ .../tidspbridge/include/dspbridge/chnldefs.h       |    6 +-
+ .../tidspbridge/include/dspbridge/chnlpriv.h       |    8 +-
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |    2 +-
+ .../tidspbridge/include/dspbridge/cmmdefs.h        |   38 +-
+ .../staging/tidspbridge/include/dspbridge/cod.h    |    2 +-
+ .../tidspbridge/include/dspbridge/dbdcddef.h       |   14 +-
+ .../staging/tidspbridge/include/dspbridge/dbdefs.h |   72 ++--
+ .../staging/tidspbridge/include/dspbridge/dev.h    |    6 +-
+ .../tidspbridge/include/dspbridge/dispdefs.h       |    4 +-
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   16 +-
+ .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |  212 +++++-----
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   78 ++--
+ .../tidspbridge/include/dspbridge/dspioctl.h       |    8 +-
+ .../staging/tidspbridge/include/dspbridge/iodefs.h |    2 +-
+ .../tidspbridge/include/dspbridge/mgrpriv.h        |    4 +-
+ .../tidspbridge/include/dspbridge/nldrdefs.h       |   24 +-
+ .../tidspbridge/include/dspbridge/nodepriv.h       |   10 +-
+ .../tidspbridge/include/dspbridge/strmdefs.h       |    4 +-
+ drivers/staging/tidspbridge/pmgr/chnl.c            |    4 +-
+ drivers/staging/tidspbridge/pmgr/cmm.c             |  224 ++++++------
+ drivers/staging/tidspbridge/pmgr/cod.c             |    6 +-
+ drivers/staging/tidspbridge/pmgr/dbll.c            |   12 +-
+ drivers/staging/tidspbridge/pmgr/dev.c             |  268 +++++++-------
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |  272 +++++++-------
+ drivers/staging/tidspbridge/pmgr/io.c              |    8 +-
+ drivers/staging/tidspbridge/pmgr/ioobj.h           |    4 +-
+ drivers/staging/tidspbridge/pmgr/msg.c             |    4 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   58 ++--
+ drivers/staging/tidspbridge/rmgr/disp.c            |   82 ++--
+ drivers/staging/tidspbridge/rmgr/drv.c             |   86 ++--
+ drivers/staging/tidspbridge/rmgr/mgr.c             |   16 +-
+ drivers/staging/tidspbridge/rmgr/nldr.c            |  114 +++---
+ drivers/staging/tidspbridge/rmgr/node.c            |  414 ++++++++++----------
+ drivers/staging/tidspbridge/rmgr/proc.c            |  168 ++++----
+ drivers/staging/tidspbridge/rmgr/pwr.c             |    8 +-
+ drivers/staging/tidspbridge/rmgr/rmm.c             |   18 +-
+ drivers/staging/tidspbridge/rmgr/strm.c            |   86 ++--
+ 52 files changed, 1736 insertions(+), 1736 deletions(-)
 
-That code disassembles to
-
-
-   0:	74 33                	je     0x35
-   2:	80 3d 25 1b c7 00 01 	cmpb   $0x1,0xc71b25(%rip)        # 0xc71b2e
-   9:	74 2a                	je     0x35
-   b:	be a6 02 00 00       	mov    $0x2a6,%esi
-  10:	48 c7 c7 d1 8b 5e 81 	mov    $0xffffffff815e8bd1,%rdi
-  17:	e8 af dc fc ff       	callq  0xfffffffffffcdccb
-  1c:	c6 05 0b 1b c7 00 01 	movb   $0x1,0xc71b0b(%rip)        # 0xc71b2e
-  23:	eb 10                	jmp    0x35
-  25:	49 89 d6             	mov    %rdx,%r14
-  28:*	49 8b 16             	mov    (%r14),%rdx     <-- trapping instruction
-  2b:	49 39 ce             	cmp    %rcx,%r14
-  2e:	0f 18 0a             	prefetcht0 (%rdx)
-  31:	75 bc                	jne    0xffffffffffffffef
-  33:	eb 09                	jmp    0x3e
-
-which I think matches up with this:
-
-        movq    (%rdx), %rsi    # class_293->hash_entry.next, D.31652
-        cmpq    %rcx, %rdx      # hash_head, class
-        prefetcht0      (%rsi)  # D.31652
-        jne     .L449   #,
-        jmp     .L560   #
-
-which looks like one of the "list_for_each_entry()" uses of that
-hash_head. In fact, building lockdep.lst and matching against that
-0x2a6 constant (it's a warn_slowpath_null thing and is the line
-number), we can pinpoint exactly which one it seems to be. Afaik, it
-seems to be this code in look_up_lock_class:
-
-        /*
-         * We can walk the hash lockfree, because the hash only
-         * grows, and we are careful when adding entries to the end:
-         */
-        list_for_each_entry(class, hash_head, hash_entry) {
-                if (class->key == key) {
-                        WARN_ON_ONCE(class->name != lock->name);
-                        return class;
-                }
-        }
-
-Maybe the RCU list use in lockdep isn't entirely safe?
-
-Added Peter and Ingo to the cc. It does look like some lockdep race.
-
-Or then it's some general memory corruption, of course. That just
-happened to hit the lockdep data structures. That would explain your
-subsequent radeon GP fault too.
-
-                                Linus
