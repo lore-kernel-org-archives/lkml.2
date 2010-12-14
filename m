@@ -1,140 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759330Ab0LNPKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:10:12 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:39839 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759026Ab0LNPKI (ORCPT
+	id S932218Ab0LNPKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:10:21 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:39179 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759311Ab0LNPKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:10:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Egt91DcwujjdbbSvHgbaJ1A8mHuJh6Re4HgTb9Oy49Fhf4AfHPooVzaAMWXrsRURk1
-         YWMuVS3vZBR9SvHYdQMdwIeTKbvK2CFb/ANGNsqk+oOgL7AvKXfeAK7ME3QsmsKrgXjz
-         jp5TCg2o+ZIB0wy51RaTk8SpPEpfM1LloN/yg=
-From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Subject: [PATCH 2/2] ARM: Gemini: add platform support for Gemini RTC
-Date: Tue, 14 Dec 2010 16:08:27 +0100
-Message-Id: <1292339307-14336-3-git-send-email-ulli.kroll@googlemail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com>
-References: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com>
+	Tue, 14 Dec 2010 10:10:11 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D0788D8.5080905@cam.ac.uk>
+Date: Tue, 14 Dec 2010 15:10:16 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: michael.hennerich@analog.com
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drivers@analog.com, device-drivers-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 2/3] IIO: dds.h convenience macros
+References: <1292338462-4299-1-git-send-email-michael.hennerich@analog.com> <1292338462-4299-2-git-send-email-michael.hennerich@analog.com>
+In-Reply-To: <1292338462-4299-2-git-send-email-michael.hennerich@analog.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-adds rtc support for all Gemini SoC boards
-nas4220b, rut1xx, wbd111, wbd222
-
-Signed-off-by: Hans Ulli Kroll <ulli.kroll@googlemail.com>
----
- arch/arm/mach-gemini/board-nas4220b.c |    1 +
- arch/arm/mach-gemini/board-rut1xx.c   |    1 +
- arch/arm/mach-gemini/board-wbd111.c   |    1 +
- arch/arm/mach-gemini/board-wbd222.c   |    1 +
- arch/arm/mach-gemini/common.h         |    1 +
- arch/arm/mach-gemini/devices.c        |   26 ++++++++++++++++++++++++++
- 6 files changed, 31 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-gemini/board-nas4220b.c b/arch/arm/mach-gemini/board-nas4220b.c
-index 2ba096d..0cf7a07 100644
---- a/arch/arm/mach-gemini/board-nas4220b.c
-+++ b/arch/arm/mach-gemini/board-nas4220b.c
-@@ -98,6 +98,7 @@ static void __init ib4220b_init(void)
- 	platform_register_pflash(SZ_16M, NULL, 0);
- 	platform_device_register(&ib4220b_led_device);
- 	platform_device_register(&ib4220b_key_device);
-+	platform_register_rtc();
- }
- 
- MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
-diff --git a/arch/arm/mach-gemini/board-rut1xx.c b/arch/arm/mach-gemini/board-rut1xx.c
-index a9a0d8b..4fa09af 100644
---- a/arch/arm/mach-gemini/board-rut1xx.c
-+++ b/arch/arm/mach-gemini/board-rut1xx.c
-@@ -82,6 +82,7 @@ static void __init rut1xx_init(void)
- 	platform_register_pflash(SZ_8M, NULL, 0);
- 	platform_device_register(&rut1xx_leds);
- 	platform_device_register(&rut1xx_keys_device);
-+	platform_register_rtc();
- }
- 
- MACHINE_START(RUT100, "Teltonika RUT100")
-diff --git a/arch/arm/mach-gemini/board-wbd111.c b/arch/arm/mach-gemini/board-wbd111.c
-index 8b88d50..af7b68a 100644
---- a/arch/arm/mach-gemini/board-wbd111.c
-+++ b/arch/arm/mach-gemini/board-wbd111.c
-@@ -130,6 +130,7 @@ static void __init wbd111_init(void)
- 				 wbd111_num_partitions);
- 	platform_device_register(&wbd111_leds_device);
- 	platform_device_register(&wbd111_keys_device);
-+	platform_register_rtc();
- }
- 
- MACHINE_START(WBD111, "Wiliboard WBD-111")
-diff --git a/arch/arm/mach-gemini/board-wbd222.c b/arch/arm/mach-gemini/board-wbd222.c
-index 1eebcec..99e5bbe 100644
---- a/arch/arm/mach-gemini/board-wbd222.c
-+++ b/arch/arm/mach-gemini/board-wbd222.c
-@@ -130,6 +130,7 @@ static void __init wbd222_init(void)
- 		wbd222_num_partitions);
- 	platform_device_register(&wbd222_leds_device);
- 	platform_device_register(&wbd222_keys_device);
-+	platform_register_rtc();
- }
- 
- MACHINE_START(WBD222, "Wiliboard WBD-222")
-diff --git a/arch/arm/mach-gemini/common.h b/arch/arm/mach-gemini/common.h
-index 9392834..7670c39 100644
---- a/arch/arm/mach-gemini/common.h
-+++ b/arch/arm/mach-gemini/common.h
-@@ -18,6 +18,7 @@ extern void gemini_map_io(void);
- extern void gemini_init_irq(void);
- extern void gemini_timer_init(void);
- extern void gemini_gpio_init(void);
-+extern void platform_register_rtc(void);
- 
- /* Common platform devices registration functions */
- extern int platform_register_uart(void);
-diff --git a/arch/arm/mach-gemini/devices.c b/arch/arm/mach-gemini/devices.c
-index 6b52525..5cff298 100644
---- a/arch/arm/mach-gemini/devices.c
-+++ b/arch/arm/mach-gemini/devices.c
-@@ -90,3 +90,29 @@ int platform_register_pflash(unsigned int size, struct mtd_partition *parts,
- 
- 	return platform_device_register(&pflash_device);
- }
-+
-+static struct resource gemini_rtc_resources[] = {
-+	[0] = {
-+		.start  = GEMINI_RTC_BASE,
-+		.end    = GEMINI_RTC_BASE + 0x24,
-+		.flags  = IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start  = IRQ_RTC,
-+		.end    = IRQ_RTC,
-+		.flags  = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device gemini_rtc_device = {
-+	.name		= "rtc-gemini",
-+	.id		= 0,
-+	.num_resources	= ARRAY_SIZE(gemini_rtc_resources),
-+	.resource	= gemini_rtc_resources,
-+};
-+
-+int __init platform_register_rtc(void)
-+{
-+	return platform_device_register(&gemini_rtc_device);
-+}
-+
--- 
-1.7.3.2
+On 12/14/10 14:54, michael.hennerich@analog.com wrote:
+> From: Michael Hennerich <michael.hennerich@analog.com>
+> 
+> Changes since RFC/v1:
+> IIO: Apply list review feedback
+> 
+> Apply list review feedback:
+> 	Rename attributes to fit IIO convention used in other drivers.
+> 	Provide ddsX_out_enable as opposed to ddsX_out_disable.
+> 	Fix typos.
+> 
+> Changes since v2:
+> IIO: dds.h: Apply more list review feedback
+> 
+> 	Fix mixture of X and [n] notation for indices.
+> 	Remove duplicated descriptions.
+> 	Add store methods to some dds convenience macros.
+> 
+> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/staging/iio/dds/dds.h |  110 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 110 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/iio/dds/dds.h
+> 
+> diff --git a/drivers/staging/iio/dds/dds.h b/drivers/staging/iio/dds/dds.h
+> new file mode 100644
+> index 0000000..d8ac3a9
+> --- /dev/null
+> +++ b/drivers/staging/iio/dds/dds.h
+> @@ -0,0 +1,110 @@
+> +/*
+> + * dds.h - sysfs attributes associated with DDS devices
+> + *
+> + * Copyright (c) 2010 Analog Devices Inc.
+> + *
+> + * Licensed under the GPL-2 or later.
+> + */
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_freqY
+> + */
+> +
+> +#define IIO_DEV_ATTR_FREQ(_channel, _num, _mode, _show, _store, _addr)	\
+> +	IIO_DEVICE_ATTR(dds##_channel##_freq##_num,			\
+> +			_mode, _show, _store, _addr)
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_freqY_scale
+> + */
+> +
+> +#define IIO_CONST_ATTR_FREQ_SCALE(_channel, _string)			\
+> +	IIO_CONST_ATTR(dds##_channel##_freq_scale, _string)
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_freqsymbol
+> + */
+> +
+> +#define IIO_DEV_ATTR_FREQSYMBOL(_channel, _mode, _show, _store, _addr)	\
+> +	IIO_DEVICE_ATTR(dds##_channel##_freqsymbol,			\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_phaseY
+> + */
+> +
+> +#define IIO_DEV_ATTR_PHASE(_channel, _num, _mode, _show, _store, _addr)	\
+> +	IIO_DEVICE_ATTR(dds##_channel##_phase##_num,			\
+> +			_mode, _show, _store, _addr)
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_phaseY_scale
+> + */
+> +
+> +#define IIO_CONST_ATTR_PHASE_SCALE(_channel, _string)			\
+> +	IIO_CONST_ATTR(dds##_channel##_phase_scale, _string)
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_phasesymbol
+> + */
+> +
+> +#define IIO_DEV_ATTR_PHASESYMBOL(_channel, _mode, _show, _store, _addr)	\
+> +	IIO_DEVICE_ATTR(dds##_channel##_phasesymbol,			\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_pincontrol_en
+> + */
+> +
+> +#define IIO_DEV_ATTR_PINCONTROL_EN(_channel, _mode, _show, _store, _addr)\
+> +	IIO_DEVICE_ATTR(dds##_channel##_pincontrol_en,			\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_pincontrol_freq_en
+> + */
+> +
+> +#define IIO_DEV_ATTR_PINCONTROL_FREQ_EN(_channel, _mode, _show, _store, _addr)\
+> +	IIO_DEVICE_ATTR(dds##_channel##_pincontrol_freq_en,		\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_pincontrol_phase_en
+> + */
+> +
+> +#define IIO_DEV_ATTR_PINCONTROL_PHASE_EN(_channel, _mode, _show, _store, _addr)\
+> +	IIO_DEVICE_ATTR(dds##_channel##_pincontrol_phase_en,		\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_out_enable
+> + */
+> +
+> +#define IIO_DEV_ATTR_OUT_ENABLE(_channel, _mode, _show, _store, _addr)	\
+> +	IIO_DEVICE_ATTR(dds##_channel##_out_enable,			\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_outY_enable
+> + */
+> +
+> +#define IIO_DEV_ATTR_OUTY_ENABLE(_channel, _output,			\
+> +			_mode, _show, _store, _addr)			\
+> +	IIO_DEVICE_ATTR(dds##_channel##_out##_output##_enable,		\
+> +			_mode, _show, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_outY_wavetype
+> + */
+> +
+> +#define IIO_DEV_ATTR_OUT_WAVETYPE(_channel, _output, _store, _addr)	\
+> +	IIO_DEVICE_ATTR(dds##_channel##_out##_output##_wavetype,	\
+> +			S_IWUSR, NULL, _store, _addr);
+> +
+> +/**
+> + * /sys/bus/iio/devices/.../ddsX_outY_wavetype_available
+> + */
+> +
+> +#define IIO_CONST_ATTR_OUT_WAVETYPES_AVAILABLE(_channel, _output, _modes)\
+> +	IIO_CONST_ATTR(dds##_channel##_out##_output##_wavetype_available,\
+> +			_modes);
+> --
+> 1.6.0.2
+> 
+> 
 
