@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758995Ab0LNBtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 20:49:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61109 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758959Ab0LNBtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 20:49:01 -0500
-Message-ID: <4D06CE19.9000908@cn.fujitsu.com>
-Date: Tue, 14 Dec 2010 09:53:29 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1759003Ab0LNByp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 20:54:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758964Ab0LNByn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 20:54:43 -0500
+Message-ID: <4D06CE4C.3070003@redhat.com>
+Date: Mon, 13 Dec 2010 23:54:20 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: MMU: don't make direct sp read-only if !map_writable
-References: <4D05F5F6.3070909@cn.fujitsu.com> <4D05F62D.9040308@redhat.com>
-In-Reply-To: <4D05F62D.9040308@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 09:48:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 09:49:00,
-	Serialize complete at 2010-12-14 09:49:00
-Content-Transfer-Encoding: 7bit
+To: Jarod Wilson <jarod@redhat.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Linux Input <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-media@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>,
+        =?UTF-8?B?RGF2aWQgSMOkcmRlbWFu?= <david@hardeman.nu>
+Subject: Re: [RFC] Input: define separate EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2
+References: <20101209093948.GD8821@core.coreip.homeip.net> <4D012844.3020009@euromail.se> <20101209191647.GC23781@core.coreip.homeip.net> <20101213090559.GH21401@core.coreip.homeip.net> <20101213183128.GE2531@redhat.com>
+In-Reply-To: <20101213183128.GE2531@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 06:32 PM, Avi Kivity wrote:
-> On 12/13/2010 12:31 PM, Xiao Guangrong wrote:
->> Currently, if the page is not allowed to write, then it can drop
->> ACC_WRITE_MASK in pte_access, and the direct sp's access is:
->>     gw->pt_access&  gw->pte_access
->> so, it also removes the write access in the direct sp.
+Em 13-12-2010 16:31, Jarod Wilson escreveu:
+> On Mon, Dec 13, 2010 at 01:06:00AM -0800, Dmitry Torokhov wrote:
+>> On Thu, Dec 09, 2010 at 11:16:47AM -0800, Dmitry Torokhov wrote:
+>>> On Thu, Dec 09, 2010 at 08:04:36PM +0100, Henrik Rydberg wrote:
+>>>> On 12/09/2010 10:39 AM, Dmitry Torokhov wrote:
+>>>>
+>>>>> The desire to keep old names for the EVIOCGKEYCODE/EVIOCSKEYCODE while
+>>>>> extending them to support large scancodes was a mistake. While we tried
+>>>>> to keep ABI intact (and we succeeded in doing that, programs compiled
+>>>>> on older kernels will work on newer ones) there is still a problem with
+>>>>> recompiling existing software with newer kernel headers.
+>>>>>
+>>>>> New kernel headers will supply updated ioctl numbers and kernel will
+>>>>> expect that userspace will use struct input_keymap_entry to set and
+>>>>> retrieve keymap data. But since the names of ioctls are still the same
+>>>>> userspace will happily compile even if not adjusted to make use of the
+>>>>> new structure and will start miraculously fail in the field.
+>>>>>
+>>>>> To avoid this issue let's revert EVIOCGKEYCODE/EVIOCSKEYCODE definitions
+>>>>> and add EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2 so that userspace can explicitly
+>>>>> select the style of ioctls it wants to employ.
+>>>>>
+>>>>> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+>>>>> ---
+>>>>
+>>>>
+>>>> Would the header change suffice in itself?
+>>>
+>>> We still need to change evdev to return -EINVAL on wrong sizes but yes,
+>>> the amount of change there could be more limited. I just thought that
+>>> splitting it up explicitly shows the differences in handling better. If
+>>> people prefer the previos version we could leave it, I am 50/50 between
+>>> them.
+>>>
 >>
->> There is a problem: if the access of those pages which map thought the
->> same
->> mapping in guest is different in host, it causes host switch direct sp
->> very
->> frequently.
+>> *ping*
+>>
+>> Mauro, Jarod, do you have an opinion on this? I think we need to settle
+>> on a solution before 2.6.37 is out.
 > 
-> I just sent a patch to fix this in a different way, please review it.
+> Sorry, been meaning to reply, just been quite tied up with other work...
+> I'm of two minds on this as well, but probably leaning slightly in favor
+> of going ahead with an explicit _V2 so as to not break existing userspace
+> in new and unexpected ways. There presumably isn't much in the way of
+> userspace already adapted to the new interface, and its simple to do
+> another rev of those that have been. Okay, yeah, this is probably the best
+> way to go about it.
 > 
+> Acked-by: Jarod Wilson <jarod@redhat.com>
+> 
+> 
+I'm with some email troubles here. Not sure if you got my answer. I'm OK with
+those changes.
 
-Your patch is good for me, please ignore this one :-)
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com
 
-Umm, do we need move "access &= ~ACC_WRITE_MASK" into set_spte() then
-can remove the same code in the caller?
+Cheers,
+Mauro
