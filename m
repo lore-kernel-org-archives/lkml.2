@@ -1,131 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab0LNWn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 17:43:58 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48807 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759246Ab0LNWn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 17:43:56 -0500
-Date: Tue, 14 Dec 2010 14:43:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] mm: kswapd: Keep kswapd awake for high-order
- allocations until a percentage of the node is balanced
-Message-Id: <20101214144341.71b43cb5.akpm@linux-foundation.org>
-In-Reply-To: <1291995985-5913-3-git-send-email-mel@csn.ul.ie>
-References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
-	<1291995985-5913-3-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932417Ab0LNWrz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 17:47:55 -0500
+Received: from waste.org ([173.11.57.241]:33285 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759164Ab0LNWry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 17:47:54 -0500
+Subject: Re: [PATCH v3 21/22] netoops: Add user-programmable boot_id
+From: Matt Mackall <mpm@selenic.com>
+To: Mike Waychison <mikew@google.com>
+Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
+        adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+In-Reply-To: <AANLkTineeFcSNx09P=2SZGcBHeq5p_LQ54nU=uGVv_Ck@mail.gmail.com>
+References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
+	 <20101214213048.17022.58746.stgit@mike.mtv.corp.google.com>
+	 <1292362957.3446.851.camel@calx>
+	 <AANLkTi=Q+LaS7yaU_4ThkhMUM-q8S3JTuwMWqAikQPgH@mail.gmail.com>
+	 <1292364378.3446.854.camel@calx>
+	 <AANLkTineeFcSNx09P=2SZGcBHeq5p_LQ54nU=uGVv_Ck@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 16:47:44 -0600
+Message-ID: <1292366864.3446.875.camel@calx>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 15:46:21 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-> When reclaiming for high-orders, kswapd is responsible for balancing a
-> node but it should not reclaim excessively. It avoids excessive reclaim by
-> considering if any zone in a node is balanced then the node is balanced.
-
-Here you're referring to your [patch 1/6] yes?  Not to current upstream.
-
-> In
-> the cases where there are imbalanced zone sizes (e.g. ZONE_DMA with both
-> ZONE_DMA32 and ZONE_NORMAL), kswapd can go to sleep prematurely as just
-> one small zone was balanced.
-
-Since [1/6]?
-
-> This alters the sleep logic of kswapd slightly. It counts the number of pages
-> that make up the balanced zones. If the total number of balanced pages is
-
-Define "balanced page"?  Seems to be the sum of the total sizes of all
-zones which have reached their desired free-pages threshold?
-
-But this includes all page orders, whereas here we're targetting a
-particular order.  Although things should work out OK due to the
-scaling/sizing proportionality.
-
-> more than a quarter of the zone, kswapd will go back to sleep. This should
-> keep a node balanced without reclaiming an excessive number of pages.
-
-ick.
-
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/vmscan.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++---------
->  1 files changed, 49 insertions(+), 9 deletions(-)
+On Tue, 2010-12-14 at 14:33 -0800, Mike Waychison wrote:
+> On Tue, Dec 14, 2010 at 2:06 PM, Matt Mackall <mpm@selenic.com> wrote:
+> > On Tue, 2010-12-14 at 13:59 -0800, Mike Waychison wrote:
+> >> On Tue, Dec 14, 2010 at 1:42 PM, Matt Mackall <mpm@selenic.com> wrote:
+> >> > On Tue, 2010-12-14 at 13:30 -0800, Mike Waychison wrote:
+> >> >> Add support for letting userland define a 32bit boot id.  This is useful
+> >> >> for users to be able to correlate netoops reports to specific boot
+> >> >> instances offline.
+> >> >
+> >> > This sounds a lot like the pre-existing /proc/sys/kernel/random/boot_id
+> >> > that's used by kerneloops.org.
+> >>
+> >> Could be.  I'm looking at it now... There is no documentation for this
+> >> boot_id field?
+> >
+> > Probably not. It's just a random number generated at boot.
+> >
+> >> Reusing this guy would work, except that it doesn't appear to allow
+> >> arbitrary values to be set.  We need to inject our boot sequence
+> >> number (which is figured out in userland) in the packet somehow as we
+> >> need to correlate it to our other monitoring systems.
+> >
+> > What happens if you oops before userspace is available?
+> >
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 625dfba..6723101 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2191,10 +2191,40 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
->  }
->  #endif
->  
-> +/*
-> + * pgdat_balanced is used when checking if a node is balanced for high-order
-> + * allocations.
+> Either one of two general cases:
+>   - The crash is a one-off and the machine comes back.  The boot
+> number sequence will see a hole in it, which is a clue that something
+> bad happened.
+>   - The machine is in a crash loop.  This has the same failure mode
+> for us as if the machine never made it onto the network due to
+> whatever reason: bad cables, bad firmware, bad ram, ...
+> 
+> In both cases, we can detect that something is wrong and handle it.
+> Note that our firmware is responsible for incrementing the boot
+> sequence at bootup, which is why the above works.   In general though,
+> our machines do make it up to userland -- staying alive once booted is
+> the hard part ;)
 
-Is this the correct use of the term "balanced"?  I think "balanced" is
-something that happens *between* zones: They've all achieved the same
-(perhaps weighted) ratio of free pages.  
+Interesting. Is this Google-specific firmware magic? I'd probably accept
+a hook in random.c to fold a number into the UUID, which would unify
+things. 
 
->  Only zones that meet watermarks and are in a zone allowed
-> + * by the callers classzone_idx are added to balanced_pages. The total of
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-caller's
 
-> + * balanced pages must be at least 25% of the zones allowed by classzone_idx
-> + * for the node to be considered balanced. Forcing all zones to be balanced
-> + * for high orders can cause excessive reclaim when there are imbalanced zones.
-
-Excessive reclaim of what?
-
-If one particular zone is having trouble achieving its desired level of
-free pages of a partocular order, are you saying that kswapd sits there
-madly scanning other zones, which have already reached their desired
-level?  If so, that would be bad.
-
-I think you're saying that we just keep on scanning away at this one
-zone.  But what was wrong with doing that?
-
-> + * The choice of 25% is due to
-> + *   o a 16M DMA zone that is balanced will not balance a zone on any
-> + *     reasonable sized machine
-
-How does a zone balance another zone?
-
-> + *   o On all other machines, the top zone must be at least a reasonable
-> + *     precentage of the middle zones. For example, on 32-bit x86, highmem
-> + *     would need to be at least 256M for it to be balance a whole node.
-> + *     Similarly, on x86-64 the Normal zone would need to be at least 1G
-> + *     to balance a node on its own. These seemed like reasonable ratios.
-> + */
-> +static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
-> +						int classzone_idx)
-> +{
-> +	unsigned long present_pages = 0;
-> +	int i;
-> +
-> +	for (i = 0; i <= classzone_idx; i++)
-> +		present_pages += pgdat->node_zones[i].present_pages;
-> +
-> +	return balanced_pages > (present_pages >> 2);
-> +}
-> +
->
-> ...
->
