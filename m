@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760234Ab0LNV3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:29:43 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:27230 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760198Ab0LNV3j (ORCPT
+	id S1754854Ab0LNVh0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:37:26 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:57961 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab0LNVhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:29:39 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=trjTDI24sRyJ7+v0q9JEgUY68gagm5dEtcTpbny0g/OtCLX6D2mmoEmHJ2incW9dT
-	mDxieBmDUsq8xIoeox/hw==
-Subject: [PATCH v3 01/22] netconsole: Remove unneeded reference counting
-To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>
-From: Mike Waychison <mikew@google.com>
-Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
-        =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Tue, 14 Dec 2010 13:28:58 -0800
-Message-ID: <20101214212858.17022.78664.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
-References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Tue, 14 Dec 2010 16:37:23 -0500
+Message-ID: <4D07E38C.4020201@canonical.com>
+Date: Tue, 14 Dec 2010 13:37:16 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Takashi Iwai <tiwai@suse.de>, Chris Bagwell <chris@cnpbagwell.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Input: synaptics - add multitouch packet support
+References: <1292280948-1933-1-git-send-email-rydberg@euromail.se> <4D06A7B1.6060609@canonical.com> <4D06A90C.90009@euromail.se>
+In-Reply-To: <4D06A90C.90009@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The loops that iterate through the list of targets for emitting console
-messages in the netconsole driver operating with interrupts disabled and
-the list-protecting lock held.  There is no way for the elements of the
-list to disappear, so we don't need to grab references to them.
+On 12/13/2010 03:15 PM, Henrik Rydberg wrote:
+> On 12/14/2010 12:09 AM, Chase Douglas wrote:
+> 
+>> On 12/13/2010 02:55 PM, Henrik Rydberg wrote:
+>>> @@ -638,7 +677,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+>>>  	__set_bit(BTN_LEFT, dev->keybit);
+>>>  	__set_bit(BTN_RIGHT, dev->keybit);
+>>>  
+>>> -	if (SYN_CAP_MULTIFINGER(priv->capabilities)) {
+>>> +	if (SYN_CAP_MULTIFINGER(priv->capabilities) | priv->multitouch) {
+>>
+>> ^^ Although I think this is functionally correct, it is nevertheless a
+>> typo. Note that there's only one '|' where there should be two.
+> 
+> 
+> Ah, this one was removed but kept popping back in subsequent versions. Will fix,
+> but not resending now.
 
-This patch keeps the definitions however of netconsole_target_get() and
-netconsole_target_put() as they are used in a subsequent patch.
+Henrik, Chris,
 
-Signed-off-by: Mike Waychison <mikew@google.com>
-Acked-by: Matt Mackall <mpm@selenic.com>
----
- drivers/net/netconsole.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+After some testing this is mostly fine, but I have one of those terrible
+"integrated buttons" (or whatever we call it) trackpads. When switching
+to multitouch mode, the cursor will sometimes jump when I go to push the
+button.
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index 94255f0..c87a49e 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -671,7 +671,6 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 
- 	spin_lock_irqsave(&target_list_lock, flags);
- 	list_for_each_entry(nt, &target_list, list) {
--		netconsole_target_get(nt);
- 		if (nt->np.dev == dev) {
- 			switch (event) {
- 			case NETDEV_CHANGENAME:
-@@ -693,7 +692,6 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 				break;
- 			}
- 		}
--		netconsole_target_put(nt);
- 	}
- 	spin_unlock_irqrestore(&target_list_lock, flags);
- 	if (event == NETDEV_UNREGISTER || event == NETDEV_BONDING_DESLAVE)
-@@ -722,7 +720,6 @@ static void write_msg(struct console *con, const char *msg, unsigned int len)
- 
- 	spin_lock_irqsave(&target_list_lock, flags);
- 	list_for_each_entry(nt, &target_list, list) {
--		netconsole_target_get(nt);
- 		if (nt->enabled && netif_running(nt->np.dev)) {
- 			/*
- 			 * We nest this inside the for-each-target loop above
-@@ -738,7 +735,6 @@ static void write_msg(struct console *con, const char *msg, unsigned int len)
- 				left -= frag;
- 			}
- 		}
--		netconsole_target_put(nt);
- 	}
- 	spin_unlock_irqrestore(&target_list_lock, flags);
- }
+Take the following sequence:
 
+1. Touch in top right corner of pad to position cursor
+2. Touch in bottom left corner over button
+3. Press button, but finger moves a little
+
+Step 3 causes the primary coordinates in the synaptics MT protocol to
+flip to the button-pressing touch. This causes a cursor jump. *Many*
+times I have gone to press an "Ok" dialog button and found that I
+accidentally launched an application from my dock :).
+
+I think we should perform some rudimentary touch tracking to ensure the
+same touch is always used for reporting ABS_X/ABS_Y. A simple distance
+comparison between the two touches, as I implemented in one of my other
+patches, would suffice.
+
+What do you think?
+
+Thanks,
+
+-- Chase
