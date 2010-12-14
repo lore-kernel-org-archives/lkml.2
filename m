@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab0LNAL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:11:26 -0500
-Received: from smtp.microsoft.com ([131.107.115.212]:31781 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113Ab0LNALZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:11:25 -0500
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Jesper Juhl <jj@chaosbits.net>, Ky Srinivasan <ksrinivasan@novell.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Evgeniy Polyakov <zbr@ioremap.net>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] hv: Use only one receive buffer per channel and
- kmalloc on initialize
-Thread-Topic: [PATCH 1/1] hv: Use only one receive buffer per channel and
- kmalloc on initialize
-Thread-Index: AQHLmwTWTCfBOZ+WHUG7YLQqdwCl/JOfc7GAgAAdgwD//38vEA==
-Date: Tue, 14 Dec 2010 00:11:23 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C5622C0BD022@TK5EX14MBXC116.redmond.corp.microsoft.com>
-References: <1292272498-29483-1-git-send-email-hjanssen@microsoft.com>
- <4D0636270200003000091D23@novprvoes0310.provo.novell.com>
- <alpine.LNX.2.00.1012140048290.26491@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1012140048290.26491@swampdragon.chaosbits.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757540Ab0LNANi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:13:38 -0500
+Received: from fieldses.org ([174.143.236.118]:45084 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756951Ab0LNANh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:13:37 -0500
+Date: Mon, 13 Dec 2010 19:13:34 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: bookjovi@gmail.com
+Cc: neilb@suse.de, linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfs: add missed CONFIG_NFSD_DEPRECATED
+Message-ID: <20101214001334.GH9394@fieldses.org>
+References: <1292044877-4701-1-git-send-email-bookjovi@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292044877-4701-1-git-send-email-bookjovi@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Jesper Juhl [mailto:jj@chaosbits.net]
-> Sent: Monday, December 13, 2010 3:51 PM
-> To: Ky Srinivasan
-> > > +	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> > > +	time_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> > > +	hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
-> > Why are these allocations GFP_ATOMIC. Clearly this is in module
-> loading context and you can afford to sleep. GFP_KERNEL should be fine.
-> >
+On Sat, Dec 11, 2010 at 12:21:17AM -0500, bookjovi@gmail.com wrote:
+> these pieces of code only make sense when CONFIG_NFSD_DEPRECATED enabled
 > 
-> I actually also noticed this when I did my first review of the patch,
-> but
-> I didn't point it out since I thought that "there must be a good
-> reason".
-> But now that you point it out and I look at the code once more I can't
-> actually think of a "good reason",, so I agree with you completely that
-> these should just be GFP_KERNEL.
+> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 
-I was looking at some of the back code to make sure it is okay, and I see
-No reason not make this change either. I will change it and resubmit.
+OK, thanks; applied for 2.6.38.--b.
 
-Thanks,
-
-Hank.
-
+> 
+>  fs/nfsd/nfsctl.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> index 4514ebb..6840ec3 100644
+> --- a/fs/nfsd/nfsctl.c
+> +++ b/fs/nfsd/nfsctl.c
+> @@ -127,6 +127,7 @@ static ssize_t nfsctl_transaction_write(struct file *file, const char __user *bu
+>  
+>  static ssize_t nfsctl_transaction_read(struct file *file, char __user *buf, size_t size, loff_t *pos)
+>  {
+> +#ifdef CONFIG_NFSD_DEPRECATED
+>  	static int warned;
+>  	if (file->f_dentry->d_name.name[0] == '.' && !warned) {
+>  		printk(KERN_INFO
+> @@ -135,6 +136,7 @@ static ssize_t nfsctl_transaction_read(struct file *file, char __user *buf, size
+>  		       current->comm, file->f_dentry->d_name.name);
+>  		warned = 1;
+>  	}
+> +#endif
+>  	if (! file->private_data) {
+>  		/* An attempt to read a transaction file without writing
+>  		 * causes a 0-byte write so that the file can return
