@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0LNOwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:52:19 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:33748 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756678Ab0LNOwS convert rfc822-to-8bit (ORCPT
+	id S1757773Ab0LNO4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:56:49 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41262 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756206Ab0LNO4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:52:18 -0500
-Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
- up time
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101214143902.GA24827@localhost>
-References: <20101213144646.341970461@intel.com>
-	 <20101213150326.856922289@intel.com> <1292333854.2019.16.camel@castor.rsk>
-	 <20101214135910.GA21401@localhost> <20101214143325.GA22764@localhost>
-	 <20101214143902.GA24827@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 14 Dec 2010 15:50:55 +0100
-Message-ID: <1292338255.6803.1769.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 14 Dec 2010 09:56:47 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Hans Verkuil" <hverkuil@xs4all.nl>
+Subject: Re: [alsa-devel] [RFC/PATCH v6 03/12] media: Entities, pads and links
+Date: Tue, 14 Dec 2010 15:57:38 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
+Cc: "Clemens Ladisch" <clemens@ladisch.de>, alsa-devel@alsa-project.org,
+        sakari.ailus@maxwell.research.nokia.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        lennart@poettering.net, linux-omap@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <4D0771CB.3020809@ladisch.de> <997f50534838eeb6a31a526e65045635.squirrel@webmail.xs4all.nl>
+In-Reply-To: <997f50534838eeb6a31a526e65045635.squirrel@webmail.xs4all.nl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012141557.40470.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-14 at 22:39 +0800, Wu Fengguang wrote:
-> On Tue, Dec 14, 2010 at 10:33:25PM +0800, Wu Fengguang wrote:
-> > On Tue, Dec 14, 2010 at 09:59:10PM +0800, Wu Fengguang wrote:
-> > > On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
+Hi Hans,
+
+On Tuesday 14 December 2010 15:51:08 Hans Verkuil wrote:
+> > Laurent Pinchart wrote:
+> >> On Monday 13 December 2010 17:10:51 Clemens Ladisch wrote:
+> >>> TYPE_EXT describes entities that represent some interface to the
+> >>> external world, TYPE_INT those that are internal to the entire device.
+> >>> (I'm not sure if that distinction is very useful, but TYPE_SUBDEV seems
+> >>> to be an even more meaningless name.)
+> >> 
+> >> SUBDEV comes from the V4L2 world, and I agree that it might not be a
+> >> very good
+> >> name.
+> >> 
+> >> I'm not sure I would split entities in internal/external categories. I
+> >> would
+> >> create a category for connectors though.
 > > 
-> > > > As to the ramp up time, when writing to 2 disks at the same time I see
-> > > > the per_bdi_threshold taking up to 20 seconds to converge on a steady
-> > > > value after one of the write stops. So I think this could be speeded up
-> > > > even more, at least on my setup.
-> > > 
-> > > I have the roughly same ramp up time on the 1-disk 3GB mem test:
-> > > 
-> > > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
-> > >  
-> > 
-> > Interestingly, the above graph shows that after about 10s fast ramp
-> > up, there is another 20s slow ramp down. It's obviously due the
-> > decline of global limit:
-> > 
-> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat-dirty.png
-> > 
-> > But why is the global limit declining?  The following log shows that
-> > nr_file_pages keeps growing and goes stable after 75 seconds (so long
-> > time!). In the same period nr_free_pages goes slowly down to its
-> > stable value. Given that the global limit is mainly derived from
-> > nr_free_pages+nr_file_pages (I disabled swap), something must be
-> > slowly eating memory until 75 ms. Maybe the tracing ring buffers?
-> > 
-> >          free     file      reclaimable pages
-> > 50s      369324 + 318760 => 688084
-> > 60s      235989 + 448096 => 684085
-> > 
-> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat
+> > I'm not disagreeing, but what is actually the distinction between types
+> > and subtypes?  ;-)
 > 
-> The log shows that ~64MB reclaimable memory is stoled. But the trace
-> data only takes 1.8MB. Hmm..
+> The type tells what the behavior is of an entity. E.g., type DEVNODE
+> represents device node(s) in userspace, V4L2_SUBDEV represents a v4l2
+> sub-device, etc. The subtype tells whether a V4L2_SUBDEV is a sensor or a
+> receiver or whatever. Nice to know, but it doesn't change the way
+> sub-devices work.
+> 
+> In the case of connectors you would create a CONNECTOR type and have a
+> bunch of subtypes for all the variations of connectors.
+> 
+> That said, I'm not sure whether the distinction is useful for DEVNODEs.
+> You do need to know the subtype in order to interpret the union correctly.
+> 
+> Laurent, does the MC code test against the DEVNODE type? I.e., does the MC
+> code ignore the subtype of a DEVNODE, or does it always use it?
 
-Also, trace buffers are fully pre-allocated.
+The MC code uses the DEVNODE type, ignoring the subtype, for power management. 
+When a device node is opened all entities in the chain need to be powered up.
 
-Inodes perhaps?
+-- 
+Regards,
+
+Laurent Pinchart
