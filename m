@@ -1,117 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758431Ab0LNAZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:25:01 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60479 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab0LNAY7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:24:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=RJqhPiIurxY28LyNGI9XOkJDBX2WDqk/wTCw4frePOlyCx8gxBQ4TKbjkLukJnBrsv
-         k4OCJ+yAgSk2zoO2OUrNd8e6Hqjz+u3XKTLosxeksw8c4f6MlsvgNdKQUIuFmpw0U0pG
-         e6BHs9X3+oUHlQUOO06XzjaSsBt6/TrVvk+e4=
+	id S1757574Ab0LNAid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:38:33 -0500
+Received: from ifup.org ([198.145.64.140]:51178 "EHLO ifup.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754527Ab0LNAic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:38:32 -0500
+X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 19:38:32 EST
+Date: Mon, 13 Dec 2010 16:30:24 -0800
+From: Brandon Philips <brandon@ifup.org>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: Dave Young <hidave.darkstar@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Clayton <chris2553@googlemail.com>
+Subject: Re: [PATCH] bttv: fix mutex use before init
+Message-ID: <20101214003024.GA3575@hanuman.home.ifup.org>
+References: <20101212131550.GA2608@darkstar>
+ <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101213123058.GT15575@mail.wantstofly.org>
-References: <cover.1292241952.git.buytenh@wantstofly.org>
-	<20101213123058.GT15575@mail.wantstofly.org>
-Date: Tue, 14 Dec 2010 09:24:57 +0900
-X-Google-Sender-Auth: 8jBQBe_gCkD8SLWKLCdRd3Oj7PA
-Message-ID: <AANLkTinJg-zNBjkRkGBnVgdvHaNw4VKV78KFNqZtC41V@mail.gmail.com>
-Subject: Re: [PATCH 10/20] mfd: max8998: irq_data conversion.
-From: Kyungmin Park <kmpark@infradead.org>
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+On 17:13 Sun 12 Dec 2010, Torsten Kaiser wrote:
+>  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
+> &btv->init.cap.vb_lock
+>  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
 
-On Mon, Dec 13, 2010 at 9:30 PM, Lennert Buytenhek
-<buytenh@wantstofly.org> wrote:
-> Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
-> ---
->  drivers/mfd/max8998-irq.c |   28 ++++++++++++++--------------
->  1 files changed, 14 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
-> index 45bfe77..dca3c65 100644
-> --- a/drivers/mfd/max8998-irq.c
-> +++ b/drivers/mfd/max8998-irq.c
-> @@ -102,16 +102,16 @@ irq_to_max8998_irq(struct max8998_dev *max8998, int irq)
->        return &max8998_irqs[irq - max8998->irq_base];
->  }
->
-> -static void max8998_irq_lock(unsigned int irq)
-> +static void max8998_irq_lock(struct irq_data *d)
->  {
-> -       struct max8998_dev *max8998 = get_irq_chip_data(irq);
-> +       struct max8998_dev *max8998 = irq_data_get_irq_chip_data(d);
->
->        mutex_lock(&max8998->irqlock);
->  }
->
-> -static void max8998_irq_sync_unlock(unsigned int irq)
-> +static void max8998_irq_sync_unlock(struct irq_data *d)
->  {
-> -       struct max8998_dev *max8998 = get_irq_chip_data(irq);
-> +       struct max8998_dev *max8998 = irq_data_get_irq_chip_data(d);
->        int i;
->
->        for (i = 0; i < ARRAY_SIZE(max8998->irq_masks_cur); i++) {
-> @@ -129,28 +129,28 @@ static void max8998_irq_sync_unlock(unsigned int irq)
->        mutex_unlock(&max8998->irqlock);
->  }
->
-> -static void max8998_irq_unmask(unsigned int irq)
-> +static void max8998_irq_unmask(struct irq_data *d)
->  {
-> -       struct max8998_dev *max8998 = get_irq_chip_data(irq);
-> -       struct max8998_irq_data *irq_data = irq_to_max8998_irq(max8998, irq);
-> +       struct max8998_dev *max8998 = irq_data_get_irq_chip_data(d);
-> +       struct max8998_irq_data *irq_data = irq_to_max8998_irq(max8998, d->irq);
->
->        max8998->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
->  }
->
-> -static void max8998_irq_mask(unsigned int irq)
-> +static void max8998_irq_mask(struct irq_data *d)
->  {
-> -       struct max8998_dev *max8998 = get_irq_chip_data(irq);
-> -       struct max8998_irq_data *irq_data = irq_to_max8998_irq(max8998, irq);
-> +       struct max8998_dev *max8998 = irq_data_get_irq_chip_data(d);
-> +       struct max8998_irq_data *irq_data = irq_to_max8998_irq(max8998, d->irq);
->
->        max8998->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
->  }
->
->  static struct irq_chip max8998_irq_chip = {
->        .name = "max8998",
-> -       .bus_lock = max8998_irq_lock,
-> -       .bus_sync_unlock = max8998_irq_sync_unlock,
-> -       .mask = max8998_irq_mask,
-> -       .unmask = max8998_irq_unmask,
-> +       .irq_bus_lock = max8998_irq_lock,
-> +       .irq_bus_sync_unlock = max8998_irq_sync_unlock,
-> +       .irq_mask = max8998_irq_mask,
-> +       .irq_unmask = max8998_irq_unmask,
->  };
->
->  static irqreturn_t max8998_irq_thread(int irq, void *data)
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+That seems like a reasonable suggestion. An openSUSE user submitted this
+bug to our tracker too. Here is the patch I am having him test.
+
+Would you mind testing it?
+
+>From 456dc0ce36db523c4c0c8a269f4eec43a72de1dc Mon Sep 17 00:00:00 2001
+From: Brandon Philips <bphilips@suse.de>
+Date: Mon, 13 Dec 2010 16:21:55 -0800
+Subject: [PATCH] bttv: fix locking for btv->init
+
+Fix locking for the btv->init by using btv->init.cap.vb_lock and in the
+process fix uninitialized deref introduced in c37db91fd0d.
+
+Signed-off-by: Brandon Philips <bphilips@suse.de>
+---
+ drivers/media/video/bt8xx/bttv-driver.c |   24 +++++++++++++-----------
+ 1 files changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
+index a529619..e656424 100644
+--- a/drivers/media/video/bt8xx/bttv-driver.c
++++ b/drivers/media/video/bt8xx/bttv-driver.c
+@@ -2391,16 +2391,11 @@ static int setup_window_lock(struct bttv_fh *fh, struct bttv *btv,
+ 	fh->ov.field    = win->field;
+ 	fh->ov.setup_ok = 1;
+ 
+-	/*
+-	 * FIXME: btv is protected by btv->lock mutex, while btv->init
+-	 *	  is protected by fh->cap.vb_lock. This seems to open the
+-	 *	  possibility for some race situations. Maybe the better would
+-	 *	  be to unify those locks or to use another way to store the
+-	 *	  init values that will be consumed by videobuf callbacks
+-	 */
++	mutex_lock(&btv->init.cap.vb_lock);
+ 	btv->init.ov.w.width   = win->w.width;
+ 	btv->init.ov.w.height  = win->w.height;
+ 	btv->init.ov.field     = win->field;
++	mutex_unlock(&btv->init.cap.vb_lock);
+ 
+ 	/* update overlay if needed */
+ 	retval = 0;
+@@ -2620,9 +2615,11 @@ static int bttv_s_fmt_vid_cap(struct file *file, void *priv,
+ 	fh->cap.last         = V4L2_FIELD_NONE;
+ 	fh->width            = f->fmt.pix.width;
+ 	fh->height           = f->fmt.pix.height;
++	mutex_lock(&btv->init.cap.vb_lock);
+ 	btv->init.fmt        = fmt;
+ 	btv->init.width      = f->fmt.pix.width;
+ 	btv->init.height     = f->fmt.pix.height;
++	mutex_unlock(&btv->init.cap.vb_lock);
+ 	mutex_unlock(&fh->cap.vb_lock);
+ 
+ 	return 0;
+@@ -2855,6 +2852,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
+ 
+ 	retval = 0;
+ 	fh->ovfmt = fmt;
++	mutex_lock(&btv->init.cap.vb_lock);
+ 	btv->init.ovfmt = fmt;
+ 	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
+ 		fh->ov.w.left   = 0;
+@@ -2876,6 +2874,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
+ 			retval = bttv_switch_overlay(btv, fh, new);
+ 		}
+ 	}
++	mutex_unlock(&btv->init.cap.vb_lock);
+ 	mutex_unlock(&fh->cap.vb_lock);
+ 	return retval;
+ }
+@@ -3141,6 +3140,7 @@ static int bttv_s_crop(struct file *file, void *f, struct v4l2_crop *crop)
+ 	fh->do_crop = 1;
+ 
+ 	mutex_lock(&fh->cap.vb_lock);
++	mutex_lock(&btv->init.cap.vb_lock);
+ 
+ 	if (fh->width < c.min_scaled_width) {
+ 		fh->width = c.min_scaled_width;
+@@ -3158,6 +3158,7 @@ static int bttv_s_crop(struct file *file, void *f, struct v4l2_crop *crop)
+ 		btv->init.height = c.max_scaled_height;
+ 	}
+ 
++	mutex_unlock(&btv->init.cap.vb_lock);
+ 	mutex_unlock(&fh->cap.vb_lock);
+ 
+ 	return 0;
+@@ -3302,9 +3303,9 @@ static int bttv_open(struct file *file)
+ 	 * Let's first copy btv->init at fh, holding cap.vb_lock, and then work
+ 	 * with the rest of init, holding btv->lock.
+ 	 */
+-	mutex_lock(&fh->cap.vb_lock);
++	mutex_lock(&btv->init.cap.vb_lock);
+ 	*fh = btv->init;
+-	mutex_unlock(&fh->cap.vb_lock);
++	mutex_unlock(&btv->init.cap.vb_lock);
+ 
+ 	fh->type = type;
+ 	fh->ov.setup_ok = 0;
+@@ -3502,9 +3503,9 @@ static int radio_open(struct file *file)
+ 	if (unlikely(!fh))
+ 		return -ENOMEM;
+ 	file->private_data = fh;
+-	mutex_lock(&fh->cap.vb_lock);
++	mutex_lock(&btv->init.cap.vb_lock);
+ 	*fh = btv->init;
+-	mutex_unlock(&fh->cap.vb_lock);
++	mutex_unlock(&btv->init.cap.vb_lock);
+ 
+ 	mutex_lock(&btv->lock);
+ 	v4l2_prio_open(&btv->prio, &fh->prio);
+@@ -4489,6 +4490,7 @@ static int __devinit bttv_probe(struct pci_dev *dev,
+ 	btv->opt_coring     = coring;
+ 
+ 	/* fill struct bttv with some useful defaults */
++	mutex_init(&btv->init.cap.vb_lock);
+ 	btv->init.btv         = btv;
+ 	btv->init.ov.w.width  = 320;
+ 	btv->init.ov.w.height = 240;
+-- 
+1.7.3.1
+
