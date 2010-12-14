@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab0LNEnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 23:43:55 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:47685 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758001Ab0LNEnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 23:43:53 -0500
-Date: Mon, 13 Dec 2010 23:43:47 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH -v4 0/3] ACPI, APEI,
- Report GHES error information via printk
-In-reply-to: <1291688551-14395-1-git-send-email-ying.huang@intel.com>
-Message-id: <alpine.LFD.2.00.1012132343100.16730@x980>
-References: <1291688551-14395-1-git-send-email-ying.huang@intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1758019Ab0LNEtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 23:49:45 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:35346 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757937Ab0LNEtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 23:49:43 -0500
+Date: Tue, 14 Dec 2010 15:49:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yong Shen <yong.shen@linaro.org>
+Subject: linux-next: build failure after merge of the voltage tree
+Message-Id: <20101214154933.a4b36f69.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__14_Dec_2010_15_49_33_+1100_SqMkrBxcI5NaDQ=J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010, Huang Ying wrote:
+--Signature=_Tue__14_Dec_2010_15_49_33_+1100_SqMkrBxcI5NaDQ=J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The recent consensus is that hardware error should be reported via printk.
-> This patch adds printk support to APEI GHES.
-> 
-> v4:
-> 
-> - Remove pr_pfx, use printk directly
+Hi Liam,
 
-v4 applied to acpi-test
+After merging the voltage tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+drivers/regulator/mc13892-regulator.c:21:21: error: mc13xxx.h: No such file=
+ or directory
+drivers/regulator/mc13892-regulator.c:261: error: array type has incomplete=
+ element type
+drivers/regulator/mc13892-regulator.c:262: error: implicit declaration of f=
+unction 'MC13xxx_DEFINE'
+drivers/regulator/mc13892-regulator.c:262: error: 'MC13892_' undeclared her=
+e (not in a function)
 
-> 
-> v3:
-> 
-> - Add document for output format per Andrew's comments
-> - Move pr_pfx into printk.h, hope it is useful for others too
-> - Fixes some issues according to comments
-> 
-> v2:
-> 
-> - Some minor adjustment of PCIe error section definition and printk format
-> 
-> [PATCH -v4 1/3] Add CPER PCIe error section structure and constants definition
-> [PATCH -v4 2/3] ACPI, APEI, Add APEI generic error status printing support
-> [PATCH -v4 3/3] ACPI, APEI, Report GHES error information via printk
-> 
+and on and on ....
+
+Caused by commit b0e2417cdbc12b1649245315a607ae8f1072b2bf ("regulator:
+support PMIC mc13892").  A file missing from the commit, I assume.
+
+I have used the voltage tree form next-20101213 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__14_Dec_2010_15_49_33_+1100_SqMkrBxcI5NaDQ=J
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNBvddAAoJEDMEi1NhKgbshNAH/1Y0OMWoEeucQkt4XIfeHQHd
+rDw+Qkq2c1CWl+eLZsb1iurWcBPTohLiuDTZ0fgf6fdfpE8AFNUQnBK4iMs5oCuh
+KLSPsaipv256HLM5u0PU56qELyRJKkfcRvnyJQT3mVoYsR7obsxCQN2lAFjU+9n5
+D1ro4wVrf23zAqJSA/IvppoIOzh8qfO1mE+Um8TYCwZTgNLF5KJLTIsaKL9dPlrt
+MjSLu/N7klbLOeLWesm1M0a7sgYieTPr/JUr7I0nRuc/glxOJj+EhB9PiHA4o0zd
+yq7UqhXCfaz1llOYLVS7hvrU7jQXHM26XbVft5nMcO+ovcK2Ya+x5d5+ut4OAN0=
+=jbgF
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_Dec_2010_15_49_33_+1100_SqMkrBxcI5NaDQ=J--
