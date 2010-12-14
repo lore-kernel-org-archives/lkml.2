@@ -1,136 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759741Ab0LNRdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:33:36 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38388 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891Ab0LNRde (ORCPT
+	id S1759763Ab0LNRf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:35:28 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:37069 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751891Ab0LNRf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:33:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=n3jmTTIMuGDD77XRXYMRQ9acxMUsJ2ulX8Ht2RgM0WDEFPYpJKCeazNTn2o9wjtbNk
-         3xTN4PsyPmygUFd84rjIH70l3zJHBmY1WsgHXOaMn/Q3++XevBVahP5sqeLWp2+Sjpgb
-         CjoIxt9t9rczt11/0NoUx0tWreK4YEx2JkgFY=
-Message-ID: <4D07AA4F.4000409@gmail.com>
-Date: Tue, 14 Dec 2010 09:33:03 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Thunderbird/3.1.6
+	Tue, 14 Dec 2010 12:35:27 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: _xT09.kVM1lUt_I13rUDQsFe0OJD5qIVZdDoW1bKtzHZO2d
+ 0gESeSyPwvTX.1G_JXtA5J.AizEVXh6mpk0KM3WxmM8cJEFpIs5sXZTbomP8
+ OKq1IzQzozUw5dI2J58KGyG8z863U2.ucRiuTRLorbh54vbX8fj31v76MwmJ
+ 1_QW7H1STJAFDrONFI2vsA8CRpXaoqS9EwuBUZgXqjsIN9sjNu5TbJrEJLxv
+ m.Viyx3ftRINOyZ_G1lKd919Laxf7ELRxu2d09mc7GF2M_1aNgdbqFO2Cpkp
+ w_rnAXJ3OV2wbEjan3bTM4dDgTJZ2EmzEKn5tSo.a9bbuK64-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 14 Dec 2010 11:35:21 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
+ lock semantics
+In-Reply-To: <4D07A95C.7030703@kernel.org>
+Message-ID: <alpine.DEB.2.00.1012141133550.17229@router.home>
+References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home>
+ <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: dirk.brandewie@gmail.com
-CC: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] of/fdt: add kernel command line option for dtb_compat
- string
-References: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com>
-In-Reply-To: <1291658059-383-1-git-send-email-dirk.brandewie@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2010 09:54 AM, dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie<dirk.brandewie@gmail.com>
->
-> Adds a kernel command line option "dtb_compat=<string>".  This string
-> will be used to select the first compatible device tree blob linked
-> into the kernel if a device tree blob is was *not* passed in by the
-> bootloader.
->
-> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
-> ---
->   Documentation/kernel-parameters.txt |    8 ++++++
->   drivers/of/fdt.c                    |   48 +++++++++++++++++++++++++++++++++++
->   2 files changed, 56 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 92e83e5..64093e5 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -655,6 +655,14 @@ and is between 256 and 4096 characters. It is defined in the file
->
->   	dscc4.setup=	[NET]
->
-> +	dtb_compat=	[KNL]
-> +			Specify the "compatible" string for the device
-> +			tree blob present in the vmlinux image.  This
-> +			string will be used to select the first device
-> +			tree blob whose compatible property matches
-> +			the string if a dtb was NOT passed in by the
-> +			bootloader.
-> +
->   	dynamic_printk	Enables pr_debug()/dev_dbg() calls if
->   			CONFIG_DYNAMIC_PRINTK_DEBUG has been enabled.
->   			These can also be switched on/off via
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index c1360e0..ca1318c 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -15,6 +15,8 @@
->   #include<linux/of_fdt.h>
->   #include<linux/string.h>
->   #include<linux/errno.h>
-> +#include<asm-generic/vmlinux.lds.h>
-> +
->
->   #ifdef CONFIG_PPC
->   #include<asm/machdep.h>
-> @@ -604,3 +606,49 @@ void __init unflatten_device_tree(void)
->
->   	pr_debug("<- unflatten_device_tree()\n");
->   }
-> +
-> +extern uint8_t __dtb_start[];
-> +extern uint8_t __dtb_end[];
-> +static void __init *of_flat_dt_find_compatible_dtb(char *name)
-> +{
-> +	void *rc = NULL;
-> +	unsigned long root, size;
-> +	struct boot_param_header  *orig_initial_boot_params;
-> +	uint8_t *blob;
-> +
-> +	orig_initial_boot_params = initial_boot_params;
-> +	blob = __dtb_start;
-> +	initial_boot_params = (struct boot_param_header *)blob;
-> +
-> +	while (blob<  __dtb_end) {
-> +		if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER) {
-> +			WARN(1, "Invalid device tree blob in vmlinux\n");
-> +			break;
-> +		}
-> +
-> +		root = of_get_flat_dt_root();
-> +		if (of_flat_dt_is_compatible(root, name)>  0) {
-> +			rc = blob;
-> +			break;
-> +		}
-> +
-> +		size =  be32_to_cpu(initial_boot_params->totalsize);
-> +		blob =  PTR_ALIGN(blob + size, STRUCT_ALIGNMENT);
-> +		initial_boot_params = (struct boot_param_header *)blob;
-> +	}
-> +
-> +	if (rc == NULL)
-> +		initial_boot_params = orig_initial_boot_params;
-> +	return rc;
-> +}
-> +
-> +
-> +static int __init of_flat_dtb_compat_setup(char *line)
-> +{
-> +	if (!initial_boot_params)
-> +		initial_boot_params = of_flat_dt_find_compatible_dtb(line);
-> +	return 1;
-> +}
-> +
-> +early_param("dtb_compat", of_flat_dtb_compat_setup);
-> +
+On Tue, 14 Dec 2010, Tejun Heo wrote:
 
-Any other comments on this patch?  Do I need to port it to use Stephens patch 
-set to allow passing in blobs to fdt.c?
+> > Great, that answers that!  I'll pick up the patch hopefully today (I'm
+> > finally ramping back up on arch/x86 again after having been diverted to
+> > an internal project for a while...)
+>
+> How do you want to route these?  All patches before this series is
+> already in the percpu tree.  I can pull the generic bits and leave out
+> the x86 bits so that x86 tree can pull in percpu bits and then put x86
+> stuff on top of it.  If you wanna go that way, I would drop all x86
+> related patches from the previous patchsets too.
 
---Dirk
+I think it is better to merge the generic pieces and x86 at the same time.
+Since this has worked so well with the percpu tree so far I'd say we
+continue that way.
+
+Regardless of how this will be merged: It would be good if hpa would take
+a look at the patches we have accumulated so far.
+
