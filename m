@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab0LNLpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 06:45:49 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:41972 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab0LNLps (ORCPT
+	id S1758119Ab0LNL5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 06:57:19 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54351 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757819Ab0LNL5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 06:45:48 -0500
-Date: Tue, 14 Dec 2010 17:15:42 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 2/3] Refactor zone_reclaim (v2)
-Message-ID: <20101214114542.GE14178@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101210142745.29934.29186.stgit@localhost6.localdomain6>
- <20101210143018.29934.11893.stgit@localhost6.localdomain6>
- <AANLkTimeecObDMQMbWzNhL1mE+UT9D3o1WWS4bmxtR4U@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimeecObDMQMbWzNhL1mE+UT9D3o1WWS4bmxtR4U@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 14 Dec 2010 06:57:18 -0500
+Date: Tue, 14 Dec 2010 11:56:00 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Andras Domokos <andras.domokos@nokia.com>
+Subject: Re: [RFC PATCHv4 4/7] HSI: hsi_char: Add HSI char device driver
+Message-ID: <20101214115600.62388d5d@lxorguk.ukuu.org.uk>
+In-Reply-To: <1292321383-30200-5-git-send-email-carlos.chinea@nokia.com>
+References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
+	<1292321383-30200-5-git-send-email-carlos.chinea@nokia.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* MinChan Kim <minchan.kim@gmail.com> [2010-12-14 19:01:26]:
+> +#define HSI_CHST_RD(c)		((c)->state & HSI_CHST_RD_MASK)
+> +#define HSI_CHST_WR(c)		((c)->state & HSI_CHST_WR_MASK)
+> +
+> +#define HSI_CHST_OC_SET(c, v) \
+> +	do { \
+> +		(c)->state &= ~HSI_CHST_OC_MASK; \
+> +		(c)->state |= v; \
+> +	} while (0);
+> +
+> +#define HSI_CHST_RD_SET(c, v) \
+> +	do { \
+> +		(c)->state &= ~HSI_CHST_RD_MASK; \
+> +		(c)->state |= v; \
+> +	} while (0);
+> +
+> +#define HSI_CHST_WR_SET(c, v) \
+> +	do { \
+> +		(c)->state &= ~HSI_CHST_WR_MASK; \
+> +		(c)->state |= v; \
+> +	} while (0);
 
-> Hi Balbir,
-> 
-> On Fri, Dec 10, 2010 at 11:31 PM, Balbir Singh
-> <balbir@linux.vnet.ibm.com> wrote:
-> > Move reusable functionality outside of zone_reclaim.
-> > Make zone_reclaim_unmapped_pages modular
-> >
-> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> > ---
-> >  mm/vmscan.c |   35 +++++++++++++++++++++++------------
-> >  1 files changed, 23 insertions(+), 12 deletions(-)
-> >
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index e841cae..4e2ad05 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2815,6 +2815,27 @@ static long zone_pagecache_reclaimable(struct zone *zone)
-> >  }
-> >
-> >  /*
-> > + * Helper function to reclaim unmapped pages, we might add something
-> > + * similar to this for slab cache as well. Currently this function
-> > + * is shared with __zone_reclaim()
-> > + */
-> > +static inline void
-> > +zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
-> > +                               unsigned long nr_pages)
-> > +{
-> > +       int priority;
-> > +       /*
-> > +        * Free memory by calling shrink zone with increasing
-> > +        * priorities until we have enough memory freed.
-> > +        */
-> > +       priority = ZONE_RECLAIM_PRIORITY;
-> > +       do {
-> > +               shrink_zone(priority, zone, sc);
-> > +               priority--;
-> > +       } while (priority >= 0 && sc->nr_reclaimed < nr_pages);
-> > +}
-> 
-> As I said previous version, zone_reclaim_unmapped_pages doesn't have
-> any functions related to reclaim unmapped pages.
 
-The scan control point has the right arguments for implementing
-reclaim of unmapped pages.
+These sort of macros just hide detail - eg the lack of internal locking,
+which can lead to problems later, plus they reference their arguments
+multiple times so may have weird side effects.
 
-> The function name is rather strange.
-> It would be better to add scan_control setup in function inner to
-> reclaim only unmapped pages.
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
+They should probably be inline functions so they at least type check and
+behave sanely, and their locking rules defintiely need documenting
 
--- 
-	Three Cheers,
-	Balbir
+
+
+> +static long hsi_char_ioctl(struct file *file, unsigned int cmd,
+> +							unsigned long arg)
+> +{
+> +	struct hsi_char_channel *channel = file->private_data;
+> +	unsigned int state;
+> +	struct hsi_config cfg;
+> +	struct hsc_rx_config rx_cfg;
+> +	struct hsc_tx_config tx_cfg;
+> +	long ret = 0;
+> +
+> +	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED)
+> +		return -ENODEV;
+
+-EIO is the traditional response in this case if the channel has been
+closed by the other end - ENODEV indicates there is no physical device
+present - not sure which is right here from the code.
+
+
+> +		} else if ((state == HSC_PM_ENABLE)
+> +				&& (channel->wlrefcnt > 0)) {
+> +			ret = hsi_stop_tx(channel->cl);
+> +			if (!ret)
+> +				channel->wlrefcnt--;
+
+What locks this lot against races (ditto some of the other ioctl code)
+
+> +	refcnt = atomic_inc_return(&cl_data->refcnt);
+> +	if (refcnt == 1) {
+
+You seem to construct a lot of clever stuff using atomic_inc_return and
+friends where it looks like test_and_set_bit - or even a mutex over
+open/close would be far easier to understand ?
+
+> +	ret = hsi_char_msgs_alloc(channel);
+> +
+> +	if (ret < 0) {
+> +		refcnt = atomic_dec_return(&cl_data->refcnt);
+> +		if (!refcnt)
+> +			hsi_release_port(channel->cl);
+> +		spin_lock_bh(&channel->lock);
+> +		HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
+> +		goto out;
+> +	}
+> +	if (refcnt == 1)
+> +		cl_data->attached = 1;
+
+What happens here if a second open passes the first, the attached will
+stay zero and other stuff will be in strange states but the open flag
+will be set ?
+
+
+> +	for (i = 0; i < HSI_CHAR_DEVS && channels_map[i] >= 0; i++) {
+> +		if (channels_map[i] >= HSI_CHAR_DEVS) {
+> +			pr_err("Invalid HSI/SSI channel specified");
+> +			return -EINVAL;
+> +		}
+> +		set_bit(channels_map[i], &ch_mask);
+
+How will this integrate with hot discovery of SSI supporting devices ?
+
