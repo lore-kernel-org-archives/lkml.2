@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab0LNOeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:34:02 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56052 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034Ab0LNOeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:34:00 -0500
-Message-ID: <4D078052.3040800@kernel.org>
-Date: Tue, 14 Dec 2010 15:33:54 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1756122Ab0LNOf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:35:58 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50063 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab0LNOf5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:35:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=I6GyhCrHP4ICiRgdhh5olN/CnlXkBod6lofgonE3mzQqXU1tshvKotsx4XBQKGkqBw
+         lErqcUqY6UcVdAx+aOzPRmDEiNEhDowqb+A1Cv5HNRxvG/Nrkz6ZDWlEhuA7q6TI33Yi
+         GCnytijWQcNiLwut7i7FGZrpUpehG5l3k+abA=
+Date: Tue, 14 Dec 2010 12:35:51 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: "David S. Ahern" <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] perf tools: Add symfs option for off-box analysis
+ using specified tree
+Message-ID: <20101214143551.GD13425@ghostprotocols.net>
+References: <1291926427-28846-1-git-send-email-daahern@cisco.com>
+ <20101214122428.GA13425@ghostprotocols.net>
+ <20101214125245.GB13425@ghostprotocols.net>
+ <4D077EDE.8090005@cisco.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org> <1292336798.3058.5.camel@mulgrave.site>
-In-Reply-To: <1292336798.3058.5.camel@mulgrave.site>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 14:33:56 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D077EDE.8090005@cisco.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Em Tue, Dec 14, 2010 at 07:27:42AM -0700, David S. Ahern escreveu:
+> On 12/14/10 05:52, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Dec 14, 2010 at 10:24:28AM -0200, Arnaldo Carvalho de Melo escreveu:
+> I was not aware of realpath. Simple change to symbol__init?
 
-On 12/14/2010 03:26 PM, James Bottomley wrote:
-> Depends what you're doing about the flush problem.  The synchronisation
-> is inherent in the use (we're holding a reference to the module within
-> the executed code).  The flush is to try to speed things up so the user
-> doesn't get annoyed during rmmod.  We don't need a sync, just an
-> accelerator.
+I made symbol__init use realpath to reduce the arg to --symfs.
+ 
+> > [acme@mica linux]$ find /tmp/bla
+> > /tmp/bla
+> > /tmp/bla/lib64
+> > /tmp/bla/lib64/libc-2.5.so
+> > [acme@mica linux]$ perf report -v -g none --stdio --symfs /tmp/bla > /tmp/out
+> > Looking at the vmlinux_path (3 entries long)
+> > Failed to open [kernel.kallsyms], continuing without symbols
+> > dso__synthesize_plt_symbols: problems reading /home/acme/bin/perf PLT info.
+> > [acme@mica linux]$ cat /tmp/out
 
-Hmmm, I'm confused.  How does it drop the reference then?  Something
-outside of the callback should wait for its completion and drop the
-reference as otherwise nothing can guarantee that the modules doesn't
-go away between the reference drop and the actual completion of the
-callback.
+> strace -e trace=open /tmp/build-perf/perf report -v --symfs /tmp/f14-mnt
+> -i /tmp/perf-cs.data
 
->> Compelling reason for it to exist.  Why not just use work when you
->> need execution context and the caller might or might not have one?
-> 
-> Because it's completely lame to have user context and not use it.
+> does not show any attempts to open a file not starting with the symfs path.
 
-It may be lame but I think it's better than having an optimization
-interface which is incomplete and, more importantly, unnecessary.
+Probably because all the files you need are in the directories you
+passed to --symfs, remove one and it will leak.
 
->> But, really, let's just remove it.  At this point, we either need to
->> fortify the interface or remove it and given the current usage, I
->> think we're better off with the latter.
-> 
-> I really don't think the open coding is a good idea.  It's complex and
-> error prone; exactly the type of thing that should be in an API.
+Anyway, fixed in my perf/core branch, still not propagated from
+master.k.o to git.k.o :-\
 
-Yeah, just schedule work like everyone else.
-
-Thanks.
-
--- 
-tejun
+- Arnaldo
