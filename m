@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760061Ab0LNVD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:03:57 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:48472 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760037Ab0LNVDz (ORCPT
+	id S1760058Ab0LNVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:09:16 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50238 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759993Ab0LNVJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:03:55 -0500
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: dave@linux.vnet.ibm.com, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, shenlinf@cn.ibm.com,
-        volobuev@us.ibm.com, mel@linux.vnet.ibm.com, dingc@cn.ibm.com,
-        lnxninja@us.ibm.com
-In-reply-to: <20101214174626.GN5638@random.random> (message from Andrea
-	Arcangeli on Tue, 14 Dec 2010 18:46:26 +0100)
-Subject: Re: Deadlocks with transparent huge pages and userspace fs daemons
-References: <1288817005.4235.11393.camel@nimitz> <20101214174626.GN5638@random.random>
-Message-Id: <E1PSc21-0004ob-M6@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 14 Dec 2010 22:03:33 +0100
+	Tue, 14 Dec 2010 16:09:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101214125143.0ab00c97.akpm@linux-foundation.org>
+References: <1292150923-25586-1-git-send-email-stefani@seibold.net> <20101214125143.0ab00c97.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 14 Dec 2010 13:08:54 -0800
+Message-ID: <AANLkTinPkGHASWubtUY1aDbnxv8V3uGvV+b+e+TkSiVS@mail.gmail.com>
+Subject: Re: [PATCH] cramfs: generate unique inode number for better inode
+ cache usage
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: stefani@seibold.net, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010, Andrea Arcangeli wrote:
-> Hello Dave and everyone,
-> 
-> On Wed, Nov 03, 2010 at 01:43:25PM -0700, Dave Hansen wrote:
-> > Hey Miklos,
-> > 
-> > When testing with a transparent huge page kernel:
-> > 
-> > 	http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/andrea/aa.git;a=summary
-> > 
-> > some IBM testers ran into some deadlocks.  It appears that the
-> > khugepaged process is trying to migrate one of a filesystem daemon's
-> > pages while khugepaged holds the daemon's mmap_sem for write.
-> 
-> The allocation under mmap_sem write mode in khugepaged bug should be
-> fixed in current aa.git based on 37-rc5:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commit;h=83e4d55d0014b3eeb982005d73f55ffcf2813504
-> 
-> Let me know how it goes, it's not very well tested yet (which is why I
-> didn't make a new submit yet).
-> 
-> I stick to my idea this is bug in userland and may trigger if your
-> daemon does mmap/munmap and the vma allocation under mmap_sem waits
-> for the I/O, but I don't want to show it with THP enabled, and this is
-> more scalable so it's definitely good idea and no downside whatsoever.
+On Tue, Dec 14, 2010 at 12:51 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> Did you look at using iunique() to generate cramfs inode numbers?
 
-This is all fine and dandy, but please let's not forget about the
-other thing that Dave's test uncovered.  Namely that page migration
-triggered by transparent hugepages takes the page lock on arbitrary
-filesystems.  This is also deadlocky on fuse, but also not a good idea
-for any filesystem where page reading time is not bounded (think NFS
-with network down).
+That breaks the cramfs "hardlinking" (which is just files that have
+the same data pointer), and now a hardlinked file wouldn't have the
+same inode number any more.
 
-Thanks,
-Miklos
+Of course, I'm not sure the hardlinking really matters. cramfs
+hardlinks aren't really traditional hardlinks anyway - since the
+permissions etc are in the directory entry, you can have the data
+hardlinked without having the same permissions, so it's not a "real"
+hardlink even if the inode number were to be the same.
+
+But this patch seems to roughly approximate the old pseudo-hardlink
+behavior. It used to be that all non-data files showed up with the
+same inode number, now they have separate inode numbers.
+
+That said, I hate how it moves that "setup_inode" helper function
+inline and then does the "if it's a character device" kinds of tests
+twice. Once for the inode number logic, and once for the inode
+operations structure assignment.
+
+So I think the approach is fine, but I think the implementation is pretty ugly.
+
+                          Linus
