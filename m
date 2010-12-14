@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759599Ab0LNQtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:49:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64514 "EHLO mx1.redhat.com"
+	id S1759620Ab0LNQvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:51:33 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:39140 "EHLO atmel-es2.atmel.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757308Ab0LNQtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:49:17 -0500
-Date: Tue, 14 Dec 2010 17:42:03 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
-        Amerigo Wang <amwang@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch 16/21] Wait for threads to freeze
-Message-ID: <20101214164203.GI11400@redhat.com>
-References: <20101214152259.67896960@suzukikp> <20101214154900.2d7a643c@suzukikp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214154900.2d7a643c@suzukikp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759259Ab0LNQvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 11:51:32 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: gregkh@suse.de, linux-usb@vger.kernel.org, dbrownell@users.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Emanuele <rje@crystalfontz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2] USB: atmel_usba_udc: fix freeing irq in usba_udc_remove()
+Date: Tue, 14 Dec 2010 19:00:30 +0100
+Message-Id: <1292349630-3610-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <636999.52551.qm@web180309.mail.gq1.yahoo.com>
+References: <636999.52551.qm@web180309.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14, Suzuki K. Poulose wrote:
->
-> + * zero_thread_state :
-> + * For threads, which are not frozen, we cannot capture the register state.
+From: Rob Emanuele <rje@crystalfontz.com>
 
-Indeed, but
+Add a free_irq() call on vbus gpio when we remove udc so that the
+vbus irq is properly released.
 
-> +		if (!tinfo->frozen)
-> +			zero_thread_state(tinfo);
+Signed-off-by: Rob Emanuele <rje@crystalfontz.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+David,
 
-Again, we can race with TASK_STOPPED/SIGCONT. And
-is_task_frozen_enough() thins task_is_stopped_or_traced() is fine.
+I modified $SUBJECT to be more explicit about which driver is modified.
+Hope that makes sense now...
 
-Oleg.
+Bye,
+
+ drivers/usb/gadget/atmel_usba_udc.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index 717ff65..e7c65a4 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -2057,8 +2057,10 @@ static int __exit usba_udc_remove(struct platform_device *pdev)
+ 		usba_ep_cleanup_debugfs(&usba_ep[i]);
+ 	usba_cleanup_debugfs(udc);
+ 
+-	if (gpio_is_valid(udc->vbus_pin))
++	if (gpio_is_valid(udc->vbus_pin)) {
++		free_irq(gpio_to_irq(udc->vbus_pin), udc);
+ 		gpio_free(udc->vbus_pin);
++	}
+ 
+ 	free_irq(udc->irq, udc);
+ 	kfree(usba_ep);
+-- 
+1.7.3
 
