@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072Ab0LNVLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:11:37 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:34595 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758540Ab0LNVLf (ORCPT
+	id S1760094Ab0LNVMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:12:32 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:57581 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758540Ab0LNVMb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:11:35 -0500
+	Tue, 14 Dec 2010 16:12:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=daQPyv6S9KEbkXsA0De/C5tmHkoK0JFs8poOYbRBxFrMg8lwIuiOX1H8EJO4iQyX0E
-         rEFN8AVD8+WInYfXXdlK/D6JUm4pn+EZp7bDp0h4MvxXdZ7Jxh0FrAHIq7Wjf0FRPP85
-         wsoNacW8bWaYv+mfhinsCTsQkeGePI/IOvbjY=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bEtu3JhdqWOD1fJsWa340E9pvmorN6fMXgRJ2cV0iA8TaDbSeojRj//AvBgVP/p9xA
+         2gex82AGM3Hv1p+xdKUsc+hfCWLHJzrhOSab8CM/9wx2787tynZ6SJI5Ot7gZ9EOp5N+
+         sUmaP9gOBgYaqBwyTG9PJfYQgPBNC00Bw59TE=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimNeDCH4jvP1QM785oNdua+GzwmtUA+OKzmO5aX@mail.gmail.com>
-References: <1292332047-8206-1-git-send-email-fernando.lugo@ti.com>
-	<1292332047-8206-5-git-send-email-fernando.lugo@ti.com>
-	<AANLkTin0eBk1tMDUJQQ6KuM6eOu1gu+JmwY-Nz0V+jw8@mail.gmail.com>
-	<AANLkTimNeDCH4jvP1QM785oNdua+GzwmtUA+OKzmO5aX@mail.gmail.com>
-Date: Tue, 14 Dec 2010 23:11:33 +0200
-Message-ID: <AANLkTin6CBc3gBCHbD8XdQ7E3mQdEkO+rn6Y=u-tv2m0@mail.gmail.com>
-Subject: Re: [PATCHv6 4/4] omap: iommu - create new api to set valid da range
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: Hiroshi.DOYU@nokia.com, linux@arm.linux.org.uk, h-kanigeri2@ti.com,
-        felipe.contreras@nokia.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, "Guzman Lugo, Fernando" <x0095840@ti.com>
+In-Reply-To: <1292356893.29257.1.camel@koala>
+References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
+	<20071024011712.GA3762@falooley.org>
+	<1193208689.26096.48.camel@pmac.infradead.org>
+	<20071227181524.GA19051@falooley.org>
+	<20071228174853.GA4252@uranus.ravnborg.org>
+	<20101207072919.GA8511@falooley.org>
+	<AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	<20101207182012.GA10546@falooley.org>
+	<1292343878.2538.80.camel@localhost>
+	<20101214195124.GA6010@falooley.org>
+	<1292356893.29257.1.camel@koala>
+Date: Tue, 14 Dec 2010 22:12:28 +0100
+X-Google-Sender-Auth: N69dsufX8BqrsruJXep4sk6Za0s
+Message-ID: <AANLkTim2i5e=5uioB8TQhpP9U9ZzSg=zLaH_xscP2Wmg@mail.gmail.com>
+Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: dedekind1@gmail.com
+Cc: Jason Lunz <lunz@acm.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>,
+        atom ota <atomota@sleepyhammer.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 8:59 PM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
-> On Tue, Dec 14, 2010 at 9:08 AM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Tue, Dec 14, 2010 at 3:07 PM, Fernando Guzman Lugo
->> <fernando.lugo@ti.com> wrote:
->>> From: Guzman Lugo, Fernando <x0095840@ti.com>
->>>
->>> Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF rage.
->>> With this new API the valid range can be set.
->>>
->>> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
->>> Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+On Tue, Dec 14, 2010 at 21:01, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Tue, 2010-12-14 at 11:51 -0800, Jason Lunz wrote:
+>> On Tue, Dec 14, 2010 at 06:24:38PM +0200, Artem Bityutskiy wrote:
+>> > But I think your solution is a bit dirty, because it adds a great deal
+>> > of little 'if HAS_IOMEM' and '#ifdef CONFIG_HAS_IOMEM' to many places.
+>> > This is error-prone.
 >>
->> I still don't see where this API is being used.
+>> The intent of that patch was to allow as much of the mtd subsystem to
+>> compile as possible. My thinking was to try and rectify the fact that
+>> uml has gone without mtd (and hence jffs2) support for years even though
+>> much of it works just fine. I think the entire subsystem being marked
+>> BROKEN in kconfig kept anyone from experimenting with it.
+>>
+>> The patch I sent was actually a reaction to feedback I got from Sam
+>> Ravnborg on my last attempt (um, three years ago :/ ) in which he
+>> suggested pushing down the ifdefs closer to their points of use. But I
+>> agree, the minimal version has a much smaller footprint.
+>>
+>> The version below still meets the goal of allowing jffs2-on-block2mtd
+>> usage under uml but is much smaller because only the mtd core is
+>> included. Compile-tested on i386, x86_64, um/i386, and um/x86_64.
+>>
+>> > Instead, you should solve this problem in UML code. I do not know how,
+>> > but may be you can add readb/writeb there which actually do nothing or
+>> > print a scary warning, or do BUG(), and let things which use them just
+>> > fail run-time.
+>>
+>> Something like this could work, but it would be error-prone for anyone
+>> else who attempts using iomem-requiring drivers on uml. Instead of
+>> getting obvious compile failures we'd have broken drivers that BUG() or
+>> emit scary warnings. That doesn't seem to me like an improvement.
 >
-> you can find it here:
->
-> http://marc.info/?l=linux-kernel&m=128805403014740&w=2
+> This problem does not seem to be mtd-specific, right? So my point was
+> that it would be nicer to come up with a general solution.
 
-Oh, ok, thanks. somehow I missed it.
+The generic solution for stuff that needs I/O operations is to mark it
+"depends on HAS_IOMEM".
 
->> Also, the point of using platform data was to add it to omap3_devices
->> in omap-iommu.c, see[1]. I thought the platform data start/end would
->> move to struct iommu, and iommu_set_da_range would change the
->> start/end on struct iommu, but that would only be necessary if the
->> platform data doesn't match that.
->
-> it is not clear for me. do you mean having default start/end in
-> platform data then when iommu_get is call pass them to start/end in
-> struct iommu and the new api change start/end in struct iommu?
->
-> Please let me know if that is correct.
+I used a similar patch in the past, IIRC to try axfs on UML.
 
-Yeah, if you are not going to add it in the platform data
-(mach-omap2/omap-iommu.c), then it doesn't make sense to use platform
-data for that.
+Gr{oetje,eeting}s,
 
-Cheers.
+                        Geert
 
--- 
-Felipe Contreras
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
