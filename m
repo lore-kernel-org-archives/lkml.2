@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab0LNNGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 08:06:19 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44504 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759205Ab0LNNGS (ORCPT
+	id S1759271Ab0LNNGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 08:06:37 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:46584 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759259Ab0LNNGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 08:06:18 -0500
+	Tue, 14 Dec 2010 08:06:36 -0500
 From: Fernando Guzman Lugo <fernando.lugo@ti.com>
 To: <Hiroshi.DOYU@nokia.com>, <linux@arm.linux.org.uk>, <h-kanigeri2@ti.com>
 Cc: <felipe.contreras@nokia.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <tony@atomide.com>, Fernando Guzman Lugo <fernando.lugo@ti.com>
-Subject: [PATCH 0/4] omap: iovmm - fixes for iovmm module
-Date: Tue, 14 Dec 2010 07:07:23 -0600
-Message-Id: <1292332047-8206-1-git-send-email-fernando.lugo@ti.com>
+        <tony@atomide.com>, "Guzman Lugo, Fernando" <x0095840@ti.com>
+Subject: [PATCHv6 1/4] omap: iovmm - no gap checking for fixed address
+Date: Tue, 14 Dec 2010 07:07:24 -0600
+Message-Id: <1292332047-8206-2-git-send-email-fernando.lugo@ti.com>
 X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1292332047-8206-1-git-send-email-fernando.lugo@ti.com>
+References: <1292332047-8206-1-git-send-email-fernando.lugo@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 6:
-* Rebase on Russell King branch.
- - for details see:
- http://marc.info/?l=linux-omap&m=129228495723001&w=2
+From: Guzman Lugo, Fernando <x0095840@ti.com>
 
-Version 5:
-* Changes in "iommu: create new api to set valid da range"
- - Change range variables to platform data structure.
+If some fixed da address is wanted to be mapped and the page
+is freed but it is used as gap, the mapping will fail.
+This patch is fixing that and olny keeps the gap for
+not fixed address.
 
-Version 4:
-* Changes in "iommu: create new api to set valid da range"
- - Validate range for fixed address.
- - Change way of change boundaries to avoid possible overflow
-   instead of style :
-      start + bytes >= end     which start + end can overflow
-   use style:
-      end - start < bytes
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+---
+ arch/arm/plat-omap/iovmm.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Version 3:
-* change patch 2 base on Felipe Contreras' comments,
- now it uses min_t and I deleted some blank lines.
-* patch "create new api to set valid da range" is base on
- "iovmm: IVA2 MMU range is from 0x11000000 to 0xFFFFFFFF"
- patch and on Hiroshi's comments and now it is added to
- this set.
-
-Version 2:
-* Removed "iovmm: fixes for iovmm module" that patch was already
- sent.
-* Modified "iovmm: fix roundup for next area and end check for the
- last area" patch, base on Davin Cohen's comments and rename it
- to a proper name that describes what it is doing now.
-
-Guzman Lugo, Fernando (4):
-  omap: iovmm - no gap checking for fixed address
-  omap: iovmm - add superpages support to fixed da address
-  omap: iovmm - replace __iounmap with iounmap
-  omap: iommu - create new api to set valid da range
-
- arch/arm/plat-omap/include/plat/iommu.h |    3 +
- arch/arm/plat-omap/iommu.c              |   33 ++++++++++++
- arch/arm/plat-omap/iovmm.c              |   84 ++++++++++++++++++-------------
- 3 files changed, 85 insertions(+), 35 deletions(-)
-
+diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+index 8ce0de2..34f0012 100644
+--- a/arch/arm/plat-omap/iovmm.c
++++ b/arch/arm/plat-omap/iovmm.c
+@@ -289,10 +289,10 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+ 	prev_end = 0;
+ 	list_for_each_entry(tmp, &obj->mmap, list) {
+ 
+-		if (prev_end >= start)
++		if (prev_end > start)
+ 			break;
+ 
+-		if (start + bytes < tmp->da_start)
++		if (start + bytes <= tmp->da_start)
+ 			goto found;
+ 
+ 		if (flags & IOVMF_DA_ANON)
+@@ -301,7 +301,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+ 		prev_end = tmp->da_end;
+ 	}
+ 
+-	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
++	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
+ 		goto found;
+ 
+ 	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
 -- 
 1.7.3.2
 
