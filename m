@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab0LNQRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:17:17 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:38292 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754180Ab0LNQRQ (ORCPT
+	id S932231Ab0LNQRg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:17:36 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:58574 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759483Ab0LNQRe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:17:16 -0500
+	Tue, 14 Dec 2010 11:17:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BWJF0s+QumhyJxWa5RQnBZ0v2k36Yuw8AKuneOrniueG6eBj8gBv42FpgJKLoFhl8M
+         jy+4KVn7EOjBFyqieE8iYj9R9hSlq5FU47NSxcMkmnTqg6ZcxbBgPO3NBfc1aGXyrVVW
+         TOXVIc7OGk23TWwq4M88mUUMzbUE6FdN2Jfew=
 MIME-Version: 1.0
-In-Reply-To: <8762ux49w7.fsf@deeprootsystems.com>
-References: <cover.1290635422.git.bengardiner@nanometrics.ca>
-	<cover.1291931041.git.bengardiner@nanometrics.ca>
-	<87tyild2ms.fsf@deeprootsystems.com>
-	<AANLkTik78Lb0ejUiAvqbkToi=QAKSXXj_6JaBkPYw70Z@mail.gmail.com>
-	<AANLkTi=HiJGwtznGRzFDz-4ywsB3rYPW0yF5U_RUruzV@mail.gmail.com>
-	<8762ux49w7.fsf@deeprootsystems.com>
-Date: Tue, 14 Dec 2010 11:17:14 -0500
-Message-ID: <AANLkTikUoKPG4o1+pt9r6V6H+6LrwZpTN8X9X+AkimiB@mail.gmail.com>
-Subject: Re: [PATCH v6 0/5] da850-evm: add gpio-{keys,leds} for UI and BB expanders
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        Gabor Juhos <juhosg@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1292333615-17860-1-git-send-email-toralf.foerster@gmx.de>
+References: <1292333615-17860-1-git-send-email-toralf.foerster@gmx.de>
+Date: Tue, 14 Dec 2010 14:17:26 -0200
+Message-ID: <AANLkTi=32w8Td-0ajaB5A9E6bE7g1-_hKk=oGcULHyFK@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch.pl: fix 2 of 2 errors in ./kernek/panic.c
+From: Thiago Farina <tfransosi@gmail.com>
+To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: kernel-janitors@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 4:53 PM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> Ben Gardiner <bengardiner@nanometrics.ca> writes:
->> [...]
->> Everything seems to be in order there; I tested the resulting kernel
->> with evtest and the expected output was observed. Note that
->> davinci-next still contains the cherry-pick of the upstream commit of
->> the polled gpio keys driver:
+2010/12/14 Toralf Förster <toralf.foerster@gmx.de>:
 >
-> oops... I've now removed that, since it is part of v2.6.36-rc5 already.
-> Thanks for checking.
+> Signed-off-by: Toralf Förster <toralf.foerster@gmx.de>
+> ---
+>  kernel/panic.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 4c13b1a..13623e4 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -56,7 +56,7 @@ EXPORT_SYMBOL(panic_blink);
+>  *
+>  *     This function never returns.
+>  */
+> -NORET_TYPE void panic(const char * fmt, ...)
+> +NORET_TYPE void panic(const char *fmt, ...)
+>  {
+>        static char buf[1024];
+>        va_list args;
+> @@ -75,7 +75,7 @@ NORET_TYPE void panic(const char * fmt, ...)
+>        va_start(args, fmt);
+>        vsnprintf(buf, sizeof(buf), fmt, args);
+>        va_end(args);
+> -       printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
+> +       printk(KERN_EMERG "Kernel panic - not syncing: %s\n", buf);
+>  #ifdef CONFIG_DEBUG_BUGVERBOSE
+>        dump_stack();
+>  #endif
 
-Oops on my part...
+Can you put in the change log message the description of those errors
+and resend?  Looking at this patch it seems they are just whitespace
+changes or something very trivial like this.
 
-I looked at git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git#davinci-next
-again ; HEAD at the time was:
-
-  commit 5682cfebad5e68736f4c54a268b5b371698f5262
-  Author: Ben Gardiner <bengardiner@nanometrics.ca>
-  Date:   Thu Dec 9 16:51:07 2010 -0500
-
-      da850-evm: KEYBOARD_GPIO_POLLED Kconfig conditional
-
-      Use the mach-davinci/Kconfig to enable gpio-keys-polled as default when
-      da850-evm machine is enabled.
-
-      Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-      CC: Kevin Hilman <khilman@deeprootsystems.com>
-      CC: "Nori, Sekhar" <nsekhar@ti.com>
-      CC: Gabor Juhos <juhosg@openwrt.org>
-      Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
-
-and I was unable to build a kernel from da8xx_omapl_defconfig b/c:
-
-  arch/arm/mach-davinci/board-da850-evm.c:333: error: unknown field
-'poll_interval' specified in initializer
-
-It appears that dropping the cherry-pick caused the build failure.
-
-The commit that introduces the polled gpio keys driver (which was
-included in the series as a cherry pick) is commit
-0e7d0c860a0dee49dacb7bbb248d1eba637075ad which is in
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git#master
-_after_ the tag v2.6.37-rc5.
-
-That's my fault. I incorrectly thought that commit
-0e7d0c860a0dee49dacb7bbb248d1eba637075ad was _in_ 2.6.37-rc5 and
-stated this is previous emails. I'm sorry for the confusion; I think I
-jumped the gun there due to my excitement at getting this prerequisite
-driver committed.
-
-Best Regards,
-Ben Gardiner
-
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+The subject line could be something more like:
+kernek/panic.c: Fix two checkpatch.pl errors:
