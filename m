@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758749Ab0LNApc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:45:32 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62672 "EHLO
+	id S1758746Ab0LNAsh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:48:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34426 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758171Ab0LNAor (ORCPT
+	with ESMTP id S1758717Ab0LNAsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:44:47 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=wb1bTaglDM8A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=Z4Rwk6OoAAAA:8 a=cH6R9-kdAAAA:8 a=meVymXHHAAAA:8 a=UJbBCv4JZKF3S0SSkg4A:9 a=KzDMi6IgfJOiP8Po_-MmncSJljwA:4 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=bt0zGP92IBIA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 13 Dec 2010 19:48:36 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=lW1XFx4uH24A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=y46Gznpf7Y2xR-B52ugA:9 a=yjb8XoNwUZ_lbfraVu8A:7 a=S3tbrTqfpVZl0ympuvMKgnBdX3wA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101214004446.291657413@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 13 Dec 2010 19:43:50 -0500
+Subject: [PATCH][GIT PULL] workqueue: It is likely that WORKER_NOT_RUNNING
+ is true
 From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Nick Piggin <npiggin@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: [PATCH 2/3] mm: Remove unlikely() from page_mapping()
-References: <20101214004347.996651495@goodmis.org>
-Content-Disposition: inline; filename=0002-mm-Remove-unlikely-from-page_mapping.patch
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Dec 2010 19:48:35 -0500
+Message-ID: <1292287715.5015.1782.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Hi Tejun,
 
-page_mapping() has a unlikely that the mapping has PAGE_MAPPING_ANON
-set. But running the annotated branch profiler on a normal desktop
-system doing vairous tasks (xchat, evolution, firefox, distcc),
-it is not really that unlikely that the mapping here will have the
-PAGE_MAPPING_ANON flag set:
+You can either just take this patch out directly, or pull it from my
+repo.
 
- correct incorrect  %        Function                  File              Line
- ------- ---------  -        --------                  ----              ----
-35935762 1270265395  97 page_mapping                   mm.h                 659
-1306198001   143659   0 page_mapping                   mm.h                 657
-203131478   121586   0 page_mapping                   mm.h                 657
- 5415491     1116   0 page_mapping                   mm.h                 657
-74899487     1116   0 page_mapping                   mm.h                 657
-203132845      224   0 page_mapping                   mm.h                 659
- 5415464       27   0 page_mapping                   mm.h                 659
-   13552        0   0 page_mapping                   mm.h                 657
-   13552        0   0 page_mapping                   mm.h                 659
-  242630        0   0 page_mapping                   mm.h                 657
-  242630        0   0 page_mapping                   mm.h                 659
-74899487        0   0 page_mapping                   mm.h                 659
+The following patch is in:
 
-The page_mapping() is a static inline, which is why it shows up multiple
-times.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
 
-The unlikely in page_mapping() was correct a total of 1909540379 times and
-incorrect 1270533123 times, with a 39% being incorrect. With this much of an
-error, it's best to simply remove the unlikely and have the compiler and
-branch prediction figure this out.
+    branch: unlikely/workqueue
 
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/mm.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 721f451..b064264 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -657,7 +657,7 @@ static inline struct address_space *page_mapping(struct page *page)
- 	VM_BUG_ON(PageSlab(page));
- 	if (unlikely(PageSwapCache(page)))
- 		mapping = &swapper_space;
--	else if (unlikely((unsigned long)mapping & PAGE_MAPPING_ANON))
-+	else if ((unsigned long)mapping & PAGE_MAPPING_ANON)
- 		mapping = NULL;
- 	return mapping;
+Steven Rostedt (1):
+      workqueue: It is likely that WORKER_NOT_RUNNING is true
+
+----
+ kernel/workqueue.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+---------------------------
+commit deed625e5fc7a3abfd18cdb44edf2d5197982a74
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Fri Dec 3 23:12:33 2010 -0500
+
+    workqueue: It is likely that WORKER_NOT_RUNNING is true
+    
+    Running the annotate branch profiler on three boxes, including my
+    main box that runs firefox, evolution, xchat, and is part of the distcc farm,
+    showed this with the likelys in the workqueue code:
+    
+     correct incorrect  %        Function                  File              Line
+     ------- ---------  -        --------                  ----              ----
+          96   996253  99 wq_worker_sleeping             workqueue.c          703
+          96   996247  99 wq_worker_waking_up            workqueue.c          677
+    
+    The likely()s in this case were assuming that WORKER_NOT_RUNNING will
+    most likely be false. But this is not the case. The reason is
+    (and shown by adding trace_printks and testing it) that most of the time
+    WORKER_PREP is set.
+    
+    In worker_thread() we have:
+    
+    	worker_clr_flags(worker, WORKER_PREP);
+    
+    	[ do work stuff ]
+    
+    	worker_set_flags(worker, WORKER_PREP, false);
+    
+    (that 'false' means not to wake up an idle worker)
+    
+    The wq_worker_sleeping() is called from schedule when a worker thread
+    is putting itself to sleep. Which happens most of the time outside
+    of that [ do work stuff ].
+    
+    The wq_worker_waking_up is called by the wakeup worker code, which
+    is also callod outside that [ do work stuff ].
+    
+    Thus, the likely and unlikely used by those two functions are actually
+    backwards.
+    
+    Remove the annotation and let gcc figure it out.
+    
+    Acked-by: Tejun Heo <tj@kernel.org>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 90db1bd..98ce2ea 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -661,7 +661,7 @@ void wq_worker_waking_up(struct task_struct *task, unsigned int cpu)
+ {
+ 	struct worker *worker = kthread_data(task);
+ 
+-	if (likely(!(worker->flags & WORKER_NOT_RUNNING)))
++	if (!(worker->flags & WORKER_NOT_RUNNING))
+ 		atomic_inc(get_gcwq_nr_running(cpu));
  }
--- 
-1.7.2.3
+ 
+@@ -687,7 +687,7 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
+ 	struct global_cwq *gcwq = get_gcwq(cpu);
+ 	atomic_t *nr_running = get_gcwq_nr_running(cpu);
+ 
+-	if (unlikely(worker->flags & WORKER_NOT_RUNNING))
++	if (worker->flags & WORKER_NOT_RUNNING)
+ 		return NULL;
+ 
+ 	/* this can only happen on the local cpu */
 
 
