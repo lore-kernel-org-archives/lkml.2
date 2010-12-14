@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab0LNPap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:30:45 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:37921 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757219Ab0LNPao (ORCPT
+	id S1759392Ab0LNPiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:38:54 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:61039 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab0LNPix convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:30:44 -0500
-X-Sasl-enc: +XgDzJ1X7qK0irDIZZR1cQjOUfMwLoQygd8AgbFWqunQ 1292340642
-Message-ID: <4D078D9F.1060700@ladisch.de>
-Date: Tue, 14 Dec 2010 16:30:39 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Tue, 14 Dec 2010 10:38:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=P9OgSZ9l27H3pX/0TgWWhG3QDXIThG4IPn9xKkMJQn2FmqruWdbqTBlaadCOwC1JRo
+         32H5FKFu+XluNC/wVXaCW6jvtU/0/E/c+hKEMoAm88J9RvYBq+0tR87ZZwxKkCt/5NDS
+         x4d82isIfasmZvOgu9sOR0gQkEhylF/2jubak=
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: alsa-devel@alsa-project.org, sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, linux-omap@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [alsa-devel] [RFC/PATCH v6 03/12] media: Entities,	pads and links
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com>	<201012141300.57118.laurent.pinchart@ideasonboard.com>	<4D0771CB.3020809@ladisch.de> <201012141525.02463.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201012141525.02463.laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5312.1272375671@localhost>
+References: <t2w8aa6b0651004241602i50449643lc05dcf834a80b344@mail.gmail.com>
+	<5312.1272375671@localhost>
+Date: Tue, 14 Dec 2010 17:38:51 +0200
+X-Google-Sender-Auth: 8YSmj4zu0jX0pKd-ouHf1HkSeps
+Message-ID: <AANLkTik6gRF+Z7Ay-DWr6WN3O4AfrNkZyEr4UieDDOFi@mail.gmail.com>
+Subject: Re: Need advice on updating the Linux kernel map
+From: Constantine Shulyupin <const@linuxdriver.co.il>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laurent Pinchart wrote:
-> On Tuesday 14 December 2010 14:31:55 Clemens Ladisch wrote:
-> > Laurent Pinchart wrote:
-> > > On Monday 13 December 2010 17:10:51 Clemens Ladisch wrote:
-> > >> EXT_SPEAKER also includes headphones; there might be made a case for
-> > >> having those as a separate subtype.
-> > > 
-> > > Shouldn't headphones be represented by an EXT_JACK_ANALOG ?
-> > 
-> > Headphone jacks are jacks; there are also USB headphones.
-> 
-> So EXT_SPEAKER are speakers not connected through a jack (USB, internal
-> analog, ...) ?
+Hi Valdis,
 
-Yes.
+Thank you for your feedback.
+I updated and continue to update the map of the Linux kernel -
+http://www.makelinux.net/kernel_map
 
-When there is jack, the driver often does not know what is connected.
+With your feedback I reworked connections and added
+tracing/oprofile/perf to debug segment.
 
-> > >> EXT_BROADCAST represents devices like TV tuners, satellite receivers,
-> > >> cable tuners, or radios.
-> > > 
-> > > There's clearly an overlap with V4L here.
-> > 
-> > These come from the USB audio spec.  Video devices are indeed likely to
-> > be more detailed than just a single audio source. :)
-> 
-> Does EXT_BROADCAST represent the TV tuner (or satellite receiver, cable tuner,
-> radio tuner, ...) itself, or the connection between the tuner and the rest of
-> the device ? Most TV tuner are currently handled by V4L2 and would thus turn
-> up as V4L2 subdevs (I'm not sure if that's what we want in the long term, but
-> it's at least the current situation).
+Indeeds, security and debugging is forced to be in user interface and
+have no direct relations to peripherals. But other places are less
+suable. I decided to put security and debugging in UI, because
+security limits UI (as user) and debugging expands UI (as developer).
 
->From the point of view of an audio device, this would be just some audio
-source, much like a connector.  We don't need this if there is some
-better V4L entitity that the USB audio entity can be mapped to.
+Thanks.
+
+On Tue, Apr 27, 2010 at 4:41 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Sun, 25 Apr 2010 02:02:29 +0300, Constantine Shulyupin said:
+>> I was wondering if you could help me. I've recently resumed work on
+>> the map of the Linux kernel - http://www.makelinux.net/kernel_map in
+>> order to make it more up-to-date and to improve it. Please let me know
+>> how I can update the map, as it would help me a lot.
+>
+> A few quick comments:
+>
+> 1) Can we do better than an OSI 7-layer burrito? ;)  As it stands, doing it
+> that way creates a lot of things that look like layering violations.  For
+> instance, "Device Model" is up on "virtual", when it actually gets *used*
+> several levels further down.  And you have a *lot* of vertical lines that
+> cross a whole bunch of levels.  You would probably be served much better
+> by letting each column be a lot wider, and maybe only 4 levels high (you
+> can probably squish virtual/bridges/logical into one wider level).
+>
+> 1b) Much of the I/O column should be one wide section across the bottom of
+> disk/network/user peripherals, and the 'system run' box should be in some
+> other column(s).
+>
+> 2) Security and debugging seem to be forced in the "user peripherals" column
+> for no real rational reason.
+>
+> 3) I see no mention of tracing/oprofile/perf.
+>
+> Hope that helps...
+>
 
 
-Regards,
-Clemens
+
+-- 
+Constantine Shulyupin
+Embedded Linux Expert
+TI DaVinci Expert
+Tel-Aviv Israel
+http://www.LinuxDriver.co.il/
