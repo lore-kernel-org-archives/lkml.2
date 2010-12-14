@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab0LNJUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 04:20:51 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48486 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757330Ab0LNJUs (ORCPT
+	id S1758211Ab0LNJZl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 04:25:41 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51050 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757950Ab0LNJZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 04:20:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=DxTQMjb48qO9xqk6psYx/XwU5r2kBDw3AYaLdjjiRaBu8ocUY0k9ALGyw1lmO4ulsM
-         m0f35lqLUr/z4L2c1ojI8ZdnbhEj3fElN/qI4nD0DnnLJbszBAWAHdlMthgJMQNV8jlL
-         kM/O3v+uHuJHEVwgWHNO9eSrdl/kEOHk6bCgQ=
+	Tue, 14 Dec 2010 04:25:39 -0500
+Date: Tue, 14 Dec 2010 14:55:35 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
+        Bharata B Rao <bharata.rao@in.ibm.com>
+Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
+Message-ID: <20101214092535.GD14178@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101202144129.4357fe00@annuminas.surriel.com>
+ <20101210050344.GR3158@balbir.in.ibm.com>
+ <4D0328CC.1020809@redhat.com>
+ <20101211135727.GU3158@balbir.in.ibm.com>
+ <4D0651BB.9040609@redhat.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTinarEEaJMLORBV9YozJ3GnFFVMJ-NOQhzRVJ0en@mail.gmail.com>
-References: <AANLkTimahUpEL3cV6pFhkN8KqrphfVMSOw8xAN2=9jPy@mail.gmail.com>
-	<AANLkTinarEEaJMLORBV9YozJ3GnFFVMJ-NOQhzRVJ0en@mail.gmail.com>
-Date: Tue, 14 Dec 2010 10:20:41 +0100
-Message-ID: <AANLkTi=0B2MHz-8ENz4+enkuB3KivPobLwaEc_BFEhQb@mail.gmail.com>
-Subject: Re: [PATCH 0/13] ACPI / PM: Rework power resources management
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, len.brown@intel.com,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4D0651BB.9040609@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 4:43 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi Rafael,
->
-> nice to see your patchset is in linux-next (next-20101213) now.
-> More precisely in linux-acpi-2.6: 1/13 + 2/13 in release and rest/13
-> in test GIT branch.
->
-> What about the fix
-> "Platform-x86-Make-fujitsu_laptop-use-acpi_bus_update_power.patch"
-> [1]?
-> Will this go over platform-x86/linux-next into linux-next GIT tree?
-> Are you co-ordinating this with mjg?
->
-> Regards,
-> - Sedat -
->
-> [1] https://patchwork.kernel.org/patch/357422/
-> [2] http://git.kernel.org/?p=linux/kernel/git/mjg59/platform-drivers-x86.git;a=shortlog;h=refs/heads/linux-next
+* Rik van Riel <riel@redhat.com> [2010-12-13 12:02:51]:
+
+> On 12/11/2010 08:57 AM, Balbir Singh wrote:
+> 
+> >If the vpcu holding the lock runs more and capped, the timeslice
+> >transfer is a heuristic that will not help.
+> 
+> That indicates you really need the cap to be per guest, and
+> not per VCPU.
 >
 
-Thanks, the patch is now included in linux-next (next-20101214) (see [1]).
+Yes, I personally think so too, but I suspect there needs to be a
+larger agreement on the semantics. The VCPU semantics in terms of
+power apply to each VCPU as opposed to the entire system (per guest).
+ 
+> Having one VCPU spin on a lock (and achieve nothing), because
+> the other one cannot give up the lock due to hitting its CPU
+> cap could lead to showstoppingly bad performance.
 
-- Sedat -
+Yes, that seems right!
 
-[1] http://git.kernel.org/?p=linux/kernel/git/lenb/linux-acpi-2.6.git;a=commit;h=5fd12c41e206d6bfda6eef1ed50e995a293e0777
+-- 
+	Three Cheers,
+	Balbir
