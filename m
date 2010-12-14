@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab0LNQIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:08:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10851 "EHLO mx1.redhat.com"
+	id S1759455Ab0LNQKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:10:05 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56687 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960Ab0LNQIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:08:10 -0500
-Date: Tue, 14 Dec 2010 17:06:37 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 55 of 66] select CONFIG_COMPACTION if
- TRANSPARENT_HUGEPAGE enabled
-Message-ID: <20101214160637.GB5638@random.random>
-References: <patchbomb.1288798055@v2.random>
- <89a62752012298bb500c.1288798110@v2.random>
- <20101109151756.BC7B.A69D9226@jp.fujitsu.com>
- <20101109211145.GB6809@random.random>
- <20101118162245.GE8135@csn.ul.ie>
- <20101209190407.GJ19131@random.random>
- <20101214094556.GF13914@csn.ul.ie>
+	id S1756502Ab0LNQKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 11:10:03 -0500
+Message-ID: <4D0796D7.3030309@kernel.org>
+Date: Tue, 14 Dec 2010 17:09:59 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214094556.GF13914@csn.ul.ie>
+To: lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michael Chan <mchan@broadcom.com>, netdev <netdev@vger.kernel.org>
+Subject: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from remove_one
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 16:10:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+Michael pointed out that bnx2_close() already cancels bp->reset_task
+and thus it is guaranteed to be idle when bnx2_remove_one() is called.
+Remove the unnecessary cancel_work_sync() in remove_one.
 
-On Tue, Dec 14, 2010 at 09:45:56AM +0000, Mel Gorman wrote:
-> On Thu, Dec 09, 2010 at 08:04:07PM +0100, Andrea Arcangeli wrote:
-> > On Thu, Nov 18, 2010 at 04:22:45PM +0000, Mel Gorman wrote:
-> > > Just to confirm - by hang, you mean grinds to a slow pace as opposed to
-> > > coming to a complete stop and having to restart?
-> > 
-> > Hmm it's like if you're gigabytes in swap and apps hangs for a while
-> > and system is not really usable and it swaps for most new memory
-> > allocations despite there's plenty of memory free, but it's not a
-> > deadlock of course.
-> > 
-> 
-> Ok, but it's likely to be kswapd being very aggressive because it's
-> woken up frequently and tries to balance all zones. Once it's not
-> deadlocking entirely, there isn't a more fundamental bug hiding in there
-> somewhere.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Michael Chan <mchan@broadcom.com>
+---
+ drivers/net/bnx2.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-kswapd isn't activated by transhuge allocations because there's
-khugepaged for that and it's throttle to try a 2m alloc only once per
-minute if there's fragmentation.
+diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
+index 5c811f3..85fc2c8 100644
+--- a/drivers/net/bnx2.c
++++ b/drivers/net/bnx2.c
+@@ -8393,8 +8393,6 @@ bnx2_remove_one(struct pci_dev *pdev)
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct bnx2 *bp = netdev_priv(dev);
 
-So the reason of the trashing is the direct lumpy.
+-	cancel_work_sync(&bp->reset_task);
+-
+ 	unregister_netdev(dev);
+
+ 	if (bp->mips_firmware)
