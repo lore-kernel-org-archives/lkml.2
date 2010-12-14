@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab0LNVcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:32:13 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:55306 "EHLO
+	id S932625Ab0LNVdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:33:22 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:54580 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab0LNVcF (ORCPT
+	with ESMTP id S932567Ab0LNVbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:32:05 -0500
+	Tue, 14 Dec 2010 16:31:15 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=uKKJuLWOV3fj1VcOEcwCToJBbvH5xZ9loPM9H2uPN26ysqwv9qfmuMRQCQRAIjZit
-	kchzAxMyCwQtdMJXMdZmg==
-Subject: [PATCH v3 19/22] netoops: add core functionality
+	b=PpmGAAZtUc3t4yka97rZ11O4dXjUPwoXBCrCRyaE2RB+uDxHJWqyP/M4p5DddqPoH
+	s6vluT5l5Sso5PnYGHfdg==
+Subject: [PATCH v3 15/22] Oops: Pass regs to oops_exit()
 To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
         Matt Mackall <mpm@selenic.com>
 From: Mike Waychison <mikew@google.com>
@@ -21,8 +21,8 @@ Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
         Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
         =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
         akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Tue, 14 Dec 2010 13:30:38 -0800
-Message-ID: <20101214213037.17022.1096.stgit@mike.mtv.corp.google.com>
+Date: Tue, 14 Dec 2010 13:30:16 -0800
+Message-ID: <20101214213015.17022.317.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -34,331 +34,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel network dumper provides information about a crashed machine
-on the network.
-
-On a crash, the kernel spits out the contents of the kernel message buffer
-along with a few other useful tidbits of information via netpoll UDP.
-Each packet is sent a total of three times to deal with packet loss on the
-connection. Furthermore a small amount critical data is present in every
-packet, so even if only a single packet gets through, we still witness the
-crash.  In the same vein, we send packet in reverse order to handle cases where
-the kernel fatally crashes before transmission can be completed because often
-the most interesting bits of a crash can be found in the tail of the log.
-
-Configuration of the netoops device currently uses the same mechanism as
-netpoll, that is, it uses a directory in configfs called "netpoll" that
-users can create new targets.  It also supports targets as a module
-parameter and as a kernel command line when built in.
+Later commits in this series will want to see pt_regs if available when a
+machine oopses.  Pass regs if available on to oops_exit().
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
-Changelog:
-- v3
-   - Bumped version to 3 to signify that this is different than the
-     versions already used in-house.
-   - Reserved fields for packet header have been removed in this version
-     of the patch.  They were useful when I was trying to make a packet
-     header that was compatible with our in-house protocol, but are no
-     longer neccesary now that I am restructuring the packet header
-     format to work better for other architectures.
-   - Packet now has a section called 'arch_data' for per-arch specific
-     bits to be handled.  The offset is also explicitly declared in the
-     packet header.
-   - Fields in the packet are explicitly little-endian.
-- v2
-   - Now uses netpoll_targets abstracted from netconsole.
-   - As a side effect, we now don't have to hardcode port numbers; they
-     are user overridable.
-   - Compiles as a module in this patch.
----
- drivers/net/Kconfig   |   10 ++
- drivers/net/Makefile  |    1 
- drivers/net/netoops.c |  244 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 255 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/netoops.c
+ arch/arm/kernel/traps.c     |    2 +-
+ arch/parisc/kernel/traps.c  |    2 +-
+ arch/powerpc/kernel/traps.c |    2 +-
+ arch/s390/kernel/traps.c    |    2 +-
+ arch/sh/kernel/traps_32.c   |    2 +-
+ arch/x86/kernel/dumpstack.c |    2 +-
+ include/linux/kernel.h      |    2 +-
+ kernel/panic.c              |    2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 2ae9818..0e9fae3 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -3394,6 +3394,16 @@ config NETCONSOLE_DYNAMIC
- 	  at runtime through a userspace interface exported using configfs.
- 	  See <file:Documentation/networking/netconsole.txt> for details.
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 446aee9..0de185c 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -277,7 +277,7 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 	bust_spinlocks(0);
+ 	add_taint(TAINT_DIE);
+ 	spin_unlock_irq(&die_lock);
+-	oops_exit();
++	oops_exit(regs);
  
-+config NETOOPS
-+	tristate "Network oops support"
-+	select NETPOLL_TARGETS
-+	select NETPOLL_TARGETS_DYNAMIC
-+	help
-+	  This option enables the ability to have the kernel logs emitted on
-+	  the network when a machine Oopses or Panics.  Configuration of this
-+	  option is done at runtime by configuring a destination IP address.
-+	  If unsure, say N.
-+
- config NETPOLL
- 	def_bool false
+ 	if (in_interrupt())
+ 		panic("Fatal exception in interrupt");
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index 8b58bf0..4aa5514 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -294,7 +294,7 @@ void die_if_kernel(char *str, struct pt_regs *regs, long err)
+ 		panic("Fatal exception");
+ 	}
  
-diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index b90738d..58d7181 100644
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -288,6 +288,7 @@ obj-$(CONFIG_ETRAX_ETHERNET) += cris/
- obj-$(CONFIG_ENP2611_MSF_NET) += ixp2000/
+-	oops_exit();
++	oops_exit(regs);
+ 	do_exit(SIGSEGV);
+ }
  
- obj-$(CONFIG_NETCONSOLE) += netconsole.o
-+obj-$(CONFIG_NETOOPS) += netoops.o
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index 1b2cdc8..76b950e 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -170,7 +170,7 @@ int die(const char *str, struct pt_regs *regs, long err)
+ 	if (panic_on_oops)
+ 		panic("Fatal exception");
  
- obj-$(CONFIG_FS_ENET) += fs_enet/
+-	oops_exit();
++	oops_exit(regs);
+ 	do_exit(err);
  
-diff --git a/drivers/net/netoops.c b/drivers/net/netoops.c
-new file mode 100644
-index 0000000..1940ea5
---- /dev/null
-+++ b/drivers/net/netoops.c
-@@ -0,0 +1,244 @@
-+/*
-+ * drivers/net/netoops.c
-+ * Copyright (C) 2004 and beyond Google Inc.
-+ *
-+ * Original Author Ross Biro
-+ * Revisions Rebecca Schultz
-+ * Cleaned up by Mike Waychison <mikew@google.com>
-+ *
-+ * This is very simple code to use the polling
-+ * mode of the network drivers to send the
-+ * contents of the printk buffer via udp w/o
-+ * checksum to a unicast address.
-+ */
-+
-+#include <linux/in.h>
-+#include <linux/notifier.h>
-+#include <linux/kernel.h>
-+#include <linux/netpoll.h>
-+#include <linux/nmi.h>
-+#include <linux/utsname.h>
-+#include <linux/watchdog.h>
-+#include <linux/kobject.h>
-+#include <linux/sysfs.h>
-+#include <linux/kmsg_dump.h>
-+#include <linux/netpoll_targets.h>
-+
-+#define NETOOPS_TYPE_PRINTK_BUFFER 1
-+#define NETOOPS_TYPE_PRINTK_BUFFER_SOFT 3
-+#define NETOOPS_VERSION 0x0003
-+#define NETOOPS_PORT 2004
-+#define NETOOPS_RETRANSMIT_COUNT 3
-+
-+static DEFINE_NETPOLL_TARGETS(targets);
-+
-+#define MAX_PARAM_LENGTH	256
-+static char __initdata config[MAX_PARAM_LENGTH];
-+module_param_string(netoops, config, MAX_PARAM_LENGTH, 0);
-+MODULE_PARM_DESC(netoops, " netoops=[src-port]@[src-ip]/[dev],[tgt-port]@<tgt-ip>/[tgt-macaddr]");
-+
-+#ifndef	MODULE
-+static int __init option_setup(char *opt)
-+{
-+	strlcpy(config, opt, MAX_PARAM_LENGTH);
-+	return 1;
-+}
-+__setup("netoops=", option_setup);
-+#endif	/* MODULE */
-+
-+/*
-+ * Architecture specific support.
-+ */
-+#if defined(__i386__) || defined(__x86_64__)
-+#define NETOOPS_ARCH 2
-+struct netoops_arch_data {
-+
-+} __attribute__((packed));
-+#else
-+#error "unsupported architecture"
-+#endif
-+
-+/*
-+ * Architecture independent support.
-+ */
-+#define NETOOPS_DATA_BYTES 1024
-+struct netoops_msg {
-+	struct {
-+		__le16 version;    /* MUST be @ offset 0 */
-+		__le16 dump_id;
-+		/* Offset into packet before data[] starts.  */
-+		__le16 data_offset;
-+		__le16 arch;
-+		/* Offset into packet before struct arch_data starts. */
-+		__le16 arch_offset;
-+		__le16 type;
-+		__le32 packet_count;
-+		__le32 packet_no;
-+		/*
-+		 * NOTE: fixed length strings for a packet.  NULL
-+		 * termination not required.
-+		 */
-+		char kernel_version[64];
-+	} __attribute__ ((packed)) header;
-+	struct netoops_arch_data arch_data;
-+	char data[NETOOPS_DATA_BYTES];
-+} __attribute__ ((packed));
-+
-+static struct netoops_msg msg;
-+
-+static void setup_packet_header(int packet_count, int soft_dump)
-+{
-+	typeof(msg.header) *h = &msg.header;
-+
-+	h->version = cpu_to_le16(NETOOPS_VERSION);
-+	h->data_offset = cpu_to_le16(offsetof(struct netoops_msg, data));
-+	h->arch = cpu_to_le16(NETOOPS_ARCH);
-+	h->arch_offset = cpu_to_le16(offsetof(struct netoops_msg, arch_data));
-+	h->dump_id = cpu_to_le16((jiffies/HZ) & 0xffff);
-+	h->type = cpu_to_le16(soft_dump ? NETOOPS_TYPE_PRINTK_BUFFER_SOFT :
-+					  NETOOPS_TYPE_PRINTK_BUFFER);
-+	h->packet_count = cpu_to_le32(packet_count);
-+	strncpy(h->kernel_version, utsname()->release,
-+		min(sizeof(msg.header.kernel_version),
-+		    sizeof(utsname()->release)));
-+}
-+
-+static int packet_count_from_length(unsigned long l)
-+{
-+	return (l + NETOOPS_DATA_BYTES - 1) / NETOOPS_DATA_BYTES;
-+}
-+
-+/* Send the packet to all targets */
-+static void netoops_send_packet(int packet_nr)
-+{
-+	struct netpoll_target *nt;
-+
-+	msg.header.packet_no = cpu_to_le32(packet_nr);
-+
-+	list_for_each_entry(nt, &targets.list, list) {
-+		if (nt->np_state == NETPOLL_ENABLED
-+		    && netif_running(nt->np.dev)) {
-+			netpoll_send_udp(&nt->np, (char *)&msg, sizeof(msg));
-+		}
-+	}
-+
-+}
-+
-+/*
-+ * Send the passed in segment of kmsg via netpoll.  Packets are sent in reverse
-+ * order, with the tail packet (the first one transmitted) zero-padded.
-+ */
-+static void netoops_send_segment(int packet_offset,
-+				 const char *s, unsigned long l)
-+{
-+	int packet_count = packet_count_from_length(l);
-+	size_t data_length;
-+	int i;
-+
-+	for (i = packet_count - 1; i >= 0; i--) {
-+		/* Usually messages completely fill the data field */
-+		data_length = NETOOPS_DATA_BYTES;
-+		if (i == packet_count - 1) {
-+			/* Except the tail packet, which is zero-padded */
-+			data_length = l % NETOOPS_DATA_BYTES;
-+			memset(msg.data + data_length, 0,
-+			       NETOOPS_DATA_BYTES - data_length);
-+		}
-+		BUG_ON(data_length > NETOOPS_DATA_BYTES);
-+
-+		/* Copy the payload into the packet and send */
-+		memcpy(msg.data, s + (i * NETOOPS_DATA_BYTES), data_length);
-+		netoops_send_packet((packet_count - i - 1) + packet_offset);
-+
-+		touch_nmi_watchdog();
-+	}
-+}
-+
-+/*
-+ * Callback used by the kmsg_dumper.
-+ *
-+ * Called with interrupts disabled locally.
-+ */
-+static void netoops(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
-+		    struct pt_regs *regs,
-+		    const char *s1, unsigned long l1,
-+		    const char *s2, unsigned long l2) {
-+	unsigned long flags;
-+	int packet_count_1, packet_count_2;
-+	int soft_dump = 0;
-+	int i;
-+
-+	/* Only handle fatal problems */
-+	if (reason != KMSG_DUMP_OOPS
-+	 && reason != KMSG_DUMP_PANIC
-+	 && reason != KMSG_DUMP_SOFT)
-+		return;
-+
-+	if (reason == KMSG_DUMP_SOFT)
-+		soft_dump = 1;
-+
-+	spin_lock_irqsave(&targets.lock, flags);
-+
-+	/* compute total length of the message we are going to send */
-+	packet_count_1 = packet_count_from_length(l1);
-+	packet_count_2 = packet_count_from_length(l2);
-+
-+	/* setup the non varying parts of the message */
-+	memset(&msg, 0, sizeof(msg));
-+	setup_packet_header(packet_count_1 + packet_count_2, soft_dump);
-+
-+	/* Transmission loop */
-+	for (i = 0; i < NETOOPS_RETRANSMIT_COUNT; i++) {
-+		/* Send the full packets from the second segment */
-+		netoops_send_segment(0, s2, l2);
-+		netoops_send_segment(packet_count_2, s1, l1);
-+	}
-+
-+	spin_unlock_irqrestore(&targets.lock, flags);
-+}
-+
-+static struct kmsg_dumper netoops_dumper = {
-+	.dump = netoops,
-+};
-+
-+static int __init netoops_init(void)
-+{
-+	int retval = -EINVAL;
-+
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.version) != 0);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.dump_id) != 2);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.data_offset) != 4);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.arch) != 6);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.arch_offset) != 8);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.type) != 10);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.packet_count) != 12);
-+	BUILD_BUG_ON(offsetof(struct netoops_msg, header.packet_no) != 16);
-+
-+	targets.default_local_port = NETOOPS_PORT;
-+	targets.default_remote_port = NETOOPS_PORT;
-+
-+	config[MAX_PARAM_LENGTH - 1] = '\0';
-+	retval = register_netpoll_targets("netoops", &targets, config);
-+	if (retval)
-+		goto out;
-+
-+	retval = kmsg_dump_register(&netoops_dumper);
-+	if (retval)
-+		goto out_targets;
-+
-+	return 0;
-+out_targets:
-+	unregister_netpoll_targets(&targets);
-+out:
-+	return retval;
-+}
-+
-+static void __exit netoops_exit(void)
-+{
-+	kmsg_dump_unregister(&netoops_dumper);
-+	unregister_netpoll_targets(&targets);
-+}
-+
-+module_init(netoops_init);
-+module_exit(netoops_exit);
-+MODULE_LICENSE("GPL");
+ 	return 0;
+diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
+index 7064082..73f3f2f 100644
+--- a/arch/s390/kernel/traps.c
++++ b/arch/s390/kernel/traps.c
+@@ -305,7 +305,7 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 		panic("Fatal exception in interrupt");
+ 	if (panic_on_oops)
+ 		panic("Fatal exception: panic_on_oops");
+-	oops_exit();
++	oops_exit(regs);
+ 	do_exit(SIGSEGV);
+ }
+ 
+diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
+index 3484c2f..425bd8f 100644
+--- a/arch/sh/kernel/traps_32.c
++++ b/arch/sh/kernel/traps_32.c
+@@ -103,7 +103,7 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 	bust_spinlocks(0);
+ 	add_taint(TAINT_DIE);
+ 	spin_unlock_irq(&die_lock);
+-	oops_exit();
++	oops_exit(regs);
+ 
+ 	if (kexec_should_crash(current))
+ 		crash_kexec(regs);
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 6e8752c..89c720c 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -254,7 +254,7 @@ void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
+ 		/* Nest count reaches zero, release the lock. */
+ 		arch_spin_unlock(&die_lock);
+ 	raw_local_irq_restore(flags);
+-	oops_exit();
++	oops_exit(regs);
+ 
+ 	if (!signr)
+ 		return;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index b6de9a6..c59c44e 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -165,7 +165,7 @@ extern long (*panic_blink)(int state);
+ NORET_TYPE void panic(const char * fmt, ...)
+ 	__attribute__ ((NORET_AND format (printf, 1, 2))) __cold;
+ extern void oops_enter(void);
+-extern void oops_exit(void);
++extern void oops_exit(struct pt_regs *);
+ void print_oops_end_marker(void);
+ extern int oops_may_print(void);
+ NORET_TYPE void do_exit(long error_code)
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4c13b1a8..c3f39cd 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -349,7 +349,7 @@ void print_oops_end_marker(void)
+  * Called when the architecture exits its oops handler, after printing
+  * everything.
+  */
+-void oops_exit(void)
++void oops_exit(struct pt_regs *regs)
+ {
+ 	do_oops_enter_exit();
+ 	print_oops_end_marker();
 
