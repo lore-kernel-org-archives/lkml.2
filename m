@@ -1,128 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759526Ab0LNQfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:35:14 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:51761 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759478Ab0LNQfN (ORCPT
+	id S1759545Ab0LNQkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:40:08 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:49485 "HELO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758230Ab0LNQkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:35:13 -0500
-Date: Tue, 14 Dec 2010 11:35:09 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
-	lock semantics
-Message-ID: <20101214163509.GB20667@Krystal>
-References: <20101214162842.542421046@linux.com> <20101214162855.392020353@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214162855.392020353@linux.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:34:28 up 20 days, 21:37,  4 users,  load average: 0.05, 0.07,
-	0.02
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 14 Dec 2010 11:40:06 -0500
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Michal Marek <mmarek@suse.cz>, Roman Zippel <zippel@linux-m68k.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH v2] kbuild: fix interaction of CONFIG_IKCONFIG and KCONFIG_CONFIG
+Date: Tue, 14 Dec 2010 11:39:44 -0500
+Message-Id: <98706bc370fe92e090b16c7ad91dce1cd2203acf.1292344590.git.bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <4D078D53.4040700@suse.cz>
+References: <4D078D53.4040700@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter (cl@linux.com) wrote:
-> Use cmpxchg instead of xchg to realize this_cpu_xchg.
-> 
-> xchg will cause LOCK overhead since LOCK is always implied but cmpxchg
-> will not.
-> 
-> Baselines:
-> 
-> xchg()		= 18 cycles (no segment prefix, LOCK semantics)
-> __this_cpu_xchg = 1 cycle
-> 
-> (simulated using this_cpu_read/write, two prefixes. Looks like the
-> cpu can use loop optimization to get rid of most of the overhead)
-> 
-> Cycles before:
-> 
-> this_cpu_xchg	 = 37 cycles (segment prefix and LOCK (implied by xchg))
-> 
-> After:
-> 
-> this_cpu_xchg	= 11 cycle (using cmpxchg without lock semantics)
+If you try to build a kernel with KCONFIG_CONFIG set (to a value
+not equal to .config) and that config sets CONFIG_IKCONFIG then the
+build will fail with:
 
-Cool! Thanks for benchmarking these, it's really worth it.
+make[1]: *** No rule to make target `.config', needed by \
+`kernel/config_data.gz'.  Stop.
 
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+because the kernel/Makefile contains a direct reference to .config.
 
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  arch/x86/include/asm/percpu.h |   21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/include/asm/percpu.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-10 12:46:31.000000000 -0600
-> +++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-10 13:25:21.000000000 -0600
-> @@ -213,8 +213,9 @@ do {									\
->  })
->  
->  /*
-> - * Beware: xchg on x86 has an implied lock prefix. There will be the cost of
-> - * full lock semantics even though they are not needed.
-> + * xchg is implemented using cmpxchg without a lock prefix. xchg is
-> + * expensive due to the implied lock prefix. The processor cannot prefetch
-> + * cachelines if xchg is used.
->   */
->  #define percpu_xchg_op(var, nval)					\
->  ({									\
-> @@ -222,25 +223,33 @@ do {									\
->  	typeof(var) __new = (nval);					\
->  	switch (sizeof(var)) {						\
->  	case 1:								\
-> -		asm("xchgb %2, "__percpu_arg(1)			\
-> +		asm("\n1:mov "__percpu_arg(1)",%%al"			\
-> +		    "\n\tcmpxchgb %2, "__percpu_arg(1)			\
-> +		    "\n\tjnz 1b"					\
->  			    : "=a" (__ret), "+m" (var)			\
->  			    : "q" (__new)				\
->  			    : "memory");				\
->  		break;							\
->  	case 2:								\
-> -		asm("xchgw %2, "__percpu_arg(1)			\
-> +		asm("\n1:mov "__percpu_arg(1)",%%ax"			\
-> +		    "\n\tcmpxchgw %2, "__percpu_arg(1)			\
-> +		    "\n\tjnz 1b"					\
->  			    : "=a" (__ret), "+m" (var)			\
->  			    : "r" (__new)				\
->  			    : "memory");				\
->  		break;							\
->  	case 4:								\
-> -		asm("xchgl %2, "__percpu_arg(1)			\
-> +		asm("\n1:mov "__percpu_arg(1)",%%eax"			\
-> +		    "\n\tcmpxchgl %2, "__percpu_arg(1)			\
-> +		    "\n\tjnz 1b"					\
->  			    : "=a" (__ret), "+m" (var)			\
->  			    : "r" (__new)				\
->  			    : "memory");				\
->  		break;							\
->  	case 8:								\
-> -		asm("xchgq %2, "__percpu_arg(1)			\
-> +		asm("\n1:mov "__percpu_arg(1)",%%rax"			\
-> +		    "\n\tcmpxchgq %2, "__percpu_arg(1)			\
-> +		    "\n\tjnz 1b"					\
->  			    : "=a" (__ret), "+m" (var)			\
->  			    : "r" (__new)				\
->  			    : "memory");				\
-> 
+This issue has been present since the introduction of KCONFIG_CONFIG
+in 14cdd3c402bf7c66f0bcd76e290f0770a54a4b21.
 
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+CC: Roman Zippel <zippel@linux-m68k.org>
+CC: Michal Marek <mmarek@suse.cz>
+Reviewed-by: Michal Marek <mmarek@suse.cz>
+
+---
+
+changes since v1:
+ * rebased to 6313e3c21743cc88bb5bd8aa72948ee1e83937b6 of
+   git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+ * export KCONFIG_CONFIG from top-level Makefile (Michal Marek)
+
+---
+ Makefile        |    1 +
+ kernel/Makefile |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 3d94974..e0973cc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -224,6 +224,7 @@ ifeq ($(ARCH),m68knommu)
+ endif
+ 
+ KCONFIG_CONFIG	?= .config
++export KCONFIG_CONFIG
+ 
+ # SHELL used by kbuild
+ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0b5ff08..33e0a39 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -121,7 +121,7 @@ $(obj)/configs.o: $(obj)/config_data.h
+ # config_data.h contains the same information as ikconfig.h but gzipped.
+ # Info from config_data can be extracted from /proc/config*
+ targets += config_data.gz
+-$(obj)/config_data.gz: .config FORCE
++$(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
+ 	$(call if_changed,gzip)
+ 
+ quiet_cmd_ikconfiggz = IKCFG   $@
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.0.4
+
