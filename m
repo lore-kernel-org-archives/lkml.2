@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab0LNBFv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 20:05:51 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45555 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758768Ab0LNBFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 20:05:50 -0500
-Date: Mon, 13 Dec 2010 17:05:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
- faulting in pages
-Message-Id: <20101213170526.3b010058.akpm@linux-foundation.org>
-In-Reply-To: <20101214005140.GA29904@google.com>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
-	<1291335412-16231-2-git-send-email-walken@google.com>
-	<20101208152740.ac449c3d.akpm@linux-foundation.org>
-	<AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
-	<AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
-	<20101214005140.GA29904@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1758828Ab0LNBIs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 20:08:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:4657 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758701Ab0LNBIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 20:08:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,339,1288594800"; 
+   d="scan'208";a="686824808"
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+In-Reply-To: <4D05EBA4.60202@gmail.com>
+References: <1291255347.12777.116.camel@sli10-conroe>
+	 <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe>
+	 <4D05EBA4.60202@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 09:08:44 +0800
+Message-ID: <1292288924.2323.458.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Dec 2010 16:51:40 -0800
-Michel Lespinasse <walken@google.com> wrote:
-
-> On Thu, Dec 9, 2010 at 10:11 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > On Wednesday, December 8, 2010, Michel Lespinasse <walken@google.com> wrote:
-> >>
-> >> Yes, patch 1/6 changes the long hold time to be in read mode instead
-> >> of write mode, which is only a band-aid. But, this prepares for patch
-> >> 5/6, which releases mmap_sem whenever there is contention on it or
-> >> when blocking on disk reads.
-> >
-> > I have to say that I'm not a huge fan of that horribly kludgy
-> > contention check case.
-> >
-> > The "move page-in to read-locked sequence" and the changes to
-> > get_user_pages look fine, but the contention thing is just disgusting.
-> > I'd really like to see some other approach if at all possible.
+On Mon, 2010-12-13 at 17:47 +0800, Tejun Heo wrote:
+> Hello,
 > 
-> Andrew, should I amend my patches to remove the rwsem_is_contended() code ?
-> This would involve:
-> - remove rwsem-implement-rwsem_is_contended.patch and
->   x86-rwsem-more-precise-rwsem_is_contended-implementation.patch
-> - in mlock-do-not-hold-mmap_sem-for-extended-periods-of-time.patch,
->   drop the one hunk making use of rwsem_is_contended (rest of the patch
->   would still work without it)
-
-I think I fixed all that up.
-
-> - optionally, follow up patch to limit batch size to a constant
->   in do_mlock_pages():
+> On 12/13/2010 01:41 AM, Shaohua Li wrote:
+> >> Why add another set of macros?  Can't you just make the default one
+> >> aligned?
+> > how to do it without changing all arch code? There isn't cache line size
+> > macro for all arch which could be used in vmlinux.lds.h, IIRC.
 > 
-> diff --git a/mm/mlock.c b/mm/mlock.c
-> index 569ae6a..a505a7e 100644
-> --- a/mm/mlock.c
-> +++ b/mm/mlock.c
-> @@ -457,15 +457,23 @@ static int do_mlock_pages(unsigned long start, size_t len)
->  			continue;
->  		if (nstart < vma->vm_start)
->  			nstart = vma->vm_start;
-> +		/*
-> +		 * Constrain batch size to limit mmap_sem hold time.
-> +		 */
-> +		if (nend > nstart + 1024 * PAGE_SIZE)
-> +			nend = nstart + 1024 * PAGE_SIZE;
->  		/*
->  		 * Now fault in a range of pages. __mlock_vma_pages_range()
->  		 * double checks the vma flags, so that it won't mlock pages
->  		 * if the vma was already munlocked.
->  		 */
->  		ret = __mlock_vma_pages_range(vma, nstart, nend, &locked);
->  		if (ret < 0) {
->  			ret = __mlock_posix_error_return(ret);
->  			break;
-> +		} else if (locked) {
-> +			locked = 0;
-> +			up_read(&mm->mmap_sem);
->  		}
->  		nend = nstart + ret * PAGE_SIZE;
->  		ret = 0;
-> 
-> 
-> I don't really prefer using a constant, but I'm not sure how else to make
-> Linus happy :)
+> Can't we get around that with some ifdefferies?  And even if we'll
+> have to change lds on every arch, I think we better do it that way.
+I don't understand what you mean. defining a cachine line size macro for
+all archs? There is such macro, but using it in vmlinux.ld.h always
+report error. There is some other defines which can't be included in a
+link script.
+> It's not like the problem exists only on x86, right?
+yes, though currently only x86 has it.
 
-rwsem_is_contended() didn't seem so bad to me.
-
-Reading 1024 pages can still take a long time.  I can't immediately
-think of a better approach though.
+Thanks,
+Shaohua
 
