@@ -1,113 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759829Ab0LNRkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:40:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31517 "EHLO mx1.redhat.com"
+	id S1759818Ab0LNRn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:43:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48317 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759815Ab0LNRkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:40:00 -0500
-Date: Tue, 14 Dec 2010 18:38:17 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 36 of 66] memcg compound
-Message-ID: <20101214173817.GH5638@random.random>
-References: <patchbomb.1288798055@v2.random>
- <495ffee2d60adab4d18b.1288798091@v2.random>
- <20101118152628.GY8135@csn.ul.ie>
- <20101119101041.ffe00712.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1759775Ab0LNRn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 12:43:28 -0500
+Date: Tue, 14 Dec 2010 18:36:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCHSET] ptrace,signal: sane interaction between ptrace and
+	job control signals, take#2
+Message-ID: <20101214173600.GA16253@redhat.com>
+References: <1291654624-6230-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101119101041.ffe00712.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1291654624-6230-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kame,
+On 12/06, Tejun Heo wrote:
+>
+> This is the second attempt at cleaning up ptrace and signal behaviors,
 
-On Fri, Nov 19, 2010 at 10:10:41AM +0900, KAMEZAWA Hiroyuki wrote:
-> If there are requirements of big page > 4GB, unsigned long should be used.
+Tejun, I am really, really sorry for the huge delay.
 
-There aren't, it's unthinkable at the moment even 1G (besides it seems
-on some implementations the CPU lacks a real 1G tlb and just prefetch
-the same 2M tlb so making the tlb miss read one less cacheline but in
-practice 1G don't seem to provide any measurable runtime compared to
-2M THP). Things will always be exponential, the benefit provided going
-from 4k to 2M will always be an order of magnitude bigger than the
-benefit from 2M to 1G, no matter how much the hardware is handling the
-1G pages natively.
+I will _try_ very much to read this on Friday. If nothing else,
+I am very interested to understand these changes in details.
 
-> > >  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> > >  	struct mem_cgroup *mem = NULL;
-> > >  	int ret;
-> > > -	int csize = CHARGE_SIZE;
-> > > +	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
-> > >  
-> 
-> unsigned long here.
-
-This is to shut off a warning because CHARGE_SIZE is calculated as
-multiple of PAGE_SIZE which is unsigned long. csize was already int
-but unsigned long is not required. Like you point out it's not worth
-batching even pages as small as 2G, so no need of unsigned long.
-
-> > > @@ -2491,14 +2503,14 @@ __do_uncharge(struct mem_cgroup *mem, co
-> > >  	if (batch->memcg != mem)
-> > >  		goto direct_uncharge;
-> > >  	/* remember freed charge and uncharge it later */
-> > > -	batch->bytes += PAGE_SIZE;
-> > > +	batch->bytes += page_size;
-> 
-> Hmm, isn't it simpler to avoid batched-uncharge when page_size > PAGE_SIZE ?
-
-As you wish, so I'm changing it like this.
-
-archs where the pmd is implemented purely in software might actually
-be able to use page sizes smaller than 2M that may make sense to
-batch, but for now if you think this is simpler I'll go for it. We
-need simple.
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2503,6 +2503,9 @@ __do_uncharge(struct mem_cgroup *mem, co
- 	if (!batch->do_batch || test_thread_flag(TIF_MEMDIE))
- 		goto direct_uncharge;
- 
-+	if (page_size != PAGE_SIZE)
-+		goto direct_uncharge;
-+
- 	/*
- 	 * In typical case, batch->memcg == mem. This means we can
- 	 * merge a series of uncharges to an uncharge of res_counter.
-@@ -2511,9 +2514,9 @@ __do_uncharge(struct mem_cgroup *mem, co
- 	if (batch->memcg != mem)
- 		goto direct_uncharge;
- 	/* remember freed charge and uncharge it later */
--	batch->bytes += page_size;
-+	batch->bytes += PAGE_SIZE;
- 	if (uncharge_memsw)
--		batch->memsw_bytes += page_size;
-+		batch->memsw_bytes += PAGE_SIZE;
- 	return;
- direct_uncharge:
- 	res_counter_uncharge(&mem->res, page_size);
+Oleg.
 
