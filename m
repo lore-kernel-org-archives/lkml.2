@@ -1,68 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab0LNXV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 18:21:56 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45443 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab0LNXVy convert rfc822-to-8bit (ORCPT
+	id S932505Ab0LNXWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 18:22:15 -0500
+Received: from vms173019pub.verizon.net ([206.46.173.19]:50323 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932436Ab0LNXWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 18:21:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vhw4EBCvkA20I4dZXQZc9e0BV0RuN06HmJguPBeqcHQAltHBXHVnqValT28r98p5P3
-         ULvjJhM22xj9ndvAc/XqmITgcf9jlj1LTJST/tVNILLBI1JDY3JhBxJsjqf/R6qE09nX
-         kO1ERELLFu2zZoMiB0BeH5hGC8nK0vCwmORCs=
-MIME-Version: 1.0
-In-Reply-To: <20101214212909.17022.96801.stgit@mike.mtv.corp.google.com>
-References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
-	<20101214212909.17022.96801.stgit@mike.mtv.corp.google.com>
-Date: Wed, 15 Dec 2010 00:21:53 +0100
-Message-ID: <AANLkTik8wzDPPtMM+YPoOSojiW_Nev-KDkAg8dtDV=g1@mail.gmail.com>
-Subject: Re: [PATCH v3 03/22] netconsole: Introduce 'enabled' state-machine
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: Mike Waychison <mikew@google.com>
-Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Dec 2010 18:22:13 -0500
+Date: Tue, 14 Dec 2010 18:22:02 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jack Steiner <steiner@sgi.com>, hmh@hmh.eng.br, tony.luck@gmail.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gbeshers@sgi.com
+Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
+In-reply-to: <4D07F6A2.2030706@zytor.com>
+Message-id: <alpine.LFD.2.00.1012141819580.25387@x980>
+References: <20101214220932.GA1206@sgi.com> <4D07F6A2.2030706@zytor.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/14 Mike Waychison <mikew@google.com>:
-> Representing the internal state within netconsole isn't really a boolean
-> value, but rather a state machine with transitions.
-[...]
-> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-> index 6e16888..288a025 100644
-> --- a/drivers/net/netconsole.c
-> +++ b/drivers/net/netconsole.c
-[...]
-> @@ -350,9 +362,9 @@ static ssize_t store_enabled(struct netconsole_target *nt,
->                err = netpoll_setup(&nt->np);
->                spin_lock_irqsave(&target_list_lock, flags);
->                if (err)
-> -                       nt->enabled = 0;
-> +                       nt->np_state = NETPOLL_DISABLED;
->                else
-> -                       nt->enabled = 1;
-> +                       nt->np_state = NETPOLL_ENABLED;
->                spin_unlock_irqrestore(&target_list_lock, flags);
->                if (err)
->                        return err;
-[...]
 
-Since the spinlock protects only nt->np_state setting, you might be
-able to remove it altogether and use cmpxchg() where nt->np_state
-transitions from enabled or disabled state.
+> Why just x86-64?
 
-Maybe the locking scheme just needs more thought altogether?
-
-Best Regards,
-Micha³ Miros³aw
+the patch applies to all x86, 32 and 64-bit.
