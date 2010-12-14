@@ -1,156 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab0LNWcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 17:32:12 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:56180 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758986Ab0LNWcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 17:32:11 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/alternatives] x86, suspend: Avoid unnecessary smp alternatives switch during suspend/resume
-Date: Tue, 14 Dec 2010 23:31:22 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: linux-tip-commits@vger.kernel.org
-References: <1290557500.4946.8.camel@sbsiddha-MOBL3.sc.intel.com> <tip-3fb82d56ad003e804923185316236f26b30dfdd5@git.kernel.org>
-In-Reply-To: <tip-3fb82d56ad003e804923185316236f26b30dfdd5@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012142331.22404.rjw@sisk.pl>
+	id S932265Ab0LNWc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 17:32:26 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39231 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab0LNWcX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 17:32:23 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66833089"
+From: Jeff Ohlstein <johlstei@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 4/5] msm: hotplug: support cpu hotplug on msm
+Date: Tue, 14 Dec 2010 14:31:49 -0800
+Message-Id: <1292365910-30336-1-git-send-email-johlstei@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20101214173007.GA24303@n2100.arm.linux.org.uk>
+References: <20101214173007.GA24303@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 14, 2010, tip-bot for Suresh Siddha wrote:
-> Commit-ID:  3fb82d56ad003e804923185316236f26b30dfdd5
-> Gitweb:     http://git.kernel.org/tip/3fb82d56ad003e804923185316236f26b30dfdd5
-> Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-> AuthorDate: Tue, 23 Nov 2010 16:11:40 -0800
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Mon, 13 Dec 2010 16:23:56 -0800
-> 
-> x86, suspend: Avoid unnecessary smp alternatives switch during suspend/resume
-> 
-> During suspend, we disable all the non boot cpus. And during resume we bring
-> them all back again. So no need to do alternatives_smp_switch() in between.
-> 
-> On my core 2 based laptop, this speeds up the suspend path by 15msec and the
-> resume path by 5 msec (suspend/resume speed up differences can be attributed
-> to the different P-states that the cpu is in during suspend/resume).
-> 
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> LKML-Reference: <1290557500.4946.8.camel@sbsiddha-MOBL3.sc.intel.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+---
+ arch/arm/mach-msm/Makefile  |    2 +
+ arch/arm/mach-msm/hotplug.c |   87 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 89 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/hotplug.c
 
-OK, I guess there's no nicer way to implement that.
-
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-> ---
->  arch/x86/include/asm/alternative.h |    1 +
->  arch/x86/kernel/alternative.c      |    3 ++-
->  arch/x86/kernel/smpboot.c          |   14 ++++++++++++++
->  kernel/cpu.c                       |   11 +++++++++++
->  4 files changed, 28 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-> index 76561d2..01171f6 100644
-> --- a/arch/x86/include/asm/alternative.h
-> +++ b/arch/x86/include/asm/alternative.h
-> @@ -66,6 +66,7 @@ extern void alternatives_smp_module_add(struct module *mod, char *name,
->  extern void alternatives_smp_module_del(struct module *mod);
->  extern void alternatives_smp_switch(int smp);
->  extern int alternatives_text_reserved(void *start, void *end);
-> +extern bool skip_smp_alternatives;
->  #else
->  static inline void alternatives_smp_module_add(struct module *mod, char *name,
->  					       void *locks, void *locks_end,
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index 5079f24..9f98eb4 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -353,6 +353,7 @@ void __init_or_module alternatives_smp_module_del(struct module *mod)
->  	mutex_unlock(&smp_alt);
->  }
->  
-> +bool skip_smp_alternatives;
->  void alternatives_smp_switch(int smp)
->  {
->  	struct smp_alt_module *mod;
-> @@ -368,7 +369,7 @@ void alternatives_smp_switch(int smp)
->  	printk("lockdep: fixing up alternatives.\n");
->  #endif
->  
-> -	if (noreplace_smp || smp_alt_once)
-> +	if (noreplace_smp || smp_alt_once || skip_smp_alternatives)
->  		return;
->  	BUG_ON(!smp && (num_online_cpus() > 1));
->  
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 083e99d..837c81e 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1166,6 +1166,20 @@ out:
->  	preempt_enable();
->  }
->  
-> +void arch_disable_nonboot_cpus_begin(void)
-> +{
-> +	/*
-> +	 * Avoid the smp alternatives switch during the disable_nonboot_cpus().
-> +	 * In the suspend path, we will be back in the SMP mode shortly anyways.
-> +	 */
-> +	skip_smp_alternatives = true;
-> +}
-> +
-> +void arch_disable_nonboot_cpus_end(void)
-> +{
-> +	skip_smp_alternatives = false;
-> +}
-> +
->  void arch_enable_nonboot_cpus_begin(void)
->  {
->  	set_mtrr_aps_delayed_init();
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index f6e726f..8ccc182 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -386,6 +386,14 @@ out:
->  #ifdef CONFIG_PM_SLEEP_SMP
->  static cpumask_var_t frozen_cpus;
->  
-> +void __weak arch_disable_nonboot_cpus_begin(void)
-> +{
-> +}
-> +
-> +void __weak arch_disable_nonboot_cpus_end(void)
-> +{
-> +}
-> +
->  int disable_nonboot_cpus(void)
->  {
->  	int cpu, first_cpu, error = 0;
-> @@ -397,6 +405,7 @@ int disable_nonboot_cpus(void)
->  	 * with the userspace trying to use the CPU hotplug at the same time
->  	 */
->  	cpumask_clear(frozen_cpus);
-> +	arch_disable_nonboot_cpus_begin();
->  
->  	printk("Disabling non-boot CPUs ...\n");
->  	for_each_online_cpu(cpu) {
-> @@ -412,6 +421,8 @@ int disable_nonboot_cpus(void)
->  		}
->  	}
->  
-> +	arch_disable_nonboot_cpus_end();
-> +
->  	if (!error) {
->  		BUG_ON(num_online_cpus() > 1);
->  		/* Make sure the CPUs won't be enabled by someone else */
-> 
-> 
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 34cd0a8..7a11b4a 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -20,6 +20,8 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
+ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+ 
++obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
++
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
+new file mode 100644
+index 0000000..d24f71f
+--- /dev/null
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -0,0 +1,87 @@
++/*
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/smp.h>
++#include <linux/completion.h>
++#include <linux/irq.h>
++
++#include <asm/cacheflush.h>
++
++#include <mach/smp.h>
++
++static inline void cpu_enter_lowpower(void)
++{
++	flush_cache_all();
++}
++
++static inline void cpu_leave_lowpower(void)
++{
++	pen_release = -1;
++	smp_wmb();
++}
++
++static inline void platform_do_lowpower(unsigned int cpu)
++{
++	/* Just enter wfe for now. */
++	for (;;) {
++		asm("wfe" : : : "memory");
++		if (pen_release == cpu) {
++			/*
++			 * OK, proper wakeup, we're done
++			 */
++			break;
++		}
++
++		/*
++		 * getting here, means that we have come out of WFI without
++		 * having been woken up - this shouldn't happen
++		 *
++		 * The trouble is, letting people know about this is not really
++		 * possible, since we are currently running incoherently, and
++		 * therefore cannot safely call printk() or anything else
++		*/
++		pr_debug("CPU%u: spurious wakeup call\n", cpu);
++	}
++}
++
++int platform_cpu_kill(unsigned int cpu)
++{
++	return 1;
++}
++
++/*
++ * platform-specific code to shutdown a CPU
++ *
++ * Called with IRQs disabled
++ */
++void platform_cpu_die(unsigned int cpu)
++{
++	/*
++	 * we're ready for shutdown now, so do it
++	 */
++	cpu_enter_lowpower();
++	platform_do_lowpower(cpu);
++
++	/*
++	 * bring this CPU back into the world of cache
++	 * coherency, and then restore interrupts
++	 */
++	cpu_leave_lowpower();
++}
++
++int platform_cpu_disable(unsigned int cpu)
++{
++	/*
++	 * we don't allow CPU 0 to be shutdown (it is still too special
++	 * e.g. clock tick interrupts)
++	 */
++	return cpu == 0 ? -EPERM : 0;
++}
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
