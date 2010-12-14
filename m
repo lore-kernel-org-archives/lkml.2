@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab0LNByp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 20:54:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758964Ab0LNByn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 20:54:43 -0500
-Message-ID: <4D06CE4C.3070003@redhat.com>
-Date: Mon, 13 Dec 2010 23:54:20 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jarod Wilson <jarod@redhat.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Linux Input <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-media@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?B?RGF2aWQgSMOkcmRlbWFu?= <david@hardeman.nu>
-Subject: Re: [RFC] Input: define separate EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2
-References: <20101209093948.GD8821@core.coreip.homeip.net> <4D012844.3020009@euromail.se> <20101209191647.GC23781@core.coreip.homeip.net> <20101213090559.GH21401@core.coreip.homeip.net> <20101213183128.GE2531@redhat.com>
-In-Reply-To: <20101213183128.GE2531@redhat.com>
+	id S1759022Ab0LNB5F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 20:57:05 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21054 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758950Ab0LNB5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 20:57:03 -0500
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+From: Chris Mason <chris.mason@oracle.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates
+Date: Mon, 13 Dec 2010 20:54:04 -0500
+Message-Id: <1292291131-sup-859@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 13-12-2010 16:31, Jarod Wilson escreveu:
-> On Mon, Dec 13, 2010 at 01:06:00AM -0800, Dmitry Torokhov wrote:
->> On Thu, Dec 09, 2010 at 11:16:47AM -0800, Dmitry Torokhov wrote:
->>> On Thu, Dec 09, 2010 at 08:04:36PM +0100, Henrik Rydberg wrote:
->>>> On 12/09/2010 10:39 AM, Dmitry Torokhov wrote:
->>>>
->>>>> The desire to keep old names for the EVIOCGKEYCODE/EVIOCSKEYCODE while
->>>>> extending them to support large scancodes was a mistake. While we tried
->>>>> to keep ABI intact (and we succeeded in doing that, programs compiled
->>>>> on older kernels will work on newer ones) there is still a problem with
->>>>> recompiling existing software with newer kernel headers.
->>>>>
->>>>> New kernel headers will supply updated ioctl numbers and kernel will
->>>>> expect that userspace will use struct input_keymap_entry to set and
->>>>> retrieve keymap data. But since the names of ioctls are still the same
->>>>> userspace will happily compile even if not adjusted to make use of the
->>>>> new structure and will start miraculously fail in the field.
->>>>>
->>>>> To avoid this issue let's revert EVIOCGKEYCODE/EVIOCSKEYCODE definitions
->>>>> and add EVIOCGKEYCODE_V2/EVIOCSKEYCODE_V2 so that userspace can explicitly
->>>>> select the style of ioctls it wants to employ.
->>>>>
->>>>> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
->>>>> ---
->>>>
->>>>
->>>> Would the header change suffice in itself?
->>>
->>> We still need to change evdev to return -EINVAL on wrong sizes but yes,
->>> the amount of change there could be more limited. I just thought that
->>> splitting it up explicitly shows the differences in handling better. If
->>> people prefer the previos version we could leave it, I am 50/50 between
->>> them.
->>>
->>
->> *ping*
->>
->> Mauro, Jarod, do you have an opinion on this? I think we need to settle
->> on a solution before 2.6.37 is out.
-> 
-> Sorry, been meaning to reply, just been quite tied up with other work...
-> I'm of two minds on this as well, but probably leaning slightly in favor
-> of going ahead with an explicit _V2 so as to not break existing userspace
-> in new and unexpected ways. There presumably isn't much in the way of
-> userspace already adapted to the new interface, and its simple to do
-> another rev of those that have been. Okay, yeah, this is probably the best
-> way to go about it.
-> 
-> Acked-by: Jarod Wilson <jarod@redhat.com>
-> 
-> 
-I'm with some email troubles here. Not sure if you got my answer. I'm OK with
-those changes.
+Hi everyone,
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com
+The master branch of the btrfs unstable tree:
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
 
-Cheers,
-Mauro
+Has an assortment of bug fixes.  It includes some corruption fixes when
+mounting the filesystem in degraded mode, and related oopsen as we try
+to mount damaged filesystems.
+
+The async snapshot ioctl added in rc1 is fixed to properly do
+synchronous snapshots unless the new async ioctl is used.  It is also
+updated to be ready for the readonly snapshot feature we'll add in
+2.6.38.
+
+Xin Zhong from Intel pitched in a deadlock during copy_from_user and
+Josef has fixes for the new fast caching code and a few other bugs.
+
+Josef Bacik (5) commits (+38/-21):
+    Btrfs: do not BUG if we fail to remove the orphan item for dead snapshots (+7/-3)
+    Btrfs: do not do fast caching if we are allocating blocks for tree_root (+12/-6)
+    Btrfs: fixup return code for btrfs_del_orphan_item (+5/-1)
+    Btrfs: deal with space cache errors better (+13/-9)
+    Btrfs: fix use after free in O_DIRECT (+1/-2)
+
+Chris Mason (3) commits (+59/-5):
+    Btrfs: account for missing devices in RAID allocation profiles (+36/-3)
+    Btrfs: prevent RAID level downgrades when space is low (+19/-1)
+    Btrfs: EIO when we fail to read tree roots (+4/-1)
+
+Li Zefan (2) commits (+37/-23):
+    Btrfs: Make async snapshot ioctl more generic (+36/-22)
+    Btrfs: Fix a crash when mounting a subvolume (+1/-1)
+
+Zheng Yan (1) commits (+1/-1):
+    Btrfs: Fix page leak in compressed writeback path
+
+Xin Zhong (1) commits (+60/-32):
+    Btrfs: pwrite blocked when writing from the mmaped buffer of the same page
+
+Sage Weil (1) commits (+11/-9):
+    Btrfs: fix sync subvol/snapshot creation
+
+Jan Beulich (1) commits (+5/-7):
+    Btrfs: fix compiler warnings
+
+Total: (14) commits (+211/-98)
+
+ fs/btrfs/disk-io.c          |   11 +++--
+ fs/btrfs/extent-tree.c      |   75 +++++++++++++++++++++++++++-------
+ fs/btrfs/file.c             |   92 ++++++++++++++++++++++++++++---------------
+ fs/btrfs/free-space-cache.c |   12 +++--
+ fs/btrfs/inode.c            |   11 ++---
+ fs/btrfs/ioctl.c            |   56 ++++++++++++++++----------
+ fs/btrfs/ioctl.h            |   14 ++++--
+ fs/btrfs/orphan.c           |    6 ++-
+ fs/btrfs/super.c            |    2 +-
+ fs/btrfs/volumes.c          |   20 +++++++++-
+ fs/btrfs/volumes.h          |    2 +
+ 11 files changed, 207 insertions(+), 94 deletions(-)
