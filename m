@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab0LNOdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:33:49 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39491 "EHLO mga11.intel.com"
+	id S1756774Ab0LNOeC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:34:02 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56052 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756133Ab0LNOdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:33:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,342,1288594800"; 
-   d="scan'208";a="868041482"
-Date: Tue, 14 Dec 2010 22:33:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
- up time
-Message-ID: <20101214143325.GA22764@localhost>
-References: <20101213144646.341970461@intel.com>
- <20101213150326.856922289@intel.com>
- <1292333854.2019.16.camel@castor.rsk>
- <20101214135910.GA21401@localhost>
+	id S1754034Ab0LNOeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:34:00 -0500
+Message-ID: <4D078052.3040800@kernel.org>
+Date: Tue, 14 Dec 2010 15:33:54 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214135910.GA21401@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org> <1292336798.3058.5.camel@mulgrave.site>
+In-Reply-To: <1292336798.3058.5.camel@mulgrave.site>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 14:33:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 09:59:10PM +0800, Wu Fengguang wrote:
-> On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
+Hello,
 
-> > As to the ramp up time, when writing to 2 disks at the same time I see
-> > the per_bdi_threshold taking up to 20 seconds to converge on a steady
-> > value after one of the write stops. So I think this could be speeded up
-> > even more, at least on my setup.
+On 12/14/2010 03:26 PM, James Bottomley wrote:
+> Depends what you're doing about the flush problem.  The synchronisation
+> is inherent in the use (we're holding a reference to the module within
+> the executed code).  The flush is to try to speed things up so the user
+> doesn't get annoyed during rmmod.  We don't need a sync, just an
+> accelerator.
+
+Hmmm, I'm confused.  How does it drop the reference then?  Something
+outside of the callback should wait for its completion and drop the
+reference as otherwise nothing can guarantee that the modules doesn't
+go away between the reference drop and the actual completion of the
+callback.
+
+>> Compelling reason for it to exist.  Why not just use work when you
+>> need execution context and the caller might or might not have one?
 > 
-> I have the roughly same ramp up time on the 1-disk 3GB mem test:
+> Because it's completely lame to have user context and not use it.
+
+It may be lame but I think it's better than having an optimization
+interface which is incomplete and, more importantly, unnecessary.
+
+>> But, really, let's just remove it.  At this point, we either need to
+>> fortify the interface or remove it and given the current usage, I
+>> think we're better off with the latter.
 > 
-> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
->  
+> I really don't think the open coding is a good idea.  It's complex and
+> error prone; exactly the type of thing that should be in an API.
 
-Interestingly, the above graph shows that after about 10s fast ramp
-up, there is another 20s slow ramp down. It's obviously due the
-decline of global limit:
+Yeah, just schedule work like everyone else.
 
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat-dirty.png
+Thanks.
 
-But why is the global limit declining?  The following log shows that
-nr_file_pages keeps growing and goes stable after 75 seconds (so long
-time!). In the same period nr_free_pages goes slowly down to its
-stable value. Given that the global limit is mainly derived from
-nr_free_pages+nr_file_pages (I disabled swap), something must be
-slowly eating memory until 75 ms. Maybe the tracing ring buffers?
-
-         free     file      reclaimable pages
-50s      369324 + 318760 => 688084
-60s      235989 + 448096 => 684085
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat
-
-Thanks,
-Fengguang
+-- 
+tejun
