@@ -1,376 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab0LNLCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 06:02:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55501 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab0LNLCq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 06:02:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cBwV3E5yVT/jI7PxEHjPv37iHEK00oOkj5QOfxp+/pwSE5DtdauQY1EFSjpbbUBjRe
-         ob4YZyVVZjIOuDTMTLKVOQfSDBx2aOAk7dPHY5MkXeCuaeV4ZPXpW42ExIBLaMvKX98a
-         KBBU5XCh6RlYuH/ACXySZ9OzYBd5BAbvOdayg=
-MIME-Version: 1.0
-In-Reply-To: <20101210143112.29934.22944.stgit@localhost6.localdomain6>
-References: <20101210142745.29934.29186.stgit@localhost6.localdomain6>
-	<20101210143112.29934.22944.stgit@localhost6.localdomain6>
-Date: Tue, 14 Dec 2010 20:02:45 +0900
-Message-ID: <AANLkTinaTUUfvK+Nc-Whck21r-OzT+0CFVnS4W_jG5aw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v2)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756956Ab0LNLEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 06:04:08 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:44264 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756027Ab0LNLEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 06:04:06 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19jc75kns9jnwipN9fcfUoZ4w885T/j+srLg6HR4x
+	/OK6UyAiUxaQGR
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <efault@gmx.de>
+To: vatsa@linux.vnet.ibm.com
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <20101214102409.GA3665@linux.vnet.ibm.com>
+References: <20101213224434.7495edb2@annuminas.surriel.com>
+	 <20101213224657.7e141746@annuminas.surriel.com>
+	 <1292306896.7448.157.camel@marge.simson.net>
+	 <20101214102409.GA3665@linux.vnet.ibm.com>
+Content-Type: text/plain
+Date: Tue, 14 Dec 2010 12:03:58 +0100
+Message-Id: <1292324638.7436.29.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 11:32 PM, Balbir Singh
-<balbir@linux.vnet.ibm.com> wrote:
-> Changelog v2
-> 1. Use a config option to enable the code (Andrew Morton)
-> 2. Explain the magic tunables in the code or at-least attempt
->   to explain them (General comment)
-> 3. Hint uses of the boot parameter with unlikely (Andrew Morton)
-> 4. Use better names (balanced is not a good naming convention)
-> 5. Updated Documentation/kernel-parameters.txt (Andrew Morton)
->
-> Provide control using zone_reclaim() and a boot parameter. The
-> code reuses functionality from zone_reclaim() to isolate unmapped
-> pages and reclaim them as a priority, ahead of other mapped pages.
->
-> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> ---
->  Documentation/kernel-parameters.txt |    8 +++
->  include/linux/swap.h                |   21 ++++++--
->  init/Kconfig                        |   12 ++++
->  kernel/sysctl.c                     |    2 +
->  mm/page_alloc.c                     |    9 +++
->  mm/vmscan.c                         |   97 +++++++++++++++++++++++++++++++++++
->  6 files changed, 142 insertions(+), 7 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index dd8fe2b..f52b0bd 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2515,6 +2515,14 @@ and is between 256 and 4096 characters. It is defined in the file
->                        [X86]
->                        Set unknown_nmi_panic=1 early on boot.
->
-> +       unmapped_page_control
-> +                       [KNL] Available if CONFIG_UNMAPPED_PAGECACHE_CONTROL
-> +                       is enabled. It controls the amount of unmapped memory
-> +                       that is present in the system. This boot option plus
-> +                       vm.min_unmapped_ratio (sysctl) provide granular control
-> +                       over how much unmapped page cache can exist in the system
-> +                       before kswapd starts reclaiming unmapped page cache pages.
-> +
->        usbcore.autosuspend=
->                        [USB] The autosuspend time delay (in seconds) used
->                        for newly-detected USB devices (default 2).  This
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index ac5c06e..773d7e5 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -253,19 +253,32 @@ extern int vm_swappiness;
->  extern int remove_mapping(struct address_space *mapping, struct page *page);
->  extern long vm_total_pages;
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL) || defined(CONFIG_NUMA)
->  extern int sysctl_min_unmapped_ratio;
->  extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
-> -#ifdef CONFIG_NUMA
-> -extern int zone_reclaim_mode;
-> -extern int sysctl_min_slab_ratio;
->  #else
-> -#define zone_reclaim_mode 0
->  static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
->  {
->        return 0;
->  }
->  #endif
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL)
-> +extern bool should_reclaim_unmapped_pages(struct zone *zone);
-> +#else
-> +static inline bool should_reclaim_unmapped_pages(struct zone *zone)
-> +{
-> +       return false;
-> +}
-> +#endif
-> +
-> +#ifdef CONFIG_NUMA
-> +extern int zone_reclaim_mode;
-> +extern int sysctl_min_slab_ratio;
-> +#else
-> +#define zone_reclaim_mode 0
-> +#endif
-> +
->  extern int page_evictable(struct page *page, struct vm_area_struct *vma);
->  extern void scan_mapping_unevictable_pages(struct address_space *);
->
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 3eb22ad..78c9169 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -782,6 +782,18 @@ endif # NAMESPACES
->  config MM_OWNER
->        bool
->
-> +config UNMAPPED_PAGECACHE_CONTROL
-> +       bool "Provide control over unmapped page cache"
-> +       default n
-> +       help
-> +         This option adds support for controlling unmapped page cache
-> +         via a boot parameter (unmapped_page_control). The boot parameter
-> +         with sysctl (vm.min_unmapped_ratio) control the total number
-> +         of unmapped pages in the system. This feature is useful if
-> +         you want to limit the amount of unmapped page cache or want
-> +         to reduce page cache duplication in a virtualized environment.
-> +         If unsure say 'N'
-> +
->  config SYSFS_DEPRECATED
->        bool "enable deprecated sysfs features to support old userspace tools"
->        depends on SYSFS
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index e40040e..ab2c60a 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1211,6 +1211,7 @@ static struct ctl_table vm_table[] = {
->                .extra1         = &zero,
->        },
->  #endif
-> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
->        {
->                .procname       = "min_unmapped_ratio",
->                .data           = &sysctl_min_unmapped_ratio,
-> @@ -1220,6 +1221,7 @@ static struct ctl_table vm_table[] = {
->                .extra1         = &zero,
->                .extra2         = &one_hundred,
->        },
-> +#endif
->  #ifdef CONFIG_NUMA
->        {
->                .procname       = "zone_reclaim_mode",
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1845a97..1c9fbab 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1662,6 +1662,9 @@ zonelist_scan:
->                        unsigned long mark;
->                        int ret;
->
-> +                       if (should_reclaim_unmapped_pages(zone))
-> +                               wakeup_kswapd(zone, order);
+On Tue, 2010-12-14 at 15:54 +0530, Srivatsa Vaddagiri wrote:
+> On Tue, Dec 14, 2010 at 07:08:16AM +0100, Mike Galbraith wrote:
 
-I think we can put the logic into zone_watermark_okay.
+> > That part looks ok, except for the yield cross cpu bit.  Trying to yield
+> > a resource you don't have doesn't make much sense to me.
+> 
+> So another (crazy) idea is to move the "yieldee" task on another cpu over to 
+> yielding task's cpu, let it run till the end of yielding tasks slice and then
+> let it go back to the original cpu at the same vruntime position!
 
-> +
->                        mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
->                        if (zone_watermark_ok(zone, order, mark,
->                                    classzone_idx, alloc_flags))
-> @@ -4154,10 +4157,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->
->                zone->spanned_pages = size;
->                zone->present_pages = realsize;
-> -#ifdef CONFIG_NUMA
-> -               zone->node = nid;
-> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
->                zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
->                                                / 100;
-> +#endif
-> +#ifdef CONFIG_NUMA
-> +               zone->node = nid;
->                zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
->  #endif
->                zone->name = zone_names[j];
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 4e2ad05..daf2ad1 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -158,6 +158,29 @@ static DECLARE_RWSEM(shrinker_rwsem);
->  #define scanning_global_lru(sc)        (1)
->  #endif
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL)
-> +static unsigned long reclaim_unmapped_pages(int priority, struct zone *zone,
-> +                                               struct scan_control *sc);
-> +static int unmapped_page_control __read_mostly;
-> +
-> +static int __init unmapped_page_control_parm(char *str)
-> +{
-> +       unmapped_page_control = 1;
-> +       /*
-> +        * XXX: Should we tweak swappiness here?
-> +        */
-> +       return 1;
-> +}
-> +__setup("unmapped_page_control", unmapped_page_control_parm);
-> +
-> +#else /* !CONFIG_UNMAPPED_PAGECACHE_CONTROL */
-> +static inline unsigned long reclaim_unmapped_pages(int priority,
-> +                               struct zone *zone, struct scan_control *sc)
-> +{
-> +       return 0;
-> +}
-> +#endif
-> +
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
->                                                  struct scan_control *sc)
->  {
-> @@ -2297,6 +2320,12 @@ loop_again:
->                                shrink_active_list(SWAP_CLUSTER_MAX, zone,
->                                                        &sc, priority, 0);
->
-> +                       /*
-> +                        * We do unmapped page reclaim once here and once
-> +                        * below, so that we don't lose out
-> +                        */
-> +                       reclaim_unmapped_pages(priority, zone, &sc);
+Yeah, pulling the intended recipient makes fine sense.  If he doesn't
+preempt you, you can try to swap vruntimes or whatever makes arithmetic
+sense and will help.  Dunno how you tell him how long he can keep the
+cpu though, and him somehow going back home needs to be a plain old
+migration, no fancy restoration of ancient history vruntime.
 
-It can make unnecessary stir of lru pages.
-How about this?
-zone_watermark_ok returns ZONE_UNMAPPED_PAGE_FULL.
-wakeup_kswapd(..., please reclaim unmapped page cache).
-If kswapd is woke up by unmapped page full, kswapd sets up sc with unmap = 0.
-If the kswapd try to reclaim unmapped page, shrink_page_list doesn't
-rotate non-unmapped pages.
+	-Mike
 
-> +
->                        if (!zone_watermark_ok_safe(zone, order,
->                                        high_wmark_pages(zone), 0, 0)) {
->                                end_zone = i;
-> @@ -2332,6 +2361,11 @@ loop_again:
->                                continue;
->
->                        sc.nr_scanned = 0;
-> +                       /*
-> +                        * Reclaim unmapped pages upfront, this should be
-> +                        * really cheap
-> +                        */
-> +                       reclaim_unmapped_pages(priority, zone, &sc);
-
-Remove the hacky code.
-
->
->                        /*
->                         * Call soft limit reclaim before calling shrink_zone.
-> @@ -2587,7 +2621,8 @@ void wakeup_kswapd(struct zone *zone, int order)
->                pgdat->kswapd_max_order = order;
->        if (!waitqueue_active(&pgdat->kswapd_wait))
->                return;
-> -       if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0))
-> +       if (zone_watermark_ok_safe(zone, order, low_wmark_pages(zone), 0, 0) &&
-> +               !should_reclaim_unmapped_pages(zone))
->                return;
->
->        trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
-> @@ -2740,6 +2775,7 @@ static int __init kswapd_init(void)
->
->  module_init(kswapd_init)
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL) || defined(CONFIG_NUMA)
->  /*
->  * Zone reclaim mode
->  *
-> @@ -2960,6 +2996,65 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->
->        return ret;
->  }
-> +#endif
-> +
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL)
-> +/*
-> + * Routine to reclaim unmapped pages, inspired from the code under
-> + * CONFIG_NUMA that does unmapped page and slab page control by keeping
-> + * min_unmapped_pages in the zone. We currently reclaim just unmapped
-> + * pages, slab control will come in soon, at which point this routine
-> + * should be called reclaim cached pages
-> + */
-> +unsigned long reclaim_unmapped_pages(int priority, struct zone *zone,
-> +                                               struct scan_control *sc)
-> +{
-> +       if (unlikely(unmapped_page_control) &&
-> +               (zone_unmapped_file_pages(zone) > zone->min_unmapped_pages)) {
-> +               struct scan_control nsc;
-> +               unsigned long nr_pages;
-> +
-> +               nsc = *sc;
-> +
-> +               nsc.swappiness = 0;
-> +               nsc.may_writepage = 0;
-> +               nsc.may_unmap = 0;
-> +               nsc.nr_reclaimed = 0;
-
-This logic can be put in zone_reclaim_unmapped_pages.
-
-> +
-> +               nr_pages = zone_unmapped_file_pages(zone) -
-> +                               zone->min_unmapped_pages;
-> +               /*
-> +                * We don't want to be too aggressive with our
-> +                * reclaim, it is our best effort to control
-> +                * unmapped pages
-> +                */
-> +               nr_pages >>= 3;
-> +
-> +               zone_reclaim_unmapped_pages(zone, &nsc, nr_pages);
-> +               return nsc.nr_reclaimed;
-> +       }
-> +       return 0;
-> +}
-> +
-> +/*
-> + * 16 is a magic number that was pulled out of a magician's
-> + * hat. This number automatically provided the best performance
-> + * to memory usage (unmapped pages). Lower than this and we spend
-> + * a lot of time in frequent reclaims, higher and our control is
-> + * weakend.
-> + */
-> +#define UNMAPPED_PAGE_RATIO 16
-> +
-> +bool should_reclaim_unmapped_pages(struct zone *zone)
-> +{
-> +       if (unlikely(unmapped_page_control) &&
-> +               (zone_unmapped_file_pages(zone) >
-> +                       UNMAPPED_PAGE_RATIO * zone->min_unmapped_pages))
-> +               return true;
-> +       return false;
-> +}
-> +#endif
-> +
->
->  /*
->  * page_evictable - test whether a page is evictable
->
->
-
-As I look first, the code isn't good shape.
-But more important thing is how many there are users.
-Could we pay cost to maintain feature few user?
-
-It depends on your effort which proves the usage cases and benefit.
-It would be good to give a real data.
-
-If we want really this, how about the new cache lru idea as Kame suggests?
-For example, add_to_page_cache_lru adds the page into cache lru.
-page_add_file_rmap moves the page into inactive file.
-page_remove_rmap moves the page into lru cache, again.
-We can count the unmapped pages and if the size exceeds limit, we can
-wake up kswapd.
-whenever the memory pressure happens, first of all, reclaimer try to
-reclaim cache lru.
-
-It can enhance reclaim latency and is good to embedded people.
-
--- 
-Kind regards,
-Minchan Kim
