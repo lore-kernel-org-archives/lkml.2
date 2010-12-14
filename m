@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab0LNOGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:06:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49920 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab0LNOGK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:06:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=bz6pFVHpgmzacNiPCc6hwci7mV+KHw+uEaNPIpXPZdX022pInvU2/PxhQcAS8p4gcX
-         UFONPZVEXmcp1epV6x0KBF22A+RTTihA649J/D6zDc3ga7z1OnSYGPIOMmNkDdhFM0Io
-         1jwMOqtNgzKGZI5mlcKY1++RXeGehXZRqZK7w=
-Date: Tue, 14 Dec 2010 12:06:04 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] perf tools: Add symfs option for off-box analysis
- using specified tree
-Message-ID: <20101214140604.GC13425@ghostprotocols.net>
-References: <1291926427-28846-1-git-send-email-daahern@cisco.com>
- <20101214122428.GA13425@ghostprotocols.net>
- <20101214125245.GB13425@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214125245.GB13425@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751894Ab0LNOJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:09:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54236 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab0LNOJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:09:21 -0500
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D073E9A.3000608@kernel.org>
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>
+	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 14:09:14 +0000
+Message-ID: <1292335754.3058.2.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 14, 2010 at 10:52:45AM -0200, Arnaldo Carvalho de Melo escreveu:
-> Ok, there are still some problems:
+On Tue, 2010-12-14 at 10:53 +0100, Tejun Heo wrote:
+> Hello, James.
 > 
-> It is escaping the symfs jail for /home/acme/bin/perf, /lib64/libpthread-2.5.so
-> and kernel modules, investigating...
+> On 12/12/2010 11:48 PM, James Bottomley wrote:
+> > The analysis above isn't quite correct, I'm afraid.  We use the
+> > execute_in_process_context() not to avoid deadlocks, but to acquire
+> > process context if we don't have it because the API allows calling from
+> > sites at interrupt context.  The point of using
+> > execute_in_process_context() is that we actually want to make use of the
+> > user context if we have one ... there's no point using a workqueue in
+> > that case, because there's nothing to be gained (except to slow
+> > everything down).  We have no ordering constraints (the traditional
+> > reason for using workqueues) so this is purely about context.
+> 
+> Sure, what I tried to say was that the change couldn't introduce
+> deadlock no matter how it was used.  Sure execute_in_process_context()
+> would be slightly more efficient, but it currently is used a few times
+> only in quite cold paths where optimization isn't necessary at all and
+> the API is somewhat incomplete in that it doesn't provide ordering or
+> synchronization APIs.
 
-Those 'G' signals means DSO__ORIG_GUEST_KMODULE, since you were not
-prefixing that case with symfs, it was the jail leak point, fixed, doing
-some more testing before merging.
+That's the point ... it's purely for operations which require user
+context which may not have it.  There's no synchronisation by design
+(it's a simple API).
 
-> [acme@mica linux]$ find /tmp/bla
-> /tmp/bla
-> /tmp/bla/lib64
-> /tmp/bla/lib64/libc-2.5.so
-> [acme@mica linux]$ perf report -v -g none --stdio --symfs /tmp/bla
-> Failed to open [kernel.kallsyms], continuing without symbols
-> # Events: 503  cycles
-> #
-> # Overhead Command    Shared Object                                Symbol
-> # ........ .......... .....................................        ....................
-> #
->    0.84%        perf  /home/acme/bin/perf                  0x26bf1 G [.] die_builtin
->    0.21%        perf  /home/acme/bin/perf                  0x1db4b G [.] event__synthesize_kernel_mmap
->    0.21%        perf  /home/acme/bin/perf                  0x4700  G [.] _init
->    0.21%        perf  /home/acme/bin/perf                  0x1deca G [.] event__synthesize_comm
->    0.21%        perf  /lib64/libpthread-2.5.so             0xd210  G [.] __write_nocancel
->    0.21%        perf  /home/acme/bin/perf                  0xddbd  G [.] atexit_header
->    0.03% kworker/0:1  /lib/modules/2.6.37-rc3/.../ixgbe.ko 0x605   G [k] ixgbe_update_stats
+> So, unless there's a compelling reason, let's remove it.
+
+The open coding of if (in_atomic()) { do workqueue stuff } else
+{ execute function } is rather bug prone (most people tend to do
+in_interrupt()).  It's better to encapsulate it in an API.
+
+>   It has been
+> there for quite some time now and hasn't grown any other users.  There
+> wouldn't be any noticeable difference for the current users either.
+> If you really like to keep it in the current users, let's move it into
+> SCSI.  I don't see much reason to keep it as a part of generic
+> workqueue API in its current form.
+
+It was in SCSI ... I got told to make it generic.
+
+James
+
+
