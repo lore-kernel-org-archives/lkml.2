@@ -1,361 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab0LNQYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:24:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab0LNQY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:24:26 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Amerigo Wang <amwang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] x86: merge crash_dump_32.c and crash_dump_64.c
-Date: Wed, 15 Dec 2010 00:23:49 +0800
-Message-Id: <1292343833-5023-1-git-send-email-amwang@redhat.com>
+	id S1759551Ab0LNQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:25:29 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:42574 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759499Ab0LNQZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 11:25:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=TZ5T3t/B3shyR23KaE9KYQ7FfrOS4ddt9ktgNZhHzpCIpaDTcnrfV+usH9QMrGNwtZ
+         PWY7z4wB5QZcRgWPxZTi8h5Td6WnJs1o6eZL3JSXwksxLW8joSRqo378WYlNzb4fT8Dx
+         juz9pOcfPp/k2QxMo7R3/dOPDdqSekOCSSewc=
+Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jason Lunz <lunz@acm.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>,
+        atom ota <atomota@sleepyhammer.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>
+In-Reply-To: <20101207182012.GA10546@falooley.org>
+References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
+	 <20071024011712.GA3762@falooley.org>
+	 <1193208689.26096.48.camel@pmac.infradead.org>
+	 <20071227181524.GA19051@falooley.org>
+	 <20071228174853.GA4252@uranus.ravnborg.org>
+	 <20101207072919.GA8511@falooley.org>
+	 <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	 <20101207182012.GA10546@falooley.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 18:24:38 +0200
+Message-ID: <1292343878.2538.80.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch merges crash_dump_32.c and crash_dump_64.c into crash_dump.c.
-Compile tested.
+On Tue, 2010-12-07 at 10:20 -0800, Jason Lunz wrote:
+> On Tue, Dec 07, 2010 at 10:39:41AM +0100, richard -rw- weinberger wrote:
+> > On Tue, Dec 7, 2010 at 8:29 AM, Jason Lunz <lunz@acm.org> wrote:
+> > >
+> > > Allow parts of drivers/mtd to compile on uml by pushing the HAS_IOMEM
+> > > dependencies down closer to the parts of mtd that actually need it.
+> > > This allows enough of mtd to build to let jffs2 be used on uml.
+> > >
+> > > Signed-off-by: Jason Lunz <lunz@acm.org>
+> > > ---
+> > >  arch/um/Kconfig.rest        |    4 +---
+> > >  drivers/mtd/Kconfig         |    1 -
+> > >  drivers/mtd/Makefile        |    3 ++-
+> > >  drivers/mtd/chips/Kconfig   |    4 ++++
+> > >  drivers/mtd/devices/Kconfig |    8 ++++++++
+> > >  drivers/mtd/maps/Kconfig    |    4 ++++
+> > >  drivers/mtd/mtdchar.c       |    4 ++++
+> > >  drivers/mtd/nand/Kconfig    |    3 +++
+> > >  drivers/mtd/onenand/Kconfig |    3 +++
+> > >  include/linux/mtd/map.h     |    2 ++
+> > >  10 files changed, 31 insertions(+), 5 deletions(-)
+> > >
+> > > diff --git a/arch/um/Kconfig.rest b/arch/um/Kconfig.rest
+> > > index 0ccad0f..e34f399 100644
+> > > --- a/arch/um/Kconfig.rest
+> > > +++ b/arch/um/Kconfig.rest
+> > > @@ -28,9 +28,7 @@ source "drivers/scsi/Kconfig"
+> > >
+> > >  source "drivers/md/Kconfig"
+> > >
+> > > -if BROKEN
+> > > -       source "drivers/mtd/Kconfig"
+> > > -endif
+> > > +source "drivers/mtd/Kconfig"
+> > 
+> > drivers/mtd was already marked as broken when we moved over to git (2.6.12-rc2).
+> > 
+> > Do you exactly know why it was marked and fixes this patch all issues?
+> 
+> I don't know exactly why it was originally marked BROKEN. I imagine it
+> was because most of the low-level mtd drivers need readb/writeb and
+> friends, which don't exist on uml. But now that mtd has virtual ram- and
+> blockdev-backed drivers, that's no longer sufficient reason to omit the
+> whole subsystem.
+> 
+> I can't claim that this fixes all possible issues of course, but I've
+> privately been using this patch to run block2mtd under uml for years. My
+> original motivation was to allow the use of jffs2 in a uml-based test
+> environment and for that it's worked very well.
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
----
- arch/x86/kernel/Makefile        |    2 +-
- arch/x86/kernel/crash_dump.c    |  142 +++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/crash_dump_32.c |   98 ---------------------------
- arch/x86/kernel/crash_dump_64.c |   52 --------------
- 4 files changed, 143 insertions(+), 151 deletions(-)
- create mode 100644 arch/x86/kernel/crash_dump.c
- delete mode 100644 arch/x86/kernel/crash_dump_32.c
- delete mode 100644 arch/x86/kernel/crash_dump_64.c
+But I think your solution is a bit dirty, because it adds a great deal
+of little 'if HAS_IOMEM' and '#ifdef CONFIG_HAS_IOMEM' to many places.
+This is error-prone.
 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9e13763..2cd2d6f 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -77,7 +77,7 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
- obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
- obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
--obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
-+obj-$(CONFIG_CRASH_DUMP)	+= crash_dump.o
- obj-$(CONFIG_KPROBES)		+= kprobes.o
- obj-$(CONFIG_MODULES)		+= module.o
- obj-$(CONFIG_DOUBLEFAULT) 	+= doublefault_32.o
-diff --git a/arch/x86/kernel/crash_dump.c b/arch/x86/kernel/crash_dump.c
-new file mode 100644
-index 0000000..987b244
---- /dev/null
-+++ b/arch/x86/kernel/crash_dump.c
-@@ -0,0 +1,142 @@
-+/*
-+ *	Memory preserving reboot related code.
-+ *
-+ *	Created by: Hariprasad Nellitheertha (hari@in.ibm.com)
-+ *	Copyright (C) IBM Corporation, 2004. All rights reserved
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/errno.h>
-+#include <linux/highmem.h>
-+#include <linux/crash_dump.h>
-+#include <linux/io.h>
-+
-+#include <asm/uaccess.h>
-+
-+
-+/* Stores the physical address of elf header of crash image. */
-+unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
-+
-+#ifdef CONFIG_X86_32
-+
-+static void *kdump_buf_page;
-+static int __init kdump_buf_page_init(void)
-+{
-+	int ret = 0;
-+
-+	kdump_buf_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!kdump_buf_page) {
-+		printk(KERN_WARNING "Kdump: Failed to allocate kdump buffer"
-+			 " page\n");
-+		ret = -ENOMEM;
-+	}
-+
-+	return ret;
-+}
-+arch_initcall(kdump_buf_page_init);
-+
-+static inline bool is_crashed_pfn_valid(unsigned long pfn)
-+{
-+#ifndef CONFIG_X86_PAE
-+	/*
-+	 * non-PAE kdump kernel executed from a PAE one will crop high pte
-+	 * bits and poke unwanted space counting again from address 0, we
-+	 * don't want that. pte must fit into unsigned long. In fact the
-+	 * test checks high 12 bits for being zero (pfn will be shifted left
-+	 * by PAGE_SHIFT).
-+	 */
-+	return pte_pfn(pfn_pte(pfn, __pgprot(0))) == pfn;
-+#else
-+	return true;
-+#endif
-+}
-+
-+ssize_t copy_oldmem_page_32(unsigned long pfn, char *buf,
-+                               size_t csize, unsigned long offset, int userbuf)
-+{
-+	void  *vaddr;
-+
-+	if (!csize)
-+		return 0;
-+
-+	if (!is_crashed_pfn_valid(pfn))
-+		return -EFAULT;
-+
-+	vaddr = kmap_atomic_pfn(pfn);
-+
-+	if (!userbuf) {
-+		memcpy(buf, (vaddr + offset), csize);
-+		kunmap_atomic(vaddr, KM_PTE0);
-+	} else {
-+		if (!kdump_buf_page) {
-+			printk(KERN_WARNING "Kdump: Kdump buffer page not"
-+				" allocated\n");
-+			kunmap_atomic(vaddr, KM_PTE0);
-+			return -EFAULT;
-+		}
-+		copy_page(kdump_buf_page, vaddr);
-+		kunmap_atomic(vaddr, KM_PTE0);
-+		if (copy_to_user(buf, (kdump_buf_page + offset), csize))
-+			return -EFAULT;
-+	}
-+
-+	return csize;
-+}
-+
-+#else /*CONFIG_X86_32*/
-+
-+ssize_t copy_oldmem_page_64(unsigned long pfn, char *buf,
-+		size_t csize, unsigned long offset, int userbuf)
-+{
-+	void  *vaddr;
-+
-+	if (!csize)
-+		return 0;
-+
-+	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
-+	if (!vaddr)
-+		return -ENOMEM;
-+
-+	if (userbuf) {
-+		if (copy_to_user(buf, vaddr + offset, csize)) {
-+			iounmap(vaddr);
-+			return -EFAULT;
-+		}
-+	} else
-+		memcpy(buf, vaddr + offset, csize);
-+
-+	set_iounmap_nonlazy();
-+	iounmap(vaddr);
-+	return csize;
-+}
-+#endif
-+
-+
-+/**
-+ * copy_oldmem_page - copy one page from "oldmem"
-+ * @pfn: page frame number to be copied
-+ * @buf: target memory address for the copy; this can be in kernel address
-+ *	space or user address space (see @userbuf)
-+ * @csize: number of bytes to copy
-+ * @offset: offset in bytes into the page (based on pfn) to begin the copy
-+ * @userbuf: if set, @buf is in user address space, use copy_to_user(),
-+ *	otherwise @buf is in kernel address space, use memcpy().
-+ *
-+ * Copy a page from "oldmem". For this page, there is no pte mapped
-+ * in the current kernel. We stitch up a pte, similar to kmap_atomic.
-+ *
-+ * Calling copy_to_user() in atomic context is not desirable. Hence first
-+ * copying the data to a pre-allocated kernel page and then copying to user
-+ * space in non-atomic context.
-+ */
-+ssize_t copy_oldmem_page(unsigned long pfn, char *buf, size_t csize,
-+			 unsigned long offset, int userbuf)
-+{
-+#ifdef CONFIG_X86_32
-+	return copy_oldmem_page_32(pfn, buf, csize, offset, userbuf);
-+#else
-+	return copy_oldmem_page_64(pfn, buf, csize, offset, userbuf);
-+#endif
-+}
-+
-+
-diff --git a/arch/x86/kernel/crash_dump_32.c b/arch/x86/kernel/crash_dump_32.c
-deleted file mode 100644
-index d5cd139..0000000
---- a/arch/x86/kernel/crash_dump_32.c
-+++ /dev/null
-@@ -1,98 +0,0 @@
--/*
-- *	Memory preserving reboot related code.
-- *
-- *	Created by: Hariprasad Nellitheertha (hari@in.ibm.com)
-- *	Copyright (C) IBM Corporation, 2004. All rights reserved
-- */
--
--#include <linux/slab.h>
--#include <linux/errno.h>
--#include <linux/highmem.h>
--#include <linux/crash_dump.h>
--
--#include <asm/uaccess.h>
--
--static void *kdump_buf_page;
--
--/* Stores the physical address of elf header of crash image. */
--unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
--
--static inline bool is_crashed_pfn_valid(unsigned long pfn)
--{
--#ifndef CONFIG_X86_PAE
--	/*
--	 * non-PAE kdump kernel executed from a PAE one will crop high pte
--	 * bits and poke unwanted space counting again from address 0, we
--	 * don't want that. pte must fit into unsigned long. In fact the
--	 * test checks high 12 bits for being zero (pfn will be shifted left
--	 * by PAGE_SHIFT).
--	 */
--	return pte_pfn(pfn_pte(pfn, __pgprot(0))) == pfn;
--#else
--	return true;
--#endif
--}
--
--/**
-- * copy_oldmem_page - copy one page from "oldmem"
-- * @pfn: page frame number to be copied
-- * @buf: target memory address for the copy; this can be in kernel address
-- *	space or user address space (see @userbuf)
-- * @csize: number of bytes to copy
-- * @offset: offset in bytes into the page (based on pfn) to begin the copy
-- * @userbuf: if set, @buf is in user address space, use copy_to_user(),
-- *	otherwise @buf is in kernel address space, use memcpy().
-- *
-- * Copy a page from "oldmem". For this page, there is no pte mapped
-- * in the current kernel. We stitch up a pte, similar to kmap_atomic.
-- *
-- * Calling copy_to_user() in atomic context is not desirable. Hence first
-- * copying the data to a pre-allocated kernel page and then copying to user
-- * space in non-atomic context.
-- */
--ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
--                               size_t csize, unsigned long offset, int userbuf)
--{
--	void  *vaddr;
--
--	if (!csize)
--		return 0;
--
--	if (!is_crashed_pfn_valid(pfn))
--		return -EFAULT;
--
--	vaddr = kmap_atomic_pfn(pfn);
--
--	if (!userbuf) {
--		memcpy(buf, (vaddr + offset), csize);
--		kunmap_atomic(vaddr, KM_PTE0);
--	} else {
--		if (!kdump_buf_page) {
--			printk(KERN_WARNING "Kdump: Kdump buffer page not"
--				" allocated\n");
--			kunmap_atomic(vaddr, KM_PTE0);
--			return -EFAULT;
--		}
--		copy_page(kdump_buf_page, vaddr);
--		kunmap_atomic(vaddr, KM_PTE0);
--		if (copy_to_user(buf, (kdump_buf_page + offset), csize))
--			return -EFAULT;
--	}
--
--	return csize;
--}
--
--static int __init kdump_buf_page_init(void)
--{
--	int ret = 0;
--
--	kdump_buf_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	if (!kdump_buf_page) {
--		printk(KERN_WARNING "Kdump: Failed to allocate kdump buffer"
--			 " page\n");
--		ret = -ENOMEM;
--	}
--
--	return ret;
--}
--arch_initcall(kdump_buf_page_init);
-diff --git a/arch/x86/kernel/crash_dump_64.c b/arch/x86/kernel/crash_dump_64.c
-deleted file mode 100644
-index 9948288..0000000
---- a/arch/x86/kernel/crash_dump_64.c
-+++ /dev/null
-@@ -1,52 +0,0 @@
--/*
-- *	Memory preserving reboot related code.
-- *
-- *	Created by: Hariprasad Nellitheertha (hari@in.ibm.com)
-- *	Copyright (C) IBM Corporation, 2004. All rights reserved
-- */
--
--#include <linux/errno.h>
--#include <linux/crash_dump.h>
--#include <linux/uaccess.h>
--#include <linux/io.h>
--
--/* Stores the physical address of elf header of crash image. */
--unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
--
--/**
-- * copy_oldmem_page - copy one page from "oldmem"
-- * @pfn: page frame number to be copied
-- * @buf: target memory address for the copy; this can be in kernel address
-- *	space or user address space (see @userbuf)
-- * @csize: number of bytes to copy
-- * @offset: offset in bytes into the page (based on pfn) to begin the copy
-- * @userbuf: if set, @buf is in user address space, use copy_to_user(),
-- *	otherwise @buf is in kernel address space, use memcpy().
-- *
-- * Copy a page from "oldmem". For this page, there is no pte mapped
-- * in the current kernel. We stitch up a pte, similar to kmap_atomic.
-- */
--ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
--		size_t csize, unsigned long offset, int userbuf)
--{
--	void  *vaddr;
--
--	if (!csize)
--		return 0;
--
--	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
--	if (!vaddr)
--		return -ENOMEM;
--
--	if (userbuf) {
--		if (copy_to_user(buf, vaddr + offset, csize)) {
--			iounmap(vaddr);
--			return -EFAULT;
--		}
--	} else
--		memcpy(buf, vaddr + offset, csize);
--
--	set_iounmap_nonlazy();
--	iounmap(vaddr);
--	return csize;
--}
+Instead, you should solve this problem in UML code. I do not know how,
+but may be you can add readb/writeb there which actually do nothing or
+print a scary warning, or do BUG(), and let things which use them just
+fail run-time.
+
+Anyway, please, think about a solution which needs few changes in UML
+code instead of myriads of small little changes in many places.
+
+Thanks!
+
 -- 
-1.7.3.3
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
