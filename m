@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759388Ab0LNP1X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:27:23 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:50110 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756698Ab0LNP1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:27:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=IHZfGAfnuUm4gBCBpiAZfFKfn1wufZ1/ZqI2xzkGuqB3socqArCweZ+CWKiSp8adrS
-         QGNGH0Ba9/qKl6ha4DlDvJ6dU7rNw8CBl/Nkq4lWQ2VdYF0M1B4DgpVHKjho6H4EapNU
-         d35H8EKxzGswx8Z6gRXVJM/EFWmwE6h9QGGLc=
-Subject: Re: [PATCH 1/1] mtd: nand: add check for out of page read
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jason Liu <r64343@freescale.com>
-Cc: David.Woodhouse@intel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1290156045-11719-1-git-send-email-r64343@freescale.com>
-References: <1290156045-11719-1-git-send-email-r64343@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Dec 2010 17:26:49 +0200
-Message-ID: <1292340409.2538.40.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1759372Ab0LNP2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:28:32 -0500
+Received: from snowcat.de ([89.238.75.242]:37157 "EHLO snowcat.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755501Ab0LNP2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 10:28:31 -0500
+X-Greylist: delayed 1575 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Dec 2010 10:28:31 EST
+Message-ID: <4D0786D3.7070007@akana.de>
+Date: Tue, 14 Dec 2010 16:01:39 +0100
+From: Ingo Korb <ingo@akana.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org
+CC: akpm@linux-foundation.org, mel@csn.ul.ie, cl@linux-foundation.org,
+        yinghai@kernel.org, andi.kleen@intel.com, linux-kernel@vger.kernel.org
+Subject: PROBLEM: __offline_isolated_pages may offline too many pages
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 16:40 +0800, Jason Liu wrote:
-> When run mtd_oobtest case, there will be one error for step(4),
-> which turned out it need add one check for out of page read in
-> nand_do_read_oob just like mtd_do_write_oob did it already.
-> This commit also fix one typo error for comments in mtd_do_write_oob
-> 
-> Signed-off-by: Jason Liu <r64343@freescale.com>
+Hi!
 
-I cannot reproduce this with nandsim, can you?
+[1.] One line summary of the problem:
+__offline_isolated_pages may isolate too many pages
 
-I tried:
+[2.] Full description of the problem/report:
+While experimenting with remove_memory/online_pages, removing as few 
+pages as possible (pageblock_nr_pages, 512 on my box) I noticed that the 
+number of pages marked "reserved" increased even though both functions 
+did not indicate an error. Following the code it was clear that 
+__offline_isolated_pages marked twice as many pages as it should:
 
-1. sudo modprobe nandsim
-   sudo modprobe mtd_oobtest dev=0
+=== start paste (from dmesg) ===
+Offlined Pages 512
+remove from free list c00 1024 e00
+=== end paste ===
 
-2. sudo ./load_nandsim.sh 128 128 2048
-   sudo modprobe mtd_oobtest dev=0
+The issue seems to be that __offline_isolated_pages blindly uses 
+page_order() to determine how many pages it should mark as reserved in 
+the current loop iteration, without checking if this would exceed the 
+limit set by end_pfn.
 
-In both cases the test passes: "mtd_oobtest: finished with 0 errors"
+I'm not sure what the correct way to fix this would be - is memory 
+isolation supposed to touch the order of a page if it crosses the end 
+(or beginning!) of the range of pages to be isolated?
 
-And in 'nand_do_read_oob()' I see the following piece of code:
+[3.] Keywords (i.e., modules, networking, kernel):
+kernel mm memory-hotplug
 
-        /* Do not allow reads past end of device */
-        if (unlikely(from >= mtd->size ||
-                     ops->ooboffs + readlen > ((mtd->size >> chip->page_shift) -
-                                        (from >> chip->page_shift)) * len)) {
-                DEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt read beyond end "
-                                        "of device\n", __func__);
-                return -EINVAL;
-        }
+[4.] Kernel information
+[4.1.] Kernel version (from /proc/version):
+Linux version 2.6.35-00002-g76c52bb (ingo@memtester) (gcc version 4.4.5 
+(Debian 4.4.5-6) ) #7 SMP Tue Dec 14 14:28:17 CET 2010
 
-which should handle the case AFAICS.
+The diff between vanilla 2.6.35 and this version is available at 
+http://akana.de/memtest35.diff - the only changes are a reduced timeout 
+in remove_memory and a bunch of additional exported symbols.
 
-So, although I did think hard about this, it looks like there is no
-problem. What is the kernel version you are looking at? I checked it
-with my l2-mtd-2.6.git, which is the latest mtd-2.6.git plus a revert
-commit of your patch:
+[4.2.] Kernel .config file:
+http://akana.de/config-memtest35
 
-http://git.infradead.org/users/dedekind/l2-mtd-2.6.git
+[5.] Most recent kernel version which did not have the bug:
+Probably none
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+[8.] Environment
+[8.1.] Software (add the output of the ver_linux script here)
+Linux memtester 2.6.35-00002-g76c52bb #7 SMP Tue Dec 14 14:28:17 CET 
+2010 x86_64 GNU/Linux
 
+Gnu C                  4.4.5
+Gnu make               3.81
+binutils               2.20.1
+util-linux             (no fdformat on the system)
+mount                  support
+module-init-tools      found
+Linux C Library        2.11.2
+Dynamic linker (ldd)   2.11.2
+Procps                 3.2.8
+Kbd                    1.15.2
+Sh-utils               8.5
+Modules Loaded         phys_mem ipv6 pcspkr i2c_piix4 i2c_core shpchp e1000
+
+Distribution is Debian testing if it matters
+
+[8.2.] Processor information (from /proc/cpuinfo):
+AMD Phenom 9650, but the system is running inside a VMWare Player 
+instance with just a single virtual CPU
+
+[8.3.] Module information (from /proc/modules):
+phys_mem 15068 0 - Live 0xffffffffa00d1000
+ipv6 340746 24 - Live 0xffffffffa0068000
+pcspkr 2022 0 - Live 0xffffffffa0062000
+i2c_piix4 13334 0 - Live 0xffffffffa0059000
+i2c_core 28244 1 i2c_piix4, Live 0xffffffffa004b000
+shpchp 35612 0 - Live 0xffffffffa003b000
+e1000 164575 0 - Live 0xffffffffa0000000
+
+[8.4.] Loaded driver and hardware information (/proc/ioports, /proc/iomem)
+[8.5.] PCI information ('lspci -vvv' as root)
+[8.6.] SCSI information (from /proc/scsi/scsi)
+As far as I can tell irrelevant to this problem?
+(forgot to copy those, will add later if neccessary)
+
+-ik
