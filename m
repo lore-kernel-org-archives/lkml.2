@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760154Ab0LNVTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:19:45 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57534 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760000Ab0LNVTo (ORCPT
+	id S1760146Ab0LNVV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:21:28 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:59809 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760000Ab0LNVV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:19:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:user-agent:organization:mime-version
-         :content-type:content-transfer-encoding:message-id;
-        b=WwJkrvrQkKi32RKnidos+KBM9Qh7+QKpUn/9bydoZZKWMPvYW6HqDa5BU3Zgh2tsrT
-         wUnujnQ7ZyZLL5XOYkMuOE8BbR3XNzerqcwuVuGX5SB6ycjAsq3GsPH2ZeiRefoPK7JH
-         I42Ryk1sL383u/NwkWMg17euWUhjfkwhUkll8=
-From: Florian Fainelli <florian@openwrt.org>
-To: linux-kernel@vger.kernel.org, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        sodaville@linutronix.de, Ingo Molnar <mingo@elte.hu>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] x86/trampoline: fallback to fixed trampoline address if no e820 map is provided
-Date: Tue, 14 Dec 2010 22:19:39 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
-Organization: Freebox
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012142219.40062.ffainelli@freebox.fr>
+	Tue, 14 Dec 2010 16:21:26 -0500
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Cc: Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
+Date: Tue, 14 Dec 2010 13:21:08 -0800
+Message-Id: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Fainelli <ffainelli@freebox.fr>
+Hello all,
 
-Since 893f38d1 (x86: Use find_e820() instead of hard coded trampoline address),
-the trampoline base address should be provided by the BIOS as an e820 area.
-Some minimalistic BIOSes (like CEFDK on CE4100) may not provide any e820 area,
-still we should fallback to a fixed trampoline base address for SMP to work
-correctly.
+I was left somewhat dissatisfied by the MT_TOOL_ENVELOPE addition, so I decided
+to try to propose a different solution for the problem. As a recap, the problem
+can best be defined by Synaptics hardware that provide two touch coordinates
+(X1, Y1) and (X2, Y2). Unfortunately, the real touches may be at (X1, Y2) and
+(X2, Y1). Further, three touches may be recognized, but only two coordinates are
+reported.
 
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: sodaville@linutronix.de
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
----
-diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
-index f4500fb..908b395 100644
---- a/arch/x86/include/asm/trampoline.h
-+++ b/arch/x86/include/asm/trampoline.h
-@@ -16,6 +16,7 @@ extern unsigned long initial_code;
- extern unsigned long initial_gs;
- 
- #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
-+#define TRAMPOLINE_BASE 0x6000
- 
- extern unsigned long setup_trampoline(void);
- extern void __init reserve_trampoline_memory(void);
-diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
-index f1488a3..d025aae 100644
---- a/arch/x86/kernel/trampoline.c
-+++ b/arch/x86/kernel/trampoline.c
-@@ -21,8 +21,11 @@ void __init reserve_trampoline_memory(void)
- 
- 	/* Has to be in very low memory so we can execute real-mode AP code. */
- 	mem = find_e820_area(0, 1<<20, TRAMPOLINE_SIZE, PAGE_SIZE);
--	if (mem == -1L)
--		panic("Cannot allocate trampoline\n");
-+	if (mem == -1L) {
-+		printk(KERN_INFO "BIOS did not provide e820 area for trampoline"
-+				" ,using static trampoline address\n");
-+		mem = TRAMPOLINE_BASE;
-+	}
- 
- 	trampoline_base = __va(mem);
- 	reserve_early(mem, mem + TRAMPOLINE_SIZE, "TRAMPOLINE");
--- 
-1.7.1
+Following this are four patches. The first merely reverts the MT_TOOL_ENVELOPE
+addition. The second adds documentation for evdev codes to the Documentation
+directory. It was hastily created, so it has some ommissions and may have some
+mistakes. My hope is that we keep this or a similar document up to date whenever
+non-obvious codes are added to evdev. The third patch adds the following EV_ABS
+codes:
 
+ABS_RECT_MIN_X
+ABS_RECT_MIN_Y
+ABS_RECT_MAX_X
+ABS_RECT_MAX_Y
+
+The purpose of these codes is to provide for devices that at best report a
+rectangular bounding box of touches. Instead of using the MT evdev protocol,
+this approach uses ST protocol semantics.
+
+Finally, the last patch adds support for the above codes to the synaptics
+driver.
+
+It is my belief that this is a better interface than MT_TOOL_ENVELOPE for the
+following reasons:
+
+* The code meanings are more readily graspable from the names
+* The codes behave with ST semantics, which is useful because we likely cannot
+  split properties like pressure and orientation among the touches
+* ST semantics are easier to comprehend than MT semantics, and MT isn't required
+  to solve this problem
+* The codes provide only the max and min values, none in between. This is in
+  contrast with MT_TOOL_ENVELOPE, which provides all touches as presented by the
+  hardware. However, we don't trust all the coordinate pairings, so providing
+  faulty pairings may induce incorrect userspace usage of the events.
+* A clear distinction is made here that full multitouch devices should use the
+  MT protocol, while lesser devices should use the ST protocol.
+
+Thanks!
+
+-- Chase
