@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab0LNPiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:38:54 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:61039 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab0LNPix convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:38:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=P9OgSZ9l27H3pX/0TgWWhG3QDXIThG4IPn9xKkMJQn2FmqruWdbqTBlaadCOwC1JRo
-         32H5FKFu+XluNC/wVXaCW6jvtU/0/E/c+hKEMoAm88J9RvYBq+0tR87ZZwxKkCt/5NDS
-         x4d82isIfasmZvOgu9sOR0gQkEhylF/2jubak=
+	id S1759279Ab0LNPkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:40:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:9138 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753708Ab0LNPkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 10:40:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,342,1288594800"; 
+   d="scan'208";a="583623266"
+Date: Tue, 14 Dec 2010 23:40:26 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 29/35] nfs: in-commit pages accounting and wait queue
+Message-ID: <20101214154026.GA8959@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150329.831955132@intel.com>
+ <1292274951.8795.28.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
-In-Reply-To: <5312.1272375671@localhost>
-References: <t2w8aa6b0651004241602i50449643lc05dcf834a80b344@mail.gmail.com>
-	<5312.1272375671@localhost>
-Date: Tue, 14 Dec 2010 17:38:51 +0200
-X-Google-Sender-Auth: 8YSmj4zu0jX0pKd-ouHf1HkSeps
-Message-ID: <AANLkTik6gRF+Z7Ay-DWr6WN3O4AfrNkZyEr4UieDDOFi@mail.gmail.com>
-Subject: Re: Need advice on updating the Linux kernel map
-From: Constantine Shulyupin <const@linuxdriver.co.il>
-To: Valdis.Kletnieks@vt.edu
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292274951.8795.28.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Valdis,
+On Tue, Dec 14, 2010 at 05:15:51AM +0800, Trond Myklebust wrote:
+> On Mon, 2010-12-13 at 22:47 +0800, Wu Fengguang wrote:
+> > plain text document attachment (writeback-nfs-in-commit.patch)
+> > When doing 10+ concurrent dd's, I observed very bumpy commits submission
+> > (partly because the dd's are started at the same time, and hence reached
+> > 4MB to-commit pages at the same time). Basically we rely on the server
+> > to complete and return write/commit requests, and want both to progress
+> > smoothly and not consume too many pages. The write request wait queue is
+> > not enough as it's mainly network bounded. So add another commit request
+> > wait queue. Only async writes need to sleep on this queue.
+> > 
+> 
+> I'm not understanding the above reasoning. Why should we serialise
+> commits at the per-filesystem level (and only for non-blocking flushes
+> at that)?
 
-Thank you for your feedback.
-I updated and continue to update the map of the Linux kernel -
-http://www.makelinux.net/kernel_map
+I did the commit wait queue after seeing this graph, where there is
+very bursty pattern of commit submission and hence completion:
 
-With your feedback I reworked connections and added
-tracing/oprofile/perf to debug segment.
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-03-01/nfs-commit-1000.png
 
-Indeeds, security and debugging is forced to be in user interface and
-have no direct relations to peripherals. But other places are less
-suable. I decided to put security and debugging in UI, because
-security limits UI (as user) and debugging expands UI (as developer).
+leading to big fluctuations, eg. the almost straight up/straight down
+lines below
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-03-01/vmstat-dirty-300.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-03-01/dirty-pages.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2953M-2.6.37-rc3+-2010-12-03-01/dirty-pages-200.png
 
-Thanks.
+A commit wait queue will help wipe out the "peaks". The "fixed" graph
+is
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-23/vmstat-dirty-300.png
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/nfs-100dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-03-23/dirty-pages.png
 
-On Tue, Apr 27, 2010 at 4:41 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Sun, 25 Apr 2010 02:02:29 +0300, Constantine Shulyupin said:
->> I was wondering if you could help me. I've recently resumed work on
->> the map of the Linux kernel - http://www.makelinux.net/kernel_map in
->> order to make it more up-to-date and to improve it. Please let me know
->> how I can update the map, as it would help me a lot.
->
-> A few quick comments:
->
-> 1) Can we do better than an OSI 7-layer burrito? ;)  As it stands, doing it
-> that way creates a lot of things that look like layering violations.  For
-> instance, "Device Model" is up on "virtual", when it actually gets *used*
-> several levels further down.  And you have a *lot* of vertical lines that
-> cross a whole bunch of levels.  You would probably be served much better
-> by letting each column be a lot wider, and maybe only 4 levels high (you
-> can probably squish virtual/bridges/logical into one wider level).
->
-> 1b) Much of the I/O column should be one wide section across the bottom of
-> disk/network/user peripherals, and the 'system run' box should be in some
-> other column(s).
->
-> 2) Security and debugging seem to be forced in the "user peripherals" column
-> for no real rational reason.
->
-> 3) I see no mention of tracing/oprofile/perf.
->
-> Hope that helps...
->
+Blocking flushes don't need to wait on this queue because they already
+throttle themselves by waiting on the inode commit lock before/after
+the commit.  They actually should not wait on this queue, to prevent
+sync requests being unnecessarily blocked by async ones.
 
-
-
--- 
-Constantine Shulyupin
-Embedded Linux Expert
-TI DaVinci Expert
-Tel-Aviv Israel
-http://www.LinuxDriver.co.il/
+Thanks,
+Fengguang
