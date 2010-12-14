@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab0LNE7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 23:59:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8875 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757986Ab0LNE7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 23:59:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,340,1288594800"; 
-   d="scan'208";a="686874325"
-Date: Tue, 14 Dec 2010 12:59:48 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/35] IO-less dirty throttling v4
-Message-ID: <20101214045948.GA12454@localhost>
-References: <20101213144646.341970461@intel.com>
- <AANLkTinFeu7LMaDFgUcP3r2oqVHE5bei3T5JTPGBNvS9@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinFeu7LMaDFgUcP3r2oqVHE5bei3T5JTPGBNvS9@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751507Ab0LNFHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 00:07:11 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47507 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab0LNFHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 00:07:09 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
+Subject: [GIT PULL] kgdb/kdb tree for 2.6.37-rc5
+Date: Mon, 13 Dec 2010 23:04:51 -0600
+Message-Id: <1292303092-32677-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 14 Dec 2010 05:06:57.0332 (UTC) FILETIME=[BB5B1740:01CB9B4C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 11:26:29AM +0800, Yan, Zheng wrote:
-> got error "global_dirty_limits" [fs/nfs/nfs.ko] undefined! when
-> compiling dirty-throttling-v4
+Linus, please pull the for_linus branch to pick up a crash regression
+fix for a regression introduced earlying the -rc cycle.
 
-Thanks! This should fix it. The fix will show up in the git tree after a while.
+git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_linus
 
 Thanks,
-Fengguang
+Jason.
+
 ---
-Subject: writeback: export global_dirty_limits() for NFS
-Date: Tue Dec 14 12:55:18 CST 2010
+The following changes since commit e8a7e48bb248a1196484d3f8afa53bded2b24e71:
+  Linus Torvalds (1):
+        Linux 2.6.37-rc4
 
-"global_dirty_limits" [fs/nfs/nfs.ko] undefined!
+are available in the git repository at:
 
-Reported-by: Yan Zheng <zheng.z.yan@linux.intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |    1 +
- 1 file changed, 1 insertion(+)
+  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_linus
 
---- linux-next.orig/mm/page-writeback.c	2010-12-14 12:54:57.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-14 12:55:11.000000000 +0800
-@@ -419,6 +419,7 @@ void global_dirty_limits(unsigned long *
- 	*pbackground = background;
- 	*pdirty = dirty;
- }
-+EXPORT_SYMBOL_GPL(global_dirty_limits);
- 
- /**
-  * bdi_dirty_limit - @bdi's share of dirty throttling threshold
+Jason Wessel (1):
+      kgdboc,input: Fix regression with keyboard release key and early debugging
+
+ drivers/serial/kgdboc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
