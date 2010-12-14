@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759455Ab0LNQKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:10:05 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56687 "EHLO hera.kernel.org"
+	id S1759468Ab0LNQLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:11:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756502Ab0LNQKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:10:03 -0500
-Message-ID: <4D0796D7.3030309@kernel.org>
-Date: Tue, 14 Dec 2010 17:09:59 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1756502Ab0LNQLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 11:11:54 -0500
+Date: Tue, 14 Dec 2010 17:04:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch 11/21] Track the core generation requests
+Message-ID: <20101214160421.GD11400@redhat.com>
+References: <20101214152259.67896960@suzukikp> <20101214154204.21048247@suzukikp>
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michael Chan <mchan@broadcom.com>, netdev <netdev@vger.kernel.org>
-Subject: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from remove_one
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 16:10:01 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101214154204.21048247@suzukikp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael pointed out that bnx2_close() already cancels bp->reset_task
-and thus it is guaranteed to be idle when bnx2_remove_one() is called.
-Remove the unnecessary cancel_work_sync() in remove_one.
+On 12/14, Suzuki K. Poulose wrote:
+>
+> Concurrent core generation requests
+> for the same target process are not allowed.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Michael Chan <mchan@broadcom.com>
----
- drivers/net/bnx2.c |    2 --
- 1 file changed, 2 deletions(-)
+OK, but
 
-diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
-index 5c811f3..85fc2c8 100644
---- a/drivers/net/bnx2.c
-+++ b/drivers/net/bnx2.c
-@@ -8393,8 +8393,6 @@ bnx2_remove_one(struct pci_dev *pdev)
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct bnx2 *bp = netdev_priv(dev);
+> +static struct core_proc* get_core_proc(struct task_struct *t)
+> +{
+> +	struct core_proc *cp;
+> +
+> +	list_for_each_entry(cp, &core_list, list) {
+> +		if (cp->task == t->group_leader)
+> +			return cp;
+> +	}
+> +	return NULL;
+> +}
+> ...
+>  static int open_gencore(struct inode *inode, struct file *filp)
+>  {
+> -	return 0;
+> +	struct task_struct *task = get_proc_task(inode);
+> +	struct core_proc *cp;
+> +	int ret = 0;
+> +
+> +	if (!task)
+> +		return -ENOENT;
+> +
+> +	mutex_lock(&core_mutex);
+> +	cp = get_core_proc(task);
+> +	if (cp) {
+> +		ret = -EALREADY;
 
--	cancel_work_sync(&bp->reset_task);
--
- 	unregister_netdev(dev);
+I don't think this can work.
 
- 	if (bp->mips_firmware)
+The task can change ->group_leader. This means 2 or more
+open_gencore() can succeed if this task execs in between.
+
+Oleg.
+
