@@ -1,285 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab0LNKQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 05:16:39 -0500
-Received: from nwd2mail10.analog.com ([137.71.25.55]:50390 "EHLO
-	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab0LNKQh convert rfc822-to-8bit (ORCPT
+	id S1758042Ab0LNKRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 05:17:24 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:55758 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab0LNKRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 05:16:37 -0500
-X-IronPort-AV: E=Sophos;i="4.59,341,1288584000"; 
-   d="scan'208";a="26163138"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drivers <Drivers@analog.com>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Date: Tue, 14 Dec 2010 10:16:31 +0000
-Subject: RE: [PATCH 2/3] IIO: dds.h convenience macros
-Thread-Topic: [PATCH 2/3] IIO: dds.h convenience macros
-Thread-Index: AcubC7lR+RiTxHnCRqS72rr3mGTkzwAawtHg
-Message-ID: <544AC56F16B56944AEC3BD4E3D591771324BCA85C6@LIMKCMBX1.ad.analog.com>
-References: <1292257644-26477-1-git-send-email-michael.hennerich@analog.com>
- <1292257644-26477-2-git-send-email-michael.hennerich@analog.com>
- <4D068E5E.4060707@cam.ac.uk>
-In-Reply-To: <4D068E5E.4060707@cam.ac.uk>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 14 Dec 2010 05:17:23 -0500
+Date: Tue, 14 Dec 2010 15:47:33 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [Patch 15/21] Collect ELF Core notes data
+Message-ID: <20101214154733.495bd2e7@suzukikp>
+In-Reply-To: <20101214152259.67896960@suzukikp>
+References: <20101214152259.67896960@suzukikp>
+Organization: IBM
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jonathan Cameron wrote on 2010-12-13:
-> > On 12/13/10 16:27, michael.hennerich@analog.com wrote:
-> > From: Michael Hennerich <michael.hennerich@analog.com>
-> >
-> > Changes since RFC/v1:
-> > IIO: Apply list review feedback
-> >
-> > Apply list review feedback:
-> >     Rename attributes to fit IIO convention used in other drivers.
-> >     Provide ddsX_out_enable as opposed to ddsX_out_disable.
-> >     Fix typos.
-> > Hi Michael,
->
-> I'm afraid all the comments on docs carry over to this file.  If you
-> aren't particularly attached to having docs in here I'd be tempted to
-> drop them purely so we don't end up with two differing sets in the
-> future.  The docs file is more or less obligatory whereas nice docs
-> in here is just a bonus for driver devs.  I really don't mind, but
-> we'll have to keep a close eye to ensure they don't get significantly
-> out of sync!
+Collect the PT_NOTE information for the core. 
 
-I'll drop the descriptions within the comments, but keep the file names.
+There are two "process wide" notes. NT_PRPSINFO and NT_AUXV. These are captured 
+in the core_proc structure.
 
-> The other comments are almost all about restricting parameters to be
-> write only. I think this is a bit restrictive and some drivers may
-> allow much of this stuff to be read back (even if only from cache).
+Each thread gets a NT_PRSTATUS note, which will contain the GPR contents. A 
+thread may have additional notes depending on the other register sets used by it.
+Uses struct elf_thread_core_info to capture the thread specific information.
 
-The parts I looked at so far were write only parts, but right you are.
-I'll add the read methods to the macros.
+fill_thread_core_info() fills in the notes for a thread.
 
-> Jonathan
-> > Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> > ---
-> >  drivers/staging/iio/dds/dds.h |  152
-> +++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 152 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/staging/iio/dds/dds.h
-> >
-> > diff --git a/drivers/staging/iio/dds/dds.h
-> b/drivers/staging/iio/dds/dds.h
-> > new file mode 100644
-> > index 0000000..a8dd7be
-> > --- /dev/null
-> > +++ b/drivers/staging/iio/dds/dds.h
-> > @@ -0,0 +1,152 @@
-> > +/*
-> > + * dds.h - sysfs attributes associated with DDS devices
-> > + *
-> > + * Copyright (c) 2010 Analog Devices Inc.
-> > + *
-> > + * Licensed under the GPL-2 or later.
-> > + */
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_freqY
-> > + * Description:
-> > + * Stores frequency into tuning word register Y.
-> > + * There can be more than one ddsX_freqY file, which allows for pin
-> controlled
-> > + * FSK Frequency Shift Keying (ddsX_pincontrol_freq_en is active) or
-> the user
-> > + * can control the desired active tuning word by writing Y to the
-> > + * ddsX_freqsymbol file.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_FREQ(_device, _num, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_freq##_num, S_IWUSR, NULL, _store,
-> _addr)
-> Can envision some parts allowing this to be read back. So I'd be
-> inclined
-> to make mode a parameter of the macro and allow a read function.  Also
-> is _device
-> a little misleading?  Perhaps use _channel?
+Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+Signed-off-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
 
-Right, channel fits better.
+---
+ fs/proc/gencore-elf.c |  183 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/proc/gencore.c     |   67 ++++++++++++++++--
+ fs/proc/gencore.h     |   28 +++++++
+ 3 files changed, 268 insertions(+), 10 deletions(-)
 
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_freqY_scale
-> > + * Description:
-> > + * Scale to be applied to ddsX_freqY in order to obtain the
-> > + * desired value in Hz. If shared across all frequency registers
-> > + * Y is not present.
-> > + */
-> > +
-> > +#define IIO_CONST_ATTR_FREQ_SCALE(_device, _string)
->       \
-> > +   IIO_CONST_ATTR(dds##_device##_freq_scale, _string)
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_freqsymbol
-> > + * Description:
-> > + * Specifies the active output frequency tuning word. The value
-> corresponds
-> > + * to the Y in ddsX_freqY. To exit this mode the user can write
-> > + * ddsX_pincontrol_freq_en or ddsX_out_disable file.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_FREQSYMBOL(_device, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_freqsymbol,                      \
-> > +                   S_IWUSR, NULL, _store, _addr);
-> Again I can envision parts for which this may be read back so this is
-> probably
-> to restrictive.
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_phaseY
-> > + * Description:
-> > + * Stores phase into phase register Y.
-> > + * There can be more than one ddsX_phaseY file, which allows for pin
-> controlled
-> > + * PSK Phase Shift Keying (ddsX_pincontrol_phase_en is active) or
-> the user can
-> > + * control the desired phase Y which is added to the phase
-> accumulator output
-> > + * by writing Y to the en_phase file.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_PHASE(_device, _num, _store, _addr)           \
-> > +   IIO_DEVICE_ATTR(dds##_device##_phase##_num,                     \
-> > +                   S_IWUSR, NULL, _store, _addr)
-> Another one that I think should allow reading (if the driver wants to
-> provide
-> it anyway!)
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_phaseY_scale
-> > + * Description:
-> > + * Scale to be applied to ddsX_phaseY in order to obtain the
-> > + * desired value in rad. If shared across all phase registers
-> > + * Y is not present.
-> > + */
-> > +
-> > +#define IIO_CONST_ATTR_PHASE_SCALE(_device, _string)
->       \
-> > +   IIO_CONST_ATTR(dds##_device##_phase_scale, _string)
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_phasesymbol
-> > + * Description:
-> > + * Specifies the active phase Y which is added to the phase
-> accumulator output.
-> > + * The value corresponds to the Y in ddsX_phaseY. To exit this mode
-> the user
-> > + * can write ddsX_pincontrol_phase_en or disable file.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_PHASESYMBOL(_device, _store, _addr)           \
-> > +   IIO_DEVICE_ATTR(dds##_device##_phasesymbol,                     \
-> > +                   S_IWUSR, NULL, _store, _addr);
-> Another that I'd imagine some drivers may allow to be read back.
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
-> > + * Description:
-> > + * Both, the active frequency and phase is controlled by the
-> respective
-> > + * phase and frequency control inputs.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_PINCONTROL_EN(_device, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_pincontrol_en,                   \
-> > +                   S_IWUSR, NULL, _store, _addr);
-> ditto.
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
-> > + * Description:
-> > + * The active frequency is controlled by the respective
-> > + * frequency control/select inputs.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_PINCONTROL_FREQ_EN(_device, _store, _addr)
->               \
-> > +   IIO_DEVICE_ATTR(dds##_device##_pincontrol_freq_en,              \
-> > +                   S_IWUSR, NULL, _store, _addr);
-> ditto.
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
-> > + * Description:
-> > + * The active phase is controlled by the respective
-> > + * phase control/select inputs.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_PINCONTROL_PHASE_EN(_device, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_pincontrol_phase_en,             \
-> > +                   S_IWUSR, NULL, _store, _addr);
-> ditto
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_out_enable
-> > + * Description:
-> > + * Disables any signal generation on all outputs.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_OUT_ENABLE(_device, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_out_enable,                      \
-> > +                   S_IWUSR, NULL, _store, _addr);
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_outY_enable
-> > + * Description:
-> > + * Disables any signal generation on output Y.
-> Comment is lagging changes in the macro.
-> > + */
-> > +
-> > +#define IIO_DEV_ATTR_OUTY_ENABLE(_device, _output, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_out##_output##_enable,           \
-> > +   S_IWUSR, NULL, _store, _addr);
-> Why write only?
-> > +
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
-> > + * Description:
-> > + * Specifies the output waveform. (sine, triangle, ramp, square,
-> ...)
-> > + * For a list of available output waveform options read
-> available_output_modes.
-> > + */
-> > +#define IIO_DEV_ATTR_OUT_WAVETYPE(_device, _output, _store, _addr)
->       \
-> > +   IIO_DEVICE_ATTR(dds##_device##_out##_output##_wavetype,
->       \
-> > +                   S_IWUSR, NULL, _store, _addr);
->
-> > +/**
-> > + * /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype_available
-> > + * Description:
-> > + * Lists all available output waveform options.
-> > + */
-> > +#define IIO_CONST_ATTR_OUT_WAVETYPES_AVAILABLE(_device, _output,
-> _modes)\
-> > +   IIO_CONST_ATTR(dds##_device##_out##_output##_wavetype_available,\
-> > +                   _modes);
-> > --
-> > 1.6.0.2
-> >
-> >
-
+Index: linux-2.6.36-rc7/fs/proc/gencore.h
+===================================================================
+--- linux-2.6.36-rc7.orig/fs/proc/gencore.h
++++ linux-2.6.36-rc7/fs/proc/gencore.h
+@@ -3,16 +3,44 @@
+ 
+ #include <linux/list.h>
+ #include <linux/sched.h>
++#include <linux/elfcore.h>
++#include <linux/elfcore-internal.h>
++
++struct elf_thread_core_info {
++	unsigned short num_notes;	/* Number of notes for this thread */
++	struct elf_thread_core_info *next;
++	struct task_struct *task;
++	struct elf_prstatus prstatus;
++	struct memelfnote notes[0];
++};
+ 
+ struct core_proc {
+ 	struct list_head list;
+ 	struct task_struct *task;
+ 	void *shdr;		/* elf_shdr, in case nphdrs > PN_XNUM */
+ 	char *elf_buf;		/* buffer for elf_hdr + phdrs + notes */
++	struct elf_thread_core_info *tinfo;
++	struct memelfnote psinfo;
++	struct memelfnote auxv;
++	struct elf_prpsinfo prpsinfo;
+ 	size_t elf_buflen;	/* size of elf_buf */
+ 	size_t nphdrs;		/* number of phdrs */
++	size_t notes_size;
+ };
+ 
++#ifdef CORE_DUMP_USE_REGSET
++#include <linux/regset.h>
++
++static inline int  get_max_regsets(struct task_struct *task)
++{
++	const struct user_regset_view *view = task_user_regset_view(task);
++	return view->n;
++}
++
++#else
++#define get_max_regsets(task)	3 /* GPR, FP, XFP? */
++#endif
++
+ extern ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
+ 					size_t buflen, loff_t *foffset);
+ #endif
+Index: linux-2.6.36-rc7/fs/proc/gencore.c
+===================================================================
+--- linux-2.6.36-rc7.orig/fs/proc/gencore.c
++++ linux-2.6.36-rc7/fs/proc/gencore.c
+@@ -25,6 +25,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/elf.h>
+ #include <linux/freezer.h>
++#include <linux/sched.h>
+ 
+ #include "internal.h"
+ #include "gencore.h"
+@@ -70,6 +71,39 @@ out:
+ 	return ret;
+ }
+ 
++static void free_notes_data(struct elf_thread_core_info *tinfo)
++{
++	int i;
++
++	for (i = 1; i < tinfo->num_notes; i++)
++		if (tinfo->notes[i].data) {
++			kfree(tinfo->notes[i].data);
++			tinfo->notes[i].data = NULL;
++		}
++}
++
++static void cleanup_cp(struct core_proc *cp)
++{
++	struct elf_thread_core_info *tmp, *tinfo = cp->tinfo;
++
++	mutex_lock(&core_mutex);
++	list_del(&cp->list);
++	mutex_unlock(&core_mutex);
++
++	if (tinfo) {
++		do {
++			tmp = tinfo;
++			tinfo = tinfo->next;
++			free_notes_data(tmp);
++			kfree(tmp);
++		} while (tinfo != NULL);
++	}
++	if (cp->shdr)
++		kfree(cp->shdr);
++	kfree(cp->elf_buf);
++	kfree(cp);
++}
++
+ static int release_gencore(struct inode *inode, struct file *file)
+ {
+ 	struct task_struct *task = get_proc_task(file->f_dentry->d_inode);
+@@ -89,14 +123,11 @@ static int release_gencore(struct inode 
+ 
+ 	mutex_lock(&core_mutex);
+ 	cp = get_core_proc(task);
+-	if (cp) {
+-		list_del(&cp->list);
+-		if (cp->shdr)
+-			kfree(cp->shdr);
+-		kfree(cp->elf_buf);
+-		kfree(cp);
+-	}
+ 	mutex_unlock(&core_mutex);
++
++	if (cp)
++		cleanup_cp(cp);
++
+ 	put_task_struct(task);
+ 	return 0;
+ }
+@@ -133,9 +164,11 @@ static int open_gencore(struct inode *in
+ {
+ 	struct task_struct *task = get_proc_task(inode);
+ 	struct task_struct *t;
++	struct elf_thread_core_info *tinfo = NULL;
+ 	struct core_proc *cp;
++	int elf_class, max_regset, i;
+ 	int ret = 0;
+-	int elf_class;
++
+ 
+ 	if (!task)
+ 		return -ENOENT;
+@@ -164,10 +197,28 @@ static int open_gencore(struct inode *in
+ 	list_add(&cp->list, &core_list);
+ 	mutex_unlock(&core_mutex);
+ 
++	max_regset = get_max_regsets(task);
++
++	for (i = 0; i < get_nr_threads(task); i++) {
++		tinfo = kzalloc(offsetof(struct elf_thread_core_info,
++					notes[max_regset]), GFP_KERNEL);
++		if (unlikely(!tinfo)) {
++			cleanup_cp(cp);
++			ret = -ENOMEM;
++			goto out;
++		}
++		tinfo->next = cp->tinfo;
++		cp->tinfo = tinfo;
++	}
++
+ 	/* freeze the processes */
+ 	t = task;
+ 	read_lock(&tasklist_lock);
+ 	do {
++		if (tinfo) {
++			tinfo->task = t;
++			tinfo = tinfo->next;
++		}
+ 		if (frozen(t) || !freezeable(t) || freezing(t))
+ 			continue;
+ 
+Index: linux-2.6.36-rc7/fs/proc/gencore-elf.c
+===================================================================
+--- linux-2.6.36-rc7.orig/fs/proc/gencore-elf.c
++++ linux-2.6.36-rc7/fs/proc/gencore-elf.c
+@@ -30,6 +30,158 @@
+ 
+ #include "gencore.h"
+ 
++static int notesize(struct memelfnote *men)
++{
++	int size = sizeof(struct elf_note);
++
++	size += roundup(strlen(men->name) + 1, 4);
++	size += roundup(men->datasz, 4);
++
++	return size;
++}
++
++/* Store the note in the header buffer */
++static char *storenote(struct memelfnote *men, char *bufp)
++{
++	struct elf_note *en = (struct elf_note *)bufp;
++
++	en->n_namesz = strlen(men->name) + 1;
++	en->n_descsz = men->datasz;
++	en->n_type = men->type;
++	bufp = (char *) (en + 1);
++
++	memcpy(bufp, men->name, en->n_namesz);
++	bufp = (char *) roundup((unsigned long)bufp + en->n_namesz, 4);
++
++	memcpy(bufp, men->data, men->datasz);
++	bufp = (char *) roundup((unsigned long)bufp + men->datasz, 4);
++
++	return bufp;
++}
++
++#ifdef CORE_DUMP_USE_REGSET
++static void do_thread_regset_writeback(struct task_struct *task,
++				const struct user_regset *regset)
++{
++	if (regset->writeback)
++		regset->writeback(task, regset, 1);
++}
++
++static int fill_thread_core_info(struct elf_thread_core_info *tinfo,
++					struct core_proc *cp)
++{
++	unsigned int i;
++	const struct user_regset_view *view = task_user_regset_view(tinfo->task);
++
++	fill_prstatus(&tinfo->prstatus, tinfo->task, 0);
++
++	do_thread_regset_writeback(tinfo->task, &view->regsets[0]);
++	(void) view->regsets[0].get(tinfo->task, &view->regsets[0],
++				0, sizeof(tinfo->prstatus.pr_reg),
++				&tinfo->prstatus.pr_reg, NULL);
++	fill_note(&tinfo->notes[0], "CORE", NT_PRSTATUS,
++			sizeof(tinfo->prstatus), &tinfo->prstatus);
++	cp->notes_size += notesize(&tinfo->notes[0]);
++	tinfo->num_notes = view->n;
++
++	for (i = 1; i < view->n; i++) {
++		const struct user_regset *regset = &view->regsets[i];
++
++		do_thread_regset_writeback(tinfo->task, regset);
++		if (regset->core_note_type &&
++			(!regset->active || regset->active(tinfo->task, regset))) {
++			int ret;
++			size_t size = regset->n * regset->size;
++			void *data = kzalloc(size, GFP_KERNEL);
++			if (!unlikely(data))
++				return 0;
++			ret = regset->get(tinfo->task, regset,
++					0, size, data, NULL);
++			if (unlikely(ret))
++				kfree(data);
++			else {
++				if (regset->core_note_type != NT_PRFPREG)
++					fill_note(&tinfo->notes[i], "LINUX",
++						regset->core_note_type,
++						size, data);
++				else {
++					tinfo->prstatus.pr_fpvalid = 1;
++					fill_note(&tinfo->notes[i], "CORE",
++						NT_PRFPREG, size, data);
++				}
++				cp->notes_size += notesize(&tinfo->notes[i]);
++			}
++		}
++	}
++	return 1;
++}
++#else
++static int fill_thread_core_info(struct elf_thread_core_info *tinfo,
++					struct core_proc *cp)
++{
++	elf_fpregset_t fpu, *pfpu;
++#ifdef ELF_CORE_COPY_XFPREGS
++	elf_fpxregset_t xfpu, *pxfpu;
++#endif
++
++	fill_prstatus(&tinfo->prstatus, t->task, 0);
++	elf_core_copy_task_regs(t->task, &tinfo->prstatus.pr_reg);
++	fill_note(&tinfo->notes[0], "CORE", NT_PRSTATUS,
++			sizeof(t->prstatus), &t->prstatus);
++
++	cp->notes_size += notesize(&tinfo->notes[0]);
++	tinfo->num_notes = 1;
++
++	if (tinfo->prstatus.pr_fpvalid = elf_core_copy_task_fpregs(tinfo->task,
++							NULL, &fpu)) {
++		pfpu = kzalloc(sizeof(*pfpu), GFP_KERNEL);
++		if (pfpu == NULL)
++			return 0;
++		memcpy(pfpu, &fpu, sizeof(fpu));
++		fill_note(&tinfo->notes[tinfo->num_notes], "CORE", NT_PRFPREG,
++				sizeof(*pfpu), pfpu);
++		cp->notes_size += notesize(&tinfo->notes[tinfo->num_notes]);
++		tinfo->num_notes++;
++	}
++#ifdef ELF_CORE_COPY_XFPREGS
++	if (elf_core_copy_task_xfpregs(tinfo->task, &xfpu)) {
++		pxfpu = kzalloc(sizeof(*pxfpu), GFP_KERNEL);
++		if (!pxfpu)
++			return 0;
++		memcpy(pxfpu, &xfpu, sizeof(xfpu));
++		fill_note(&tinfo->notes[tinfo->num_notes], "LINUX",
++			ELF_CORE_XFPREG_TYPE, sizeof(*pxfpu), pxfpu);
++		cp->notes_size += notesize(&tinfo->notes[tinfo->num_notes]);
++		tinfo->num_notes++;
++	}
++#endif
++	return 1;
++}
++#endif
++
++/* Returns 0 on error, 1 on success */
++static int collect_notes(struct core_proc *cp)
++{
++	struct elf_thread_core_info *tinfo;
++
++	/* Fill the 2 process wide notes */
++	fill_psinfo(&cp->prpsinfo, cp->task, cp->task->mm);
++	fill_note(&cp->psinfo, "CORE", NT_PRPSINFO,
++			sizeof(struct elf_prpsinfo), &cp->prpsinfo);
++	cp->notes_size += notesize(&cp->psinfo);
++
++	fill_auxv_note(&cp->auxv, cp->task->mm);
++	cp->notes_size += notesize(&cp->auxv);
++
++	tinfo = cp->tinfo;
++	while (tinfo != NULL) {
++		if (!fill_thread_core_info(tinfo, cp))
++			return 0;
++		tinfo = tinfo->next;
++	}
++	return 1;
++}
++
+ static void get_elfhdr_size(struct core_proc *cp)
+ {
+ 	struct vm_area_struct *gate_vma;
+@@ -47,7 +199,9 @@ static void get_elfhdr_size(struct core_
+ 
+ 	cp->nphdrs = segs;
+ 	cp->elf_buflen = sizeof(struct elfhdr) +
+-			(cp->nphdrs * sizeof(struct elf_phdr));
++			(cp->nphdrs * sizeof(struct elf_phdr)) +
++			cp->notes_size;
++
+ 	cp->elf_buflen = roundup(cp->elf_buflen, ELF_EXEC_PAGESIZE);
+ 
+ 	return;
+@@ -62,11 +216,13 @@ static int create_elf_header(struct core
+ 	struct elfhdr *elf = (struct elfhdr *)cp->elf_buf;
+ 	struct elf_phdr *note;
+ 	struct vm_area_struct *vma, *gate_vma = get_gate_vma(cp->task);
++	struct elf_thread_core_info *tinfo;
+ 	char *bufp;
+ 	off_t dataoff, offset;
+ 	short e_phnum = (cp->nphdrs > PN_XNUM ? PN_XNUM : cp->nphdrs);
+ 	size_t exphdrs_sz = 0;
+ 	unsigned long limit = elf_core_extra_phdrs() * sizeof(struct elf_phdr);
++	int first = 1;
+ 
+ #ifdef CORE_DUMP_USE_REGSET
+ 	const struct user_regset_view *view = task_user_regset_view(cp->task);
+@@ -88,7 +244,7 @@ static int create_elf_header(struct core
+ 	note->p_offset = dataoff;
+ 	note->p_vaddr = 0;
+ 	note->p_paddr = 0;
+-	/* TODO: Needs to be populated with the size of the notes section */
++	note->p_filesz = cp->notes_size;
+ 	note->p_memsz = 0;
+ 	note->p_flags = 0;
+ 	note->p_align = 0;
+@@ -134,6 +290,22 @@ static int create_elf_header(struct core
+ 						dataoff, cp->nphdrs);
+ 		dataoff += sizeof(struct elf_shdr);
+ 	}
++	/* Store the notes */
++	tinfo = cp->tinfo;
++	do {
++		int i;
++
++		bufp = storenote(&tinfo->notes[0], bufp);
++		if (first) {
++			bufp = storenote(&cp->psinfo, bufp);
++			bufp = storenote(&cp->auxv, bufp);
++		}
++		for (i = 1; i < tinfo->num_notes; i++)
++			if (tinfo->notes[i].data != NULL)
++				bufp = storenote(&tinfo->notes[i], bufp);
++		first = 0;
++		tinfo = tinfo->next;
++	} while (tinfo != NULL);
+ 
+ 	return 0;
+ }
+@@ -143,6 +315,13 @@ ssize_t elf_read_gencore(struct core_pro
+ {
+ 	ssize_t ret = 0;
+ 
++	if (!cp->notes_size) {
++		if (!collect_notes(cp)) {
++			ret = -ENOMEM;
++			goto out;
++		}
++	}
++
+ 	if (!cp->elf_buf) {
+ 		get_elfhdr_size(cp);
+ 
