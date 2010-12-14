@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628Ab0LNQye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:54:34 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:54445 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758694Ab0LNQyd (ORCPT
+	id S1759638Ab0LNQ4B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:56:01 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:24342 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758656Ab0LNQ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 11:54:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=bpRaRSP4ToXAz0MP5QpzsjbweLjMfn1fWguhx6WQT4RCcBATyJfdq43j46KcVNUNmv
-         gvVj5f4w4C68rMR7GR2h/NG902Sjh47BiUVobt6U3RI66B0BQwAOODOxpeOOlQv1PBP3
-         L60YvD8WkmKWeZ4kxYjdujgxhRGkW8pFH7S0A=
-Subject: Re: [PATCH 27/30] mtd: don't use flush_scheduled_work()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <1292086307-19211-28-git-send-email-tj@kernel.org>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
-	 <1292086307-19211-28-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Dec 2010 18:53:53 +0200
-Message-ID: <1292345633.2538.101.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Tue, 14 Dec 2010 11:56:00 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: qQklum8VM1mLP0YBQZTldMEUJiurCQrgtIvdLcALkMBIu6V
+ 4dNd87SIo3PXjd_mXT9.ycliDIuqCKIzB9SYogN.Tb.C47srefg3l4vY3bq4
+ M5zf6ETtgu0nY_XcP2lO6owtazpVmgDWJuc_qjhSWjcpisooocazw6dXxvco
+ XCPDHD3gn7.EJYrm1BRloupaPu_srq2LOiGj311RNGJ_3b8r549CgATeMMN.
+ CpBbP3XEindNjQ2LKoD0gaEi6QRNRR6ZRQum5S8zwOLTT4mxyTmPbw___FnV
+ AFnK9Gzqu6q40v8jvGkQlCFnK1GY6AxoCIXaISHtllUXNszc-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 14 Dec 2010 10:55:56 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
+ lock semantics
+In-Reply-To: <1292345072.5934.32.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1012141055220.17229@router.home>
+References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-12-11 at 17:51 +0100, Tejun Heo wrote:
-> flush_scheduled_work() is deprecated and scheduled to be removed.
-> Directly flush cxt->work_{erase|write} on removal instead.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: linux-mtd@lists.infradead.org
-> ---
-> This is part of a series to remove flush_scheduled_work() usage to
-> prepare for deprecation of flush_scheduled_work().  Patches in this
-> series are self contained and mostly straight-forward.
-> 
-> Please feel free to take it into the appropriate tree, or just ack it.
-> In the latter case, I'll merge the patch through the workqueue tree
-> during the next merge window.
-> 
-> If you're seeing this patch for the second time, it's because the
-> commit hasn't showed up in mainline yet.  Please let me know what
-> should be done.
+On Tue, 14 Dec 2010, Eric Dumazet wrote:
 
-Pushed to l2-mtd-2.6.git, thanks. This means this will be merged to the
-mtd tree a bit later and will go upstream.
+> You should use the fact that the failed cmpxchg loads in al/ax/eax/rax
+> the current value, so :
+>
+> 	"\n\tmov "__percpu_arg(1)",%%al"
+> 	"\n1:\tcmpxchgb %2, "__percpu_arg(1)
+> 	"\n\tjnz 1b"
+>
+> (No need to reload the value again)
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Subject: cpuops xchg: Exploit the fact that failed cmpxchges return old value
 
+We do not need to reload the value as pointed out by Eric. It is already in
+the correct register so just rerun the cmpxchg without the load.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+---
+ arch/x86/include/asm/percpu.h |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/percpu.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-14 10:51:57.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-14 10:54:46.000000000 -0600
+@@ -223,32 +223,32 @@ do {									\
+ 	typeof(var) __new = (nval);					\
+ 	switch (sizeof(var)) {						\
+ 	case 1:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%al"			\
+-		    "\n\tcmpxchgb %2, "__percpu_arg(1)			\
++		asm("\n\tmov "__percpu_arg(1)",%%al"			\
++		    "\n1:cmpxchgb %2, "__percpu_arg(1)		\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "q" (__new)				\
+ 			    : "memory");				\
+ 		break;							\
+ 	case 2:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%ax"			\
+-		    "\n\tcmpxchgw %2, "__percpu_arg(1)			\
++		asm("\n\tmov "__percpu_arg(1)",%%ax"			\
++		    "\n1:cmpxchgw %2, "__percpu_arg(1)		\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "r" (__new)				\
+ 			    : "memory");				\
+ 		break;							\
+ 	case 4:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%eax"			\
+-		    "\n\tcmpxchgl %2, "__percpu_arg(1)			\
++		asm("\n\tmov "__percpu_arg(1)",%%eax"			\
++		    "\n1:cmpxchgl %2, "__percpu_arg(1)		\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "r" (__new)				\
+ 			    : "memory");				\
+ 		break;							\
+ 	case 8:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%rax"			\
+-		    "\n\tcmpxchgq %2, "__percpu_arg(1)			\
++		asm("\n\tmov "__percpu_arg(1)",%%rax"			\
++		    "\n1:cmpxchgq %2, "__percpu_arg(1)		\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "r" (__new)				\
