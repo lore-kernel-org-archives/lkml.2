@@ -1,57 +1,722 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760230Ab0LNXWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 18:22:41 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:55605 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab0LNXWj (ORCPT
+	id S1755204Ab0LNX14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 18:27:56 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:33478 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab0LNX1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 18:22:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OuB9Cp19s6pcASeD43+5jO+p6t15xw4HFRIPdkdo1NL5rYZnCPYoRVf2a85io1Tlw3
-         a3vLiFZE6Rvn+ZTeUs9Q==
+	Tue, 14 Dec 2010 18:27:53 -0500
+Date: Wed, 15 Dec 2010 00:27:47 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, lwn@lwn.net,
+        tim.bird@am.sony.com, stable@kernel.org
+Subject: [ANNOUNCE] Linux 2.6.35.10 has been released
+Message-ID: <20101214232747.GA18757@basil.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim-sV6JO5apPdd9oG23q3THaZ1FazfF1nqUfs6C@mail.gmail.com>
-References: <1291335412-16231-1-git-send-email-walken@google.com>
-	<1291335412-16231-2-git-send-email-walken@google.com>
-	<20101208152740.ac449c3d.akpm@linux-foundation.org>
-	<AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
-	<AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
-	<20101214005140.GA29904@google.com>
-	<20101213170526.3b010058.akpm@linux-foundation.org>
-	<AANLkTim-sV6JO5apPdd9oG23q3THaZ1FazfF1nqUfs6C@mail.gmail.com>
-Date: Tue, 14 Dec 2010 15:22:35 -0800
-Message-ID: <AANLkTim-CBKeXYiK=TWHafcEto32mKAqCggTVW5-r9nj@mail.gmail.com>
-Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
- faulting in pages
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 7:43 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Without _any_ at all of the crappy "rwsem_contended()" or the stupid
-> constants, we hold it only for reading, _and_ we drop it for any
-> actual IO. So the semaphore is held only for actual CPU intensive
-> cases. We're talking a reduction from minutes to milliseconds.
 
-It's actually still several seconds for a large enough mlock from page cache.
+A new longterm 2.6.35.10 kernel has been released. This release contains security
+fixes and all 2.6.35 users are encouraged to update. This continues
+the 2.6.35 stable series under a new name.
 
-But yes, I agree it'll do fine for now :)
+Full tarball
+ftp://ftp.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.35/linux-2.6.35.10.tar.gz
+SHA1: 15fcaa6d398a0d5571f458e83e315ee68c20e9a5
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Patch against 2.6.35:
+ftp://ftp.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.35/patch-2.6.35.10.gz
+SHA1: 626f7b907ae0360cc6bc1a7f7d653f242341deac
+
+Patch against 2.6.35.9
+ftp://ftp.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.35/incr/patch-2.6.35.9-2.6.35.10.gz
+SHA1: ee046b8ccc5fda51c21434a2598da6aef493ddeb
+
+Git tree:
+git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.35.y.git
+
+Alan Stern (2):
+      USB: EHCI: fix obscure race in ehci_endpoint_disable
+      USB: fix autosuspend bug in usb-serial
+
+Alex Deucher (10):
+      drm/radeon/kms: don't disable shared encoders on pre-DCE3 display blocks
+      drm/radeon/kms: register an i2c adapter name for the dp aux bus
+      drm/radeon/kms: MC vram map needs to be >= pci aperture size
+      drm/radeon/kms: properly compute group_size on 6xx/7xx
+      drm/radeon/kms: make sure blit addr masks are 64 bit
+      drm/radeon/kms: fix handling of tex lookup disable in cs checker on r2xx
+      drm/radeon/kms/atom: set sane defaults in atombios_get_encoder_mode()
+      drm/radeon/kms: fix typos in disabled vbios code
+      drm/radeon/kms: add workaround for dce3 ddc line vbios bug
+      drm/radeon/kms: fix interlaced and doublescan handling
+
+Andi Kleen (1):
+      Release 2.6.35.10
+
+Andiry Xu (1):
+      xHCI: fix wMaxPacketSize mask
+
+Andres Salomon (1):
+      cs5535-gpio: apply CS5536 errata workaround for GPIOs
+
+Andrew Morton (1):
+      drivers/media/video/cx23885/cx23885-core.c: fix cx23885_dev_checkrevision()
+
+Anupam Chanda (1):
+      e1000: fix screaming IRQ
+
+Avi Kivity (1):
+      KVM: Correct ordering of ldt reload wrt fs/gs reload
+
+Axel Lin (2):
+      ASoC: wm8961 - clear WM8961_DACSLOPE bit for normal mode
+      ASoC: wm8961 - clear WM8961_MCLKDIV bit for freq <= 16500000
+
+Ben Hutchings (1):
+      net: NETIF_F_HW_CSUM does not imply FCoE CRC offload
+
+Chris Wilson (3):
+      drm/i915/overlay: Ensure that the reg_bo is in the GTT prior to writing.
+      agp/intel: Also add B43.1 to list of supported devices
+      drm/i915/sdvo: Always add a 30ms delay to make SDVO TV detection reliable
+
+Christian Lamparter (2):
+      mac80211: clear txflags for ps-filtered frames
+      mac80211: don't sanitize invalid rates
+
+Clemens Ladisch (3):
+      hpet: fix unwanted interrupt due to stale irq status bit
+      firewire: ohci: fix buffer overflow in AR split packet handling
+      firewire: ohci: fix race in AR split packet handling
+
+Dan Rosenberg (5):
+      ipc: initialize structure memory to zero for compat functions
+      DECnet: don't leak uninitialized stack byte
+      x25: Prevent crashing when parsing bad X.25 facilities
+      rds: Integer overflow in RDS cmsg handling
+      Fix pktcdvd ioctl dev_minor range check
+
+Daniel Klaffenbach (1):
+      ssb: b43-pci-bridge: Add new vendor for BCM4318
+
+Daniel T Chen (6):
+      ALSA: hda: Use hp-laptop quirk to enable headphones automute for Asus A52J
+      ALSA: hda: Use BIOS auto-parsing instead of existing model quirk for MEDION MD2
+      ALSA: ac97: Apply quirk for Dell Latitude D610 binding Master and Headphone controls
+      ALSA: hda: Add speaker pin to automute Acer Aspire 8943G
+      ALSA: hda: Add Samsung R720 SSID for subwoofer pin fixup
+      ALSA: hda: Use "alienware" model quirk for another SSID
+
+Daniel Vetter (1):
+      intel-gtt: fix gtt_total_entries detection
+
+Darrick J. Wong (1):
+      PCI: fix offset check for sysfs mmapped files
+
+Dave Hansen (1):
+      mm/vfs: revalidate page->mapping in do_generic_file_read()
+
+Dave Jones (1):
+      ACPI: debugfs custom_method open to non-root
+
+David Henningsson (3):
+      ALSA: HDA: Enable internal mic on Dell E6410 and Dell E6510
+      ALSA: HDA: Add fixup pins for Ideapad Y550
+      ALSA: HDA: Add an extra DAC for Realtek ALC887-VD
+
+David Howells (1):
+      SH: Add missing consts to sys_execve() declaration
+
+David S. Miller (2):
+      net: Limit socket I/O iovec total length to INT_MAX.
+      filter: make sure filters dont read uninitialized memory
+
+Dmitri Belimov (1):
+      saa7134: Fix autodetect for Behold A7 and H7 TV cards
+
+Dmitry Torokhov (2):
+      PNPACPI: cope with invalid device IDs
+      Input: i8042 - add Sony VAIO VPCZ122GX to nomux list
+
+Eric Dumazet (4):
+      ipmi: proper spinlock initialization
+      numa: fix slab_node(MPOL_BIND)
+      netfilter: nf_conntrack: allow nf_ct_alloc_hashtable() to get highmem pages
+      r8169: fix rx checksum offload
+
+Eric Paris (1):
+      netfilter: NF_HOOK_COND has wrong conditional
+
+Florian Tobias Schandinat (2):
+      viafb: fix i2c_transfer error handling
+      viafb: use proper register for colour when doing fill ops
+
+Frederic Weisbecker (3):
+      reiserfs: fix inode mutex - reiserfs lock misordering
+      reiserfs: don't acquire lock recursively in reiserfs_acl_chmod
+      x86: Ignore trap bits on single step exceptions
+
+Graham Gower (1):
+      drivers/char/vt_ioctl.c: fix VT_OPENQRY error value
+
+Greg Kroah-Hartman (15):
+      Staging: asus_oled: fix up some sysfs attribute permissions
+      Staging: asus_oled: fix up my fixup for some sysfs attribute permissions
+      Staging: line6: fix up some sysfs attribute permissions
+      USB: storage: sierra_ms: fix sysfs file attribute
+      USB: atm: ueagle-atm: fix up some permissions on the sysfs files
+      USB: misc: cypress_cy7c63: fix up some sysfs attribute permissions
+      USB: misc: usbled: fix up some sysfs attribute permissions
+      USB: misc: trancevibrator: fix up a sysfs attribute permission
+      USB: misc: usbsevseg: fix up some sysfs attribute permissions
+      Staging: udlfb: fix up some sysfs attribute permissions
+      Staging: iio: adis16220: fix up some sysfs attribute permissions
+      Staging: iio: adis16220: fix up my fixup for some sysfs attribute permissions
+      Staging: samsung-laptop: fix up some sysfs attribute permissions
+      Staging: samsung-laptop: fix up my fixup for some sysfs attribute permissions
+      Staging: frontier: fix up some sysfs attribute permissions
+
+Guennadi Liakhovetski (2):
+      wireless: b43: fix error path in SDIO
+      mmc: fix rmmod race for hosts using card-detection polling
+
+Guo-Fu Tseng (1):
+      jme: Fix PHY power-off error
+
+Hagen Paul Pfeifer (1):
+      net: optimize Berkeley Packet Filter (BPF) processing
+
+Heiko Carstens (2):
+      nohz/s390: fix arch_needs_cpu() return value on offline cpus
+      nmi: fix clock comparator revalidation
+
+Herbert Xu (1):
+      crypto: padlock - Fix AES-CBC handling on odd-block-sized input
+
+Herton Ronaldo Krzesinski (1):
+      ALSA: hda - Fix ALC660-VD/ALC861-VD capture/playback mixers
+
+Ian Campbell (1):
+      xen: ensure that all event channels start off bound to VCPU 0
+
+Jacques Viviers (1):
+      USB: serial: ftdi_sio: Vardaan USB RS422/485 converter PID added
+
+James Jones (1):
+      ARM: 6482/2: Fix find_next_zero_bit and related assembly
+
+James M McLaren (1):
+      hdpvr: Add missing URB_NO_TRANSFER_DMA_MAP flag
+
+Jan Kara (1):
+      block: Fix race during disk initialization
+
+Jarkko Nikula (1):
+      omap: dma: Fix buffering disable bit setting for omap24xx
+
+Jaroslav Kysela (1):
+      ALSA: OSS mixer emulation - fix locking
+
+Jean Delvare (1):
+      hwmon: (lm85) Fix ADT7468 frequency table
+
+Jean-François Moine (1):
+      gspca - sonixj: Fix a regression of sensors hv7131r and mi0360
+
+Jens Axboe (4):
+      block: limit vec count in bio_kmalloc() and bio_alloc_map_data()
+      block: take care not to overflow when calculating total iov length
+      block: check for proper length of iov entries in blk_rq_map_user_iov()
+      bio: take care not overflow page count when mapping/copying user data
+
+Jeremy Fitzhardinge (1):
+      xen: don't bother to stop other cpus on shutdown/reboot
+
+Jesse Barnes (1):
+      drm/i915: diasable clock gating for the panel power sequencer
+
+Jiri Olsa (1):
+      tty: prevent DOS in the flush_to_ldisc
+
+Jiri Slaby (3):
+      hpet: unmap unused I/O space
+      TTY: restore tty_ldisc_wait_idle
+      TTY: ldisc, fix open flag handling
+
+Johannes Berg (4):
+      cfg80211: fix BSS double-unlinking
+      cfg80211: fix locking
+      mac80211: use correct station flags lock
+      mac80211: delete AddBA response timer
+
+John Tapsell (1):
+      Staging: rt2870: Add USB ID for Buffalo Airstation WLI-UC-GN
+
+Josh Wu (1):
+      USB: gadget: AT91: fix typo in atmel_usba_udc driver
+
+Jouni Malinen (1):
+      mac80211: Fix signal strength average initialization for CQM events
+
+Justin Maggard (1):
+      md: fix return value of rdev_size_change()
+
+KAMEZAWA Hiroyuki (2):
+      mm: fix return value of scan_lru_pages in memory unplug
+      mm: fix is_mem_section_removable() page_order BUG_ON check
+
+Kailang Yang (1):
+      ALSA: hda - Fixed ALC887-VD initial error
+
+Keith Packard (1):
+      drm/i915: Free hardware status page on unload when physically mapped
+
+Ken Chen (1):
+      latencytop: fix per task accumulator
+
+Ken Kawasaki (1):
+      pcnet_cs: add new_id
+
+Ken Sumrall (1):
+      fuse: fix attributes after open(O_TRUNC)
+
+Kenji Kaneshige (1):
+      genirq: Fix incorrect proc spurious output
+
+Larry Finger (3):
+      staging: rt2870: Add new USB ID for Belkin F6D4050 v1
+      b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
+      staging: rtl8187se: Change panic to warn when RF switch turned off
+
+Linus Torvalds (4):
+      net: Truncate recvfrom and sendto length to INT_MAX.
+      Rename 'pipe_info()' to 'get_pipe_info()'
+      Export 'get_pipe_info()' to other users
+      Un-inline get_pipe_info() helper function
+
+Luis R. Rodriguez (10):
+      cfg80211: fix regression on processing country IEs
+      mac80211: fix channel assumption for association done work
+      mac80211: fix offchannel assumption upon association
+      mac80211: add helper for reseting the connection monitor
+      mac80211: reset connection idle when going offchannel
+      mac80211: make the beacon monitor available externally
+      mac80211: send last 3/5 probe requests as unicast
+      mac80211: disable beacon monitor while going offchannel
+      mac80211: reset probe send counter upon connection timer reset
+      cfg80211: fix extension channel checks to initiate communication
+
+Marcelo Roberto Jimenez (1):
+      ARM: 6456/1: Fix for building DEBUG with sa11xx_base.c as a module.
+
+Marek Lindner (1):
+      Staging: batman-adv: ensure that eth_type_trans gets linear memory
+
+Mark Brown (1):
+      ASoC: Remove volatility from WM8900 POWER1 register
+
+Martin K. Petersen (1):
+      block: Ensure physical block size is unsigned int
+
+Martin Wilck (1):
+      PCI: fix size checks for mmap() on /proc/bus/pci files
+
+Masanori ITOH (1):
+      percpu: fix list_head init bug in __percpu_counter_init()
+
+Mel Gorman (1):
+      mm, page-allocator: do not check the state of a non-existant buddy during free
+
+Michael Hennerich (1):
+      drivers/misc/ad525x_dpot.c: fix typo in spi write16 and write24 transfer counts
+
+Michael Neuling (1):
+      powerpc: Fix call to subpage_protection()
+
+Michael S. Tsirkin (1):
+      KVM: Write protect memory after slot swap
+
+Michael Stuermer (1):
+      USB: ftdi_sio: Add ID for RT Systems USB-29B radio cable
+
+Michel Dänzer (1):
+      drm/radeon/kms: Fix retrying ttm_bo_init() after it failed once.
+
+Mika Westerberg (1):
+      ARM: 6464/2: fix spinlock recursion in adjust_pte()
+
+Ming Lei (2):
+      usbnet: fix usb_autopm_get_interface failure(v1)
+      usb: musb: fix kernel oops when loading musb_hdrc module for the 2nd time
+
+NeilBrown (1):
+      md/raid1: really fix recovery looping when single good device fails.
+
+Nelson Elhage (1):
+      do_exit(): make sure that we run with get_fs() == USER_DS
+
+Nick Piggin (1):
+      radix-tree: fix RCU bug
+
+Nobuhiro Iwamatsu (1):
+      i2c-pca-platform: Change device name of request_irq
+
+Oleg Nesterov (2):
+      exec: make argv/envp memory visible to oom-killer
+      exec: copy-and-paste the fixes into compat_do_execve() paths
+
+Oliver Hartkopp (1):
+      can-bcm: fix minor heap overflow
+
+Oskar Schirmer (1):
+      cifs: fix another memleak, in cifs_root_iget
+
+Paul Zimmerman (1):
+      xhci: Fix reset-device and configure-endpoint commands
+
+Pekka Enberg (1):
+      perf_events: Fix perf_counter_mmap() hook in mprotect()
+
+Peter Ujfalusi (1):
+      OMAP3: DMA: Errata i541: sDMA FIFO draining does not finish
+
+Peter Zijlstra (1):
+      sched: fix RCU lockdep splat from task_group()
+
+Phil Blundell (3):
+      econet: disallow NULL remote addr for sendmsg(), fixes CVE-2010-3849
+      econet: fix CVE-2010-3850
+      econet: fix CVE-2010-3848
+
+Philipp Merkel (1):
+      HID: Fix for problems with eGalax/DWAV multi-touch-screen
+
+Philippe Rétornaz (1):
+      tty_ldisc: Fix BUG() on hangup
+
+Rafael J. Wysocki (1):
+      PM / Hibernate: Fix memory corruption related to swap
+
+Rajkumar Manoharan (1):
+      mac80211: Fix ibss station got expired immediately
+
+Richard A. Smith (1):
+      olpc_battery: Fix endian neutral breakage for s16 values
+
+Richard Weinberger (2):
+      um: remove PAGE_SIZE alignment in linker script causing kernel segfault.
+      um: fix global timer issue when using CONFIG_NO_HZ
+
+Roberto Sassu (1):
+      ecryptfs: call vfs_setxattr() in ecryptfs_setxattr()
+
+Robin@sgi.com (1):
+      sgi-xpc: XPC fails to discover partitions with all nasids above 128
+
+Samuel Ortiz (2):
+      irda: Fix parameter extraction stack overflow
+      irda: Fix heap memory corruption in iriap.c
+
+Santosh Shilimkar (1):
+      oprofile: Fix the hang while taking the cpu offline
+
+Sarah Sharp (2):
+      xhci: Setup array of USB 2.0 and USB 3.0 ports.
+      xhci: Don't let the USB core disable SuperSpeed ports.
+
+Sebastien Bourdeauducq (1):
+      USB: ftdi_sio: add device IDs for Milkymist One JTAG/serial
+
+Shan Wei (1):
+      r8169: fix checksum broken
+
+Stanislaw Gruszka (1):
+      r8169: (re)init phy on resume
+
+Steven J. Magnani (1):
+      nommu: yield CPU while disposing VM
+
+Steven Rostedt (1):
+      leds: fix bug with reading NAS SS4200 dmi code
+
+Takashi Iwai (4):
+      ALSA: hda - Fix wrong SPDIF NID assignment for CA0110
+      ALSA: hda - Add some workarounds for Creative IBG
+      ALSA: hda - Use ALC_INIT_DEFAULT for really default initialization
+      ALSA: Fix SNDCTL_DSP_RESET ioctl for OSS emulation
+
+Tejun Heo (2):
+      sata_via: apply magic FIFO fix to vt6420 too
+      libata: fix NULL sdev dereference race in atapi_qc_complete()
+
+Thadeu Lima de Souza Cascardo (1):
+      wmi: use memcmp instead of strncmp to compare GUIDs
+
+Thomas Backlund (1):
+      microblaze: Fix build with make 3.82
+
+Thomas Gleixner (1):
+      perf: Fix inherit vs. context rotation bug
+
+Tilman Schmidt (3):
+      isdn/gigaset: fix bas_gigaset AT read error handling
+      isdn/gigaset: correct bas_gigaset rx buffer handling
+      isdn/gigaset: bas_gigaset locking fix
+
+Trond Myklebust (4):
+      NFSv4: Don't call nfs4_reclaim_complete() on receiving NFS4ERR_STALE_CLIENTID
+      NFSv4: Don't call nfs4_state_mark_reclaim_reboot() from error handlers
+      NFSv4: Fix open recovery
+      NFS: Don't SIGBUS if nfs_vm_page_mkwrite races with a cache invalidation
+
+Tyler Hicks (1):
+      eCryptfs: Clear LOOKUP_OPEN flag when creating lower file
+
+Uwe Kleine-König (1):
+      backlight: grab ops_lock before testing bd->ops
+
+Valentine Sinitsyn (1):
+      ALSA: hda - Added fixup for Lenovo Y550P
+
+Vasiliy Kulikov (5):
+      ipc: shm: fix information leak to userland
+      KVM: x86: fix information leak to userland
+      usb: misc: sisusbvga: fix information leak to userland
+      usb: misc: iowarrior: fix information leak to userland
+      usb: core: fix information leak to userland
+
+Will Deacon (1):
+      ARM: 6489/1: thumb2: fix incorrect optimisation in usracc
+
+Will Newton (1):
+      uml: disable winch irq before freeing handler data
+
+Zhang Rui (2):
+      ACPI battery: support percentage battery remaining capacity
+      acpi-cpufreq: fix a memleak when unloading driver
+
+andrew hendry (1):
+      memory corruption in X.25 facilities parsing
+
+ma rui (1):
+      USB: option: fix when the driver is loaded incorrectly for some Huawei devices.
+
+ Makefile                                        |    2 +-
+ arch/arm/include/asm/assembler.h                |    2 +-
+ arch/arm/lib/findbit.S                          |    6 +-
+ arch/arm/mm/fault-armv.c                        |   28 +++-
+ arch/arm/plat-omap/dma.c                        |   50 ++++-
+ arch/arm/plat-omap/include/plat/dma.h           |    4 +
+ arch/microblaze/Makefile                        |    8 +-
+ arch/powerpc/mm/hash_utils_64.c                 |    2 +-
+ arch/s390/kernel/nmi.c                          |   10 +-
+ arch/s390/kernel/vtime.c                        |   19 ++
+ arch/s390/lib/delay.c                           |   14 +-
+ arch/sh/include/asm/syscalls_32.h               |    4 +-
+ arch/um/drivers/line.c                          |    5 +-
+ arch/um/kernel/uml.lds.S                        |    2 +-
+ arch/um/os-Linux/time.c                         |    2 +-
+ arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c      |    1 +
+ arch/x86/kernel/hw_breakpoint.c                 |    4 +
+ arch/x86/kvm/svm.c                              |    2 +-
+ arch/x86/kvm/vmx.c                              |    4 +-
+ arch/x86/kvm/x86.c                              |   16 +-
+ arch/x86/xen/enlighten.c                        |    4 -
+ block/blk-map.c                                 |    2 +
+ block/blk-settings.c                            |    2 +-
+ block/genhd.c                                   |    6 +-
+ block/scsi_ioctl.c                              |   34 ++-
+ drivers/acpi/battery.c                          |   38 +++-
+ drivers/acpi/debug.c                            |    2 +-
+ drivers/ata/libata-scsi.c                       |    5 +-
+ drivers/ata/sata_via.c                          |    9 +-
+ drivers/block/pktcdvd.c                         |    2 +-
+ drivers/char/agp/intel-agp.c                    |    1 +
+ drivers/char/agp/intel-gtt.c                    |   63 +++---
+ drivers/char/hpet.c                             |   17 ++
+ drivers/char/ipmi/ipmi_si_intf.c                |   30 ++-
+ drivers/char/tty_buffer.c                       |   14 +-
+ drivers/char/tty_ldisc.c                        |   51 ++++-
+ drivers/char/vt_ioctl.c                         |   11 +-
+ drivers/crypto/padlock-aes.c                    |    2 +-
+ drivers/firewire/ohci.c                         |   64 ++++--
+ drivers/gpio/cs5535-gpio.c                      |   16 ++-
+ drivers/gpu/drm/i915/i915_dma.c                 |    3 +
+ drivers/gpu/drm/i915/i915_reg.h                 |    3 +
+ drivers/gpu/drm/i915/intel_display.c            |    7 +
+ drivers/gpu/drm/i915/intel_overlay.c            |    8 +
+ drivers/gpu/drm/i915/intel_sdvo.c               |    8 +-
+ drivers/gpu/drm/radeon/r100.c                   |    6 +
+ drivers/gpu/drm/radeon/r100_track.h             |    1 +
+ drivers/gpu/drm/radeon/r200.c                   |    2 +
+ drivers/gpu/drm/radeon/r600.c                   |    7 +-
+ drivers/gpu/drm/radeon/r600_blit_kms.c          |    8 +-
+ drivers/gpu/drm/radeon/r600_reg.h               |    1 +
+ drivers/gpu/drm/radeon/radeon_atombios.c        |    8 +
+ drivers/gpu/drm/radeon/radeon_bios.c            |   13 +-
+ drivers/gpu/drm/radeon/radeon_connectors.c      |   34 +++
+ drivers/gpu/drm/radeon/radeon_encoders.c        |   36 +++-
+ drivers/gpu/drm/radeon/radeon_i2c.c             |    1 +
+ drivers/gpu/drm/radeon/radeon_object.c          |    4 +-
+ drivers/gpu/drm/radeon/radeon_reg.h             |    1 +
+ drivers/gpu/drm/radeon/rv770.c                  |    9 +-
+ drivers/hid/hid-egalax.c                        |   16 +-
+ drivers/hid/usbhid/hid-quirks.c                 |    1 -
+ drivers/hwmon/lm85.c                            |    1 +
+ drivers/i2c/busses/i2c-pca-platform.c           |    2 +-
+ drivers/input/serio/i8042-x86ia64io.h           |    7 +
+ drivers/isdn/gigaset/bas-gigaset.c              |   89 +++-----
+ drivers/isdn/gigaset/isocdata.c                 |    8 +-
+ drivers/leds/leds-ss4200.c                      |    1 +
+ drivers/md/md.c                                 |    4 +-
+ drivers/md/raid1.c                              |    1 +
+ drivers/media/video/cx23885/cx23885-core.c      |    1 +
+ drivers/media/video/gspca/sonixj.c              |    3 +-
+ drivers/media/video/hdpvr/hdpvr-video.c         |    1 +
+ drivers/media/video/saa7134/saa7134-cards.c     |   24 +-
+ drivers/misc/ad525x_dpot-spi.c                  |    4 +-
+ drivers/misc/sgi-xp/xpc_partition.c             |   25 ++-
+ drivers/mmc/core/core.c                         |    2 +-
+ drivers/net/e1000/e1000_main.c                  |   12 +-
+ drivers/net/jme.c                               |   22 ++-
+ drivers/net/pcmcia/pcnet_cs.c                   |    1 +
+ drivers/net/r8169.c                             |   14 +-
+ drivers/net/usb/usbnet.c                        |   11 +
+ drivers/net/wireless/b43/sdio.c                 |    3 +
+ drivers/oprofile/timer_int.c                    |   13 +
+ drivers/pci/pci-sysfs.c                         |   22 ++-
+ drivers/pci/pci.h                               |    7 +-
+ drivers/pci/proc.c                              |    2 +-
+ drivers/pcmcia/soc_common.c                     |    1 +
+ drivers/platform/x86/wmi.c                      |    2 +-
+ drivers/pnp/pnpacpi/core.c                      |   29 ++-
+ drivers/power/olpc_battery.c                    |    8 +-
+ drivers/ssb/b43_pci_bridge.c                    |    1 +
+ drivers/staging/asus_oled/asus_oled.c           |    8 +-
+ drivers/staging/batman-adv/soft-interface.c     |    4 +
+ drivers/staging/frontier/tranzport.c            |    2 +-
+ drivers/staging/iio/accel/adis16220_core.c      |    2 +-
+ drivers/staging/line6/control.c                 |  204 +++++++++---------
+ drivers/staging/line6/midi.c                    |    4 +-
+ drivers/staging/line6/pod.c                     |   32 ++--
+ drivers/staging/line6/toneport.c                |    4 +-
+ drivers/staging/line6/variax.c                  |   12 +-
+ drivers/staging/rt2860/usb_main_dev.c           |    2 +
+ drivers/staging/rtl8187se/r8185b_init.c         |   30 ++-
+ drivers/staging/samsung-laptop/samsung-laptop.c |    2 +-
+ drivers/staging/udlfb/udlfb.c                   |    2 +-
+ drivers/usb/atm/ueagle-atm.c                    |    7 +-
+ drivers/usb/core/devio.c                        |    7 +-
+ drivers/usb/gadget/atmel_usba_udc.c             |    2 +-
+ drivers/usb/host/ehci-hcd.c                     |   10 +-
+ drivers/usb/host/xhci-hub.c                     |    7 +
+ drivers/usb/host/xhci-mem.c                     |  168 ++++++++++++++-
+ drivers/usb/host/xhci.c                         |   18 ++
+ drivers/usb/host/xhci.h                         |   32 +++
+ drivers/usb/misc/cypress_cy7c63.c               |    6 +-
+ drivers/usb/misc/iowarrior.c                    |    1 +
+ drivers/usb/misc/sisusbvga/sisusb.c             |    1 +
+ drivers/usb/misc/trancevibrator.c               |    2 +-
+ drivers/usb/misc/usbled.c                       |    2 +-
+ drivers/usb/misc/usbsevseg.c                    |   10 +-
+ drivers/usb/musb/musb_core.c                    |    1 -
+ drivers/usb/serial/ftdi_sio.c                   |    4 +
+ drivers/usb/serial/ftdi_sio_ids.h               |   11 +
+ drivers/usb/serial/option.c                     |    2 +-
+ drivers/usb/serial/usb-serial.c                 |    3 +
+ drivers/usb/storage/sierra_ms.c                 |    2 +-
+ drivers/video/backlight/backlight.c             |   12 +-
+ drivers/video/via/accel.c                       |    7 +-
+ drivers/video/via/via_i2c.c                     |   27 ++-
+ drivers/xen/events.c                            |    2 +-
+ fs/bio.c                                        |   23 ++-
+ fs/cifs/inode.c                                 |   12 +-
+ fs/compat.c                                     |   28 ++-
+ fs/ecryptfs/inode.c                             |   11 +-
+ fs/exec.c                                       |   32 +++-
+ fs/fuse/file.c                                  |   10 +
+ fs/nfs/file.c                                   |   17 +-
+ fs/nfs/nfs4proc.c                               |    9 +-
+ fs/nfs/nfs4state.c                              |   17 +-
+ fs/pipe.c                                       |   14 +-
+ fs/reiserfs/ioctl.c                             |    7 +-
+ fs/reiserfs/xattr_acl.c                         |    6 +-
+ fs/splice.c                                     |   24 +--
+ include/linux/binfmts.h                         |    5 +
+ include/linux/blkdev.h                          |    4 +-
+ include/linux/filter.h                          |   48 ++++
+ include/linux/gfp.h                             |    4 +-
+ include/linux/netfilter.h                       |    2 +-
+ include/linux/pci_ids.h                         |    1 +
+ include/linux/perf_event.h                      |    1 +
+ include/linux/pipe_fs_i.h                       |    1 +
+ include/linux/radix-tree.h                      |   36 ++--
+ include/net/mac80211.h                          |   16 ++
+ ipc/compat.c                                    |    6 +
+ ipc/compat_mq.c                                 |    5 +
+ ipc/shm.c                                       |    1 +
+ kernel/exit.c                                   |    9 +
+ kernel/irq/proc.c                               |    2 +-
+ kernel/latencytop.c                             |   17 +-
+ kernel/perf_event.c                             |   22 ++-
+ kernel/power/hibernate.c                        |   22 +-
+ kernel/power/suspend.c                          |    5 +-
+ kernel/power/user.c                             |    2 +
+ kernel/sched.c                                  |   12 +
+ lib/percpu_counter.c                            |    1 +
+ lib/radix-tree.c                                |   78 +++++--
+ mm/filemap.c                                    |   29 +--
+ mm/internal.h                                   |    2 +-
+ mm/memory_hotplug.c                             |    2 +-
+ mm/mempolicy.c                                  |    2 +-
+ mm/mprotect.c                                   |    2 +-
+ mm/nommu.c                                      |    1 +
+ mm/page_alloc.c                                 |   21 +-
+ net/can/bcm.c                                   |    2 +-
+ net/compat.c                                    |   10 +-
+ net/core/dev.c                                  |    6 +-
+ net/core/filter.c                               |  276 ++++++++++++++++-------
+ net/core/iovec.c                                |   15 +-
+ net/decnet/af_decnet.c                          |    2 +
+ net/econet/af_econet.c                          |   91 ++++----
+ net/irda/iriap.c                                |    3 +-
+ net/irda/parameters.c                           |    4 +-
+ net/mac80211/agg-tx.c                           |    3 +
+ net/mac80211/cfg.c                              |    5 +-
+ net/mac80211/ibss.c                             |    1 +
+ net/mac80211/ieee80211_i.h                      |    2 +
+ net/mac80211/main.c                             |    3 +-
+ net/mac80211/mlme.c                             |   48 +++--
+ net/mac80211/offchannel.c                       |    7 +
+ net/mac80211/rate.c                             |    3 +
+ net/mac80211/status.c                           |    1 +
+ net/netfilter/nf_conntrack_core.c               |    3 +-
+ net/rds/rdma.c                                  |    2 +-
+ net/socket.c                                    |    4 +
+ net/wireless/chan.c                             |   51 +++++
+ net/wireless/nl80211.c                          |   11 +-
+ net/wireless/reg.c                              |    2 +-
+ net/wireless/scan.c                             |   12 +-
+ net/x25/x25_facilities.c                        |   20 +-
+ net/x25/x25_in.c                                |    2 +
+ sound/core/oss/mixer_oss.c                      |   12 +-
+ sound/core/oss/pcm_oss.c                        |   19 +-
+ sound/pci/hda/hda_intel.c                       |   16 +-
+ sound/pci/hda/patch_ca0110.c                    |    2 +-
+ sound/pci/hda/patch_conexant.c                  |    1 +
+ sound/pci/hda/patch_realtek.c                   |   51 ++++-
+ sound/pci/hda/patch_sigmatel.c                  |   16 ++
+ sound/pci/intel8x0.c                            |    6 +
+ sound/soc/codecs/wm8900.c                       |    6 -
+ sound/soc/codecs/wm8961.c                       |    4 +-
+ 208 files changed, 2131 insertions(+), 868 deletions(-)
+
+
