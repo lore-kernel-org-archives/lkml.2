@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab0LNTCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 14:02:37 -0500
-Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:46404 "EHLO
-	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758821Ab0LNTCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 14:02:35 -0500
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <AANLkTimeWSEUU6EYa4yWY11OyAVQqNu5eoBZc5ddqHQL@mail.gmail.com>
-References: <20101209070938.GA3949@amd> <19324.1291990997@jrobl> <20101213014553.GA6522@amd> <9580.1292225351@jrobl> <AANLkTimeWSEUU6EYa4yWY11OyAVQqNu5eoBZc5ddqHQL@mail.gmail.com>
-Date: Wed, 15 Dec 2010 04:01:53 +0900
-Message-ID: <12853.1292353313@jrobl>
+	id S1759415Ab0LNTDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 14:03:05 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32680 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab0LNTDC (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 14 Dec 2010 14:03:02 -0500
+Date: Tue, 14 Dec 2010 14:02:08 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for December 14 (xen)
+Message-ID: <20101214190208.GA11901@dumpdata.com>
+References: <20101214180723.3c70fdb9.sfr@canb.auug.org.au>
+ <20101214100356.bdc5734e.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101214100356.bdc5734e.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 14, 2010 at 10:03:56AM -0800, Randy Dunlap wrote:
+> On Tue, 14 Dec 2010 18:07:23 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > [The mirroring on kernel.org is being slow again ...]
+> > 
+> > Changes since 20101213:
+> 
+> 
+> linux-next-20101214/arch/x86/pci/xen.c:451: error: redefinition of 'xen_find_device_domain_owner'
+> linux-next-20101214/arch/x86/include/asm/xen/pci.h:25: note: previous definition of 'xen_find_device_domain_owner' was here
+> linux-next-20101214/arch/x86/pci/xen.c:465: error: redefinition of 'xen_register_device_domain_owner'
+> linux-next-20101214/arch/x86/include/asm/xen/pci.h:29: note: previous definition of 'xen_register_device_domain_owner' was here
+> linux-next-20101214/arch/x86/pci/xen.c:487: error: redefinition of 'xen_unregister_device_domain_owner'
+> linux-next-20101214/arch/x86/include/asm/xen/pci.h:34: note: previous definition of 'xen_unregister_device_domain_owner' was here
+> 
 
-Nick Piggin:
-> Well, let's see what turns up. We certainly can try the long *
-> approach. I suspect on architectures where byte loads are
-> very slow, gcc will block the loop into larger loads, so it should
-> be no worse than a normal memcmp call, but if we do explicit
-> padding we can avoid all the problems associated with tail
-> handling.
-
-Thank you for your reply.
-But unfortunately I am afraid that I cannot understand what you wrote
-clearly due to my poor English. What I understood is,
-- I suggested 'long *' approach
-- You wrote "not bad and possible, but may not be worth"
-- I agreed "the approach may not be effective"
-And you gave deeper consideration, but the result is unchaged which
-means "'long *' approach may not be worth". Am I right?
-
-
-> In short, I think the change should be suitable for all x86 CPUs,
-> but I would like to hear more opinions or see numbers for other
-> cores.
-
-I'd like to hear from other x86 experts too.
-Also I noticed that memcmp for x86_32 is defined as __builtin_memcmp
-(for x86_64 is "rep cmp"). Why does x86_64 doesn't use __builtin_memcmp?
-Is it really worse?
-
-
-J. R. Okajima
+Fixed in the branch. Thank you for finding this.
