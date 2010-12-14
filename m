@@ -1,79 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758976Ab0LNMrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 07:47:39 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:38511 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1758911Ab0LNMri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 07:47:38 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX196HiVlsud6ijpfcKgTtcBU9C4OnMvY9JL/NKcgAh
-	A4l6NJbc98qztA
-Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
-From: Mike Galbraith <efault@gmx.de>
-To: vatsa@linux.vnet.ibm.com
-Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Chris Wright <chrisw@sous-sol.org>
-In-Reply-To: <20101214112655.GB3665@linux.vnet.ibm.com>
-References: <20101213224434.7495edb2@annuminas.surriel.com>
-	 <20101213224657.7e141746@annuminas.surriel.com>
-	 <1292306896.7448.157.camel@marge.simson.net>
-	 <20101214102409.GA3665@linux.vnet.ibm.com>
-	 <1292324638.7436.29.camel@marge.simson.net>
-	 <20101214112655.GB3665@linux.vnet.ibm.com>
-Content-Type: text/plain
-Date: Tue, 14 Dec 2010 13:47:31 +0100
-Message-Id: <1292330851.7436.98.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1759072Ab0LNMvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 07:51:51 -0500
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:48563 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759009Ab0LNMvt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 07:51:49 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Dec 2010 07:51:49 EST
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>
+Subject: [PATCH] base: add sysfs socs info
+Date: Tue, 14 Dec 2010 13:40:17 +0100
+Message-Id: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Ovh-Tracer-Id: 7407014013661588248
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-14 at 16:56 +0530, Srivatsa Vaddagiri wrote:
-> On Tue, Dec 14, 2010 at 12:03:58PM +0100, Mike Galbraith wrote:
-> > On Tue, 2010-12-14 at 15:54 +0530, Srivatsa Vaddagiri wrote:
-> > > On Tue, Dec 14, 2010 at 07:08:16AM +0100, Mike Galbraith wrote:
-> > 
-> > > > That part looks ok, except for the yield cross cpu bit.  Trying to yield
-> > > > a resource you don't have doesn't make much sense to me.
-> > > 
-> > > So another (crazy) idea is to move the "yieldee" task on another cpu over to 
-> > > yielding task's cpu, let it run till the end of yielding tasks slice and then
-> > > let it go back to the original cpu at the same vruntime position!
-> > 
-> > Yeah, pulling the intended recipient makes fine sense.  If he doesn't
-> > preempt you, you can try to swap vruntimes or whatever makes arithmetic
-> > sense and will help.  Dunno how you tell him how long he can keep the
-> > cpu though,
-> 
-> can't we adjust the new task's [prev_]sum_exec_runtime a bit so that it is 
-> preempted at the end of yielding task's timeslice?
+this provide an easy way to register soc information
 
-And dork up accounting.  Why?  Besides, it won't work because you have
-no idea who may preempt whom, when, and for how long.
+arch, family, model, id, revision
 
-(Why do people keep talking about timeslice?  The only thing that exists
-is lag that changes the instant anyone does anything of interest.)
+as this for at91sam9g20
 
-> > and him somehow going back home needs to be a plain old
-> > migration, no fancy restoration of ancient history vruntime.
-> 
-> What is the issue if it gets queued at the old vruntime (assuming fair stick is
-> still behind that)? Without that it will hurt fairness for the yieldee (and
-> perhaps of the overall VM in this case).
+$ cat /sys/devices/system/soc/soc0/arch
+current
+$ cat /sys/devices/system/soc/soc0/family
+at91
+$ cat /sys/devices/system/soc/soc0/id
+at91sam9g20
+$ cat /sys/devices/system/soc/soc0/model
+0x00000000019905a0
+$ cat /sys/devices/system/soc/soc0/revision
+1.1
 
-Who all are you placing this task in front of or behind based upon a
-non-existent relationship?
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
+---
+ drivers/base/Makefile |    3 +-
+ drivers/base/base.h   |    1 +
+ drivers/base/init.c   |    1 +
+ drivers/base/soc.c    |  124 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/soc.h   |   27 +++++++++++
+ 5 files changed, 155 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/base/soc.c
+ create mode 100644 include/linux/soc.h
 
-Your recipient may well have been preempted, and is now further behind
-than the completely irrelevant to the current situation stored vruntime
-would indicate, so why would you want to move it rightward?  Certainly
-not in the interest of fairness.
-
-	-Mike
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 5f51c3b..cf3e59f 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -3,7 +3,8 @@
+ obj-y			:= core.o sys.o bus.o dd.o \
+ 			   driver.o class.o platform.o \
+ 			   cpu.o firmware.o init.o map.o devres.o \
+-			   attribute_container.o transport_class.o
++			   attribute_container.o transport_class.o \
++			   soc.o
+ obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+ obj-y			+= power/
+ obj-$(CONFIG_HAS_DMA)	+= dma-mapping.o
+diff --git a/drivers/base/base.h b/drivers/base/base.h
+index 2ca7f5b..e2daaf6 100644
+--- a/drivers/base/base.h
++++ b/drivers/base/base.h
+@@ -107,6 +107,7 @@ static inline int hypervisor_init(void) { return 0; }
+ extern int platform_bus_init(void);
+ extern int system_bus_init(void);
+ extern int cpu_dev_init(void);
++extern int soc_dev_init(void);
+ 
+ extern int bus_add_device(struct device *dev);
+ extern void bus_probe_device(struct device *dev);
+diff --git a/drivers/base/init.c b/drivers/base/init.c
+index c8a934e..f908faa 100644
+--- a/drivers/base/init.c
++++ b/drivers/base/init.c
+@@ -33,5 +33,6 @@ void __init driver_init(void)
+ 	platform_bus_init();
+ 	system_bus_init();
+ 	cpu_dev_init();
++	soc_dev_init();
+ 	memory_dev_init();
+ }
+diff --git a/drivers/base/soc.c b/drivers/base/soc.c
+new file mode 100644
+index 0000000..c24bb41
+--- /dev/null
++++ b/drivers/base/soc.c
+@@ -0,0 +1,124 @@
++/*
++ * drivers/base/soc.c - basic SOC class support
++ *
++ * Copyright (C) 2010 Jean-Chrisotphe PLAGNIOL-VILLARD * <plagnioj@jcrosoft.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/sysdev.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/soc.h>
++#include <linux/device.h>
++
++#include "base.h"
++
++static int nb_socs;
++
++struct sysdev_class soc_sysdev_class = {
++	.name = "soc",
++};
++EXPORT_SYMBOL_GPL(soc_sysdev_class);
++
++#define print_u64_attr(field)							\
++static ssize_t print_socs_##field(struct sys_device *dev,			\
++				  struct sysdev_attribute *attr, char *buf)	\
++{										\
++	struct soc *soc = container_of(dev, struct soc, sysdev);		\
++										\
++	return sprintf(buf, "0x%016Lx\n", soc->field);				\
++}										\
++static SYSDEV_ATTR(field, 0444, print_socs_##field, NULL);			\
++
++#define print_str_attr(field)							\
++static ssize_t print_socs_##field(struct sys_device *dev,			\
++				  struct sysdev_attribute *attr, char *buf)	\
++{										\
++	struct soc *soc = container_of(dev, struct soc, sysdev);		\
++										\
++	return sprintf(buf, "%s\n", soc->field);				\
++}										\
++static SYSDEV_ATTR(field, 0444, print_socs_##field, NULL);			\
++
++print_u64_attr(id)
++print_str_attr(arch)
++print_str_attr(family)
++print_str_attr(model)
++print_str_attr(revision)
++
++static char *arch_current = "current";
++/*
++ * register_soc - Setup a sysfs device for a SOC.
++ *
++ * Initialize and register the SOC device.
++ */
++int register_soc(struct soc *soc)
++{
++	int err;
++
++	if (!soc)
++		return -EINVAL;
++
++	soc->sysdev.id = nb_socs;
++	soc->sysdev.cls = &soc_sysdev_class;
++
++	if (!soc->arch)
++		soc->arch = arch_current;
++
++	err = sysdev_register(&soc->sysdev);
++
++	if (err)
++		return err;
++
++	err = sysdev_create_file(&soc->sysdev, &attr_arch);
++
++	if (err)
++		goto end;
++
++	err = sysdev_create_file(&soc->sysdev, &attr_family);
++
++	if (err)
++		goto end0;
++
++	err = sysdev_create_file(&soc->sysdev, &attr_model);
++
++	if (err)
++		goto end1;
++
++	err = sysdev_create_file(&soc->sysdev, &attr_id);
++
++	if (err)
++		goto end2;
++
++	err = sysdev_create_file(&soc->sysdev, &attr_revision);
++
++	if (err)
++		goto end3;
++
++	nb_socs++;
++
++	return 0;
++
++end3:
++	sysdev_remove_file(&soc->sysdev, &attr_id);
++end2:
++	sysdev_remove_file(&soc->sysdev, &attr_model);
++end1:
++	sysdev_remove_file(&soc->sysdev, &attr_family);
++end0:
++	sysdev_remove_file(&soc->sysdev, &attr_arch);
++end:
++	sysdev_unregister(&soc->sysdev);
++
++	return err;
++}
++
++int __init soc_dev_init(void)
++{
++	nb_socs = 0;
++
++	return sysdev_class_register(&soc_sysdev_class);
++}
+diff --git a/include/linux/soc.h b/include/linux/soc.h
+new file mode 100644
+index 0000000..55e6ea2
+--- /dev/null
++++ b/include/linux/soc.h
+@@ -0,0 +1,27 @@
++/*
++ * include/linux/soc.h - generic soc definition
++ *
++ * Copyright (C) 2010 Jean-Chrisotphe PLAGNIOL-VILLARD * <plagnioj@jcrosoft.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef _LINUX_SOC_H_
++#define _LINUX_OSC_H_
++
++#include <linux/sysdev.h>
++
++struct soc {
++	u64 id;
++	char *arch;
++	char *family;
++	char *model;
++	char *revision;
++	struct sys_device sysdev;
++};
++
++extern int register_soc(struct soc *soc);
++extern struct sysdev_class soc_sysdev_class;
++
++#endif /* _LINUX_SOC_H_ */
+-- 
+1.7.2.3
 
