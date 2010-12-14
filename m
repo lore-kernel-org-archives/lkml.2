@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab0LNV3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:29:52 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:27302 "EHLO
+	id S932480Ab0LNVaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:30:13 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:53606 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394Ab0LNV3q (ORCPT
+	with ESMTP id S932471Ab0LNVaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:29:46 -0500
+	Tue, 14 Dec 2010 16:30:07 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=itY574KORoERkMnfPQNcLEzmHo3XyA74DoFxn0vKUzy1OByPeMOUoZQqPzOyvultj
-	k5otn+8h6KgbYGaXY2iDQ==
-Subject: [PATCH v3 02/22] netconsole: Introduce locking over the netpoll fields
+	b=cHdZL/Y1FEs33kMBRcmjHiVHWUAZvdvTVSlp6rkOedE7HyRNLj8aO2kxDNU00C5M6
+	hkPjDmFMeFO0Wn7E84Vvw==
+Subject: [PATCH v3 06/22] netconsole: Push configfs_subsystem into
+	netpoll_targets
 To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
         Matt Mackall <mpm@selenic.com>
 From: Mike Waychison <mikew@google.com>
@@ -21,8 +22,8 @@ Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
         Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
         =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
         akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Tue, 14 Dec 2010 13:29:04 -0800
-Message-ID: <20101214212904.17022.16604.stgit@mike.mtv.corp.google.com>
+Date: Tue, 14 Dec 2010 13:29:26 -0800
+Message-ID: <20101214212926.17022.72702.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -34,220 +35,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The netconsole driver currently doesn't do any locking over its
-configuration fields.  This can cause problems if we were to ever have
-concurrent writing to fields while somebody is enabling the service.
+This patch is a step in the preparation of pushing the target handling
+code out of netconsole and into netpoll proper where it can be used by
+other clients.
 
-For simplicity, this patch extends targets_list_lock to cover all
-configuration fields within the targets.  Macros are also added here to
-wrap accessors so that we check whether the target has been enabled with
-locking handled.
+Here, we move the configfs_subsystem bits out of global scope and
+package it in the netpoll_targets structure that will maintain a set of
+targets.  There is a bit of code that is rearranged due to needing to
+provide netconsole_subsys_type in scope much earlier in the file.  This
+has the added benefit of folding all of the dynamic target handling code
+under a single #ifdef CONFIG_NETCONSOLE_DYNAMIC block.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 Acked-by: Matt Mackall <mpm@selenic.com>
 ---
- drivers/net/netconsole.c |  114 ++++++++++++++++++++++++++--------------------
- 1 files changed, 64 insertions(+), 50 deletions(-)
+ drivers/net/netconsole.c |  132 ++++++++++++++++++++++------------------------
+ 1 files changed, 64 insertions(+), 68 deletions(-)
 
 diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index c87a49e..6e16888 100644
+index 3aa7151..aa95b91 100644
 --- a/drivers/net/netconsole.c
 +++ b/drivers/net/netconsole.c
-@@ -327,6 +327,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 			     const char *buf,
- 			     size_t count)
- {
-+	unsigned long flags;
- 	int err;
- 	long enabled;
+@@ -68,6 +68,9 @@ __setup("netconsole=", option_setup);
+ struct netpoll_targets {
+ 	struct list_head list;
+ 	spinlock_t lock;
++#ifdef	CONFIG_NETCONSOLE_DYNAMIC
++	struct configfs_subsystem configfs_subsys;
++#endif
+ };
+ #define DEFINE_NETPOLL_TARGETS(x) struct netpoll_targets x = \
+ 	{ .list = LIST_HEAD_INIT(x.list), \
+@@ -112,63 +115,8 @@ struct netconsole_target {
+ 	struct work_struct	cleanup_work;
+ };
  
-@@ -335,6 +336,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 		return enabled;
- 
- 	if (enabled) {	/* 1 */
-+		spin_lock_irqsave(&target_list_lock, flags);
-+		if (nt->enabled)
-+			goto busy;
-+		spin_unlock_irqrestore(&target_list_lock, flags);
- 
- 		/*
- 		 * Skip netpoll_parse_options() -- all the attributes are
-@@ -343,18 +348,28 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 		netpoll_print_options(&nt->np);
- 
- 		err = netpoll_setup(&nt->np);
-+		spin_lock_irqsave(&target_list_lock, flags);
-+		if (err)
-+			nt->enabled = 0;
-+		else
-+			nt->enabled = 1;
-+		spin_unlock_irqrestore(&target_list_lock, flags);
- 		if (err)
- 			return err;
- 
- 		printk(KERN_INFO "netconsole: network logging started\n");
+-#ifdef	CONFIG_NETCONSOLE_DYNAMIC
 -
- 	} else {	/* 0 */
-+		spin_lock_irqsave(&target_list_lock, flags);
-+		nt->enabled = 0;
-+		spin_unlock_irqrestore(&target_list_lock, flags);
+-static struct configfs_subsystem netconsole_subsys;
+-
+-static int __init dynamic_netconsole_init(void)
+-{
+-	config_group_init(&netconsole_subsys.su_group);
+-	mutex_init(&netconsole_subsys.su_mutex);
+-	return configfs_register_subsystem(&netconsole_subsys);
+-}
+-
+-static void __exit dynamic_netconsole_exit(void)
+-{
+-	configfs_unregister_subsystem(&netconsole_subsys);
+-}
+-
+-/*
+- * Targets that were created by parsing the boot/module option string
+- * do not exist in the configfs hierarchy (and have NULL names) and will
+- * never go away, so make these a no-op for them.
+- */
+-static void netconsole_target_get(struct netconsole_target *nt)
+-{
+-	if (config_item_name(&nt->item))
+-		config_item_get(&nt->item);
+-}
+-
+-static void netconsole_target_put(struct netconsole_target *nt)
+-{
+-	if (config_item_name(&nt->item))
+-		config_item_put(&nt->item);
+-}
+-
+-#else	/* !CONFIG_NETCONSOLE_DYNAMIC */
+-
+-static int __init dynamic_netconsole_init(void)
+-{
+-	return 0;
+-}
+-
+-static void __exit dynamic_netconsole_exit(void)
+-{
+-}
+-
+-/*
+- * No danger of targets going away from under us when dynamic
+- * reconfigurability is off.
+- */
+-static void netconsole_target_get(struct netconsole_target *nt)
+-{
+-}
+-
+-static void netconsole_target_put(struct netconsole_target *nt)
+-{
+-}
+-
+-#endif	/* CONFIG_NETCONSOLE_DYNAMIC */
++static void netconsole_target_get(struct netconsole_target *nt);
++static void netconsole_target_put(struct netconsole_target *nt);
+ 
+ static void deferred_netpoll_cleanup(struct work_struct *work)
+ {
+@@ -714,15 +662,63 @@ static struct config_item_type netconsole_subsys_type = {
+ 	.ct_owner	= THIS_MODULE,
+ };
+ 
+-/* The netconsole configfs subsystem */
+-static struct configfs_subsystem netconsole_subsys = {
+-	.su_group	= {
+-		.cg_item	= {
+-			.ci_namebuf	= "netconsole",
+-			.ci_type	= &netconsole_subsys_type,
+-		},
+-	},
+-};
++static int __init dynamic_netpoll_targets_init(struct netpoll_targets *nts)
++{
++	struct configfs_subsystem *subsys = &nts->configfs_subsys;
 +
- 		netpoll_cleanup(&nt->np);
- 	}
- 
--	nt->enabled = enabled;
--
- 	return strnlen(buf, count);
-+busy:
-+	spin_unlock_irqrestore(&target_list_lock, flags);
-+	return -EBUSY;
- }
- 
- static ssize_t store_dev_name(struct netconsole_target *nt,
-@@ -363,13 +378,6 @@ static ssize_t store_dev_name(struct netconsole_target *nt,
- {
- 	size_t len;
- 
--	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
--		return -EINVAL;
--	}
--
- 	strlcpy(nt->np.dev_name, buf, IFNAMSIZ);
- 
- 	/* Get rid of possible trailing newline from echo(1) */
-@@ -387,13 +395,6 @@ static ssize_t store_local_port(struct netconsole_target *nt,
- 	long local_port;
- #define __U16_MAX	((__u16) ~0U)
- 
--	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
--		return -EINVAL;
--	}
--
- 	local_port = strtol10_check_range(buf, 0, __U16_MAX);
- 	if (local_port < 0)
- 		return local_port;
-@@ -410,13 +411,6 @@ static ssize_t store_remote_port(struct netconsole_target *nt,
- 	long remote_port;
- #define __U16_MAX	((__u16) ~0U)
- 
--	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
--		return -EINVAL;
--	}
--
- 	remote_port = strtol10_check_range(buf, 0, __U16_MAX);
- 	if (remote_port < 0)
- 		return remote_port;
-@@ -430,13 +424,6 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
- 			      const char *buf,
- 			      size_t count)
- {
--	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
--		return -EINVAL;
--	}
--
- 	nt->np.local_ip = in_aton(buf);
- 
- 	return strnlen(buf, count);
-@@ -446,13 +433,6 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
- 			       const char *buf,
- 			       size_t count)
- {
--	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
--		return -EINVAL;
--	}
--
- 	nt->np.remote_ip = in_aton(buf);
- 
- 	return strnlen(buf, count);
-@@ -466,13 +446,6 @@ static ssize_t store_remote_mac(struct netconsole_target *nt,
- 	char *p = (char *) buf;
- 	int i;
- 
--	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
--		return -EINVAL;
--	}
--
- 	for (i = 0; i < ETH_ALEN - 1; i++) {
- 		remote_mac[i] = simple_strtoul(p, &p, 16);
- 		if (*p != ':')
-@@ -496,15 +469,56 @@ invalid:
-  * Attribute definitions for netconsole_target.
-  */
- 
--#define NETCONSOLE_TARGET_ATTR_RO(_name)				\
-+#define __NETCONSOLE_TARGET_ATTR_RO(_name, _prefix_...)			\
- static struct netconsole_target_attr netconsole_target_##_name =	\
--	__CONFIGFS_ATTR(_name, S_IRUGO, show_##_name, NULL)
-+	__CONFIGFS_ATTR(_name, S_IRUGO, show_##_prefix_##_name, NULL)
- 
--#define NETCONSOLE_TARGET_ATTR_RW(_name)				\
-+#define __NETCONSOLE_TARGET_ATTR_RW(_name, _prefix_...)			\
- static struct netconsole_target_attr netconsole_target_##_name =	\
--	__CONFIGFS_ATTR(_name, S_IRUGO | S_IWUSR, show_##_name, store_##_name)
-+	__CONFIGFS_ATTR(_name, S_IRUGO | S_IWUSR,			\
-+			show_##_prefix_##_name, store_##_prefix_##_name)
-+
-+#define NETCONSOLE_WRAP_ATTR_STORE(_name)				\
-+static ssize_t store_locked_##_name(struct netconsole_target *nt,	\
-+				    const char *buf,			\
-+				    size_t count)			\
-+{									\
-+	unsigned long flags;						\
-+	ssize_t ret;							\
-+	spin_lock_irqsave(&target_list_lock, flags);			\
-+	if (nt->enabled) {						\
-+		printk(KERN_ERR "netconsole: target (%s) is enabled, "	\
-+				"disable to update parameters\n",	\
-+				config_item_name(&nt->item));		\
-+		spin_unlock_irqrestore(&target_list_lock, flags);	\
-+		return -EBUSY;						\
-+	}								\
-+	ret = store_##_name(nt, buf, count);				\
-+	spin_unlock_irqrestore(&target_list_lock, flags);		\
-+	return ret;							\
++	config_group_init(&subsys->su_group);
++	mutex_init(&subsys->su_mutex);
++	strncpy((char *)&subsys->su_group.cg_item.ci_namebuf, "netconsole",
++		CONFIGFS_ITEM_NAME_LEN);
++	subsys->su_group.cg_item.ci_type = &netconsole_subsys_type;
++	return configfs_register_subsystem(subsys);
 +}
 +
-+#define NETCONSOLE_WRAP_ATTR_SHOW(_name)				\
-+static ssize_t show_locked_##_name(struct netconsole_target *nt, char *buf) \
-+{									\
-+	unsigned long flags;						\
-+	ssize_t ret;							\
-+	spin_lock_irqsave(&target_list_lock, flags);			\
-+	ret = show_##_name(nt, buf);					\
-+	spin_unlock_irqrestore(&target_list_lock, flags);		\
-+	return ret;							\
++static void __exit dynamic_netpoll_targets_exit(struct netpoll_targets *nts)
++{
++	configfs_unregister_subsystem(&nts->configfs_subsys);
 +}
 +
-+#define NETCONSOLE_TARGET_ATTR_RW(_name)				\
-+		NETCONSOLE_WRAP_ATTR_STORE(_name)			\
-+		NETCONSOLE_WRAP_ATTR_SHOW(_name)			\
-+		__NETCONSOLE_TARGET_ATTR_RW(_name, locked_)
++/*
++ * Targets that were created by parsing the boot/module option string
++ * do not exist in the configfs hierarchy (and have NULL names) and will
++ * never go away, so make these a no-op for them.
++ */
++static void netconsole_target_get(struct netconsole_target *nt)
++{
++	if (config_item_name(&nt->item))
++		config_item_get(&nt->item);
++}
 +
-+#define NETCONSOLE_TARGET_ATTR_RO(_name)				\
-+		NETCONSOLE_WRAP_ATTR_SHOW(_name)			\
-+		__NETCONSOLE_TARGET_ATTR_RO(_name, locked_)
++static void netconsole_target_put(struct netconsole_target *nt)
++{
++	if (config_item_name(&nt->item))
++		config_item_put(&nt->item);
++}
++
++#else	/* !CONFIG_NETCONSOLE_DYNAMIC */
++
++static int __init dynamic_netpoll_targets_init(const char *subsys_name,
++					       struct netpoll_targets *nts)
++{
++	return 0;
++}
++
++static void __exit dynamic_netpoll_targets_exit(struct netpoll_targets *nts)
++{
++}
++
++/*
++ * No danger of targets going away from under us when dynamic
++ * reconfigurability is off.
++ */
++static void netconsole_target_get(struct netconsole_target *nt)
++{
++}
++
++static void netconsole_target_put(struct netconsole_target *nt)
++{
++}
  
--NETCONSOLE_TARGET_ATTR_RW(enabled);
-+__NETCONSOLE_TARGET_ATTR_RW(enabled);
- NETCONSOLE_TARGET_ATTR_RW(dev_name);
- NETCONSOLE_TARGET_ATTR_RW(local_port);
- NETCONSOLE_TARGET_ATTR_RW(remote_port);
+ #endif	/* CONFIG_NETCONSOLE_DYNAMIC */
+ 
+@@ -850,7 +846,7 @@ static int __init init_netconsole(void)
+ 	if (err)
+ 		goto fail;
+ 
+-	err = dynamic_netconsole_init();
++	err = dynamic_netpoll_targets_init(&targets);
+ 	if (err)
+ 		goto undonotifier;
+ 
+@@ -883,7 +879,7 @@ static void __exit cleanup_netconsole(void)
+ 	struct netconsole_target *nt, *tmp;
+ 
+ 	unregister_console(&netconsole);
+-	dynamic_netconsole_exit();
++	dynamic_netpoll_targets_exit(&targets);
+ 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
+ 
+ 	/*
 
