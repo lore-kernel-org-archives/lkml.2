@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760133Ab0LNVRP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:17:15 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61441 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097Ab0LNVRN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:17:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:user-agent:organization:mime-version
-         :content-type:content-transfer-encoding:message-id;
-        b=JzZ8iZA2C90Md/BcTgsFEdusWvEY8+Xz7F1+WhgOq6WIEENl6+biSz+goWtOoJWTmQ
-         B2FvgWNvKewrQmLTINVNmlNiZHFuN5IxzYx38unZJA7tcsV/y3fsShUNdMnhFEu4PiSF
-         h1kiST620We8VVMEdkIpRR1uOgjBVDSxLmkGU=
-From: Florian Fainelli <florian@openwrt.org>
-To: linux-kernel@vger.kernel.org, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        sodaville@linutronix.de, Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH] coretemp: fix junction temperature for Intel CE4100
-Date: Tue, 14 Dec 2010 22:17:07 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
-Organization: Freebox
+	id S1760137Ab0LNVT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:19:28 -0500
+Received: from fieldses.org ([174.143.236.118]:51059 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760080Ab0LNVT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 16:19:27 -0500
+Date: Tue, 14 Dec 2010 16:19:22 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Joe Perches <joe@perches.com>
+Cc: Neil Brown <neilb@suse.de>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/sunrpc/auth_gss/gss_krb5_crypto.c: Use normal
+ negative error value return
+Message-ID: <20101214211922.GJ24828@fieldses.org>
+References: <1289786891.16461.102.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012142217.07194.ffainelli@freebox.fr>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289786891.16461.102.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Fainelli <ffainelli@freebox.fr>
+On Sun, Nov 14, 2010 at 06:08:11PM -0800, Joe Perches wrote:
+> And remove unnecessary double semicolon too.
+> 
+> No effect to code, as test is != 0.
 
-The Intel CE4100 System-on-a-Chip has a slightly higher junction temperature
-(110 degrees Celsius) than other Atom-based hardware.
+Hm, the error return's actually ignored.  But OK.  Applying to my tree
+for 2.6.38 assuming nobody else has picked it up.
 
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: sodaville@linutronix.de
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
----
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 42de98d..e47b405 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -178,12 +178,23 @@ static int __devinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id, struct device *
- 
- 		host_bridge = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
- 
--		if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL
--		    && (host_bridge->device == 0xa000	/* NM10 based nettop */
--		    || host_bridge->device == 0xa010))	/* NM10 based netbook */
--			tjmax = 100000;
--		else
--			tjmax = 90000;
-+		if (host_bridge && host_bridge->vendor == PCI_VENDOR_ID_INTEL) {
-+			switch (host_bridge->device) {
-+			/* NM10 based nettop */
-+			case 0xa000:
-+			/* NM10 based netbook */
-+			case 0xa010:
-+				tjmax = 100000;
-+				break;
-+			/* IntelCE Sodaville (CE4100) */
-+			case 0x0708:
-+				tjmax = 110000;
-+				break;
-+			default:
-+				tjmax = 90000;
-+				break;
-+			}
-+		}
- 
- 		pci_dev_put(host_bridge);
- 	}
--- 
-1.7.1
+--b.
 
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  net/sunrpc/auth_gss/gss_krb5_crypto.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sunrpc/auth_gss/gss_krb5_crypto.c b/net/sunrpc/auth_gss/gss_krb5_crypto.c
+> index 75ee993..9576f35 100644
+> --- a/net/sunrpc/auth_gss/gss_krb5_crypto.c
+> +++ b/net/sunrpc/auth_gss/gss_krb5_crypto.c
+> @@ -137,7 +137,7 @@ arcfour_hmac_md5_usage_to_salt(unsigned int usage, u8 salt[4])
+>  		ms_usage = 13;
+>  		break;
+>  	default:
+> -		return EINVAL;;
+> +		return -EINVAL;
+>  	}
+>  	salt[0] = (ms_usage >> 0) & 0xff;
+>  	salt[1] = (ms_usage >> 8) & 0xff;
+> 
+> 
