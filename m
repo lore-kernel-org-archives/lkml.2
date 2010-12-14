@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab0LNO0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:26:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54586 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751626Ab0LNO0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:26:43 -0500
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D077CD9.6050907@kernel.org>
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>
-	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>
-	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Dec 2010 08:26:38 -0600
-Message-ID: <1292336798.3058.5.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1755122Ab0LNO1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:27:43 -0500
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:44554 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab0LNO1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:27:42 -0500
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAEkNB02rRN+J/2dsb2JhbACkCnimNZtThUoEhGSGFoMV
+X-IronPort-AV: E=Sophos;i="4.59,342,1288569600"; 
+   d="scan'208";a="232353796"
+Message-ID: <4D077EDE.8090005@cisco.com>
+Date: Tue, 14 Dec 2010 07:27:42 -0700
+From: "David S. Ahern" <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] perf tools: Add symfs option for off-box analysis
+ using specified tree
+References: <1291926427-28846-1-git-send-email-daahern@cisco.com> <20101214122428.GA13425@ghostprotocols.net> <20101214125245.GB13425@ghostprotocols.net>
+In-Reply-To: <20101214125245.GB13425@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-14 at 15:19 +0100, Tejun Heo wrote:
-> Hello, James.
+
+
+On 12/14/10 05:52, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 14, 2010 at 10:24:28AM -0200, Arnaldo Carvalho de Melo escreveu:
+>> Em Thu, Dec 09, 2010 at 01:27:07PM -0700, David Ahern escreveu:
+>>> The symfs argument allows analysis of perf.data file using a locally
+>>> accessible filesystem tree with debug symbols - e.g., tree created
+>>> during image builds, sshfs mount, loop mounted KVM disk images,
+>>> USB keys, initrds, etc. Anything with an OS tree can be analyzed from
+>>> anywhere without the need to populate a local data store with
+>>> build-ids.
+>>>
+>>> Signed-off-by: David Ahern <daahern@cisco.com>
+>>>
+>>> v2 --> v3: handle symfs="/"
+>>
+>> [acme@felicio ~]$ ./realpath /..//.
+>> /
+>> [acme@felicio ~]$
+>>
+>> I'll fix this up and merge, thanks!
+
+I was not aware of realpath. Simple change to symbol__init?
+
 > 
-> On 12/14/2010 03:09 PM, James Bottomley wrote:
-> > That's the point ... it's purely for operations which require user
-> > context which may not have it.  There's no synchronisation by design
-> > (it's a simple API).
+> Ok, there are still some problems:
 > 
-> Well, the problem is that you do require proper synchornization
-> anyway; otherwise, there is no way to make sure that the work is
-> finished before the SCSI module is about to be unloaded.  Currently,
-> the code uses flush_scheduled_work() for this, which is going away
-> because the latency can grow arbitrarily large and the behavior is
-> dependent on completely unrelated work items.  So, either we need to
-> add a separate flush interface for ew's, flush the work item inside
-> ew's or schedule them to a dedicated workqueue.
+> It is escaping the symfs jail for /home/acme/bin/perf, /lib64/libpthread-2.5.so
+> and kernel modules, investigating...
 
-Depends what you're doing about the flush problem.  The synchronisation
-is inherent in the use (we're holding a reference to the module within
-the executed code).  The flush is to try to speed things up so the user
-doesn't get annoyed during rmmod.  We don't need a sync, just an
-accelerator.
-
-> >> So, unless there's a compelling reason, let's remove it.
-> > 
-> > The open coding of if (in_atomic()) { do workqueue stuff } else
-> > { execute function } is rather bug prone (most people tend to do
-> > in_interrupt()).  It's better to encapsulate it in an API.
 > 
-> Compelling reason for it to exist.  Why not just use work when you
-> need execution context and the caller might or might not have one?
-
-Because it's completely lame to have user context and not use it.
-
-> > It was in SCSI ... I got told to make it generic.
+> - Arnaldo
 > 
-> Heh, yeah, that would feel quite silly.  Sorry about that.  :-)
-> 
-> But, really, let's just remove it.  At this point, we either need to
-> fortify the interface or remove it and given the current usage, I
-> think we're better off with the latter.
+> [acme@mica linux]$ find /tmp/bla
+> /tmp/bla
+> /tmp/bla/lib64
+> /tmp/bla/lib64/libc-2.5.so
+> [acme@mica linux]$ perf report -v -g none --stdio --symfs /tmp/bla > /tmp/out
+> Looking at the vmlinux_path (3 entries long)
+> Failed to open [kernel.kallsyms], continuing without symbols
+> dso__synthesize_plt_symbols: problems reading /home/acme/bin/perf PLT info.
+> dso__synthesize_plt_symbols: problems reading /lib64/libpthread-2.5.so PLT info.
+> dso__synthesize_plt_symbols: problems reading /lib/modules/2.6.37-rc3-00084-gd937616/kernel/drivers/net/ixgbe/ixgbe.ko PLT info.
+> [acme@mica linux]$ cat /tmp/out
 
-I really don't think the open coding is a good idea.  It's complex and
-error prone; exactly the type of thing that should be in an API.
+strace -e trace=open /tmp/build-perf/perf report -v --symfs /tmp/f14-mnt
+-i /tmp/perf-cs.data
 
->   If any pressing need arises,
-> we can always add a proper API with all the necessary bells and
-> whistles later.
+does not show any attempts to open a file not starting with the symfs path.
 
-James
+At the top of dso__synthesize_plt_symbols() is:
+	snprintf(name, sizeof(name), "%s%s",
+		 symbol_conf.symfs, self->long_name);
+	fd = open(name, O_RDONLY);
 
+so the open only gets the relative path.
 
+David
