@@ -1,140 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759947Ab0LNUno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 15:43:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51656 "EHLO
+	id S1759941Ab0LNUpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 15:45:43 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40980 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758310Ab0LNUnm (ORCPT
+	by vger.kernel.org with ESMTP id S1759597Ab0LNUpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 15:43:42 -0500
-Date: Tue, 14 Dec 2010 12:43:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH] gpiolib: Convert ADP5588 to new irq_ APIs
-Message-Id: <20101214124332.07f2a212.akpm@linux-foundation.org>
-In-Reply-To: <1292159988-28268-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1292159988-28268-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Dec 2010 15:45:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikogB78xPGiQZpg6nWKYVffr61A_Adm0a+C3mbR@mail.gmail.com>
+References: <20101208213606.13026.47657.stgit@bob.kio> <20101208213627.13026.18854.stgit@bob.kio>
+ <AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
+ <20101212061743.GA4974@helgaas.com> <AANLkTikogB78xPGiQZpg6nWKYVffr61A_Adm0a+C3mbR@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 14 Dec 2010 12:44:51 -0800
+Message-ID: <AANLkTi=a4kOssPYfdYHW5yn9q03=2_6v4bZeCj4iGsUi@mail.gmail.com>
+Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Dec 2010 13:19:48 +0000
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+On Tue, Dec 14, 2010 at 12:34 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> That's a maintainable approach. But it's maintainable ONLY if we then
+> don't do other random changes that invalidates all the years of
+> testing we've had.
 
-> The genirq core is being updated to pass struct irq_data to irq_chip
-> operations instead of an irq number. Update the ADP5588 GPIO driver to
-> the new API.
+Btw, looking at all the x86-specific commits that have gone in, I'm
+*extremely* unhappy that they apparently stopped honoring that
+"resource_alloc_from_bottom" flag that I explicitly asked for.
 
-Seems to be the same as Lennert's patch, except he called it "d"?
+So it looks like it's not enough to just set that flag. We have to
+actually revert all the commits in this area as broken.
 
+Which is sad, but since they clearly *are* broken and don't honor the
+flag that was there explicitly to avoid this problem and make it easy
+to test reverting it, I'm really pissed off. The WHOLE POINT of that
+flag was to give people an option to say "use the old resource
+allocation order because the new one doesn't work for me".
 
+So at this point the only question is whether I should just revert the
+whole effing lot, or whether there are patches to fix the code to
+honor the "allocate from bottom" bit and then just set it by default
+again.
 
-From: Lennert Buytenhek <buytenh@wantstofly.org>
+Bjorn? Preferences?
 
-Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
-Acked-by: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/gpio/adp5588-gpio.c |   39 +++++++++++++++++-----------------
- 1 file changed, 20 insertions(+), 19 deletions(-)
-
-diff -puN drivers/gpio/adp5588-gpio.c~gpio-adp5588-gpio-irq_data-conversion drivers/gpio/adp5588-gpio.c
---- a/drivers/gpio/adp5588-gpio.c~gpio-adp5588-gpio-irq_data-conversion
-+++ a/drivers/gpio/adp5588-gpio.c
-@@ -146,9 +146,10 @@ static int adp5588_gpio_to_irq(struct gp
- 	return dev->irq_base + off;
- }
- 
--static void adp5588_irq_bus_lock(unsigned int irq)
-+static void adp5588_irq_bus_lock(struct irq_data *d)
- {
--	struct adp5588_gpio *dev = get_irq_chip_data(irq);
-+	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
-+
- 	mutex_lock(&dev->irq_lock);
- }
- 
-@@ -160,9 +161,9 @@ static void adp5588_irq_bus_lock(unsigne
-   * and unlocks the bus.
-   */
- 
--static void adp5588_irq_bus_sync_unlock(unsigned int irq)
-+static void adp5588_irq_bus_sync_unlock(struct irq_data *d)
- {
--	struct adp5588_gpio *dev = get_irq_chip_data(irq);
-+	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
- 	int i;
- 
- 	for (i = 0; i <= ADP5588_BANK(ADP5588_MAXGPIO); i++)
-@@ -175,31 +176,31 @@ static void adp5588_irq_bus_sync_unlock(
- 	mutex_unlock(&dev->irq_lock);
- }
- 
--static void adp5588_irq_mask(unsigned int irq)
-+static void adp5588_irq_mask(struct irq_data *d)
- {
--	struct adp5588_gpio *dev = get_irq_chip_data(irq);
--	unsigned gpio = irq - dev->irq_base;
-+	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
-+	unsigned gpio = d->irq - dev->irq_base;
- 
- 	dev->irq_mask[ADP5588_BANK(gpio)] &= ~ADP5588_BIT(gpio);
- }
- 
--static void adp5588_irq_unmask(unsigned int irq)
-+static void adp5588_irq_unmask(struct irq_data *d)
- {
--	struct adp5588_gpio *dev = get_irq_chip_data(irq);
--	unsigned gpio = irq - dev->irq_base;
-+	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
-+	unsigned gpio = d->irq - dev->irq_base;
- 
- 	dev->irq_mask[ADP5588_BANK(gpio)] |= ADP5588_BIT(gpio);
- }
- 
--static int adp5588_irq_set_type(unsigned int irq, unsigned int type)
-+static int adp5588_irq_set_type(struct irq_data *d, unsigned int type)
- {
--	struct adp5588_gpio *dev = get_irq_chip_data(irq);
--	uint16_t gpio = irq - dev->irq_base;
-+	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
-+	uint16_t gpio = d->irq - dev->irq_base;
- 	unsigned bank, bit;
- 
- 	if ((type & IRQ_TYPE_EDGE_BOTH)) {
- 		dev_err(&dev->client->dev, "irq %d: unsupported type %d\n",
--			irq, type);
-+			d->irq, type);
- 		return -EINVAL;
- 	}
- 
-@@ -222,11 +223,11 @@ static int adp5588_irq_set_type(unsigned
- 
- static struct irq_chip adp5588_irq_chip = {
- 	.name			= "adp5588",
--	.mask			= adp5588_irq_mask,
--	.unmask			= adp5588_irq_unmask,
--	.bus_lock		= adp5588_irq_bus_lock,
--	.bus_sync_unlock	= adp5588_irq_bus_sync_unlock,
--	.set_type		= adp5588_irq_set_type,
-+	.irq_mask		= adp5588_irq_mask,
-+	.irq_unmask		= adp5588_irq_unmask,
-+	.irq_bus_lock		= adp5588_irq_bus_lock,
-+	.irq_bus_sync_unlock	= adp5588_irq_bus_sync_unlock,
-+	.irq_set_type		= adp5588_irq_set_type,
- };
- 
- static int adp5588_gpio_read_intstat(struct i2c_client *client, u8 *buf)
-_
-
+                           Linus
