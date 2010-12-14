@@ -1,170 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759194Ab0LNMw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 07:52:26 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:57972 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759009Ab0LNMwY (ORCPT
+	id S1759220Ab0LNMww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 07:52:52 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33008 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755912Ab0LNMwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 07:52:24 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Hans Verkuil" <hverkuil@xs4all.nl>
-Subject: Re: [alsa-devel] [RFC/PATCH v6 03/12] media: Entities, pads and links
-Date: Tue, 14 Dec 2010 13:53:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
-Cc: "Clemens Ladisch" <clemens@ladisch.de>, alsa-devel@alsa-project.org,
-        sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, linux-omap@vger.kernel.org,
-        linux-media@vger.kernel.org
-References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <201012141300.57118.laurent.pinchart@ideasonboard.com> <e629c78fffa0f709d743473f10334fd7.squirrel@webmail.xs4all.nl>
-In-Reply-To: <e629c78fffa0f709d743473f10334fd7.squirrel@webmail.xs4all.nl>
+	Tue, 14 Dec 2010 07:52:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=Thy1MidO8emLK2tsyMmYDFeBg797JK/Epqby7OMhwCbU38wjDmIvd1QvGPvyd3jo6z
+         yc+fSIF9c6wcTo+pI40MlV3kIpHUPTbgJMFvkTymMVd8jwc5fTFB3exMYWMS2NBwH3LU
+         ZAO0dy2AizJbbTfTZSnSrLxAmKh3R3FGilrV4=
+Date: Tue, 14 Dec 2010 10:52:45 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] perf tools: Add symfs option for off-box analysis
+ using specified tree
+Message-ID: <20101214125245.GB13425@ghostprotocols.net>
+References: <1291926427-28846-1-git-send-email-daahern@cisco.com>
+ <20101214122428.GA13425@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012141353.15749.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101214122428.GA13425@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On Tuesday 14 December 2010 13:40:21 Hans Verkuil wrote:
-> > On Monday 13 December 2010 17:10:51 Clemens Ladisch wrote:
-> >> * Entity types
-> >> 
-> >> TYPE_NODE was renamed to TYPE_DEVICE because "node" sounds like a node
-> >> in a graph, which does not distinguish it from other entity types
-> >> because all entities are part of the topology graph.  I chose "device"
-> >> as this type describes entities that are visible as some device node to
-> >> other software.
+Em Tue, Dec 14, 2010 at 10:24:28AM -0200, Arnaldo Carvalho de Melo escreveu:
+> Em Thu, Dec 09, 2010 at 01:27:07PM -0700, David Ahern escreveu:
+> > The symfs argument allows analysis of perf.data file using a locally
+> > accessible filesystem tree with debug symbols - e.g., tree created
+> > during image builds, sshfs mount, loop mounted KVM disk images,
+> > USB keys, initrds, etc. Anything with an OS tree can be analyzed from
+> > anywhere without the need to populate a local data store with
+> > build-ids.
 > > 
-> > What this type describes is a device node. Both NODE and DEVICE can be
-> > confusing in my opinion, but DEVICE_NODE is a bit long.
+> > Signed-off-by: David Ahern <daahern@cisco.com>
+> > 
+> > v2 --> v3: handle symfs="/"
 > 
-> What about DEVNODE? I think that would be a good alternative.
-
-Fine with me. Clemens, any opinion on that ?
-
-> >> TYPE_EXT describes entities that represent some interface to the
-> >> external world, TYPE_INT those that are internal to the entire device.
-> >> (I'm not sure if that distinction is very useful, but TYPE_SUBDEV seems
-> >> to be an even more meaningless name.)
-> > 
-> > SUBDEV comes from the V4L2 world, and I agree that it might not be a very
-> > good name.
+> [acme@felicio ~]$ ./realpath /..//.
+> /
+> [acme@felicio ~]$
 > 
-> SUBDEV refers to a specific type of driver. Within the v4l world it is
-> well defined. So I prefer to keep this. Perhaps some additional comments
-> or documentation can be added to clarify this.
+> I'll fix this up and merge, thanks!
 
-Should this be clarified by using V4L2_SUBDEV instead then ? What about ALSA 
-entities, should they use MEDIA_ENTITY_TYPE_ALSA_* ?
+Ok, there are still some problems:
 
-> > I'm not sure I would split entities in internal/external categories. I
-> > would create a category for connectors though.
-> 
-> I agree. It was always the plan to eventually add connectors, but v4l
-> didn't really need it (it already has an API to enumerate connectors).
-> 
-> >> ALSA mixer controls are not directly represented; a better fit for the
-> >> architecture of actual devices is that one or more mixer controls can be
-> >> associated with an entity.  (This can be done with a field of the mixer
-> >> control.)
-> > 
-> > Agreed.
-> > 
-> >> * Entity properties
-> >> 
-> >> There needs to be a mechanism to associate meta-information (properties)
-> >> with entities.  This information should be optional and extensible, but,
-> >> when being handled inside the kernel, doesn't need to be more than
-> >> a read-only blob.  I think that something like ALSA's TLV format (used
-> >> for mixer controls) can be used here.  (I'm not mentioning the X-word
-> >> here, except to note that the "M" stands for "markup".)
-> > 
-> > I've been thinking of adding a new ioctl for that. It's something we need
-> > to draft. The UVC driver will need it, and I'm pretty sure other V4L2
-> > drivers would find it useful as well.
-> > 
-> >> * Entity subtypes
-> >> 
-> >> EXT_JACK_ANALOG represents any analog audio and/or video connector.
-> >> Properties for audio jacks would be jack type (TRS/RCA), color code,
-> >> line level, position, etc.
-> >> 
-> >> EXT_JACK_DIGITAL represents a digital connector like S/PDIF (coax/
-> >> TOSLINK), ADAT, TDIF, or MADI.
-> >> 
-> >> EXT_JACK_BUS represents a bus like FireWire and comes from the USB audio
-> >> spec.  (I doubt that any devices with this entitiy will ever exist.)
-> >> 
-> >> EXT_INSTRUMENT represents something like an e-guitar, keyboard, or MIDI
-> >> controller.  (Instrument entities are typically audio sources and MIDI
-> >> sources and sinks, but can also be audio sinks.)
-> >> 
-> >> EXT_SPEAKER also includes headphones; there might be made a case for
-> >> having those as a separate subtype.
-> > 
-> > Shouldn't headphones be represented by an EXT_JACK_ANALOG ?
-> > 
-> >> EXT_PLAYER represents a device like a CD/DVD/tape player.  Recorders can
-> >> also write to that device, so "player" might not be an ideal name.
-> >> 
-> >> EXT_BROADCAST represents devices like TV tuners, satellite receivers,
-> >> cable tuners, or radios.
-> 
-> I don't think it is right to talk about 'represents devices'. I'd rephrase
-> it to 'connects to devices'.
-> 
-> > There's clearly an overlap with V4L here. Hopefully someone from the
-> > linux-media list can comment on this.
-> 
-> I don't think this will be a problem. Initially we probably won't be
-> enumerating connectors for V4L since it already has its own API for that.
+It is escaping the symfs jail for /home/acme/bin/perf, /lib64/libpthread-2.5.so
+and kernel modules, investigating...
 
-My understanding is that EXT_BROADCAST really represents the TV tuners, ..., 
-not the connector they connect to. Some (all ?) of them are definitely V4L2 
-subdevs.
+- Arnaldo
 
-> >> INT_SYNTHESIZER converts MIDI to audio.
-> >> 
-> >> INT_NOISE_SOURCE comes from the USB audio spec; this is not an attempt
-> >> to describe the characteristics of consumer-grade devices :-) , but
-> >> represents an internal noise source for level calibration or
-> >> measurements.
-> >> 
-> >> INT_CONTROLS may have multiple independent controls (this is USB's
-> >> Feature Unit); INT_EFFECT may have multiple controls that affect one
-> >> single algorithm.
-> > 
-> > I'd describe this as a feature unit/processing unit then.
-> > 
-> >> INT_CHANNEL_SPLIT/MERGE are needed for HDAudio devices, whose topology
-> >> information has only stereo links.
-> > 
-> > Some of those INT entities could also be implemented in dedicated chips,
-> > so I really think the EXT/INT split doesn't make too much sense. Should we
-> > have an AUDIO category ?
-> > 
-> >> * Entity specifications
-> >> 
-> >> While TYPE_DEVICE entities can be identified by their device node, other
-> >> entities typcially have just a numeric ID.
-> > 
-> > In V4L2 sub-devices have (or rather will have once the media controller
-> > patches will be integrated) device nodes as well, so exposing that
-> > information
-> > is required.
-> > 
-> >> For that, it would be useful to make do without separate identification
-> >> and let the driver choose the entity ID.
-> > 
-> > How would drivers do that ? What if you have two instances of the same
-> > chip (a video sensor, audio mixer, ...) on the same board ?
+[acme@mica linux]$ find /tmp/bla
+/tmp/bla
+/tmp/bla/lib64
+/tmp/bla/lib64/libc-2.5.so
+[acme@mica linux]$ perf report -v -g none --stdio --symfs /tmp/bla > /tmp/out
+Looking at the vmlinux_path (3 entries long)
+Failed to open [kernel.kallsyms], continuing without symbols
+dso__synthesize_plt_symbols: problems reading /home/acme/bin/perf PLT info.
+dso__synthesize_plt_symbols: problems reading /lib64/libpthread-2.5.so PLT info.
+dso__synthesize_plt_symbols: problems reading /lib/modules/2.6.37-rc3-00084-gd937616/kernel/drivers/net/ixgbe/ixgbe.ko PLT info.
+[acme@mica linux]$ cat /tmp/out
+# Events: 503  cycles
+#
+# Overhead      Command                                                             Shared Object                         Symbol
+# ........  ...........  ........................................................................  .............................
+#
+    86.67%         perf  [kernel.kallsyms]                                                         0xffffffff8106f697 ! [k] 0xffffffff8106f697
+     2.56%      swapper  [kernel.kallsyms]                                                         0xffffffff81089f50 ! [k] 0xffffffff81089f50
+     0.84%         perf  /lib64/libc-2.5.so                                                        0x798ed          d [.] __memchr
+     0.84%         perf  /home/acme/bin/perf                                                       0x26bf1          G [.] die_builtin
+     0.82%         perf  /lib64/libc-2.5.so                                                        0x728ea          d [.] _int_malloc
+     0.63%         perf  /lib64/libc-2.5.so                                                        0xe6077          d [.] ___snprintf_chk
+     0.63%         perf  /lib64/libc-2.5.so                                                        0x7b528          d [.] __GI_memcpy
+     0.63%         perf  /lib64/libc-2.5.so                                                        0x786c0          d [.] index
+     0.51%         perf  /lib64/libc-2.5.so                                                        0x625b0          d [.] _IO_getline_internal
+     0.42%         perf  /lib64/libc-2.5.so                                                        0x6265a          d [.] _IO_getline_info
+     0.42%         perf  /lib64/libc-2.5.so                                                        0x6cbc4          d [.] _IO_new_file_underflow
+     0.42%         perf  /lib64/libc-2.5.so                                                        0x6d148          d [.] _IO_un_link_internal
+     0.34%         perf  /lib64/libc-2.5.so                                                        0x60c49          d [.] _IO_new_fclose
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x5ff40          d [.] __find_specmb
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x6c35b          d [.] _IO_new_file_fopen
+     0.21%         perf  /home/acme/bin/perf                                                       0x1db4b          G [.] event__synthesize_kernel_mmap
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x6d3c5          d [.] _IO_link_in_internal
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x34524          d [.] __GI_____strtoll_l_internal
+     0.21%         perf  /home/acme/bin/perf                                                       0x4700           G [.] _init
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x41907          d [.] _itoa_word
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x6148f          d [.] fgets
+     0.21%         perf  /home/acme/bin/perf                                                       0x1deca          G [.] event__synthesize_comm
+     0.21%         perf  /lib64/libc-2.5.so                                                        0xcfe7d          d [.] __munmap
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x79513          d [.] __GI_strstr
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x6e060          d [.] _IO_setb_internal
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x6bac3          d [.] _IO_file_close_internal
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x95dc3          d [.] __getdents64
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x6f1b2          d [.] _IO_str_init_static_internal
+     0.21%         perf  /lib64/libpthread-2.5.so                                                  0xd210           G [.] __write_nocancel
+     0.21%         perf  /lib64/libc-2.5.so                                                        0x9595a          d [.] __readdir_r
+     0.21%         perf  /home/acme/bin/perf                                                       0xddbd           G [.] atexit_header
+     0.21%         perf  /lib64/libc-2.5.so                                                        0xc4de7          d [.] __GI___open
+     0.12%        pcscd  [unknown]                                                                 0x3f44a79110     ! [.] 0x3f44a79110    
+     0.09%        pcscd  [kernel.kallsyms]                                                         0xffffffff810e59ac ! [k] 0xffffffff810e59ac
+     0.03%         sshd  [kernel.kallsyms]                                                         0xffffffff810f45f9 ! [k] 0xffffffff810f45f9
+     0.03%  kworker/0:1  /lib/modules/2.6.37-rc3-00084-gd937616/kernel/drivers/net/ixgbe/ixgbe.ko  0x605            G [k] ixgbe_update_stats
+     0.02%         sshd  [unknown]                                                                 0x7f78ed5f8ccb   ! [.] 0x7f78ed5f8ccb  
 
--- 
-Regards,
 
-Laurent Pinchart
+#
+# (For a higher level overview, try: perf report --sort comm,dso)
+#
+[acme@mica linux]$ 
+
