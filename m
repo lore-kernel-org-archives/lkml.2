@@ -1,47 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758772Ab0LNRXQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:23:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56730 "EHLO mail.zytor.com"
+	id S1759499Ab0LNRYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:24:07 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:47282 "EHLO mgw-da01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755285Ab0LNRXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:23:15 -0500
-Message-ID: <4D07A7CB.7010205@zytor.com>
-Date: Tue, 14 Dec 2010 09:22:19 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
- lock semantics
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home>
-In-Reply-To: <alpine.DEB.2.00.1012141109470.17229@router.home>
-Content-Type: text/plain; charset=UTF-8
+	id S1757219Ab0LNRYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 12:24:05 -0500
+Subject: Re: [RFC PATCHv4 4/7] HSI: hsi_char: Add HSI char device driver
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Andras Domokos <andras.domokos@nokia.com>
+In-Reply-To: <20101214115600.62388d5d@lxorguk.ukuu.org.uk>
+References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
+	 <1292321383-30200-5-git-send-email-carlos.chinea@nokia.com>
+	 <20101214115600.62388d5d@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 19:24:28 +0200
+Message-ID: <1292347468.2529.220.camel@groo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 09:19 AM, Christoph Lameter wrote:
->>
->> Is it genuinely faster to do the pre-load mov, or can we drop that too?
->>  My guess would be that yes it is, but if it happens not to be it would
->> be nice to reduce the code size.
+On Tue, 2010-12-14 at 11:56 +0000, ext Alan Cox wrote:
+> > +#define HSI_CHST_RD(c)		((c)->state & HSI_CHST_RD_MASK)
+> > +#define HSI_CHST_WR(c)		((c)->state & HSI_CHST_WR_MASK)
+> > +
+> > +#define HSI_CHST_OC_SET(c, v) \
+> > +	do { \
+> > +		(c)->state &= ~HSI_CHST_OC_MASK; \
+> > +		(c)->state |= v; \
+> > +	} while (0);
+> > +
+> > +#define HSI_CHST_RD_SET(c, v) \
+> > +	do { \
+> > +		(c)->state &= ~HSI_CHST_RD_MASK; \
+> > +		(c)->state |= v; \
+> > +	} while (0);
+> > +
+> > +#define HSI_CHST_WR_SET(c, v) \
+> > +	do { \
+> > +		(c)->state &= ~HSI_CHST_WR_MASK; \
+> > +		(c)->state |= v; \
+> > +	} while (0);
 > 
-> Dropping the load increases the cycle count from 11 to 16.
+> 
+> These sort of macros just hide detail - eg the lack of internal locking,
+> which can lead to problems later, plus they reference their arguments
+> multiple times so may have weird side effects.
+> 
+> They should probably be inline functions so they at least type check and
+> behave sanely, and their locking rules defintiely need documenting
+
+Agree. We would change that.
+
+> 
+> 
+> 
+> > +static long hsi_char_ioctl(struct file *file, unsigned int cmd,
+> > +							unsigned long arg)
+> > +{
+> > +	struct hsi_char_channel *channel = file->private_data;
+> > +	unsigned int state;
+> > +	struct hsi_config cfg;
+> > +	struct hsc_rx_config rx_cfg;
+> > +	struct hsc_tx_config tx_cfg;
+> > +	long ret = 0;
+> > +
+> > +	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED)
+> > +		return -ENODEV;
+> 
+> -EIO is the traditional response in this case if the channel has been
+> closed by the other end - ENODEV indicates there is no physical device
+> present - not sure which is right here from the code.
 > 
 
-Great, that answers that!  I'll pick up the patch hopefully today (I'm
-finally ramping back up on arch/x86 again after having been diverted to
-an internal project for a while...)
+The initial idea of this code was to guard against underneath removal of
+the device. That was the reason for the -ENODEV.
 
-	-hpa
+Now after, rechecking the code I think that we need also to lock the
+device to avoid that the removal happening in the middle of the
+function.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> 
+> > +		} else if ((state == HSC_PM_ENABLE)
+> > +				&& (channel->wlrefcnt > 0)) {
+> > +			ret = hsi_stop_tx(channel->cl);
+> > +			if (!ret)
+> > +				channel->wlrefcnt--;
+> 
+> What locks this lot against races (ditto some of the other ioctl code)
+
+Right. We will fix this also.
+
+> 
+> > +	refcnt = atomic_inc_return(&cl_data->refcnt);
+> > +	if (refcnt == 1) {
+> 
+> You seem to construct a lot of clever stuff using atomic_inc_return and
+> friends where it looks like test_and_set_bit - or even a mutex over
+> open/close would be far easier to understand ?
+
+Yep a mutex will be a better option here. It would also take care of the
+next comment.
+
+> 
+> > +	ret = hsi_char_msgs_alloc(channel);
+> > +
+> > +	if (ret < 0) {
+> > +		refcnt = atomic_dec_return(&cl_data->refcnt);
+> > +		if (!refcnt)
+> > +			hsi_release_port(channel->cl);
+> > +		spin_lock_bh(&channel->lock);
+> > +		HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
+> > +		goto out;
+> > +	}
+> > +	if (refcnt == 1)
+> > +		cl_data->attached = 1;
+> 
+> What happens here if a second open passes the first, the attached will
+> stay zero and other stuff will be in strange states but the open flag
+> will be set ?
+> 
+> 
+> > +	for (i = 0; i < HSI_CHAR_DEVS && channels_map[i] >= 0; i++) {
+> > +		if (channels_map[i] >= HSI_CHAR_DEVS) {
+> > +			pr_err("Invalid HSI/SSI channel specified");
+> > +			return -EINVAL;
+> > +		}
+> > +		set_bit(channels_map[i], &ch_mask);
+> 
+> How will this integrate with hot discovery of SSI supporting devices ?
+> 
+
+For every SSI port there is an HSI char client device, which is the
+device received through probe. The driver will export for every HSI char
+client device, HSI_CHAR_DEVS char devices, one char device per channel.
+
+The intention of this piece of code is to allow the user to configure
+which channels the user wants to be available to userspace.
+
+Thanks for the comments,
+Carlos
 
