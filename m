@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758762Ab0LNAuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:50:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36595 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757983Ab0LNAuX (ORCPT
+	id S1758754Ab0LNAvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:51:53 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:39965 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758098Ab0LNAvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:50:23 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=kwUP-EQ6x2wA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=2TqYCPFLtvIFBJJXcEkA:9 a=EcJYKQq1JoHYQZmBRy4A:7 a=PIGx9NqBIGV52XOG2rZH3vnLIOsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH][GIT PULL] x86: Remove unlikey()'s from sched_switch
- segment tests
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 13 Dec 2010 19:50:21 -0500
-Message-ID: <1292287821.5015.1784.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Dec 2010 19:51:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xEWfJygDLkIRLRtAaQgYVmkPzwlguar/NNMvTI4ZBJ+aMKwjMngoyY/NT81bCRb2mj
+         DLK4cPxAycNbuYlwff6g==
+Date: Mon, 13 Dec 2010 16:51:40 -0800
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] mlock: only hold mmap_sem in shared mode when
+ faulting in pages
+Message-ID: <20101214005140.GA29904@google.com>
+References: <1291335412-16231-1-git-send-email-walken@google.com>
+ <1291335412-16231-2-git-send-email-walken@google.com>
+ <20101208152740.ac449c3d.akpm@linux-foundation.org>
+ <AANLkTikYZi0=c+yM1p8H18u+9WVbsQXjAinUWyNt7x+t@mail.gmail.com>
+ <AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinY0pcTcd+OxPLyvsJgHgh=cTaB1-8VbEA2tstb@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 9, 2010 at 10:11 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Wednesday, December 8, 2010, Michel Lespinasse <walken@google.com> wrote:
+>>
+>> Yes, patch 1/6 changes the long hold time to be in read mode instead
+>> of write mode, which is only a band-aid. But, this prepares for patch
+>> 5/6, which releases mmap_sem whenever there is contention on it or
+>> when blocking on disk reads.
+>
+> I have to say that I'm not a huge fan of that horribly kludgy
+> contention check case.
+>
+> The "move page-in to read-locked sequence" and the changes to
+> get_user_pages look fine, but the contention thing is just disgusting.
+> I'd really like to see some other approach if at all possible.
 
-Ingo or Thomas,
+Andrew, should I amend my patches to remove the rwsem_is_contended() code ?
+This would involve:
+- remove rwsem-implement-rwsem_is_contended.patch and
+  x86-rwsem-more-precise-rwsem_is_contended-implementation.patch
+- in mlock-do-not-hold-mmap_sem-for-extended-periods-of-time.patch,
+  drop the one hunk making use of rwsem_is_contended (rest of the patch
+  would still work without it)
+- optionally, follow up patch to limit batch size to a constant
+  in do_mlock_pages():
 
-Please pull the latest unlikely/x86 tree, which can be found at:
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 569ae6a..a505a7e 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -457,15 +457,23 @@ static int do_mlock_pages(unsigned long start, size_t len)
+ 			continue;
+ 		if (nstart < vma->vm_start)
+ 			nstart = vma->vm_start;
++		/*
++		 * Constrain batch size to limit mmap_sem hold time.
++		 */
++		if (nend > nstart + 1024 * PAGE_SIZE)
++			nend = nstart + 1024 * PAGE_SIZE;
+ 		/*
+ 		 * Now fault in a range of pages. __mlock_vma_pages_range()
+ 		 * double checks the vma flags, so that it won't mlock pages
+ 		 * if the vma was already munlocked.
+ 		 */
+ 		ret = __mlock_vma_pages_range(vma, nstart, nend, &locked);
+ 		if (ret < 0) {
+ 			ret = __mlock_posix_error_return(ret);
+ 			break;
++		} else if (locked) {
++			locked = 0;
++			up_read(&mm->mmap_sem);
+ 		}
+ 		nend = nstart + ret * PAGE_SIZE;
+ 		ret = 0;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-unlikely/x86
 
+I don't really prefer using a constant, but I'm not sure how else to make
+Linus happy :)
 
-Steven Rostedt (1):
-      x86: Remove unlikey()'s from sched_switch segment tests
-
-----
- arch/x86/kernel/process_64.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
----------------------------
-commit 6ddd9593268de1cc4438e5f2e680887af292f350
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Mon Dec 6 16:04:10 2010 -0500
-
-    x86: Remove unlikey()'s from sched_switch segment tests
-    
-    On a 64bit distro, the chances of having a process using segment registers
-    is very unlikely. But if the userspace is 32bit running on top of
-    a 64bit kernel (very common), then this will be very likely that
-    processes have segment registers in use.
-    
-    Running on my main desktop (which is a 32bit userspace on top of
-    a 64bit kernel) the annotated branch profiler showed the following:
-    
-     correct incorrect  %        Function             File              Line
-     ------- ---------  -        --------             ----              ----
-    25522442 304125815  92 __switch_to               process_64.c         408
-    25522430 304123341  92 __switch_to               process_64.c         412
-    25743877 303891250  92 __switch_to               process_64.c         464
-    
-    Instead of punishing 32bit userspace systems with an unlikely, just remove
-    the unlikely and let gcc optimize for what it thinks is good and let
-    the branch prediction (hopefully) work.
-    
-    Cc: Thomas Gleixner <tglx@linutronix.de>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index b3d7a3a..22de90c 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -405,11 +405,11 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	 * This won't pick up thread selector changes, but I guess that is ok.
- 	 */
- 	savesegment(es, prev->es);
--	if (unlikely(next->es | prev->es))
-+	if (next->es | prev->es)
- 		loadsegment(es, next->es);
- 
- 	savesegment(ds, prev->ds);
--	if (unlikely(next->ds | prev->ds))
-+	if (next->ds | prev->ds)
- 		loadsegment(ds, next->ds);
- 
- 
-@@ -461,7 +461,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 		wrmsrl(MSR_FS_BASE, next->fs);
- 	prev->fsindex = fsindex;
- 
--	if (unlikely(gsindex | next->gsindex | prev->gs)) {
-+	if (gsindex | next->gsindex | prev->gs) {
- 		load_gs_index(next->gsindex);
- 		if (gsindex)
- 			prev->gs = 0;
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
 
