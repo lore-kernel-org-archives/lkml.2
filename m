@@ -1,58 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab0LNGcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 01:32:11 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59441 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab0LNGcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 01:32:09 -0500
-Message-ID: <4D070F7C.3060503@cn.fujitsu.com>
-Date: Tue, 14 Dec 2010 14:32:28 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754356Ab0LNGkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 01:40:13 -0500
+Received: from mail-iw0-f194.google.com ([209.85.214.194]:37122 "EHLO
+	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632Ab0LNGkL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 01:40:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nRtIsDEDSlqfIWICKSFFk7KyfvHp9LgsE3r4pRX0ILltlCgYFAwwirgKZ+Hch0G1CQ
+         aQSuZhgHs7Ygmd1L/H62ij4FHcARlbC7iJWSApcZ8FvDOX+rPn+NCdyvK8OLxGDY5LaV
+         MvasRpLW0c36UCfrqrAXMS154dM6vrZR6WkIQ=
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cfq-iosched: don't check cfqg in choose_service_tree()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 14:32:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 14:32:04,
-	Serialize complete at 2010-12-14 14:32:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101213113830.GE6017@pengutronix.de>
+References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de>
+	<1291902441-24712-6-git-send-email-s.hauer@pengutronix.de>
+	<AANLkTikZowDCK4JPiCyEou1ekRuYA1qGnKrBPT5dXB+8@mail.gmail.com>
+	<20101213113830.GE6017@pengutronix.de>
+Date: Tue, 14 Dec 2010 14:40:09 +0800
+Message-ID: <AANLkTikwTjUUzc6BovFKXq-FverNMqg-ustodk+sKUCY@mail.gmail.com>
+Subject: Re: [PATCH 5/9] Add i.MX5 framebuffer driver
+From: Liu Ying <liu.y.victor@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Zhang Lily-R58066 <r58066@freescale.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cfq_choose_cfqg() is called in select_queue(), there must be at least one
-backlogged CFQ queue waiting for dispatching, hence there must be at least one
-backlogged CFQ group on service tree. So we never call choose_service_tree()
-with cfqg == NULL.
+Hello, Sascha,
 
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
----
- block/cfq-iosched.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+Please find my feedback with [LY] embedded.
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 9b186fd..c19d015 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -2103,12 +2103,6 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	unsigned group_slice;
- 	enum wl_prio_t original_prio = cfqd->serving_prio;
- 
--	if (!cfqg) {
--		cfqd->serving_prio = IDLE_WORKLOAD;
--		cfqd->workload_expires = jiffies + 1;
--		return;
--	}
--
- 	/* Choose next priority. RT > BE > IDLE */
- 	if (cfq_group_busy_queues_wl(RT_WORKLOAD, cfqd, cfqg))
- 		cfqd->serving_prio = RT_WORKLOAD;
--- 
-1.6.5.2
+And, a bug related with this patch:
+1) Bootup the babbage board.
+2) echo U:640x480p-60 > /sys/class/graphics/fb0/mode
+3) cat /sys/class/graphics/fb0/virtual_size, it shows '640,480'.
+4) echo 640,960 > /sys/class/graphics/fb0/virtual_size, change virtual
+yres to be 960.
+5) cat /sys/class/graphics/fb0/virtual_size, it still shows '640,480'.
+I think this is caused by 'var->yres_virtual = var->yres;' in custom
+fb_set_par() function(Sorry, I cannot make the comment inline this
+time, as I don't find the original code within the mail I am
+replying). This makes fb0 use only one block of memory whose size is
+equal to screen size, so pan display can not really play her role and
+screen tearing issue may happen.
 
+Best Regards,
+Liu Ying
 
+2010/12/13 Sascha Hauer <s.hauer@pengutronix.de>:
+> On Sun, Dec 12, 2010 at 02:13:40PM +0800, Liu Ying wrote:
+>> Hello, Sascha,
+>>
+>> I have following comments to this patch:
+>> 1) Please modify the commit message, as IPUv3 is not embedded in i.MX50 SoC.
+>
+> ok.
+>
+>> 2) ADC is not supported yet in the framebuffer driver, so please
+>> modify this comment:
+>>    > + * Framebuffer Framebuffer Driver for SDC and ADC.
+>
+> ok.
+>
+>> 3) 'ipu_dp_set_window_pos()' is called only once in
+>> imx_ipu_fb_set_par_overlay(). So, the framebuffer driver doesn't
+>> support to change the overlay framebuffer position. Need a
+>> mechanism/interface for users to change the overlay framebuffer
+>> position.
+>
+> Yes. The overlay support is currently only present in the driver because
+> I didn't want to break it in general. There is no generic overlay API in
+> the kernel and I didn't want to invent the n+1 API. Currently the
+> possible use cases of the overlay support are not clear to me. Number
+> one use case would probably be to display video output, but the
+> corresponding driver would be a v4l2 driver, so in this case we would
+> only need an in-kernel API.
+> Anyway, I have not the resources to implement complete overlay support.
+> So either we keep it like it is and it more has an example character
+> or we remove it completely from the driver for now.
+>
+>> 4) Need to make sure the framebuffer on DP-FG is blanked before the
+>> framebuffer on DP-BG is blanked. Meanwhile, the framebuffer on DP-FG
+>> should be unblanked after the framebuffer on DP-BG is unblanked
+>> 5) Need to check the framebuffer on DP-FG doesn't run out of the range
+>> of the framebuffer on DP-BG.
+>
+> I tend to remove the overlay support.
+>
+>> 6) I prefer to find the video mode in modedb first, and if we cannot
+>> find the video mode in common video mode data base, we can find a
+>> video mode in custom video mode data base which is defined in platform
+>> data. In this way, we don't need to export common modefb.
+>
+> I exported the modedb to be able to show the different modes under
+> /sys/class/graphics/fb0/modes and to set it with
+> /sys/class/graphics/fb0/mode. If you want this there is no way around
+> exporting it. The ioctl interface for mode setting is independent of the
+> specific modes anyway.
+[LY]  Just a concern. If a platform choose to add the generic video
+mode data base to IPUv3 framebuffer modelist, 'cat
+/sys/class/graphics/fb0/modes' will show all the video modes in the
+generic data base to users. I am not sure whether showing them to
+users means the IPUv3 framebuffer driver acknowledges to support all
+of them or not. I tried to do 'echo U:1800x1440p-70 >
+/sys/class/graphics/fb0/mode' with the kernel on ipuv3 branch, there
+will be a kernel dump(seems it can not allocate enough memory).
+>
+> BTW please make comments specific to specific code inline.
+[LY] Ok.
+>
+> Sascha
+>
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
