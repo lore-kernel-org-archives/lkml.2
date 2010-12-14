@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759384Ab0LNRK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:10:26 -0500
-Received: from mail-px0-f179.google.com ([209.85.212.179]:40752 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757615Ab0LNRKY (ORCPT
+	id S1757792Ab0LNRT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:19:29 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:25560 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752083Ab0LNRT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:10:24 -0500
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Tue, 14 Dec 2010 12:19:28 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 9Uy6SsYVM1nuhusIvCxI6x38yZnRwXSyd6kzYjaFu0jpgL0
+ H8.mfQ4MFE3meHyNA02vLTn8LYUsShJ0IKPC4cfG.9NZBXLy2Wy7EZd0WASU
+ dfkw_wreKeCWmed9tuRztZ2_Lypa.86Zovg.cifG8GDpHA34MaO9GMWUujqb
+ viQT8GNTOXSUZu6xCARVEQFzsf5txK0HSPlyB79o8jvsZfaHkfoNIvCLX.1C
+ 3Xmw8eiEl9g6Iql8Jpj_R5q1G6uxG3f04CwZmv29HW8SG5Y.FNfxbEoZaOvt
+ IVvuitvucokGoMqaltd3AiK23kvMEudSbLxlJyFd9ER.zpLg-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 14 Dec 2010 11:19:24 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
         linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        Gabor Juhos <juhosg@openwrt.org>
-Subject: Re: [PATCH v6 0/5] da850-evm: add gpio-{keys,leds} for UI and BB expanders
-Organization: Deep Root Systems, LLC
-References: <cover.1290635422.git.bengardiner@nanometrics.ca>
-	<cover.1291931041.git.bengardiner@nanometrics.ca>
-	<87tyild2ms.fsf@deeprootsystems.com>
-	<AANLkTik78Lb0ejUiAvqbkToi=QAKSXXj_6JaBkPYw70Z@mail.gmail.com>
-	<AANLkTi=HiJGwtznGRzFDz-4ywsB3rYPW0yF5U_RUruzV@mail.gmail.com>
-	<8762ux49w7.fsf@deeprootsystems.com>
-	<AANLkTikUoKPG4o1+pt9r6V6H+6LrwZpTN8X9X+AkimiB@mail.gmail.com>
-Date: Tue, 14 Dec 2010 09:10:19 -0800
-In-Reply-To: <AANLkTikUoKPG4o1+pt9r6V6H+6LrwZpTN8X9X+AkimiB@mail.gmail.com>
-	(Ben Gardiner's message of "Tue, 14 Dec 2010 11:17:14 -0500")
-Message-ID: <87ei9kwa9w.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
+ lock semantics
+In-Reply-To: <4D07A2B7.8080405@zytor.com>
+Message-ID: <alpine.DEB.2.00.1012141109470.17229@router.home>
+References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Gardiner <bengardiner@nanometrics.ca> writes:
 
-> On Mon, Dec 13, 2010 at 4:53 PM, Kevin Hilman
-> <khilman@deeprootsystems.com> wrote:
->> Ben Gardiner <bengardiner@nanometrics.ca> writes:
->>> [...]
->>> Everything seems to be in order there; I tested the resulting kernel
->>> with evtest and the expected output was observed. Note that
->>> davinci-next still contains the cherry-pick of the upstream commit of
->>> the polled gpio keys driver:
->>
->> oops... I've now removed that, since it is part of v2.6.36-rc5 already.
->> Thanks for checking.
+
+On Tue, 14 Dec 2010, H. Peter Anvin wrote:
+
+> On 12/14/2010 08:55 AM, Christoph Lameter wrote:
+> >
+> > We do not need to reload the value as pointed out by Eric. It is already in
+> > the correct register so just rerun the cmpxchg without the load.
+> >
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> >
 >
-> Oops on my part...
->
+> Is it genuinely faster to do the pre-load mov, or can we drop that too?
+>  My guess would be that yes it is, but if it happens not to be it would
+> be nice to reduce the code size.
 
-[...]
+Dropping the load increases the cycle count from 11 to 16.
 
-> It appears that dropping the cherry-pick caused the build failure.
->
-> The commit that introduces the polled gpio keys driver (which was
-> included in the series as a cherry pick) is commit
-> 0e7d0c860a0dee49dacb7bbb248d1eba637075ad which is in
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git#master
-> _after_ the tag v2.6.37-rc5.
->
-> That's my fault. I incorrectly thought that commit
-> 0e7d0c860a0dee49dacb7bbb248d1eba637075ad was _in_ 2.6.37-rc5 and
-> stated this is previous emails. I'm sorry for the confusion; I think I
-> jumped the gun there due to my excitement at getting this prerequisite
-> driver committed.
+---
+ arch/x86/include/asm/percpu.h |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-OK, while waiting for it to arrive upstream, I've added it to my
-'davinci-backports' branch, which is also merged into the master branch
-of davinci git (but not in davinci-next, since it will go upstream via
-another subsystem.)
-
-Just pushed an updated version, and this time, I actually build tested for
-davinci_all_defconfig and da8xx_omapl_defconfig. :)
-
-Sorry for the churn,
-
-Kevin
-
+Index: linux-2.6/arch/x86/include/asm/percpu.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-14 11:07:18.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-14 11:14:37.000000000 -0600
+@@ -223,32 +223,28 @@ do {									\
+ 	typeof(var) __new = (nval);					\
+ 	switch (sizeof(var)) {						\
+ 	case 1:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%al"			\
+-		    "\n\tcmpxchgb %2, "__percpu_arg(1)			\
++		asm("\n1:cmpxchgb %2, "__percpu_arg(1)			\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "q" (__new)				\
+ 			    : "memory");				\
+ 		break;							\
+ 	case 2:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%ax"			\
+-		    "\n\tcmpxchgw %2, "__percpu_arg(1)			\
++		asm("\n1:cmpxchgw %2, "__percpu_arg(1)			\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "r" (__new)				\
+ 			    : "memory");				\
+ 		break;							\
+ 	case 4:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%eax"			\
+-		    "\n\tcmpxchgl %2, "__percpu_arg(1)			\
++		asm("\n1:cmpxchgl %2, "__percpu_arg(1)			\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "r" (__new)				\
+ 			    : "memory");				\
+ 		break;							\
+ 	case 8:								\
+-		asm("\n1:mov "__percpu_arg(1)",%%rax"			\
+-		    "\n\tcmpxchgq %2, "__percpu_arg(1)			\
++		asm("\n1:cmpxchgq %2, "__percpu_arg(1)			\
+ 		    "\n\tjnz 1b"					\
+ 			    : "=a" (__ret), "+m" (var)			\
+ 			    : "r" (__new)				\
