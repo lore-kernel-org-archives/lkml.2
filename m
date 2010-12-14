@@ -1,76 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab0LNUjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 15:39:07 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:39349 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759951Ab0LNUjC (ORCPT
+	id S1759947Ab0LNUno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 15:43:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51656 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758310Ab0LNUnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 15:39:02 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/35] writeback: increase min pause time on concurrent dirtiers
-In-Reply-To: Your message of "Tue, 14 Dec 2010 21:24:15 +0100."
-             <1292358255.13513.390.camel@laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <20101213144646.341970461@intel.com> <20101213150328.284979629@intel.com> <15881.1292264611@localhost> <20101214065133.GA6940@localhost> <14658.1292352152@localhost> <1292352908.13513.376.camel@laptop> <20252.1292357637@localhost>
-            <1292358255.13513.390.camel@laptop>
+	Tue, 14 Dec 2010 15:43:42 -0500
+Date: Tue, 14 Dec 2010 12:43:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH] gpiolib: Convert ADP5588 to new irq_ APIs
+Message-Id: <20101214124332.07f2a212.akpm@linux-foundation.org>
+In-Reply-To: <1292159988-28268-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1292159988-28268-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1292359075_5019P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Tue, 14 Dec 2010 15:37:55 -0500
-Message-ID: <21373.1292359075@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020203.4D07D5A4.019A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1292359075_5019P
-Content-Type: text/plain; charset=us-ascii
+On Sun, 12 Dec 2010 13:19:48 +0000
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-On Tue, 14 Dec 2010 21:24:15 +0100, Peter Zijlstra said:
+> The genirq core is being updated to pass struct irq_data to irq_chip
+> operations instead of an irq number. Update the ADP5588 GPIO driver to
+> the new API.
 
-> You're confused. 10*HZ jiffies is always 10 seconds.
+Seems to be the same as Lennert's patch, except he called it "d"?
 
-I must be misremembering times past, when HZ was settable
-but a jiffie was always 1/100th of a second...  Senility has
-finally set it. :)
 
---==_Exmh_1292359075_5019P
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+From: Lennert Buytenhek <buytenh@wantstofly.org>
 
-iD8DBQFNB9WjcC3lWbTT17ARAj7+AJ9/OF4KRUBMv0x5wXfUMLmmedtWvACffjh3
-SVZe9YHIxLX+IUkfoJ5o9ds=
-=MxJx
------END PGP SIGNATURE-----
+Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
+Acked-by: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
---==_Exmh_1292359075_5019P--
+ drivers/gpio/adp5588-gpio.c |   39 +++++++++++++++++-----------------
+ 1 file changed, 20 insertions(+), 19 deletions(-)
+
+diff -puN drivers/gpio/adp5588-gpio.c~gpio-adp5588-gpio-irq_data-conversion drivers/gpio/adp5588-gpio.c
+--- a/drivers/gpio/adp5588-gpio.c~gpio-adp5588-gpio-irq_data-conversion
++++ a/drivers/gpio/adp5588-gpio.c
+@@ -146,9 +146,10 @@ static int adp5588_gpio_to_irq(struct gp
+ 	return dev->irq_base + off;
+ }
+ 
+-static void adp5588_irq_bus_lock(unsigned int irq)
++static void adp5588_irq_bus_lock(struct irq_data *d)
+ {
+-	struct adp5588_gpio *dev = get_irq_chip_data(irq);
++	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
++
+ 	mutex_lock(&dev->irq_lock);
+ }
+ 
+@@ -160,9 +161,9 @@ static void adp5588_irq_bus_lock(unsigne
+   * and unlocks the bus.
+   */
+ 
+-static void adp5588_irq_bus_sync_unlock(unsigned int irq)
++static void adp5588_irq_bus_sync_unlock(struct irq_data *d)
+ {
+-	struct adp5588_gpio *dev = get_irq_chip_data(irq);
++	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
+ 	int i;
+ 
+ 	for (i = 0; i <= ADP5588_BANK(ADP5588_MAXGPIO); i++)
+@@ -175,31 +176,31 @@ static void adp5588_irq_bus_sync_unlock(
+ 	mutex_unlock(&dev->irq_lock);
+ }
+ 
+-static void adp5588_irq_mask(unsigned int irq)
++static void adp5588_irq_mask(struct irq_data *d)
+ {
+-	struct adp5588_gpio *dev = get_irq_chip_data(irq);
+-	unsigned gpio = irq - dev->irq_base;
++	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
++	unsigned gpio = d->irq - dev->irq_base;
+ 
+ 	dev->irq_mask[ADP5588_BANK(gpio)] &= ~ADP5588_BIT(gpio);
+ }
+ 
+-static void adp5588_irq_unmask(unsigned int irq)
++static void adp5588_irq_unmask(struct irq_data *d)
+ {
+-	struct adp5588_gpio *dev = get_irq_chip_data(irq);
+-	unsigned gpio = irq - dev->irq_base;
++	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
++	unsigned gpio = d->irq - dev->irq_base;
+ 
+ 	dev->irq_mask[ADP5588_BANK(gpio)] |= ADP5588_BIT(gpio);
+ }
+ 
+-static int adp5588_irq_set_type(unsigned int irq, unsigned int type)
++static int adp5588_irq_set_type(struct irq_data *d, unsigned int type)
+ {
+-	struct adp5588_gpio *dev = get_irq_chip_data(irq);
+-	uint16_t gpio = irq - dev->irq_base;
++	struct adp5588_gpio *dev = irq_data_get_irq_chip_data(d);
++	uint16_t gpio = d->irq - dev->irq_base;
+ 	unsigned bank, bit;
+ 
+ 	if ((type & IRQ_TYPE_EDGE_BOTH)) {
+ 		dev_err(&dev->client->dev, "irq %d: unsupported type %d\n",
+-			irq, type);
++			d->irq, type);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -222,11 +223,11 @@ static int adp5588_irq_set_type(unsigned
+ 
+ static struct irq_chip adp5588_irq_chip = {
+ 	.name			= "adp5588",
+-	.mask			= adp5588_irq_mask,
+-	.unmask			= adp5588_irq_unmask,
+-	.bus_lock		= adp5588_irq_bus_lock,
+-	.bus_sync_unlock	= adp5588_irq_bus_sync_unlock,
+-	.set_type		= adp5588_irq_set_type,
++	.irq_mask		= adp5588_irq_mask,
++	.irq_unmask		= adp5588_irq_unmask,
++	.irq_bus_lock		= adp5588_irq_bus_lock,
++	.irq_bus_sync_unlock	= adp5588_irq_bus_sync_unlock,
++	.irq_set_type		= adp5588_irq_set_type,
+ };
+ 
+ static int adp5588_gpio_read_intstat(struct i2c_client *client, u8 *buf)
+_
 
