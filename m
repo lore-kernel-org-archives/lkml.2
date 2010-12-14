@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab0LNWWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 17:22:54 -0500
-Received: from cantor.suse.de ([195.135.220.2]:44074 "EHLO mx1.suse.de"
+	id S1758924Ab0LNWZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 17:25:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1921 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758105Ab0LNWWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 17:22:53 -0500
-From: "Rafael J. Wysocki" <rjw@suse.com>
-Organization: SUSE Labs
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-Date: Tue, 14 Dec 2010 23:22:35 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org> <201012132210.51325.rjw@suse.com> <4D07EAE5.6050803@gmail.com>
-In-Reply-To: <4D07EAE5.6050803@gmail.com>
+	id S1758361Ab0LNWZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 17:25:26 -0500
+Date: Tue, 14 Dec 2010 17:25:19 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cfq-iosched: don't check cfqg in choose_service_tree()
+Message-ID: <20101214222519.GA19693@redhat.com>
+References: <4D070F7C.3060503@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012142322.36053.rjw@suse.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D070F7C.3060503@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 14, 2010, Jiri Slaby wrote:
-> On 12/13/2010 10:10 PM, Rafael J. Wysocki wrote:
-> > On Monday, December 13, 2010, Jiri Slaby wrote:
-> >> On 12/05/2010 02:08 PM, Rafael J. Wysocki wrote:
-> >>> On Sunday, December 05, 2010, Jiri Slaby wrote:
-> >>>> On 12/03/2010 01:34 AM, akpm@linux-foundation.org wrote:
-> >>>>> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
-> >>>>
-> >>>> Hi, this kernel regresses with respect to resume. It doesn't wake up,
-> >>>> the screen is black with blinking cursor at position [1, 1].
-> >>>> 2010-11-23-16-12 seemed to be OK. In this one it is 100% reproducible so
-> >>>> far.
-> >>>>
-> >>>> I'm using pm-suspend, any ideas what to test before I start to find the
-> >>>> reason on my own?
-> >>>
-> >>> Please try the pm_test tests for core, processors and devices, eg.:
-> >>
-> >> Hmm, I haven't seen the issues since then. So it had to be some kind of
-> >> coincidence -- I see the issue occasionally for some time already. Now
-> >> it triggered twice in a row after I updated the kernel.
-> > 
-> > Hmm.  What hardware is that?
+On Tue, Dec 14, 2010 at 02:32:28PM +0800, Gui Jianfeng wrote:
+> When cfq_choose_cfqg() is called in select_queue(), there must be at least one
+> backlogged CFQ queue waiting for dispatching, hence there must be at least one
+> backlogged CFQ group on service tree. So we never call choose_service_tree()
+> with cfqg == NULL.
 > 
-> What exactly do you want to know about it? It's some specific intel
-> desktop machine, 3 years old, 2 intel cores, 6G of mem, 2 sata disks in
-> raid, dvb-t usb receiver (af9015), usb keyboard and mouse.
+> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> ---
 
-I'm seeing pretty much the same symptoms on quite different hardware, except
-for one thing: USB keyboard and mouse.
+Thanks Gui for the cleanup. This patch looks good to me.
 
-Have you checked if writing 0 to /sys/power/pm_async helps?
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Rafael
+Vivek
+
+>  block/cfq-iosched.c |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 9b186fd..c19d015 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -2103,12 +2103,6 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	unsigned group_slice;
+>  	enum wl_prio_t original_prio = cfqd->serving_prio;
+>  
+> -	if (!cfqg) {
+> -		cfqd->serving_prio = IDLE_WORKLOAD;
+> -		cfqd->workload_expires = jiffies + 1;
+> -		return;
+> -	}
+> -
+>  	/* Choose next priority. RT > BE > IDLE */
+>  	if (cfq_group_busy_queues_wl(RT_WORKLOAD, cfqd, cfqg))
+>  		cfqd->serving_prio = RT_WORKLOAD;
+> -- 
+> 1.6.5.2
+> 
