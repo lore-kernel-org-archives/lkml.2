@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab0LNWdr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 17:33:47 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56942 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759081Ab0LNWdp (ORCPT
+	id S1760108Ab0LNWip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 17:38:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37017 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758910Ab0LNWin convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 17:33:45 -0500
-Date: Tue, 14 Dec 2010 14:33:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Simon Kirby <sim@hostway.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] mm: kswapd: Stop high-order balancing when any
- suitable zone is balanced
-Message-Id: <20101214143306.485f2c7c.akpm@linux-foundation.org>
-In-Reply-To: <1291995985-5913-2-git-send-email-mel@csn.ul.ie>
-References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie>
-	<1291995985-5913-2-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Dec 2010 17:38:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wI4xFP89Q7YKihwj28YyUZe/q3Uo1CYQmbXbR20VuvXFvgNhHLRdYPLw6X1/oW2LjX
+         hxLwWxoLGQI4AUcclcQShdTHlRtU0r/YEbh4hCnGTUw4/m5xEKrFvG3/4pzqGyA4Of0b
+         7vswH6mfTijbHGUfOjQ9sxRejcv9ekNNUt7mk=
+MIME-Version: 1.0
+In-Reply-To: <20101214114542.GE14178@balbir.in.ibm.com>
+References: <20101210142745.29934.29186.stgit@localhost6.localdomain6>
+	<20101210143018.29934.11893.stgit@localhost6.localdomain6>
+	<AANLkTimeecObDMQMbWzNhL1mE+UT9D3o1WWS4bmxtR4U@mail.gmail.com>
+	<20101214114542.GE14178@balbir.in.ibm.com>
+Date: Wed, 15 Dec 2010 07:38:42 +0900
+Message-ID: <AANLkTimy2wKPGxMsO0d_CxUNiDcc+8HWRBctOTrkbbjX@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Refactor zone_reclaim (v2)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: balbir@linux.vnet.ibm.com
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Dec 2010 15:46:20 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Tue, Dec 14, 2010 at 8:45 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> * MinChan Kim <minchan.kim@gmail.com> [2010-12-14 19:01:26]:
+>
+>> Hi Balbir,
+>>
+>> On Fri, Dec 10, 2010 at 11:31 PM, Balbir Singh
+>> <balbir@linux.vnet.ibm.com> wrote:
+>> > Move reusable functionality outside of zone_reclaim.
+>> > Make zone_reclaim_unmapped_pages modular
+>> >
+>> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+>> > ---
+>> >  mm/vmscan.c |   35 +++++++++++++++++++++++------------
+>> >  1 files changed, 23 insertions(+), 12 deletions(-)
+>> >
+>> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> > index e841cae..4e2ad05 100644
+>> > --- a/mm/vmscan.c
+>> > +++ b/mm/vmscan.c
+>> > @@ -2815,6 +2815,27 @@ static long zone_pagecache_reclaimable(struct zone *zone)
+>> >  }
+>> >
+>> >  /*
+>> > + * Helper function to reclaim unmapped pages, we might add something
+>> > + * similar to this for slab cache as well. Currently this function
+>> > + * is shared with __zone_reclaim()
+>> > + */
+>> > +static inline void
+>> > +zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
+>> > +                               unsigned long nr_pages)
+>> > +{
+>> > +       int priority;
+>> > +       /*
+>> > +        * Free memory by calling shrink zone with increasing
+>> > +        * priorities until we have enough memory freed.
+>> > +        */
+>> > +       priority = ZONE_RECLAIM_PRIORITY;
+>> > +       do {
+>> > +               shrink_zone(priority, zone, sc);
+>> > +               priority--;
+>> > +       } while (priority >= 0 && sc->nr_reclaimed < nr_pages);
+>> > +}
+>>
+>> As I said previous version, zone_reclaim_unmapped_pages doesn't have
+>> any functions related to reclaim unmapped pages.
+>
+> The scan control point has the right arguments for implementing
+> reclaim of unmapped pages.
 
-> When the allocator enters its slow path, kswapd is woken up to balance the
-> node. It continues working until all zones within the node are balanced. For
-> order-0 allocations, this makes perfect sense but for higher orders it can
-> have unintended side-effects. If the zone sizes are imbalanced, kswapd may
-> reclaim heavily within a smaller zone discarding an excessive number of
-> pages.
+I mean you should set up scan_control setup in this function.
+Current zone_reclaim_unmapped_pages doesn't have any specific routine
+related to reclaim unmapped pages.
+Otherwise, change the function name with just "zone_reclaim_pages". I
+think you don't want it.
 
-Why was it doing this?  
-
-> The user-visible behaviour is that kswapd is awake and reclaiming
-> even though plenty of pages are free from a suitable zone.
-
-Suitable for what?  I assume you refer to a future allocation which can
-be satisfied from more than one of the zones?
-
-But what if that allocation wanted to allocate a high-order page from
-a zone which we just abandoned?
-
-> This patch alters the "balance" logic for high-order reclaim allowing kswapd
-> to stop if any suitable zone becomes balanced to reduce the number of pages
-
-again, suitable for what?
-
-> it reclaims from other zones. kswapd still tries to ensure that order-0
-> watermarks for all zones are met before sleeping.
-
-Handling order-0 pages differently from higher-order pages sounds weird
-and wrong.
-
-I don't think I understand this patch.
-
+-- 
+Kind regards,
+Minchan Kim
