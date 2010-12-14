@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab0LNO47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:56:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:57930 "EHLO mx1.suse.de"
+	id S1758285Ab0LNO5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:57:06 -0500
+Received: from mga03.intel.com ([143.182.124.21]:59490 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757937Ab0LNO46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:56:58 -0500
-Date: Tue, 14 Dec 2010 15:56:56 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Synaptics touchpad on Dell Vostro V13
-Message-ID: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757937Ab0LNO5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:57:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,342,1288594800"; 
+   d="scan'208";a="361487810"
+Date: Tue, 14 Dec 2010 22:56:54 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
+ up time
+Message-ID: <20101214145654.GA25607@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150326.856922289@intel.com>
+ <1292333854.2019.16.camel@castor.rsk>
+ <20101214135910.GA21401@localhost>
+ <20101214143325.GA22764@localhost>
+ <20101214143902.GA24827@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101214143902.GA24827@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Tue, Dec 14, 2010 at 10:39:02PM +0800, Wu Fengguang wrote:
+> On Tue, Dec 14, 2010 at 10:33:25PM +0800, Wu Fengguang wrote:
+> > On Tue, Dec 14, 2010 at 09:59:10PM +0800, Wu Fengguang wrote:
+> > > On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
+> > 
+> > > > As to the ramp up time, when writing to 2 disks at the same time I see
+> > > > the per_bdi_threshold taking up to 20 seconds to converge on a steady
+> > > > value after one of the write stops. So I think this could be speeded up
+> > > > even more, at least on my setup.
+> > > 
+> > > I have the roughly same ramp up time on the 1-disk 3GB mem test:
+> > > 
+> > > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
+> > >  
+> > 
+> > Interestingly, the above graph shows that after about 10s fast ramp
+> > up, there is another 20s slow ramp down. It's obviously due the
+> > decline of global limit:
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat-dirty.png
+> > 
+> > But why is the global limit declining?  The following log shows that
+> > nr_file_pages keeps growing and goes stable after 75 seconds (so long
+> > time!). In the same period nr_free_pages goes slowly down to its
+> > stable value. Given that the global limit is mainly derived from
+> > nr_free_pages+nr_file_pages (I disabled swap), something must be
+> > slowly eating memory until 75 ms. Maybe the tracing ring buffers?
+> > 
+> >          free     file      reclaimable pages
+> > 50s      369324 + 318760 => 688084
+> > 60s      235989 + 448096 => 684085
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat
+> 
+> The log shows that ~64MB reclaimable memory is stoled. But the trace
+> data only takes 1.8MB. Hmm..
 
-I have a bugreport about Synaptics touchpad not working as proper 
-Synaptics, but only being detected as standard PS/2.
+ext2 has the same pattern:
 
-Looking at the i8042.debug output, the device is clearly buggy, as it 
-doesn't identify itself by 0x47 when queried:
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext2-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-01-36/dirty-pages.png
 
-	91 -> i8042 (command) [58]
-	e8 -> i8042 (parameter) [58]
-	fa <- i8042 (interrupt, 3, 12) [59]
-	91 -> i8042 (command) [59]
-	00 -> i8042 (parameter) [59]
-	fa <- i8042 (interrupt, 3, 12) [59]
-	91 -> i8042 (command) [59]
-	e8 -> i8042 (parameter) [59]
-	fa <- i8042 (interrupt, 3, 12) [60]
-	91 -> i8042 (command) [60]
-	00 -> i8042 (parameter) [60]
-	fa <- i8042 (interrupt, 3, 12) [61]
-	91 -> i8042 (command) [61]
-	e8 -> i8042 (parameter) [61]
-	fa <- i8042 (interrupt, 3, 12) [61]
-	91 -> i8042 (command) [61]
-	00 -> i8042 (parameter) [61]
-	fa <- i8042 (interrupt, 3, 12) [62]
-	91 -> i8042 (command) [62]
-	e8 -> i8042 (parameter) [62]
-	fa <- i8042 (interrupt, 3, 12) [63]
-	91 -> i8042 (command) [63]
-	00 -> i8042 (parameter) [63]
-	fa <- i8042 (interrupt, 3, 12) [64]
-	91 -> i8042 (command) [64]
-	e9 -> i8042 (parameter) [64]
-	fa <- i8042 (interrupt, 3, 12) [64]
+But it does not happen for btrfs!
 
-... and here we time out after approximately 0.5s. nomux doesn't really 
-fix it, we start getting a lot of timeouts on i8042 with that.
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/btrfs-1dd-1M-8p-2952M-2.6.37-rc5-2010-12-10-21-23/vmstat-dirty.png
 
-Apparently the device works with Synaptics driver in Other OS(TM) though. 
-Do you have any idea what they might be doing differently so that they 
-make the touchpad identify itself properly?
+Seems that it's the nr_slab_reclaimable keep growing until 75s.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15416 seems to be related BTW.
+Looking at
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext2-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-01-36/slabinfo-end
+
+It should be the buffer heads that slowly eats the memory during the time:
+
+buffer_head       670304 670662    104   37    1 : tunables  120   60 8 : slabdata  18117  18126    480
+
+(670304/37)*4 = 72464KB.
+
+The consumption seems acceptable for a 3G memory system.
 
 Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Fengguang
