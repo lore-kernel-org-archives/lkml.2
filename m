@@ -1,764 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760051Ab0LNUie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 15:38:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42745 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758384Ab0LNUey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 15:34:54 -0500
-From: Rene Sapiens <rene.sapiens@ti.com>
-To: omar.ramirez@ti.com
-Cc: felipe.contreras@gmail.com, x0095840@ti.com, ernesto@ti.com, nm@ti.com,
-        ohad@wizery.com, ameya.palande@nokia.com, x0095078@ti.com,
-        ionut.nicu@mindbit.ro, ivan.gomez@ti.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Rene Sapiens <rene.sapiens@ti.com>
-Subject: [PATCH 03/12] staging:tidspbridge - set3 remove hungarian from structs
-Date: Tue, 14 Dec 2010 14:33:09 -0600
-Message-Id: <1292358798-25875-4-git-send-email-rene.sapiens@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1292358798-25875-3-git-send-email-rene.sapiens@ti.com>
-References: <1292358798-25875-1-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-2-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-3-git-send-email-rene.sapiens@ti.com>
+	id S932310Ab0LNUiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 15:38:51 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33469
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759983Ab0LNUit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 15:38:49 -0500
+Date: Tue, 14 Dec 2010 12:39:17 -0800 (PST)
+Message-Id: <20101214.123917.183056983.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hungarian notation will be removed from the elements inside
-structures, the next variables will be renamed:
 
-Original:               Replacement:
-dw_seg_base_va          seg_base_va
-dw_self_loop            self_loop
-dw_state                state
-dw_tc_endianism         tc_endianism
-dw_test_base            test_base
-dw_type                 type
-dw_val1                 val1
-dw_val2                 val2
-dw_val3                 val3
-dw_va                   va
-dw_virt_base            virt_base
-dw_vm_base              vm_base
-dw_vm_size              vm_size
-pfn_allocate            allocate
-pfn_brd_mem_copy        brd_mem_copy
-pfn_brd_mem_map         brd_mem_map
-pfn_brd_mem_un_map      brd_mem_un_map
-pfn_brd_mem_write       brd_mem_write
-pfn_brd_monitor         brd_monitor
-pfn_brd_read            brd_read
+A lot of small stuff has queued up while you were away.
 
-Signed-off-by: Rene Sapiens <rene.sapiens@ti.com>
----
- drivers/staging/tidspbridge/core/_tiomap.h         |    6 +-
- drivers/staging/tidspbridge/core/chnl_sm.c         |   22 +++++-----
- drivers/staging/tidspbridge/core/io_sm.c           |   34 ++++++++--------
- drivers/staging/tidspbridge/core/tiomap3430.c      |    2 +-
- .../tidspbridge/include/dspbridge/_chnl_sm.h       |    4 +-
- .../tidspbridge/include/dspbridge/chnlpriv.h       |    4 +-
- .../tidspbridge/include/dspbridge/cmmdefs.h        |    6 +-
- .../staging/tidspbridge/include/dspbridge/dbdefs.h |    6 +-
- .../tidspbridge/include/dspbridge/dspdefs.h        |   12 +++---
- .../tidspbridge/include/dspbridge/nldrdefs.h       |    2 +-
- drivers/staging/tidspbridge/pmgr/cmm.c             |   44 ++++++++++----------
- drivers/staging/tidspbridge/pmgr/dev.c             |   16 ++++----
- drivers/staging/tidspbridge/rmgr/node.c            |    6 +-
- drivers/staging/tidspbridge/rmgr/proc.c            |    6 +-
- drivers/staging/tidspbridge/rmgr/strm.c            |    2 +-
- 15 files changed, 86 insertions(+), 86 deletions(-)
+1) Revert a pppoe change that causes SKBs to be accessed after
+   being freed, from Andrej Ota.
 
-diff --git a/drivers/staging/tidspbridge/core/_tiomap.h b/drivers/staging/tidspbridge/core/_tiomap.h
-index 919e22c..1cd3282 100644
---- a/drivers/staging/tidspbridge/core/_tiomap.h
-+++ b/drivers/staging/tidspbridge/core/_tiomap.h
-@@ -321,9 +321,9 @@ struct bridge_dev_context {
- 	u32 dsp_clk_m2_base;	/* DSP Clock Module m2 */
- 	u32 public_rhea;	/* Pub Rhea */
- 	u32 int_addr;		/* MB INTR reg */
--	u32 dw_tc_endianism;	/* TC Endianism register */
--	u32 dw_test_base;	/* DSP MMU Mapped registers */
--	u32 dw_self_loop;	/* Pointer to the selfloop */
-+	u32 tc_endianism;	/* TC Endianism register */
-+	u32 test_base;		/* DSP MMU Mapped registers */
-+	u32 self_loop;		/* Pointer to the selfloop */
- 	u32 dsp_start_add;	/* API Boot vector */
- 	u32 internal_size;	/* Internal memory size */
- 
-diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
-index 59b8d55..c204315 100644
---- a/drivers/staging/tidspbridge/core/chnl_sm.c
-+++ b/drivers/staging/tidspbridge/core/chnl_sm.c
-@@ -115,7 +115,7 @@ int bridge_chnl_add_io_req(struct chnl_object *chnl_obj, void *host_buf,
- 	 * Check the channel state: only queue chirp if channel state
- 	 * allows it.
- 	 */
--	dw_state = pchnl->dw_state;
-+	dw_state = pchnl->state;
- 	if (dw_state != CHNL_STATEREADY) {
- 		if (dw_state & CHNL_STATECANCEL)
- 			return -ECANCELED;
-@@ -207,7 +207,7 @@ func_cont:
- 	 * more IOR's.
- 	 */
- 	if (is_eos)
--		pchnl->dw_state |= CHNL_STATEEOS;
-+		pchnl->state |= CHNL_STATEEOS;
- 
- 	/* Legacy DSM Processor-Copy */
- 	DBC_ASSERT(pchnl->chnl_type == CHNL_PCPY);
-@@ -258,7 +258,7 @@ int bridge_chnl_cancel_io(struct chnl_object *chnl_obj)
- 	 *  IORequests or dispatching. */
- 	spin_lock_bh(&chnl_mgr_obj->chnl_mgr_lock);
- 
--	pchnl->dw_state |= CHNL_STATECANCEL;
-+	pchnl->state |= CHNL_STATECANCEL;
- 
- 	if (list_empty(&pchnl->pio_requests)) {
- 		spin_unlock_bh(&chnl_mgr_obj->chnl_mgr_lock);
-@@ -312,7 +312,7 @@ int bridge_chnl_close(struct chnl_object *chnl_obj)
- 	if (status)
- 		return status;
- 	/* Assert I/O on this channel is now cancelled: Protects from io_dpc */
--	DBC_ASSERT((pchnl->dw_state & CHNL_STATECANCEL));
-+	DBC_ASSERT((pchnl->state & CHNL_STATECANCEL));
- 	/* Invalidate channel object: Protects from CHNL_GetIOCompletion() */
- 	/* Free the slot in the channel manager: */
- 	pchnl->chnl_mgr_obj->ap_channel[pchnl->chnl_id] = NULL;
-@@ -381,7 +381,7 @@ int bridge_chnl_create(struct chnl_mgr **channel_mgr,
- 						* max_channels, GFP_KERNEL);
- 		if (chnl_mgr_obj->ap_channel) {
- 			/* Initialize chnl_mgr object */
--			chnl_mgr_obj->dw_type = CHNL_TYPESM;
-+			chnl_mgr_obj->type = CHNL_TYPESM;
- 			chnl_mgr_obj->word_size = mgr_attrts->word_size;
- 			/* Total # chnls supported */
- 			chnl_mgr_obj->max_channels = max_channels;
-@@ -488,7 +488,7 @@ int bridge_chnl_flush_io(struct chnl_object *chnl_obj, u32 timeout)
- 		} else {
- 			status = bridge_chnl_cancel_io(chnl_obj);
- 			/* Now, leave the channel in the ready state: */
--			pchnl->dw_state &= ~CHNL_STATECANCEL;
-+			pchnl->state &= ~CHNL_STATECANCEL;
- 		}
- 	}
- 	DBC_ENSURE(status || list_empty(&pchnl->pio_requests));
-@@ -517,7 +517,7 @@ int bridge_chnl_get_info(struct chnl_object *chnl_obj,
- 			channel_info->sync_event = pchnl->sync_event;
- 			channel_info->cio_cs = pchnl->cio_cs;
- 			channel_info->cio_reqs = pchnl->cio_reqs;
--			channel_info->dw_state = pchnl->dw_state;
-+			channel_info->state = pchnl->state;
- 		} else {
- 			status = -EFAULT;
- 		}
-@@ -687,7 +687,7 @@ int bridge_chnl_get_mgr_info(struct chnl_mgr *hchnl_mgr, u32 ch_id,
- 	/* Return the requested information: */
- 	mgr_info->chnl_obj = chnl_mgr_obj->ap_channel[ch_id];
- 	mgr_info->open_channels = chnl_mgr_obj->open_channels;
--	mgr_info->dw_type = chnl_mgr_obj->dw_type;
-+	mgr_info->type = chnl_mgr_obj->type;
- 	/* total # of chnls */
- 	mgr_info->max_channels = chnl_mgr_obj->max_channels;
- 
-@@ -718,7 +718,7 @@ int bridge_chnl_idle(struct chnl_object *chnl_obj, u32 timeout,
- 
- 		/* Reset the byte count and put channel back in ready state. */
- 		chnl_obj->bytes_moved = 0;
--		chnl_obj->dw_state &= ~CHNL_STATECANCEL;
-+		chnl_obj->state &= ~CHNL_STATECANCEL;
- 	}
- 
- 	return status;
-@@ -769,7 +769,7 @@ int bridge_chnl_open(struct chnl_object **chnl,
- 		return -ENOMEM;
- 
- 	/* Protect queues from io_dpc: */
--	pchnl->dw_state = CHNL_STATECANCEL;
-+	pchnl->state = CHNL_STATECANCEL;
- 
- 	/* Allocate initial IOR and IOC queues: */
- 	status = create_chirp_list(&pchnl->free_packets_list,
-@@ -817,7 +817,7 @@ int bridge_chnl_open(struct chnl_object **chnl,
- 	chnl_mgr_obj->open_channels++;
- 	spin_unlock_bh(&chnl_mgr_obj->chnl_mgr_lock);
- 	/* Return result... */
--	pchnl->dw_state = CHNL_STATEREADY;
-+	pchnl->state = CHNL_STATEREADY;
- 	*chnl = pchnl;
- 
- 	return status;
-diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index a607328..b734c42 100644
---- a/drivers/staging/tidspbridge/core/io_sm.c
-+++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -483,7 +483,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
- 							      1)) == 0)) {
- 				status =
- 				    hio_mgr->intf_fxns->
--				    pfn_brd_mem_map(hio_mgr->hbridge_context,
-+				    brd_mem_map(hio_mgr->hbridge_context,
- 						    pa_curr, va_curr,
- 						    page_size[i], map_attrs,
- 						    NULL);
-@@ -549,7 +549,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
- 			} else {
- 				status =
- 				    hio_mgr->intf_fxns->
--				    pfn_brd_mem_map(hio_mgr->hbridge_context,
-+				    brd_mem_map(hio_mgr->hbridge_context,
- 						    pa_curr, va_curr,
- 						    page_size[i], map_attrs,
- 						    NULL);
-@@ -615,7 +615,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
- 					ae_proc[ndx].ul_dsp_va);
- 				ndx++;
- 			} else {
--				status = hio_mgr->intf_fxns->pfn_brd_mem_map
-+				status = hio_mgr->intf_fxns->brd_mem_map
- 				    (hio_mgr->hbridge_context,
- 				     hio_mgr->ext_proc_info.ty_tlb[i].
- 				     ul_gpp_phys,
-@@ -637,7 +637,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
- 	/* Map the L4 peripherals */
- 	i = 0;
- 	while (l4_peripheral_table[i].phys_addr) {
--		status = hio_mgr->intf_fxns->pfn_brd_mem_map
-+		status = hio_mgr->intf_fxns->brd_mem_map
- 		    (hio_mgr->hbridge_context, l4_peripheral_table[i].phys_addr,
- 		     l4_peripheral_table[i].dsp_virt_addr, HW_PAGE_SIZE4KB,
- 		     map_attrs, NULL);
-@@ -977,8 +977,8 @@ void io_request_chnl(struct io_mgr *io_manager, struct chnl_object *pchnl,
- 		 * Assertion fires if CHNL_AddIOReq() called on a stream
- 		 * which was cancelled, or attached to a dead board.
- 		 */
--		DBC_ASSERT((pchnl->dw_state == CHNL_STATEREADY) ||
--			   (pchnl->dw_state == CHNL_STATEEOS));
-+		DBC_ASSERT((pchnl->state == CHNL_STATEREADY) ||
-+			   (pchnl->state == CHNL_STATEEOS));
- 		/* Indicate to the DSP we have a buffer available for input */
- 		set_chnl_busy(sm, pchnl->chnl_id);
- 		*mbx_val = MBX_PCPY_CLASS;
-@@ -987,7 +987,7 @@ void io_request_chnl(struct io_mgr *io_manager, struct chnl_object *pchnl,
- 		 * This assertion fails if CHNL_AddIOReq() was called on a
- 		 * stream which was cancelled, or attached to a dead board.
- 		 */
--		DBC_ASSERT((pchnl->dw_state & ~CHNL_STATEEOS) ==
-+		DBC_ASSERT((pchnl->state & ~CHNL_STATEEOS) ==
- 			   CHNL_STATEREADY);
- 		/*
- 		 * Record the fact that we have a buffer available for
-@@ -1092,7 +1092,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 	}
- 	pchnl = chnl_mgr_obj->ap_channel[chnl_id];
- 	if ((pchnl != NULL) && CHNL_IS_INPUT(pchnl->chnl_mode)) {
--		if ((pchnl->dw_state & ~CHNL_STATEEOS) == CHNL_STATEREADY) {
-+		if ((pchnl->state & ~CHNL_STATEEOS) == CHNL_STATEREADY) {
- 			/* Get the I/O request, and attempt a transfer */
- 			if (!list_empty(&pchnl->pio_requests)) {
- 				if (!pchnl->cio_reqs)
-@@ -1122,7 +1122,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 					 * sends EOS more than once on this
- 					 * channel.
- 					 */
--					if (pchnl->dw_state & CHNL_STATEEOS)
-+					if (pchnl->state & CHNL_STATEEOS)
- 						goto func_end;
- 					/*
- 					 * Zero bytes indicates EOS. Update
-@@ -1131,7 +1131,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 					 */
- 					chnl_packet_obj->status |=
- 						CHNL_IOCSTATEOS;
--					pchnl->dw_state |= CHNL_STATEEOS;
-+					pchnl->state |= CHNL_STATEEOS;
- 					/*
- 					 * Notify that end of stream has
- 					 * occurred.
-@@ -1329,7 +1329,7 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 	if (sm->output_full)
- 		goto func_end;
- 
--	if (pchnl && !((pchnl->dw_state & ~CHNL_STATEEOS) == CHNL_STATEREADY))
-+	if (pchnl && !((pchnl->state & ~CHNL_STATEEOS) == CHNL_STATEREADY))
- 		goto func_end;
- 
- 	/* Look to see if both a PC and DSP output channel are ready */
-@@ -1814,7 +1814,7 @@ int print_dsp_trace_buffer(struct bridge_dev_context *hbridge_context)
- 	psz_buf = kzalloc(ul_num_bytes + 2, GFP_ATOMIC);
- 	if (psz_buf != NULL) {
- 		/* Read trace buffer data */
--		status = (*intf_fxns->pfn_brd_read)(pbridge_context,
-+		status = (*intf_fxns->brd_read)(pbridge_context,
- 			(u8 *)psz_buf, (u32)ul_trace_begin,
- 			ul_num_bytes, 0);
- 
-@@ -1829,7 +1829,7 @@ int print_dsp_trace_buffer(struct bridge_dev_context *hbridge_context)
- 			__func__, psz_buf);
- 
- 		/* Read the value at the DSP address in trace_cur_pos. */
--		status = (*intf_fxns->pfn_brd_read)(pbridge_context,
-+		status = (*intf_fxns->brd_read)(pbridge_context,
- 				(u8 *)&trace_cur_pos, (u32)trace_cur_pos,
- 				4, 0);
- 		if (status)
-@@ -1996,7 +1996,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
- 			poll_cnt < POLL_MAX) {
- 
- 			/* Read DSP dump size from the DSP trace buffer... */
--			status = (*intf_fxns->pfn_brd_read)(bridge_context,
-+			status = (*intf_fxns->brd_read)(bridge_context,
- 				(u8 *)&mmu_fault_dbg_info, (u32)trace_begin,
- 				sizeof(mmu_fault_dbg_info), 0);
- 
-@@ -2032,7 +2032,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
- 		buffer_end =  buffer + total_size / 4;
- 
- 		/* Read bytes from the DSP trace buffer... */
--		status = (*intf_fxns->pfn_brd_read)(bridge_context,
-+		status = (*intf_fxns->brd_read)(bridge_context,
- 				(u8 *)buffer, (u32)trace_begin,
- 				total_size, 0);
- 		if (status) {
-@@ -2193,7 +2193,7 @@ void dump_dl_modules(struct bridge_dev_context *bridge_context)
- 	pr_debug("%s: _DLModules at 0x%x\n", __func__, module_dsp_addr);
- 
- 	/* Copy the modules_header structure from DSP memory. */
--	status = (*intf_fxns->pfn_brd_read)(bridge_context, (u8 *) &modules_hdr,
-+	status = (*intf_fxns->brd_read)(bridge_context, (u8 *) &modules_hdr,
- 				(u32) module_dsp_addr, sizeof(modules_hdr), 0);
- 
- 	if (status) {
-@@ -2228,7 +2228,7 @@ void dump_dl_modules(struct bridge_dev_context *bridge_context)
- 				goto func_end;
- 		}
- 		/* Copy the dll_module structure from DSP memory */
--		status = (*intf_fxns->pfn_brd_read)(bridge_context,
-+		status = (*intf_fxns->brd_read)(bridge_context,
- 			(u8 *)module_struct, module_dsp_addr, module_size, 0);
- 
- 		if (status) {
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index 436e6b2..d1b9c5c 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -765,7 +765,7 @@ static int bridge_dev_create(struct bridge_dev_context
- 	}
- 
- 	dev_context->dsp_start_add = (u32) OMAP_GEM_BASE;
--	dev_context->dw_self_loop = (u32) NULL;
-+	dev_context->self_loop = (u32) NULL;
- 	dev_context->dsp_per_clks = 0;
- 	dev_context->internal_size = OMAP_DSP_SIZE;
- 	/*  Clear dev context MMU table entries.
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/_chnl_sm.h b/drivers/staging/tidspbridge/include/dspbridge/_chnl_sm.h
-index ea54738..318f6b0 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/_chnl_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/_chnl_sm.h
-@@ -127,7 +127,7 @@ struct chnl_mgr {
- 	u8 max_channels;	/* Total number of channels */
- 	u8 open_channels;	/* Total number of open channels */
- 	struct chnl_object **ap_channel;	/* Array of channels */
--	u8 dw_type;		/* Type of channel class library */
-+	u8 type;		/* Type of channel class library */
- 	/* If no shm syms, return for CHNL_Open */
- 	int chnl_open_status;
- };
-@@ -140,7 +140,7 @@ struct chnl_object {
- 	/* Pointer back to channel manager */
- 	struct chnl_mgr *chnl_mgr_obj;
- 	u32 chnl_id;		/* Channel id */
--	u8 dw_state;		/* Current channel state */
-+	u8 state;		/* Current channel state */
- 	s8 chnl_mode;		/* Chnl mode and attributes */
- 	/* Chnl I/O completion event (user mode) */
- 	void *user_event;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h b/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-index 6961572..7a625b5 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-@@ -72,7 +72,7 @@ struct chnl_info {
- 	/*Abstraction of I/O completion event. */
- 	struct sync_object *sync_event;
- 	s8 mode;		/* Channel mode. */
--	u8 dw_state;		/* Current channel state. */
-+	u8 state;		/* Current channel state. */
- 	u32 bytes_tx;		/* Total bytes transferred. */
- 	u32 cio_cs;		/* Number of IOCs in queue. */
- 	u32 cio_reqs;		/* Number of IO Requests in queue. */
-@@ -81,7 +81,7 @@ struct chnl_info {
- 
- /* Channel manager info: */
- struct chnl_mgrinfo {
--	u8 dw_type;		/* Type of channel class library. */
-+	u8 type;		/* Type of channel class library. */
- 	/* Channel handle, given the channel id. */
- 	struct chnl_object *chnl_obj;
- 	u8 open_channels;	/* Number of open channels. */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmmdefs.h b/drivers/staging/tidspbridge/include/dspbridge/cmmdefs.h
-index 8cd1494..719628e 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cmmdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cmmdefs.h
-@@ -60,7 +60,7 @@ struct cmm_seginfo {
- 	u32 ul_dsp_size;	/* DSP seg size in bytes */
- 	/* # of current GPP allocations from this segment */
- 	u32 ul_in_use_cnt;
--	u32 dw_seg_base_va;	/* Start Virt address of SM seg */
-+	u32 seg_base_va;	/* Start Virt address of SM seg */
- 
- };
- 
-@@ -83,8 +83,8 @@ struct cmm_xlatorattrs {
- 	u32 dsp_buf_size;	/* size of DSP-side bufs in GPP bytes */
- 	/* Vm base address alloc'd in client process context */
- 	void *vm_base;
--	/* dw_vm_size must be >= (dwMaxNumBufs * dwMaxSize) */
--	u32 dw_vm_size;
-+	/* vm_size must be >= (dwMaxNumBufs * dwMaxSize) */
-+	u32 vm_size;
- };
- 
- /*
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-index 1b12475..6582054 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-@@ -388,9 +388,9 @@ struct dsp_processorinfo {
- /* Error information of last DSP exception signalled to the GPP */
- struct dsp_errorinfo {
- 	u32 err_mask;
--	u32 dw_val1;
--	u32 dw_val2;
--	u32 dw_val3;
-+	u32 val1;
-+	u32 val2;
-+	u32 val3;
- };
- 
- /* The dsp_processorstate structure describes the state of a DSP processor */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-index 0ae7d16..8432cf9 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-@@ -984,17 +984,17 @@ struct bridge_drv_interface {
- 	fxn_dev_create pfn_dev_create;	/* Create device context */
- 	fxn_dev_destroy pfn_dev_destroy;	/* Destroy device context */
- 	fxn_dev_ctrl pfn_dev_cntrl;	/* Optional vendor interface */
--	fxn_brd_monitor pfn_brd_monitor;	/* Load and/or start monitor */
-+	fxn_brd_monitor brd_monitor;	/* Load and/or start monitor */
- 	fxn_brd_start pfn_brd_start;	/* Start DSP program. */
- 	fxn_brd_stop pfn_brd_stop;	/* Stop/reset board. */
- 	fxn_brd_status pfn_brd_status;	/* Get current board status. */
--	fxn_brd_read pfn_brd_read;	/* Read board memory */
-+	fxn_brd_read brd_read;	/* Read board memory */
- 	fxn_brd_write pfn_brd_write;	/* Write board memory. */
- 	fxn_brd_setstate pfn_brd_set_state;	/* Sets the Board State */
--	fxn_brd_memcopy pfn_brd_mem_copy;	/* Copies DSP Memory */
--	fxn_brd_memwrite pfn_brd_mem_write;	/* Write DSP Memory w/o halt */
--	fxn_brd_memmap pfn_brd_mem_map;	/* Maps MPU mem to DSP mem */
--	fxn_brd_memunmap pfn_brd_mem_un_map;	/* Unmaps MPU mem to DSP mem */
-+	fxn_brd_memcopy brd_mem_copy;	/* Copies DSP Memory */
-+	fxn_brd_memwrite brd_mem_write;	/* Write DSP Memory w/o halt */
-+	fxn_brd_memmap brd_mem_map;	/* Maps MPU mem to DSP mem */
-+	fxn_brd_memunmap brd_mem_un_map;	/* Unmaps MPU mem to DSP mem */
- 	fxn_chnl_create pfn_chnl_create;	/* Create channel manager. */
- 	fxn_chnl_destroy pfn_chnl_destroy;	/* Destroy channel manager. */
- 	fxn_chnl_open pfn_chnl_open;	/* Create a new channel. */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h b/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
-index c85d3da..b1a9072 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
-@@ -280,7 +280,7 @@ typedef int(*nldr_unloadfxn) (struct nldr_nodeobject *nldr_node_obj,
-  *  ======== node_ldr_fxns ========
-  */
- struct node_ldr_fxns {
--	nldr_allocatefxn pfn_allocate;
-+	nldr_allocatefxn allocate;
- 	nldr_createfxn pfn_create;
- 	nldr_deletefxn pfn_delete;
- 	nldr_exitfxn pfn_exit;
-diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
-index d2fb6a4..bc8571b 100644
---- a/drivers/staging/tidspbridge/pmgr/cmm.c
-+++ b/drivers/staging/tidspbridge/pmgr/cmm.c
-@@ -64,7 +64,7 @@
- struct cmm_allocator {		/* sma */
- 	unsigned int shm_base;	/* Start of physical SM block */
- 	u32 ul_sm_size;		/* Size of SM block in bytes */
--	unsigned int dw_vm_base;	/* Start of VM block. (Dev driver
-+	unsigned int vm_base;	/* Start of VM block. (Dev driver
- 					 * context for 'sma') */
- 	u32 dsp_phys_addr_offset;	/* DSP PA to GPP PA offset for this
- 					 * SM space */
-@@ -86,7 +86,7 @@ struct cmm_xlator {		/* Pa<->Va translator object */
- 	 *  base address for translator's ul_seg_id.
- 	 *  Only 1 segment ID currently supported.
- 	 */
--	unsigned int dw_virt_base;	/* virtual base address */
-+	unsigned int virt_base;	/* virtual base address */
- 	u32 ul_virt_size;	/* size of virt space in bytes */
- 	u32 ul_seg_id;		/* Segment Id */
- };
-@@ -122,14 +122,14 @@ static struct cmm_xlatorattrs cmm_dfltxlatorattrs = {
- 	0,			/* dsp_bufs */
- 	0,			/* dsp_buf_size */
- 	NULL,			/* vm_base */
--	0,			/* dw_vm_size */
-+	0,			/* vm_size */
- };
- 
- /* SM node representing a block of memory. */
- struct cmm_mnode {
- 	struct list_head link;	/* must be 1st element */
- 	u32 pa;		/* Phys addr */
--	u32 dw_va;		/* Virtual address in device process context */
-+	u32 va;			/* Virtual address in device process context */
- 	u32 ul_size;		/* SM block size in bytes */
- 	u32 client_proc;	/* Process that allocated this mem block */
- };
-@@ -200,7 +200,7 @@ void *cmm_calloc_buf(struct cmm_object *hcmm_mgr, u32 usize,
- 				 * add to freelist */
- 				new_node =
- 				    get_node(cmm_mgr_obj, pnode->pa + usize,
--					     pnode->dw_va + usize,
-+					     pnode->va + usize,
- 					     (u32) delta_size);
- 				/* leftovers go free */
- 				add_to_free_list(allocator, new_node);
-@@ -218,13 +218,13 @@ void *cmm_calloc_buf(struct cmm_object *hcmm_mgr, u32 usize,
- 			list_add_tail(&pnode->link, &allocator->in_use_list);
- 			buf_pa = (void *)pnode->pa;	/* physical address */
- 			/* clear mem */
--			pbyte = (u8 *) pnode->dw_va;
-+			pbyte = (u8 *) pnode->va;
- 			for (cnt = 0; cnt < (s32) usize; cnt++, pbyte++)
- 				*pbyte = 0;
- 
- 			if (pp_buf_va != NULL) {
- 				/* Virtual address */
--				*pp_buf_va = (void *)pnode->dw_va;
-+				*pp_buf_va = (void *)pnode->va;
- 			}
- 		}
- 		mutex_unlock(&cmm_mgr_obj->cmm_lock);
-@@ -450,8 +450,8 @@ int cmm_get_info(struct cmm_object *hcmm_mgr,
- 			altr->dsp_base;
- 		cmm_info_obj->seg_info[ul_seg - 1].ul_dsp_size =
- 			altr->ul_dsp_size;
--		cmm_info_obj->seg_info[ul_seg - 1].dw_seg_base_va =
--			altr->dw_vm_base - altr->ul_dsp_size;
-+		cmm_info_obj->seg_info[ul_seg - 1].seg_base_va =
-+			altr->vm_base - altr->ul_dsp_size;
- 		cmm_info_obj->seg_info[ul_seg - 1].ul_in_use_cnt = 0;
- 
- 		list_for_each_entry(curr, &altr->in_use_list, link) {
-@@ -539,12 +539,12 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 	psma->hcmm_mgr = hcmm_mgr;	/* ref to parent */
- 	psma->shm_base = dw_gpp_base_pa;	/* SM Base phys */
- 	psma->ul_sm_size = ul_size;	/* SM segment size in bytes */
--	psma->dw_vm_base = gpp_base_va;
-+	psma->vm_base = gpp_base_va;
- 	psma->dsp_phys_addr_offset = dsp_addr_offset;
- 	psma->c_factor = c_factor;
- 	psma->dsp_base = dw_dsp_base;
- 	psma->ul_dsp_size = ul_dsp_size;
--	if (psma->dw_vm_base == 0) {
-+	if (psma->vm_base == 0) {
- 		status = -EPERM;
- 		goto func_end;
- 	}
-@@ -556,7 +556,7 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 
- 	/* Get a mem node for this hunk-o-memory */
- 	new_node = get_node(cmm_mgr_obj, dw_gpp_base_pa,
--			psma->dw_vm_base, ul_size);
-+			psma->vm_base, ul_size);
- 	/* Place node on the SM allocator's free list */
- 	if (new_node) {
- 		list_add_tail(&new_node->link, &psma->free_list);
-@@ -649,8 +649,8 @@ static void un_register_gppsm_seg(struct cmm_allocator *psma)
- 		kfree(curr);
- 	}
- 
--	if ((void *)psma->dw_vm_base != NULL)
--		MEM_UNMAP_LINEAR_ADDRESS((void *)psma->dw_vm_base);
-+	if ((void *)psma->vm_base != NULL)
-+		MEM_UNMAP_LINEAR_ADDRESS((void *)psma->vm_base);
- 
- 	/* Free allocator itself */
- 	kfree(psma);
-@@ -705,7 +705,7 @@ static struct cmm_mnode *get_node(struct cmm_object *cmm_mgr_obj, u32 dw_pa,
- 	}
- 
- 	pnode->pa = dw_pa;
--	pnode->dw_va = dw_va;
-+	pnode->va = dw_va;
- 	pnode->ul_size = ul_size;
- 
- 	return pnode;
-@@ -770,7 +770,7 @@ static void add_to_free_list(struct cmm_allocator *allocator,
- 		}
- 		if (curr->pa == NEXT_PA(node)) {
- 			curr->pa = node->pa;
--			curr->dw_va = node->dw_va;
-+			curr->va = node->va;
- 			curr->ul_size += node->ul_size;
- 			delete_node(allocator->hcmm_mgr, node);
- 			return;
-@@ -925,10 +925,10 @@ int cmm_xlator_info(struct cmm_xlatorobject *xlator, u8 ** paddr,
- 	if (xlator_obj) {
- 		if (set_info) {
- 			/* set translators virtual address range */
--			xlator_obj->dw_virt_base = (u32) *paddr;
-+			xlator_obj->virt_base = (u32) *paddr;
- 			xlator_obj->ul_virt_size = ul_size;
- 		} else {	/* return virt base address */
--			*paddr = (u8 *) xlator_obj->dw_virt_base;
-+			*paddr = (u8 *) xlator_obj->virt_base;
- 		}
- 	} else {
- 		status = -EFAULT;
-@@ -969,18 +969,18 @@ void *cmm_xlator_translate(struct cmm_xlatorobject *xlator, void *paddr,
- 			dw_offset = (u8 *) paddr - (u8 *) (allocator->shm_base -
- 							   allocator->
- 							   ul_dsp_size);
--			dw_addr_xlate = xlator_obj->dw_virt_base + dw_offset;
-+			dw_addr_xlate = xlator_obj->virt_base + dw_offset;
- 			/* Check if translated Va base is in range */
--			if ((dw_addr_xlate < xlator_obj->dw_virt_base) ||
-+			if ((dw_addr_xlate < xlator_obj->virt_base) ||
- 			    (dw_addr_xlate >=
--			     (xlator_obj->dw_virt_base +
-+			     (xlator_obj->virt_base +
- 			      xlator_obj->ul_virt_size))) {
- 				dw_addr_xlate = 0;	/* bad address */
- 			}
- 		} else {
- 			/* Gpp PA =  Gpp Base + offset */
- 			dw_offset =
--			    (u8 *) paddr - (u8 *) xlator_obj->dw_virt_base;
-+			    (u8 *) paddr - (u8 *) xlator_obj->virt_base;
- 			dw_addr_xlate =
- 			    allocator->shm_base - allocator->ul_dsp_size +
- 			    dw_offset;
-diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
-index 673ede0..45da16b 100644
---- a/drivers/staging/tidspbridge/pmgr/dev.c
-+++ b/drivers/staging/tidspbridge/pmgr/dev.c
-@@ -1088,17 +1088,17 @@ static void store_interface_fxns(struct bridge_drv_interface *drv_fxns,
- 		STORE_FXN(fxn_dev_create, pfn_dev_create);
- 		STORE_FXN(fxn_dev_destroy, pfn_dev_destroy);
- 		STORE_FXN(fxn_dev_ctrl, pfn_dev_cntrl);
--		STORE_FXN(fxn_brd_monitor, pfn_brd_monitor);
-+		STORE_FXN(fxn_brd_monitor, brd_monitor);
- 		STORE_FXN(fxn_brd_start, pfn_brd_start);
- 		STORE_FXN(fxn_brd_stop, pfn_brd_stop);
- 		STORE_FXN(fxn_brd_status, pfn_brd_status);
--		STORE_FXN(fxn_brd_read, pfn_brd_read);
-+		STORE_FXN(fxn_brd_read, brd_read);
- 		STORE_FXN(fxn_brd_write, pfn_brd_write);
- 		STORE_FXN(fxn_brd_setstate, pfn_brd_set_state);
--		STORE_FXN(fxn_brd_memcopy, pfn_brd_mem_copy);
--		STORE_FXN(fxn_brd_memwrite, pfn_brd_mem_write);
--		STORE_FXN(fxn_brd_memmap, pfn_brd_mem_map);
--		STORE_FXN(fxn_brd_memunmap, pfn_brd_mem_un_map);
-+		STORE_FXN(fxn_brd_memcopy, brd_mem_copy);
-+		STORE_FXN(fxn_brd_memwrite, brd_mem_write);
-+		STORE_FXN(fxn_brd_memmap, brd_mem_map);
-+		STORE_FXN(fxn_brd_memunmap, brd_mem_un_map);
- 		STORE_FXN(fxn_chnl_create, pfn_chnl_create);
- 		STORE_FXN(fxn_chnl_destroy, pfn_chnl_destroy);
- 		STORE_FXN(fxn_chnl_open, pfn_chnl_open);
-@@ -1129,11 +1129,11 @@ static void store_interface_fxns(struct bridge_drv_interface *drv_fxns,
- 	DBC_ENSURE(intf_fxns->pfn_dev_create != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_dev_destroy != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_dev_cntrl != NULL);
--	DBC_ENSURE(intf_fxns->pfn_brd_monitor != NULL);
-+	DBC_ENSURE(intf_fxns->brd_monitor != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_brd_start != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_brd_stop != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_brd_status != NULL);
--	DBC_ENSURE(intf_fxns->pfn_brd_read != NULL);
-+	DBC_ENSURE(intf_fxns->brd_read != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_brd_write != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_chnl_create != NULL);
- 	DBC_ENSURE(intf_fxns->pfn_chnl_destroy != NULL);
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index 82dade3..ffa3778 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -577,7 +577,7 @@ func_cont:
- 	if (!status) {
- 		/* Create object for dynamic loading */
- 
--		status = hnode_mgr->nldr_fxns.pfn_allocate(hnode_mgr->nldr_obj,
-+		status = hnode_mgr->nldr_fxns.allocate(hnode_mgr->nldr_obj,
- 							   (void *)pnode,
- 							   &pnode->dcd_props.
- 							   obj_data.node_obj,
-@@ -3117,7 +3117,7 @@ static u32 ovly(void *priv_ref, u32 dsp_run_addr, u32 dsp_load_addr,
- 	status = dev_get_bridge_context(hnode_mgr->hdev_obj, &hbridge_context);
- 	if (!status) {
- 		status =
--		    (*intf_fxns->pfn_brd_mem_copy) (hbridge_context,
-+		    (*intf_fxns->brd_mem_copy) (hbridge_context,
- 						dsp_run_addr, dsp_load_addr,
- 						ul_num_bytes, (u32) mem_space);
- 		if (!status)
-@@ -3159,7 +3159,7 @@ static u32 mem_write(void *priv_ref, u32 dsp_add, void *pbuf,
- 	/* Call new MemWrite function */
- 	intf_fxns = hnode_mgr->intf_fxns;
- 	status = dev_get_bridge_context(hnode_mgr->hdev_obj, &hbridge_context);
--	status = (*intf_fxns->pfn_brd_mem_write) (hbridge_context, pbuf,
-+	status = (*intf_fxns->brd_mem_write) (hbridge_context, pbuf,
- 					dsp_add, ul_num_bytes, mem_sect_type);
- 
- 	return ul_num_bytes;
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index d5f6719..03bc214 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -1397,7 +1397,7 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 		if (!map_obj)
- 			status = -ENOMEM;
- 		else
--			status = (*p_proc_object->intf_fxns->pfn_brd_mem_map)
-+			status = (*p_proc_object->intf_fxns->brd_mem_map)
- 			    (p_proc_object->hbridge_context, pa_align, va_align,
- 			     size_align, ul_map_attr, map_obj->pages);
- 	}
-@@ -1720,7 +1720,7 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 	status = dmm_un_map_memory(dmm_mgr, (u32) va_align, &size_align);
- 	/* Remove mapping from the page tables. */
- 	if (!status) {
--		status = (*p_proc_object->intf_fxns->pfn_brd_mem_un_map)
-+		status = (*p_proc_object->intf_fxns->brd_mem_un_map)
- 		    (p_proc_object->hbridge_context, va_align, size_align);
- 	}
- 
-@@ -1828,7 +1828,7 @@ static int proc_monitor(struct proc_object *proc_obj)
- 		}
- 	}
- 	/* Place the Board in the Monitor State */
--	if (!((*proc_obj->intf_fxns->pfn_brd_monitor)
-+	if (!((*proc_obj->intf_fxns->brd_monitor)
- 			  (proc_obj->hbridge_context))) {
- 		status = 0;
- 		if (!((*proc_obj->intf_fxns->pfn_brd_status)
-diff --git a/drivers/staging/tidspbridge/rmgr/strm.c b/drivers/staging/tidspbridge/rmgr/strm.c
-index d36b316..4adb7a0 100644
---- a/drivers/staging/tidspbridge/rmgr/strm.c
-+++ b/drivers/staging/tidspbridge/rmgr/strm.c
-@@ -344,7 +344,7 @@ int strm_get_info(struct strm_object *stream_obj,
- 	stream_info->user_strm->ul_number_bytes = chnl_info_obj.bytes_tx;
- 	stream_info->user_strm->sync_object_handle = chnl_info_obj.event_obj;
- 	/* Determine stream state based on channel state and info */
--	if (chnl_info_obj.dw_state & CHNL_STATEEOS) {
-+	if (chnl_info_obj.state & CHNL_STATEEOS) {
- 		stream_info->user_strm->ss_stream_state = STREAM_DONE;
- 	} else {
- 		if (chnl_info_obj.cio_cs > 0)
--- 
-1.6.3.3
+2) SFC driver crash and list corruption fixes from Ben Hutchings.
 
+3) EHEA driver needs to respect ethtool enable/disable LRO requests
+   otherwise bridging and routing won't work properly, from
+   Breno Leitao.
+
+4) x25 device refcount leak fix from Apollon Oikonomopoulos.
+
+5) Endian fixes in LSO code in bnx2x driver from Vladislav Zolotarov.
+
+6) stmmac driver uses spinlock uninitialized, from Vlad Lungu.
+
+7) enic driver passes wrong pointer to IRQ handler, from Vasanthy Kolluri.
+
+8) TCP time-wait bucket message can spam logs, use event counter instead.
+   From Tom Herbert.
+
+9) IPSEC code leaks in error path of xfrm_state_migrate(), fix from
+   Thomas Egerer.
+
+10) Elide checksumming offload on GE0301 option HSO cards
+    From Thomas Bogendoerfer.
+
+11) Runtime PM fix in r8169 from Rafael J. Wysocki.
+
+12) Netlink group improperly choosen during ipv6 net link advertisement.
+    Fix frm Nicolas Dichtel.
+
+13) Improper cleanup in econet's SIOCSIFADDR ioctl code.
+
+14) benet driver loads mac addresses incorrectly due to improperly
+    coded memcpy() call, fix from Joe Jin.
+
+15) Several fixes from Eric Dumazet:
+
+    a) sk_filter() hits RCU incorrectly
+    b) llc leaks netdevices
+    c) obscure sysctl settings can make tcp divide by zero
+    d) Use ACCESS_ONCE() when reading sysctl_tcp_cookie_size
+       multiple times
+    e) Fix crash when skb_defer_rx_timestamp() encounters a packet
+       lacking a link-level header.
+
+16) ECONET aun_incoming() makes bogus unconditional deref of skb->dev,
+    it should use dst->dev when 'dst' is non-NULL instead.
+
+17) Blocking mechanism for bonding netpoll support via a cpumask is
+    busted, use a counter instead.  From Neil Horman.
+
+18) SCTP_SET_PEER_PRIMARY_ADDR erroneously does not accept ipv4-mapped	
+    ipv6 addresses, fix from Wei Yongjun.
+
+19) ATM layer creates sysfs device links with bogus parent relationships,
+    fix from Dan Williams.
+
+20) Fix deadlock in qlge, from Ron Mercer.
+
+21) Several bluetooth fixes:
+    a) Fix error propagation from sco_connect_ind(), sco_connect_cfm(), and
+       sco_disconn_cfm().
+    b) fix btusb log spam during autosuspend
+    c) Add USB device ID for Atheros 3011
+
+22) Fix bonding regression in MAC address assignment behavior, from
+    David Strand.
+
+23) IPV6 over IPV4 tunnel fix from David McCullough.  SIT driver was
+    consuming all the packets and sending ICMP port unreachables out.
+
+24) Various ath9k, mac80211, orinoco, libertas et al. fixes via John
+    Linville and the wireless team.
+
+25) Fix NULL deref during ixgbe shutdown, from Don Skidmore.
+
+26) TCP receive window initialization boundary checks improperly
+    coded, fix from Nandita Dukkipati.
+
+27) IFB transmit queue can deadlock, fix from Changli Gao.
+
+28) Modalias fixes in l2tp and connector.
+
+29) IPv6 tunnel uses incorrect MTU when encap limit is enabled, fix from
+    Anders Franzen.
+
+30) VHOST dirty page logging traversal fix from Michael S. Tsirkin.
+
+Please pull, thanks a lot!
+
+The following changes since commit bcb38ceb225f5d5b2198a2755277cd441ed1e82b:
+
+  Revert "debug_locks: set oops_in_progress if we will log messages." (2010-11-29 15:18:28 -0800)
+
+are available in the git repository at:
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Alexander V. Lukyanov (1):
+      tulip: fix hang in dmfe driver on sending of big packet
+
+Anders Franzen (1):
+      Make the ip6_tunnel reflect the true mtu.
+
+Andrej Ota (1):
+      pppoe.c: Fix kernel panic caused by __pppoe_xmit
+
+Apollon Oikonomopoulos (1):
+      x25: decrement netdev reference counts on unload
+
+Bala Shanmugam (1):
+      Bluetooth: Add new PID for Atheros 3011
+
+Ben Hutchings (2):
+      sfc: Fix crash in legacy onterrupt handler during ring reallocation
+      sfc: Fix NAPI list corruption during ring reallocation
+
+Breno Leitao (1):
+      ehea: Fixing LRO configuration
+
+Casey Leedom (1):
+      cxgb4vf: Ingress Queue Entry Size needs to be 64 bytes
+
+Changli Gao (1):
+      ifb: goto resched directly if error happens and dp->tq isn't empty
+
+Christian Lamparter (2):
+      carl9170: fix carl9170_tx_prepare typo
+      mac80211: ignore non-bcast mcast deauth/disassoc franes
+
+Dan Williams (1):
+      atm: correct sysfs 'device' link creation and parent relationships
+
+Daniel Drake (1):
+      libertas: fix memory corruption in lbs_remove_card()
+
+David Kilroy (4):
+      orinoco: abort scan on interface down
+      orinoco: initialise priv->hw before assigning the interrupt
+      orinoco: clear countermeasure setting on commit
+      orinoco: fix TKIP countermeasure behaviour
+
+David McCullough (1):
+      net/ipv6/sit.c: return unhandled skb to tunnel4_rcv
+
+David S. Miller (5):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+      Merge branch 'sfc-2.6.37' of git://git.kernel.org/.../bwh/sfc-2.6
+      econet: Fix crash in aun_incoming().
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+      Merge branch 'vhost-net' of git://git.kernel.org/.../mst/vhost
+
+David Strand (1):
+      bonding: check for assigned mac before adopting the slaves mac address
+
+Dimitris Michailidis (1):
+      cxgb4: fix MAC address hash filter
+
+Don Skidmore (1):
+      ixgbe: fix possible NULL pointer deference in shutdown path
+
+Eric Dumazet (5):
+      filter: fix sk_filter rcu handling
+      llc: fix a device refcount imbalance
+      tcp: avoid a possible divide by zero
+      tcp: protect sysctl_tcp_cookie_size reads
+      net: fix skb_defer_rx_timestamp()
+
+Felix Fietkau (3):
+      ath9k_hw: fix endian issues with CTLs on AR9003
+      ath9k_hw: fix more bitfield related endian issues
+      ath9k: fix a DMA related race condition on reset
+
+Gabor Juhos (1):
+      ath9k: use per-device struct for pm_qos_* operations
+
+Giuseppe CAVALLARO (1):
+      phy: add the IC+ IP1001 driver
+
+Gustavo F. Padovan (1):
+      Bluetooth: Fix not returning proper error in SCO
+
+Hauke Mehrtens (1):
+      b44: fix workarround for wap54g10
+
+Helmut Schaa (1):
+      mac80211: Fix BUG in pskb_expand_head when transmitting shared skbs
+
+Javier Cardona (3):
+      ath5k: Fix beaconing in mesh mode
+      ath5k: Prevent mesh interfaces from being counted as ad-hoc
+      ath5k: Put the right tsf value in mesh beacons
+
+Joe Jin (1):
+      driver/net/benet: fix be_cmd_multicast_set() memcpy bug
+
+Johannes Berg (1):
+      ath9k/carl9170: advertise P2P
+
+John W. Linville (2):
+      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth-2.6
+      Revert "ath9k: Fix STA disconnect issue due to received MIC failed bcast frames"
+
+Jouni Malinen (1):
+      mac80211: Fix frame injection using non-AP vif
+
+Kim Lilliestierna XX (1):
+      CAIF: Fix U5500 compile error for shared memory driver
+
+Krzysztof Halasa (1):
+      WAN: Fix a TX IRQ causing BUG() in PC300 and PCI200SYN drivers.
+
+Kyle McMartin (1):
+      MAINTAINERS: remove me from tulip
+
+Martin Lucina (1):
+      net: Document the kernel_recvmsg() function
+
+Matteo Croce (1):
+      ath9k: fix bug in tx power
+
+Michael S. Tsirkin (1):
+      vhost: correctly set bits of dirty pages
+
+Michal Marek (1):
+      l2tp: Fix modalias of l2tp_ip
+
+Nandita Dukkipati (1):
+      tcp: Bug fix in initialization of receive window.
+
+Neil Horman (1):
+      net: Convert netpoll blocking api in bonding driver to be a counter
+
+Nelson Elhage (1):
+      econet: Do the correct cleanup after an unprivileged SIOCSIFADDR.
+
+Nicolas Dichtel (1):
+      ipv6: fix nl group when advertising a new link
+
+Rafael J. Wysocki (1):
+      r8169: Fix runtime power management
+
+Rajkumar Manoharan (2):
+      ath9k: Disable SWBA interrupt on remove_interface
+      ath9k: fix beacon resource related race condition
+
+Ron Mercer (1):
+      qlge: Fix deadlock when cancelling worker.
+
+Senthil Balasubramanian (3):
+      mac80211: Fix STA disconnect due to MIC failure
+      ath9k: Fix STA disconnect issue due to received MIC failed bcast frames
+      ath9k: Fix STA disconnect issue due to received MIC failed bcast frames
+
+Stefan Seyfried (1):
+      Bluetooth: Fix log spamming in btusb due to autosuspend
+
+Stephen Hemminger (1):
+      connector: add module alias
+
+Sujith Manoharan (1):
+      ath9k_htc: Fix suspend/resume
+
+Sven Neumann (1):
+      libertas: fix invalid access
+
+Thomas Bogendoerfer (1):
+      hso: IP checksuming doesn't work on GE0301 option cards
+
+Thomas Egerer (1):
+      xfrm: Fix xfrm_state_migrate leak
+
+Tom Herbert (1):
+      tcp: Replace time wait bucket msg by counter
+
+Vasanthakumar Thiagarajan (1):
+      ath9k: Fix bug in reading input gpio state for ar9003
+
+Vasanthy Kolluri (1):
+      enic: Bug Fix: Pass napi reference to the isr that services receive queue
+
+Vlad Lungu (1):
+      stmmac: priv->lock can be used uninitialized
+
+Vladislav Zolotarov (3):
+      bnx2x: LSO code was broken on BE platforms
+      bnx2x: Fixed a compilation warning
+      bnx2x: Advance a version number to 1.60.01-0
+
+Wei Yongjun (1):
+      SCTP: Fix SCTP_SET_PEER_PRIMARY_ADDR to accpet v4mapped address
+
+ MAINTAINERS                                    |    1 -
+ drivers/atm/adummy.c                           |    2 +-
+ drivers/atm/ambassador.c                       |    3 +-
+ drivers/atm/atmtcp.c                           |    2 +-
+ drivers/atm/eni.c                              |    2 +-
+ drivers/atm/firestream.c                       |    2 +-
+ drivers/atm/fore200e.c                         |   14 ++--
+ drivers/atm/he.c                               |    2 +-
+ drivers/atm/horizon.c                          |    3 +-
+ drivers/atm/idt77252.c                         |    3 +-
+ drivers/atm/iphase.c                           |    2 +-
+ drivers/atm/lanai.c                            |    2 +-
+ drivers/atm/nicstar.c                          |    3 +-
+ drivers/atm/solos-pci.c                        |    8 +-
+ drivers/atm/zatm.c                             |    2 +-
+ drivers/bluetooth/ath3k.c                      |    4 +
+ drivers/bluetooth/btusb.c                      |   12 +++-
+ drivers/connector/connector.c                  |    1 +
+ drivers/net/b44.c                              |   11 ++--
+ drivers/net/benet/be_cmds.c                    |    2 +-
+ drivers/net/bnx2x/bnx2x.h                      |    4 +-
+ drivers/net/bnx2x/bnx2x_cmn.c                  |   42 ++++++++-----
+ drivers/net/bnx2x/bnx2x_init_ops.h             |    4 +-
+ drivers/net/bonding/bond_main.c                |   19 ++----
+ drivers/net/bonding/bonding.h                  |   12 +---
+ drivers/net/caif/caif_shm_u5500.c              |    2 +-
+ drivers/net/caif/caif_shmcore.c                |    2 +-
+ drivers/net/cxgb4/t4_hw.c                      |    2 +-
+ drivers/net/cxgb4vf/cxgb4vf_main.c             |   15 ++++-
+ drivers/net/ehea/ehea_ethtool.c                |    9 +++
+ drivers/net/ehea/ehea_main.c                   |    7 ++-
+ drivers/net/enic/enic_main.c                   |    3 +-
+ drivers/net/ifb.c                              |    2 +
+ drivers/net/ixgbe/ixgbe_main.c                 |    3 +
+ drivers/net/phy/Kconfig                        |    2 +-
+ drivers/net/phy/icplus.c                       |   59 +++++++++++++++++--
+ drivers/net/pppoe.c                            |    2 +-
+ drivers/net/qlge/qlge.h                        |    1 +
+ drivers/net/qlge/qlge_main.c                   |    1 +
+ drivers/net/qlge/qlge_mpi.c                    |   12 +---
+ drivers/net/r8169.c                            |   26 +++++---
+ drivers/net/sfc/efx.c                          |   43 +++++++++-----
+ drivers/net/sfc/net_driver.h                   |    2 +
+ drivers/net/sfc/nic.c                          |    6 ++
+ drivers/net/stmmac/stmmac_main.c               |    4 +-
+ drivers/net/tulip/dmfe.c                       |    6 +-
+ drivers/net/usb/hso.c                          |    4 -
+ drivers/net/wan/hd64572.c                      |    5 +-
+ drivers/net/wireless/ath/ath5k/base.c          |   13 +++--
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   73 ++++++++++++-----------
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    9 +--
+ drivers/net/wireless/ath/ath9k/ath9k.h         |    6 +-
+ drivers/net/wireless/ath/ath9k/eeprom.c        |    6 +-
+ drivers/net/wireless/ath/ath9k/eeprom.h        |   27 +++++----
+ drivers/net/wireless/ath/ath9k/eeprom_def.c    |   23 +++++---
+ drivers/net/wireless/ath/ath9k/hif_usb.c       |    7 ++
+ drivers/net/wireless/ath/ath9k/htc.h           |    3 +
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c  |    6 ++
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c  |    4 +-
+ drivers/net/wireless/ath/ath9k/hw.c            |    3 +-
+ drivers/net/wireless/ath/ath9k/init.c          |    9 +--
+ drivers/net/wireless/ath/ath9k/mac.c           |    3 +-
+ drivers/net/wireless/ath/ath9k/main.c          |   28 +++++----
+ drivers/net/wireless/ath/ath9k/recv.c          |    9 +++-
+ drivers/net/wireless/ath/ath9k/reg.h           |    6 +-
+ drivers/net/wireless/ath/ath9k/xmit.c          |   22 ++-----
+ drivers/net/wireless/ath/carl9170/fw.c         |    3 +-
+ drivers/net/wireless/ath/carl9170/main.c       |    3 +-
+ drivers/net/wireless/ath/carl9170/tx.c         |    2 +-
+ drivers/net/wireless/libertas/if_sdio.c        |    1 -
+ drivers/net/wireless/libertas/if_spi.c         |    1 -
+ drivers/net/wireless/libertas/main.c           |    2 -
+ drivers/net/wireless/orinoco/main.c            |   18 ++++--
+ drivers/net/wireless/orinoco/orinoco_cs.c      |   14 ++--
+ drivers/net/wireless/orinoco/scan.c            |    8 +++
+ drivers/net/wireless/orinoco/scan.h            |    1 +
+ drivers/net/wireless/orinoco/spectrum_cs.c     |   14 ++--
+ drivers/net/wireless/orinoco/wext.c            |    4 +-
+ drivers/usb/atm/usbatm.c                       |   15 +----
+ drivers/vhost/vhost.c                          |    3 +-
+ include/linux/atmdev.h                         |    6 +-
+ include/linux/snmp.h                           |    1 +
+ include/net/sock.h                             |    4 +-
+ net/atm/atm_sysfs.c                            |    3 +-
+ net/atm/resources.c                            |    7 +-
+ net/atm/resources.h                            |    2 +-
+ net/bluetooth/sco.c                            |    6 +-
+ net/core/filter.c                              |   19 ++----
+ net/core/timestamping.c                        |    6 +-
+ net/econet/af_econet.c                         |   12 +++-
+ net/ipv4/proc.c                                |    1 +
+ net/ipv4/tcp_minisocks.c                       |    2 +-
+ net/ipv4/tcp_output.c                          |   42 ++++++++------
+ net/ipv6/addrconf.c                            |    4 +-
+ net/ipv6/ip6_tunnel.c                          |    7 ++
+ net/ipv6/sit.c                                 |    3 +-
+ net/l2tp/l2tp_ip.c                             |    6 ++-
+ net/llc/af_llc.c                               |    5 +-
+ net/mac80211/rx.c                              |    6 ++
+ net/mac80211/tx.c                              |   28 ++++++++-
+ net/sctp/socket.c                              |    8 +++
+ net/socket.c                                   |   15 +++++
+ net/x25/x25_link.c                             |    1 +
+ net/xfrm/xfrm_state.c                          |    2 +-
+ 104 files changed, 569 insertions(+), 353 deletions(-)
