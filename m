@@ -1,36 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab0LNLMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 06:12:52 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:51171 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757562Ab0LNLMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 06:12:50 -0500
-Message-ID: <4D07512D.5070801@stericsson.com>
-Date: Tue, 14 Dec 2010 12:12:45 +0100
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1755670Ab0LNL1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 06:27:03 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44048 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab0LNL1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 06:27:01 -0500
+Date: Tue, 14 Dec 2010 16:56:55 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v2 PATCH 2/3] sched: add yield_to function
+Message-ID: <20101214112655.GB3665@linux.vnet.ibm.com>
+Reply-To: vatsa@linux.vnet.ibm.com
+References: <20101213224434.7495edb2@annuminas.surriel.com>
+ <20101213224657.7e141746@annuminas.surriel.com>
+ <1292306896.7448.157.camel@marge.simson.net>
+ <20101214102409.GA3665@linux.vnet.ibm.com>
+ <1292324638.7436.29.camel@marge.simson.net>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: Use NULL to initialise NULL pointers in ab8500-debugfs
-References: <1292249320-17633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1292249320-17633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292324638.7436.29.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 03:08 PM, Mark Brown wrote:
-> Partly for coding style reasons, but mostly because sparse warns on it.
+On Tue, Dec 14, 2010 at 12:03:58PM +0100, Mike Galbraith wrote:
+> On Tue, 2010-12-14 at 15:54 +0530, Srivatsa Vaddagiri wrote:
+> > On Tue, Dec 14, 2010 at 07:08:16AM +0100, Mike Galbraith wrote:
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-Acked-by: Mattias Wallin <mattias.wallin@stericsson.com>
+> > > That part looks ok, except for the yield cross cpu bit.  Trying to yield
+> > > a resource you don't have doesn't make much sense to me.
+> > 
+> > So another (crazy) idea is to move the "yieldee" task on another cpu over to 
+> > yielding task's cpu, let it run till the end of yielding tasks slice and then
+> > let it go back to the original cpu at the same vruntime position!
+> 
+> Yeah, pulling the intended recipient makes fine sense.  If he doesn't
+> preempt you, you can try to swap vruntimes or whatever makes arithmetic
+> sense and will help.  Dunno how you tell him how long he can keep the
+> cpu though,
 
-Yours,
-Mattias Wallin
+can't we adjust the new task's [prev_]sum_exec_runtime a bit so that it is 
+preempted at the end of yielding task's timeslice?
+
+> and him somehow going back home needs to be a plain old
+> migration, no fancy restoration of ancient history vruntime.
+
+What is the issue if it gets queued at the old vruntime (assuming fair stick is
+still behind that)? Without that it will hurt fairness for the yieldee (and
+perhaps of the overall VM in this case).
+
+- vatsa
