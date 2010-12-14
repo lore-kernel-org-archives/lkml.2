@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760012Ab0LNUw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 15:52:27 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59824 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759994Ab0LNUw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 15:52:26 -0500
-Date: Tue, 14 Dec 2010 12:51:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] cramfs: generate unique inode number for better inode
- cache usage
-Message-Id: <20101214125143.0ab00c97.akpm@linux-foundation.org>
-In-Reply-To: <1292150923-25586-1-git-send-email-stefani@seibold.net>
-References: <1292150923-25586-1-git-send-email-stefani@seibold.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759998Ab0LNUy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 15:54:26 -0500
+Received: from www.tglx.de ([62.245.132.106]:47936 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759883Ab0LNUyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 15:54:25 -0500
+Date: Tue, 14 Dec 2010 21:54:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Kiszka <jan.kiszka@web.de>
+cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+        Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
+In-Reply-To: <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de>
+Message-ID: <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6>
+References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Dec 2010 11:48:42 +0100
-stefani@seibold.net wrote:
+On Mon, 13 Dec 2010, Jan Kiszka wrote:
+> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+>  	/* Make sure it's not being used on another CPU: */
+>  	synchronize_irq(irq);
+>  
+> +	if (single_handler)
+> +		desc->irq_data.drv_status &= ~IRQS_SHARED;
+> +
 
-> This patch generates a unique inode numbers for any entries in the cram file
-> system. For files which did not contain data's (device nodes, fifos and
-> sockets) the offset of the directory entry inside + 1 will be used as the
-> inode number.
-> 
-> The + 1 for the inode will it make possible to distinguish between
-> a file which contains no data and files which has data, the later one has
-> a inode value where the lower two bits are always 0.
-> 
-> It also reimplement the behavoir to set the size and the number of block
-> to 0 for special file, which is the right value for devices, fifos and
-> sockets.
-> 
-> As a little benefit it will be also more compatible which older
-> mkcramfs, because it will never use the cramfs_inode->offset for
-> creating a inode number for special files.
+What's the reason to clear this flag outside of the desc->lock held
+region. I need this status for other purposes as well, where I
+definitely need serialization.
 
-Did you look at using iunique() to generate cramfs inode numbers?
+> +	mutex_lock(&register_lock);
+> +
+> +	old_action = desc->action;
+> +	if (old_action && (old_action->flags & IRQF_ADAPTIVE) &&
+> +	    !(desc->irq_data.drv_status & IRQS_SHARED)) {
+> +		/*
+> +		 * Signal the old handler that is has to switch to shareable
+> +		 * handling mode. Disable the line to avoid any conflict with
+> +		 * a real IRQ.
+> +		 */
+> +		disable_irq(irq);
+> +		local_irq_disable();
+> +
+> +		desc->irq_data.drv_status |= IRQS_SHARED | IRQS_MAKE_SHAREABLE;
+
+Unserialized access as well. Will think about it.
+
+> +		old_action->handler(irq, old_action->dev_id);
+> +		desc->irq_data.drv_status &= ~IRQS_MAKE_SHAREABLE;
+
+Thanks,
+
+	tglx
