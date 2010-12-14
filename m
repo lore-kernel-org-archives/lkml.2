@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab0LNKJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 05:09:26 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:52251 "EHLO mgw-sa02.nokia.com"
+	id S932215Ab0LNKJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 05:09:22 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:52265 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab0LNKJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 05:09:18 -0500
+	id S932131Ab0LNKJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 05:09:19 -0500
 From: Carlos Chinea <carlos.chinea@nokia.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-omap@vger.kernel.org, Andras Domokos <andras.domokos@nokia.com>
-Subject: [RFC PATCHv4 5/7] HSI: hsi_char: Add HSI char device kernel configuration
-Date: Tue, 14 Dec 2010 12:09:41 +0200
-Message-Id: <1292321383-30200-6-git-send-email-carlos.chinea@nokia.com>
+Subject: [RFC PATCHv4 7/7] HSI: hsi_char: Update ioctl-number.txt
+Date: Tue, 14 Dec 2010 12:09:43 +0200
+Message-Id: <1292321383-30200-8-git-send-email-carlos.chinea@nokia.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
 References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
@@ -22,92 +22,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andras Domokos <andras.domokos@nokia.com>
 
-Add HSI character device kernel configuration
+Added ioctl range for HSI char devices to the documentation
 
 Signed-off-by: Andras Domokos <andras.domokos@nokia.com>
 Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
 ---
- drivers/hsi/Kconfig          |    1 +
- drivers/hsi/Makefile         |    2 +-
- drivers/hsi/clients/Kconfig  |   13 +++++++++++++
- drivers/hsi/clients/Makefile |    5 +++++
- include/linux/Kbuild         |    1 +
- include/linux/hsi/Kbuild     |    1 +
- 6 files changed, 22 insertions(+), 1 deletions(-)
- create mode 100644 drivers/hsi/clients/Kconfig
- create mode 100644 drivers/hsi/clients/Makefile
- create mode 100644 include/linux/hsi/Kbuild
+ Documentation/ioctl/ioctl-number.txt |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hsi/Kconfig b/drivers/hsi/Kconfig
-index bba73ea..2c76de4 100644
---- a/drivers/hsi/Kconfig
-+++ b/drivers/hsi/Kconfig
-@@ -15,5 +15,6 @@ config HSI_BOARDINFO
- 	default y
- 
- source "drivers/hsi/controllers/Kconfig"
-+source "drivers/hsi/clients/Kconfig"
- 
- endif # HSI
-diff --git a/drivers/hsi/Makefile b/drivers/hsi/Makefile
-index 0de87bd..d47ca5d 100644
---- a/drivers/hsi/Makefile
-+++ b/drivers/hsi/Makefile
-@@ -3,4 +3,4 @@
- #
- obj-$(CONFIG_HSI_BOARDINFO)	+= hsi_boardinfo.o
- obj-$(CONFIG_HSI)		+= hsi.o
--obj-y				+= controllers/
-+obj-y				+= controllers/ clients/
-diff --git a/drivers/hsi/clients/Kconfig b/drivers/hsi/clients/Kconfig
-new file mode 100644
-index 0000000..3bacd27
---- /dev/null
-+++ b/drivers/hsi/clients/Kconfig
-@@ -0,0 +1,13 @@
-+#
-+# HSI clients configuration
-+#
-+
-+comment "HSI clients"
-+
-+config HSI_CHAR
-+	tristate "HSI/SSI character driver"
-+	depends on HSI
-+	---help---
-+	  If you say Y here, you will enable the HSI/SSI character driver.
-+	  This driver provides a simple character device interface for
-+	  serial communication with the cellular modem over HSI/SSI bus.
-diff --git a/drivers/hsi/clients/Makefile b/drivers/hsi/clients/Makefile
-new file mode 100644
-index 0000000..327c0e2
---- /dev/null
-+++ b/drivers/hsi/clients/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for HSI clients
-+#
-+
-+obj-$(CONFIG_HSI_CHAR)	+= hsi_char.o
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 97319a8..b1eafe6 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -2,6 +2,7 @@ header-y += byteorder/
- header-y += can/
- header-y += dvb/
- header-y += hdlc/
-+header-y += hsi/
- header-y += isdn/
- header-y += nfsd/
- header-y += raid/
-diff --git a/include/linux/hsi/Kbuild b/include/linux/hsi/Kbuild
-new file mode 100644
-index 0000000..271a770
---- /dev/null
-+++ b/include/linux/hsi/Kbuild
-@@ -0,0 +1 @@
-+header-y += hsi_char.h
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index 63ffd78..955bf5e 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -225,6 +225,7 @@ Code  Seq#(hex)	Include File		Comments
+ 'j'	00-3F	linux/joystick.h
+ 'k'	00-0F	linux/spi/spidev.h	conflict!
+ 'k'	00-05	video/kyro.h		conflict!
++'k'	10-17	linux/hsi/hsi_char.h	HSI character device
+ 'l'	00-3F	linux/tcfs_fs.h		transparent cryptographic file system
+ 					<http://web.archive.org/web/*/http://mikonos.dia.unisa.it/tcfs>
+ 'l'	40-7F	linux/udf_fs_i.h	in development:
 -- 
 1.7.1
 
