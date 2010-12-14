@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab0LNEn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 23:43:29 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55272 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161Ab0LNEn2 (ORCPT
+	id S1758034Ab0LNEnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 23:43:55 -0500
+Received: from vms173013pub.verizon.net ([206.46.173.13]:47685 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758001Ab0LNEnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 23:43:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UhgSTcdwhG/gfOVOUnipMbCB3mVdFkLhHEmP5Yw0t+TxcPKWTO5n1veMRb1VzsK1id
-         LctSYoEaIyp55nvmm1QH74/B2rS/bbzZmQWR78WF7NdjhBhRU55qgFnAl+rV0+Xla9mC
-         83FdxVnqb/2Zk2tjYUj+h15qtUK9Bz6NgAPJU=
-Subject: Re: [PATCH 1/2] Staging: vme_ca91cx42: use __dev{init,exit} for
- ->probe/remove
-From: Namhyung Kim <namhyung@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Martyn Welch <martyn.welch@ge.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101213182656.GA4645@kroah.com>
-References: <1292141068-31458-1-git-send-email-namhyung@gmail.com>
-	 <20101213182656.GA4645@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Dec 2010 13:43:19 +0900
-Message-ID: <1292301799.1696.22.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 13 Dec 2010 23:43:53 -0500
+Date: Mon, 13 Dec 2010 23:43:47 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -v4 0/3] ACPI, APEI,
+ Report GHES error information via printk
+In-reply-to: <1291688551-14395-1-git-send-email-ying.huang@intel.com>
+Message-id: <alpine.LFD.2.00.1012132343100.16730@x980>
+References: <1291688551-14395-1-git-send-email-ying.huang@intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-12-13 (월), 10:26 -0800, Greg KH:
-> On Sun, Dec 12, 2010 at 05:04:27PM +0900, Namhyung Kim wrote:
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> > ---
-> >  drivers/staging/vme/bridges/vme_ca91cx42.c |   12 +++++++-----
+On Tue, 7 Dec 2010, Huang Ying wrote:
+
+> The recent consensus is that hardware error should be reported via printk.
+> This patch adds printk support to APEI GHES.
 > 
-> This patch does not apply to the linux-next tree, what did you generate
-> it against?
+> v4:
 > 
+> - Remove pr_pfx, use printk directly
 
-Argh.. sorry, it was Linus's tree. Will resend if you want.
+v4 applied to acpi-test
 
+thanks,
+Len Brown, Intel Open Source Technology Center
 
-> Also, why are you marking these functions, is it really needed?  Same
-> thing for your 2/2 patch.
 > 
-
-?? Maybe I don't get what you mean exactly.. They are hotplugging
-stuffs, right? So shouldn't they be marked as such?
-
-
--- 
-Regards,
-Namhyung Kim
-
-
+> v3:
+> 
+> - Add document for output format per Andrew's comments
+> - Move pr_pfx into printk.h, hope it is useful for others too
+> - Fixes some issues according to comments
+> 
+> v2:
+> 
+> - Some minor adjustment of PCIe error section definition and printk format
+> 
+> [PATCH -v4 1/3] Add CPER PCIe error section structure and constants definition
+> [PATCH -v4 2/3] ACPI, APEI, Add APEI generic error status printing support
+> [PATCH -v4 3/3] ACPI, APEI, Report GHES error information via printk
+> 
