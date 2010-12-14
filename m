@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab0LNAth (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:49:37 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45852 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757983Ab0LNAtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:49:35 -0500
-Date: Tue, 14 Dec 2010 00:49:20 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        stable@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com, jody@nctritech.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com, jody@nctritech.com
-In-Reply-To: <20101116212442.059967454@sbsiddha-MOBL3.sc.intel.com>
-References: <20101116212442.059967454@sbsiddha-MOBL3.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, xsave: Use alloc_bootmem_align() instead of alloc_bootmem()
-Message-ID: <tip-10340ae130fb70352eae1ae8a00b7906d91bf166@git.kernel.org>
-Git-Commit-ID: 10340ae130fb70352eae1ae8a00b7906d91bf166
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 00:49:21 +0000 (UTC)
+	id S1758762Ab0LNAuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:50:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36595 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757983Ab0LNAuX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:50:23 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=kwUP-EQ6x2wA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=2TqYCPFLtvIFBJJXcEkA:9 a=EcJYKQq1JoHYQZmBRy4A:7 a=PIGx9NqBIGV52XOG2rZH3vnLIOsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL] x86: Remove unlikey()'s from sched_switch
+ segment tests
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Dec 2010 19:50:21 -0500
+Message-ID: <1292287821.5015.1784.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  10340ae130fb70352eae1ae8a00b7906d91bf166
-Gitweb:     http://git.kernel.org/tip/10340ae130fb70352eae1ae8a00b7906d91bf166
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Tue, 16 Nov 2010 13:23:51 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 13 Dec 2010 16:13:11 -0800
 
-x86, xsave: Use alloc_bootmem_align() instead of alloc_bootmem()
+Ingo or Thomas,
 
-Alignment of alloc_bootmem() depends on the value of
-L1_CACHE_SHIFT. What we need here, however, is 64 byte alignment.  Use
-alloc_bootmem_align() and explicitly specify the alignment instead.
+Please pull the latest unlikely/x86 tree, which can be found at:
 
-This fixes a kernel boot crash reported by Jody when the cpu in .config
-is set to MPENTIUMII but the kernel is booted on a xsave-capable CPU.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+unlikely/x86
 
-Reported-by: Jody Bruchon <jody@nctritech.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <20101116212442.059967454@sbsiddha-MOBL3.sc.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@kernel.org>
----
- arch/x86/kernel/xsave.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 9c253bd..5471285 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -394,7 +394,8 @@ static void __init setup_xstate_init(void)
- 	 * Setup init_xstate_buf to represent the init state of
- 	 * all the features managed by the xsave
+Steven Rostedt (1):
+      x86: Remove unlikey()'s from sched_switch segment tests
+
+----
+ arch/x86/kernel/process_64.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+---------------------------
+commit 6ddd9593268de1cc4438e5f2e680887af292f350
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Mon Dec 6 16:04:10 2010 -0500
+
+    x86: Remove unlikey()'s from sched_switch segment tests
+    
+    On a 64bit distro, the chances of having a process using segment registers
+    is very unlikely. But if the userspace is 32bit running on top of
+    a 64bit kernel (very common), then this will be very likely that
+    processes have segment registers in use.
+    
+    Running on my main desktop (which is a 32bit userspace on top of
+    a 64bit kernel) the annotated branch profiler showed the following:
+    
+     correct incorrect  %        Function             File              Line
+     ------- ---------  -        --------             ----              ----
+    25522442 304125815  92 __switch_to               process_64.c         408
+    25522430 304123341  92 __switch_to               process_64.c         412
+    25743877 303891250  92 __switch_to               process_64.c         464
+    
+    Instead of punishing 32bit userspace systems with an unlikely, just remove
+    the unlikely and let gcc optimize for what it thinks is good and let
+    the branch prediction (hopefully) work.
+    
+    Cc: Thomas Gleixner <tglx@linutronix.de>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index b3d7a3a..22de90c 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -405,11 +405,11 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	 * This won't pick up thread selector changes, but I guess that is ok.
  	 */
--	init_xstate_buf = alloc_bootmem(xstate_size);
-+	init_xstate_buf = alloc_bootmem_align(xstate_size,
-+					      __alignof__(struct xsave_struct));
- 	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
+ 	savesegment(es, prev->es);
+-	if (unlikely(next->es | prev->es))
++	if (next->es | prev->es)
+ 		loadsegment(es, next->es);
  
- 	clts();
+ 	savesegment(ds, prev->ds);
+-	if (unlikely(next->ds | prev->ds))
++	if (next->ds | prev->ds)
+ 		loadsegment(ds, next->ds);
+ 
+ 
+@@ -461,7 +461,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 		wrmsrl(MSR_FS_BASE, next->fs);
+ 	prev->fsindex = fsindex;
+ 
+-	if (unlikely(gsindex | next->gsindex | prev->gs)) {
++	if (gsindex | next->gsindex | prev->gs) {
+ 		load_gs_index(next->gsindex);
+ 		if (gsindex)
+ 			prev->gs = 0;
+
+
