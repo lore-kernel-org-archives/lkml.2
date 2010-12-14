@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0LNIa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 03:30:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52377 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756382Ab0LNIa5 convert rfc822-to-8bit (ORCPT
+	id S1756631Ab0LNIfG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 03:35:06 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35549 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab0LNIfF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 03:30:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,341,1288594800"; 
-   d="scan'208";a="867941669"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "kmpark@infradead.org" <kmpark@infradead.org>,
-        "Mai, Leonard" <leonard.mai@intel.com>
-Date: Tue, 14 Dec 2010 16:30:10 +0800
-Subject: RE: [PATCH v5 0/4]implement eMMC4.4 standard HW reset feature
-Thread-Topic: [PATCH v5 0/4]implement eMMC4.4 standard HW reset feature
-Thread-Index: AcuXnH85wEN9oVp1SCCSILYcPs0lZADyz5ZA
-Message-ID: <5D8008F58939784290FAB48F5497519833732FB9F2@shsmsx502.ccr.corp.intel.com>
-References: <20101209122403.GA13236@intel.com>
-In-Reply-To: <20101209122403.GA13236@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Dec 2010 03:35:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xARxXFw1U2SHS8L9oVwb2l5cQtKtPnEjKH310suQGr1xTXcWAzRKZaLl6YkGh2RDGx
+         DALuPI7KciS/1ZCrAWiI+PkNHkmjSKSOG27jK6XNwrUx7HpK/vMSur3u4fMl6cd2lJR1
+         FNPhNYXFdzpOzVnuPS1ZlxJQHNoqQP8Wwlrtw=
 MIME-Version: 1.0
+In-Reply-To: <987664A83D2D224EAE907B061CE93D530193BBAA27@orsmsx505.amr.corp.intel.com>
+References: <AANLkTin2Z5XXf-3Gkqj72+FT4rM+hpqehK8Ys=gg++c9@mail.gmail.com>
+	<987664A83D2D224EAE907B061CE93D530193BBAA27@orsmsx505.amr.corp.intel.com>
+Date: Tue, 14 Dec 2010 09:35:02 +0100
+Message-ID: <AANLkTi=NKa6UCeYsE0Y5iWnq8XYbVtSU7XiKJSNc5tLz@mail.gmail.com>
+Subject: Re: [RFC] persistent store (version 3) (part 1 of 2)
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-This feature can reset eMMC card when card cannot response any command.
-As eMMC4.4 standard recommended, the HW reset will only be launched when card occurs timeout errors.
-To make sure card can be reset, using HW reset instead of using command 0.
+2010/12/13 Luck, Tony <tony.luck@intel.com>:
+>>could you cc linux fs devel and maybe linux embedded mailing list?
+>>Currently I try to insert in mainline the pramfs. Maybe we have the
+>>same goal and we could "merge" our effort. What do you think? Sure the
+>>kernel from this point of view has got a lack of support, I see
+>>different approach and solution to this. I saw in the staging tree a
+>>pmem driver of google guys that it seems to be designed for the same
+>>goal.
+>
+> Marco,
+>
+> My Cc: list is already getting rather long ... I worry about
+> adding more mailing lists to it.  Embedded is a bit worrying
+> for me as I've been a bit cavalier about memory allocation in
+> the current version (on the theory that I was targeting servers,
+> and a few Kbytes, or even tens of Kbytes wasn't worth worrying
+> about on a server - which these days is likely to have a minimum
+> of 4 GBytes).
+>
+> I grepped around for "pmem" in drivers/staging in linux-next and
+> got a lot of hits - but none of them leapt out as something
+> similar.  Can you point a bit more specifically?
 
-So if this kind of scenario occurs, these patches will be useful. Is it acceptable?
+I saw (very quickly) in drivers/staging/dream/pmem.c
 
-> -----Original Message-----
-> From: linux-mmc-owner@vger.kernel.org
-> [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chuanxiao Dong
-> Sent: Thursday, December 09, 2010 8:24 PM
-> To: linux-mmc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; akpm@linux-foundation.org; cjb@laptop.org;
-> kmpark@infradead.org; Mai, Leonard
-> Subject: [PATCH v5 0/4]implement eMMC4.4 standard HW reset feature
-> 
-> Hi,
-> 	This is the version 5 of HW reset feature implementation. HW reset can
-> 	reset eMMC card when card occurs a read/write/erase timeout error. It is
-> 	useful when eMMC card cannot correspond any command after occurs a
-> timeout
-> 	error.
-> 
-> 	change-log:
-> 	patch1: use value 5 instead to judge whether eMMC card complies eMMC4.41
-> 	standard.
-> 	patch4: handle erase timeout error only when there was an error occurs
-> 	after erase.
-> 
-> 	patch1: enable HW reset capability if card support.
-> 
->  	patch2: add two new callback to implement HW reset in mmc core layer. In
->  	this patch, routine mmc_handle_timeout_error was added.
-> 
->  	patch3: implement hardware_reset callback for sdhci host. A new callback
->  	reset_emmc was defined which will be each sdhci host controller to
->  	implement separately.
-> 
->  	patch4: did a HW reset after each read/write/erase command if need.
-> 
-> Thanks
-> Chuanxiao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Marco
