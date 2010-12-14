@@ -1,57 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab0LNRf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:35:28 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:37069 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751891Ab0LNRf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:35:27 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: _xT09.kVM1lUt_I13rUDQsFe0OJD5qIVZdDoW1bKtzHZO2d
- 0gESeSyPwvTX.1G_JXtA5J.AizEVXh6mpk0KM3WxmM8cJEFpIs5sXZTbomP8
- OKq1IzQzozUw5dI2J58KGyG8z863U2.ucRiuTRLorbh54vbX8fj31v76MwmJ
- 1_QW7H1STJAFDrONFI2vsA8CRpXaoqS9EwuBUZgXqjsIN9sjNu5TbJrEJLxv
- m.Viyx3ftRINOyZ_G1lKd919Laxf7ELRxu2d09mc7GF2M_1aNgdbqFO2Cpkp
- w_rnAXJ3OV2wbEjan3bTM4dDgTJZ2EmzEKn5tSo.a9bbuK64-
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 14 Dec 2010 11:35:21 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
- lock semantics
-In-Reply-To: <4D07A95C.7030703@kernel.org>
-Message-ID: <alpine.DEB.2.00.1012141133550.17229@router.home>
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home>
- <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1759781Ab0LNRjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:39:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759383Ab0LNRjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 12:39:45 -0500
+Date: Tue, 14 Dec 2010 18:38:24 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 39 of 66] memcg huge memory
+Message-ID: <20101214173824.GJ5638@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <877d2f205026b0463450.1288798094@v2.random>
+ <20101119101938.2edf889f.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101119101938.2edf889f.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010, Tejun Heo wrote:
+On Fri, Nov 19, 2010 at 10:19:38AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 03 Nov 2010 16:28:14 +0100
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > @@ -402,9 +408,15 @@ static int do_huge_pmd_wp_page_fallback(
+> >  	for (i = 0; i < HPAGE_PMD_NR; i++) {
+> >  		pages[i] = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
+> >  					  vma, address);
+> > -		if (unlikely(!pages[i])) {
+> > -			while (--i >= 0)
+> > +		if (unlikely(!pages[i] ||
+> > +			     mem_cgroup_newpage_charge(pages[i], mm,
+> > +						       GFP_KERNEL))) {
+> > +			if (pages[i])
+> >  				put_page(pages[i]);
+> > +			while (--i >= 0) {
+> > +				mem_cgroup_uncharge_page(pages[i]);
+> > +				put_page(pages[i]);
+> > +			}
+> 
+> Maybe you can use batched-uncharge here.
+> ==
+> mem_cgroup_uncharge_start()
+> {
+> 	do loop;
+> }
+> mem_cgroup_uncharge_end();
+> ==
+> Then, many atomic ops can be reduced.
 
-> > Great, that answers that!  I'll pick up the patch hopefully today (I'm
-> > finally ramping back up on arch/x86 again after having been diverted to
-> > an internal project for a while...)
->
-> How do you want to route these?  All patches before this series is
-> already in the percpu tree.  I can pull the generic bits and leave out
-> the x86 bits so that x86 tree can pull in percpu bits and then put x86
-> stuff on top of it.  If you wanna go that way, I would drop all x86
-> related patches from the previous patchsets too.
+Cute!
 
-I think it is better to merge the generic pieces and x86 at the same time.
-Since this has worked so well with the percpu tree so far I'd say we
-continue that way.
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -413,10 +413,12 @@ static int do_huge_pmd_wp_page_fallback(
+ 						       GFP_KERNEL))) {
+ 			if (pages[i])
+ 				put_page(pages[i]);
++			mem_cgroup_uncharge_start();
+ 			while (--i >= 0) {
+ 				mem_cgroup_uncharge_page(pages[i]);
+ 				put_page(pages[i]);
+ 			}
++			mem_cgroup_uncharge_end();
+ 			kfree(pages);
+ 			ret |= VM_FAULT_OOM;
+ 			goto out;
 
-Regardless of how this will be merged: It would be good if hpa would take
-a look at the patches we have accumulated so far.
 
+> 
+> 
+> >  			kfree(pages);
+> >  			ret |= VM_FAULT_OOM;
+> >  			goto out;
+> > @@ -455,8 +467,10 @@ out:
+> >  
+> >  out_free_pages:
+> >  	spin_unlock(&mm->page_table_lock);
+> > -	for (i = 0; i < HPAGE_PMD_NR; i++)
+> > +	for (i = 0; i < HPAGE_PMD_NR; i++) {
+> > +		mem_cgroup_uncharge_page(pages[i]);
+> >  		put_page(pages[i]);
+> > +	}
+> 
+> here, too.
+
+This is actually a very unlikely path handling a thread race
+condition, but I'll add it any way.
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -469,10 +469,12 @@ out:
+ 
+ out_free_pages:
+ 	spin_unlock(&mm->page_table_lock);
++	mem_cgroup_uncharge_start();
+ 	for (i = 0; i < HPAGE_PMD_NR; i++) {
+ 		mem_cgroup_uncharge_page(pages[i]);
+ 		put_page(pages[i]);
+ 	}
++	mem_cgroup_uncharge_end();
+ 	kfree(pages);
+ 	goto out;
+ }
+
+
+> Hmm...it seems there are no codes for move_account() hugepage in series.
+> I think it needs some complicated work to walk page table.
+
+Agreed.
