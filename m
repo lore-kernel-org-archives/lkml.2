@@ -1,241 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab0LNJth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 04:49:37 -0500
-Received: from nwd2mail11.analog.com ([137.71.25.57]:39134 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab0LNJtd convert rfc822-to-8bit (ORCPT
+	id S1758558Ab0LNJxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 04:53:00 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54910 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab0LNJw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 04:49:33 -0500
-X-IronPort-AV: E=Sophos;i="4.59,341,1288584000"; 
-   d="scan'208";a="26090256"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drivers <Drivers@analog.com>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Date: Tue, 14 Dec 2010 09:49:27 +0000
-Subject: RE: [PATCH 1/3] IIO: Direct digital synthesis abi documentation
-Thread-Topic: [PATCH 1/3] IIO: Direct digital synthesis abi documentation
-Thread-Index: AcubClclSQ+hqIhsSb6G8JJh49qAiQAZaqyw
-Message-ID: <544AC56F16B56944AEC3BD4E3D591771324BCA8590@LIMKCMBX1.ad.analog.com>
-References: <1292257644-26477-1-git-send-email-michael.hennerich@analog.com>
- <4D068C0E.1060400@cam.ac.uk>
-In-Reply-To: <4D068C0E.1060400@cam.ac.uk>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 14 Dec 2010 04:52:59 -0500
+Date: Tue, 14 Dec 2010 15:22:59 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Subject: [RFC] [Patch 0/21] Non disruptive application core dump
+ infrastructure
+Message-ID: <20101214152259.67896960@suzukikp>
+Organization: IBM
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jonathan Cameron wrote on 2010-12-13:
-> On 12/13/10 16:27, michael.hennerich@analog.com wrote:
-> > From: Michael Hennerich <michael.hennerich@analog.com>
-> >
-> > Changes since RFC/v1:
-> > IIO: Apply list review feedback:
-> >
-> > Apply list review feedback:
-> >     Restructure documentation according to list feedback.
-> >     Rename attributes to fit IIO convention used in other drivers.
-> >     Fix typos.
-> >     Provide ddsX_out_enable as opposed to ddsX_out_disable
-> Hi Michael,
->
-> This is more or less there. A few minor queries / suggestions
-> inline.  The only major one is the mixture of X and [n] notation
-> for the various indicies.  I 'think' all our docs have now moved
-> to the X notation. (if not then I have messed up!)
->
-> I am happy with all the actual attributes. All remaining issues
-> are to do with the descriptions of what they do!
->
-> Thanks,
->
-> Jonathan
-> >
-> > Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> > Reviewed-by: Jonathan Cameron <jic23@cam.ac.uk>
-> > ---
-> >  .../staging/iio/Documentation/sysfs-bus-iio-dds    |   94
-> ++++++++++++++++++++
-> >  1 files changed, 94 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-
-> dds
-> >
-> > diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> > new file mode 100644
-> > index 0000000..6791174
-> > --- /dev/null
-> > +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> > @@ -0,0 +1,94 @@
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_freqY
-> We have a hybrid here of the old indexing schemed (device[n]) and the
-> new.  Either just shorten then form to
-> /sys/bus/iio/.../ddsX_freqY or use
-> /sys/bus/iio/devices/deviceX/ddsY_freqZ and update below appropriately.
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Stores frequency into tuning word register Y.
-> Technically it might not be a register? Dropping 'register' doesn't
-> to my mind change the meaning but makes it marginally more general.
+Hi all,
 
-ok
+This is series of patches implementing an infrastructure for capturing the core 
+of an application without disrupting its process semantics.
 
-> > +           There can be more than one ddsX_freqY file, which allows
-> for
-> If there is only one wouldn't it be ddsX_freq and correspond to direct
-> control rather than dependant on the tunning word?
+The infrastructure makes use of the freezer subsystem in kernel to freeze the 
+threads and then collect the information to generate  the core.
 
-I don't understand. In case there is only one ddsX_freqY file.
-Then there is certainly no ddsX_freqsymbol or ddsX_pincontrol_freq_en file.
+The interface is provided by a /proc/pid/core file, reading which can give the 
+ELF formatted core of the process with "pid". The interface supports "seek" 
+operation on the fd, allowing the dumper to have control on the data that is 
+being dumped. Also it allows the user to store the dump at any location.
 
-> The upshot of this
-> is that there are always 0 or more than 1 ddsX_freqY file.
-> Given we don't have any direct control cases yet that can be documented
-> when/if the turn up. Hence change line above to..
-> "There will be more than one ddsX_freqY file, which allows for"
+The current implementation supports both native as well as the compat ELF 
+tasks.
 
-We can document the missing cases once we add parts that requires them.
+An open() call to the /proc/pid/core will try to freeze the threads in the 
+process and the read() requests will dynamically generate the contents for the 
+core file. The ELF header & Program Headers are stored in a kernel buffer to 
+allow us to map the fpos to the required data section.
 
-> > +           pin controlled FSK Frequency Shift Keying
-> > +           (ddsX_pincontrol_freq_en is active) or the user can control
-> > +           the desired active tuning word by writing Y to the
-> > +           ddsX_freqsymbol file.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_freqY_scale
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Scale to be applied to ddsX_freqY in order to obtain the
-> > +           desired value in Hz. If shared across all frequency
-> registers
-> > +           Y is not present. It is also possible X is not present if
-> > +           shared across all channels.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_freqsymbol
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Specifies the active output frequency tuning word. The
-> value
-> > +           corresponds to the Y in ddsX_freqY. To exit this mode the
-> user
-> > +           can write ddsX_pincontrol_freq_en or ddsX_out_disable file.
-> Is it theoretically possible to read this value when pin control is on?
+In case a thread is not frozen within a time interval, after issuing the freeze 
+request, we fill the register state information with 0's to indicate we could 
+not capture the data.
 
-Not with the AD9832/35 AD9833/34, some other DDS parts allow register readouts.
-Depending on the implementation of the device in question. It might be possible
-To read back the current hardware state.
+A close() would kick the threads out of the refrigerator().
 
-I'll add the read method.
 
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_phaseY
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Stores phase into phase register Y.
-> Again, the mention of 'register' is a bit leading.  It's always a
-> register
-> so far but at least in theory it could be say several registers...
+The implementation reuses some of the existing ELF core generation code by 
+exporting them. Some of the code common to both native and compat ELF class 
+support has been moved to a common place, elfcore-common.c. Also some of the 
+reusable functions, specific to the ELF class handling, has been made global, 
+after renaming the compat version of the same.
 
-I'll change.
+We also added a new API -elf_core_copy_extra_phdrs() -for "reading" the arch 
+specific program headers, versus the existing elf_core_write_extra_phdrs().
 
-> > +           There can be more than one ddsX_phaseY file, which allows
-> for
-> Again, 'There will be'
+Patches 1 to 9 deals with re-arranging the ELF code to be reusable by the 
+infrastructure.
 
-ok
+Patches 10 to 21 implements the infrastructure.
 
-> > +           pin controlled PSK Phase Shift Keying
-> > +           (ddsX_pincontrol_phase_en is active) or the user can
-> > +           control the desired phase Y which is added to the phase
-> > +           accumulator output by writing Y to the en_phase file.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_phaseY_scale
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Scale to be applied to ddsX_phaseY in order to obtain the
-> > +           desired value in rad. If shared across all phase registers
-> > +           Y is not present. It is also possible X is not present if
-> > +           shared across all channels.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_phasesymbol
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Specifies the active phase Y which is added to the phase
-> > +           accumulator output. The value corresponds to the Y in
-> > +           ddsX_phaseY. To exit this mode the user can write
-> > +           ddsX_pincontrol_phase_en or disable file.
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
-> > +What:
->       /sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
-> > +What:
->       /sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           ddsX_pincontrol_en: Both, the active frequency and phase is
-> > +           controlled by the respective phase and frequency control
-> inputs.
-> > +           In case the device in question allows to independent
-> controls,
-> > +           then there are dedicated files (ddsX_pincontrol_freq_en,
-> > +           ddsX_pincontrol_phase_en).
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_out_enable
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_outY_enable
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           ddsX_out_enable: Enables signal generation on all outputs
-> > +           of channel X.
-> > +           ddsX_outY_enable: Enables signal generation on output Y,
-> > +           of channel X.
-> This description takes a rather different form from similar ones above.
-> Perhaps it should read...
->
-> ddsX_outY_enable controls signal generation on output Y of channel X. Y
-> may
-> be suppressed if all channels are controlled together.
->
-> (we can add supression of X to the description if it ever occurs!)
+TODO: Add support for collecting the arch specific notes, currently used only 
+by Cell platform.
 
-ok
+Please let me know your review comments / thoughts.
 
-> > +
-> > +What:              /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Specifies the output waveform.
-> > +           (sine, triangle, ramp, square, ...)
-> > +           For a list of available output waveform options read
-> > +           available_output_modes.
-> > +
-> > +What:
->       /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype_available
-> > +KernelVersion:     2.6.37
-> > +Contact:   linux-iio@vger.kernel.org
-> > +Description:
-> > +           Lists all available output waveform options.
-> > --
-> > 1.6.0.2
-> >
-> >
+  arch/ia64/kernel/elfcore.c       |   34 ++
+  arch/um/sys-i386/elfcore.c       |   32 ++
+  fs/Makefile                      |    1
+  fs/binfmt_elf.c                  |  162 +------------
+  fs/compat_binfmt_elf.c           |    7
+  fs/elfcore-common.c              |  138 +++++++++++
+  fs/proc/Makefile                 |    2
+  fs/proc/base.c                   |    1
+  fs/proc/gencore-compat-elf.c     |   61 ++++
+  fs/proc/gencore-elf.c            |  479+++++++++++++++++++++++++++++++++++++++ 
+  fs/proc/gencore.c                |  297++++++++++++++++++++++++ 
+  fs/proc/gencore.h                |   71 +++++
+  fs/proc/internal.h               |    1
+  include/linux/elfcore-internal.h |   73 +++++
+  include/linux/elfcore.h          |    3
+  include/linux/freezer.h          |   12
+  kernel/elfcore.c                 |    6
+  kernel/power/process.c           |    9
+  18 files changed, 1241 insertions(+), 148 deletions(-)
 
+
+Thanks
+
+Suzuki
