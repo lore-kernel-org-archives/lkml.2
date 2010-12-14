@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372Ab0LNP2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:28:32 -0500
-Received: from snowcat.de ([89.238.75.242]:37157 "EHLO snowcat.de"
+	id S1759249Ab0LNP3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:29:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56367 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755501Ab0LNP2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:28:31 -0500
-X-Greylist: delayed 1575 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Dec 2010 10:28:31 EST
-Message-ID: <4D0786D3.7070007@akana.de>
-Date: Tue, 14 Dec 2010 16:01:39 +0100
-From: Ingo Korb <ingo@akana.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753219Ab0LNP3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 10:29:21 -0500
+Message-ID: <4D078D53.4040700@suse.cz>
+Date: Tue, 14 Dec 2010 16:29:23 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: linux-mm@kvack.org
-CC: akpm@linux-foundation.org, mel@csn.ul.ie, cl@linux-foundation.org,
-        yinghai@kernel.org, andi.kleen@intel.com, linux-kernel@vger.kernel.org
-Subject: PROBLEM: __offline_isolated_pages may offline too many pages
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+Cc: Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: fix interaction of CONFIG_IKCONFIG and KCONFIG_CONFIG
+References: <1290797770-22877-1-git-send-email-bengardiner@nanometrics.ca>
+In-Reply-To: <1290797770-22877-1-git-send-email-bengardiner@nanometrics.ca>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 26.11.2010 19:56, Ben Gardiner wrote:
+> Change the use of .config in kernel/Makefile to $(KCONFIG_CONFIG).
+>
+> Currently, if you try to build a kernel with KCONFIG_CONFIG set (to a value
+> not equal to .config) and the config file pointed to by KCONFIG_CONFIG sets
+> CONFIG_IKCONFIG then the build will fail with:
+>
+> make[1]: *** No rule to make target `.config', needed by `kernel/config_data.gz'.  Stop.
+>
+> I think this has been present since the introduction of KCONFIG_CONFIG
+> in 14cdd3c402bf7c66f0bcd76e290f0770a54a4b21.
+>
+> Signed-off-by: Ben Gardiner<bengardiner@nanometrics.ca>
+> CC: Roman Zippel<zippel@linux-m68k.org>
+> CC: Michal Marek<mmarek@suse.cz>
+>
+> ---
+> based on 698fd6a2c3ca05ec796072defb5c415289a86cdc of
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+>
+>   kernel/Makefile |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index 0b5ff08..33e0a39 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -121,7 +121,7 @@ $(obj)/configs.o: $(obj)/config_data.h
+>   # config_data.h contains the same information as ikconfig.h but gzipped.
+>   # Info from config_data can be extracted from /proc/config*
+>   targets += config_data.gz
+> -$(obj)/config_data.gz: .config FORCE
+> +$(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
+>   	$(call if_changed,gzip)
+>
+>   quiet_cmd_ikconfiggz = IKCFG   $@
 
-[1.] One line summary of the problem:
-__offline_isolated_pages may isolate too many pages
+The problem is that KCONFIG_CONFIG is not exported in the top-level 
+Makefile. If you want to use it in other Makefiles, you need to add the 
+export.
 
-[2.] Full description of the problem/report:
-While experimenting with remove_memory/online_pages, removing as few 
-pages as possible (pageblock_nr_pages, 512 on my box) I noticed that the 
-number of pages marked "reserved" increased even though both functions 
-did not indicate an error. Following the code it was clear that 
-__offline_isolated_pages marked twice as many pages as it should:
-
-=== start paste (from dmesg) ===
-Offlined Pages 512
-remove from free list c00 1024 e00
-=== end paste ===
-
-The issue seems to be that __offline_isolated_pages blindly uses 
-page_order() to determine how many pages it should mark as reserved in 
-the current loop iteration, without checking if this would exceed the 
-limit set by end_pfn.
-
-I'm not sure what the correct way to fix this would be - is memory 
-isolation supposed to touch the order of a page if it crosses the end 
-(or beginning!) of the range of pages to be isolated?
-
-[3.] Keywords (i.e., modules, networking, kernel):
-kernel mm memory-hotplug
-
-[4.] Kernel information
-[4.1.] Kernel version (from /proc/version):
-Linux version 2.6.35-00002-g76c52bb (ingo@memtester) (gcc version 4.4.5 
-(Debian 4.4.5-6) ) #7 SMP Tue Dec 14 14:28:17 CET 2010
-
-The diff between vanilla 2.6.35 and this version is available at 
-http://akana.de/memtest35.diff - the only changes are a reduced timeout 
-in remove_memory and a bunch of additional exported symbols.
-
-[4.2.] Kernel .config file:
-http://akana.de/config-memtest35
-
-[5.] Most recent kernel version which did not have the bug:
-Probably none
-
-[8.] Environment
-[8.1.] Software (add the output of the ver_linux script here)
-Linux memtester 2.6.35-00002-g76c52bb #7 SMP Tue Dec 14 14:28:17 CET 
-2010 x86_64 GNU/Linux
-
-Gnu C                  4.4.5
-Gnu make               3.81
-binutils               2.20.1
-util-linux             (no fdformat on the system)
-mount                  support
-module-init-tools      found
-Linux C Library        2.11.2
-Dynamic linker (ldd)   2.11.2
-Procps                 3.2.8
-Kbd                    1.15.2
-Sh-utils               8.5
-Modules Loaded         phys_mem ipv6 pcspkr i2c_piix4 i2c_core shpchp e1000
-
-Distribution is Debian testing if it matters
-
-[8.2.] Processor information (from /proc/cpuinfo):
-AMD Phenom 9650, but the system is running inside a VMWare Player 
-instance with just a single virtual CPU
-
-[8.3.] Module information (from /proc/modules):
-phys_mem 15068 0 - Live 0xffffffffa00d1000
-ipv6 340746 24 - Live 0xffffffffa0068000
-pcspkr 2022 0 - Live 0xffffffffa0062000
-i2c_piix4 13334 0 - Live 0xffffffffa0059000
-i2c_core 28244 1 i2c_piix4, Live 0xffffffffa004b000
-shpchp 35612 0 - Live 0xffffffffa003b000
-e1000 164575 0 - Live 0xffffffffa0000000
-
-[8.4.] Loaded driver and hardware information (/proc/ioports, /proc/iomem)
-[8.5.] PCI information ('lspci -vvv' as root)
-[8.6.] SCSI information (from /proc/scsi/scsi)
-As far as I can tell irrelevant to this problem?
-(forgot to copy those, will add later if neccessary)
-
--ik
+Michal
