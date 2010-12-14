@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759129Ab0LNK0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 05:26:09 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50353 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab0LNK0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 05:26:07 -0500
-Date: Tue, 14 Dec 2010 15:56:14 +0530
+	id S1759225Ab0LNK1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 05:27:30 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38910 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758779Ab0LNK12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 05:27:28 -0500
+Date: Tue, 14 Dec 2010 15:57:37 +0530
 From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
@@ -22,8 +21,8 @@ Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [Patch 20/21] Add supporting for compat ELF class data structures
-Message-ID: <20101214155614.215b39ff@suzukikp>
+Subject: [Patch 21/21] Compat ELF class Core generation support
+Message-ID: <20101214155737.040a49e3@suzukikp>
 In-Reply-To: <20101214152259.67896960@suzukikp>
 References: <20101214152259.67896960@suzukikp>
 Organization: IBM
@@ -31,163 +30,127 @@ X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Redefine the structures to include the compat class variant of the data 
-structures.
-
-gencore-elf.c will be reused for the compat ELF class support. Hence, define 
-macros to get the right member for each class.
+Add full support for the compat ELF class objects. The gencore-compat-elf.c 
+reuses the gencore-elf.c, by renaming the ABI structures and functions. 
+(Inspired by compat_binfmt_elf.c)
 
 Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
 
 ---
- fs/proc/gencore-elf.c |   37 +++++++++++++++++++++++++------------
- fs/proc/gencore.h     |   18 ++++++++++++++++--
- 2 files changed, 41 insertions(+), 14 deletions(-)
+ fs/proc/Makefile             |    1 
+ fs/proc/gencore-compat-elf.c |   61 +++++++++++++++++++++++++++++++++++++++++++
+ fs/proc/gencore.c            |    4 ++
+ fs/proc/gencore.h            |    4 ++
+ 4 files changed, 70 insertions(+)
 
-Index: linux-2.6.36-rc7/fs/proc/gencore-elf.c
-===================================================================
---- linux-2.6.36-rc7.orig/fs/proc/gencore-elf.c
-+++ linux-2.6.36-rc7/fs/proc/gencore-elf.c
-@@ -16,6 +16,8 @@
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  *
-  * Copyright (C) IBM Corporation, 2010
-+ *
-+ * This code is reused in gencore-compat-elf.c for compat ELF class support.
-  */
- #include <linux/mm.h>
- #include <linux/slab.h>
-@@ -30,6 +32,17 @@
- 
- #include "gencore.h"
- 
-+#ifndef et_prstatus
-+/* prstatus field for native elf,  in elf_thread_core_info*/
-+#define et_prstatus u.prstatus
-+#endif
-+
-+#ifndef cp_prpsinfo
-+/* prpsinfo field for native elf, in core_proc */
-+#define cp_prpsinfo u.prpsinfo
-+#endif
-+
-+
- static int notesize(struct memelfnote *men)
- {
- 	int size = sizeof(struct elf_note);
-@@ -73,14 +86,14 @@ static int fill_thread_core_info(struct 
- 	unsigned int i;
- 	const struct user_regset_view *view = task_user_regset_view(tinfo->task);
- 
--	fill_prstatus(&tinfo->prstatus, tinfo->task, 0);
-+	fill_prstatus(&tinfo->et_prstatus, tinfo->task, 0);
- 
- 	do_thread_regset_writeback(tinfo->task, &view->regsets[0]);
- 	(void) view->regsets[0].get(tinfo->task, &view->regsets[0],
--				0, sizeof(tinfo->prstatus.pr_reg),
--				&tinfo->prstatus.pr_reg, NULL);
-+				0, sizeof(tinfo->et_prstatus.pr_reg),
-+				&tinfo->et_prstatus.pr_reg, NULL);
- 	fill_note(&tinfo->notes[0], "CORE", NT_PRSTATUS,
--			sizeof(tinfo->prstatus), &tinfo->prstatus);
-+			sizeof(tinfo->et_prstatus), &tinfo->et_prstatus);
- 	cp->notes_size += notesize(&tinfo->notes[0]);
- 	tinfo->num_notes = view->n;
- 
-@@ -105,7 +118,7 @@ static int fill_thread_core_info(struct 
- 						regset->core_note_type,
- 						size, data);
- 				else {
--					tinfo->prstatus.pr_fpvalid = 1;
-+					tinfo->et_prstatus.pr_fpvalid = 1;
- 					fill_note(&tinfo->notes[i], "CORE",
- 						NT_PRFPREG, size, data);
- 				}
-@@ -124,15 +137,15 @@ static int fill_thread_core_info(struct 
- 	elf_fpxregset_t xfpu, *pxfpu;
- #endif
- 
--	fill_prstatus(&tinfo->prstatus, t->task, 0);
--	elf_core_copy_task_regs(t->task, &tinfo->prstatus.pr_reg);
-+	fill_prstatus(&tinfo->et_prstatus, t->task, 0);
-+	elf_core_copy_task_regs(t->task, &tinfo->et_prstatus.pr_reg);
- 	fill_note(&tinfo->notes[0], "CORE", NT_PRSTATUS,
--			sizeof(t->prstatus), &t->prstatus);
-+			sizeof(t->et_prstatus), &t->et_prstatus);
- 
- 	cp->notes_size += notesize(&tinfo->notes[0]);
- 	tinfo->num_notes = 1;
- 
--	if (tinfo->prstatus.pr_fpvalid = elf_core_copy_task_fpregs(tinfo->task,
-+	if (tinfo->et_prstatus.pr_fpvalid = elf_core_copy_task_fpregs(tinfo->task,
- 							NULL, &fpu)) {
- 		pfpu = kzalloc(sizeof(*pfpu), GFP_KERNEL);
- 		if (pfpu == NULL)
-@@ -168,7 +181,7 @@ static void zero_thread_state(struct elf
- {
- 	int i;
- 
--	memset(&tinfo->prstatus.pr_reg, 0, sizeof(tinfo->prstatus.pr_reg));
-+	memset(&tinfo->et_prstatus.pr_reg, 0, sizeof(tinfo->et_prstatus.pr_reg));
- 	for (i = 1; i < tinfo->num_notes; i++)
- 		if (tinfo->notes[i].data)
- 			memset(tinfo->notes[i].data, 0, tinfo->notes[i].datasz);
-@@ -180,9 +193,9 @@ static int collect_notes(struct core_pro
- 	struct elf_thread_core_info *tinfo;
- 
- 	/* Fill the 2 process wide notes */
--	fill_psinfo(&cp->prpsinfo, cp->task, cp->task->mm);
-+	fill_psinfo(&cp->cp_prpsinfo, cp->task, cp->task->mm);
- 	fill_note(&cp->psinfo, "CORE", NT_PRPSINFO,
--			sizeof(struct elf_prpsinfo), &cp->prpsinfo);
-+			sizeof(struct elf_prpsinfo), &cp->cp_prpsinfo);
- 	cp->notes_size += notesize(&cp->psinfo);
- 
- 	fill_auxv_note(&cp->auxv, cp->task->mm);
 Index: linux-2.6.36-rc7/fs/proc/gencore.h
 ===================================================================
 --- linux-2.6.36-rc7.orig/fs/proc/gencore.h
 +++ linux-2.6.36-rc7/fs/proc/gencore.h
-@@ -6,6 +6,10 @@
- #include <linux/elfcore.h>
- #include <linux/elfcore-internal.h>
+@@ -64,4 +64,8 @@ static inline int  get_max_regsets(struc
  
+ extern ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
+ 					size_t buflen, loff_t *foffset);
 +#ifdef CONFIG_COMPAT_BINFMT_ELF
-+#include <linux/elfcore-compat.h>
++extern ssize_t compat_elf_read_gencore(struct core_proc *cp, char __user *buffer,
++					size_t buflen, loff_t *foffset);
 +#endif
+ #endif
+Index: linux-2.6.36-rc7/fs/proc/gencore.c
+===================================================================
+--- linux-2.6.36-rc7.orig/fs/proc/gencore.c
++++ linux-2.6.36-rc7/fs/proc/gencore.c
+@@ -108,6 +108,10 @@ static ssize_t read_gencore(struct file 
+ 
+ 	if (cp->elf_class == ELF_CLASS_NATIVE)
+ 		ret = elf_read_gencore(cp, buffer, buflen, fpos);
++#ifdef CONFIG_COMPAT_BINFMT_ELF
++	else if (cp->elf_class == ELF_CLASS_COMPAT)
++		ret = compat_elf_read_gencore(cp, buffer, buflen, fpos);
++#endif
+ 
+ out:
+ 	put_task_struct(task);
+Index: linux-2.6.36-rc7/fs/proc/gencore-compat-elf.c
+===================================================================
+--- /dev/null
++++ linux-2.6.36-rc7/fs/proc/gencore-compat-elf.c
+@@ -0,0 +1,61 @@
++/*
++ * Application core dump - compat ELF Class specific code
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2010
++ *
++ * We use macros to rename the types and functions in gencore-elf.c to
++ * the compat versions
++ *
++ */
 +
- enum { ELF_CLASS_NATIVE, ELF_CLASS_COMPAT };
- 
- struct elf_thread_core_info {
-@@ -13,7 +17,12 @@ struct elf_thread_core_info {
- 	unsigned short num_notes;	/* Number of notes for this thread */
- 	struct elf_thread_core_info *next;
- 	struct task_struct *task;
--	struct elf_prstatus prstatus;
-+	union {
-+		struct elf_prstatus prstatus;
-+#ifdef CONFIG_COMPAT_BINFMT_ELF
-+		struct compat_elf_prstatus compat_prstatus;
-+#endif
-+	} u;
- 	struct memelfnote notes[0];
- };
- 
-@@ -25,7 +34,12 @@ struct core_proc {
- 	struct elf_thread_core_info *tinfo;
- 	struct memelfnote psinfo;
- 	struct memelfnote auxv;
--	struct elf_prpsinfo prpsinfo;
-+	union {
-+		struct elf_prpsinfo prpsinfo;
-+#ifdef CONFIG_COMPAT_BINFMT_ELF
-+		struct compat_elf_prpsinfo compat_prpsinfo;
-+#endif
-+	} u;
- 	size_t elf_buflen;	/* size of elf_buf */
- 	size_t nphdrs;		/* number of phdrs */
- 	size_t notes_size;
++#include <linux/elfcore-compat.h>
++#include "gencore.h"
++
++#undef elfhdr
++#undef elf_phdr
++#undef elf_shdr
++#undef elf_note
++#undef elf_addr_t
++#define	elfhdr		elf32_hdr
++#define elf_phdr	elf32_phdr
++#define elf_shdr	elf32_shdr
++#define elf_note	elf32_note
++#define elf_addr_t	Elf32_Addr
++
++#undef ELF_CLASS
++#define ELF_CLASS ELF_CASS32
++
++#define elf_prstatus	compat_elf_prstatus
++#define elf_prpsinfo	compat_elf_prpsinfo
++
++/* Functions used from binfmt_elf core code */
++#define fill_psinfo		compat_fill_psinfo
++#define fill_prstatus		compat_fill_prstatus
++#define fill_extnum_info	compat_fill_extnum_info
++#define fill_auxv_note		compat_fill_auxv_note
++#define fill_elf_header		compat_fill_elf_header
++/*
++ * Define the fileds in elf_thread_core_info and core_proc
++ * for compat ELF class
++ */
++#define et_prstatus	u.compat_prstatus
++#define cp_prpsinfo	u.compat_prpsinfo
++
++/* Rename the core function to compat_ */
++#define elf_read_gencore	compat_elf_read_gencore
++
++#include "gencore-elf.c"
+Index: linux-2.6.36-rc7/fs/proc/Makefile
+===================================================================
+--- linux-2.6.36-rc7.orig/fs/proc/Makefile
++++ linux-2.6.36-rc7/fs/proc/Makefile
+@@ -20,6 +20,7 @@ proc-y	+= uptime.o
+ proc-y	+= version.o
+ proc-y	+= softirqs.o
+ proc-$(CONFIG_ELF_CORE)	+= gencore.o gencore-elf.o
++proc-$(CONFIG_COMPAT_BINFMT_ELF) += gencore-compat-elf.o
+ proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
+ proc-$(CONFIG_NET)		+= proc_net.o
+ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
