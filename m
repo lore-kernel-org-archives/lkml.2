@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab0LNB5F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 20:57:05 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21054 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758950Ab0LNB5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 20:57:03 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Date: Mon, 13 Dec 2010 20:54:04 -0500
-Message-Id: <1292291131-sup-859@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	id S1759098Ab0LNCK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 21:10:29 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37547 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759086Ab0LNCK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 21:10:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,339,1288594800"; 
+   d="scan'208";a="636049917"
+Subject: Re: [RFC PATCH 3/3 v3] perf: Update perf tool to monitor uncore
+ events
+From: Lin Ming <ming.m.lin@intel.com>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, Carl Love <cel@linux.ibm.com>
+In-Reply-To: <4D06C846.4030804@linux.vnet.ibm.com>
+References: <1291267238.2405.315.camel@minggr.sh.intel.com>
+	 <4D06C846.4030804@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 10:15:08 +0800
+Message-ID: <1292292908.10384.137.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Tue, 2010-12-14 at 09:28 +0800, Corey Ashford wrote:
+> On 12/01/2010 09:20 PM, Lin Ming wrote:
+> > Uncore events are monitored with raw events with "ru" prefix("u" for uncore).
+> > Note that, per-task uncore event is not allowed.
+> >
+> > $ ./perf stat -e ru0101 -- ls
+> > No permission to collect stats.
+> > Consider tweaking /proc/sys/kernel/perf_event_paranoid.
+> >
+> > ./perf stat -a -C 0 -e ru0101 -- ls
+> 
+> Sorry for replying to this thread so late, but I have some concerns 
+> about this modification.
+> 
+> First of all, "uncore" is an x86-specific term and so it's not clear to 
+> me if you meant for all arches to utilize this encoding for all "not 
+> core but on the same die" events (IBM Power arch refers to this as 
+> "nest" logic).
+> 
+> In the case of the IBM PowerEN chip (aka WireSpeed Processor) we have a 
+> large number of "uncore" PMUs.  It's not clear to me how we should break 
+> them up using the syntax you've suggested here.  Until now, we (IBM) 
+> have stuck with encoding all PowerEN nest events as PERF_TYPE_RAW and 
+> utilizing the 64-bit config value to encode which PMU, which event, and 
+> other necessary event attribute bits.
+> 
+> In one scenario, we could utilize the "u" encoding as suggested in this 
+> patch, but then we'd be stuck with encoding the specific PMU into the 
+> config value, really not buying us any convenience.
+> 
+> Another way might be to introduce a bunch of new prefixes for each of 
+> the PMU's and add corresponding PERF_TYPE_* values.  Do we want a bunch 
+> of arch-specific PERF_TYPE_* values in include/linux/perf_event.h? 
+> Having that many PMUs, we might want a more sophisticated prefix scheme, 
+> perhaps something like what Stephane Eranian uses in libpfm4: 
+> <pmu>::nnnn, e.g:
+> 
+> perf stat -C 0 -e runc::0101
+> or more verbosely,
+> perf stat -C 0 -e runcore::0101
+> 
+> For the PowerEN chip, we have PMUs for these nest functional units:
+> XML accelerator
+> Regular expression accelerator
+> Crypto accelerator
+> PowerBus interface chiplet (0..3)
+> Network accelerator
+> Memory controller Synchronous (0..1)
+> Memory controller Asynchronous (0..1)
+> etc.
+> 
+> I can see value in adding something like:
+> 
+> perf stat -C 0 -e rmcs0::1d
+> 
+> On the other hand, I don't want to get carried away with this, when we 
+> have the sysfs solution coming down the road, which I think will reduce 
+> or eliminate the need for these prefixes.
+> 
+> Is PERF_TYPE_UNCORE and the "u" encoding intended to be a temporary 
+> solution?  How do you envision someone using sysfs to specify an uncore 
+> event (especially one with a raw encoding)?
 
-The master branch of the btrfs unstable tree:
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+Yes, they are temporary solution. I use it to easily test uncore
+patches. Sorry I should mention that.
 
-Has an assortment of bug fixes.  It includes some corruption fixes when
-mounting the filesystem in degraded mode, and related oopsen as we try
-to mount damaged filesystems.
+sysfs is the final solution, but I'm not clear how the sysfs structures
+should be.
 
-The async snapshot ioctl added in rc1 is fixed to properly do
-synchronous snapshots unless the new async ioctl is used.  It is also
-updated to be ready for the readonly snapshot feature we'll add in
-2.6.38.
+As we discussed before,
 
-Xin Zhong from Intel pitched in a deadlock during copy_from_user and
-Josef has fixes for the new fast caching code and a few other bugs.
+1. Should we list all events under sysfs?
 
-Josef Bacik (5) commits (+38/-21):
-    Btrfs: do not BUG if we fail to remove the orphan item for dead snapshots (+7/-3)
-    Btrfs: do not do fast caching if we are allocating blocks for tree_root (+12/-6)
-    Btrfs: fixup return code for btrfs_del_orphan_item (+5/-1)
-    Btrfs: deal with space cache errors better (+13/-9)
-    Btrfs: fix use after free in O_DIRECT (+1/-2)
+/sys/devices/system/cpu/cpuN/events/event0
+...
+/sys/devices/system/cpu/cpuN/events/eventN
 
-Chris Mason (3) commits (+59/-5):
-    Btrfs: account for missing devices in RAID allocation profiles (+36/-3)
-    Btrfs: prevent RAID level downgrades when space is low (+19/-1)
-    Btrfs: EIO when we fail to read tree roots (+4/-1)
+/sys/devices/system/node/nodeN/pmuN/events/event0
+...
+/sys/devices/system/node/nodeN/pmuN/events/eventN
 
-Li Zefan (2) commits (+37/-23):
-    Btrfs: Make async snapshot ioctl more generic (+36/-22)
-    Btrfs: Fix a crash when mounting a subvolume (+1/-1)
+2. Or should we use a sysfs file to pass in raw config value?
 
-Zheng Yan (1) commits (+1/-1):
-    Btrfs: Fix page leak in compressed writeback path
+/sys/devices/system/cpu/cpuN/raw
+/sys/devices/system/node/nodeN/pmuN/raw?
 
-Xin Zhong (1) commits (+60/-32):
-    Btrfs: pwrite blocked when writing from the mmaped buffer of the same page
+3. How will the additional attributes(needed by IBM PowerEN chip, etc)
+be passed in?
 
-Sage Weil (1) commits (+11/-9):
-    Btrfs: fix sync subvol/snapshot creation
+4. and other problems I don't remember now.
 
-Jan Beulich (1) commits (+5/-7):
-    Btrfs: fix compiler warnings
+> 
+> - Corey
 
-Total: (14) commits (+211/-98)
 
- fs/btrfs/disk-io.c          |   11 +++--
- fs/btrfs/extent-tree.c      |   75 +++++++++++++++++++++++++++-------
- fs/btrfs/file.c             |   92 ++++++++++++++++++++++++++++---------------
- fs/btrfs/free-space-cache.c |   12 +++--
- fs/btrfs/inode.c            |   11 ++---
- fs/btrfs/ioctl.c            |   56 ++++++++++++++++----------
- fs/btrfs/ioctl.h            |   14 ++++--
- fs/btrfs/orphan.c           |    6 ++-
- fs/btrfs/super.c            |    2 +-
- fs/btrfs/volumes.c          |   20 +++++++++-
- fs/btrfs/volumes.h          |    2 +
- 11 files changed, 207 insertions(+), 94 deletions(-)
