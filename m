@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893Ab0LNUQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 15:16:11 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41362 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759260Ab0LNUQJ (ORCPT
+	id S1759311Ab0LNUQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 15:16:58 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56302 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759573Ab0LNUQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 15:16:09 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/35] writeback: increase min pause time on concurrent dirtiers
-In-Reply-To: Your message of "Tue, 14 Dec 2010 19:55:08 +0100."
-             <1292352908.13513.376.camel@laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <20101213144646.341970461@intel.com> <20101213150328.284979629@intel.com> <15881.1292264611@localhost> <20101214065133.GA6940@localhost> <14658.1292352152@localhost>
-            <1292352908.13513.376.camel@laptop>
+	Tue, 14 Dec 2010 15:16:57 -0500
+Date: Tue, 14 Dec 2010 12:16:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: balbir@linux.vnet.ibm.com
+Cc: Dan Carpenter <error27@gmail.com>, Brian Rogers <brian@xyzw.org>,
+        Jeff Mahoney <jeffm@suse.com>, linux-kernel@vger.kernel.org,
+        Guillaume Chazarain <guichaz@gmail.com>
+Subject: Re: [patch] delayacct: fix iotop on x86_64
+Message-Id: <20101214121641.7c337509.akpm@linux-foundation.org>
+In-Reply-To: <20101214080239.GC14178@balbir.in.ibm.com>
+References: <20101213113745.GE1620@bicker>
+	<20101213125709.GB14178@balbir.in.ibm.com>
+	<4D0639B2.4060903@suse.com>
+	<4D068869.7040305@xyzw.org>
+	<20101213212253.GI1620@bicker>
+	<20101214070243.GJ1620@bicker>
+	<20101214080239.GC14178@balbir.in.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1292357637_5019P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Tue, 14 Dec 2010 15:13:57 -0500
-Message-ID: <20252.1292357637@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4D07D007.003F,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1292357637_5019P
-Content-Type: text/plain; charset="us-ascii"
-Content-Id: <20222.1292357614.1@localhost>
+On Tue, 14 Dec 2010 13:32:39 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-On Tue, 14 Dec 2010 19:55:08 +0100, Peter Zijlstra said:
+> * Dan Carpenter <error27@gmail.com> [2010-12-14 10:02:43]:
+> 
+> > We changed how the taskstats was exported to user space in:
+> > 85893120699 "delayacct: align to 8 byte boundary on 64-bit systems"
+> > This was important because it fixes a run time warning on IA64.  In
+> > theory it shouldn't have broken anything, if you just assume that user
+> > space programmers don't smoke crack all day long.
+> > 
+> > But actually it breaks iotop on x86_64.
+> > 
+> > Reported-by: Brian Rogers <brian@xyzw.org>
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > 
+> > diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+> > index c8231fb..a0758de 100644
+> > --- a/kernel/taskstats.c
+> > +++ b/kernel/taskstats.c
+> > @@ -358,7 +358,19 @@ static struct taskstats *mk_reply(struct sk_buff *skb, int type, u32 pid)
+> >  	 * This causes lots of runtime warnings on systems requiring 8 byte
+> >  	 * alignment */
+> >  	u32 pids[2] = { pid, 0 };
+> > -	int pid_size = ALIGN(sizeof(pid), sizeof(long));
+> > +	int pid_size;
+> > +
+> > +	/*
+> > +	 * IA64 can't be aligned on a 4 byte boundary.  But iotop on x86_64
+> > +	 * depends on the current struct layout.  The next version of iotop
+> > +	 * will fix this so maybe we can move everything to the new code in
+> > +	 * a couple years.
+> > +	 */
+> > +#if defined(CONFIG_IA64)
+> > +	pid_size = ALIGN(sizeof(pid), sizeof(long));
+> > +#else
+> > +	pid_size = sizeof(u32);
+> > +#endif
+> 
+> I would rather abstract this better
 
-> 10*HZ = 10 seconds
-> (10*HZ) / 1024 ~= 10 milliseconds
+Well.  Abstracting something tends to make it permanent.  When you have
+an ugly, special-case temporary hack, there is merit to having it
+sitting there in the middle of the code staring you in the face.  It's
+very explicit and we won't forget about it.
 
-from include/asm-generic/param.h (which is included by x86)
+> and I'd be apprehensive about the
+> fix if iotop was at fault to begin with, I would rather fix iotop.
+> IOW, are we fixing what iotop got wrong? Isn't it easier to backport
+> the correct behaviour in iotop. I understand we broke the ABI, but
+> user space can still live.
 
-#ifdef __KERNEL__
-# define HZ             CONFIG_HZ       /* Internal kernel timer frequency */
-# define USER_HZ        100             /* some user interfaces are */
-# define CLOCKS_PER_SEC (USER_HZ)       /* in "ticks" like times() */
-#endif
-
-Note that HZ isn't USER_HZ or CLOCKS_PER_SEC  - it's CONFIG_HZ, which last
-I checked is still user-settable.  If not, then there needs to be a massive cleanup
-of Kconfig and defconfig:
-
-% grep HZ .config
-CONFIG_NO_HZ=y
-# CONFIG_HZ_100 is not set
-# CONFIG_HZ_250 is not set
-# CONFIG_HZ_300 is not set
-CONFIG_HZ_1000=y
-CONFIG_HZ=1000
-
-So you're not guaranteed that 10*HZ is 10 seconds.  10*USER_HZ, sure. But not HZ.
+Nah, let's not knowingly break a userspace app.
 
 
-
-
-
---==_Exmh_1292357637_5019P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNB9AFcC3lWbTT17ARAiAEAKC0yjII9TJD8lfJXeSnMkXkUjX/VQCfQSRX
-BtQWcpp8YUP/QPYYfDiFDLk=
-=Aycg
------END PGP SIGNATURE-----
-
---==_Exmh_1292357637_5019P--
-
+This is a versioned interface, is it not?  How is that supposed
+to work?  Should we have upped the version number when making this
+change?
