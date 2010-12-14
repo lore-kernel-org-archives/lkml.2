@@ -1,208 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab0LNQ3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 11:29:37 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:39339 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759564Ab0LNQ24 (ORCPT
+	id S1759589Ab0LNQ3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 11:29:38 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:49035 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759565Ab0LNQ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Dec 2010 11:28:56 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: fYoC4toVM1mDzLCq4m9GvFHwUmFTw5.xJaNqV4UVRXGR7Lg
- PCuxL3FQdVejsxuKLwmiHGUc4D5Qwm8cjHJik4Wknd3wvlpbusCJtUCIXgWD
- W8mz8Jxbhnzf_4iZycdmOoM1_HtotCPqzmJweUqnFJNjZBawL0ZAcpv2Wupd
- 1P54WDKGcH9VHU6IJVkiu5VxlfE4Nwn67uBX25WkhdFt5CM8aO9nC3WqoBPh
- qMnCnqsuzPRibHTUJVrjxlNoInNSwUdTgjCXIIWdOsKpEkSoKOqvGayBxH8h
- Mn3IjBEKHDKu5oD7jzB3Uo6VD4iGEdJ79GKyBGm8h0B_iZIE-
+X-YMail-OSG: XhI7wmAVM1lgYjCc5xX7SeTW_4Yoo.ArW7dT9o.4WpShTrz
+ Q2iiEj1l.cpfCA2g.0U29nmOXcQu.5nP_A3x22LpMeA_39M90meSRmugcOOX
+ gBam1fnVcfhRz_OzOIdoFYNA7eSzxm4Izj2xe3chA3HzPqh0eS4ARYxCy.9h
+ aozDQ5Oy5JT6nLyJ5vVtgerfaku99cyz4sDDiLO3Qq_OAjXw1uLbJCAt7ZjA
+ LtAYa7cE8lcrHsW5YxoHECS0FdekTbwWNDZF3Ie2GCyBmIgTyi.LmeQ2F32.
+ 6WxKBA9BKpik0QfUUt2op8CqzmK.e.ATKoqy.FYUS0OiEMC0-
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101214162853.636123666@linux.com>
+Message-Id: <20101214162854.218751478@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 14 Dec 2010 10:28:44 -0600
+Date: Tue, 14 Dec 2010 10:28:45 -0600
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org
+Cc: akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [cpuops cmpxchg V2 2/5] x86: this_cpu_cmpxchg and this_cpu_xchg operations
+Subject: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead of regular atomics
 References: <20101214162842.542421046@linux.com>
-Content-Disposition: inline; filename=cpuops_cmpxchg_x86
+Content-Disposition: inline; filename=cpuops_cmpxchg_irq
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide support as far as the hardware capabilities of the x86 cpus
-allow.
+The irq work queue is a per cpu object and it is sufficient for
+synchronization if per cpu atomics are used. Doing so simplifies
+the code and reduces the overhead of the code.
 
-Define CONFIG_CMPXCHG_LOCAL in Kconfig.cpu to allow core code to test for
-fast cpuops implementations.
+Before:
 
-V1->V2:
-	- Take out the definition for this_cpu_cmpxchg_8 and move it into
-	  a separate patch.
+christoph@linux-2.6$ size kernel/irq_work.o
+   text	   data	    bss	    dec	    hex	filename
+    451	      8	      1	    460	    1cc	kernel/irq_work.o
 
+After:
+
+christoph@linux-2.6$ size kernel/irq_work.o 
+   text	   data	    bss	    dec	    hex	filename
+    438	      8	      1	    447	    1bf	kernel/irq_work.o
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
 ---
- arch/x86/Kconfig.cpu          |    3 +
- arch/x86/include/asm/percpu.h |  109 +++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 111 insertions(+), 1 deletion(-)
+ kernel/irq_work.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-Index: linux-2.6/arch/x86/include/asm/percpu.h
+Index: linux-2.6/kernel/irq_work.c
 ===================================================================
---- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-10 12:18:46.000000000 -0600
-+++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-10 12:42:18.000000000 -0600
-@@ -212,6 +212,83 @@ do {									\
- 	ret__;								\
- })
+--- linux-2.6.orig/kernel/irq_work.c	2010-12-07 10:24:30.000000000 -0600
++++ linux-2.6/kernel/irq_work.c	2010-12-07 10:26:45.000000000 -0600
+@@ -77,21 +77,21 @@ void __weak arch_irq_work_raise(void)
+  */
+ static void __irq_work_queue(struct irq_work *entry)
+ {
+-	struct irq_work **head, *next;
++	struct irq_work *next;
  
-+/*
-+ * Beware: xchg on x86 has an implied lock prefix. There will be the cost of
-+ * full lock semantics even though they are not needed.
-+ */
-+#define percpu_xchg_op(var, nval)					\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __new = (nval);					\
-+	switch (sizeof(var)) {						\
-+	case 1:								\
-+		asm("xchgb %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "q" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 2:								\
-+		asm("xchgw %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 4:								\
-+		asm("xchgl %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	case 8:								\
-+		asm("xchgq %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new)				\
-+			    : "memory");				\
-+		break;							\
-+	default: __bad_percpu_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
-+/*
-+ * cmpxchg has no such implied lock semantics as a result it is much
-+ * more efficient for cpu local operations.
-+ */
-+#define percpu_cmpxchg_op(var, oval, nval)				\
-+({									\
-+	typeof(var) __ret;						\
-+	typeof(var) __old = (oval);					\
-+	typeof(var) __new = (nval);					\
-+	switch (sizeof(var)) {						\
-+	case 1:								\
-+		asm("cmpxchgb %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "q" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 2:								\
-+		asm("cmpxchgw %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 4:								\
-+		asm("cmpxchgl %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	case 8:								\
-+		asm("cmpxchgq %2, "__percpu_arg(1)			\
-+			    : "=a" (__ret), "+m" (var)			\
-+			    : "r" (__new), "0" (__old)			\
-+			    : "memory");				\
-+		break;							\
-+	default: __bad_percpu_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
- #define percpu_from_op(op, var, constraint)		\
- ({							\
- 	typeof(var) pfo_ret__;				\
-@@ -335,6 +412,17 @@ do {									\
- #define irqsafe_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
- #define irqsafe_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
+-	head = &get_cpu_var(irq_work_list);
++	preempt_disable();
  
-+/*
-+ * Generic fallback operations for __this_cpu_xchg are okay and much faster
-+ * than an xchg with forced lock semantics.
-+ */
-+#define this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-+
- #ifndef CONFIG_M386
- #define __this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
- #define __this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
-@@ -342,7 +430,18 @@ do {									\
- #define this_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
--#endif
-+
-+#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#endif /* !CONFIG_M386 */
-+
+ 	do {
+-		next = *head;
++		next = __this_cpu_read(irq_work_list);
+ 		/* Can assign non-atomic because we keep the flags set. */
+ 		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+-	} while (cmpxchg(head, next, entry) != next);
++	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
+ 
+ 	/* The list was empty, raise self-interrupt to start processing. */
+ 	if (!irq_work_next(entry))
+ 		arch_irq_work_raise();
+ 
+-	put_cpu_var(irq_work_list);
++	preempt_enable();
+ }
+ 
  /*
-  * Per cpu atomic 64 bit operations are only available under 64 bit.
-  * 32 bit must fall back to generic operations.
-@@ -370,6 +469,14 @@ do {									\
- #define __this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
- #define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
+@@ -120,16 +120,16 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
+  */
+ void irq_work_run(void)
+ {
+-	struct irq_work *list, **head;
++	struct irq_work *list;
  
-+#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+
-+#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+
- #endif
+-	head = &__get_cpu_var(irq_work_list);
+-	if (*head == NULL)
++	if (this_cpu_read(irq_work_list) == NULL)
+ 		return;
  
- /* This is not atomic against other CPUs -- CPU preemption needs to be off */
-Index: linux-2.6/arch/x86/Kconfig.cpu
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig.cpu	2010-12-10 12:18:46.000000000 -0600
-+++ linux-2.6/arch/x86/Kconfig.cpu	2010-12-10 12:18:49.000000000 -0600
-@@ -310,6 +310,9 @@ config X86_INTERNODE_CACHE_SHIFT
- config X86_CMPXCHG
- 	def_bool X86_64 || (X86_32 && !M386)
+ 	BUG_ON(!in_irq());
+ 	BUG_ON(!irqs_disabled());
  
-+config CMPXCHG_LOCAL
-+	def_bool X86_64 || (X86_32 && !M386)
+-	list = xchg(head, NULL);
++	list = this_cpu_xchg(irq_work_list, NULL);
 +
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
+ 	while (list != NULL) {
+ 		struct irq_work *entry = list;
+ 
 
