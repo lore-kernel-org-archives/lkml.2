@@ -1,261 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759072Ab0LNMvv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 07:51:51 -0500
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:48563 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759009Ab0LNMvt (ORCPT
+	id S1759194Ab0LNMw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 07:52:26 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57972 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759009Ab0LNMwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 07:51:49 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Dec 2010 07:51:49 EST
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>
-Subject: [PATCH] base: add sysfs socs info
-Date: Tue, 14 Dec 2010 13:40:17 +0100
-Message-Id: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
-X-Mailer: git-send-email 1.7.2.3
-X-Ovh-Tracer-Id: 7407014013661588248
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Tue, 14 Dec 2010 07:52:24 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Hans Verkuil" <hverkuil@xs4all.nl>
+Subject: Re: [alsa-devel] [RFC/PATCH v6 03/12] media: Entities, pads and links
+Date: Tue, 14 Dec 2010 13:53:14 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3; KDE/4.5.3; x86_64; ; )
+Cc: "Clemens Ladisch" <clemens@ladisch.de>, alsa-devel@alsa-project.org,
+        sakari.ailus@maxwell.research.nokia.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        lennart@poettering.net, linux-omap@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1290652099-15102-1-git-send-email-laurent.pinchart@ideasonboard.com> <201012141300.57118.laurent.pinchart@ideasonboard.com> <e629c78fffa0f709d743473f10334fd7.squirrel@webmail.xs4all.nl>
+In-Reply-To: <e629c78fffa0f709d743473f10334fd7.squirrel@webmail.xs4all.nl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012141353.15749.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this provide an easy way to register soc information
+Hi Hans,
 
-arch, family, model, id, revision
+On Tuesday 14 December 2010 13:40:21 Hans Verkuil wrote:
+> > On Monday 13 December 2010 17:10:51 Clemens Ladisch wrote:
+> >> * Entity types
+> >> 
+> >> TYPE_NODE was renamed to TYPE_DEVICE because "node" sounds like a node
+> >> in a graph, which does not distinguish it from other entity types
+> >> because all entities are part of the topology graph.  I chose "device"
+> >> as this type describes entities that are visible as some device node to
+> >> other software.
+> > 
+> > What this type describes is a device node. Both NODE and DEVICE can be
+> > confusing in my opinion, but DEVICE_NODE is a bit long.
+> 
+> What about DEVNODE? I think that would be a good alternative.
 
-as this for at91sam9g20
+Fine with me. Clemens, any opinion on that ?
 
-$ cat /sys/devices/system/soc/soc0/arch
-current
-$ cat /sys/devices/system/soc/soc0/family
-at91
-$ cat /sys/devices/system/soc/soc0/id
-at91sam9g20
-$ cat /sys/devices/system/soc/soc0/model
-0x00000000019905a0
-$ cat /sys/devices/system/soc/soc0/revision
-1.1
+> >> TYPE_EXT describes entities that represent some interface to the
+> >> external world, TYPE_INT those that are internal to the entire device.
+> >> (I'm not sure if that distinction is very useful, but TYPE_SUBDEV seems
+> >> to be an even more meaningless name.)
+> > 
+> > SUBDEV comes from the V4L2 world, and I agree that it might not be a very
+> > good name.
+> 
+> SUBDEV refers to a specific type of driver. Within the v4l world it is
+> well defined. So I prefer to keep this. Perhaps some additional comments
+> or documentation can be added to clarify this.
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Patrice VILCHEZ <patrice.vilchez@atmel.com>
----
- drivers/base/Makefile |    3 +-
- drivers/base/base.h   |    1 +
- drivers/base/init.c   |    1 +
- drivers/base/soc.c    |  124 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/soc.h   |   27 +++++++++++
- 5 files changed, 155 insertions(+), 1 deletions(-)
- create mode 100644 drivers/base/soc.c
- create mode 100644 include/linux/soc.h
+Should this be clarified by using V4L2_SUBDEV instead then ? What about ALSA 
+entities, should they use MEDIA_ENTITY_TYPE_ALSA_* ?
 
-diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-index 5f51c3b..cf3e59f 100644
---- a/drivers/base/Makefile
-+++ b/drivers/base/Makefile
-@@ -3,7 +3,8 @@
- obj-y			:= core.o sys.o bus.o dd.o \
- 			   driver.o class.o platform.o \
- 			   cpu.o firmware.o init.o map.o devres.o \
--			   attribute_container.o transport_class.o
-+			   attribute_container.o transport_class.o \
-+			   soc.o
- obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
- obj-y			+= power/
- obj-$(CONFIG_HAS_DMA)	+= dma-mapping.o
-diff --git a/drivers/base/base.h b/drivers/base/base.h
-index 2ca7f5b..e2daaf6 100644
---- a/drivers/base/base.h
-+++ b/drivers/base/base.h
-@@ -107,6 +107,7 @@ static inline int hypervisor_init(void) { return 0; }
- extern int platform_bus_init(void);
- extern int system_bus_init(void);
- extern int cpu_dev_init(void);
-+extern int soc_dev_init(void);
- 
- extern int bus_add_device(struct device *dev);
- extern void bus_probe_device(struct device *dev);
-diff --git a/drivers/base/init.c b/drivers/base/init.c
-index c8a934e..f908faa 100644
---- a/drivers/base/init.c
-+++ b/drivers/base/init.c
-@@ -33,5 +33,6 @@ void __init driver_init(void)
- 	platform_bus_init();
- 	system_bus_init();
- 	cpu_dev_init();
-+	soc_dev_init();
- 	memory_dev_init();
- }
-diff --git a/drivers/base/soc.c b/drivers/base/soc.c
-new file mode 100644
-index 0000000..c24bb41
---- /dev/null
-+++ b/drivers/base/soc.c
-@@ -0,0 +1,124 @@
-+/*
-+ * drivers/base/soc.c - basic SOC class support
-+ *
-+ * Copyright (C) 2010 Jean-Chrisotphe PLAGNIOL-VILLARD * <plagnioj@jcrosoft.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/sysdev.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/soc.h>
-+#include <linux/device.h>
-+
-+#include "base.h"
-+
-+static int nb_socs;
-+
-+struct sysdev_class soc_sysdev_class = {
-+	.name = "soc",
-+};
-+EXPORT_SYMBOL_GPL(soc_sysdev_class);
-+
-+#define print_u64_attr(field)							\
-+static ssize_t print_socs_##field(struct sys_device *dev,			\
-+				  struct sysdev_attribute *attr, char *buf)	\
-+{										\
-+	struct soc *soc = container_of(dev, struct soc, sysdev);		\
-+										\
-+	return sprintf(buf, "0x%016Lx\n", soc->field);				\
-+}										\
-+static SYSDEV_ATTR(field, 0444, print_socs_##field, NULL);			\
-+
-+#define print_str_attr(field)							\
-+static ssize_t print_socs_##field(struct sys_device *dev,			\
-+				  struct sysdev_attribute *attr, char *buf)	\
-+{										\
-+	struct soc *soc = container_of(dev, struct soc, sysdev);		\
-+										\
-+	return sprintf(buf, "%s\n", soc->field);				\
-+}										\
-+static SYSDEV_ATTR(field, 0444, print_socs_##field, NULL);			\
-+
-+print_u64_attr(id)
-+print_str_attr(arch)
-+print_str_attr(family)
-+print_str_attr(model)
-+print_str_attr(revision)
-+
-+static char *arch_current = "current";
-+/*
-+ * register_soc - Setup a sysfs device for a SOC.
-+ *
-+ * Initialize and register the SOC device.
-+ */
-+int register_soc(struct soc *soc)
-+{
-+	int err;
-+
-+	if (!soc)
-+		return -EINVAL;
-+
-+	soc->sysdev.id = nb_socs;
-+	soc->sysdev.cls = &soc_sysdev_class;
-+
-+	if (!soc->arch)
-+		soc->arch = arch_current;
-+
-+	err = sysdev_register(&soc->sysdev);
-+
-+	if (err)
-+		return err;
-+
-+	err = sysdev_create_file(&soc->sysdev, &attr_arch);
-+
-+	if (err)
-+		goto end;
-+
-+	err = sysdev_create_file(&soc->sysdev, &attr_family);
-+
-+	if (err)
-+		goto end0;
-+
-+	err = sysdev_create_file(&soc->sysdev, &attr_model);
-+
-+	if (err)
-+		goto end1;
-+
-+	err = sysdev_create_file(&soc->sysdev, &attr_id);
-+
-+	if (err)
-+		goto end2;
-+
-+	err = sysdev_create_file(&soc->sysdev, &attr_revision);
-+
-+	if (err)
-+		goto end3;
-+
-+	nb_socs++;
-+
-+	return 0;
-+
-+end3:
-+	sysdev_remove_file(&soc->sysdev, &attr_id);
-+end2:
-+	sysdev_remove_file(&soc->sysdev, &attr_model);
-+end1:
-+	sysdev_remove_file(&soc->sysdev, &attr_family);
-+end0:
-+	sysdev_remove_file(&soc->sysdev, &attr_arch);
-+end:
-+	sysdev_unregister(&soc->sysdev);
-+
-+	return err;
-+}
-+
-+int __init soc_dev_init(void)
-+{
-+	nb_socs = 0;
-+
-+	return sysdev_class_register(&soc_sysdev_class);
-+}
-diff --git a/include/linux/soc.h b/include/linux/soc.h
-new file mode 100644
-index 0000000..55e6ea2
---- /dev/null
-+++ b/include/linux/soc.h
-@@ -0,0 +1,27 @@
-+/*
-+ * include/linux/soc.h - generic soc definition
-+ *
-+ * Copyright (C) 2010 Jean-Chrisotphe PLAGNIOL-VILLARD * <plagnioj@jcrosoft.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _LINUX_SOC_H_
-+#define _LINUX_OSC_H_
-+
-+#include <linux/sysdev.h>
-+
-+struct soc {
-+	u64 id;
-+	char *arch;
-+	char *family;
-+	char *model;
-+	char *revision;
-+	struct sys_device sysdev;
-+};
-+
-+extern int register_soc(struct soc *soc);
-+extern struct sysdev_class soc_sysdev_class;
-+
-+#endif /* _LINUX_SOC_H_ */
+> > I'm not sure I would split entities in internal/external categories. I
+> > would create a category for connectors though.
+> 
+> I agree. It was always the plan to eventually add connectors, but v4l
+> didn't really need it (it already has an API to enumerate connectors).
+> 
+> >> ALSA mixer controls are not directly represented; a better fit for the
+> >> architecture of actual devices is that one or more mixer controls can be
+> >> associated with an entity.  (This can be done with a field of the mixer
+> >> control.)
+> > 
+> > Agreed.
+> > 
+> >> * Entity properties
+> >> 
+> >> There needs to be a mechanism to associate meta-information (properties)
+> >> with entities.  This information should be optional and extensible, but,
+> >> when being handled inside the kernel, doesn't need to be more than
+> >> a read-only blob.  I think that something like ALSA's TLV format (used
+> >> for mixer controls) can be used here.  (I'm not mentioning the X-word
+> >> here, except to note that the "M" stands for "markup".)
+> > 
+> > I've been thinking of adding a new ioctl for that. It's something we need
+> > to draft. The UVC driver will need it, and I'm pretty sure other V4L2
+> > drivers would find it useful as well.
+> > 
+> >> * Entity subtypes
+> >> 
+> >> EXT_JACK_ANALOG represents any analog audio and/or video connector.
+> >> Properties for audio jacks would be jack type (TRS/RCA), color code,
+> >> line level, position, etc.
+> >> 
+> >> EXT_JACK_DIGITAL represents a digital connector like S/PDIF (coax/
+> >> TOSLINK), ADAT, TDIF, or MADI.
+> >> 
+> >> EXT_JACK_BUS represents a bus like FireWire and comes from the USB audio
+> >> spec.  (I doubt that any devices with this entitiy will ever exist.)
+> >> 
+> >> EXT_INSTRUMENT represents something like an e-guitar, keyboard, or MIDI
+> >> controller.  (Instrument entities are typically audio sources and MIDI
+> >> sources and sinks, but can also be audio sinks.)
+> >> 
+> >> EXT_SPEAKER also includes headphones; there might be made a case for
+> >> having those as a separate subtype.
+> > 
+> > Shouldn't headphones be represented by an EXT_JACK_ANALOG ?
+> > 
+> >> EXT_PLAYER represents a device like a CD/DVD/tape player.  Recorders can
+> >> also write to that device, so "player" might not be an ideal name.
+> >> 
+> >> EXT_BROADCAST represents devices like TV tuners, satellite receivers,
+> >> cable tuners, or radios.
+> 
+> I don't think it is right to talk about 'represents devices'. I'd rephrase
+> it to 'connects to devices'.
+> 
+> > There's clearly an overlap with V4L here. Hopefully someone from the
+> > linux-media list can comment on this.
+> 
+> I don't think this will be a problem. Initially we probably won't be
+> enumerating connectors for V4L since it already has its own API for that.
+
+My understanding is that EXT_BROADCAST really represents the TV tuners, ..., 
+not the connector they connect to. Some (all ?) of them are definitely V4L2 
+subdevs.
+
+> >> INT_SYNTHESIZER converts MIDI to audio.
+> >> 
+> >> INT_NOISE_SOURCE comes from the USB audio spec; this is not an attempt
+> >> to describe the characteristics of consumer-grade devices :-) , but
+> >> represents an internal noise source for level calibration or
+> >> measurements.
+> >> 
+> >> INT_CONTROLS may have multiple independent controls (this is USB's
+> >> Feature Unit); INT_EFFECT may have multiple controls that affect one
+> >> single algorithm.
+> > 
+> > I'd describe this as a feature unit/processing unit then.
+> > 
+> >> INT_CHANNEL_SPLIT/MERGE are needed for HDAudio devices, whose topology
+> >> information has only stereo links.
+> > 
+> > Some of those INT entities could also be implemented in dedicated chips,
+> > so I really think the EXT/INT split doesn't make too much sense. Should we
+> > have an AUDIO category ?
+> > 
+> >> * Entity specifications
+> >> 
+> >> While TYPE_DEVICE entities can be identified by their device node, other
+> >> entities typcially have just a numeric ID.
+> > 
+> > In V4L2 sub-devices have (or rather will have once the media controller
+> > patches will be integrated) device nodes as well, so exposing that
+> > information
+> > is required.
+> > 
+> >> For that, it would be useful to make do without separate identification
+> >> and let the driver choose the entity ID.
+> > 
+> > How would drivers do that ? What if you have two instances of the same
+> > chip (a video sensor, audio mixer, ...) on the same board ?
+
 -- 
-1.7.2.3
+Regards,
 
+Laurent Pinchart
