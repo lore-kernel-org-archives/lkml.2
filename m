@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab0LNBRI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 20:17:08 -0500
-Received: from hera.kernel.org ([140.211.167.34]:46607 "EHLO hera.kernel.org"
+	id S932094Ab0LNBRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 20:17:22 -0500
+Received: from hera.kernel.org ([140.211.167.34]:46616 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758790Ab0LNBRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 20:17:06 -0500
-Date: Tue, 14 Dec 2010 01:16:41 GMT
-From: tip-bot for Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+	id S1758848Ab0LNBRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 20:17:20 -0500
+Date: Tue, 14 Dec 2010 01:17:04 GMT
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        chrisw@sous-sol.org, suresh.b.siddha@intel.com,
-        kaneshige.kenji@jp.fujitsu.com, tglx@linutronix.de,
+        chrisw@sous-sol.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         chrisw@sous-sol.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        kaneshige.kenji@jp.fujitsu.com, hpa@linux.intel.com
-In-Reply-To: <20101201062244.541996375@intel.com>
-References: <20101201062244.541996375@intel.com>
+        hpa@linux.intel.com
+In-Reply-To: <20101201062244.630417138@intel.com>
+References: <20101201062244.630417138@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Enable the intr-remap fault handling after local APIC setup
-Message-ID: <tip-7f7fbf45c6b748074546f7f16b9488ca71de99c1@git.kernel.org>
-Git-Commit-ID: 7f7fbf45c6b748074546f7f16b9488ca71de99c1
+Subject: [tip:x86/urgent] x86, vt-d: Handle previous faults after enabling fault handling
+Message-ID: <tip-7f99d946e71e71d484b7543b49e990508e70d0c0@git.kernel.org>
+Git-Commit-ID: 7f99d946e71e71d484b7543b49e990508e70d0c0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 01:16:41 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 01:17:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7f7fbf45c6b748074546f7f16b9488ca71de99c1
-Gitweb:     http://git.kernel.org/tip/7f7fbf45c6b748074546f7f16b9488ca71de99c1
-Author:     Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-AuthorDate: Tue, 30 Nov 2010 22:22:28 -0800
+Commit-ID:  7f99d946e71e71d484b7543b49e990508e70d0c0
+Gitweb:     http://git.kernel.org/tip/7f99d946e71e71d484b7543b49e990508e70d0c0
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Tue, 30 Nov 2010 22:22:29 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 13 Dec 2010 16:53:32 -0800
+CommitDate: Mon, 13 Dec 2010 16:53:57 -0800
 
-x86: Enable the intr-remap fault handling after local APIC setup
+x86, vt-d: Handle previous faults after enabling fault handling
 
-Interrupt-remapping gets enabled very early in the boot, as it determines the
-apic mode that the processor can use. And the current code enables the vt-d
-fault handling before the setup_local_APIC(). And hence the APIC LDR registers
-and data structure in the memory may not be initialized. So the vt-d fault
-handling in logical xapic/x2apic modes were broken.
+Fault handling is getting enabled after enabling the interrupt-remapping (as
+the success of interrupt-remapping can affect the apic mode and hence the
+fault handling mode).
 
-Fix this by enabling the vt-d fault handling in the end_local_APIC_setup()
+Hence there can potentially be some faults between the window of enabling
+interrupt-remapping in the vt-d and the fault-handling of the vt-d units.
 
-A cleaner fix of enabling fault handling while enabling intr-remapping
-will be addressed for v2.6.38. [ Enabling intr-remapping determines the
-usage of x2apic mode and the apic mode determines the fault-handling
-configuration. ]
+Handle any previous faults after enabling the vt-d fault handling.
 
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-LKML-Reference: <20101201062244.541996375@intel.com>
+For v2.6.38 cleanup, need to check if we can remove the dmar_fault() in the
+enable_intr_remapping() and see if we can enable fault handling along with
+enabling intr-remapping.
+
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+LKML-Reference: <20101201062244.630417138@intel.com>
 Cc: stable@kernel.org [v2.6.32+]
 Acked-by: Chris Wright <chrisw@sous-sol.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/apic/apic.c     |    8 ++++++++
- arch/x86/kernel/apic/probe_64.c |    7 -------
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/pci/dmar.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 3f838d5..7821813 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1389,6 +1389,14 @@ void __cpuinit end_local_APIC_setup(void)
- 
- 	setup_apic_nmi_watchdog(NULL);
- 	apic_pm_activate();
+diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+index 0157708..09933eb 100644
+--- a/drivers/pci/dmar.c
++++ b/drivers/pci/dmar.c
+@@ -1417,6 +1417,11 @@ int __init enable_drhd_fault_handling(void)
+ 			       (unsigned long long)drhd->reg_base_addr, ret);
+ 			return -1;
+ 		}
 +
-+	/*
-+	 * Now that local APIC setup is completed for BP, configure the fault
-+	 * handling for interrupt remapping.
-+	 */
-+	if (!smp_processor_id() && intr_remapping_enabled)
-+		enable_drhd_fault_handling();
-+
- }
- 
- #ifdef CONFIG_X86_X2APIC
-diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
-index f9e4e6a..d8c4a6f 100644
---- a/arch/x86/kernel/apic/probe_64.c
-+++ b/arch/x86/kernel/apic/probe_64.c
-@@ -79,13 +79,6 @@ void __init default_setup_apic_routing(void)
- 		/* need to update phys_pkg_id */
- 		apic->phys_pkg_id = apicid_phys_pkg_id;
++		/*
++		 * Clear any previous faults.
++		 */
++		dmar_fault(iommu->irq, iommu);
  	}
--
--	/*
--	 * Now that apic routing model is selected, configure the
--	 * fault handling for intr remapping.
--	 */
--	if (intr_remapping_enabled)
--		enable_drhd_fault_handling();
- }
  
- /* Same for both flat and physical. */
+ 	return 0;
