@@ -1,149 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab0LNWc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 17:32:26 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39231 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932153Ab0LNWcX (ORCPT
+	id S1759072Ab0LNWdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 17:33:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57166 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759012Ab0LNWdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 17:32:23 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66833089"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 4/5] msm: hotplug: support cpu hotplug on msm
-Date: Tue, 14 Dec 2010 14:31:49 -0800
-Message-Id: <1292365910-30336-1-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20101214173007.GA24303@n2100.arm.linux.org.uk>
-References: <20101214173007.GA24303@n2100.arm.linux.org.uk>
+	Tue, 14 Dec 2010 17:33:18 -0500
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linuxppc-dev@ozlabs.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pata_mpc52xx: driver needs BMDMA
+Date: Tue, 14 Dec 2010 23:32:47 +0100
+Message-Id: <1292365967-14867-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
----
- arch/arm/mach-msm/Makefile  |    2 +
- arch/arm/mach-msm/hotplug.c |   87 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/hotplug.c
+Found by this build-error:
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 34cd0a8..7a11b4a 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -20,6 +20,8 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
- obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+drivers/ata/pata_mpc52xx.c: In function 'mpc52xx_ata_init_one':
+drivers/ata/pata_mpc52xx.c:662: error: 'ata_bmdma_interrupt' undeclared (first use in this function)
+
+So, move the Kconfig entry to the proper location.
+
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+---
+ drivers/ata/Kconfig  |   20 ++++++++++----------
+ drivers/ata/Makefile |    2 +-
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index 11ec911..85756b8 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -128,16 +128,6 @@ config PDC_ADMA
  
-+obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
+ 	  If unsure, say N.
+ 
+-config PATA_MPC52xx
+-	tristate "Freescale MPC52xx SoC internal IDE"
+-	depends on PPC_MPC52xx && PPC_BESTCOMM
+-	select PPC_BESTCOMM_ATA
+-	help
+-	  This option enables support for integrated IDE controller
+-	  of the Freescale MPC52xx SoC.
+-
+-	  If unsure, say N.
+-
+ config PATA_OCTEON_CF
+ 	tristate "OCTEON Boot Bus Compact Flash support"
+ 	depends on CPU_CAVIUM_OCTEON
+@@ -491,6 +481,16 @@ config PATA_MARVELL
+ 
+ 	  If unsure, say N.
+ 
++config PATA_MPC52xx
++	tristate "Freescale MPC52xx SoC internal IDE"
++	depends on PPC_MPC52xx && PPC_BESTCOMM
++	select PPC_BESTCOMM_ATA
++	help
++	  This option enables support for integrated IDE controller
++	  of the Freescale MPC52xx SoC.
 +
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
- obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
-diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
-new file mode 100644
-index 0000000..d24f71f
---- /dev/null
-+++ b/arch/arm/mach-msm/hotplug.c
-@@ -0,0 +1,87 @@
-+/*
-+ *  Copyright (C) 2002 ARM Ltd.
-+ *  All Rights Reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++	  If unsure, say N.
 +
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/smp.h>
-+#include <linux/completion.h>
-+#include <linux/irq.h>
-+
-+#include <asm/cacheflush.h>
-+
-+#include <mach/smp.h>
-+
-+static inline void cpu_enter_lowpower(void)
-+{
-+	flush_cache_all();
-+}
-+
-+static inline void cpu_leave_lowpower(void)
-+{
-+	pen_release = -1;
-+	smp_wmb();
-+}
-+
-+static inline void platform_do_lowpower(unsigned int cpu)
-+{
-+	/* Just enter wfe for now. */
-+	for (;;) {
-+		asm("wfe" : : : "memory");
-+		if (pen_release == cpu) {
-+			/*
-+			 * OK, proper wakeup, we're done
-+			 */
-+			break;
-+		}
-+
-+		/*
-+		 * getting here, means that we have come out of WFI without
-+		 * having been woken up - this shouldn't happen
-+		 *
-+		 * The trouble is, letting people know about this is not really
-+		 * possible, since we are currently running incoherently, and
-+		 * therefore cannot safely call printk() or anything else
-+		*/
-+		pr_debug("CPU%u: spurious wakeup call\n", cpu);
-+	}
-+}
-+
-+int platform_cpu_kill(unsigned int cpu)
-+{
-+	return 1;
-+}
-+
-+/*
-+ * platform-specific code to shutdown a CPU
-+ *
-+ * Called with IRQs disabled
-+ */
-+void platform_cpu_die(unsigned int cpu)
-+{
-+	/*
-+	 * we're ready for shutdown now, so do it
-+	 */
-+	cpu_enter_lowpower();
-+	platform_do_lowpower(cpu);
-+
-+	/*
-+	 * bring this CPU back into the world of cache
-+	 * coherency, and then restore interrupts
-+	 */
-+	cpu_leave_lowpower();
-+}
-+
-+int platform_cpu_disable(unsigned int cpu)
-+{
-+	/*
-+	 * we don't allow CPU 0 to be shutdown (it is still too special
-+	 * e.g. clock tick interrupts)
-+	 */
-+	return cpu == 0 ? -EPERM : 0;
-+}
+ config PATA_NETCELL
+ 	tristate "NETCELL Revolution RAID support"
+ 	depends on PCI
+diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+index c501af5..2b67c90 100644
+--- a/drivers/ata/Makefile
++++ b/drivers/ata/Makefile
+@@ -11,7 +11,6 @@ obj-$(CONFIG_SATA_DWC)		+= sata_dwc_460ex.o
+ 
+ # SFF w/ custom DMA
+ obj-$(CONFIG_PDC_ADMA)		+= pdc_adma.o
+-obj-$(CONFIG_PATA_MPC52xx)	+= pata_mpc52xx.o
+ obj-$(CONFIG_PATA_OCTEON_CF)	+= pata_octeon_cf.o
+ obj-$(CONFIG_SATA_QSTOR)	+= sata_qstor.o
+ obj-$(CONFIG_SATA_SX4)		+= sata_sx4.o
+@@ -52,6 +51,7 @@ obj-$(CONFIG_PATA_IT821X)	+= pata_it821x.o
+ obj-$(CONFIG_PATA_JMICRON)	+= pata_jmicron.o
+ obj-$(CONFIG_PATA_MACIO)	+= pata_macio.o
+ obj-$(CONFIG_PATA_MARVELL)	+= pata_marvell.o
++obj-$(CONFIG_PATA_MPC52xx)	+= pata_mpc52xx.o
+ obj-$(CONFIG_PATA_NETCELL)	+= pata_netcell.o
+ obj-$(CONFIG_PATA_NINJA32)	+= pata_ninja32.o
+ obj-$(CONFIG_PATA_NS87415)	+= pata_ns87415.o
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.2.3
 
