@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227Ab0LNVYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:24:39 -0500
-Received: from intermatrixgroup.ru ([195.178.208.66]:53219 "EHLO
-	tservice.net.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760156Ab0LNVYh (ORCPT
+	id S1760185Ab0LNV1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:27:03 -0500
+Received: from www84.your-server.de ([213.133.104.84]:56965 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760158Ab0LNV1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:24:37 -0500
-Date: Wed, 15 Dec 2010 00:24:35 +0300
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, jgarzik@pobox.com, benh@kernel.crashing.org,
-        mchehab@infradead.org, davem@davemloft.net, netdev@vger.kernel.org,
-        cbou@mail.ru, dwmw2@infradead.org, gregkh@suse.de,
-        bfields@fieldses.org, neilb@suse.de, aelder@sgi.com,
-        xfs-masters@oss.sgi.com, cl@linux-foundation.org,
-        penberg@cs.helsinki.fi, akpm@linux-foundation.org,
-        netfilter-devel@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 1/2] workqueue: convert
- cancel_rearming_delayed_work[queue]() users to cancel_delayed_work_sync()
-Message-ID: <20101214212435.GA10097@ioremap.net>
-References: <4D078B6D.5060202@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D078B6D.5060202@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 14 Dec 2010 16:27:02 -0500
+Subject: Re: [PATCH] cramfs: generate unique inode number for better inode
+ cache usage
+From: Stefani Seibold <stefani@seibold.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20101214131204.c263d6a3.akpm@linux-foundation.org>
+References: <1292150923-25586-1-git-send-email-stefani@seibold.net>
+	 <20101214125143.0ab00c97.akpm@linux-foundation.org>
+	 <1292360550.29366.4.camel@wall-e>
+	 <20101214131204.c263d6a3.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 14 Dec 2010 22:27:53 +0100
+Message-ID: <1292362073.29621.13.camel@wall-e>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-
-On Tue, Dec 14, 2010 at 04:21:17PM +0100, Tejun Heo (tj@kernel.org) wrote:
-> cancel_rearming_delayed_work[queue]() has been superceded by
-> cancel_delayed_work_sync() quite some time ago.  Convert all the
-> in-kernel users.  The conversions are completely equivalent and
-> trivial.
+Am Dienstag, den 14.12.2010, 13:12 -0800 schrieb Andrew Morton:
+> On Tue, 14 Dec 2010 22:02:30 +0100
+> Stefani Seibold <stefani@seibold.net> wrote:
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Am Dienstag, den 14.12.2010, 12:51 -0800 schrieb Andrew Morton:
+> > > On Sun, 12 Dec 2010 11:48:42 +0100
+> > > stefani@seibold.net wrote:
+> > > 
+> > > > This patch generates a unique inode numbers for any entries in the cram file
+> > > > system. For files which did not contain data's (device nodes, fifos and
+> > > > sockets) the offset of the directory entry inside + 1 will be used as the
+> > > > inode number.
+> > > > 
+> > > > The + 1 for the inode will it make possible to distinguish between
+> > > > a file which contains no data and files which has data, the later one has
+> > > > a inode value where the lower two bits are always 0.
+> > > > 
+> > > > It also reimplement the behavoir to set the size and the number of block
+> > > > to 0 for special file, which is the right value for devices, fifos and
+> > > > sockets.
+> > > > 
+> > > > As a little benefit it will be also more compatible which older
+> > > > mkcramfs, because it will never use the cramfs_inode->offset for
+> > > > creating a inode number for special files.
+> > > 
+> > > Did you look at using iunique() to generate cramfs inode numbers?
+> > 
+> > iunique() will create random inode numbers, depending on the order of
+> > the accessed files.
+> 
+> It generates non-unique inode numbers and uses Weird Nonstandard
+> Private Stuff in a place where we could use standard kernel facilities.
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Disagree, it will create uniqe inode. And if the "standard" kernel
+facilities will not serve right, than it is necessary to do in a better
+way. iunique() is not the right facility.
 
--- 
-	Evgeniy Polyakov
+Stefani
+
+
