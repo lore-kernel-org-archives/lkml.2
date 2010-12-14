@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab0LNOf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:35:58 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50063 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab0LNOf5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:35:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=I6GyhCrHP4ICiRgdhh5olN/CnlXkBod6lofgonE3mzQqXU1tshvKotsx4XBQKGkqBw
-         lErqcUqY6UcVdAx+aOzPRmDEiNEhDowqb+A1Cv5HNRxvG/Nrkz6ZDWlEhuA7q6TI33Yi
-         GCnytijWQcNiLwut7i7FGZrpUpehG5l3k+abA=
-Date: Tue, 14 Dec 2010 12:35:51 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: "David S. Ahern" <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] perf tools: Add symfs option for off-box analysis
- using specified tree
-Message-ID: <20101214143551.GD13425@ghostprotocols.net>
-References: <1291926427-28846-1-git-send-email-daahern@cisco.com>
- <20101214122428.GA13425@ghostprotocols.net>
- <20101214125245.GB13425@ghostprotocols.net>
- <4D077EDE.8090005@cisco.com>
+	id S1756661Ab0LNOjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:39:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:11173 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752280Ab0LNOjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:39:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,342,1288594800"; 
+   d="scan'208";a="583607428"
+Date: Tue, 14 Dec 2010 22:39:02 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
+ up time
+Message-ID: <20101214143902.GA24827@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150326.856922289@intel.com>
+ <1292333854.2019.16.camel@castor.rsk>
+ <20101214135910.GA21401@localhost>
+ <20101214143325.GA22764@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D077EDE.8090005@cisco.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101214143325.GA22764@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 14, 2010 at 07:27:42AM -0700, David S. Ahern escreveu:
-> On 12/14/10 05:52, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Dec 14, 2010 at 10:24:28AM -0200, Arnaldo Carvalho de Melo escreveu:
-> I was not aware of realpath. Simple change to symbol__init?
+On Tue, Dec 14, 2010 at 10:33:25PM +0800, Wu Fengguang wrote:
+> On Tue, Dec 14, 2010 at 09:59:10PM +0800, Wu Fengguang wrote:
+> > On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
+> 
+> > > As to the ramp up time, when writing to 2 disks at the same time I see
+> > > the per_bdi_threshold taking up to 20 seconds to converge on a steady
+> > > value after one of the write stops. So I think this could be speeded up
+> > > even more, at least on my setup.
+> > 
+> > I have the roughly same ramp up time on the 1-disk 3GB mem test:
+> > 
+> > http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
+> >  
+> 
+> Interestingly, the above graph shows that after about 10s fast ramp
+> up, there is another 20s slow ramp down. It's obviously due the
+> decline of global limit:
+> 
+> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat-dirty.png
+> 
+> But why is the global limit declining?  The following log shows that
+> nr_file_pages keeps growing and goes stable after 75 seconds (so long
+> time!). In the same period nr_free_pages goes slowly down to its
+> stable value. Given that the global limit is mainly derived from
+> nr_free_pages+nr_file_pages (I disabled swap), something must be
+> slowly eating memory until 75 ms. Maybe the tracing ring buffers?
+> 
+>          free     file      reclaimable pages
+> 50s      369324 + 318760 => 688084
+> 60s      235989 + 448096 => 684085
+> 
+> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat
 
-I made symbol__init use realpath to reduce the arg to --symfs.
- 
-> > [acme@mica linux]$ find /tmp/bla
-> > /tmp/bla
-> > /tmp/bla/lib64
-> > /tmp/bla/lib64/libc-2.5.so
-> > [acme@mica linux]$ perf report -v -g none --stdio --symfs /tmp/bla > /tmp/out
-> > Looking at the vmlinux_path (3 entries long)
-> > Failed to open [kernel.kallsyms], continuing without symbols
-> > dso__synthesize_plt_symbols: problems reading /home/acme/bin/perf PLT info.
-> > [acme@mica linux]$ cat /tmp/out
+The log shows that ~64MB reclaimable memory is stoled. But the trace
+data only takes 1.8MB. Hmm..
 
-> strace -e trace=open /tmp/build-perf/perf report -v --symfs /tmp/f14-mnt
-> -i /tmp/perf-cs.data
-
-> does not show any attempts to open a file not starting with the symfs path.
-
-Probably because all the files you need are in the directories you
-passed to --symfs, remove one and it will leak.
-
-Anyway, fixed in my perf/core branch, still not propagated from
-master.k.o to git.k.o :-\
-
-- Arnaldo
+Thanks,
+Fengguang
