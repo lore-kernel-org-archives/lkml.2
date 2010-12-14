@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab0LNVbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:31:10 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:28180 "EHLO
+	id S932579Ab0LNVbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:31:16 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:54541 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab0LNVbF (ORCPT
+	with ESMTP id S932513Ab0LNVbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:31:05 -0500
+	Tue, 14 Dec 2010 16:31:12 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=fjX/i2TDe0Iu5VndVrQ/1WUkTuhtkflTWtRcrd0OiAP2AFrsLBp/WcGVlawPXv1bt
-	2kp0QUIX/6lMw95aymzcQ==
-Subject: [PATCH v3 13/22] netpoll: Introduce netpoll_target configs
+	b=phkiE3Yvtiu1YZHNSOyKKeBh0bDsTVlzjPfcL3umKrvgPeZIhXJYaNlCAHcaKhJlx
+	ufToRraxqUQX30cwhgnrw==
+Subject: [PATCH v3 12/22] netconsole: Move setting of default ports.
 To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
         Matt Mackall <mpm@selenic.com>
 From: Mike Waychison <mikew@google.com>
@@ -21,8 +21,8 @@ Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
         Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
         =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
         akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Tue, 14 Dec 2010 13:30:05 -0800
-Message-ID: <20101214213004.17022.50295.stgit@mike.mtv.corp.google.com>
+Date: Tue, 14 Dec 2010 13:29:59 -0800
+Message-ID: <20101214212959.17022.85347.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -34,124 +34,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As preparation for moving netpoll_targets out of netconsole and making
-them available to other clients, introduce new Kconfig options.
-
-CONFIG_NETPOLL_TARGETS
-
-Access to targets APIs.  Only supports parameter based parsing of
-targets (via the kernel command line or module paramters).
-
-CONFIG_NETPOLL_TARGETS_DYNAMIC
-
-Extends the support that netpoll_targets provides by allowing for the
-dynamic creation of targets in configfs on a per client basis.  This is
-boolean flag used to enable dynamic support.  Specifying it without
-also selecting NETPOLL_TARGETS is meaningless.
+Clients of netpoll_targets need to be able to specify the default port
+numbers.  Do this by specifying the default port numbers in struct
+netpoll_targets directly.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 Acked-by: Matt Mackall <mpm@selenic.com>
-
 ---
-Changelog:
-- v3
-  - Fixed to support building netpoll_targets as a module.  It depends
-    on netpoll, but netpoll itself doesn't depend on it.
-    netpoll_targets will be built as a module if it is needed by either
-    NETCONSOLE or NETOOPS are enabled as modules (and neither are built
-    in).  CONFIGFS_FS is also only selected to be a module if that is
-    possible.
----
- drivers/net/Kconfig      |   15 ++++++++++++---
- drivers/net/netconsole.c |   10 +++++-----
- 2 files changed, 17 insertions(+), 8 deletions(-)
+ drivers/net/netconsole.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 4f1755b..2ae9818 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -3379,14 +3379,15 @@ config NET_FC
- 
- config NETCONSOLE
- 	tristate "Network console logging support"
-+	select NETPOLL_TARGETS
- 	---help---
- 	If you want to log kernel messages over the network, enable this.
- 	See <file:Documentation/networking/netconsole.txt> for details.
- 
- config NETCONSOLE_DYNAMIC
- 	bool "Dynamic reconfiguration of logging targets"
--	depends on NETCONSOLE && SYSFS
--	select CONFIGFS_FS
-+	depends on NETCONSOLE
-+	select NETPOLL_TARGETS_DYNAMIC
- 	help
- 	  This option enables the ability to dynamically reconfigure target
- 	  parameters (interface, IP addresses, port numbers, MAC addresses)
-@@ -3394,7 +3395,15 @@ config NETCONSOLE_DYNAMIC
- 	  See <file:Documentation/networking/netconsole.txt> for details.
- 
- config NETPOLL
--	def_bool NETCONSOLE
-+	def_bool false
-+
-+config NETPOLL_TARGETS
-+	tristate
-+	select NETPOLL
-+	select CONFIGFS_FS if NETPOLL_TARGETS_DYNAMIC
-+
-+config NETPOLL_TARGETS_DYNAMIC
-+	bool
- 
- config NETPOLL_TRAP
- 	bool "Netpoll traffic trapping"
 diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index fbef723..1970be3 100644
+index 5c8701f..fbef723 100644
 --- a/drivers/net/netconsole.c
 +++ b/drivers/net/netconsole.c
-@@ -69,7 +69,7 @@ struct netpoll_targets {
+@@ -68,6 +68,7 @@ __setup("netconsole=", option_setup);
+ struct netpoll_targets {
  	struct list_head list;
  	spinlock_t lock;
- 	u16 default_local_port, default_remote_port;
--#ifdef	CONFIG_NETCONSOLE_DYNAMIC
-+#ifdef	CONFIG_NETPOLL_TARGETS_DYNAMIC
++	u16 default_local_port, default_remote_port;
+ #ifdef	CONFIG_NETCONSOLE_DYNAMIC
  	struct configfs_subsystem configfs_subsys;
  #endif
- 	struct notifier_block netdev_notifier;
-@@ -111,7 +111,7 @@ static DEFINE_NETPOLL_TARGETS(targets);
- struct netpoll_target {
- 	struct netpoll_targets *nts;
- 	struct list_head	list;
--#ifdef	CONFIG_NETCONSOLE_DYNAMIC
-+#ifdef	CONFIG_NETPOLL_TARGETS_DYNAMIC
- 	struct config_item	item;
- #endif
- 	int			np_state;
-@@ -194,7 +194,7 @@ static void free_param_target(struct netpoll_target *nt)
- 	kfree(nt);
- }
+@@ -161,8 +162,8 @@ static struct netpoll_target *alloc_param_target(struct netpoll_targets *nts,
+ 	nt->nts = nts;
+ 	nt->np.name = nts->subsys_name;
+ 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
+-	nt->np.local_port = 6665;
+-	nt->np.remote_port = 6666;
++	nt->np.local_port = nts->default_local_port;
++	nt->np.remote_port = nts->default_remote_port;
+ 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
+ 	INIT_WORK(&nt->cleanup_work, deferred_netpoll_cleanup);
  
--#ifdef	CONFIG_NETCONSOLE_DYNAMIC
-+#ifdef	CONFIG_NETPOLL_TARGETS_DYNAMIC
+@@ -635,8 +636,8 @@ static struct config_item *make_netpoll_target(struct config_group *group,
+ 	nt->nts = nts;
+ 	nt->np.name = nts->subsys_name;
+ 	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
+-	nt->np.local_port = 6665;
+-	nt->np.remote_port = 6666;
++	nt->np.local_port = nts->default_local_port;
++	nt->np.remote_port = nts->default_remote_port;
+ 	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
+ 	INIT_WORK(&nt->cleanup_work, deferred_netpoll_cleanup);
  
- /*
-  * Our subsystem hierarchy is:
-@@ -724,7 +724,7 @@ static void netpoll_target_put(struct netpoll_target *nt)
- 		config_item_put(&nt->item);
- }
- 
--#else	/* !CONFIG_NETCONSOLE_DYNAMIC */
-+#else	/* !CONFIG_NETPOLL_TARGETS_DYNAMIC */
- 
- static int __init dynamic_netpoll_targets_init(const char *subsys_name,
- 					       struct netpoll_targets *nts)
-@@ -748,7 +748,7 @@ static void netpoll_target_put(struct netpoll_target *nt)
+@@ -926,6 +927,10 @@ static void __exit unregister_netpoll_targets(struct netpoll_targets *nts)
+ static int __init init_netconsole(void)
  {
- }
- 
--#endif	/* CONFIG_NETCONSOLE_DYNAMIC */
-+#endif	/* CONFIG_NETPOLL_TARGETS_DYNAMIC */
- 
- /*
-  * Call netpoll_cleanup on this target asynchronously.
+ 	int err;
++
++	targets.default_local_port = 6665;
++	targets.default_remote_port = 6666;
++
+ 	err = register_netpoll_targets("netconsole", &targets, config);
+ 	if (err)
+ 		return err;
 
