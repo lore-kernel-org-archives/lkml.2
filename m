@@ -1,186 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758929Ab0LNBdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 20:33:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51833 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758865Ab0LNBdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 20:33:07 -0500
-Message-ID: <4D06C957.4030204@cn.fujitsu.com>
-Date: Tue, 14 Dec 2010 09:33:11 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1758945Ab0LNBet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 20:34:49 -0500
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:41231 "EHLO
+	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758865Ab0LNBer convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 20:34:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qZj60WZSQsBVdCNxK+2XtG3xkpXMu6GPXcfjFJtnMtx+h8cGxVsTLRWm8CD4gXRB8J
+         WCSFi0lgEp3QJ8VglH7XmGMP+k7Cju/ZCY7C9Je5jWRFJuQk/4tyiKhY7D0j7pLwbuFt
+         107mi0BILsNXE8pmRiz5Gbwd6VJLJWv8+922Q=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/8 v2] cfq-iosched: Introduce cfq_entity for CFQ group
-References: <4CDF7BC5.9080803@cn.fujitsu.com> <4CDF9CC6.2040106@cn.fujitsu.com> <20101115165319.GI30792@redhat.com> <4CE2718C.6010406@kernel.dk> <4D01C6AB.9040807@cn.fujitsu.com> <4D057A81.1000901@cn.fujitsu.com> <20101213165925.GF20454@redhat.com>
-In-Reply-To: <20101213165925.GF20454@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 09:32:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 09:33:06,
-	Serialize complete at 2010-12-14 09:33:06
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201012131859.15152.strakh@ispras.ru>
+References: <201012131859.15152.strakh@ispras.ru>
+Date: Tue, 14 Dec 2010 09:34:46 +0800
+Message-ID: <AANLkTi=4CZ2LD8cj_cjnb5yyyML+M6T=57EjT_hD4TBn@mail.gmail.com>
+Subject: Re: BUG: double mutex_unlock in drivers/media/video/tlg2300/pd-video.c
+From: Huang Shijie <shijie8@gmail.com>
+To: Alexander Strakh <strakh@ispras.ru>
+Cc: linux-kernel@vger.kernel.org, kangyong@telegent.com, xbzhang@telegent.com,
+        zyziii@telegent.com, Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Mon, Dec 13, 2010 at 09:44:33AM +0800, Gui Jianfeng wrote:
->> Introduce cfq_entity for CFQ group
->>
->> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->> ---
->>  block/cfq-iosched.c |  113 ++++++++++++++++++++++++++++++--------------------
->>  1 files changed, 68 insertions(+), 45 deletions(-)
->>
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index 9b07a24..91e9833 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -1,5 +1,5 @@
->>  /*
->> - *  CFQ, or complete fairness queueing, disk scheduler.
->> + *  Cfq, or complete fairness queueing, disk scheduler.
-> 
-> Is this really required?
-> 
->>   *
->>   *  Based on ideas from a previously unfinished io
->>   *  scheduler (round robin per-process disk scheduling) and Andrea Arcangeli.
->> @@ -73,7 +73,8 @@ static DEFINE_IDA(cic_index_ida);
->>  #define cfq_class_rt(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_RT)
->>  
->>  #define sample_valid(samples)	((samples) > 80)
->> -#define rb_entry_cfqg(node)	rb_entry((node), struct cfq_group, rb_node)
->> +#define rb_entry_entity(node)	rb_entry((node), struct cfq_entity,\
->> +					 rb_node)
->>  
->>  /*
->>   * Most of our rbtree usage is for sorting with min extraction, so
->> @@ -102,6 +103,11 @@ struct cfq_entity {
->>  	struct rb_node rb_node;
->>  	/* service_tree key, represent the position on the tree */
->>  	unsigned long rb_key;
->> +
->> +	/* group service_tree key */
->> +	u64 vdisktime;
->> +	bool is_group_entity;
->> +	unsigned int weight;
->>  };
->>  
->>  /*
->> @@ -183,12 +189,8 @@ enum wl_type_t {
->>  
->>  /* This is per cgroup per device grouping structure */
->>  struct cfq_group {
->> -	/* group service_tree member */
->> -	struct rb_node rb_node;
->> -
->> -	/* group service_tree key */
->> -	u64 vdisktime;
->> -	unsigned int weight;
->> +	/* cfq group sched entity */
->> +	struct cfq_entity cfqe;
->>  
->>  	/* number of cfqq currently on this group */
->>  	int nr_cfqq;
->> @@ -315,12 +317,21 @@ struct cfq_data {
->>  static inline struct cfq_queue *
->>  cfqq_of_entity(struct cfq_entity *cfqe)
->>  {
->> -	if (cfqe)
->> +	if (cfqe && !cfqe->is_group_entity)
->>  		return container_of(cfqe, struct cfq_queue,
->>  				    cfqe);
-> 
-> can be single line above. I think came from previous patch.
-> 
->>  	return NULL;
->>  }
->>  
->> +static inline struct cfq_group *
->> +cfqg_of_entity(struct cfq_entity *cfqe)
->> +{
->> +	if (cfqe && cfqe->is_group_entity)
->> +		return container_of(cfqe, struct cfq_group,
->> +				    cfqe);
-> 
-> No need to split line.
-> 
->> +	return NULL;
->> +}
->> +
->>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
->>  
->>  static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
->> @@ -548,12 +559,12 @@ cfq_prio_to_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->>  	return cfq_prio_slice(cfqd, cfq_cfqq_sync(cfqq), cfqq->ioprio);
->>  }
->>  
->> -static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_group *cfqg)
->> +static inline u64 cfq_scale_slice(unsigned long delta, struct cfq_entity *cfqe)
->>  {
->>  	u64 d = delta << CFQ_SERVICE_SHIFT;
->>  
->>  	d = d * BLKIO_WEIGHT_DEFAULT;
->> -	do_div(d, cfqg->weight);
->> +	do_div(d, cfqe->weight);
->>  	return d;
->>  }
->>  
->> @@ -578,11 +589,11 @@ static inline u64 min_vdisktime(u64 min_vdisktime, u64 vdisktime)
->>  static void update_min_vdisktime(struct cfq_rb_root *st)
->>  {
->>  	u64 vdisktime = st->min_vdisktime;
->> -	struct cfq_group *cfqg;
->> +	struct cfq_entity *cfqe;
->>  
->>  	if (st->left) {
->> -		cfqg = rb_entry_cfqg(st->left);
->> -		vdisktime = min_vdisktime(vdisktime, cfqg->vdisktime);
->> +		cfqe = rb_entry_entity(st->left);
->> +		vdisktime = min_vdisktime(vdisktime, cfqe->vdisktime);
->>  	}
->>  
->>  	st->min_vdisktime = max_vdisktime(st->min_vdisktime, vdisktime);
->> @@ -613,8 +624,9 @@ static inline unsigned
->>  cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
->>  {
->>  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
->> +	struct cfq_entity *cfqe = &cfqg->cfqe;
->>  
->> -	return cfq_target_latency * cfqg->weight / st->total_weight;
->> +	return cfq_target_latency * cfqe->weight / st->total_weight;
->>  }
->>  
->>  static inline void
->> @@ -777,13 +789,13 @@ static struct cfq_entity *cfq_rb_first(struct cfq_rb_root *root)
->>  	return NULL;
->>  }
->>  
->> -static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
->> +static struct cfq_entity *cfq_rb_first_entity(struct cfq_rb_root *root)
-> 
-> So now we have two functions. One cfq_rb_first() and one cfq_rb_first_entity()
-> both returning cfq_entity*? This is confusing. Or you are getting rid of
-> one in later patches. Why not make use of existing cfq_rb_first()?
+Hi Strakh:
 
-Yes, I get rid of cfq_rb_first_entity() in later patch.
+Thanks for your patch.
 
-Thanks,
-Gui
+But I prefer to remove the mutex_unlock() in the pd_vidioc_s_fmt(),
+since the pd_vidioc_s_fmt() is also called in restore_v4l2_context().
 
-> 
-> Thanks
-> Vivek
-> 
+would you please change the patch?
+I will ack it.
 
--- 
-Regards
-Gui Jianfeng
+Best Regards
+Huang Shijie
+
+
+2010/12/13 Alexander Strakh <strakh@ispras.ru>:
+>        KERNEL_VERSION: 2.6.36
+>        SUBJECT: double mutex_lock in drivers/media/video/tlg2300/pd-video.c
+> in function vidioc_s_fmt
+>        SUBSCRIBE:
+>        First mutex_unlock in function pd_vidioc_s_fmt in line 767:
+>
+>  764        ret |= send_set_req(pd, VIDEO_ROSOLU_SEL,
+>  765                                vid_resol, &cmd_status);
+>  766        if (ret || cmd_status) {
+>  767                mutex_unlock(&pd->lock);
+>  768                return -EBUSY;
+>  769        }
+>
+>        Second mutex_unlock in function vidioc_s_fmt in line 806:
+>
+>  805        pd_vidioc_s_fmt(pd, &f->fmt.pix);
+>  806        mutex_unlock(&pd->lock);
+>
+> Found by Linux Device Drivers Verification Project
+>
+> Сhecks the return code of pd_vidioc_s_fm before mutex_unlocking.
+>
+> Signed-off-by: Alexander Strakh <strakh@ispras.ru>
+>
+> ---
+> diff --git a/drivers/media/video/tlg2300/pd-video.c
+> b/drivers/media/video/tlg2300/pd-video.c
+> index a1ffe18..fe6bd2b 100644
+> --- a/drivers/media/video/tlg2300/pd-video.c
+> +++ b/drivers/media/video/tlg2300/pd-video.c
+> @@ -802,8 +802,8 @@ static int vidioc_s_fmt(struct file *file, void *fh,
+> struct v4l2_format *f)
+>                return -EINVAL;
+>        }
+>
+> -       pd_vidioc_s_fmt(pd, &f->fmt.pix);
+> -       mutex_unlock(&pd->lock);
+> +       if(!pd_vidioc_s_fmt(pd, &f->fmt.pix))
+> +               mutex_unlock(&pd->lock);
+>        return 0;
+>  }
+>
+>
+>
