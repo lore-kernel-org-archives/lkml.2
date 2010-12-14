@@ -1,540 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab0LNOKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:10:46 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63908 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab0LNOKo convert rfc822-to-8bit (ORCPT
+	id S1752623Ab0LNONU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:13:20 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:33521 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab0LNONT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:10:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=DNS1LvIczJKet+9cj0XM63ySESjOwAybaVpY/6d6gdTO5pH4w1ETBjsTSHAxtH+cu8
-         /cGcd9q++EP1z5NlZUDAhhOWAnyQnx3n3/S431l1Qolilap258u25+oz0EivUArdJ33C
-         sYzUF2FfrzYogZxVO57uQEIcftUOzi2I2sepc=
+	Tue, 14 Dec 2010 09:13:19 -0500
+Date: Tue, 14 Dec 2010 15:13:14 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, Carl Love <cel@linux.ibm.com>
+Subject: Re: [RFC PATCH 3/3 v3] perf: Update perf tool to monitor uncore
+ events
+Message-ID: <20101214141314.GC21257@basil.fritz.box>
+References: <1291267238.2405.315.camel@minggr.sh.intel.com>
+ <4D06C846.4030804@linux.vnet.ibm.com>
+ <1292292908.10384.137.camel@minggr.sh.intel.com>
+ <1292330007.6803.1629.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20101210193637.GA23113@kroah.com>
-References: <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com>
- <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
- <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com> <4CE2846C.6070501@vlnb.net>
- <4CE59482.3050002@gmail.com> <20101118214619.GA29097@kroah.com>
- <4CE6BB4A.5060606@gmail.com> <20101119211904.GB28606@kroah.com>
- <AANLkTimJo_ZtQ3uVEBv864pP9f9AZR3D_o0R7T-B3fWL@mail.gmail.com> <20101210193637.GA23113@kroah.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 14 Dec 2010 15:10:03 +0100
-X-Google-Sender-Auth: nhsIbmpGtIckEyquTkof1rNxL80
-Message-ID: <AANLkTim3py__YdNbM+_SE+CVAm2Lt8ZWrM7q809UPMFP@mail.gmail.com>
-Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
-To: Greg KH <greg@kroah.com>
-Cc: Vladislav Bolkhovitin <vvvvvst@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292330007.6803.1629.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 10, 2010 at 8:36 PM, Greg KH <greg@kroah.com> wrote:
->
-> On Fri, Dec 10, 2010 at 01:06:06PM +0100, Bart Van Assche wrote:
-> > On Fri, Nov 19, 2010 at 10:19 PM, Greg KH <greg@kroah.com> wrote:
-> > > [ ... ]
-> > >
-> > > None.  Use 'struct device'
-> >
-> > How about using 'struct device' as follows ?
-> > * Move /sys/kernel/scst_tgt/targets to /sys/class/target_driver.
->
-> Please never create a new class, use 'struct bus_type' instead and
-> create a bus and have drivers and devices on it.
+On Tue, Dec 14, 2010 at 01:33:27PM +0100, Peter Zijlstra wrote:
+> > > First of all, "uncore" is an x86-specific term and so it's not clear to 
+> > > me if you meant for all arches to utilize this encoding for all "not 
+> > > core but on the same die" events (IBM Power arch refers to this as 
+> > > "nest" logic).
+> 
+> I don't think the x86 uncore matches the "not on core but on the same
+> die" definition. The x86-uncore thing is more like a memory controller
+> PMU (and since the memory controller is on die it is of course on die,
 
-How about the hierarchy illustrated below, using the two new bus types
-scsi_tgt_dev and scsi_tgt_port ? Note: this time I neither have loaded
-the scst_local kernel module nor iscsi-scst in order to keep the
-output short.
+memory controller + interconnect + cache + power management + various other things.
 
-# find /sys/bus/scsi_tgt_* /sys/devices/scst | while read f; do if [
--h $f ]; then echo "$f -> $(readlink $f)"; else echo $f; fi; done
-/sys/bus/scsi_tgt_dev
-/sys/bus/scsi_tgt_dev/uevent
-/sys/bus/scsi_tgt_dev/devices
-/sys/bus/scsi_tgt_dev/devices/2:0:0:0 -> ../../../devices/2:0:0:0
-/sys/bus/scsi_tgt_dev/devices/2:0:1:0 -> ../../../devices/2:0:1:0
-/sys/bus/scsi_tgt_dev/devices/3:0:0:0 -> ../../../devices/3:0:0:0
-/sys/bus/scsi_tgt_dev/devices/disk01 -> ../../../devices/disk01
-/sys/bus/scsi_tgt_dev/devices/disk02 -> ../../../devices/disk02
-/sys/bus/scsi_tgt_dev/devices/disk03 -> ../../../devices/disk03
-/sys/bus/scsi_tgt_dev/devices/disk04 -> ../../../devices/disk04
-/sys/bus/scsi_tgt_dev/devices/disk05 -> ../../../devices/disk05
-/sys/bus/scsi_tgt_dev/devices/disk06 -> ../../../devices/disk06
-/sys/bus/scsi_tgt_dev/drivers
-/sys/bus/scsi_tgt_dev/drivers/dev_disk
-/sys/bus/scsi_tgt_dev/drivers/dev_disk/module -> ../../../../module/scst_disk
-/sys/bus/scsi_tgt_dev/drivers/dev_disk/uevent
-/sys/bus/scsi_tgt_dev/drivers/dev_disk/type
-/sys/bus/scsi_tgt_dev/drivers/dev_disk/trace_level
-/sys/bus/scsi_tgt_dev/drivers/dev_disk_perf
-/sys/bus/scsi_tgt_dev/drivers/dev_disk_perf/module ->
-../../../../module/scst_disk
-/sys/bus/scsi_tgt_dev/drivers/dev_disk_perf/uevent
-/sys/bus/scsi_tgt_dev/drivers/dev_disk_perf/type
-/sys/bus/scsi_tgt_dev/drivers/dev_disk_perf/trace_level
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/module ->
-../../../../module/scst_vdisk
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/uevent
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/type
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/add_device_parameters
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/trace_level
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/disk01 -> ../../../../devices/disk01
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/disk02 -> ../../../../devices/disk02
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/disk03 -> ../../../../devices/disk03
-/sys/bus/scsi_tgt_dev/drivers/vdisk_fileio/disk04 -> ../../../../devices/disk04
-/sys/bus/scsi_tgt_dev/drivers/vdisk_blockio
-/sys/bus/scsi_tgt_dev/drivers/vdisk_blockio/module ->
-../../../../module/scst_vdisk
-/sys/bus/scsi_tgt_dev/drivers/vdisk_blockio/uevent
-/sys/bus/scsi_tgt_dev/drivers/vdisk_blockio/type
-/sys/bus/scsi_tgt_dev/drivers/vdisk_blockio/add_device_parameters
-/sys/bus/scsi_tgt_dev/drivers/vdisk_blockio/trace_level
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/module ->
-../../../../module/scst_vdisk
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/uevent
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/type
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/add_device_parameters
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/trace_level
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/disk05 -> ../../../../devices/disk05
-/sys/bus/scsi_tgt_dev/drivers/vdisk_nullio/disk06 -> ../../../../devices/disk06
-/sys/bus/scsi_tgt_dev/drivers/vcdrom
-/sys/bus/scsi_tgt_dev/drivers/vcdrom/module -> ../../../../module/scst_vdisk
-/sys/bus/scsi_tgt_dev/drivers/vcdrom/uevent
-/sys/bus/scsi_tgt_dev/drivers/vcdrom/type
-/sys/bus/scsi_tgt_dev/drivers/vcdrom/trace_level
-/sys/bus/scsi_tgt_dev/drivers_probe
-/sys/bus/scsi_tgt_dev/drivers_autoprobe
-/sys/bus/scsi_tgt_port
-/sys/bus/scsi_tgt_port/uevent
-/sys/bus/scsi_tgt_port/devices
-/sys/bus/scsi_tgt_port/devices/ib_srpt_target_0 ->
-../../../devices/ib_srpt_target_0
-/sys/bus/scsi_tgt_port/devices/ib_srpt_target_1 ->
-../../../devices/ib_srpt_target_1
-/sys/bus/scsi_tgt_port/drivers
-/sys/bus/scsi_tgt_port/drivers/ib_srpt
-/sys/bus/scsi_tgt_port/drivers/ib_srpt/module -> ../../../../module/ib_srpt
-/sys/bus/scsi_tgt_port/drivers/ib_srpt/uevent
-/sys/bus/scsi_tgt_port/drivers/ib_srpt/add_target
-/sys/bus/scsi_tgt_port/drivers/ib_srpt/ib_srpt_target_0 ->
-../../../../devices/ib_srpt_target_0
-/sys/bus/scsi_tgt_port/drivers/ib_srpt/ib_srpt_target_1 ->
-../../../../devices/ib_srpt_target_1
-/sys/bus/scsi_tgt_port/drivers_probe
-/sys/bus/scsi_tgt_port/drivers_autoprobe
-/sys/devices/2:0:0:0
-/sys/devices/2:0:0:0/uevent
-/sys/devices/2:0:0:0/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/2:0:0:0/power
-/sys/devices/2:0:0:0/power/wakeup
-/sys/devices/2:0:0:0/power/wakeup_count
-/sys/devices/2:0:0:0/power/wakeup_active_count
-/sys/devices/2:0:0:0/power/wakeup_hit_count
-/sys/devices/2:0:0:0/power/wakeup_active
-/sys/devices/2:0:0:0/power/wakeup_total_time_ms
-/sys/devices/2:0:0:0/power/wakeup_max_time_ms
-/sys/devices/2:0:0:0/power/wakeup_last_time_ms
-/sys/devices/2:0:0:0/power/runtime_status
-/sys/devices/2:0:0:0/power/control
-/sys/devices/2:0:0:0/power/runtime_suspended_time
-/sys/devices/2:0:0:0/power/runtime_active_time
-/sys/devices/2:0:0:0/power/autosuspend_delay_ms
-/sys/devices/2:0:0:0/scsi_device
-/sys/devices/2:0:1:0
-/sys/devices/2:0:1:0/uevent
-/sys/devices/2:0:1:0/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/2:0:1:0/power
-/sys/devices/2:0:1:0/power/wakeup
-/sys/devices/2:0:1:0/power/wakeup_count
-/sys/devices/2:0:1:0/power/wakeup_active_count
-/sys/devices/2:0:1:0/power/wakeup_hit_count
-/sys/devices/2:0:1:0/power/wakeup_active
-/sys/devices/2:0:1:0/power/wakeup_total_time_ms
-/sys/devices/2:0:1:0/power/wakeup_max_time_ms
-/sys/devices/2:0:1:0/power/wakeup_last_time_ms
-/sys/devices/2:0:1:0/power/runtime_status
-/sys/devices/2:0:1:0/power/control
-/sys/devices/2:0:1:0/power/runtime_suspended_time
-/sys/devices/2:0:1:0/power/runtime_active_time
-/sys/devices/2:0:1:0/power/autosuspend_delay_ms
-/sys/devices/2:0:1:0/scsi_device
-/sys/devices/3:0:0:0
-/sys/devices/3:0:0:0/uevent
-/sys/devices/3:0:0:0/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/3:0:0:0/power
-/sys/devices/3:0:0:0/power/wakeup
-/sys/devices/3:0:0:0/power/wakeup_count
-/sys/devices/3:0:0:0/power/wakeup_active_count
-/sys/devices/3:0:0:0/power/wakeup_hit_count
-/sys/devices/3:0:0:0/power/wakeup_active
-/sys/devices/3:0:0:0/power/wakeup_total_time_ms
-/sys/devices/3:0:0:0/power/wakeup_max_time_ms
-/sys/devices/3:0:0:0/power/wakeup_last_time_ms
-/sys/devices/3:0:0:0/power/runtime_status
-/sys/devices/3:0:0:0/power/control
-/sys/devices/3:0:0:0/power/runtime_suspended_time
-/sys/devices/3:0:0:0/power/runtime_active_time
-/sys/devices/3:0:0:0/power/autosuspend_delay_ms
-/sys/devices/3:0:0:0/scsi_device
-/sys/devices/disk01
-/sys/devices/disk01/uevent
-/sys/devices/disk01/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/disk01/power
-/sys/devices/disk01/power/wakeup
-/sys/devices/disk01/power/wakeup_count
-/sys/devices/disk01/power/wakeup_active_count
-/sys/devices/disk01/power/wakeup_hit_count
-/sys/devices/disk01/power/wakeup_active
-/sys/devices/disk01/power/wakeup_total_time_ms
-/sys/devices/disk01/power/wakeup_max_time_ms
-/sys/devices/disk01/power/wakeup_last_time_ms
-/sys/devices/disk01/power/runtime_status
-/sys/devices/disk01/power/control
-/sys/devices/disk01/power/runtime_suspended_time
-/sys/devices/disk01/power/runtime_active_time
-/sys/devices/disk01/power/autosuspend_delay_ms
-/sys/devices/disk01/driver -> ../../bus/scsi_tgt_dev/drivers/vdisk_fileio
-/sys/devices/disk01/exported
-/sys/devices/disk01/exported/export0 -> ../../ib_srpt_target_0/luns/0
-/sys/devices/disk01/exported/export1 -> ../../ib_srpt_target_1/luns/0
-/sys/devices/disk01/type
-/sys/devices/disk01/threads_num
-/sys/devices/disk01/threads_pool_type
-/sys/devices/disk01/size_mb
-/sys/devices/disk01/blocksize
-/sys/devices/disk01/read_only
-/sys/devices/disk01/write_through
-/sys/devices/disk01/thin_provisioned
-/sys/devices/disk01/nv_cache
-/sys/devices/disk01/o_direct
-/sys/devices/disk01/removable
-/sys/devices/disk01/filename
-/sys/devices/disk01/resync_size
-/sys/devices/disk01/t10_dev_id
-/sys/devices/disk01/usn
-/sys/devices/disk02
-/sys/devices/disk02/uevent
-/sys/devices/disk02/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/disk02/power
-/sys/devices/disk02/power/wakeup
-/sys/devices/disk02/power/wakeup_count
-/sys/devices/disk02/power/wakeup_active_count
-/sys/devices/disk02/power/wakeup_hit_count
-/sys/devices/disk02/power/wakeup_active
-/sys/devices/disk02/power/wakeup_total_time_ms
-/sys/devices/disk02/power/wakeup_max_time_ms
-/sys/devices/disk02/power/wakeup_last_time_ms
-/sys/devices/disk02/power/runtime_status
-/sys/devices/disk02/power/control
-/sys/devices/disk02/power/runtime_suspended_time
-/sys/devices/disk02/power/runtime_active_time
-/sys/devices/disk02/power/autosuspend_delay_ms
-/sys/devices/disk02/driver -> ../../bus/scsi_tgt_dev/drivers/vdisk_fileio
-/sys/devices/disk02/exported
-/sys/devices/disk02/exported/export0 -> ../../ib_srpt_target_0/luns/1
-/sys/devices/disk02/exported/export1 -> ../../ib_srpt_target_1/luns/1
-/sys/devices/disk02/type
-/sys/devices/disk02/threads_num
-/sys/devices/disk02/threads_pool_type
-/sys/devices/disk02/size_mb
-/sys/devices/disk02/blocksize
-/sys/devices/disk02/read_only
-/sys/devices/disk02/write_through
-/sys/devices/disk02/thin_provisioned
-/sys/devices/disk02/nv_cache
-/sys/devices/disk02/o_direct
-/sys/devices/disk02/removable
-/sys/devices/disk02/filename
-/sys/devices/disk02/resync_size
-/sys/devices/disk02/t10_dev_id
-/sys/devices/disk02/usn
-/sys/devices/disk03
-/sys/devices/disk03/uevent
-/sys/devices/disk03/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/disk03/power
-/sys/devices/disk03/power/wakeup
-/sys/devices/disk03/power/wakeup_count
-/sys/devices/disk03/power/wakeup_active_count
-/sys/devices/disk03/power/wakeup_hit_count
-/sys/devices/disk03/power/wakeup_active
-/sys/devices/disk03/power/wakeup_total_time_ms
-/sys/devices/disk03/power/wakeup_max_time_ms
-/sys/devices/disk03/power/wakeup_last_time_ms
-/sys/devices/disk03/power/runtime_status
-/sys/devices/disk03/power/control
-/sys/devices/disk03/power/runtime_suspended_time
-/sys/devices/disk03/power/runtime_active_time
-/sys/devices/disk03/power/autosuspend_delay_ms
-/sys/devices/disk03/driver -> ../../bus/scsi_tgt_dev/drivers/vdisk_fileio
-/sys/devices/disk03/exported
-/sys/devices/disk03/exported/export0 -> ../../ib_srpt_target_0/luns/2
-/sys/devices/disk03/exported/export1 -> ../../ib_srpt_target_1/luns/2
-/sys/devices/disk03/type
-/sys/devices/disk03/threads_num
-/sys/devices/disk03/threads_pool_type
-/sys/devices/disk03/size_mb
-/sys/devices/disk03/blocksize
-/sys/devices/disk03/read_only
-/sys/devices/disk03/write_through
-/sys/devices/disk03/thin_provisioned
-/sys/devices/disk03/nv_cache
-/sys/devices/disk03/o_direct
-/sys/devices/disk03/removable
-/sys/devices/disk03/filename
-/sys/devices/disk03/resync_size
-/sys/devices/disk03/t10_dev_id
-/sys/devices/disk03/usn
-/sys/devices/disk04
-/sys/devices/disk04/uevent
-/sys/devices/disk04/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/disk04/power
-/sys/devices/disk04/power/wakeup
-/sys/devices/disk04/power/wakeup_count
-/sys/devices/disk04/power/wakeup_active_count
-/sys/devices/disk04/power/wakeup_hit_count
-/sys/devices/disk04/power/wakeup_active
-/sys/devices/disk04/power/wakeup_total_time_ms
-/sys/devices/disk04/power/wakeup_max_time_ms
-/sys/devices/disk04/power/wakeup_last_time_ms
-/sys/devices/disk04/power/runtime_status
-/sys/devices/disk04/power/control
-/sys/devices/disk04/power/runtime_suspended_time
-/sys/devices/disk04/power/runtime_active_time
-/sys/devices/disk04/power/autosuspend_delay_ms
-/sys/devices/disk04/driver -> ../../bus/scsi_tgt_dev/drivers/vdisk_fileio
-/sys/devices/disk04/exported
-/sys/devices/disk04/exported/export0 -> ../../ib_srpt_target_0/luns/3
-/sys/devices/disk04/exported/export1 -> ../../ib_srpt_target_1/luns/3
-/sys/devices/disk04/type
-/sys/devices/disk04/threads_num
-/sys/devices/disk04/threads_pool_type
-/sys/devices/disk04/size_mb
-/sys/devices/disk04/blocksize
-/sys/devices/disk04/read_only
-/sys/devices/disk04/write_through
-/sys/devices/disk04/thin_provisioned
-/sys/devices/disk04/nv_cache
-/sys/devices/disk04/o_direct
-/sys/devices/disk04/removable
-/sys/devices/disk04/filename
-/sys/devices/disk04/resync_size
-/sys/devices/disk04/t10_dev_id
-/sys/devices/disk04/usn
-/sys/devices/disk05
-/sys/devices/disk05/uevent
-/sys/devices/disk05/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/disk05/power
-/sys/devices/disk05/power/wakeup
-/sys/devices/disk05/power/wakeup_count
-/sys/devices/disk05/power/wakeup_active_count
-/sys/devices/disk05/power/wakeup_hit_count
-/sys/devices/disk05/power/wakeup_active
-/sys/devices/disk05/power/wakeup_total_time_ms
-/sys/devices/disk05/power/wakeup_max_time_ms
-/sys/devices/disk05/power/wakeup_last_time_ms
-/sys/devices/disk05/power/runtime_status
-/sys/devices/disk05/power/control
-/sys/devices/disk05/power/runtime_suspended_time
-/sys/devices/disk05/power/runtime_active_time
-/sys/devices/disk05/power/autosuspend_delay_ms
-/sys/devices/disk05/driver -> ../../bus/scsi_tgt_dev/drivers/vdisk_nullio
-/sys/devices/disk05/exported
-/sys/devices/disk05/exported/export0 -> ../../ib_srpt_target_0/luns/4
-/sys/devices/disk05/exported/export1 -> ../../ib_srpt_target_1/luns/4
-/sys/devices/disk05/type
-/sys/devices/disk05/threads_num
-/sys/devices/disk05/threads_pool_type
-/sys/devices/disk05/size_mb
-/sys/devices/disk05/blocksize
-/sys/devices/disk05/read_only
-/sys/devices/disk05/removable
-/sys/devices/disk05/t10_dev_id
-/sys/devices/disk05/usn
-/sys/devices/disk06
-/sys/devices/disk06/uevent
-/sys/devices/disk06/subsystem -> ../../bus/scsi_tgt_dev
-/sys/devices/disk06/power
-/sys/devices/disk06/power/wakeup
-/sys/devices/disk06/power/wakeup_count
-/sys/devices/disk06/power/wakeup_active_count
-/sys/devices/disk06/power/wakeup_hit_count
-/sys/devices/disk06/power/wakeup_active
-/sys/devices/disk06/power/wakeup_total_time_ms
-/sys/devices/disk06/power/wakeup_max_time_ms
-/sys/devices/disk06/power/wakeup_last_time_ms
-/sys/devices/disk06/power/runtime_status
-/sys/devices/disk06/power/control
-/sys/devices/disk06/power/runtime_suspended_time
-/sys/devices/disk06/power/runtime_active_time
-/sys/devices/disk06/power/autosuspend_delay_ms
-/sys/devices/disk06/driver -> ../../bus/scsi_tgt_dev/drivers/vdisk_nullio
-/sys/devices/disk06/exported
-/sys/devices/disk06/exported/export0 -> ../../ib_srpt_target_0/luns/5
-/sys/devices/disk06/exported/export1 -> ../../ib_srpt_target_1/luns/5
-/sys/devices/disk06/type
-/sys/devices/disk06/threads_num
-/sys/devices/disk06/threads_pool_type
-/sys/devices/disk06/size_mb
-/sys/devices/disk06/blocksize
-/sys/devices/disk06/read_only
-/sys/devices/disk06/removable
-/sys/devices/disk06/t10_dev_id
-/sys/devices/disk06/usn
-/sys/devices/ib_srpt_target_0
-/sys/devices/ib_srpt_target_0/uevent
-/sys/devices/ib_srpt_target_0/subsystem -> ../../bus/scsi_tgt_port
-/sys/devices/ib_srpt_target_0/power
-/sys/devices/ib_srpt_target_0/power/wakeup
-/sys/devices/ib_srpt_target_0/power/wakeup_count
-/sys/devices/ib_srpt_target_0/power/wakeup_active_count
-/sys/devices/ib_srpt_target_0/power/wakeup_hit_count
-/sys/devices/ib_srpt_target_0/power/wakeup_active
-/sys/devices/ib_srpt_target_0/power/wakeup_total_time_ms
-/sys/devices/ib_srpt_target_0/power/wakeup_max_time_ms
-/sys/devices/ib_srpt_target_0/power/wakeup_last_time_ms
-/sys/devices/ib_srpt_target_0/power/runtime_status
-/sys/devices/ib_srpt_target_0/power/control
-/sys/devices/ib_srpt_target_0/power/runtime_suspended_time
-/sys/devices/ib_srpt_target_0/power/runtime_active_time
-/sys/devices/ib_srpt_target_0/power/autosuspend_delay_ms
-/sys/devices/ib_srpt_target_0/driver -> ../../bus/scsi_tgt_port/drivers/ib_srpt
-/sys/devices/ib_srpt_target_0/enabled
-/sys/devices/ib_srpt_target_0/sessions
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/active_commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/initiator_name
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/req_lim
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/req_lim_delta
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/luns
--> ../../luns
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun0
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun0/active_commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun1
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun1/active_commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun2
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun2/active_commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun3
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun3/active_commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun4
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun4/active_commands
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun5
-/sys/devices/ib_srpt_target_0/sessions/0x00000000000000000002c9030005f34b/lun5/active_commands
-/sys/devices/ib_srpt_target_0/luns
-/sys/devices/ib_srpt_target_0/luns/parameters
-/sys/devices/ib_srpt_target_0/luns/0
-/sys/devices/ib_srpt_target_0/luns/0/read_only
-/sys/devices/ib_srpt_target_0/luns/0/device -> ../../../disk01
-/sys/devices/ib_srpt_target_0/luns/1
-/sys/devices/ib_srpt_target_0/luns/1/read_only
-/sys/devices/ib_srpt_target_0/luns/1/device -> ../../../disk02
-/sys/devices/ib_srpt_target_0/luns/2
-/sys/devices/ib_srpt_target_0/luns/2/read_only
-/sys/devices/ib_srpt_target_0/luns/2/device -> ../../../disk03
-/sys/devices/ib_srpt_target_0/luns/3
-/sys/devices/ib_srpt_target_0/luns/3/read_only
-/sys/devices/ib_srpt_target_0/luns/3/device -> ../../../disk04
-/sys/devices/ib_srpt_target_0/luns/4
-/sys/devices/ib_srpt_target_0/luns/4/read_only
-/sys/devices/ib_srpt_target_0/luns/4/device -> ../../../disk05
-/sys/devices/ib_srpt_target_0/luns/5
-/sys/devices/ib_srpt_target_0/luns/5/read_only
-/sys/devices/ib_srpt_target_0/luns/5/device -> ../../../disk06
-/sys/devices/ib_srpt_target_0/ini_groups
-/sys/devices/ib_srpt_target_0/rel_tgt_id
-/sys/devices/ib_srpt_target_0/addr_method
-/sys/devices/ib_srpt_target_0/io_grouping_type
-/sys/devices/ib_srpt_target_0/cpu_mask
-/sys/devices/ib_srpt_target_0/login_info
-/sys/devices/ib_srpt_target_1
-/sys/devices/ib_srpt_target_1/uevent
-/sys/devices/ib_srpt_target_1/subsystem -> ../../bus/scsi_tgt_port
-/sys/devices/ib_srpt_target_1/power
-/sys/devices/ib_srpt_target_1/power/wakeup
-/sys/devices/ib_srpt_target_1/power/wakeup_count
-/sys/devices/ib_srpt_target_1/power/wakeup_active_count
-/sys/devices/ib_srpt_target_1/power/wakeup_hit_count
-/sys/devices/ib_srpt_target_1/power/wakeup_active
-/sys/devices/ib_srpt_target_1/power/wakeup_total_time_ms
-/sys/devices/ib_srpt_target_1/power/wakeup_max_time_ms
-/sys/devices/ib_srpt_target_1/power/wakeup_last_time_ms
-/sys/devices/ib_srpt_target_1/power/runtime_status
-/sys/devices/ib_srpt_target_1/power/control
-/sys/devices/ib_srpt_target_1/power/runtime_suspended_time
-/sys/devices/ib_srpt_target_1/power/runtime_active_time
-/sys/devices/ib_srpt_target_1/power/autosuspend_delay_ms
-/sys/devices/ib_srpt_target_1/driver -> ../../bus/scsi_tgt_port/drivers/ib_srpt
-/sys/devices/ib_srpt_target_1/enabled
-/sys/devices/ib_srpt_target_1/sessions
-/sys/devices/ib_srpt_target_1/luns
-/sys/devices/ib_srpt_target_1/luns/parameters
-/sys/devices/ib_srpt_target_1/luns/0
-/sys/devices/ib_srpt_target_1/luns/0/read_only
-/sys/devices/ib_srpt_target_1/luns/0/device -> ../../../disk01
-/sys/devices/ib_srpt_target_1/luns/1
-/sys/devices/ib_srpt_target_1/luns/1/read_only
-/sys/devices/ib_srpt_target_1/luns/1/device -> ../../../disk02
-/sys/devices/ib_srpt_target_1/luns/2
-/sys/devices/ib_srpt_target_1/luns/2/read_only
-/sys/devices/ib_srpt_target_1/luns/2/device -> ../../../disk03
-/sys/devices/ib_srpt_target_1/luns/3
-/sys/devices/ib_srpt_target_1/luns/3/read_only
-/sys/devices/ib_srpt_target_1/luns/3/device -> ../../../disk04
-/sys/devices/ib_srpt_target_1/luns/4
-/sys/devices/ib_srpt_target_1/luns/4/read_only
-/sys/devices/ib_srpt_target_1/luns/4/device -> ../../../disk05
-/sys/devices/ib_srpt_target_1/luns/5
-/sys/devices/ib_srpt_target_1/luns/5/read_only
-/sys/devices/ib_srpt_target_1/luns/5/device -> ../../../disk06
-/sys/devices/ib_srpt_target_1/ini_groups
-/sys/devices/ib_srpt_target_1/rel_tgt_id
-/sys/devices/ib_srpt_target_1/addr_method
-/sys/devices/ib_srpt_target_1/io_grouping_type
-/sys/devices/ib_srpt_target_1/cpu_mask
-/sys/devices/ib_srpt_target_1/login_info
-/sys/devices/scst
-/sys/devices/scst/uevent
-/sys/devices/scst/power
-/sys/devices/scst/power/wakeup
-/sys/devices/scst/power/wakeup_count
-/sys/devices/scst/power/wakeup_active_count
-/sys/devices/scst/power/wakeup_hit_count
-/sys/devices/scst/power/wakeup_active
-/sys/devices/scst/power/wakeup_total_time_ms
-/sys/devices/scst/power/wakeup_max_time_ms
-/sys/devices/scst/power/wakeup_last_time_ms
-/sys/devices/scst/power/runtime_status
-/sys/devices/scst/power/control
-/sys/devices/scst/power/runtime_suspended_time
-/sys/devices/scst/power/runtime_active_time
-/sys/devices/scst/power/autosuspend_delay_ms
-/sys/devices/scst/mgmt
-/sys/devices/scst/threads
-/sys/devices/scst/setup_id
-/sys/devices/scst/trace_level
-/sys/devices/scst/version
-/sys/devices/scst/sgv
-/sys/devices/scst/sgv/global_stats
-/sys/devices/scst/sgv/sgv
-/sys/devices/scst/sgv/sgv/stats
-/sys/devices/scst/sgv/sgv-clust
-/sys/devices/scst/sgv/sgv-clust/stats
-/sys/devices/scst/sgv/sgv-dma
-/sys/devices/scst/sgv/sgv-dma/stats
+Older x86 CPUs also had special PMUs on die for parts of that, but
+without memory controller.
 
-Bart.
+> but its not just any random on-die thing).
+> 
+> The wire-speed thing has tons of special purpose 'cores' on die, each of
+> them having a PMU.
+
+Modern x86 CPUs also have other PMUs, at least in package (e.g. in the 
+GPU) 
+
+> Using the sysfs stuff you could actually expose each individually.
+
+I expect this will be also needed on x86. Also there are x86 SOCs
+where other parts of the SOC will have their own counters too.
+So in general a flexible scheme to describe that is useful.
+
+-Andi
