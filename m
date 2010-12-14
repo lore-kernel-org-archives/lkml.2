@@ -1,160 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759093Ab0LNPI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:08:56 -0500
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:38416 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758969Ab0LNPIz (ORCPT
+	id S1759148Ab0LNPJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:09:55 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:45047 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab0LNPJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:08:55 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4D07888C.4080704@cam.ac.uk>
-Date: Tue, 14 Dec 2010 15:09:00 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: michael.hennerich@analog.com
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        drivers@analog.com, device-drivers-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 1/3] IIO: Direct digital synthesis abi documentation
-References: <1292338462-4299-1-git-send-email-michael.hennerich@analog.com>
-In-Reply-To: <1292338462-4299-1-git-send-email-michael.hennerich@analog.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Dec 2010 10:09:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZhUB8qZ4wWDvE5FHbTfl1I2db8zOSXFjr91Aum9Q9iVinTlywQzJ9sTnVtn/1Lhlbp
+         ecg6VNAJ3SE5qmUHgHkV0BF2Tk4PDSdYRtYgxiAXVuVUsmNcZRF0SA0GtFuYOu/RaOJ9
+         Z78AOpOI5gKzGb0PhHlOwsOq2XkLsUVRj03ow=
+From: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Subject: [PATCH 0/2] ARM: Gemini: add RTC support for Gemini SoC 
+Date: Tue, 14 Dec 2010 16:08:25 +0100
+Message-Id: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/10 14:54, michael.hennerich@analog.com wrote:
-> From: Michael Hennerich <michael.hennerich@analog.com>
-> 
-> Changes since RFC/v1:
-> IIO: Apply list review feedback:
-> 
-> Apply list review feedback:
-> 	Restructure documentation according to list feedback.
-> 	Rename attributes to fit IIO convention used in other drivers.
-> 	Fix typos.
-> 	Provide ddsX_out_enable as opposed to ddsX_out_disable
-> 
-> Changes since v2:
-> IIO: sysfs-bus-iio-dds: Apply more list review feedback
-> 
-> 	Fix mixture of X and [n] notation for indices.
-> 	Fix some wording in the descriptions.
+This patch adds the driver for the rtc chip on the Gemini SoC
 
-Looks good. 
-> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  .../staging/iio/Documentation/sysfs-bus-iio-dds    |   93 ++++++++++++++++++++
->  1 files changed, 93 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> 
-> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> new file mode 100644
-> index 0000000..ffdd547
-> --- /dev/null
-> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
-> @@ -0,0 +1,93 @@
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_freqY
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Stores frequency into tuning word Y.
-> +		There will be more than one ddsX_freqY file, which allows for
-> +		pin controlled FSK Frequency Shift Keying
-> +		(ddsX_pincontrol_freq_en is active) or the user can control
-> +		the desired active tuning word by writing Y to the
-> +		ddsX_freqsymbol file.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_freqY_scale
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Scale to be applied to ddsX_freqY in order to obtain the
-> +		desired value in Hz. If shared across all frequency registers
-> +		Y is not present. It is also possible X is not present if
-> +		shared across all channels.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_freqsymbol
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the active output frequency tuning word. The value
-> +		corresponds to the Y in ddsX_freqY. To exit this mode the user
-> +		can write ddsX_pincontrol_freq_en or ddsX_out_enable file.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_phaseY
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Stores phase into Y.
-> +		There will be more than one ddsX_phaseY file, which allows for
-> +		pin controlled PSK Phase Shift Keying
-> +		(ddsX_pincontrol_phase_en is active) or the user can
-> +		control the desired phase Y which is added to the phase
-> +		accumulator output by writing Y to the en_phase file.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_phaseY_scale
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Scale to be applied to ddsX_phaseY in order to obtain the
-> +		desired value in rad. If shared across all phase registers
-> +		Y is not present. It is also possible X is not present if
-> +		shared across all channels.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_phasesymbol
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the active phase Y which is added to the phase
-> +		accumulator output. The value corresponds to the Y in
-> +		ddsX_phaseY. To exit this mode the user can write
-> +		ddsX_pincontrol_phase_en or disable file.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_pincontrol_en
-> +What:		/sys/bus/iio/devices/.../ddsX_pincontrol_freq_en
-> +What:		/sys/bus/iio/devices/.../ddsX_pincontrol_phase_en
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		ddsX_pincontrol_en: Both, the active frequency and phase is
-> +		controlled by the respective phase and frequency control inputs.
-> +		In case the device in question allows to independent controls,
-> +		then there are dedicated files (ddsX_pincontrol_freq_en,
-> +		ddsX_pincontrol_phase_en).
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_out_enable
-> +What:		/sys/bus/iio/devices/.../ddsX_outY_enable
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		ddsX_outY_enable controls signal generation on output Y of
-> +		channel X. Y may be suppressed if all channels are
-> +		controlled together.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_outY_wavetype
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Specifies the output waveform.
-> +		(sine, triangle, ramp, square, ...)
-> +		For a list of available output waveform options read
-> +		available_output_modes.
-> +
-> +What:		/sys/bus/iio/devices/.../ddsX_outY_wavetype_available
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Lists all available output waveform options.
-> --
-> 1.6.0.2
-> 
-> 
+I divided this patch into two parts.
+One for the core rtc-driver in /drivers/rtc
+and one for the needed platform bindings in /arch/arm/mach-gemini
+
+ MAINTAINERS                           |    1 +
+ arch/arm/mach-gemini/board-nas4220b.c |    1 +
+ arch/arm/mach-gemini/board-rut1xx.c   |    1 +
+ arch/arm/mach-gemini/board-wbd111.c   |    1 +
+ arch/arm/mach-gemini/board-wbd222.c   |    1 +
+ arch/arm/mach-gemini/common.h         |    1 +
+ arch/arm/mach-gemini/devices.c        |   26 ++++
+ drivers/rtc/Kconfig                   |    9 ++
+ drivers/rtc/Makefile                  |    1 +
+ drivers/rtc/rtc-gemini.c              |  206 +++++++++++++++++++++++++++++++++
+ 10 files changed, 248 insertions(+), 0 deletions(-)
+
 
