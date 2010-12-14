@@ -1,65 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0LNWIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 17:08:43 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:62125 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab0LNWIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 17:08:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dV0RxLcLuP8AiGz9wezaeDzOcK+nq2c2mVJqY6g1KyrTLLy5WugkZ9m/slEWVNlfmT
-         gsdIPzIQKsXsrExc3q1musG9x84ZesgPWOqHZUIBFDopHH8C3aQ/rjbRKUVozd5WSL5E
-         MZ7fBHepgAlbhwLw503hTAycTOQ8++qoNmU4c=
-Message-ID: <4D07EAE5.6050803@gmail.com>
-Date: Tue, 14 Dec 2010 23:08:37 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1756557Ab0LNWJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 17:09:38 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:56002 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753085Ab0LNWJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 17:09:37 -0500
+Date: Tue, 14 Dec 2010 16:09:32 -0600
+From: Jack Steiner <steiner@sgi.com>
+To: lenb@kernel.org
+Cc: hpa@zytor.com, hmh@hmh.eng.br, tony.luck@gmail.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gbeshers@sgi.com
+Subject: [PATCH] - Mapping ACPI tables as CACHED
+Message-ID: <20101214220932.GA1206@sgi.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@suse.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org> <201012051408.27730.rjw@suse.com> <4D05EFB2.3050703@gmail.com> <201012132210.51325.rjw@suse.com>
-In-Reply-To: <201012132210.51325.rjw@suse.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 10:10 PM, Rafael J. Wysocki wrote:
-> On Monday, December 13, 2010, Jiri Slaby wrote:
->> On 12/05/2010 02:08 PM, Rafael J. Wysocki wrote:
->>> On Sunday, December 05, 2010, Jiri Slaby wrote:
->>>> On 12/03/2010 01:34 AM, akpm@linux-foundation.org wrote:
->>>>> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
->>>>
->>>> Hi, this kernel regresses with respect to resume. It doesn't wake up,
->>>> the screen is black with blinking cursor at position [1, 1].
->>>> 2010-11-23-16-12 seemed to be OK. In this one it is 100% reproducible so
->>>> far.
->>>>
->>>> I'm using pm-suspend, any ideas what to test before I start to find the
->>>> reason on my own?
->>>
->>> Please try the pm_test tests for core, processors and devices, eg.:
->>
->> Hmm, I haven't seen the issues since then. So it had to be some kind of
->> coincidence -- I see the issue occasionally for some time already. Now
->> it triggered twice in a row after I updated the kernel.
-> 
-> Hmm.  What hardware is that?
+Map ACPI tables as WB on x86_64. No substantive changes to IA64.
 
-What exactly do you want to know about it? It's some specific intel
-desktop machine, 3 years old, 2 intel cores, 6G of mem, 2 sata disks in
-raid, dvb-t usb receiver (af9015), usb keyboard and mouse.
+Large SGI UV systems (3072p, 5TB) take a long time to boot. A significant
+part of the boot time is scanning ACPI tables. ACPI tables on UV systems
+are located in RAM memory that is physically attached to node 0.
 
-regards,
--- 
-js
+User programs (ex., acpidump) read the ACPI tables by mapping them thru
+/dev/mem.  Although mmap tries to map the tables as CACHED, there are
+existing kernel UNCACHED mapping that conflict and the tables end up as
+being mapped UNCACHED.  (See the call to track_pfn_vma_new() in
+remap_pfn_range()).
+
+Much of the access is to small fields (bytes (checksums), shorts, etc).
+Late in boot, there is significant scanning of the ACPI tables that take
+place from nodes other than zero. Since the tables are not cached, each
+reference accesses physical memory that is attached to remote nodes. These
+memory requests must cross the numalink interconnect which adds several
+hundred nsec to each access. This slows the boot process.  Access from
+node 0, although faster, is still very slow.
+
+
+
+The following patch changes the kernel mapping for ACPI tables
+to CACHED. This eliminates the page attibute conflict & allows users to map
+the tables CACHEABLE. This significantly speeds up boot:
+
+        38 minutes without the patch
+        27 minutes with the patch
+                ~30% improvement
+
+Time to run ACPIDUMP on a large system:
+        527 seconds without the patch
+          8 seconds with the patch
+
+
+
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+
+---
+(resend of earlier patch)
+	http://marc.info/?l=linux-kernel&m=128206079905826&w=2
+	http://marc.info/?l=linux-acpi&m=128284304032481&w=2
+
+
+V2 - Change the patch to unconditionally map ACPI tables as WB on x86_64.
+
+V3 - same as V2 except updated to 2.6.37-rc5
+
+
+---
+ arch/ia64/kernel/acpi.c     |    6 ++++++
+ arch/x86/kernel/acpi/boot.c |   14 ++++++++++++++
+ drivers/acpi/osl.c          |    2 +-
+ include/linux/acpi.h        |    1 +
+ 4 files changed, 22 insertions(+), 1 deletion(-)
+
+Index: linux/arch/ia64/kernel/acpi.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/acpi.c	2010-12-14 15:51:33.230235579 -0600
++++ linux/arch/ia64/kernel/acpi.c	2010-12-14 16:02:26.718529904 -0600
+@@ -176,6 +176,12 @@ void __init __acpi_unmap_table(char *map
+ {
+ }
+ 
++char *__init __acpi_map_table_permanent(unsigned long phys_addr,
++					unsigned long size)
++{
++	return ioremap(phys_addr, size);
++}
++
+ /* --------------------------------------------------------------------------
+                             Boot-time Table Parsing
+    -------------------------------------------------------------------------- */
+Index: linux/arch/x86/kernel/acpi/boot.c
+===================================================================
+--- linux.orig/arch/x86/kernel/acpi/boot.c	2010-12-14 15:51:33.230235579 -0600
++++ linux/arch/x86/kernel/acpi/boot.c	2010-12-14 15:52:06.070227289 -0600
+@@ -167,6 +167,20 @@ void __init __acpi_unmap_table(char *map
+ 	early_iounmap(map, size);
+ }
+ 
++/*
++ * Permanently map memory for ACPI. Map ACPI tables and RAM as WB,
++ * other regions as UC.
++ */
++char *__init __acpi_map_table_permanent(unsigned long phys, unsigned long size)
++{
++	if (e820_all_mapped(phys, phys + size, E820_RAM) ||
++			e820_all_mapped(phys, phys + size, E820_ACPI) ||
++			e820_all_mapped(phys, phys + size, E820_NVS))
++		return ioremap_cache((unsigned long)phys, size);
++	 else
++		return ioremap(phys, size);
++}
++
+ #ifdef CONFIG_X86_LOCAL_APIC
+ static int __init acpi_parse_madt(struct acpi_table_header *table)
+ {
+Index: linux/drivers/acpi/osl.c
+===================================================================
+--- linux.orig/drivers/acpi/osl.c	2010-12-14 15:51:33.230235579 -0600
++++ linux/drivers/acpi/osl.c	2010-12-14 15:52:06.098240079 -0600
+@@ -324,7 +324,7 @@ acpi_os_map_memory(acpi_physical_address
+ 
+ 	pg_off = round_down(phys, PAGE_SIZE);
+ 	pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
+-	virt = ioremap(pg_off, pg_sz);
++	virt = __acpi_map_table_permanent(pg_off, pg_sz);
+ 	if (!virt) {
+ 		kfree(map);
+ 		return NULL;
+Index: linux/include/linux/acpi.h
+===================================================================
+--- linux.orig/include/linux/acpi.h	2010-12-14 15:51:33.230235579 -0600
++++ linux/include/linux/acpi.h	2010-12-14 16:03:23.042529564 -0600
+@@ -77,6 +77,7 @@ typedef int (*acpi_table_handler) (struc
+ typedef int (*acpi_table_entry_handler) (struct acpi_subtable_header *header, const unsigned long end);
+ 
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
++char *__acpi_map_table_permanent(unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
