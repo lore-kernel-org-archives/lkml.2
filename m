@@ -1,60 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab0LNPIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 10:08:46 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:33682 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756543Ab0LNPIp (ORCPT
+	id S1759093Ab0LNPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 10:08:56 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:38416 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758969Ab0LNPIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 10:08:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=K9q69CPRVXngUFVLe5mE9zYDimA9YUF+Hbi21W4L4tQPM1tCiPZS22RXzRsngAgZco
-         iH/UdLOdduMLaVCIvMIwUjQIXUop7/gwbWxguJKgDtlQpPGg5obo3pXGpDnTD5x4nOiL
-         +EYOmTeWKnZFoyWH/PAuOFmsBqFBqIdidi6E0=
+	Tue, 14 Dec 2010 10:08:55 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D07888C.4080704@cam.ac.uk>
+Date: Tue, 14 Dec 2010 15:09:00 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1292332047-8206-5-git-send-email-fernando.lugo@ti.com>
-References: <1292332047-8206-1-git-send-email-fernando.lugo@ti.com>
-	<1292332047-8206-5-git-send-email-fernando.lugo@ti.com>
-Date: Tue, 14 Dec 2010 17:08:42 +0200
-Message-ID: <AANLkTin0eBk1tMDUJQQ6KuM6eOu1gu+JmwY-Nz0V+jw8@mail.gmail.com>
-Subject: Re: [PATCHv6 4/4] omap: iommu - create new api to set valid da range
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Cc: Hiroshi.DOYU@nokia.com, linux@arm.linux.org.uk, h-kanigeri2@ti.com,
-        felipe.contreras@nokia.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, "Guzman Lugo, Fernando" <x0095840@ti.com>
-Content-Type: text/plain; charset=UTF-8
+To: michael.hennerich@analog.com
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drivers@analog.com, device-drivers-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 1/3] IIO: Direct digital synthesis abi documentation
+References: <1292338462-4299-1-git-send-email-michael.hennerich@analog.com>
+In-Reply-To: <1292338462-4299-1-git-send-email-michael.hennerich@analog.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 3:07 PM, Fernando Guzman Lugo
-<fernando.lugo@ti.com> wrote:
-> From: Guzman Lugo, Fernando <x0095840@ti.com>
->
-> Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF rage.
-> With this new API the valid range can be set.
->
-> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+On 12/14/10 14:54, michael.hennerich@analog.com wrote:
+> From: Michael Hennerich <michael.hennerich@analog.com>
+> 
+> Changes since RFC/v1:
+> IIO: Apply list review feedback:
+> 
+> Apply list review feedback:
+> 	Restructure documentation according to list feedback.
+> 	Rename attributes to fit IIO convention used in other drivers.
+> 	Fix typos.
+> 	Provide ddsX_out_enable as opposed to ddsX_out_disable
+> 
+> Changes since v2:
+> IIO: sysfs-bus-iio-dds: Apply more list review feedback
+> 
+> 	Fix mixture of X and [n] notation for indices.
+> 	Fix some wording in the descriptions.
 
-I still don't see where this API is being used.
+Looks good. 
+> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  .../staging/iio/Documentation/sysfs-bus-iio-dds    |   93 ++++++++++++++++++++
+>  1 files changed, 93 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/iio/Documentation/sysfs-bus-iio-dds
+> 
+> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-dds b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
+> new file mode 100644
+> index 0000000..ffdd547
+> --- /dev/null
+> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-dds
+> @@ -0,0 +1,93 @@
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_freqY
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Stores frequency into tuning word Y.
+> +		There will be more than one ddsX_freqY file, which allows for
+> +		pin controlled FSK Frequency Shift Keying
+> +		(ddsX_pincontrol_freq_en is active) or the user can control
+> +		the desired active tuning word by writing Y to the
+> +		ddsX_freqsymbol file.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_freqY_scale
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Scale to be applied to ddsX_freqY in order to obtain the
+> +		desired value in Hz. If shared across all frequency registers
+> +		Y is not present. It is also possible X is not present if
+> +		shared across all channels.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_freqsymbol
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Specifies the active output frequency tuning word. The value
+> +		corresponds to the Y in ddsX_freqY. To exit this mode the user
+> +		can write ddsX_pincontrol_freq_en or ddsX_out_enable file.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_phaseY
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Stores phase into Y.
+> +		There will be more than one ddsX_phaseY file, which allows for
+> +		pin controlled PSK Phase Shift Keying
+> +		(ddsX_pincontrol_phase_en is active) or the user can
+> +		control the desired phase Y which is added to the phase
+> +		accumulator output by writing Y to the en_phase file.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_phaseY_scale
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Scale to be applied to ddsX_phaseY in order to obtain the
+> +		desired value in rad. If shared across all phase registers
+> +		Y is not present. It is also possible X is not present if
+> +		shared across all channels.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_phasesymbol
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Specifies the active phase Y which is added to the phase
+> +		accumulator output. The value corresponds to the Y in
+> +		ddsX_phaseY. To exit this mode the user can write
+> +		ddsX_pincontrol_phase_en or disable file.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_pincontrol_en
+> +What:		/sys/bus/iio/devices/.../ddsX_pincontrol_freq_en
+> +What:		/sys/bus/iio/devices/.../ddsX_pincontrol_phase_en
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		ddsX_pincontrol_en: Both, the active frequency and phase is
+> +		controlled by the respective phase and frequency control inputs.
+> +		In case the device in question allows to independent controls,
+> +		then there are dedicated files (ddsX_pincontrol_freq_en,
+> +		ddsX_pincontrol_phase_en).
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_out_enable
+> +What:		/sys/bus/iio/devices/.../ddsX_outY_enable
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		ddsX_outY_enable controls signal generation on output Y of
+> +		channel X. Y may be suppressed if all channels are
+> +		controlled together.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_outY_wavetype
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Specifies the output waveform.
+> +		(sine, triangle, ramp, square, ...)
+> +		For a list of available output waveform options read
+> +		available_output_modes.
+> +
+> +What:		/sys/bus/iio/devices/.../ddsX_outY_wavetype_available
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Lists all available output waveform options.
+> --
+> 1.6.0.2
+> 
+> 
 
-Also, the point of using platform data was to add it to omap3_devices
-in omap-iommu.c, see[1]. I thought the platform data start/end would
-move to struct iommu, and iommu_set_da_range would change the
-start/end on struct iommu, but that would only be necessary if the
-platform data doesn't match that.
-
-If there's no sensible platform data default, then there's no point in
-using platform data, as the platform is not the limiting factor, but
-the DSP SW.
-
-[1] http://article.gmane.org/gmane.linux.kernel/1051268
-
--- 
-Felipe Contreras
