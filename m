@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab0LNJZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 04:25:41 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51050 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757950Ab0LNJZj (ORCPT
+	id S1758310Ab0LNJii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 04:38:38 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:61707 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab0LNJig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 04:25:39 -0500
-Date: Tue, 14 Dec 2010 14:55:35 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <aliguori@linux.vnet.ibm.com>,
-        Bharata B Rao <bharata.rao@in.ibm.com>
-Subject: Re: [RFC PATCH 0/3] directed yield for Pause Loop Exiting
-Message-ID: <20101214092535.GD14178@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101202144129.4357fe00@annuminas.surriel.com>
- <20101210050344.GR3158@balbir.in.ibm.com>
- <4D0328CC.1020809@redhat.com>
- <20101211135727.GU3158@balbir.in.ibm.com>
- <4D0651BB.9040609@redhat.com>
+	Tue, 14 Dec 2010 04:38:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=liPgXqNB5qZCFmbI2ubD7IBtSu/4kV10vCDkhaNFXMNEtndHbt8r3ZVeoasuwV/MKK
+         /zfiNhHRbE5YAmXuUWK5LYH9GxZUQkAoxOwIxbGEvHeT8x8zo7sUrzQo+J3Urrq3d40J
+         OTJ1CCU3091q7/eeKEmbpJ7PxLSX7AuKIUHXc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4D0651BB.9040609@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 14 Dec 2010 10:38:35 +0100
+Message-ID: <AANLkTi=LG5Sbnu-_gHu5C0-mowBUAPWBmNHn0+e6LTyZ@mail.gmail.com>
+Subject: Re: linux-next: Tree for December 14 (New tree: vfs-scale)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Nick Kossifidis <mickflemm@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Hutterer <peter.hutterer@who-t.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rik van Riel <riel@redhat.com> [2010-12-13 12:02:51]:
+[ QUOTE ]
+Hi all,
 
-> On 12/11/2010 08:57 AM, Balbir Singh wrote:
-> 
-> >If the vpcu holding the lock runs more and capped, the timeslice
-> >transfer is a heuristic that will not help.
-> 
-> That indicates you really need the cap to be per guest, and
-> not per VCPU.
->
+[The mirroring on kernel.org is being slow again ...]
 
-Yes, I personally think so too, but I suspect there needs to be a
-larger agreement on the semantics. The VCPU semantics in terms of
-power apply to each VCPU as opposed to the entire system (per guest).
- 
-> Having one VCPU spin on a lock (and achieve nothing), because
-> the other one cannot give up the lock due to hitting its CPU
-> cap could lead to showstoppingly bad performance.
+Changes since 20101213:
 
-Yes, that seems right!
+New tree: vfs-scale
 
--- 
-	Three Cheers,
-	Balbir
+The vfs-scale tree gained a conflict against the fuse tree.
+
+The ieee1394 tree lost its build failure.
+
+The wireless tree gained conflicts against the wireless-current tree.
+
+The sound tree lost its conflict.
+
+The input tree gained a conflict against Linus' tree.
+
+The voltage tree gained a build failure so I used the version from
+next-20101213.
+
+The swiotlb-xen tree lost its build failure.
+
+The cleancache tree gained a conflict against the vfs-scale tree.
+[ /QUOTE ]
+
+First of all congrats to all involved parties so that the work of Nick
+was accepted as "vfs-scale" into linux-next!
+
+I played yesterday with the new refreshed patchset (manually merged
+and fixed) against systemd-v15 with kgdb/kdb.
+Oh yes, there is a "dmesg" command :-) and with "btp $pid" I yesterday
+night saw a NULL dereference in the backtrace.
+Currently, I am compiling linux-next (next-20101214) and will take
+some pictures with my digicam.
+
+Some recommends (not that I want to teach you as GIT is for me new
+playground and I follow mostly the commit-messages, which not means I
+understand the complexity of the patchset), but ...
+
+1. Please give commits a proper/sane "commit subject"
+"Build fix" or "Fixed build failure" is not saying much.
+
+2. Add credits for people investing time to test and report
+Same commits did not have also credits for people reporting the build failures.
+A reference to LKML posting would be fine in the "commit-body" (sorry
+for my comparison with Email, do not know the GIT term).
+
+This all is not to punish you, it is for following and documenting the
+whole process.
+
+Peter Hutterer has a wonderful blog article "On commit messages"
+concerning this topic.
+If all of us would follow them, the working-together will be more fruitful.
+
+My 0.02EUR.
+
+- Sedat -
+
+[1] http://who-t.blogspot.com/2009/12/on-commit-messages.html
