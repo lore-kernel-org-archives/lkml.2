@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758891Ab0LNSkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 13:40:10 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43052 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab0LNSkI (ORCPT
+	id S1759175Ab0LNSku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 13:40:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61219 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758468Ab0LNSks convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 13:40:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fKPNB/BvaBG0z+ekonv9CGo/RuJqnLJyVJcUrNLeFYoYqKtrPDSl/Uh3XDf9oWPfye
-         lkGsQpRtqNUlj12aVSAKKjcct/kh84goOSQMpu4zv2H9+Jn2/8dUWY0rmyWb+kpAYc2M
-         m3MbUOu5jEBktrxPzGvYBMPOvStZ+5pKuzFqM=
-Date: Tue, 14 Dec 2010 10:40:00 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the input tree with Linus' tree
-Message-ID: <20101214184000.GA11384@core.coreip.homeip.net>
-References: <20101214132658.ce0f5bc6.sfr@canb.auug.org.au>
+	Tue, 14 Dec 2010 13:40:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214132658.ce0f5bc6.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [46.116.87.10]
+In-Reply-To: <20101214170656.GA3832@kroah.com>
+References: <1291420247-18171-1-git-send-email-ohad@wizery.com>
+ <AANLkTin1fd=Kei7Fo6G+uR+270HdTkc71fvsA6qjBjcA@mail.gmail.com> <20101214170656.GA3832@kroah.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 14 Dec 2010 20:40:28 +0200
+Message-ID: <AANLkTi=q=QMQ_Abxb8eUWT_qGG8K=pc892ZB-mqgt_mh@mail.gmail.com>
+Subject: Re: [PATCH v3 0/4] Introduce hardware spinlock framework
+To: Greg KH <greg@kroah.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 01:26:58PM +1100, Stephen Rothwell wrote:
-> Hi Dmitry,
-> 
-> Today's linux-next merge of the input tree got a conflict in
-> include/linux/input.h between commit
-> 86b17f76f462db460d6d916e105a4c44cb353e36 ("Input: document struct
-> input_absinfo") from Linus' tree and commit
-> a528f721b7c0ba70433dbddf5947eea458c3e36a ("Input: document new trkid
-> field in struct input_dev") from the input tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+On Tue, Dec 14, 2010 at 7:06 PM, Greg KH <greg@kroah.com> wrote:
+>> Can you please have a look and say if this looks OK ?
+>
+> Look at what, I don't see a patch here.
 
-Hi Stephen,
+Here's the complete patchset:
 
-The fix looks good and if you could carry it for a while that would be
-great - I try to avoid cross-merging branches if possible...
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg39833.html
 
-Thanks.
+If you prefer, I can resubmit.
 
--- 
-Dmitry
+>
+> I've seen a lot of discussion about this, are all of the review comments
+> now addressed?
+
+Yes, all comments were addressed in this v3 iteration, and this thread
+has been idle for about 10 days.
+
+>  Like the most important one, why is this generic code if
+>  it's only for one specific platform?
+
+We started out with an omap-specific driver, but Tony preferred that we
+make this a platform-agnostic framework, in order to keep the IPC drivers that
+will use it generic, and assuming that more users will show up for
+such framework.
+
+To me it sounds reasonable, but both ways (framework / omap-specific
+driver) will work for us just fine, and I can switch back to a misc
+driver if this is preferred.
+
+The complete discussion of v1 is at:
+http://comments.gmane.org/gmane.linux.kernel/1049802
+
+We also discussed this at v2 of the patches with David, see the
+complete discussion at:
+http://comments.gmane.org/gmane.linux.kernel/1067016
+
+Thanks,
+Ohad.
+
+>
+> thanks,
+>
+> greg k-h
+>
