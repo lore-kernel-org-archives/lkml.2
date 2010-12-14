@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0LNVjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:39:51 -0500
-Received: from smtp-rs1-vallila2.fe.helsinki.fi ([128.214.173.75]:36524 "EHLO
-	smtp-rs1.it.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab0LNVju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:39:50 -0500
-Date: Tue, 14 Dec 2010 23:39:32 +0200 (EET)
-From: Jouko Orava <jouko.orava@helsinki.fi>
-Reply-To: Jouko Orava <jouko.orava@iki.fi>
-To: Shaun Ruffell <sruffell@digium.com>
-cc: Jouko Orava <jouko.orava@helsinki.fi>, linux-kernel@vger.kernel.org
-Subject: Re: Custom kernel logging using an USB microcontroller?
-In-Reply-To: <4D07806C.3070009@digium.com>
-Message-ID: <alpine.LRH.2.00.1012142315000.7914@ruuvi.it.helsinki.fi>
-References: <alpine.LRH.2.00.1012130108200.12183@ruuvi.it.helsinki.fi> <4D07806C.3070009@digium.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754442Ab0LNVmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:42:54 -0500
+Received: from waste.org ([173.11.57.241]:60670 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751077Ab0LNVmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 16:42:52 -0500
+Subject: Re: [PATCH v3 21/22] netoops: Add user-programmable boot_id
+From: Matt Mackall <mpm@selenic.com>
+To: Mike Waychison <mikew@google.com>
+Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
+        adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+In-Reply-To: <20101214213048.17022.58746.stgit@mike.mtv.corp.google.com>
+References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
+	 <20101214213048.17022.58746.stgit@mike.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Dec 2010 15:42:37 -0600
+Message-ID: <1292362957.3446.851.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2010 05:31 PM, Jouko Orava wrote:
-> > Would any of you happen to have written a kernel module for
-> > custom kernel logging to a USB microcontroller?
+On Tue, 2010-12-14 at 13:30 -0800, Mike Waychison wrote:
+> Add support for letting userland define a 32bit boot id.  This is useful
+> for users to be able to correlate netoops reports to specific boot
+> instances offline.
 
-On Tue, 14 Dec 2010, Shaun Ruffell wrote:
-> Will netconsole (see Documentation/networking/netconsole.txt) work for
-> you?  Presumably you have a network adapter or can add a USB network
-> adapter.
+This sounds a lot like the pre-existing /proc/sys/kernel/random/boot_id
+that's used by kerneloops.org.
 
-Sure, thanks for the pointer.
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-However, I think I can adapt the skeleton USB driver for my needs.
-After all, I only need an in-kernel custom_printk() which I could sprinkle
-in the kernel codepaths I'm interested in.
 
-Thanks,
-	Jouko
