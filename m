@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab0LNCQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 21:16:10 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:6790 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758901Ab0LNCQI (ORCPT
+	id S1759139Ab0LNCVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 21:21:55 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:48774 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759125Ab0LNCVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 21:16:08 -0500
-Message-ID: <98ED21118B7A4639B9AB0B8FFE323179@hacdom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: <wg@grandegger.com>, <socketcan-core@lists.berlios.de>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1292221467-8039-18-git-send-email-tomoya-linux@dsn.okisemi.com><1292221467-8039-19-git-send-email-tomoya-linux@dsn.okisemi.com><1292221467-8039-20-git-send-email-tomoya-linux@dsn.okisemi.com> <20101213.122826.27813399.davem@davemloft.net>
-Subject: Re: [PATCH net-next-2.6 v9 20/20] pch_can: Replace netif_rx to netif_receive_skb
-Date: Tue, 14 Dec 2010 11:16:04 +0900
+	Mon, 13 Dec 2010 21:21:54 -0500
+Date: Tue, 14 Dec 2010 10:21:51 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Struk, Tadeusz" <tadeusz.struk@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
+        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>
+Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Message-ID: <20101214022150.GA11023@gondor.apana.org.au>
+References: <4CC9946D.mailLH511GU0C@intel.com> <20101104190405.GA2501@gondor.apana.org.au> <20101117172331.3bbec734.akpm@linux-foundation.org> <20101118092640.GA9486@gondor.apana.org.au> <24483BA4C9F69C43A7379639D35543D7C3450A84@irsmsx502.ger.corp.intel.com> <20101202161403.74daae6f.akpm@linux-foundation.org> <20101203013021.GA304@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="ISO-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101203013021.GA304@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-Thank you for your acceptance.
-
-> Hi Marc and Wolfgang
-Until now, thank you for your much help!
-
----
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
------ Original Message ----- 
-From: "David Miller" <davem@davemloft.net>
-To: <tomoya-linux@dsn.okisemi.com>
-Cc: <wg@grandegger.com>; <w.sang@pengutronix.de>; <chripell@fsfe.org>; 
-<21cnbao@gmail.com>; <sameo@linux.intel.com>; 
-<socketcan-core@lists.berlios.de>; <netdev@vger.kernel.org>; 
-<linux-kernel@vger.kernel.org>; <qi.wang@intel.com>; 
-<yong.y.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; 
-<joel.clark@intel.com>; <kok.howg.ewe@intel.com>; <margie.foster@intel.com>
-Sent: Tuesday, December 14, 2010 5:28 AM
-Subject: Re: [PATCH net-next-2.6 v9 20/20] pch_can: Replace netif_rx to 
-netif_receive_skb
-
-
-> From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> Date: Mon, 13 Dec 2010 15:24:26 +0900
+On Fri, Dec 03, 2010 at 09:30:21AM +0800, Herbert Xu wrote:
 >
->> Since this driver is implemented as NAPI,
->> netif_receive_skb must be used not netif_rx.
->>
->> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
->> Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
->
-> Applied.
-> 
+> Andrew, I'll just back this out if it doesn't get resolved.
 
+Andrew, the problem should be resolved in the current cryptodev
+tree.  Please let me know if it still blows up for you.
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
