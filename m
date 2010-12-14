@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab0LNOd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:33:29 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:46343 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab0LNOd1 (ORCPT
+	id S1755981Ab0LNOdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:33:42 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:54830 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab0LNOdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:33:27 -0500
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAHwOB02rR7H+/2dsb2JhbACkCnimN5tUhUoEhGSGFoMV
-X-IronPort-AV: E=Sophos;i="4.59,342,1288569600"; 
-   d="scan'208";a="232358160"
-Message-ID: <4D078037.9060207@cisco.com>
-Date: Tue, 14 Dec 2010 07:33:27 -0700
-From: "David S. Ahern" <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	Tue, 14 Dec 2010 09:33:41 -0500
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] perf tools: Add symfs option for off-box analysis
- using specified tree
-References: <1291926427-28846-1-git-send-email-daahern@cisco.com> <20101214122428.GA13425@ghostprotocols.net> <20101214125245.GB13425@ghostprotocols.net> <20101214140604.GC13425@ghostprotocols.net>
-In-Reply-To: <20101214140604.GC13425@ghostprotocols.net>
+In-Reply-To: <20101214043635.GB12059@salty.local>
+References: <1292001842-5000-1-git-send-email-rydberg@euromail.se>
+	<4D065BDE.5020107@canonical.com>
+	<4D068E3C.8080100@euromail.se>
+	<4D06A60D.7010409@canonical.com>
+	<4D06AB66.8090909@euromail.se>
+	<20101214043635.GB12059@salty.local>
+Date: Tue, 14 Dec 2010 08:33:39 -0600
+Message-ID: <AANLkTinPSkFddbM0dfWp3ROHYgvb7Gx2A_Avudwkoqif@mail.gmail.com>
+Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Peter Hutterer <peter.hutterer@who-t.net>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 12/14/10 07:06, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Dec 14, 2010 at 10:52:45AM -0200, Arnaldo Carvalho de Melo escreveu:
->> Ok, there are still some problems:
+On Mon, Dec 13, 2010 at 10:36 PM, Peter Hutterer
+<peter.hutterer@who-t.net> wrote:
+> On Tue, Dec 14, 2010 at 12:25:26AM +0100, Henrik Rydberg wrote:
+>> >> The envelope contacts serve as a way to detect a small area of fingers or a
 >>
->> It is escaping the symfs jail for /home/acme/bin/perf, /lib64/libpthread-2.5.so
->> and kernel modules, investigating...
-> 
-> Those 'G' signals means DSO__ORIG_GUEST_KMODULE, since you were not
-> prefixing that case with symfs, it was the jail leak point, fixed, doing
-> some more testing before merging.
+>> >> large area of fingers. There is nothing inherently problematic with having one
+>> >> or three or more such contacts.
+>> >
+>> > Then I'm more confused :).
+>> >
+>> > I see one problem: devices that report two touch points, (X1, Y1) and
+>> > (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
+>> > instead. Using a rectangle helps resolve this issue for panning and
+>> > pinching, though not for rotation.
+>>
+>>
+>> If panning and pinching and rotation could all be recovered properly, then the
+>> individual contacts could actually have been reconstructed properly in the first
+>> place. This is the whole point - there is not enough information available for
+>> rotation to be recovered properly.
+>
+> can you post an example event stream of the MT_ENVELOPE tool? I'm having
+> trouble wrapping my head around it.
+>
 
-yuk. I did not touch the hypervisor paths.
+Patch 2/2 of synaptics patches from Henrik show this in code form but
+here is text form.
 
-So the 'guest' route is tried all the time because of the origin list --
-even when it's not applicable.
+Its sets up 2 MT slots and start out at (x,y)=(0,0) for both slots
+with no fingers touching.  When 1 finger touches, slot 0 shows (x,y)
+as reported by hardware and keeps slot 1 at (0,0).  When 2 fingers
+touch, slot 0 shows lower left of rectangle and slot 1 shows upper
+right corner.  When 3 fingers touch, same thing as 2 fingers.
 
-David
+For 1 finger case, we could send duplicate values of slot 0 into slot
+1 but (0,0) is more efficient for more typical 1 finger usage.
 
-> 
->> [acme@mica linux]$ find /tmp/bla
->> /tmp/bla
->> /tmp/bla/lib64
->> /tmp/bla/lib64/libc-2.5.so
->> [acme@mica linux]$ perf report -v -g none --stdio --symfs /tmp/bla
->> Failed to open [kernel.kallsyms], continuing without symbols
->> # Events: 503  cycles
->> #
->> # Overhead Command    Shared Object                                Symbol
->> # ........ .......... .....................................        ....................
->> #
->>    0.84%        perf  /home/acme/bin/perf                  0x26bf1 G [.] die_builtin
->>    0.21%        perf  /home/acme/bin/perf                  0x1db4b G [.] event__synthesize_kernel_mmap
->>    0.21%        perf  /home/acme/bin/perf                  0x4700  G [.] _init
->>    0.21%        perf  /home/acme/bin/perf                  0x1deca G [.] event__synthesize_comm
->>    0.21%        perf  /lib64/libpthread-2.5.so             0xd210  G [.] __write_nocancel
->>    0.21%        perf  /home/acme/bin/perf                  0xddbd  G [.] atexit_header
->>    0.03% kworker/0:1  /lib/modules/2.6.37-rc3/.../ixgbe.ko 0x605   G [k] ixgbe_update_stats
+The 3 finger case helps show that hardware itself really wants to talk
+in terms of rectangles as well, even if they give half hearted
+attempts at real multi-touch points.
+
+Since these slots need to be treated as a whole, no tracking id or similar.
+
+Chris
