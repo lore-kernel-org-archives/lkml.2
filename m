@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab0LNAKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:10:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36981 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756138Ab0LNAKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:10:14 -0500
-Date: Tue, 14 Dec 2010 00:09:52 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        hjl.tools@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        hjl.tools@gmail.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, gcc-4.6: Use gcc -m options when building vdso
-Message-ID: <tip-de2a8cf98ecdde25231d6c5e7901e2cffaf32af9@git.kernel.org>
-Git-Commit-ID: de2a8cf98ecdde25231d6c5e7901e2cffaf32af9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757380Ab0LNAL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:11:26 -0500
+Received: from smtp.microsoft.com ([131.107.115.212]:31781 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113Ab0LNALZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:11:25 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Jesper Juhl <jj@chaosbits.net>, Ky Srinivasan <ksrinivasan@novell.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] hv: Use only one receive buffer per channel and
+ kmalloc on initialize
+Thread-Topic: [PATCH 1/1] hv: Use only one receive buffer per channel and
+ kmalloc on initialize
+Thread-Index: AQHLmwTWTCfBOZ+WHUG7YLQqdwCl/JOfc7GAgAAdgwD//38vEA==
+Date: Tue, 14 Dec 2010 00:11:23 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C5622C0BD022@TK5EX14MBXC116.redmond.corp.microsoft.com>
+References: <1292272498-29483-1-git-send-email-hjanssen@microsoft.com>
+ <4D0636270200003000091D23@novprvoes0310.provo.novell.com>
+ <alpine.LNX.2.00.1012140048290.26491@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1012140048290.26491@swampdragon.chaosbits.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 00:09:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  de2a8cf98ecdde25231d6c5e7901e2cffaf32af9
-Gitweb:     http://git.kernel.org/tip/de2a8cf98ecdde25231d6c5e7901e2cffaf32af9
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Mon, 13 Dec 2010 16:01:38 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 13 Dec 2010 16:08:37 -0800
 
-x86, gcc-4.6: Use gcc -m options when building vdso
 
-The vdso Makefile passes linker-style -m options not to the linker but
-to gcc.  This happens to work with earlier gcc, but fails with gcc
-4.6.  Pass gcc-style -m options, instead.
+> -----Original Message-----
+> From: Jesper Juhl [mailto:jj@chaosbits.net]
+> Sent: Monday, December 13, 2010 3:51 PM
+> To: Ky Srinivasan
+> > > +	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+> > > +	time_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+> > > +	hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_ATOMIC);
+> > Why are these allocations GFP_ATOMIC. Clearly this is in module
+> loading context and you can afford to sleep. GFP_KERNEL should be fine.
+> >
+> 
+> I actually also noticed this when I did my first review of the patch,
+> but
+> I didn't point it out since I thought that "there must be a good
+> reason".
+> But now that you point it out and I look at the code once more I can't
+> actually think of a "good reason",, so I agree with you completely that
+> these should just be GFP_KERNEL.
 
-Note: all currently supported versions of gcc supports -m32, so there
-is no reason to conditionalize it any more.
+I was looking at some of the back code to make sure it is okay, and I see
+No reason not make this change either. I will change it and resubmit.
 
-Reported-by: H. J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <tip-*@git.kernel.org>
-Cc: <stable@kernel.org>
----
- arch/x86/vdso/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 4a2afa1..b6552b1 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -25,7 +25,7 @@ targets += vdso.so vdso.so.dbg vdso.lds $(vobjs-y)
- 
- export CPPFLAGS_vdso.lds += -P -C
- 
--VDSO_LDFLAGS_vdso.lds = -m elf_x86_64 -Wl,-soname=linux-vdso.so.1 \
-+VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
- 		      	-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
- 
- $(obj)/vdso.o: $(src)/vdso.S $(obj)/vdso.so
-@@ -69,7 +69,7 @@ vdso32.so-$(VDSO32-y)		+= sysenter
- vdso32-images			= $(vdso32.so-y:%=vdso32-%.so)
- 
- CPPFLAGS_vdso32.lds = $(CPPFLAGS_vdso.lds)
--VDSO_LDFLAGS_vdso32.lds = -m elf_i386 -Wl,-soname=linux-gate.so.1
-+VDSO_LDFLAGS_vdso32.lds = -m32 -Wl,-soname=linux-gate.so.1
- 
- # This makes sure the $(obj) subdirectory exists even though vdso32/
- # is not a kbuild sub-make subdirectory.
+Hank.
+
