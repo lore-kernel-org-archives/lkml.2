@@ -1,53 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab0LNN4w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 08:56:52 -0500
-Received: from mail.atmel.fr ([81.80.104.162]:37932 "EHLO atmel-es2.atmel.fr"
+	id S1759318Ab0LNN7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 08:59:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:25851 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759278Ab0LNN4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 08:56:51 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: gregkh@suse.de, linux-usb@vger.kernel.org, dbrownell@users.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rob Emanuele <rje@crystalfontz.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] AT91: usb gadget: fix freeing irq in _udc_remove()
-Date: Tue, 14 Dec 2010 16:05:39 +0100
-Message-Id: <1292339139-26212-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <AANLkTimV2ENcWajrrMQ2Too4pf=XBfLczJ9HehNt4V_8@mail.gmail.com>
-References: <AANLkTimV2ENcWajrrMQ2Too4pf=XBfLczJ9HehNt4V_8@mail.gmail.com>
+	id S1758989Ab0LNN7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 08:59:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,342,1288594800"; 
+   d="scan'208";a="361462803"
+Date: Tue, 14 Dec 2010 21:59:10 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
+ up time
+Message-ID: <20101214135910.GA21401@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150326.856922289@intel.com>
+ <1292333854.2019.16.camel@castor.rsk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292333854.2019.16.camel@castor.rsk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Emanuele <rje@crystalfontz.com>
+Hi Richard,
 
-Add a free_irq() call on vbus gpio when we remove udc so that the
-vbus irq is properly released.
+On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
+> On Mon, 2010-12-13 at 22:46 +0800, Wu Fengguang wrote:
+> > plain text document attachment
+> > (writeback-speedup-per-bdi-threshold-ramp-up.patch)
+> > Reduce the dampening for the control system, yielding faster
+> > convergence.
+> > 
+> > Currently it converges at a snail's pace for slow devices (in order of
+> > minutes).  For really fast storage, the convergence speed should be fine.
+> > 
+> > It makes sense to make it reasonably fast for typical desktops.
+> > 
+> > After patch, it converges in ~10 seconds for 60MB/s writes and 4GB mem.
+> > So expect ~1s for a fast 600MB/s storage under 4GB mem, or ~4s under
+> > 16GB mem, which seems reasonable.
+> > 
+> > $ while true; do grep BdiDirtyThresh /debug/bdi/8:0/stats; sleep 1; done
+> > BdiDirtyThresh:            0 kB
+> > BdiDirtyThresh:       118748 kB
+> > BdiDirtyThresh:       214280 kB
+> > BdiDirtyThresh:       303868 kB
+> > BdiDirtyThresh:       376528 kB
+> > BdiDirtyThresh:       411180 kB
+> > BdiDirtyThresh:       448636 kB
+> > BdiDirtyThresh:       472260 kB
+> > BdiDirtyThresh:       490924 kB
+> > BdiDirtyThresh:       499596 kB
+> > BdiDirtyThresh:       507068 kB
+> > ...
+> > DirtyThresh:          530392 kB
+> > 
+> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  mm/page-writeback.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > --- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:11.000000000 +0800
+> > +++ linux-next/mm/page-writeback.c	2010-12-13 21:46:11.000000000 +0800
+> > @@ -145,7 +145,7 @@ static int calc_period_shift(void)
+> >  	else
+> >  		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+> >  				100;
+> > -	return 2 + ilog2(dirty_total - 1);
+> > +	return ilog2(dirty_total - 1) - 1;
+> >  }
+> >  
+> >  /*
+> > 
+> > 
+> Hi Fengguang,
+> 
+> I've been running my test set on your v3 series and generally it's
+> giving good results in line with the mainline kernel, with much less
+> variability and lower standard deviation of the results so it is much
+> more repeatable.
 
-Signed-off-by: Rob Emanuele <rje@crystalfontz.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/usb/gadget/atmel_usba_udc.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Glad to hear that, and thank you very much for trying it out!
 
-diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-index 717ff65..e7c65a4 100644
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -2057,8 +2057,10 @@ static int __exit usba_udc_remove(struct platform_device *pdev)
- 		usba_ep_cleanup_debugfs(&usba_ep[i]);
- 	usba_cleanup_debugfs(udc);
+> However, it doesn't seem to be honouring the background_dirty_threshold.
+
+> The attached graph is from a simple fio write test of 400Mb on ext4.
+> All dirty pages are completely written in 15 seconds, but I expect to
+> see up to background_dirty_threshold pages staying dirty until the 30
+> second background task writes them out. So it is much too eager to write
+> back dirty pages.
  
--	if (gpio_is_valid(udc->vbus_pin))
-+	if (gpio_is_valid(udc->vbus_pin)) {
-+		free_irq(gpio_to_irq(udc->vbus_pin), udc);
- 		gpio_free(udc->vbus_pin);
-+	}
- 
- 	free_irq(udc->irq, udc);
- 	kfree(usba_ep);
--- 
-1.7.3
+This is interesting, and seems easy to root cause. When testing v4,
+would you help collect the following trace events?
 
+echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
+echo 1 > /debug/tracing/events/writeback/balance_dirty_state/enable
+echo 1 > /debug/tracing/events/writeback/writeback_single_inode/enable
+
+They'll have good opportunity to disclose the bug.
+
+> As to the ramp up time, when writing to 2 disks at the same time I see
+> the per_bdi_threshold taking up to 20 seconds to converge on a steady
+> value after one of the write stops. So I think this could be speeded up
+> even more, at least on my setup.
+
+I have the roughly same ramp up time on the 1-disk 3GB mem test:
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
+ 
+Given that it's the typical desktop, it does seem reasonable to speed
+it up further.
+
+> I am just about to start testing v4 & will report anything interesting.
+
+Thanks!
+
+Fengguang
