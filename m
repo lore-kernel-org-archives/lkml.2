@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751302Ab0LNFHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 00:07:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:47506 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab0LNFHJ (ORCPT
+	id S1751663Ab0LNFKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 00:10:24 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43239 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab0LNFKW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 00:07:09 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH] kgdboc,input: Fix regression with keyboard release key and early debugging
-Date: Mon, 13 Dec 2010 23:04:52 -0600
-Message-Id: <1292303092-32677-2-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1292303092-32677-1-git-send-email-jason.wessel@windriver.com>
-References: <1292303092-32677-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 14 Dec 2010 05:06:57.0941 (UTC) FILETIME=[BBB80450:01CB9B4C]
+	Tue, 14 Dec 2010 00:10:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101214154933.a4b36f69.sfr@canb.auug.org.au>
+References: <20101214154933.a4b36f69.sfr@canb.auug.org.au>
+Date: Tue, 14 Dec 2010 13:10:20 +0800
+Message-ID: <AANLkTimxnunX6rmV8vCTCmwMuDoD3HTppHjkHGxg4ZKJ@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the voltage tree
+From: Yong Shen <yong.shen@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 111c182340cd22e238ab1cc6564df336c6ebd7cb (kgdboc: reset
-input devices (keyboards) when exiting debugger) introduced a
-regression in early debugging such that you get a kernel oops on
-continue (with the go command) if you boot a kernel with:
+Hi Stephen,
 
-    earlyprintk=vga ekgdboc=kbd kgdbwait
+I had already noticed Liam. Mc13892's patch depends on other two
+patches which are not applied yet.
 
-The restore kgdboc_restore_input() routine schedules work for the
-purpose of sending key release events for any keys that were in the
-depressed state prior to entering the kernel debugger.  A simple fix
-to the crash is to not invoke the schedule_work() if the kernel
-system_state is anything other than SYSTEM_RUNNING.
+Yong
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Reviewed-by: Sergei Shtylyov <sshtylyov@mvista.com>
----
- drivers/serial/kgdboc.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/serial/kgdboc.c b/drivers/serial/kgdboc.c
-index 3374618..25a8bc5 100644
---- a/drivers/serial/kgdboc.c
-+++ b/drivers/serial/kgdboc.c
-@@ -90,7 +90,8 @@ static DECLARE_WORK(kgdboc_restore_input_work, kgdboc_restore_input_helper);
- 
- static void kgdboc_restore_input(void)
- {
--	schedule_work(&kgdboc_restore_input_work);
-+	if (likely(system_state == SYSTEM_RUNNING))
-+		schedule_work(&kgdboc_restore_input_work);
- }
- 
- static int kgdboc_register_kbd(char **cptr)
--- 
-1.7.0.4
-
+On Tue, Dec 14, 2010 at 12:49 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Liam,
+>
+> After merging the voltage tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> drivers/regulator/mc13892-regulator.c:21:21: error: mc13xxx.h: No such file or directory
+> drivers/regulator/mc13892-regulator.c:261: error: array type has incomplete element type
+> drivers/regulator/mc13892-regulator.c:262: error: implicit declaration of function 'MC13xxx_DEFINE'
+> drivers/regulator/mc13892-regulator.c:262: error: 'MC13892_' undeclared here (not in a function)
+>
+> and on and on ....
+>
+> Caused by commit b0e2417cdbc12b1649245315a607ae8f1072b2bf ("regulator:
+> support PMIC mc13892").  A file missing from the commit, I assume.
+>
+> I have used the voltage tree form next-20101213 for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
