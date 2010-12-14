@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758407Ab0LNAm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:42:27 -0500
-Received: from mga14.intel.com ([143.182.124.37]:56885 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757662Ab0LNAm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:42:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,339,1288594800"; 
-   d="scan'208";a="361213873"
-Date: Mon, 13 Dec 2010 16:42:08 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Mark Brown <broonie@sirena.org.uk>, Matthias Schniedermeyer <ms@citd.de>,
-        Luben Tuikov <ltuikov@yahoo.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] [USB] UASP: USB Attached SCSI (UAS) protocol driver
-Message-ID: <20101214004208.GA25538@xanatos>
-References: <20101213194841.GA20997@citd.de>
- <20101213215324.GA6565@rhlx01.hs-esslingen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101213215324.GA6565@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758741Ab0LNAo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:44:58 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45961 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758480Ab0LNAos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:44:48 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=LXS9Q2L0C3sA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=Z4Rwk6OoAAAA:8 a=meVymXHHAAAA:8 a=IQAZ6Wn-OtEyv86CUOcA:9 a=7QirWHDLgzEXafWqIMK6rj5pesUA:4 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101214004446.724852466@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 13 Dec 2010 19:43:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Nick Piggin <npiggin@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3/3] mm: Remove likely() from grab_cache_page_write_begin()
+References: <20101214004347.996651495@goodmis.org>
+Content-Disposition: inline; filename=0003-mm-Remove-likely-from-grab_cache_page_write_begin.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 10:53:25PM +0100, Andreas Mohr wrote:
-> I was just chilling down late in the evening by reading a short LKML 
-> overview, and then inadvertently managed to hit this bomb shell ;)
-> 
-> > As uas has not been in a release-kernel, by definition, there is no 
-> > impact either way. No regressions or anything else.
-> 
-> Since I've actually just been oldconfig'ing uas driver yesterday on a new 
-> installation, I can relate to UAS kernel support being quite new 
-> in its entirety.
-> 
-> If this is the case, then I'd also tend to believe the situation
-> is very different from other more painful (since longstanding) driver conflicts
-> (e.g. 8139, some raid drivers, and also e100 as witnessed by myself).
-> 
-> The author of UASP might want to adjust some of his writings
-> (especially the more personal parts),
-> however several parts of his criticism (e.g. no focus on code review)
-> seem valid from my POV.
+From: Steven Rostedt <srostedt@redhat.com>
 
-I think you may be missing some code review on the linux-usb mailing
-list.  Luben posted his original patch to the uas.c driver there, but he
-included behavior changes, code style modification, and variable
-renaming in one giant patch.  It was very difficult to wade through, so
-I asked him to break the changes into a series of patches (perhaps 18,
-since he has 18 points?).
+Running the annotated branch profiler on a box doing average work
+(firefox, evolution, xchat, distcc farm), the likely() used in
+grab_cache_page_write_begin() was incorrect most of the time:
 
-I did attempt to give a partial code review of Luben's original patches,
-and he has yet to respond to any of my points:
+ correct incorrect  %        Function                  File              Line
+ ------- ---------  -        --------                  ----              ----
+ 1924262 71332401  97 grab_cache_page_write_begin    filemap.c           2206
 
-http://marc.info/?l=linux-kernel&m=129021816023869&w=2
+Adding a trace_printk() and running the function tracer limited to
+just this function I can see:
 
-I also asked him to change a different patch for his driver, to move a
-work-around into a better place:
+        gconfd-2-2696  [000]  4467.268935: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=7
+        gconfd-2-2696  [000]  4467.268946: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268947: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=8
+        gconfd-2-2696  [000]  4467.268959: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268960: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=9
+        gconfd-2-2696  [000]  4467.268972: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268973: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=10
+        gconfd-2-2696  [000]  4467.268991: grab_cache_page_write_begin <-ext3_write_begin
+        gconfd-2-2696  [000]  4467.268992: grab_cache_page_write_begin: page=          (null) mapping=ffff8800676a9460 index=11
+        gconfd-2-2696  [000]  4467.269005: grab_cache_page_write_begin <-ext3_write_begin
 
-http://marc.info/?l=linux-kernel&m=129192831709856&w=2
+Which shows that a lot of calls from ext3_write_begin will result in
+the page returned by "find_lock_page" will be NULL.
 
-I have yet to see an updated patch set, only personal attacks.
+Acked-by: Nick Piggin <npiggin@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ mm/filemap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Sarah Sharp
+diff --git a/mm/filemap.c b/mm/filemap.c
+index ea89840..d557fe7 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2218,7 +2218,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 		gfp_notmask = __GFP_FS;
+ repeat:
+ 	page = find_lock_page(mapping, index);
+-	if (likely(page))
++	if (page)
+ 		return page;
+ 
+ 	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
+-- 
+1.7.2.3
+
+
