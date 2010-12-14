@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab0LNAHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:07:10 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36915 "EHLO hera.kernel.org"
+	id S1757334Ab0LNAKQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:10:16 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36981 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756584Ab0LNAHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:07:09 -0500
-Date: Tue, 14 Dec 2010 00:06:59 GMT
+	id S1756138Ab0LNAKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:10:14 -0500
+Date: Tue, 14 Dec 2010 00:09:52 GMT
 From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        hjl.tools@gmail.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com
+        stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
+        hjl.tools@gmail.com
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/urgent] x86, gcc-4.6: Use gcc -m options when building vdso
-Message-ID: <tip-0406d960122bce54e6610e2e6a63e8cc6f3699e3@git.kernel.org>
-Git-Commit-ID: 0406d960122bce54e6610e2e6a63e8cc6f3699e3
+Message-ID: <tip-de2a8cf98ecdde25231d6c5e7901e2cffaf32af9@git.kernel.org>
+Git-Commit-ID: de2a8cf98ecdde25231d6c5e7901e2cffaf32af9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 00:07:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 14 Dec 2010 00:09:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0406d960122bce54e6610e2e6a63e8cc6f3699e3
-Gitweb:     http://git.kernel.org/tip/0406d960122bce54e6610e2e6a63e8cc6f3699e3
+Commit-ID:  de2a8cf98ecdde25231d6c5e7901e2cffaf32af9
+Gitweb:     http://git.kernel.org/tip/de2a8cf98ecdde25231d6c5e7901e2cffaf32af9
 Author:     H. Peter Anvin <hpa@linux.intel.com>
 AuthorDate: Mon, 13 Dec 2010 16:01:38 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 13 Dec 2010 16:01:38 -0800
+CommitDate: Mon, 13 Dec 2010 16:08:37 -0800
 
 x86, gcc-4.6: Use gcc -m options when building vdso
 
@@ -46,6 +48,7 @@ is no reason to conditionalize it any more.
 Reported-by: H. J. Lu <hjl.tools@gmail.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 LKML-Reference: <tip-*@git.kernel.org>
+Cc: <stable@kernel.org>
 ---
  arch/x86/vdso/Makefile |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
