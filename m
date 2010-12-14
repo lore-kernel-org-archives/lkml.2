@@ -1,287 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab0LNKP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 05:15:59 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:60628 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab0LNKP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 05:15:58 -0500
-Date: Tue, 14 Dec 2010 15:46:07 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
-        Amerigo Wang <amwang@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [Patch 14/21] Create ELF header
-Message-ID: <20101214154607.3ace278c@suzukikp>
-In-Reply-To: <20101214152259.67896960@suzukikp>
-References: <20101214152259.67896960@suzukikp>
-Organization: IBM
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757193Ab0LNKQj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 05:16:39 -0500
+Received: from nwd2mail10.analog.com ([137.71.25.55]:50390 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab0LNKQh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 05:16:37 -0500
+X-IronPort-AV: E=Sophos;i="4.59,341,1288584000"; 
+   d="scan'208";a="26163138"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Drivers <Drivers@analog.com>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Date: Tue, 14 Dec 2010 10:16:31 +0000
+Subject: RE: [PATCH 2/3] IIO: dds.h convenience macros
+Thread-Topic: [PATCH 2/3] IIO: dds.h convenience macros
+Thread-Index: AcubC7lR+RiTxHnCRqS72rr3mGTkzwAawtHg
+Message-ID: <544AC56F16B56944AEC3BD4E3D591771324BCA85C6@LIMKCMBX1.ad.analog.com>
+References: <1292257644-26477-1-git-send-email-michael.hennerich@analog.com>
+ <1292257644-26477-2-git-send-email-michael.hennerich@analog.com>
+ <4D068E5E.4060707@cam.ac.uk>
+In-Reply-To: <4D068E5E.4060707@cam.ac.uk>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build the ELF header on the fly for the very first read request. The ELF Header,
- Program Headers are stored in a buffer for processing future read() requests.
+> Jonathan Cameron wrote on 2010-12-13:
+> > On 12/13/10 16:27, michael.hennerich@analog.com wrote:
+> > From: Michael Hennerich <michael.hennerich@analog.com>
+> >
+> > Changes since RFC/v1:
+> > IIO: Apply list review feedback
+> >
+> > Apply list review feedback:
+> >     Rename attributes to fit IIO convention used in other drivers.
+> >     Provide ddsX_out_enable as opposed to ddsX_out_disable.
+> >     Fix typos.
+> > Hi Michael,
+>
+> I'm afraid all the comments on docs carry over to this file.  If you
+> aren't particularly attached to having docs in here I'd be tempted to
+> drop them purely so we don't end up with two differing sets in the
+> future.  The docs file is more or less obligatory whereas nice docs
+> in here is just a bonus for driver devs.  I really don't mind, but
+> we'll have to keep a close eye to ensure they don't get significantly
+> out of sync!
 
-gencore-elf.c contains the ELF class specific functions.
+I'll drop the descriptions within the comments, but keep the file names.
 
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Signed-off-by: Ananth N.Mavinakayanahalli <ananth@in.ibm.com>
+> The other comments are almost all about restricting parameters to be
+> write only. I think this is a bit restrictive and some drivers may
+> allow much of this stuff to be read back (even if only from cache).
 
----
- fs/proc/Makefile      |    2 
- fs/proc/gencore-elf.c |  177 ++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/proc/gencore.c     |    5 +
- fs/proc/gencore.h     |    6 +
- 4 files changed, 189 insertions(+), 1 deletion(-)
+The parts I looked at so far were write only parts, but right you are.
+I'll add the read methods to the macros.
 
-Index: linux-2.6.36-rc7/fs/proc/gencore.h
-===================================================================
---- linux-2.6.36-rc7.orig/fs/proc/gencore.h
-+++ linux-2.6.36-rc7/fs/proc/gencore.h
-@@ -7,6 +7,12 @@
- struct core_proc {
- 	struct list_head list;
- 	struct task_struct *task;
-+	void *shdr;		/* elf_shdr, in case nphdrs > PN_XNUM */
-+	char *elf_buf;		/* buffer for elf_hdr + phdrs + notes */
-+	size_t elf_buflen;	/* size of elf_buf */
-+	size_t nphdrs;		/* number of phdrs */
- };
- 
-+extern ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
-+					size_t buflen, loff_t *foffset);
- #endif
-Index: linux-2.6.36-rc7/fs/proc/gencore-elf.c
-===================================================================
---- /dev/null
-+++ linux-2.6.36-rc7/fs/proc/gencore-elf.c
-@@ -0,0 +1,177 @@
-+/*
-+ * Application core dump - ELF Class specific code
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2010
-+ */
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/freezer.h>
-+#include <linux/elf.h>
-+#include <linux/elfcore.h>
-+#include <linux/elfcore-internal.h>
-+
-+#ifdef CORE_DUMP_USE_REGSET
-+#include <linux/regset.h>
-+#endif
-+
-+#include "gencore.h"
-+
-+static void get_elfhdr_size(struct core_proc *cp)
-+{
-+	struct vm_area_struct *gate_vma;
-+	int segs;
-+
-+	segs = cp->task->mm->map_count;
-+	segs += elf_core_extra_phdrs();
-+
-+	gate_vma = get_gate_vma(cp->task);
-+	if (gate_vma != NULL)
-+		segs++;
-+
-+	/* One phdr for PT_NOTE */
-+	segs++;
-+
-+	cp->nphdrs = segs;
-+	cp->elf_buflen = sizeof(struct elfhdr) +
-+			(cp->nphdrs * sizeof(struct elf_phdr));
-+	cp->elf_buflen = roundup(cp->elf_buflen, ELF_EXEC_PAGESIZE);
-+
-+	return;
-+}
-+
-+/*
-+ * Fill the elf_hdr and the phdrs
-+ * Returns 0 on success. On error, returns errno
-+ */
-+static int create_elf_header(struct core_proc *cp)
-+{
-+	struct elfhdr *elf = (struct elfhdr *)cp->elf_buf;
-+	struct elf_phdr *note;
-+	struct vm_area_struct *vma, *gate_vma = get_gate_vma(cp->task);
-+	char *bufp;
-+	off_t dataoff, offset;
-+	short e_phnum = (cp->nphdrs > PN_XNUM ? PN_XNUM : cp->nphdrs);
-+	size_t exphdrs_sz = 0;
-+	unsigned long limit = elf_core_extra_phdrs() * sizeof(struct elf_phdr);
-+
-+#ifdef CORE_DUMP_USE_REGSET
-+	const struct user_regset_view *view = task_user_regset_view(cp->task);
-+
-+	fill_elf_header(elf, e_phnum, view->e_machine, view->e_flags,
-+					view->ei_osabi);
-+#else
-+	fill_elf_header(elf, e_phnum, ELF_ARCH, ELF_CORE_EFLAGS, ELF_OSABI);
-+#endif
-+	offset = sizeof(struct elfhdr);
-+ 	bufp = cp->elf_buf + offset;
-+	dataoff = offset + (cp->nphdrs * sizeof(struct elf_phdr));
-+
-+	/* Setup ELF PT_NOTE */
-+	note = (struct elf_phdr*)bufp;
-+	bufp += sizeof(struct elf_phdr);
-+	offset += sizeof(struct elf_phdr);
-+	note->p_type = PT_NOTE;
-+	note->p_offset = dataoff;
-+	note->p_vaddr = 0;
-+	note->p_paddr = 0;
-+	/* TODO: Needs to be populated with the size of the notes section */
-+	note->p_memsz = 0;
-+	note->p_flags = 0;
-+	note->p_align = 0;
-+
-+	dataoff = cp->elf_buflen;
-+
-+	/* Write the phdrs for memory segments */
-+	down_read(&cp->task->mm->mmap_sem);
-+	for (vma = first_vma(cp->task, gate_vma); vma != NULL;
-+			vma = next_vma(vma, gate_vma)) {
-+		struct elf_phdr *phdr = (struct elf_phdr  *)bufp;
-+
-+		bufp += sizeof(struct elf_phdr);
-+		offset += sizeof(struct elf_phdr);
-+
-+		phdr->p_type = PT_LOAD;
-+		phdr->p_offset = dataoff;
-+		phdr->p_vaddr = vma->vm_start;
-+		phdr->p_paddr = 0;
-+		phdr->p_filesz = vma_dump_size(cp->task, vma, cp->task->mm->flags);
-+		phdr->p_memsz = vma->vm_end - vma->vm_start;
-+		phdr->p_flags = (vma->vm_flags & VM_READ) ? PF_R : 0;
-+		if (vma->vm_flags & VM_WRITE)
-+			phdr->p_flags |= PF_W;
-+		if (vma->vm_flags & VM_EXEC)
-+			phdr->p_flags |= PF_X;
-+		phdr->p_align = ELF_EXEC_PAGESIZE;
-+
-+		dataoff += phdr->p_filesz;
-+	}
-+	up_read(&cp->task->mm->mmap_sem);
-+
-+	if (!elf_core_copy_extra_phdrs(bufp, dataoff, &exphdrs_sz, limit))
-+		return -EIO;
-+	bufp += exphdrs_sz;
-+	dataoff += elf_core_extra_data_size();
-+
-+	if (e_phnum == PN_XNUM) {
-+		cp->shdr = kzalloc(sizeof(struct elf_shdr), GFP_KERNEL);
-+		if (!cp->shdr)
-+			return -ENOMEM;
-+		fill_extnum_info(elf, (struct elf_shdr *)cp->shdr,
-+						dataoff, cp->nphdrs);
-+		dataoff += sizeof(struct elf_shdr);
-+	}
-+
-+	return 0;
-+}
-+
-+ssize_t elf_read_gencore(struct core_proc *cp, char __user *buffer,
-+				size_t buflen, loff_t *fpos)
-+{
-+	ssize_t ret = 0;
-+
-+	if (!cp->elf_buf) {
-+		get_elfhdr_size(cp);
-+
-+		cp->elf_buf = kzalloc(cp->elf_buflen, GFP_KERNEL);
-+		if (!cp->elf_buf) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		ret = create_elf_header(cp);
-+		if (ret < 0)
-+			goto out;
-+	}
-+
-+	if (*fpos < cp->elf_buflen) {
-+		size_t bcp = cp->elf_buflen - *fpos;
-+
-+		bcp = (bcp < buflen) ? bcp : buflen;
-+		if (copy_to_user(buffer, (cp->elf_buf + *fpos), bcp)) {
-+			ret = -EFAULT;
-+			goto out;
-+		} else {
-+			ret = bcp;
-+			*fpos += bcp;
-+			buflen -= bcp;
-+			buffer += bcp;
-+		}
-+	}
-+
-+out:
-+	return ret;
-+}
-Index: linux-2.6.36-rc7/fs/proc/Makefile
-===================================================================
---- linux-2.6.36-rc7.orig/fs/proc/Makefile
-+++ linux-2.6.36-rc7/fs/proc/Makefile
-@@ -19,7 +19,7 @@ proc-y	+= stat.o
- proc-y	+= uptime.o
- proc-y	+= version.o
- proc-y	+= softirqs.o
--proc-$(CONFIG_ELF_CORE)	+= gencore.o
-+proc-$(CONFIG_ELF_CORE)	+= gencore.o gencore-elf.o
- proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
- proc-$(CONFIG_NET)		+= proc_net.o
- proc-$(CONFIG_PROC_KCORE)	+= kcore.o
-Index: linux-2.6.36-rc7/fs/proc/gencore.c
-===================================================================
---- linux-2.6.36-rc7.orig/fs/proc/gencore.c
-+++ linux-2.6.36-rc7/fs/proc/gencore.c
-@@ -63,6 +63,8 @@ static ssize_t read_gencore(struct file 
- 	}
- 	mutex_unlock(&core_mutex);
- 
-+	ret = elf_read_gencore(cp, buffer, buflen, fpos);
-+
- out:
- 	put_task_struct(task);
- 	return ret;
-@@ -89,6 +91,9 @@ static int release_gencore(struct inode 
- 	cp = get_core_proc(task);
- 	if (cp) {
- 		list_del(&cp->list);
-+		if (cp->shdr)
-+			kfree(cp->shdr);
-+		kfree(cp->elf_buf);
- 		kfree(cp);
- 	}
- 	mutex_unlock(&core_mutex);
+> Jonathan
+> > Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+> > ---
+> >  drivers/staging/iio/dds/dds.h |  152
+> +++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 152 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/staging/iio/dds/dds.h
+> >
+> > diff --git a/drivers/staging/iio/dds/dds.h
+> b/drivers/staging/iio/dds/dds.h
+> > new file mode 100644
+> > index 0000000..a8dd7be
+> > --- /dev/null
+> > +++ b/drivers/staging/iio/dds/dds.h
+> > @@ -0,0 +1,152 @@
+> > +/*
+> > + * dds.h - sysfs attributes associated with DDS devices
+> > + *
+> > + * Copyright (c) 2010 Analog Devices Inc.
+> > + *
+> > + * Licensed under the GPL-2 or later.
+> > + */
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_freqY
+> > + * Description:
+> > + * Stores frequency into tuning word register Y.
+> > + * There can be more than one ddsX_freqY file, which allows for pin
+> controlled
+> > + * FSK Frequency Shift Keying (ddsX_pincontrol_freq_en is active) or
+> the user
+> > + * can control the desired active tuning word by writing Y to the
+> > + * ddsX_freqsymbol file.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_FREQ(_device, _num, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_freq##_num, S_IWUSR, NULL, _store,
+> _addr)
+> Can envision some parts allowing this to be read back. So I'd be
+> inclined
+> to make mode a parameter of the macro and allow a read function.  Also
+> is _device
+> a little misleading?  Perhaps use _channel?
+
+Right, channel fits better.
+
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_freqY_scale
+> > + * Description:
+> > + * Scale to be applied to ddsX_freqY in order to obtain the
+> > + * desired value in Hz. If shared across all frequency registers
+> > + * Y is not present.
+> > + */
+> > +
+> > +#define IIO_CONST_ATTR_FREQ_SCALE(_device, _string)
+>       \
+> > +   IIO_CONST_ATTR(dds##_device##_freq_scale, _string)
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_freqsymbol
+> > + * Description:
+> > + * Specifies the active output frequency tuning word. The value
+> corresponds
+> > + * to the Y in ddsX_freqY. To exit this mode the user can write
+> > + * ddsX_pincontrol_freq_en or ddsX_out_disable file.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_FREQSYMBOL(_device, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_freqsymbol,                      \
+> > +                   S_IWUSR, NULL, _store, _addr);
+> Again I can envision parts for which this may be read back so this is
+> probably
+> to restrictive.
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_phaseY
+> > + * Description:
+> > + * Stores phase into phase register Y.
+> > + * There can be more than one ddsX_phaseY file, which allows for pin
+> controlled
+> > + * PSK Phase Shift Keying (ddsX_pincontrol_phase_en is active) or
+> the user can
+> > + * control the desired phase Y which is added to the phase
+> accumulator output
+> > + * by writing Y to the en_phase file.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_PHASE(_device, _num, _store, _addr)           \
+> > +   IIO_DEVICE_ATTR(dds##_device##_phase##_num,                     \
+> > +                   S_IWUSR, NULL, _store, _addr)
+> Another one that I think should allow reading (if the driver wants to
+> provide
+> it anyway!)
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_phaseY_scale
+> > + * Description:
+> > + * Scale to be applied to ddsX_phaseY in order to obtain the
+> > + * desired value in rad. If shared across all phase registers
+> > + * Y is not present.
+> > + */
+> > +
+> > +#define IIO_CONST_ATTR_PHASE_SCALE(_device, _string)
+>       \
+> > +   IIO_CONST_ATTR(dds##_device##_phase_scale, _string)
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_phasesymbol
+> > + * Description:
+> > + * Specifies the active phase Y which is added to the phase
+> accumulator output.
+> > + * The value corresponds to the Y in ddsX_phaseY. To exit this mode
+> the user
+> > + * can write ddsX_pincontrol_phase_en or disable file.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_PHASESYMBOL(_device, _store, _addr)           \
+> > +   IIO_DEVICE_ATTR(dds##_device##_phasesymbol,                     \
+> > +                   S_IWUSR, NULL, _store, _addr);
+> Another that I'd imagine some drivers may allow to be read back.
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_pincontrol_en
+> > + * Description:
+> > + * Both, the active frequency and phase is controlled by the
+> respective
+> > + * phase and frequency control inputs.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_PINCONTROL_EN(_device, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_pincontrol_en,                   \
+> > +                   S_IWUSR, NULL, _store, _addr);
+> ditto.
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_pincontrol_freq_en
+> > + * Description:
+> > + * The active frequency is controlled by the respective
+> > + * frequency control/select inputs.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_PINCONTROL_FREQ_EN(_device, _store, _addr)
+>               \
+> > +   IIO_DEVICE_ATTR(dds##_device##_pincontrol_freq_en,              \
+> > +                   S_IWUSR, NULL, _store, _addr);
+> ditto.
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_pincontrol_phase_en
+> > + * Description:
+> > + * The active phase is controlled by the respective
+> > + * phase control/select inputs.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_PINCONTROL_PHASE_EN(_device, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_pincontrol_phase_en,             \
+> > +                   S_IWUSR, NULL, _store, _addr);
+> ditto
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_out_enable
+> > + * Description:
+> > + * Disables any signal generation on all outputs.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_OUT_ENABLE(_device, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_out_enable,                      \
+> > +                   S_IWUSR, NULL, _store, _addr);
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_outY_enable
+> > + * Description:
+> > + * Disables any signal generation on output Y.
+> Comment is lagging changes in the macro.
+> > + */
+> > +
+> > +#define IIO_DEV_ATTR_OUTY_ENABLE(_device, _output, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_out##_output##_enable,           \
+> > +   S_IWUSR, NULL, _store, _addr);
+> Why write only?
+> > +
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype
+> > + * Description:
+> > + * Specifies the output waveform. (sine, triangle, ramp, square,
+> ...)
+> > + * For a list of available output waveform options read
+> available_output_modes.
+> > + */
+> > +#define IIO_DEV_ATTR_OUT_WAVETYPE(_device, _output, _store, _addr)
+>       \
+> > +   IIO_DEVICE_ATTR(dds##_device##_out##_output##_wavetype,
+>       \
+> > +                   S_IWUSR, NULL, _store, _addr);
+>
+> > +/**
+> > + * /sys/bus/iio/devices/device[n]/ddsX_outY_wavetype_available
+> > + * Description:
+> > + * Lists all available output waveform options.
+> > + */
+> > +#define IIO_CONST_ATTR_OUT_WAVETYPES_AVAILABLE(_device, _output,
+> _modes)\
+> > +   IIO_CONST_ATTR(dds##_device##_out##_output##_wavetype_available,\
+> > +                   _modes);
+> > --
+> > 1.6.0.2
+> >
+> >
+
