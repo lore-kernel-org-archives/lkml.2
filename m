@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab0LNJKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 04:10:47 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:33940 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab0LNJKn convert rfc822-to-8bit (ORCPT
+	id S1757988Ab0LNJKu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 04:10:50 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:49867 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757842Ab0LNJKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 04:10:43 -0500
-Subject: Re: kernel BUG at mm/truncate.c:475!
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Michael Leun <lkml20101129@newton.leun.net>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <alpine.LSU.2.00.1012132246580.6071@sister.anvils>
-References: <20101130194945.58962c44@xenia.leun.net>
-	 <alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com>
-	 <E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu>
-	 <20101201124528.6809c539@xenia.leun.net>
-	 <E1PNqO1-0005px-9h@pomaz-ex.szeredi.hu>
-	 <20101202084159.6bff7355@xenia.leun.net>
-	 <20101202091552.4a63f717@xenia.leun.net>
-	 <E1PO5gh-00079U-Ma@pomaz-ex.szeredi.hu>
-	 <20101202115722.1c00afd5@xenia.leun.net>
-	 <20101203085350.55f94057@xenia.leun.net>
-	 <E1PPaIw-0004pW-Mk@pomaz-ex.szeredi.hu>
-	 <20101206204303.1de6277b@xenia.leun.net>
-	 <E1PRQDn-0007jZ-5S@pomaz-ex.szeredi.hu>
-	 <20101213142059.643f8080.akpm@linux-foundation.org>
-	 <alpine.LSU.2.00.1012132246580.6071@sister.anvils>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 14 Dec 2010 10:10:07 +0100
-Message-ID: <1292317807.6803.1324.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 14 Dec 2010 04:10:47 -0500
+Message-ID: <4D073472.10104@euromail.se>
+Date: Tue, 14 Dec 2010 10:10:10 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Peter Hutterer <peter.hutterer@who-t.net>
+CC: Chase Douglas <chase.douglas@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
+References: <1292001842-5000-1-git-send-email-rydberg@euromail.se> <4D065BDE.5020107@canonical.com> <4D068E3C.8080100@euromail.se> <4D06A60D.7010409@canonical.com> <4D06AB66.8090909@euromail.se> <20101214043635.GB12059@salty.local>
+In-Reply-To: <20101214043635.GB12059@salty.local>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PSQtu-0008Ga-AW.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PSQtu-0008Ga-AW f5f0c6d6104d214c728324eff9a14889
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 23:31 -0800, Hugh Dickins wrote:
-> > then I suspect all the vm_truncate_count/restart_addr stuff can go away?
+On 12/14/2010 05:36 AM, Peter Hutterer wrote:
+
+> On Tue, Dec 14, 2010 at 12:25:26AM +0100, Henrik Rydberg wrote:
+>>>> The envelope contacts serve as a way to detect a small area of fingers or a
+>>
+>>>> large area of fingers. There is nothing inherently problematic with having one
+>>>> or three or more such contacts.
+>>>
+>>> Then I'm more confused :).
+>>>
+>>> I see one problem: devices that report two touch points, (X1, Y1) and
+>>> (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
+>>> instead. Using a rectangle helps resolve this issue for panning and
+>>> pinching, though not for rotation.
+>>
+>>
+>> If panning and pinching and rotation could all be recovered properly, then the
+>> individual contacts could actually have been reconstructed properly in the first
+>> place. This is the whole point - there is not enough information available for
+>> rotation to be recovered properly.
 > 
-> That would be lovely, but in fact no: it's guarding against operations on
-> vmas, things like munmap and mprotect, which can shuffle the prio_tree
-> when i_mmap_lock is dropped, without i_mutex ever being taken.
-> 
-> However, if we adopt Peter's preemptible mmu_gather patches, i_mmap_lock
-> becomes a mutex, so there's then no need for any of this (I think Peter
-> just did a straight conversion here, leaving it in, but it becomes
-> pointless and would gladly be removed). 
-
-I'm still trying to sell that series, so if you see any value in it,
-please reply with positive feedback ;-)
-
-Also, the whole vm_truncate_count/restart_addr isn't entirely useless,
-its still a lock break which might help with long held locks. Imagine
-someone trying to unmap several TB worth of pages at once (not entirely
-beyond the realm of possibility today, and we all know tomorrow will be
-huge).
+> can you post an example event stream of the MT_ENVELOPE tool? I'm having
+> trouble wrapping my head around it.
 
 
+Here is an example for you: You sit in a car. You turn your steering wheel left
+or right to follow the road. Now, imagine that 40% of the time, when you turn
+left, the car actually turns right. This is the behavior you get from the raw
+data. Now, instead soak your gloves in soap. At least now you know that your car
+will go straight 100% of the time. The MT_ENVELOPE tool is the soapy glove.
+That's all there is to it.
+
+The synaptics driver patch sent recently contains an example event stream
+generator, in case you want to dwell on more details.
+
+Personally, I am done bending myself backwards to support "old" or "semi-mt"
+hardware I never use myself. If somebody cares deeply enough, send a patch. Or
+forever hold your peace.
+
+Thanks.
+Henrik
