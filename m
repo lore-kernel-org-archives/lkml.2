@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab0LNGkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 01:40:13 -0500
-Received: from mail-iw0-f194.google.com ([209.85.214.194]:37122 "EHLO
-	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632Ab0LNGkL convert rfc822-to-8bit (ORCPT
+	id S1753977Ab0LNGlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 01:41:45 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42968 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab0LNGlo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 01:40:11 -0500
+	Tue, 14 Dec 2010 01:41:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nRtIsDEDSlqfIWICKSFFk7KyfvHp9LgsE3r4pRX0ILltlCgYFAwwirgKZ+Hch0G1CQ
-         aQSuZhgHs7Ygmd1L/H62ij4FHcARlbC7iJWSApcZ8FvDOX+rPn+NCdyvK8OLxGDY5LaV
-         MvasRpLW0c36UCfrqrAXMS154dM6vrZR6WkIQ=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=crUAGdmM82JQXV2wwt6W3Vrqe2xObUGUWHiSpVzUf7aP/0Fjs/L4N7a0IM8er/dcow
+         NOdOKZSBCdzyPDGt12Rv4KoW+M6IbT1xtWIqwbmxSANJlLihMxwCBnLxPn1SN7q/wt5W
+         7KeEXBWfDoU4uNmVqggYVARYZskOw+BAsbTIs=
 MIME-Version: 1.0
-In-Reply-To: <20101213113830.GE6017@pengutronix.de>
-References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de>
-	<1291902441-24712-6-git-send-email-s.hauer@pengutronix.de>
-	<AANLkTikZowDCK4JPiCyEou1ekRuYA1qGnKrBPT5dXB+8@mail.gmail.com>
-	<20101213113830.GE6017@pengutronix.de>
-Date: Tue, 14 Dec 2010 14:40:09 +0800
-Message-ID: <AANLkTikwTjUUzc6BovFKXq-FverNMqg-ustodk+sKUCY@mail.gmail.com>
-Subject: Re: [PATCH 5/9] Add i.MX5 framebuffer driver
-From: Liu Ying <liu.y.victor@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Zhang Lily-R58066 <r58066@freescale.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTin9qsjtc8J=Z_wxiKAn3o5kTcEVrOzkoBRT+=ih@mail.gmail.com>
+References: <AANLkTinXD4_LtL=hqJg2nLosiqU=ManvryN1RiSEHWUU@mail.gmail.com>
+	<AANLkTin9qsjtc8J=Z_wxiKAn3o5kTcEVrOzkoBRT+=ih@mail.gmail.com>
+Date: Tue, 14 Dec 2010 07:41:43 +0100
+Message-ID: <AANLkTikpKY7NyUkkzRwgLWrTc4bTgv-=dOFADQABgS_1@mail.gmail.com>
+Subject: Re: Agenda items for DFS IRC Meeting #linux-wireless on freenode 2010-12-14
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        Kathy Giori <Kathy.Giori@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Felix Fietkau <nbd@openwrt.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sascha,
+On Tue, Dec 14, 2010 at 7:28 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Mon, Dec 13, 2010 at 11:39 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+>> As noted we have an IRC meeting tomorrow scheduled at 9am PST time to
+>> start upstreaming DFS discussions.
+>
+> Arrrgh, PST?
+> (If you ask me right now, I would not know how to look up PST-time.)
+> Can you please give such date-releated infos as UTC next time, please.
+>
+> $ LC_ALL=C date --utc
+> Tue Dec 14 06:26:53 UTC 2010
+>
 
-Please find my feedback with [LY] embedded.
+According to [1]:
 
-And, a bug related with this patch:
-1) Bootup the babbage board.
-2) echo U:640x480p-60 > /sys/class/graphics/fb0/mode
-3) cat /sys/class/graphics/fb0/virtual_size, it shows '640,480'.
-4) echo 640,960 > /sys/class/graphics/fb0/virtual_size, change virtual
-yres to be 960.
-5) cat /sys/class/graphics/fb0/virtual_size, it still shows '640,480'.
-I think this is caused by 'var->yres_virtual = var->yres;' in custom
-fb_set_par() function(Sorry, I cannot make the comment inline this
-time, as I don't find the original code within the mail I am
-replying). This makes fb0 use only one block of memory whose size is
-equal to screen size, so pan display can not really play her role and
-screen tearing issue may happen.
+PST â€“ Pacific Standard Time
+Time zone offset: UTC - 8 hours
+PST is 8 hours behind of Coordinated Universal Time (UTC)
 
-Best Regards,
-Liu Ying
+Current time in Los Angeles
+Monday, December 13, 2010 at 10:41:00 PM PST
 
-2010/12/13 Sascha Hauer <s.hauer@pengutronix.de>:
-> On Sun, Dec 12, 2010 at 02:13:40PM +0800, Liu Ying wrote:
->> Hello, Sascha,
->>
->> I have following comments to this patch:
->> 1) Please modify the commit message, as IPUv3 is not embedded in i.MX50 SoC.
->
-> ok.
->
->> 2) ADC is not supported yet in the framebuffer driver, so please
->> modify this comment:
->>    > + * Framebuffer Framebuffer Driver for SDC and ADC.
->
-> ok.
->
->> 3) 'ipu_dp_set_window_pos()' is called only once in
->> imx_ipu_fb_set_par_overlay(). So, the framebuffer driver doesn't
->> support to change the overlay framebuffer position. Need a
->> mechanism/interface for users to change the overlay framebuffer
->> position.
->
-> Yes. The overlay support is currently only present in the driver because
-> I didn't want to break it in general. There is no generic overlay API in
-> the kernel and I didn't want to invent the n+1 API. Currently the
-> possible use cases of the overlay support are not clear to me. Number
-> one use case would probably be to display video output, but the
-> corresponding driver would be a v4l2 driver, so in this case we would
-> only need an in-kernel API.
-> Anyway, I have not the resources to implement complete overlay support.
-> So either we keep it like it is and it more has an example character
-> or we remove it completely from the driver for now.
->
->> 4) Need to make sure the framebuffer on DP-FG is blanked before the
->> framebuffer on DP-BG is blanked. Meanwhile, the framebuffer on DP-FG
->> should be unblanked after the framebuffer on DP-BG is unblanked
->> 5) Need to check the framebuffer on DP-FG doesn't run out of the range
->> of the framebuffer on DP-BG.
->
-> I tend to remove the overlay support.
->
->> 6) I prefer to find the video mode in modedb first, and if we cannot
->> find the video mode in common video mode data base, we can find a
->> video mode in custom video mode data base which is defined in platform
->> data. In this way, we don't need to export common modefb.
->
-> I exported the modedb to be able to show the different modes under
-> /sys/class/graphics/fb0/modes and to set it with
-> /sys/class/graphics/fb0/mode. If you want this there is no way around
-> exporting it. The ioctl interface for mode setting is independent of the
-> specific modes anyway.
-[LY]  Just a concern. If a platform choose to add the generic video
-mode data base to IPUv3 framebuffer modelist, 'cat
-/sys/class/graphics/fb0/modes' will show all the video modes in the
-generic data base to users. I am not sure whether showing them to
-users means the IPUv3 framebuffer driver acknowledges to support all
-of them or not. I tried to do 'echo U:1800x1440p-70 >
-/sys/class/graphics/fb0/mode' with the kernel on ipuv3 branch, there
-will be a kernel dump(seems it can not allocate enough memory).
->
-> BTW please make comments specific to specific code inline.
-[LY] Ok.
->
-> Sascha
->
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->
+Looks like I can join the discussion :-).
+
+- Sedat -
+
+[1] http://timeanddate.com/library/abbreviations/timezones/na/pst.html
