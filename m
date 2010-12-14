@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab0LNJ44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 04:56:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58429 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758578Ab0LNJ4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 04:56:53 -0500
-Message-ID: <4D073F9B.7060002@cn.fujitsu.com>
-Date: Tue, 14 Dec 2010 17:57:47 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1758844Ab0LNJ51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 04:57:27 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:54590 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758073Ab0LNJ5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 04:57:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=xjVoX7hSEUFD1X3AS7v7cr1Dt+qS25eju3viFsX6Dz56eC+UTyrLxmVsBBVyjfGiTX
+         6RAYEl3o4+6FukGDaaWMTHwtrfK5PMQeFjoTYHB2wfR8XAg4AAjhHfDgtA2K9p+NxbgP
+         YdsX239LRdtk8AZaQPgkZTgWH6OdGelwMrJrw=
+Message-ID: <4D073FA9.9020801@gmail.com>
+Date: Tue, 14 Dec 2010 10:58:01 +0100
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kvm,x86: return true when user space query KVM_CAP_USER_NMI
- extension
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 17:56:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-14 17:56:52,
-	Serialize complete at 2010-12-14 17:56:52
-Content-Transfer-Encoding: 7bit
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+References: <1291255347.12777.116.camel@sli10-conroe> <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe> <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe>
+In-Reply-To: <1292288924.2323.458.camel@sli10-conroe>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-userspace may check this extension in runtime.
+Hello,
 
-Signed-off-by:  Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index cdac9e5..3d6b9ec 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1909,6 +1909,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_NOP_IO_DELAY:
- 	case KVM_CAP_MP_STATE:
- 	case KVM_CAP_SYNC_MMU:
-+	case KVM_CAP_USER_NMI:
- 	case KVM_CAP_REINJECT_CONTROL:
- 	case KVM_CAP_IRQ_INJECT_STATUS:
- 	case KVM_CAP_ASSIGN_DEV_IRQ:
+On 12/14/2010 02:08 AM, Shaohua Li wrote:
+> I don't understand what you mean. defining a cachine line size macro
+> for all archs? There is such macro, but using it in vmlinux.ld.h
+> always report error. There is some other defines which can't be
+> included in a link script.
+
+I haven't really looked through it but wouldn't it be possible to
+ifdef it.  ie. if cacheline macro is available, align it to it;
+otherwise, don't.  And, ultimately, the correct thing to do is making
+it cacheline aligned on all archs.  There can be several different
+ways to get there but it might just as well be making cacheline size
+available in all archs first and then update the PERCPU macro.
+
+Thank you.
+
+-- 
+tejun
