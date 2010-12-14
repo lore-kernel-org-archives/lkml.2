@@ -1,262 +1,441 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0LNMFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 07:05:47 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33599 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab0LNMFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 07:05:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=e32oKJ8wxAXny0E5Gliem07BidNLJsw1bSyiKWtVZ9inFwzxaECX2kRDySqHYCOSyT
-         cozvhE+ApIPl1uHcvDbNstwmo4yf/itmNGbV5XDWhcW+hBrDE8i/YQp1nDx3/2cwij98
-         tCEbEBUGBuC8ZqU73XFXX4BLtcDEiUMxyevC4=
-Date: Tue, 14 Dec 2010 20:05:34 +0800
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Brandon Philips <brandon@ifup.org>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Clayton <chris2553@googlemail.com>
-Subject: Re: [PATCH] bttv: fix mutex use before init
-Message-ID: <20101214120534.GA2483@darkstar>
-References: <20101212131550.GA2608@darkstar>
- <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
- <20101214003024.GA3575@hanuman.home.ifup.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214003024.GA3575@hanuman.home.ifup.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758457Ab0LNMGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 07:06:53 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41052 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757192Ab0LNMGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 07:06:50 -0500
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, linux-kernel@vger.kernel.org
+Cc: padovan@profusion.mobi, marcel@holtmann.org,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 2/2] drivers:staging: ti-st: update the TI ST BT driver
+Date: Tue, 14 Dec 2010 06:06:40 -0600
+Message-Id: <1292328400-7649-3-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1292328400-7649-2-git-send-email-pavan_savoy@ti.com>
+References: <1292328400-7649-1-git-send-email-pavan_savoy@ti.com>
+ <1292328400-7649-2-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 04:30:24PM -0800, Brandon Philips wrote:
-> On 17:13 Sun 12 Dec 2010, Torsten Kaiser wrote:
-> >  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
-> > &btv->init.cap.vb_lock
-> >  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
-> 
-> That seems like a reasonable suggestion. An openSUSE user submitted this
-> bug to our tracker too. Here is the patch I am having him test.
-> 
-> Would you mind testing it?
-> 
-> From 456dc0ce36db523c4c0c8a269f4eec43a72de1dc Mon Sep 17 00:00:00 2001
-> From: Brandon Philips <bphilips@suse.de>
-> Date: Mon, 13 Dec 2010 16:21:55 -0800
-> Subject: [PATCH] bttv: fix locking for btv->init
-> 
-> Fix locking for the btv->init by using btv->init.cap.vb_lock and in the
-> process fix uninitialized deref introduced in c37db91fd0d.
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-Tested this patch, seems fine. But there's still possible deadlock, kernel hangs with lockdep warning, I think maybe it is another issue.
+Update the bluetooth driver for TI-ST with the latest
+bluetooth btwilink driver v7, which had undergone several
+reviews.
+The driver by itself was un-acceptable because of certain
+design/architecture in the underlying TI ST driver.
+So, park this driver here, as plans to work on the underlying
+driver layer (TI-ST) is carried out.
 
-Could some v4l2 guys who have deep understand about bttv driver have a look at this issue?
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/staging/ti-st/Kconfig    |   13 ++
+ drivers/staging/ti-st/Makefile   |    1 +
+ drivers/staging/ti-st/btwilink.c |  363 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 377 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/ti-st/Kconfig
+ create mode 100644 drivers/staging/ti-st/Makefile
+ create mode 100644 drivers/staging/ti-st/btwilink.c
 
-[  322.172772] bttv: driver version 0.9.18 loaded
-[  322.172781] bttv: using 8 buffers with 2080k (520 pages) each for capture
-[  322.173300] bttv: Bt8xx card found (0).
-[  322.174510] bttv 0000:03:01.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[  322.174560] bttv0: Bt878 (rev 17) at 0000:03:01.0, irq: 17, latency: 64, mmio: 0xd0001000
-[  322.174679] bttv0: detected: Leadtek WinFast TV 2000 [card=34], PCI subsystem ID is 107d:6606
-[  322.174687] bttv0: using: Leadtek WinFast 2000/ WinFast 2000 XP [card=34,autodetected]
-[  322.175062] bttv0: gpio: en=00000000, out=00000000 in=003fbfff [init]
-[  322.178792] bttv0: tuner type=5
-[  322.254454] bttv0: audio absent, no audio device found!
-[  322.289946] tuner 1-0061: chip found @ 0xc2 (bt878 #0 [sw])
-[  322.290944] tuner-simple 1-0061: creating new instance
-[  322.290953] tuner-simple 1-0061: type set to 5 (Philips PAL_BG (FI1216 and compatibles))
-[  322.295830] bttv0: registered device video0
-[  322.300020] bttv0: registered device vbi0
-[  322.303216] bttv0: registered device radio0
-[  322.303636] bttv0: PLL: 28636363 => 35468950 .. ok
-[  322.334635] Registered IR keymap rc-winfast
-[  322.341201] input: bttv IR (card=34) as /devices/pci0000:00/0000:00:1e.0/0000:03:01.0/rc/rc0/input4
-[  322.357025] rc0: bttv IR (card=34) as /devices/pci0000:00/0000:00:1e.0/0000:03:01.0/rc/rc0
-[  382.342433] bttv0: PLL can sleep, using XTAL (28636363).
-[  382.816353] irq event stamp: 1078776
-[  382.816363] hardirqs last  enabled at (1078775): [<c105604d>] debug_check_no_locks_freed+0x102/0x113
-[  382.816381] 
-[  382.816384] =======================================================
-[  382.816389] [ INFO: possible circular locking dependency detected ]
-[  382.816394] 2.6.37-rc5-00062-g6313e3c-dirty #114
-[  382.816398] -------------------------------------------------------
-[  382.816403] kdetv/2109 is trying to acquire lock:
-[  382.816408]  (&mm->mmap_sem){++++++}, at: [<c10b1bf5>] might_fault+0x47/0x81
-[  382.816422] 
-[  382.816424] but task is already holding lock:
-[  382.816427]  (&q->vb_lock){+.+.+.}, at: [<e00af2be>] videobuf_queue_lock+0x10/0x12 [videobuf_core]
-[  382.816442] 
-[  382.816444] which lock already depends on the new lock.
-[  382.816446] 
-[  382.816449] 
-[  382.816450] the existing dependency chain (in reverse order) is:
-[  382.816455] 
-[  382.816456] -> #1 (&q->vb_lock){+.+.+.}:
-[  382.816463]        [<c10574dc>] lock_acquire+0xa1/0xc4
-[  382.816472]        [<c14ef90d>] __mutex_lock_common+0x35/0x2dc
-[  382.816482]        [<c14efc52>] mutex_lock_nested+0x30/0x38
-[  382.816489]        [<e00af2be>] videobuf_queue_lock+0x10/0x12 [videobuf_core]
-[  382.816499]        [<e00af339>] videobuf_mmap_mapper+0x69/0xc0 [videobuf_core]
-[  382.816509]        [<e18aae49>] bttv_mmap+0x66/0x6d [bttv]
-[  382.816522]        [<c140009a>] v4l2_mmap+0x5a/0x73
-[  382.816532]        [<c10b7f0c>] mmap_region+0x24c/0x400
-[  382.816540]        [<c10b82ef>] do_mmap_pgoff+0x22f/0x27f
-[  382.816547]        [<c10b841c>] sys_mmap_pgoff+0xdd/0x119
-[  382.816560]        [<c14f0d55>] syscall_call+0x7/0xb
-[  382.816569] 
-[  382.816571] -> #0 (&mm->mmap_sem){++++++}:
-[  382.816577]        [<c105718c>] __lock_acquire+0x9d7/0xc86
-[  382.816585]        [<c10574dc>] lock_acquire+0xa1/0xc4
-[  382.816592]        [<c10b1c12>] might_fault+0x64/0x81
-[  382.816599]        [<c1297552>] copy_to_user+0x2c/0xfe
-[  382.816608]        [<e00b0851>] videobuf_read_stream+0x17f/0x24c [videobuf_core]
-[  382.816619]        [<e18ab05b>] bttv_read+0xcf/0xe9 [bttv]
-[  382.816633]        [<c14002bb>] v4l2_read+0x63/0x7f
-[  382.816640]        [<c10ce67e>] vfs_read+0x81/0xdb
-[  382.816649]        [<c10ce771>] sys_read+0x3b/0x60
-[  382.816655]        [<c14f0d55>] syscall_call+0x7/0xb
-[  382.816663] 
-[  382.816665] other info that might help us debug this:
-[  382.816667] 
-[  382.816671] 1 lock held by kdetv/2109:
-[  382.816675]  #0:  (&q->vb_lock){+.+.+.}, at: [<e00af2be>] videobuf_queue_lock+0x10/0x12 [videobuf_core]
-[  382.816688] 
-[  382.816690] stack backtrace:
-[  382.816695] Pid: 2109, comm: kdetv Not tainted 2.6.37-rc5-00062-g6313e3c-dirty #114
-[  382.816700] Call Trace:
-[  382.816639] hardirqs last disabled at (1078776): [<c1002ea7>] common_interrupt+0x27/0x34
-[  382.816639] softirqs last  enabled at (1078294): [<c1034a8b>] __do_softirq+0x17b/0x183
-[  382.816639] softirqs last disabled at (1078271): [<c1003ffb>] do_softirq+0x67/0xc0
-[  382.816738]  [<c14ee80b>] ? printk+0x20/0x24
-[  382.816748]  [<c1056480>] print_circular_bug+0x9c/0xa8
-[  382.816758]  [<c105718c>] __lock_acquire+0x9d7/0xc86
-[  382.816769]  [<c103a908>] ? __mod_timer+0x10c/0x117
-[  382.816779]  [<c10574dc>] lock_acquire+0xa1/0xc4
-[  382.816788]  [<c10b1bf5>] ? might_fault+0x47/0x81
-[  382.816798]  [<c10b1c12>] might_fault+0x64/0x81
-[  382.816807]  [<c10b1bf5>] ? might_fault+0x47/0x81
-[  382.816815]  [<c1297552>] copy_to_user+0x2c/0xfe
-[  382.816828]  [<e00b0851>] videobuf_read_stream+0x17f/0x24c [videobuf_core]
-[  382.816844]  [<e18ab05b>] bttv_read+0xcf/0xe9 [bttv]
-[  382.816854]  [<c14002bb>] v4l2_read+0x63/0x7f
-[  382.816865]  [<c1400258>] ? v4l2_read+0x0/0x7f
-[  382.816874]  [<c10ce67e>] vfs_read+0x81/0xdb
-[  382.816883]  [<c10ce771>] sys_read+0x3b/0x60
-[  382.816893]  [<c14f0d55>] syscall_call+0x7/0xb
-[  382.816902]  [<c14f0000>] ? rt_mutex_trylock+0x2a/0x2d
+diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
+new file mode 100644
+index 0000000..3cf6c3e
+--- /dev/null
++++ b/drivers/staging/ti-st/Kconfig
+@@ -0,0 +1,13 @@
++menu "Texas Instruments shared transport line discipline"
++config BT_WILINK
++       tristate "Texas Instruments WiLink7 driver"
++       depends on TI_ST
++       help
++         This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
++         combo devices. This makes use of shared transport line discipline
++         core driver to communicate with the BT core of the combo chip.
++
++         Say Y here to compile support for Texas Instrument's WiLink7 driver
++         into the kernel or say M to compile it as module.
++ endmenu
++
+diff --git a/drivers/staging/ti-st/Makefile b/drivers/staging/ti-st/Makefile
+new file mode 100644
+index 0000000..8b8a795
+--- /dev/null
++++ b/drivers/staging/ti-st/Makefile
+@@ -0,0 +1 @@
+++obj-$(CONFIG_BT_WILINK)                += btwilink.o
+diff --git a/drivers/staging/ti-st/btwilink.c b/drivers/staging/ti-st/btwilink.c
+new file mode 100644
+index 0000000..71e69f8
+--- /dev/null
++++ b/drivers/staging/ti-st/btwilink.c
+@@ -0,0 +1,363 @@
++/*
++ *  Texas Instrument's Bluetooth Driver For Shared Transport.
++ *
++ *  Bluetooth Driver acts as interface between HCI core and
++ *  TI Shared Transport Layer.
++ *
++ *  Copyright (C) 2009-2010 Texas Instruments
++ *  Author: Raja Mani <raja_mani@ti.com>
++ *	Pavan Savoy <pavan_savoy@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++
++#include <linux/ti_wilink_st.h>
++
++/* Bluetooth Driver Version */
++#define VERSION               "1.0"
++
++/* Number of seconds to wait for registration completion
++ * when ST returns PENDING status.
++ */
++#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
++
++/**
++ * struct ti_st - driver operation structure
++ * @hdev: hci device pointer which binds to bt driver
++ * @reg_status: ST registration callback status
++ * @st_write: write function provided by the ST driver
++ *	to be used by the driver during send_frame.
++ * @wait_reg_completion - completion sync between ti_st_open
++ *	and ti_st_registration_completion_cb.
++ */
++struct ti_st {
++	struct hci_dev *hdev;
++	char reg_status;
++	long (*st_write) (struct sk_buff *);
++	struct completion wait_reg_completion;
++};
++
++/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
++static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
++{
++	struct hci_dev *hdev = hst->hdev;
++
++	/* Update HCI stat counters */
++	switch (pkt_type) {
++	case HCI_COMMAND_PKT:
++		hdev->stat.cmd_tx++;
++		break;
++
++	case HCI_ACLDATA_PKT:
++		hdev->stat.acl_tx++;
++		break;
++
++	case HCI_SCODATA_PKT:
++		hdev->stat.sco_tx++;
++		break;
++	}
++}
++
++/* ------- Interfaces to Shared Transport ------ */
++
++/* Called by ST layer to indicate protocol registration completion
++ * status.ti_st_open() function will wait for signal from this
++ * API when st_register() function returns ST_PENDING.
++ */
++static void st_registration_completion_cb(void *priv_data, char data)
++{
++	struct ti_st *lhst = priv_data;
++
++	/* Save registration status for use in ti_st_open() */
++	lhst->reg_status = data;
++	/* complete the wait in ti_st_open() */
++	complete(&lhst->wait_reg_completion);
++}
++
++/* Called by Shared Transport layer when receive data is
++ * available */
++static long st_receive(void *priv_data, struct sk_buff *skb)
++{
++	struct ti_st *lhst = priv_data;
++	int err;
++
++	if (!skb)
++		return -EFAULT;
++
++	if (!lhst) {
++		kfree_skb(skb);
++		return -EFAULT;
++	}
++
++	skb->dev = (void *) lhst->hdev;
++
++	/* Forward skb to HCI core layer */
++	err = hci_recv_frame(skb);
++	if (err < 0) {
++		BT_ERR("Unable to push skb to HCI core(%d)", err);
++		return err;
++	}
++
++	lhst->hdev->stat.byte_rx += skb->len;
++
++	return 0;
++}
++
++/* ------- Interfaces to HCI layer ------ */
++/* protocol structure registered with shared transport */
++static struct st_proto_s ti_st_proto = {
++	.type = ST_BT,
++	.recv = st_receive,
++	.reg_complete_cb = st_registration_completion_cb,
++};
++
++/* Called from HCI core to initialize the device */
++static int ti_st_open(struct hci_dev *hdev)
++{
++	unsigned long timeleft;
++	struct ti_st *hst;
++	int err;
++
++	BT_DBG("%s %p", hdev->name, hdev);
++	if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
++		BT_ERR("btwilink already opened");
++		return -EBUSY;
++	}
++
++	/* provide contexts for callbacks from ST */
++	hst = hdev->driver_data;
++	ti_st_proto.priv_data = hst;
++
++	err = st_register(&ti_st_proto);
++	if (err == -EINPROGRESS) {
++		/* ST is busy with either protocol registration or firmware
++		 * download.
++		 */
++		/* Prepare wait-for-completion handler data structures.
++		 */
++		init_completion(&hst->wait_reg_completion);
++
++		/* Reset ST registration callback status flag , this value
++		 * will be updated in ti_st_registration_completion_cb()
++		 * function whenever it called from ST driver.
++		 */
++		hst->reg_status = -EINPROGRESS;
++
++		BT_DBG("waiting for registration completion signal from ST");
++		timeleft = wait_for_completion_timeout
++			(&hst->wait_reg_completion,
++			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
++		if (!timeleft) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("Timeout(%d sec),didn't get reg "
++					"completion signal from ST",
++					BT_REGISTER_TIMEOUT / 1000);
++			return -ETIMEDOUT;
++		}
++
++		/* Is ST registration callback called with ERROR status? */
++		if (hst->reg_status != 0) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("ST registration completed with invalid "
++					"status %d", hst->reg_status);
++			return -EAGAIN;
++		}
++		err = 0;
++	} else if (err != 0) {
++		clear_bit(HCI_RUNNING, &hdev->flags);
++		BT_ERR("st_register failed %d", err);
++		return err;
++	}
++
++	/* ti_st_proto.write is filled up by the underlying shared
++	 * transport driver upon registration
++	 */
++	hst->st_write = ti_st_proto.write;
++	if (!hst->st_write) {
++		BT_ERR("undefined ST write function");
++		clear_bit(HCI_RUNNING, &hdev->flags);
++
++		/* Undo registration with ST */
++		err = st_unregister(ST_BT);
++		if (err)
++			BT_ERR("st_unregister() failed with error %d", err);
++
++		hst->st_write = NULL;
++		return err;
++	}
++
++	return err;
++}
++
++/* Close device */
++static int ti_st_close(struct hci_dev *hdev)
++{
++	int err;
++	struct ti_st *hst = hdev->driver_data;
++
++	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
++		return 0;
++
++	/* continue to unregister from transport */
++	err = st_unregister(ST_BT);
++	if (err)
++		BT_ERR("st_unregister() failed with error %d", err);
++
++	hst->st_write = NULL;
++
++	return err;
++}
++
++static int ti_st_send_frame(struct sk_buff *skb)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst;
++	long len;
++
++	hdev = (struct hci_dev *)skb->dev;
++
++	if (!test_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	hst = hdev->driver_data;
++
++	/* Prepend skb with frame type */
++	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
++
++	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
++			skb->len);
++
++	/* Insert skb to shared transport layer's transmit queue.
++	 * Freeing skb memory is taken care in shared transport layer,
++	 * so don't free skb memory here.
++	 */
++	len = hst->st_write(skb);
++	if (len < 0) {
++		kfree_skb(skb);
++		BT_ERR("ST write failed (%ld)", len);
++		/* Try Again, would only fail if UART has gone bad */
++		return -EAGAIN;
++	}
++
++	/* ST accepted our skb. So, Go ahead and do rest */
++	hdev->stat.byte_tx += len;
++	ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
++
++	return 0;
++}
++
++static void ti_st_destruct(struct hci_dev *hdev)
++{
++	BT_DBG("%s", hdev->name);
++	kfree(hdev->driver_data);
++}
++
++static int bt_ti_probe(struct platform_device *pdev)
++{
++	static struct ti_st *hst;
++	struct hci_dev *hdev;
++	int err;
++
++	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
++	if (!hst)
++		return -ENOMEM;
++
++	/* Expose "hciX" device to user space */
++	hdev = hci_alloc_dev();
++	if (!hdev) {
++		kfree(hst);
++		return -ENOMEM;
++	}
++
++	BT_DBG("hdev %p", hdev);
++
++	hst->hdev = hdev;
++	hdev->bus = HCI_UART;
++	hdev->driver_data = hst;
++	hdev->open = ti_st_open;
++	hdev->close = ti_st_close;
++	hdev->flush = NULL;
++	hdev->send = ti_st_send_frame;
++	hdev->destruct = ti_st_destruct;
++	hdev->owner = THIS_MODULE;
++
++	err = hci_register_dev(hdev);
++	if (err < 0) {
++		BT_ERR("Can't register HCI device error %d", err);
++		kfree(hst);
++		hci_free_dev(hdev);
++		return err;
++	}
++
++	BT_DBG("HCI device registered (hdev %p)", hdev);
++
++	dev_set_drvdata(&pdev->dev, hst);
++	return err;
++}
++
++static int bt_ti_remove(struct platform_device *pdev)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst = dev_get_drvdata(&pdev->dev);
++
++	if (!hst)
++		return -EFAULT;
++
++	hdev = hst->hdev;
++	ti_st_close(hdev);
++	hci_unregister_dev(hdev);
++
++	hci_free_dev(hdev);
++	kfree(hst);
++
++	dev_set_drvdata(&pdev->dev, NULL);
++	return 0;
++}
++
++static struct platform_driver btwilink_driver = {
++	.probe = bt_ti_probe,
++	.remove = bt_ti_remove,
++	.driver = {
++		.name = "btwilink",
++		.owner = THIS_MODULE,
++	},
++};
++
++/* ------- Module Init/Exit interfaces ------ */
++static int __init btwilink_init(void)
++{
++	BT_INFO("Bluetooth Driver for TI WiLink - Version %s", VERSION);
++
++	return platform_driver_register(&btwilink_driver);
++}
++
++static void __exit btwilink_exit(void)
++{
++	platform_driver_unregister(&btwilink_driver);
++}
++
++module_init(btwilink_init);
++module_exit(btwilink_exit);
++
++/* ------ Module Info ------ */
++
++MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
++MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
++MODULE_VERSION(VERSION);
++MODULE_LICENSE("GPL");
+-- 
+1.6.3.3
 
-> 
-> Signed-off-by: Brandon Philips <bphilips@suse.de>
-> ---
->  drivers/media/video/bt8xx/bttv-driver.c |   24 +++++++++++++-----------
->  1 files changed, 13 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
-> index a529619..e656424 100644
-> --- a/drivers/media/video/bt8xx/bttv-driver.c
-> +++ b/drivers/media/video/bt8xx/bttv-driver.c
-> @@ -2391,16 +2391,11 @@ static int setup_window_lock(struct bttv_fh *fh, struct bttv *btv,
->  	fh->ov.field    = win->field;
->  	fh->ov.setup_ok = 1;
->  
-> -	/*
-> -	 * FIXME: btv is protected by btv->lock mutex, while btv->init
-> -	 *	  is protected by fh->cap.vb_lock. This seems to open the
-> -	 *	  possibility for some race situations. Maybe the better would
-> -	 *	  be to unify those locks or to use another way to store the
-> -	 *	  init values that will be consumed by videobuf callbacks
-> -	 */
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	btv->init.ov.w.width   = win->w.width;
->  	btv->init.ov.w.height  = win->w.height;
->  	btv->init.ov.field     = win->field;
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  
->  	/* update overlay if needed */
->  	retval = 0;
-> @@ -2620,9 +2615,11 @@ static int bttv_s_fmt_vid_cap(struct file *file, void *priv,
->  	fh->cap.last         = V4L2_FIELD_NONE;
->  	fh->width            = f->fmt.pix.width;
->  	fh->height           = f->fmt.pix.height;
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	btv->init.fmt        = fmt;
->  	btv->init.width      = f->fmt.pix.width;
->  	btv->init.height     = f->fmt.pix.height;
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  	mutex_unlock(&fh->cap.vb_lock);
->  
->  	return 0;
-> @@ -2855,6 +2852,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
->  
->  	retval = 0;
->  	fh->ovfmt = fmt;
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	btv->init.ovfmt = fmt;
->  	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
->  		fh->ov.w.left   = 0;
-> @@ -2876,6 +2874,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
->  			retval = bttv_switch_overlay(btv, fh, new);
->  		}
->  	}
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  	mutex_unlock(&fh->cap.vb_lock);
->  	return retval;
->  }
-> @@ -3141,6 +3140,7 @@ static int bttv_s_crop(struct file *file, void *f, struct v4l2_crop *crop)
->  	fh->do_crop = 1;
->  
->  	mutex_lock(&fh->cap.vb_lock);
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  
->  	if (fh->width < c.min_scaled_width) {
->  		fh->width = c.min_scaled_width;
-> @@ -3158,6 +3158,7 @@ static int bttv_s_crop(struct file *file, void *f, struct v4l2_crop *crop)
->  		btv->init.height = c.max_scaled_height;
->  	}
->  
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  	mutex_unlock(&fh->cap.vb_lock);
->  
->  	return 0;
-> @@ -3302,9 +3303,9 @@ static int bttv_open(struct file *file)
->  	 * Let's first copy btv->init at fh, holding cap.vb_lock, and then work
->  	 * with the rest of init, holding btv->lock.
->  	 */
-> -	mutex_lock(&fh->cap.vb_lock);
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	*fh = btv->init;
-> -	mutex_unlock(&fh->cap.vb_lock);
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  
->  	fh->type = type;
->  	fh->ov.setup_ok = 0;
-> @@ -3502,9 +3503,9 @@ static int radio_open(struct file *file)
->  	if (unlikely(!fh))
->  		return -ENOMEM;
->  	file->private_data = fh;
-> -	mutex_lock(&fh->cap.vb_lock);
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	*fh = btv->init;
-> -	mutex_unlock(&fh->cap.vb_lock);
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  
->  	mutex_lock(&btv->lock);
->  	v4l2_prio_open(&btv->prio, &fh->prio);
-> @@ -4489,6 +4490,7 @@ static int __devinit bttv_probe(struct pci_dev *dev,
->  	btv->opt_coring     = coring;
->  
->  	/* fill struct bttv with some useful defaults */
-> +	mutex_init(&btv->init.cap.vb_lock);
->  	btv->init.btv         = btv;
->  	btv->init.ov.w.width  = 320;
->  	btv->init.ov.w.height = 240;
-> -- 
-> 1.7.3.1
-> 
