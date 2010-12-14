@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760216Ab0LNXAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 18:00:08 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56644 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1758935Ab0LNXAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 18:00:06 -0500
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX18kXKRlY/IkjNaWx6R01S0KYp9TONTxfRwCIj7w/h
-	6bKZNxPNjQXDMz
-Date: Wed, 15 Dec 2010 00:00:01 +0100
-From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arch/arm/kernel: use cpu_relax() in halt loops
-Message-ID: <20101214230001.GA1747@debian.debian>
-References: <20101214224848.GA1706@debian.debian>
- <20101214225126.GD24303@n2100.arm.linux.org.uk>
+	id S1760247Ab0LNXAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 18:00:45 -0500
+Received: from fmmailgate02.web.de ([217.72.192.227]:58425 "EHLO
+	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756060Ab0LNXAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 18:00:43 -0500
+Message-ID: <4D07F70A.30209@web.de>
+Date: Wed, 15 Dec 2010 00:00:26 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101214225126.GD24303@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+        Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
+References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig30DBE9776EC3FE5A5D9B529F"
+X-Provags-ID: V01U2FsdGVkX1+kEshGbxSkeOVLO3CNT/QL9x3xMNuc39cXY4We
+	jE/94L1cC2pNldP11B+ohtlRqbrC3kPvkdOUvXEGfkOVCMX9Tl
+	c7VE6ib6Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 10:51:26PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Dec 14, 2010 at 11:48:48PM +0100, Jonathan Neuschäfer wrote:
-> > Looking throught arch/arm/kernel/ I found some halt loops.
-> > I just thought we could save some power here using cpu_relax(),
-> > or am I missing something?
-> 
-> #if __LINUX_ARM_ARCH__ == 6
-> #define cpu_relax()                     smp_mb()
-> #else
-> #define cpu_relax()                     barrier()
-> #endif
-> 
-> IOW, it's either a memory barrier or compiler barrier on ARM; it
-> doesn't do any power saving.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig30DBE9776EC3FE5A5D9B529F
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Okay, thanks for that explanation.
+Am 14.12.2010 21:54, Thomas Gleixner wrote:
+> On Mon, 13 Dec 2010, Jan Kiszka wrote:
+>> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int i=
+rq, void *dev_id)
+>>  	/* Make sure it's not being used on another CPU: */
+>>  	synchronize_irq(irq);
+>> =20
+>> +	if (single_handler)
+>> +		desc->irq_data.drv_status &=3D ~IRQS_SHARED;
+>> +
+>=20
+> What's the reason to clear this flag outside of the desc->lock held
+> region.
+
+We need to synchronize the irq first before clearing the flag.
+
+The problematic scenario behind this: An IRQ started in shared mode,
+this the line was unmasked after the hardirq. Now we clear IRQS_SHARED
+before calling into the threaded handler. And that handler may now think
+that the line is still masked as IRQS_SHARED is set.
+
+> I need this status for other purposes as well, where I
+> definitely need serialization.
+
+Well, two options: wrap all bit manipulations with desc->lock
+acquisition/release or turn drv_status into an atomic. I don't know what
+your plans with drv_status are, so...
+
+>=20
+>> +	mutex_lock(&register_lock);
+>> +
+>> +	old_action =3D desc->action;
+>> +	if (old_action && (old_action->flags & IRQF_ADAPTIVE) &&
+>> +	    !(desc->irq_data.drv_status & IRQS_SHARED)) {
+>> +		/*
+>> +		 * Signal the old handler that is has to switch to shareable
+>> +		 * handling mode. Disable the line to avoid any conflict with
+>> +		 * a real IRQ.
+>> +		 */
+>> +		disable_irq(irq);
+>> +		local_irq_disable();
+>> +
+>> +		desc->irq_data.drv_status |=3D IRQS_SHARED | IRQS_MAKE_SHAREABLE;
+>=20
+> Unserialized access as well. Will think about it.
+>=20
+>> +		old_action->handler(irq, old_action->dev_id);
+>> +		desc->irq_data.drv_status &=3D ~IRQS_MAKE_SHAREABLE;
+>=20
+> Thanks,
+>=20
+> 	tglx
+
+Jan
+
+
+--------------enig30DBE9776EC3FE5A5D9B529F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk0H9w8ACgkQitSsb3rl5xQ1vwCg0zyEKWV2dwEbR1PWgcgBChPa
+qVcAnjMO758LOKzK+pEAjxc2lnPIuivO
+=0+nL
+-----END PGP SIGNATURE-----
+
+--------------enig30DBE9776EC3FE5A5D9B529F--
