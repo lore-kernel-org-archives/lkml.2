@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759725Ab0LNRAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:00:03 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:33750 "EHLO
+	id S1759735Ab0LNRAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:00:36 -0500
+Received: from mail-gw0-f42.google.com ([74.125.83.42]:51347 "EHLO
 	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759558Ab0LNRAB (ORCPT
+	with ESMTP id S1759650Ab0LNRAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:00:01 -0500
+	Tue, 14 Dec 2010 12:00:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Kw06lZ/bVI6+4HDPjnX42XMPmPm/smvydxuTb5nEMVwkS5nkIPB4FEA9j0kc7kwMaN
-         N48D8MwEhxdYZj4FlGv/jHppi5Hu11Aq0iUPO0OQB1snqdXdboEergF8VJwNxVqW9dCV
-         wSRkCrVeMD8iF1fSMr6HiYtUb71r03SkmM6Ys=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eerAxLdmPkQCCRUMuNEsHbaRpQJ6ITvFQmXFFuB5eWD4xz2QWahMajYDHuvbmMzVB6
+         0wGVGunurtl4UCbiqyDB/bAED29rt7vAGKS0+GA/mgjtn730LEfEvLTh0f5RUpAauocu
+         Wca5N6OY/oP3CAg5MbbNi8hb7qEmjUSBTJBgc=
+Date: Tue, 14 Dec 2010 09:00:27 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Synaptics touchpad on Dell Vostro V13
+Message-ID: <20101214170027.GA11318@core.coreip.homeip.net>
+References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=NKa6UCeYsE0Y5iWnq8XYbVtSU7XiKJSNc5tLz@mail.gmail.com>
-References: <AANLkTin2Z5XXf-3Gkqj72+FT4rM+hpqehK8Ys=gg++c9@mail.gmail.com>
-	<987664A83D2D224EAE907B061CE93D530193BBAA27@orsmsx505.amr.corp.intel.com>
-	<AANLkTi=NKa6UCeYsE0Y5iWnq8XYbVtSU7XiKJSNc5tLz@mail.gmail.com>
-Date: Tue, 14 Dec 2010 09:00:00 -0800
-Message-ID: <AANLkTin98z8_Maa8iJfbzyjtRDLkTve7PShPAvdukqZd@mail.gmail.com>
-Subject: Re: [RFC] persistent store (version 3) (part 1 of 2)
-From: Tony Luck <tony.luck@gmail.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 12:35 AM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> I saw (very quickly) in drivers/staging/dream/pmem.c
+On Tue, Dec 14, 2010 at 03:56:56PM +0100, Jiri Kosina wrote:
+> Hi Dmitry,
+> 
+> I have a bugreport about Synaptics touchpad not working as proper 
+> Synaptics, but only being detected as standard PS/2.
+> 
+> Looking at the i8042.debug output, the device is clearly buggy, as it 
+> doesn't identify itself by 0x47 when queried:
+> 
+> 	91 -> i8042 (command) [58]
+> 	e8 -> i8042 (parameter) [58]
+> 	fa <- i8042 (interrupt, 3, 12) [59]
+> 	91 -> i8042 (command) [59]
+> 	00 -> i8042 (parameter) [59]
+> 	fa <- i8042 (interrupt, 3, 12) [59]
+> 	91 -> i8042 (command) [59]
+> 	e8 -> i8042 (parameter) [59]
+> 	fa <- i8042 (interrupt, 3, 12) [60]
+> 	91 -> i8042 (command) [60]
+> 	00 -> i8042 (parameter) [60]
+> 	fa <- i8042 (interrupt, 3, 12) [61]
+> 	91 -> i8042 (command) [61]
+> 	e8 -> i8042 (parameter) [61]
+> 	fa <- i8042 (interrupt, 3, 12) [61]
+> 	91 -> i8042 (command) [61]
+> 	00 -> i8042 (parameter) [61]
+> 	fa <- i8042 (interrupt, 3, 12) [62]
+> 	91 -> i8042 (command) [62]
+> 	e8 -> i8042 (parameter) [62]
+> 	fa <- i8042 (interrupt, 3, 12) [63]
+> 	91 -> i8042 (command) [63]
+> 	00 -> i8042 (parameter) [63]
+> 	fa <- i8042 (interrupt, 3, 12) [64]
+> 	91 -> i8042 (command) [64]
+> 	e9 -> i8042 (parameter) [64]
+> 	fa <- i8042 (interrupt, 3, 12) [64]
+> 
+> ... and here we time out after approximately 0.5s. nomux doesn't really 
+> fix it, we start getting a lot of timeouts on i8042 with that.
+> 
+> Apparently the device works with Synaptics driver in Other OS(TM) though. 
+> Do you have any idea what they might be doing differently so that they 
+> make the touchpad identify itself properly?
 
-Most recent commit for that says:
+Hi Jiri,
 
-    Staging: dream: remove dream driver and arch from tree
+Do you have the device in your possession? If so can you check if the
+driver installed in Other OS uses active multiplexing? I think you can
+infer whether it does or not by looking at the pointer properties - I
+think it would "Synaptics Blah at port X" or something like that...
 
-    This code is stalled, with no one working on it anymore, and the main
-    msm code is now going through the proper channels to get merged
-    correctly.
+Also you could try combining nomux with reset and see if it makes any
+sense...
 
-    So remove it as it contains a number of kernel information leaks and it
-    is doubtful if it even still builds anymore.
+Thanks.
 
-:-(
-
--Tony
+-- 
+Dmitry
