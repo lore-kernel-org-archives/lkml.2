@@ -1,149 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759499Ab0LNRYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 12:24:07 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:47282 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757219Ab0LNRYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 12:24:05 -0500
-Subject: Re: [RFC PATCHv4 4/7] HSI: hsi_char: Add HSI char device driver
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Andras Domokos <andras.domokos@nokia.com>
-In-Reply-To: <20101214115600.62388d5d@lxorguk.ukuu.org.uk>
-References: <1292321383-30200-1-git-send-email-carlos.chinea@nokia.com>
-	 <1292321383-30200-5-git-send-email-carlos.chinea@nokia.com>
-	 <20101214115600.62388d5d@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Dec 2010 19:24:28 +0200
-Message-ID: <1292347468.2529.220.camel@groo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1759604Ab0LNRYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 12:24:21 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64282 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756206Ab0LNRYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 12:24:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jiBG8EluXVydv0z7zBYXZw7v6TXQ5Bk1Xhz+FyVaeiJuWvBgIurYthHBAmH2xiraB0
+         S2IuXNuV2ugxAUGGKilegSFRpz7vhZEv5ny9Oo3yv7rGd3BcaSy2RvcQnwFYf3Jhf+rf
+         b289fHkMjyYePF3qV54kuaZ/0xpQ80lO94big=
+Message-ID: <4D07A83C.9080707@gmail.com>
+Date: Tue, 14 Dec 2010 09:24:12 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: dirk.brandewie@gmail.com
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        sodaville@linutronix.de, linuxppc-dev@lists.ozlabs.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        mmarek@suse.cz
+Subject: Re: [PATCH 0/4] V3 Add ability to link device blob(s) into vmlinux
+References: <cover.1291820033.git.dirk.brandewie@gmail.com>
+In-Reply-To: <cover.1291820033.git.dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-14 at 11:56 +0000, ext Alan Cox wrote:
-> > +#define HSI_CHST_RD(c)		((c)->state & HSI_CHST_RD_MASK)
-> > +#define HSI_CHST_WR(c)		((c)->state & HSI_CHST_WR_MASK)
-> > +
-> > +#define HSI_CHST_OC_SET(c, v) \
-> > +	do { \
-> > +		(c)->state &= ~HSI_CHST_OC_MASK; \
-> > +		(c)->state |= v; \
-> > +	} while (0);
-> > +
-> > +#define HSI_CHST_RD_SET(c, v) \
-> > +	do { \
-> > +		(c)->state &= ~HSI_CHST_RD_MASK; \
-> > +		(c)->state |= v; \
-> > +	} while (0);
-> > +
-> > +#define HSI_CHST_WR_SET(c, v) \
-> > +	do { \
-> > +		(c)->state &= ~HSI_CHST_WR_MASK; \
-> > +		(c)->state |= v; \
-> > +	} while (0);
-> 
-> 
-> These sort of macros just hide detail - eg the lack of internal locking,
-> which can lead to problems later, plus they reference their arguments
-> multiple times so may have weird side effects.
-> 
-> They should probably be inline functions so they at least type check and
-> behave sanely, and their locking rules defintiely need documenting
+On 12/08/2010 07:01 AM, dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie<dirk.brandewie@gmail.com>
+>
+> This patch set adds the ability to link device tree blobs into
+> vmlinux.
+>
+> Patch 1 implements the changes to include/asm-generic/vmlinux.lds.h and
+> adds a generic rule for generating DTB objects to be linked vmlinux.
+>
+> Patch 2 implements linking a DTB into an x86 image.
+>
+> Patch 3-4 move {powerpc,microblaze}/boot/Makefile to use the dtc rule
+> in patch 1.
+>
+> This patch set has been tested on x86.
+>
+> Powerpc and Microblaze have been compile tested with and without patch
+> 3 and 4 applied.
+>
+> Changes from V1:
+>
+> Documentation added for dtc command in Makefile.lib to
+> Documentation/kbuild/makefiles.txt
+> Separate DTB_ALIGNMENT define removed.
+> FORCE removed from dtc rule.
+> Removed hardcoded path to dts files from dtc command.
+> Moved %.dtb: %.dts rule to arch specific makefiles.
+>
+> Patch for adding kernel command line option to pass in dtb_compat
+> string dropped from this set will be submitted seperately.
+>
+> Changes from V2:
+>
+> Rule to create assembly wrapper for blob changed to use Sam Ravnborgs
+> suggested implementation.
+>
+> Rules in architecture specific Makefiles changed to use the cmd
+> function instead of the if_changed function.
+>
+> Dirk Brandewie (4):
+>    of: Add support for linking device tree blobs into vmlinux
+>    x86/of: Add building device tree blob(s) into image.
+>    of/powerpc: Use generic rule to build dtb's
+>    microblaze/of: Use generic rule to build dtb's
+>
+>   Documentation/kbuild/makefiles.txt |   15 +++++++++++++++
+>   arch/microblaze/boot/Makefile      |   12 +++---------
+>   arch/powerpc/boot/Makefile         |    8 +++-----
+>   arch/x86/platform/ce4100/Makefile  |   10 ++++++++++
+>   include/asm-generic/vmlinux.lds.h  |   13 +++++++++++--
+>   scripts/Makefile.lib               |   23 +++++++++++++++++++++++
+>   6 files changed, 65 insertions(+), 16 deletions(-)
+>
 
-Agree. We would change that.
+Any Comments on this patch set?
 
-> 
-> 
-> 
-> > +static long hsi_char_ioctl(struct file *file, unsigned int cmd,
-> > +							unsigned long arg)
-> > +{
-> > +	struct hsi_char_channel *channel = file->private_data;
-> > +	unsigned int state;
-> > +	struct hsi_config cfg;
-> > +	struct hsc_rx_config rx_cfg;
-> > +	struct hsc_tx_config tx_cfg;
-> > +	long ret = 0;
-> > +
-> > +	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED)
-> > +		return -ENODEV;
-> 
-> -EIO is the traditional response in this case if the channel has been
-> closed by the other end - ENODEV indicates there is no physical device
-> present - not sure which is right here from the code.
-> 
-
-The initial idea of this code was to guard against underneath removal of
-the device. That was the reason for the -ENODEV.
-
-Now after, rechecking the code I think that we need also to lock the
-device to avoid that the removal happening in the middle of the
-function.
-
-> 
-> > +		} else if ((state == HSC_PM_ENABLE)
-> > +				&& (channel->wlrefcnt > 0)) {
-> > +			ret = hsi_stop_tx(channel->cl);
-> > +			if (!ret)
-> > +				channel->wlrefcnt--;
-> 
-> What locks this lot against races (ditto some of the other ioctl code)
-
-Right. We will fix this also.
-
-> 
-> > +	refcnt = atomic_inc_return(&cl_data->refcnt);
-> > +	if (refcnt == 1) {
-> 
-> You seem to construct a lot of clever stuff using atomic_inc_return and
-> friends where it looks like test_and_set_bit - or even a mutex over
-> open/close would be far easier to understand ?
-
-Yep a mutex will be a better option here. It would also take care of the
-next comment.
-
-> 
-> > +	ret = hsi_char_msgs_alloc(channel);
-> > +
-> > +	if (ret < 0) {
-> > +		refcnt = atomic_dec_return(&cl_data->refcnt);
-> > +		if (!refcnt)
-> > +			hsi_release_port(channel->cl);
-> > +		spin_lock_bh(&channel->lock);
-> > +		HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
-> > +		goto out;
-> > +	}
-> > +	if (refcnt == 1)
-> > +		cl_data->attached = 1;
-> 
-> What happens here if a second open passes the first, the attached will
-> stay zero and other stuff will be in strange states but the open flag
-> will be set ?
-> 
-> 
-> > +	for (i = 0; i < HSI_CHAR_DEVS && channels_map[i] >= 0; i++) {
-> > +		if (channels_map[i] >= HSI_CHAR_DEVS) {
-> > +			pr_err("Invalid HSI/SSI channel specified");
-> > +			return -EINVAL;
-> > +		}
-> > +		set_bit(channels_map[i], &ch_mask);
-> 
-> How will this integrate with hot discovery of SSI supporting devices ?
-> 
-
-For every SSI port there is an HSI char client device, which is the
-device received through probe. The driver will export for every HSI char
-client device, HSI_CHAR_DEVS char devices, one char device per channel.
-
-The intention of this piece of code is to allow the user to configure
-which channels the user wants to be available to userspace.
-
-Thanks for the comments,
-Carlos
-
+--Dirk
