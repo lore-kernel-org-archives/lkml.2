@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab0LNVga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 16:36:30 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:36595 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab0LNVgY (ORCPT
+	id S1760234Ab0LNV3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 16:29:43 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:27230 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760198Ab0LNV3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 16:36:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Lml/Q5pQD5S00pvhNy4PjrNGIbzSW/seriKNuGnz8BG7gFVLZEKoDwpo6VTnL810/H
-         pi/bQez5X96+EDgpbCCknZAiDD8BApbOVDiMfp24fvQPpdTeDwvSl+y8WbuGxyn2DD3j
-         WpPLJJ71wzYb1TSq2fLkjBfklVDF+AmasShKg=
-Subject: [PATCH] hid: egalax: Extend support for touchscreen used in
- "Samsung NB30 touch" netbook.
-From: Richard Nauber <richard.nauber@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Cc: rydberg@euromail.se
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Dec 2010 22:36:18 +0100
-Message-ID: <1292362579.2232.84.camel@itzy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 14 Dec 2010 16:29:39 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=trjTDI24sRyJ7+v0q9JEgUY68gagm5dEtcTpbny0g/OtCLX6D2mmoEmHJ2incW9dT
+	mDxieBmDUsq8xIoeox/hw==
+Subject: [PATCH v3 01/22] netconsole: Remove unneeded reference counting
+To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
+        Matt Mackall <mpm@selenic.com>
+From: Mike Waychison <mikew@google.com>
+Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
+        =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Date: Tue, 14 Dec 2010 13:28:58 -0800
+Message-ID: <20101214212858.17022.78664.stgit@mike.mtv.corp.google.com>
+In-Reply-To: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
+References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
-I got me a brand new "Samsung NB30 touch" and with this patch I have 
-the full multitouch power at my fingertips. At least at two of them... 
+The loops that iterate through the list of targets for emitting console
+messages in the netconsole driver operating with interrupts disabled and
+the list-protecting lock held.  There is no way for the elements of the
+list to disappear, so we don't need to grab references to them.
 
-The patch applies to the 
-git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git 
-tree at a528f7.
+This patch keeps the definitions however of netconsole_target_get() and
+netconsole_target_put() as they are used in a subsequent patch.
 
-Have Fun.
+Signed-off-by: Mike Waychison <mikew@google.com>
+Acked-by: Matt Mackall <mpm@selenic.com>
+---
+ drivers/net/netconsole.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-BTW: I have not found a suitable tuio bridge for linux mt devices, 
-so I wrote a small mtdev2tuio tool. It uses libmtdev and liblo 
-and allows to interact with lots of existing software (e.g. a 
-compiz plugin, numtyphysics, ...). If someone is interested, I 
-can upload it (might take a while).
-
------snip-----
-
-[hid] egalax: Extend hid-egalax support for touchscreen in the "Samsung NB30 touch" netbook.          
-
-Signed-off-by: Richard Nauber <Richard.Nauber@gmail.com>
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 6fa4503..d8b10f6 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1301,6 +1301,7 @@ static const struct hid_device_id hid_blacklist[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH480e) },	
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
-diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
-index 5795969..0beada2 100644
---- a/drivers/hid/hid-egalax.c
-+++ b/drivers/hid/hid-egalax.c
-@@ -240,6 +240,8 @@ static const struct hid_device_id egalax_devices[] = {
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH480e) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, egalax_devices);
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index b76166a..16a6a02 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -197,6 +197,7 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH	0x480d
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1	0x720c
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
-+#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH480e	0x480e
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index 94255f0..c87a49e 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -671,7 +671,6 @@ static int netconsole_netdev_event(struct notifier_block *this,
  
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
+ 	spin_lock_irqsave(&target_list_lock, flags);
+ 	list_for_each_entry(nt, &target_list, list) {
+-		netconsole_target_get(nt);
+ 		if (nt->np.dev == dev) {
+ 			switch (event) {
+ 			case NETDEV_CHANGENAME:
+@@ -693,7 +692,6 @@ static int netconsole_netdev_event(struct notifier_block *this,
+ 				break;
+ 			}
+ 		}
+-		netconsole_target_put(nt);
+ 	}
+ 	spin_unlock_irqrestore(&target_list_lock, flags);
+ 	if (event == NETDEV_UNREGISTER || event == NETDEV_BONDING_DESLAVE)
+@@ -722,7 +720,6 @@ static void write_msg(struct console *con, const char *msg, unsigned int len)
+ 
+ 	spin_lock_irqsave(&target_list_lock, flags);
+ 	list_for_each_entry(nt, &target_list, list) {
+-		netconsole_target_get(nt);
+ 		if (nt->enabled && netif_running(nt->np.dev)) {
+ 			/*
+ 			 * We nest this inside the for-each-target loop above
+@@ -738,7 +735,6 @@ static void write_msg(struct console *con, const char *msg, unsigned int len)
+ 				left -= frag;
+ 			}
+ 		}
+-		netconsole_target_put(nt);
+ 	}
+ 	spin_unlock_irqrestore(&target_list_lock, flags);
+ }
 
