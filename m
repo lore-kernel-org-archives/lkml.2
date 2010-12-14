@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759887Ab0LNTyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 14:54:54 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:47832 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759843Ab0LNTyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 14:54:52 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Vftyt9v7ovxVGiSx/PcTYA/z3szn+DWKttpFDeAnrjDLJDCoDxiET3B4rpHo+fkj9GlamlKYFeDpW0OqFBM4GQIo7IVubrg8Mit3X5dCNbvI6jpDKSq/L3887q9U/xnh;
-Date: Tue, 14 Dec 2010 11:54:49 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
-Subject: Regression: audio not detected "cannot build controls"
-Message-ID: <20101214115449.6e569c86@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759728Ab0LNT65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 14:58:57 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55678 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758908Ab0LNT64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 14:58:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [RFC][PATCH 2/4] PM: Remove redundant checks from core device resume routines
+Date: Tue, 14 Dec 2010 20:58:04 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <201012130128.31243.rjw@sisk.pl> <AANLkTi=UVOQb15EdpfSeD+Qh8x779pJpsSCTyGvf-gxG@mail.gmail.com> <AANLkTim+UoR+GeEK8T1_jgie3gwq6Pdt_=sRiSf8qx6K@mail.gmail.com>
+In-Reply-To: <AANLkTim+UoR+GeEK8T1_jgie3gwq6Pdt_=sRiSf8qx6K@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+Message-Id: <201012142058.04469.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sound on my Sony Vaio used to work back in 2.6.36 but no longer works.
-At boot time I see a message like this:
+On Tuesday, December 14, 2010, Ming Lei wrote:
+> 2010/12/13 Linus Torvalds <torvalds@linux-foundation.org>:
+> > So I really like this series not only because it implements what I
+> > suggested, but also because each patch seems to remove more lines than
+> > it adds. That's always nice, and much too unusual.
+> >
+> > But in this one, I really think you should simplify/clarify things further:
+> >
+> > On Sun, Dec 12, 2010 at 4:31 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>
+> >> +++ linux-2.6/drivers/base/power/main.c
+> >> @@ -485,20 +485,17 @@ void dpm_resume_noirq(pm_message_t state
+> >>        transition_started = false;
+> >>        while (!list_empty(&dpm_noirq_list)) {
+> >>                struct device *dev = to_device(dpm_noirq_list.next);
+> >> +               int error;
+> >>
+> >>                get_device(dev);
+> >> -               if (dev->power.status > DPM_OFF) {
+> >> -                       int error;
+> >> -
+> >> -                       dev->power.status = DPM_OFF;
+> >> -                       mutex_unlock(&dpm_list_mtx);
+> >> +               dev->power.status = DPM_OFF;
+> >> +               mutex_unlock(&dpm_list_mtx);
+> >
+> > I think you should move the device to the dpm_suspended list _here_,
+> > before dropping the mutex. That way the power.status thing matches the
+> > list.
+> >
+> > So then you'd just remove the crazy conditional "if it's still on a
+> > list, move it to the right list" thing, and these two lines:
+> >
+> >>                if (!list_empty(&dev->power.entry))
+> >>                        list_move_tail(&dev->power.entry, &dpm_suspended_list);
+> >
+> > Would just be that plain
+> >
+> >        list_move_tail(&dev->power.entry, &dpm_suspended_list);
+> >
+> > before you even drop the lock. That look much simpler, and the list
+> > movement seems a lot more obvious, no?
+> >
+> > If an unregister event (or whatever) happens while you had the mutex
+> > unlocked, it will just remove it from the new list (the one that
+> > matches the power state). So no need for that whole complexity with
+> > "what happens with the list if somebody removed the device while we
+> > were busy suspending/resuming it".
+> >
+> > Or am I missing something?
+> >
+> > (And same comment for that other identical case in dpm_complete())
+> 
+> Seems it may apply in other cases(dpm_prepare/dpm_suspend
+> /dpm_suspend_noirq) too?
 
-[    7.159241] hda_codec: ALC889: BIOS auto-probing.
-[    7.159246] hda_codec: ALC889: SKU not ready 0x411111f0
-[    7.160629] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input6
-[    7.164300] hda_codec: cannot build controls for #0 (error -16)
-...
-[    7.215622] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input7
-[    7.216004] HDA Intel 0000:01:00.1: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[    7.216007] hda_intel: Disable MSI for Nvidia chipset
-[    7.216094] HDA Intel 0000:01:00.1: setting latency timer to 64
-...
-[   13.780090] hda-intel: IRQ timing workaround is activated for card #1. Suggest a bigger bdl_pos_adj.
-
-and I don't see the sound device in my Pulseaudio configuration so of
-course I don't get anything out of the speakers.
-
-I haven't tried to bisect this yet, presumably this bug came in along
-with the main ALSA changes for this cycle.  Hope it's a known issue
-with a fix somewhere already?
+I thought about that, but in these cases the status is changed after the
+callback has returned and only if it's succeeded.  Moreover, if the callback
+hasn't been successful, the device is not moved to the new list, so I think
+it's better to leave that as is.
 
 Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Rafael
