@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab0LNOdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 09:33:42 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:54830 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab0LNOdl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 09:33:41 -0500
+	id S1756449Ab0LNOdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 09:33:49 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39491 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756133Ab0LNOdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 09:33:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,342,1288594800"; 
+   d="scan'208";a="868041482"
+Date: Tue, 14 Dec 2010 22:33:25 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
+ up time
+Message-ID: <20101214143325.GA22764@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150326.856922289@intel.com>
+ <1292333854.2019.16.camel@castor.rsk>
+ <20101214135910.GA21401@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20101214043635.GB12059@salty.local>
-References: <1292001842-5000-1-git-send-email-rydberg@euromail.se>
-	<4D065BDE.5020107@canonical.com>
-	<4D068E3C.8080100@euromail.se>
-	<4D06A60D.7010409@canonical.com>
-	<4D06AB66.8090909@euromail.se>
-	<20101214043635.GB12059@salty.local>
-Date: Tue, 14 Dec 2010 08:33:39 -0600
-Message-ID: <AANLkTinPSkFddbM0dfWp3ROHYgvb7Gx2A_Avudwkoqif@mail.gmail.com>
-Subject: Re: [PATCH v2] input: mt: Interface and MT_TOOL documentation updates
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101214135910.GA21401@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 13, 2010 at 10:36 PM, Peter Hutterer
-<peter.hutterer@who-t.net> wrote:
-> On Tue, Dec 14, 2010 at 12:25:26AM +0100, Henrik Rydberg wrote:
->> >> The envelope contacts serve as a way to detect a small area of fingers or a
->>
->> >> large area of fingers. There is nothing inherently problematic with having one
->> >> or three or more such contacts.
->> >
->> > Then I'm more confused :).
->> >
->> > I see one problem: devices that report two touch points, (X1, Y1) and
->> > (X2, Y2), but in reality the touches could be at (X1, Y2) and (X2, Y1)
->> > instead. Using a rectangle helps resolve this issue for panning and
->> > pinching, though not for rotation.
->>
->>
->> If panning and pinching and rotation could all be recovered properly, then the
->> individual contacts could actually have been reconstructed properly in the first
->> place. This is the whole point - there is not enough information available for
->> rotation to be recovered properly.
->
-> can you post an example event stream of the MT_ENVELOPE tool? I'm having
-> trouble wrapping my head around it.
->
+On Tue, Dec 14, 2010 at 09:59:10PM +0800, Wu Fengguang wrote:
+> On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
 
-Patch 2/2 of synaptics patches from Henrik show this in code form but
-here is text form.
+> > As to the ramp up time, when writing to 2 disks at the same time I see
+> > the per_bdi_threshold taking up to 20 seconds to converge on a steady
+> > value after one of the write stops. So I think this could be speeded up
+> > even more, at least on my setup.
+> 
+> I have the roughly same ramp up time on the 1-disk 3GB mem test:
+> 
+> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
+>  
 
-Its sets up 2 MT slots and start out at (x,y)=(0,0) for both slots
-with no fingers touching.  When 1 finger touches, slot 0 shows (x,y)
-as reported by hardware and keeps slot 1 at (0,0).  When 2 fingers
-touch, slot 0 shows lower left of rectangle and slot 1 shows upper
-right corner.  When 3 fingers touch, same thing as 2 fingers.
+Interestingly, the above graph shows that after about 10s fast ramp
+up, there is another 20s slow ramp down. It's obviously due the
+decline of global limit:
 
-For 1 finger case, we could send duplicate values of slot 0 into slot
-1 but (0,0) is more efficient for more typical 1 finger usage.
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat-dirty.png
 
-The 3 finger case helps show that hardware itself really wants to talk
-in terms of rectangles as well, even if they give half hearted
-attempts at real multi-touch points.
+But why is the global limit declining?  The following log shows that
+nr_file_pages keeps growing and goes stable after 75 seconds (so long
+time!). In the same period nr_free_pages goes slowly down to its
+stable value. Given that the global limit is mainly derived from
+nr_free_pages+nr_file_pages (I disabled swap), something must be
+slowly eating memory until 75 ms. Maybe the tracing ring buffers?
 
-Since these slots need to be treated as a whole, no tracking id or similar.
+         free     file      reclaimable pages
+50s      369324 + 318760 => 688084
+60s      235989 + 448096 => 684085
 
-Chris
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/vmstat
+
+Thanks,
+Fengguang
