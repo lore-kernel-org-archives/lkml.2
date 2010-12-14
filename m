@@ -1,155 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab0LNAid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Dec 2010 19:38:33 -0500
-Received: from ifup.org ([198.145.64.140]:51178 "EHLO ifup.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527Ab0LNAic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Dec 2010 19:38:32 -0500
-X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Dec 2010 19:38:32 EST
-Date: Mon, 13 Dec 2010 16:30:24 -0800
-From: Brandon Philips <brandon@ifup.org>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Dave Young <hidave.darkstar@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Clayton <chris2553@googlemail.com>
-Subject: Re: [PATCH] bttv: fix mutex use before init
-Message-ID: <20101214003024.GA3575@hanuman.home.ifup.org>
-References: <20101212131550.GA2608@darkstar>
- <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
+	id S1758013Ab0LNAkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Dec 2010 19:40:14 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:32651 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab0LNAkM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Dec 2010 19:40:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ew9tRiPBhB9cIFkUWe2ZRnzhQUy1qpKslCQWK7WzzrjG0DxsyIBQbzLTcKJkC1Jwz+
+         zRCa2jhtWargK2lsYrfg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1291844807-15481-1-git-send-email-dhsharp@google.com>
+References: <AANLkTim7xZvUJSxW0KzbZX1wxf19gZhvh1GLnU63zdgW@mail.gmail.com> <1291844807-15481-1-git-send-email-dhsharp@google.com>
+From: David Sharp <dhsharp@google.com>
+Date: Mon, 13 Dec 2010 16:39:49 -0800
+Message-ID: <AANLkTi=BbmNqXmM8OJUsj4XKhTm7DG13yGR2JtBQfQwb@mail.gmail.com>
+Subject: Re: [PATCH] tracing: Add an 'overwrite' trace_option.
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, mrubin@google.com, jiayingz@google.com,
+        David Sharp <dhsharp@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:13 Sun 12 Dec 2010, Torsten Kaiser wrote:
->  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
-> &btv->init.cap.vb_lock
->  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
+Steve, any feedback on this patch?
 
-That seems like a reasonable suggestion. An openSUSE user submitted this
-bug to our tracker too. Here is the patch I am having him test.
-
-Would you mind testing it?
-
->From 456dc0ce36db523c4c0c8a269f4eec43a72de1dc Mon Sep 17 00:00:00 2001
-From: Brandon Philips <bphilips@suse.de>
-Date: Mon, 13 Dec 2010 16:21:55 -0800
-Subject: [PATCH] bttv: fix locking for btv->init
-
-Fix locking for the btv->init by using btv->init.cap.vb_lock and in the
-process fix uninitialized deref introduced in c37db91fd0d.
-
-Signed-off-by: Brandon Philips <bphilips@suse.de>
----
- drivers/media/video/bt8xx/bttv-driver.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
-index a529619..e656424 100644
---- a/drivers/media/video/bt8xx/bttv-driver.c
-+++ b/drivers/media/video/bt8xx/bttv-driver.c
-@@ -2391,16 +2391,11 @@ static int setup_window_lock(struct bttv_fh *fh, struct bttv *btv,
- 	fh->ov.field    = win->field;
- 	fh->ov.setup_ok = 1;
- 
--	/*
--	 * FIXME: btv is protected by btv->lock mutex, while btv->init
--	 *	  is protected by fh->cap.vb_lock. This seems to open the
--	 *	  possibility for some race situations. Maybe the better would
--	 *	  be to unify those locks or to use another way to store the
--	 *	  init values that will be consumed by videobuf callbacks
--	 */
-+	mutex_lock(&btv->init.cap.vb_lock);
- 	btv->init.ov.w.width   = win->w.width;
- 	btv->init.ov.w.height  = win->w.height;
- 	btv->init.ov.field     = win->field;
-+	mutex_unlock(&btv->init.cap.vb_lock);
- 
- 	/* update overlay if needed */
- 	retval = 0;
-@@ -2620,9 +2615,11 @@ static int bttv_s_fmt_vid_cap(struct file *file, void *priv,
- 	fh->cap.last         = V4L2_FIELD_NONE;
- 	fh->width            = f->fmt.pix.width;
- 	fh->height           = f->fmt.pix.height;
-+	mutex_lock(&btv->init.cap.vb_lock);
- 	btv->init.fmt        = fmt;
- 	btv->init.width      = f->fmt.pix.width;
- 	btv->init.height     = f->fmt.pix.height;
-+	mutex_unlock(&btv->init.cap.vb_lock);
- 	mutex_unlock(&fh->cap.vb_lock);
- 
- 	return 0;
-@@ -2855,6 +2852,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
- 
- 	retval = 0;
- 	fh->ovfmt = fmt;
-+	mutex_lock(&btv->init.cap.vb_lock);
- 	btv->init.ovfmt = fmt;
- 	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
- 		fh->ov.w.left   = 0;
-@@ -2876,6 +2874,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
- 			retval = bttv_switch_overlay(btv, fh, new);
- 		}
- 	}
-+	mutex_unlock(&btv->init.cap.vb_lock);
- 	mutex_unlock(&fh->cap.vb_lock);
- 	return retval;
- }
-@@ -3141,6 +3140,7 @@ static int bttv_s_crop(struct file *file, void *f, struct v4l2_crop *crop)
- 	fh->do_crop = 1;
- 
- 	mutex_lock(&fh->cap.vb_lock);
-+	mutex_lock(&btv->init.cap.vb_lock);
- 
- 	if (fh->width < c.min_scaled_width) {
- 		fh->width = c.min_scaled_width;
-@@ -3158,6 +3158,7 @@ static int bttv_s_crop(struct file *file, void *f, struct v4l2_crop *crop)
- 		btv->init.height = c.max_scaled_height;
- 	}
- 
-+	mutex_unlock(&btv->init.cap.vb_lock);
- 	mutex_unlock(&fh->cap.vb_lock);
- 
- 	return 0;
-@@ -3302,9 +3303,9 @@ static int bttv_open(struct file *file)
- 	 * Let's first copy btv->init at fh, holding cap.vb_lock, and then work
- 	 * with the rest of init, holding btv->lock.
- 	 */
--	mutex_lock(&fh->cap.vb_lock);
-+	mutex_lock(&btv->init.cap.vb_lock);
- 	*fh = btv->init;
--	mutex_unlock(&fh->cap.vb_lock);
-+	mutex_unlock(&btv->init.cap.vb_lock);
- 
- 	fh->type = type;
- 	fh->ov.setup_ok = 0;
-@@ -3502,9 +3503,9 @@ static int radio_open(struct file *file)
- 	if (unlikely(!fh))
- 		return -ENOMEM;
- 	file->private_data = fh;
--	mutex_lock(&fh->cap.vb_lock);
-+	mutex_lock(&btv->init.cap.vb_lock);
- 	*fh = btv->init;
--	mutex_unlock(&fh->cap.vb_lock);
-+	mutex_unlock(&btv->init.cap.vb_lock);
- 
- 	mutex_lock(&btv->lock);
- 	v4l2_prio_open(&btv->prio, &fh->prio);
-@@ -4489,6 +4490,7 @@ static int __devinit bttv_probe(struct pci_dev *dev,
- 	btv->opt_coring     = coring;
- 
- 	/* fill struct bttv with some useful defaults */
-+	mutex_init(&btv->init.cap.vb_lock);
- 	btv->init.btv         = btv;
- 	btv->init.ov.w.width  = 320;
- 	btv->init.ov.w.height = 240;
--- 
-1.7.3.1
-
+On Wed, Dec 8, 2010 at 1:46 PM, David Sharp <dhsharp@google.com> wrote:
+> Add an "overwrite" trace_option for ftrace to control whether the buffer should
+> be overwritten on overflow or not. The default remains to overwrite old events
+> when the buffer is full. This patch adds the option to instead discard newest
+> events when the buffer is full. This is useful to get a snapshot of traces just
+> after enabling traces. Dropping the current event is also a simpler code path.
+> ---
+>  Documentation/trace/ftrace.txt |    5 +++++
+>  include/linux/ring_buffer.h    |    2 ++
+>  kernel/trace/ring_buffer.c     |   11 +++++++++++
+>  kernel/trace/trace.c           |   17 +++++++++++------
+>  kernel/trace/trace.h           |    1 +
+>  5 files changed, 30 insertions(+), 6 deletions(-)
+>
+> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+> index 557c1ed..2842ea7 100644
+> --- a/Documentation/trace/ftrace.txt
+> +++ b/Documentation/trace/ftrace.txt
+> @@ -491,6 +491,11 @@ x494] <- /root/a.out[+0x4a8] <- /lib/libc-2.7.so[+0x1e1a6]
+>                    latencies, as described in "Latency
+>                    trace format".
+>
+> +  overwrite - This controls what happens when the trace buffer is
+> +              full. If "1" (default), the oldest events are
+> +              discarded and overwritten. If "0", then the newest
+> +              events are discarded.
+> +
+>  sched_switch
+>  ------------
+>
+> diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
+> index 8d3a248..ab38ac8 100644
+> --- a/include/linux/ring_buffer.h
+> +++ b/include/linux/ring_buffer.h
+> @@ -100,6 +100,8 @@ void ring_buffer_free(struct ring_buffer *buffer);
+>
+>  int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size);
+>
+> +void ring_buffer_change_overwrite(struct ring_buffer *buffer, int val);
+> +
+>  struct ring_buffer_event *ring_buffer_lock_reserve(struct ring_buffer *buffer,
+>                                                   unsigned long length);
+>  int ring_buffer_unlock_commit(struct ring_buffer *buffer,
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 9ed509a..3207147 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -1429,6 +1429,17 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
+>  }
+>  EXPORT_SYMBOL_GPL(ring_buffer_resize);
+>
+> +void ring_buffer_change_overwrite(struct ring_buffer *buffer, int val)
+> +{
+> +       mutex_lock(&buffer->mutex);
+> +       if (val)
+> +               buffer->flags |= RB_FL_OVERWRITE;
+> +       else
+> +               buffer->flags &= ~RB_FL_OVERWRITE;
+> +       mutex_unlock(&buffer->mutex);
+> +}
+> +EXPORT_SYMBOL_GPL(ring_buffer_change_overwrite);
+> +
+>  static inline void *
+>  __rb_data_page_index(struct buffer_data_page *bpage, unsigned index)
+>  {
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index c380612..6f7494c 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -41,8 +41,6 @@
+>  #include "trace.h"
+>  #include "trace_output.h"
+>
+> -#define TRACE_BUFFER_FLAGS     (RB_FL_OVERWRITE)
+> -
+>  /*
+>  * On boot up, the ring buffer is set to the minimum size, so that
+>  * we do not waste memory on systems that are not using tracing.
+> @@ -340,7 +338,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
+>  /* trace_flags holds trace_options default values */
+>  unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
+>        TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
+> -       TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD;
+> +       TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE;
+>
+>  static int trace_stop_count;
+>  static DEFINE_SPINLOCK(tracing_start_lock);
+> @@ -425,6 +423,7 @@ static const char *trace_options[] = {
+>        "sleep-time",
+>        "graph-time",
+>        "record-cmd",
+> +       "overwrite",
+>        NULL
+>  };
+>
+> @@ -2523,6 +2522,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
+>
+>        if (mask == TRACE_ITER_RECORD_CMD)
+>                trace_event_enable_cmd_record(enabled);
+> +
+> +       if (mask == TRACE_ITER_OVERWRITE)
+> +               ring_buffer_change_overwrite(global_trace.buffer, enabled);
+>  }
+>
+>  static ssize_t
+> @@ -4545,9 +4547,11 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
+>  __init static int tracer_alloc_buffers(void)
+>  {
+>        int ring_buf_size;
+> +       enum ring_buffer_flags rb_flags;
+>        int i;
+>        int ret = -ENOMEM;
+>
+> +
+>        if (!alloc_cpumask_var(&tracing_buffer_mask, GFP_KERNEL))
+>                goto out;
+>
+> @@ -4560,12 +4564,13 @@ __init static int tracer_alloc_buffers(void)
+>        else
+>                ring_buf_size = 1;
+>
+> +       rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
+> +
+>        cpumask_copy(tracing_buffer_mask, cpu_possible_mask);
+>        cpumask_copy(tracing_cpumask, cpu_all_mask);
+>
+>        /* TODO: make the number of buffers hot pluggable with CPUS */
+> -       global_trace.buffer = ring_buffer_alloc(ring_buf_size,
+> -                                                  TRACE_BUFFER_FLAGS);
+> +       global_trace.buffer = ring_buffer_alloc(ring_buf_size, rb_flags);
+>        if (!global_trace.buffer) {
+>                printk(KERN_ERR "tracer: failed to allocate ring buffer!\n");
+>                WARN_ON(1);
+> @@ -4575,7 +4580,7 @@ __init static int tracer_alloc_buffers(void)
+>
+>
+>  #ifdef CONFIG_TRACER_MAX_TRACE
+> -       max_tr.buffer = ring_buffer_alloc(1, TRACE_BUFFER_FLAGS);
+> +       max_tr.buffer = ring_buffer_alloc(1, rb_flags);
+>        if (!max_tr.buffer) {
+>                printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
+>                WARN_ON(1);
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 9021f8c..9cd025a 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -606,6 +606,7 @@ enum trace_iterator_flags {
+>        TRACE_ITER_SLEEP_TIME           = 0x40000,
+>        TRACE_ITER_GRAPH_TIME           = 0x80000,
+>        TRACE_ITER_RECORD_CMD           = 0x100000,
+> +       TRACE_ITER_OVERWRITE            = 0x200000,
+>  };
+>
+>  /*
+> --
+> 1.7.3.1
+>
+>
