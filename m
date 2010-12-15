@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab0LOHDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 02:03:08 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:44807 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab0LOHDG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 02:03:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=keJDcT2VL/ByphSJRBgZr6jeo1wlzaDE4Npr0fVRfWVbqOL47+KsXT9Kg3P78V5Zxg
-         HcV2xq0yf6IwRIhoEvfk0qS/O059M28uymdP2TH06zrnCyqkE3c5K0TUkZs9wrHG601q
-         QPOeQyGNi5nvxm3T+rvyUygT1TeEd0P3zsOa8=
+	id S1753670Ab0LOHLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 02:11:17 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44842 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752661Ab0LOHLP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 02:11:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <20101214162646.5dd1c0de.randy.dunlap@oracle.com>
-References: <20101214162646.5dd1c0de.randy.dunlap@oracle.com>
-Date: Wed, 15 Dec 2010 08:03:04 +0100
-Message-ID: <AANLkTi=iCwE8E+KW17Skb2AfC99PenJOvjK8vYAfVFFc@mail.gmail.com>
-Subject: Re: [PATCH] eeepc-wmi: fix function return type to kill warning
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, akpm <akpm@linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101215062650.GB2728@helgaas.com>
+References: <20101208213606.13026.47657.stgit@bob.kio> <20101208213627.13026.18854.stgit@bob.kio>
+ <AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
+ <20101212061743.GA4974@helgaas.com> <AANLkTikogB78xPGiQZpg6nWKYVffr61A_Adm0a+C3mbR@mail.gmail.com>
+ <20101215062650.GB2728@helgaas.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 14 Dec 2010 23:03:15 -0800
+Message-ID: <AANLkTi=U+CTn=RDvYG0w6JK0Owv_TEc9YNtAtm9DeLKi@mail.gmail.com>
+Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 1:26 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, Dec 14, 2010 at 10:26 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 >
-> Fix return type warning:
->
-> drivers/platform/x86/eeepc-wmi.c:322: warning: initialization from incompatible pointer type
->
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  drivers/platform/x86/eeepc-wmi.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- lnx-2637-rc4.orig/drivers/platform/x86/eeepc-wmi.c
-> +++ lnx-2637-rc4/drivers/platform/x86/eeepc-wmi.c
-> @@ -298,7 +298,7 @@ static void eeepc_wmi_notify(u32 value,
->        kfree(obj);
->  }
->
-> -static int store_cpufv(struct device *dev, struct device_attribute *attr,
-> +static ssize_t store_cpufv(struct device *dev, struct device_attribute *attr,
->                       const char *buf, size_t count)
->  {
->        int value;
->
+> I don't know whether the other patches in this series make you
+> unhappy. �I'm really not happy with how I implemented the avoidance
+> of ACPI devices when doing PCI allocation, but I do think we need
+> to avoid them *somehow*, and I was looking for a minimal quick
+> fix at this point in the cycle.
 
+So the "avoid ACPI devices" part makes sense, and doesn't involved
+quirks, so I don't hate it at all the same way I hated the HP quirk.
 
-Sorry, too late, :)
+However, I hate how it makes the allocation logic opaque. You can no
+longer tell from the regular non-debug dmesg and the /proc/iomem _why_
+something got allocated the way it did, because there are hidden
+rules. That makes things awkward, methinks.
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=da7fddf92985c2525260dfd6f70006e022f4457c
+Also, quite frankly, I wonder what happens after release when somebody
+shows another machine that simply stopped working because the
+allocation strategy didn't work for it. The hw coverage that -rc6 gets
+is tiny compared to a real release.
 
-Still, Thanks
--- 
-Corentin Chary
-http://xf.iksaif.net
+IOW, what's the long-term strategy for this? The only sane long-term
+strategy I can see is the one we have _always_ done, which is to try
+to populate the memory resource tree with what simply matches reality.
+The whole "ok, we know the hardware better than the BIOS does" is a
+_stable_ strategy. In contrast, the things you propose are NOT stable
+strategies, they all depend on basically "we match windows exactly
+and/or trust ACPI". Both of which are *known* to be failing models.
+
+That's why I'm somewhat upset. Your whole strategy seems to depend on
+a known broken model. We _know_ ACPI tables are crap much of the time.
+So we know that "avoiding ACPI resources" is inevitably insufficient.
+
+And that's why I hate the "switch everything around" model. Yes, we
+have a known way to fix things up - namely to actually detect the
+hardware itself properly when firmware inevitably screws up - but the
+very act of switching things around will pretty much guarantee that
+all our years of effort is of dubious value, and we'll end up finding
+other laptops that used to work and no longer does.
+
+Only switching around when _CRS is used is possible, and shouldn't
+cause any regressions if we continue to default to not using _CRS. But
+you want to switch that default around at some point, don't you? At
+which point we'll be up sh*t creek again. See what I'm saying?
+
+Which all makes me suspect that we'd be much better off just doing the
+bottom-up allocation even for _CRS. And maybe CRS works fine then when
+we combine our hardware knowledge with the ACPI region avoidance.
+
+                     Linus
