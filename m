@@ -1,134 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab0LOUoV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:44:21 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:50883 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751661Ab0LOUoU (ORCPT
+	id S1754738Ab0LOUsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:48:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64508 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749Ab0LOUso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 15:44:20 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ai0JACS3CE3O+J1F/2dsb2JhbACVUo1AgR10w3aFSgSEZIwfgWo
-X-IronPort-AV: E=Sophos;i="4.59,351,1288584000"; 
-   d="scan'208";a="85563559"
-From: matthew@wil.cx
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH 3/5] uas: Rename sense pipe and sense urb to status pipe and status urb
-Date: Wed, 15 Dec 2010 15:44:04 -0500
-Message-Id: <1292445846-12101-3-git-send-email-matthew@wil.cx>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101215204147.GA1263@parisc-linux.org>
-References: <20101215204147.GA1263@parisc-linux.org>
+	Wed, 15 Dec 2010 15:48:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=k7t3cIWFHNH6YBDHA1r8ELmTin2eR9yShyH3atMEQQpNHk5HyKfTNSIo07G9O90CVM
+         mwWs33UuoBcGoqqJDwpKg12UKwbSRoWfGU2QYp2lJXhj/wACJfGP/6PsdXcGtPp3BSsc
+         ei+Y5zYo/znCA81hjV6Dsbl7kgLyJT4K6NQu4=
+Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Xinan Tang <xinan.tang@intel.com>,
+        Junchang Wang <junchangwang@gmail.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
+References: <cover.1292405004.git.fenghua.yu@intel.com>
+	 <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 21:48:38 +0100
+Message-ID: <1292446118.2603.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <matthew@wil.cx>
+Le mercredi 15 décembre 2010 à 12:02 -0800, Fenghua Yu a écrit :
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Multiqueue and multicore provide packet parallel processing methodology.
+> Current kernel and network drivers place one queue on one core. But the higher
+> level socket doesn't know multiqueue. Current socket only can receive or send
+> packets through one network interfaces. In some cases e.g. multi bpf filter
+> tcpdump and snort, a lot of contentions come from socket operations like ring
+> buffer. Even if the application itself has been fully parallelized and run on
+> multi-core systems and NIC handlex tx/rx in multiqueue in parallel, network layer
+> and NIC device driver assemble packets to a single, serialized queue. Thus the
+> application cannot actually run in parallel in high speed.
+> 
+> To break the serialized packets assembling bottleneck in kernel, one way is to
+> allow socket to know multiqueue associated with a NIC interface. So each socket
+> can handle tx/rx in one queue in parallel.
+> 
+> Kernel provides several interfaces by which sockets can be bound to rx/tx queues.
+> User applications can configure socket by providing several sockets that each
+> bound to a single queue, applications can get data from kernel in parallel. After
+> that, competitions mentioned above can be removed.
+> 
+> With this patch, the user-space receiving speed on a Intel SR1690 server with
+> a single L5640 6-core processor and a single ixgbe-based NIC goes from 0.73Mpps
+> to 4.20Mpps, nearly a linear speedup. A Intel SR1625 server two E5530 4-core
+> processors and a single ixgbe-based NIC goes from 0.80Mpps to 4.6Mpps. We noticed
+> the performance penalty comes from NUMA memory allocation.
+> 
 
-The spec calls this the status pipe.  While it is used to receive sense IUs,
-it is also used to receive other IUs, so this can be confusing.
+??? please elaborate on these NUMA memory allocations. This should be OK
+after commit 564824b0c52c34692d (net: allocate skbs on local node)
 
-Reported-by: Luben Tuikov <ltuikov@yahoo.com>
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
----
- drivers/usb/storage/uas.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+> This patch set provides kernel ioctl interfaces for user space. User space can
+> either directly call the interfaces or libpcap interfaces can be further provided
+> on the top of the kernel ioctl interfaces.
 
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index 981fdef..f82787f 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -100,8 +100,8 @@ struct uas_dev_info {
- };
- 
- enum {
--	ALLOC_SENSE_URB		= (1 << 0),
--	SUBMIT_SENSE_URB	= (1 << 1),
-+	ALLOC_STATUS_URB	= (1 << 0),
-+	SUBMIT_STATUS_URB	= (1 << 1),
- 	ALLOC_DATA_IN_URB	= (1 << 2),
- 	SUBMIT_DATA_IN_URB	= (1 << 3),
- 	ALLOC_DATA_OUT_URB	= (1 << 4),
-@@ -115,7 +115,7 @@ struct uas_cmd_info {
- 	unsigned int state;
- 	unsigned int stream;
- 	struct urb *cmd_urb;
--	struct urb *sense_urb;
-+	struct urb *status_urb;
- 	struct urb *data_in_urb;
- 	struct urb *data_out_urb;
- 	struct list_head list;
-@@ -207,7 +207,7 @@ static void uas_xfer_data(struct urb *urb, struct scsi_cmnd *cmnd,
- 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 	int err;
- 
--	cmdinfo->state = direction | SUBMIT_SENSE_URB;
-+	cmdinfo->state = direction | SUBMIT_STATUS_URB;
- 	err = uas_submit_urbs(cmnd, cmnd->device->hostdata, GFP_ATOMIC);
- 	if (err) {
- 		spin_lock(&uas_work_lock);
-@@ -360,21 +360,21 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
- {
- 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 
--	if (cmdinfo->state & ALLOC_SENSE_URB) {
--		cmdinfo->sense_urb = uas_alloc_sense_urb(devinfo, gfp, cmnd,
--							cmdinfo->stream);
--		if (!cmdinfo->sense_urb)
-+	if (cmdinfo->state & ALLOC_STATUS_URB) {
-+		cmdinfo->status_urb = uas_alloc_sense_urb(devinfo, gfp, cmnd,
-+							  cmdinfo->stream);
-+		if (!cmdinfo->status_urb)
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
--		cmdinfo->state &= ~ALLOC_SENSE_URB;
-+		cmdinfo->state &= ~ALLOC_STATUS_URB;
- 	}
- 
--	if (cmdinfo->state & SUBMIT_SENSE_URB) {
--		if (usb_submit_urb(cmdinfo->sense_urb, gfp)) {
-+	if (cmdinfo->state & SUBMIT_STATUS_URB) {
-+		if (usb_submit_urb(cmdinfo->status_urb, gfp)) {
- 			scmd_printk(KERN_INFO, cmnd,
- 					"sense urb submission failure\n");
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		}
--		cmdinfo->state &= ~SUBMIT_SENSE_URB;
-+		cmdinfo->state &= ~SUBMIT_STATUS_URB;
- 	}
- 
- 	if (cmdinfo->state & ALLOC_DATA_IN_URB) {
-@@ -443,7 +443,7 @@ static int uas_queuecommand_lck(struct scsi_cmnd *cmnd,
- 
- 	BUILD_BUG_ON(sizeof(struct uas_cmd_info) > sizeof(struct scsi_pointer));
- 
--	if (!cmdinfo->sense_urb && sdev->current_cmnd)
-+	if (!cmdinfo->status_urb && sdev->current_cmnd)
- 		return SCSI_MLQUEUE_DEVICE_BUSY;
- 
- 	if (blk_rq_tagged(cmnd->request)) {
-@@ -455,7 +455,7 @@ static int uas_queuecommand_lck(struct scsi_cmnd *cmnd,
- 
- 	cmnd->scsi_done = done;
- 
--	cmdinfo->state = ALLOC_SENSE_URB | SUBMIT_SENSE_URB |
-+	cmdinfo->state = ALLOC_STATUS_URB | SUBMIT_STATUS_URB |
- 			ALLOC_CMD_URB | SUBMIT_CMD_URB;
- 
- 	switch (cmnd->sc_data_direction) {
-@@ -478,8 +478,8 @@ static int uas_queuecommand_lck(struct scsi_cmnd *cmnd,
- 	err = uas_submit_urbs(cmnd, devinfo, GFP_ATOMIC);
- 	if (err) {
- 		/* If we did nothing, give up now */
--		if (cmdinfo->state & SUBMIT_SENSE_URB) {
--			usb_free_urb(cmdinfo->sense_urb);
-+		if (cmdinfo->state & SUBMIT_STATUS_URB) {
-+			usb_free_urb(cmdinfo->status_urb);
- 			return SCSI_MLQUEUE_DEVICE_BUSY;
- 		}
- 		spin_lock(&uas_work_lock);
--- 
-1.7.2.3
+So, say we have 8 queues, you want libpcap opens 8 sockets, and bind
+them to each queue. Add a bpf filter to each one of them. This seems not
+generic way, because it wont work for an UDP socket for example.
+And you already can do this using SKF_AD_QUEUE (added in commit
+d19742fb)
+
+Also your AF_PACKET patch only address mmaped sockets.
+
+
 
