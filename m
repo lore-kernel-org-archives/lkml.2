@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759321Ab0LODqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 22:46:35 -0500
-Received: from cantor.suse.de ([195.135.220.2]:51218 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753198Ab0LODqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 22:46:34 -0500
-Date: Tue, 14 Dec 2010 19:47:13 -0800
-From: Greg KH <gregkh@suse.de>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>
-Subject: Re: [PATCH] base: add sysfs socs info
-Message-ID: <20101215034713.GB3297@suse.de>
-References: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
- <20101214161130.GB1857@suse.de>
- <20101215012511.GQ19897@game.jcrosoft.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101215012511.GQ19897@game.jcrosoft.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760009Ab0LODt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 22:49:28 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39884 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755123Ab0LODt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 22:49:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66872366"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: davidb@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH 0/7] msm: Support for Qualcomm MSM8960
+Date: Tue, 14 Dec 2010 19:49:14 -0800
+Message-Id: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 02:25:11AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 08:11 Tue 14 Dec     , Greg KH wrote:
-> > On Tue, Dec 14, 2010 at 01:40:17PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > > this provide an easy way to register soc information
-> > > 
-> > > arch, family, model, id, revision
-> > > 
-> > > as this for at91sam9g20
-> > > 
-> > > $ cat /sys/devices/system/soc/soc0/arch
-> > > current
-> > > $ cat /sys/devices/system/soc/soc0/family
-> > > at91
-> > > $ cat /sys/devices/system/soc/soc0/id
-> > > at91sam9g20
-> > > $ cat /sys/devices/system/soc/soc0/model
-> > > 0x00000000019905a0
-> > > $ cat /sys/devices/system/soc/soc0/revision
-> > > 1.1
-> > 
-> > What is this for?  When you add sysfs files, you are required to add
-> > entries to the Documentation/ABI/ files as well, please always provide
-> > this so we are able to review the code easier.
-> I'll add a doc in Documentation/ABI
->  
-> > > +struct soc {
-> > > +	u64 id;
-> > > +	char *arch;
-> > > +	char *family;
-> > > +	char *model;
-> > > +	char *revision;
-> > > +	struct sys_device sysdev;
-> > > +};
-> > 
-> > What is a "SOC"?  A "Small Ordinary Creature"?
-> :) Systen On Chip
-> > 
-> > And does every system have one of these?  Just one?  Not multiple?  We
-> > need a whole lot more information here as to why this code is needed,
-> > and who will be using it.
-> > 
-> > Also, isn't this information already in /proc/cpu/ today?
-> no all this information are not present in /proc/cpu and a cpu is not a soc
-> 
-> basicaly on a board you will have one soc but some boards have more as example
-> some ST boards you have two sh4 soc or on some amcc you have two powerpc soc
-> 
-> with these information you are allow to dynamise the userspace based on the
-> soc or the companion soc and also be able to display this information in a UI
+Add initial support for the Qualcomm MSM8960 target.
 
-Ok, but then why not make it "real" devices and not sysdev?  We are
-trying to fix the sysdev code to be semi-real devices, so you might as
-well make them real ones now.
+Stepan Moskovchenko (7):
+  msm: io: I/O register definitions for MSM8960
+  msm: Physical offset for MSM8960
+  msm: irqs-8960: Interrupt map for MSM8960
+  msm: Board file for MSM8960 simulator
+  msm: timer: Timer support for MSM8960
+  msm: Makefile cleanup
+  msm: Build support for the MSM8960 target
 
-thanks,
+ arch/arm/mach-msm/Kconfig                       |   16 ++
+ arch/arm/mach-msm/Makefile                      |   20 +-
+ arch/arm/mach-msm/board-msm8960.c               |   71 ++++++
+ arch/arm/mach-msm/include/mach/io.h             |    1 +
+ arch/arm/mach-msm/include/mach/irqs-8960.h      |  293 +++++++++++++++++++++++
+ arch/arm/mach-msm/include/mach/irqs.h           |    2 +
+ arch/arm/mach-msm/include/mach/memory.h         |    2 +
+ arch/arm/mach-msm/include/mach/msm_iomap-8960.h |   55 +++++
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |    2 +
+ arch/arm/mach-msm/io.c                          |   14 +
+ arch/arm/mach-msm/timer.c                       |    3 +-
+ 11 files changed, 466 insertions(+), 13 deletions(-)
+ create mode 100644 arch/arm/mach-msm/board-msm8960.c
+ create mode 100644 arch/arm/mach-msm/include/mach/irqs-8960.h
+ create mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8960.h
 
-greg k-h
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
