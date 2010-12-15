@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab0LOKfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:35:51 -0500
-Received: from csmtp3.one.com ([91.198.169.23]:36743 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630Ab0LOKfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:35:50 -0500
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 05:35:49 EST
-Message-ID: <4D0897F3.7040500@bitmath.org>
-Date: Wed, 15 Dec 2010 11:26:59 +0100
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+	id S1752591Ab0LOKjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:39:11 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46801 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab0LOKjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:39:10 -0500
+Message-Id: <E1PSolI-0008TX-Bx@ZenIV.linux.org.uk>
+Date: Wed, 15 Dec 2010 10:39:08 +0000
+To: hans-christian.egtvedt@atmel.com
+Subject: [PATCH 1/6] avr32: missed _TIF_NOTIFY_RESUME on one of
+ do_notify_resume callers
+Cc: linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Chase Douglas <chase.douglas@canonical.com>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Ping has touched upon this subject as well, from the pen & touch perspective.
->> Generally, some ABS axes are actually enumerations, for which we have no
->> direct abstraction. If we had a way to declare the used values for such
->> enumerations, it would resolve these and possibly other issues.
 
-> I think that presence of pen/touch can be detected by having
-> BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
-> finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
-> this is another case where we should employ the proposed device flags?
+we need that not just on syscall returns but on irq ones as well...
 
-Yes. Having something like INPUT_QUIRK_SEMI_MT might be enough, and we could
-drop the whole MT_TOOL_ENVELOPE circus. Chase, Peter, Chris, would you be
-comfortable with such a solution?
+Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ arch/avr32/kernel/entry-avr32b.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Anyway, it looks like we have a few concerns with current
-> MT_TOOL_ENVELOPE so I want to rewind my 'next' branch.
+diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
+index 169268c..5e6beb2 100644
+--- a/arch/avr32/kernel/entry-avr32b.S
++++ b/arch/avr32/kernel/entry-avr32b.S
+@@ -587,7 +587,7 @@ fault_exit_work:
+ 	ld.w	r1, r0[TI_flags]
+ 	rjmp	fault_exit_work
+ 
+-1:	mov	r2, _TIF_SIGPENDING | _TIF_RESTORE_SIGMASK
++1:	mov	r2, _TIF_SIGPENDING | _TIF_RESTORE_SIGMASK | _TIF_NOTIFY_RESUME
+ 	tst	r1, r2
+ 	breq	2f
+ 	unmask_interrupts
+-- 
+1.5.6.5
 
-Yep. Should I also take the opportunity to sync from -rc1 instead, and fold the
-cleanup patches into the appropriate places?
-
-Thanks,
-Henrik
 
