@@ -1,77 +1,538 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab0LOSYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 13:24:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:36318 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab0LOSYb convert rfc822-to-8bit (ORCPT
+	id S1754725Ab0LOS2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 13:28:22 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:54131 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab0LOS2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 13:24:31 -0500
-Subject: Re: [PATCH 1/2] sched: Fix the irqtime code to deal with u64 wraps
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <AANLkTin86W-W69fGpj+5LCP7L-KQfA_tn506o+RZ_UED@mail.gmail.com>
-References: <1292013506.13513.78.camel@laptop>
-	 <AANLkTi=vUvNET2peva7uzWbzk5eK5EsKUrEQQSwLkNwM@mail.gmail.com>
-	 <1292242433.6803.199.camel@twins>
-	 <AANLkTin86W-W69fGpj+5LCP7L-KQfA_tn506o+RZ_UED@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Dec 2010 19:24:12 +0100
-Message-ID: <1292437452.2708.45.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 15 Dec 2010 13:28:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66748269"
+From: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+Subject: [PATCH] msm: smd: Add smd_pkt driver
+Date: Wed, 15 Dec 2010 10:27:55 -0800
+Message-Id: <1292437675-11561-1-git-send-email-nvishwan@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-15 at 10:16 -0800, Venkatesh Pallipadi wrote:
-> Peter,
-> 
-> This looks like something that happened while splitting this into two
-> patches. I needed a trivial change like below before I could apply
-> these two patches on linus-git.
-> 
-> Thanks,
-> Venki
-> ---
-> @@ -641,17 +641,18 @@ static void sched_irq_time_avg_update(struct rq
-> *rq, u64 irq_time);
-> 
->  inline void update_rq_clock(struct rq *rq)
->  {
-> -	if (!rq->skip_clock_update) {
-> -		int cpu = cpu_of(rq);
-> -		u64 irq_time;
-> +	int cpu = cpu_of(rq);
-> +	u64 irq_time;
-> 
-> -		rq->clock = sched_clock_cpu(cpu);
-> -		irq_time = irq_time_cpu(cpu);
-> -		if (rq->clock - irq_time > rq->clock_task)
-> -			rq->clock_task = rq->clock - irq_time;
-> +	if (rq->skip_clock_update)
-> +		return;
-> 
-> -		sched_irq_time_avg_update(rq, irq_time);
-> -	}
-> +	rq->clock = sched_clock_cpu(cpu);
-> +	irq_time = irq_time_cpu(cpu);
-> +	if (rq->clock - irq_time > rq->clock_task)
-> +		rq->clock_task = rq->clock - irq_time;
-> +
-> +	sched_irq_time_avg_update(rq, irq_time);
->  }
-> 
->  /*
+Add smd_pkt driver which provides device interface
+to smd packet ports.
 
+Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+---
+ drivers/char/Kconfig       |    8 +
+ drivers/char/Makefile      |    2 +
+ drivers/char/msm_smd_pkt.c |  466 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 476 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/msm_smd_pkt.c
 
-That's due another patch in tip/sched/urgent
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 43d3395..f82af94 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -1144,5 +1144,13 @@ config RAMOOPS
+ 	  This enables panic and oops messages to be logged to a circular
+ 	  buffer in RAM where it can be read back at some later point.
+ 
++config MSM_SMD_PKT
++	bool "Enable device interface for some SMD packet ports"
++	default n
++	depends on MSM_SMD
++	help
++	  Enables userspace clients to read and write to some packet SMD
++	  ports via device interface for MSM chipset.
++
+ endmenu
+ 
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index ba53ec9..1c4413f 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -98,3 +98,5 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
+ 
+ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
+ js-rtc-y = rtc.o
++
++obj-$(CONFIG_MSM_SMD_PKT)	+= msm_smd_pkt.o
+diff --git a/drivers/char/msm_smd_pkt.c b/drivers/char/msm_smd_pkt.c
+new file mode 100644
+index 0000000..b6f8a65
+--- /dev/null
++++ b/drivers/char/msm_smd_pkt.c
+@@ -0,0 +1,466 @@
++/* Copyright (c) 2008-2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ *
++ */
++/*
++ * SMD Packet Driver -- Provides userspace interface to SMD packet ports.
++ */
++
++#include <linux/slab.h>
++#include <linux/cdev.h>
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/device.h>
++#include <linux/sched.h>
++#include <linux/mutex.h>
++#include <linux/delay.h>
++#include <linux/uaccess.h>
++#include <linux/workqueue.h>
++#include <linux/poll.h>
++
++#include <mach/msm_smd.h>
++
++#define NUM_SMD_PKT_PORTS 9
++#define DEVICE_NAME "smdpkt"
++#define MAX_BUF_SIZE 2048
++
++struct smd_pkt_dev {
++	struct cdev cdev;
++	struct device *devicep;
++
++	struct smd_channel *ch;
++	int open_count;
++	struct mutex ch_lock;
++	struct mutex rx_lock;
++	struct mutex tx_lock;
++	wait_queue_head_t ch_read_wait_queue;
++	wait_queue_head_t ch_opened_wait_queue;
++
++	int i;
++
++	unsigned char tx_buf[MAX_BUF_SIZE];
++	unsigned char rx_buf[MAX_BUF_SIZE];
++	int remote_open;
++
++} *smd_pkt_devp[NUM_SMD_PKT_PORTS];
++
++struct class *smd_pkt_classp;
++static dev_t smd_pkt_number;
++
++static int msm_smd_pkt_debug_enable;
++module_param_named(debug_enable, msm_smd_pkt_debug_enable,
++		   int, S_IRUGO | S_IWUSR | S_IWGRP);
++
++#ifdef DEBUG
++#define D_DUMP_BUFFER(prestr, cnt, buf) do {			\
++		int i;						\
++		if (msm_smd_pkt_debug_enable) {			\
++			pr_debug("%s", prestr);			\
++			for (i = 0; i < cnt; i++)		\
++				pr_debug("%.2x", buf[i]);	\
++			pr_debug("\n");				\
++		}						\
++	} while (0)
++#else
++#define D_DUMP_BUFFER(prestr, cnt, buf) do {} while (0)
++#endif
++
++#ifdef DEBUG
++#define DBG(x...) do {			\
++	if (msm_smd_pkt_debug_enable)	\
++		pr_debug(x);		\
++	} while (0)
++#else
++#define DBG(x...) do {} while (0)
++#endif
++
++static void check_and_wakeup_reader(struct smd_pkt_dev *smd_pkt_devp)
++{
++	int sz;
++
++	if (!smd_pkt_devp || !smd_pkt_devp->ch)
++		return;
++
++	sz = smd_cur_packet_size(smd_pkt_devp->ch);
++	if (sz == 0) {
++		DBG("no packet\n");
++		return;
++	}
++	if (sz > smd_read_avail(smd_pkt_devp->ch)) {
++		DBG("incomplete packet\n");
++		return;
++	}
++
++	DBG("waking up reader\n");
++	wake_up_interruptible(&smd_pkt_devp->ch_read_wait_queue);
++}
++
++static int smd_pkt_read(struct file *file, char __user *buf,
++			size_t count, loff_t *ppos)
++{
++	int r, bytes_read;
++	struct smd_pkt_dev *smd_pkt_devp;
++	struct smd_channel *chl;
++
++	DBG("read %d bytes\n", count);
++	if (count > MAX_BUF_SIZE)
++		return -EINVAL;
++
++	smd_pkt_devp = file->private_data;
++	if (!smd_pkt_devp || !smd_pkt_devp->ch)
++		return -EINVAL;
++
++	chl = smd_pkt_devp->ch;
++wait_for_packet:
++	r = wait_event_interruptible(smd_pkt_devp->ch_read_wait_queue,
++				     (smd_cur_packet_size(chl) > 0 &&
++				      smd_read_avail(chl) >=
++				      smd_cur_packet_size(chl)));
++
++	if (r < 0) {
++		if (r != -ERESTARTSYS)
++			pr_err("wait returned %d\n", r);
++		return r;
++	}
++
++	mutex_lock(&smd_pkt_devp->rx_lock);
++
++	bytes_read = smd_cur_packet_size(smd_pkt_devp->ch);
++	if (bytes_read == 0 ||
++	    bytes_read < smd_read_avail(smd_pkt_devp->ch)) {
++		mutex_unlock(&smd_pkt_devp->rx_lock);
++		DBG("Nothing to read\n");
++		goto wait_for_packet;
++	}
++
++	if (bytes_read > count) {
++		mutex_unlock(&smd_pkt_devp->rx_lock);
++		pr_info("packet size %d > buffer size %d", bytes_read, count);
++		return -EINVAL;
++	}
++
++	r = smd_read(smd_pkt_devp->ch, smd_pkt_devp->rx_buf, bytes_read);
++	if (r != bytes_read) {
++		mutex_unlock(&smd_pkt_devp->rx_lock);
++		pr_err("smd_read failed to read %d bytes: %d\n", bytes_read, r);
++		return -EIO;
++	}
++
++	D_DUMP_BUFFER("read: ", bytes_read, smd_pkt_devp->rx_buf);
++	r = copy_to_user(buf, smd_pkt_devp->rx_buf, bytes_read);
++	mutex_unlock(&smd_pkt_devp->rx_lock);
++	if (r) {
++		pr_err("copy_to_user failed %d\n", r);
++		return -EFAULT;
++	}
++
++	DBG("read complete %d bytes\n", bytes_read);
++	check_and_wakeup_reader(smd_pkt_devp);
++
++	return bytes_read;
++}
++
++static int smd_pkt_write(struct file *file, const char __user *buf,
++			 size_t count, loff_t *ppos)
++{
++	int r;
++	struct smd_pkt_dev *smd_pkt_devp;
++
++	if (count > MAX_BUF_SIZE)
++		return -EINVAL;
++
++	DBG("writting %d bytes\n", count);
++
++	smd_pkt_devp = file->private_data;
++	if (!smd_pkt_devp || !smd_pkt_devp->ch)
++		return -EINVAL;
++
++	mutex_lock(&smd_pkt_devp->tx_lock);
++	if (smd_write_avail(smd_pkt_devp->ch) < count) {
++		mutex_unlock(&smd_pkt_devp->tx_lock);
++		DBG("Not enough space to write\n");
++		return -ENOMEM;
++	}
++
++	D_DUMP_BUFFER("write: ", count, buf);
++	r = copy_from_user(smd_pkt_devp->tx_buf, buf, count);
++	if (r) {
++		mutex_unlock(&smd_pkt_devp->tx_lock);
++		pr_err("copy_from_user failed %d\n", r);
++		return -EFAULT;
++	}
++
++	r = smd_write(smd_pkt_devp->ch, smd_pkt_devp->tx_buf, count);
++	if (r != count) {
++		mutex_unlock(&smd_pkt_devp->tx_lock);
++		pr_err("smd_write failed to write %d bytes: %d.\n", count, r);
++		return -EIO;
++	}
++	mutex_unlock(&smd_pkt_devp->tx_lock);
++
++	DBG("wrote %d bytes\n", count);
++	return count;
++}
++
++static unsigned int smd_pkt_poll(struct file *file, poll_table *wait)
++{
++	struct smd_pkt_dev *smd_pkt_devp;
++	unsigned int mask = 0;
++
++	smd_pkt_devp = file->private_data;
++	if (!smd_pkt_devp)
++		return POLLERR;
++
++	DBG("poll waiting\n");
++	poll_wait(file, &smd_pkt_devp->ch_read_wait_queue, wait);
++	if (smd_read_avail(smd_pkt_devp->ch))
++		mask |= POLLIN | POLLRDNORM;
++
++	DBG("poll return\n");
++	return mask;
++}
++
++static void smd_pkt_ch_notify(void *priv, unsigned event)
++{
++	struct smd_pkt_dev *smd_pkt_devp = priv;
++
++	if (smd_pkt_devp->ch == 0)
++		return;
++
++	switch (event) {
++	case SMD_EVENT_DATA:
++		DBG("data\n");
++		check_and_wakeup_reader(smd_pkt_devp);
++		break;
++
++	case SMD_EVENT_OPEN:
++		DBG("remote open\n");
++		smd_pkt_devp->remote_open = 1;
++		wake_up_interruptible(&smd_pkt_devp->ch_opened_wait_queue);
++		break;
++
++	case SMD_EVENT_CLOSE:
++		smd_pkt_devp->remote_open = 0;
++		pr_info("remote closed\n");
++		break;
++
++	default:
++		pr_err("unknown event %d\n", event);
++		break;
++	}
++}
++
++static char *smd_pkt_dev_name[] = {
++	"smdcntl0",
++	"smdcntl1",
++	"smdcntl2",
++	"smdcntl3",
++	"smdcntl4",
++	"smdcntl5",
++	"smdcntl6",
++	"smdcntl7",
++	"smd22",
++};
++
++static char *smd_ch_name[] = {
++	"DATA5_CNTL",
++	"DATA6_CNTL",
++	"DATA7_CNTL",
++	"DATA8_CNTL",
++	"DATA9_CNTL",
++	"DATA12_CNTL",
++	"DATA13_CNTL",
++	"DATA14_CNTL",
++	"DATA22",
++};
++
++static int smd_pkt_open(struct inode *inode, struct file *file)
++{
++	int r = 0;
++	struct smd_pkt_dev *smd_pkt_devp;
++
++	smd_pkt_devp = container_of(inode->i_cdev, struct smd_pkt_dev, cdev);
++	if (!smd_pkt_devp)
++		return -EINVAL;
++
++	file->private_data = smd_pkt_devp;
++
++	mutex_lock(&smd_pkt_devp->ch_lock);
++	if (smd_pkt_devp->open_count == 0) {
++		r = smd_open(smd_ch_name[smd_pkt_devp->i],
++			     &smd_pkt_devp->ch, smd_pkt_devp,
++			     smd_pkt_ch_notify);
++		if (r < 0) {
++			pr_err("smd_open failed for %s, %d\n",
++			       smd_ch_name[smd_pkt_devp->i], r);
++			goto out;
++		}
++
++		r = wait_event_interruptible_timeout(
++				smd_pkt_devp->ch_opened_wait_queue,
++				smd_pkt_devp->remote_open,
++				msecs_to_jiffies(2 * HZ));
++		if (r == 0)
++			r = -ETIMEDOUT;
++
++		if (r < 0) {
++			pr_err("wait returned %d\n", r);
++			smd_close(smd_pkt_devp->ch);
++			smd_pkt_devp->ch = 0;
++		} else {
++			smd_pkt_devp->open_count++;
++			r = 0;
++		}
++	}
++out:
++	mutex_unlock(&smd_pkt_devp->ch_lock);
++	return r;
++}
++
++static int smd_pkt_release(struct inode *inode, struct file *file)
++{
++	int r = 0;
++	struct smd_pkt_dev *smd_pkt_devp = file->private_data;
++
++	if (!smd_pkt_devp)
++		return -EINVAL;
++
++	mutex_lock(&smd_pkt_devp->ch_lock);
++	if (--smd_pkt_devp->open_count == 0) {
++		r = smd_close(smd_pkt_devp->ch);
++		smd_pkt_devp->ch = 0;
++	}
++	mutex_unlock(&smd_pkt_devp->ch_lock);
++
++	return r;
++}
++
++static const struct file_operations smd_pkt_fops = {
++	.owner = THIS_MODULE,
++	.open = smd_pkt_open,
++	.release = smd_pkt_release,
++	.read = smd_pkt_read,
++	.write = smd_pkt_write,
++	.poll = smd_pkt_poll,
++};
++
++static int __init smd_pkt_init(void)
++{
++	int i;
++	int r;
++
++	r = alloc_chrdev_region(&smd_pkt_number, 0,
++				NUM_SMD_PKT_PORTS, DEVICE_NAME);
++	if (r) {
++		pr_err("alloc_chrdev_region() failed %d\n", r);
++		return r;
++	}
++
++	smd_pkt_classp = class_create(THIS_MODULE, DEVICE_NAME);
++	if (IS_ERR(smd_pkt_classp)) {
++		r = PTR_ERR(smd_pkt_classp);
++		pr_err("class_create() failed %d\n", r);
++		goto unreg_chardev;
++	}
++
++	for (i = 0; i < NUM_SMD_PKT_PORTS; ++i) {
++		smd_pkt_devp[i] = kzalloc(sizeof(struct smd_pkt_dev),
++					  GFP_KERNEL);
++		if (IS_ERR(smd_pkt_devp[i])) {
++			r = PTR_ERR(smd_pkt_devp[i]);
++			pr_err("kmalloc() failed %d\n", r);
++			goto clean_cdevs;
++		}
++
++		smd_pkt_devp[i]->i = i;
++
++		init_waitqueue_head(&smd_pkt_devp[i]->ch_read_wait_queue);
++		smd_pkt_devp[i]->remote_open = 0;
++		init_waitqueue_head(&smd_pkt_devp[i]->ch_opened_wait_queue);
++
++		mutex_init(&smd_pkt_devp[i]->ch_lock);
++		mutex_init(&smd_pkt_devp[i]->rx_lock);
++		mutex_init(&smd_pkt_devp[i]->tx_lock);
++
++		cdev_init(&smd_pkt_devp[i]->cdev, &smd_pkt_fops);
++		smd_pkt_devp[i]->cdev.owner = THIS_MODULE;
++
++		r = cdev_add(&smd_pkt_devp[i]->cdev,
++			     (smd_pkt_number + i), 1);
++		if (r) {
++			pr_err("cdev_add() failed %d\n", r);
++			kfree(smd_pkt_devp[i]);
++			goto clean_cdevs;
++		}
++
++		smd_pkt_devp[i]->devicep =
++			device_create(smd_pkt_classp, NULL,
++				      (smd_pkt_number + i), NULL,
++				      smd_pkt_dev_name[i]);
++		if (IS_ERR(smd_pkt_devp[i]->devicep)) {
++			r = PTR_ERR(smd_pkt_devp[i]->devicep);
++			pr_err("device_create() failed %d\n", r);
++			cdev_del(&smd_pkt_devp[i]->cdev);
++			kfree(smd_pkt_devp[i]);
++			goto clean_cdevs;
++		}
++
++	}
++
++	pr_info("SMD Packet Port Driver Initialized.\n");
++	return 0;
++
++clean_cdevs:
++	if (i > 0) {
++		while (--i >= 0) {
++			mutex_destroy(&smd_pkt_devp[i]->ch_lock);
++			mutex_destroy(&smd_pkt_devp[i]->rx_lock);
++			mutex_destroy(&smd_pkt_devp[i]->tx_lock);
++			cdev_del(&smd_pkt_devp[i]->cdev);
++			kfree(smd_pkt_devp[i]);
++			device_destroy(smd_pkt_classp,
++				       MKDEV(MAJOR(smd_pkt_number), i));
++		}
++	}
++
++	class_destroy(smd_pkt_classp);
++unreg_chardev:
++	unregister_chrdev_region(MAJOR(smd_pkt_number), NUM_SMD_PKT_PORTS);
++	return r;
++}
++module_init(smd_pkt_init);
++
++static void __exit smd_pkt_cleanup(void)
++{
++	int i;
++
++	for (i = 0; i < NUM_SMD_PKT_PORTS; ++i) {
++		mutex_destroy(&smd_pkt_devp[i]->ch_lock);
++		mutex_destroy(&smd_pkt_devp[i]->rx_lock);
++		mutex_destroy(&smd_pkt_devp[i]->tx_lock);
++		cdev_del(&smd_pkt_devp[i]->cdev);
++		kfree(smd_pkt_devp[i]);
++		device_destroy(smd_pkt_classp,
++			       MKDEV(MAJOR(smd_pkt_number), i));
++	}
++
++	class_destroy(smd_pkt_classp);
++	unregister_chrdev_region(MAJOR(smd_pkt_number), NUM_SMD_PKT_PORTS);
++}
++module_exit(smd_pkt_cleanup);
++
++MODULE_DESCRIPTION("MSM Shared Memory Packet Port");
++MODULE_LICENSE("GPL v2");
+-- 
+1.5.6.3
 
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
