@@ -1,216 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab0LOTrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:47:04 -0500
-Received: from [130.75.117.88] ([130.75.117.88]:47791 "EHLO htj.dyndns.org"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753299Ab0LOTrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:47:03 -0500
-Message-ID: <4D091B32.4020309@suse.de>
-Date: Wed, 15 Dec 2010 20:46:58 +0100
-From: Tejun Heo <teheo@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org>	 <1292440246.4688.416.camel@mulgrave.site>  <4D0914B5.20208@kernel.org> <1292441610.4688.457.camel@mulgrave.site> <4D091A20.3060202@kernel.org>
-In-Reply-To: <4D091A20.3060202@kernel.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
+	id S1755276Ab0LOT5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:57:43 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:47793 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755200Ab0LOT5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 14:57:42 -0500
+Subject: [PATCH] adding gpmc configuration functions, west bridge related
+From: Sutharsan <srmt@cypress.com>
+To: greg@kroah.com
+Cc: odc@cypress.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 11:57:26 -0800
+Message-ID: <1292443046.1771.47.camel@sutharsan-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 08:42 PM, Tejun Heo wrote:
-> Yeap, that's an interesting point actually.  I just sent the patch
 
-Hmm... I remember sending but don't see it anywhere.  Where did it go?
-Anyways, here it is again.
+This patch adds and exports gpmc configuration functions. 
+'gpmc' configuration functions will be used by westbridge device controller driver.
 
+Thanks,
+Sutharsan
+
+Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
 ---
- drivers/scsi/scsi.c        |   15 +++++++++++++--
- drivers/scsi/scsi_scan.c   |   26 +++++++++++++-------------
- drivers/scsi/scsi_sysfs.c  |    8 +++++---
- include/scsi/scsi_device.h |    6 ++++--
- 4 files changed, 35 insertions(+), 20 deletions(-)
 
-Index: work/drivers/scsi/scsi_scan.c
-===================================================================
---- work.orig/drivers/scsi/scsi_scan.c
-+++ work/drivers/scsi/scsi_scan.c
-@@ -362,6 +362,16 @@ int scsi_is_target_device(const struct d
- }
- EXPORT_SYMBOL(scsi_is_target_device);
-
-+static void scsi_target_reap_usercontext(struct work_struct *work)
-+{
-+	struct scsi_target *starget =
-+		container_of(work, struct scsi_target, reap_work);
+diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile
+--- linux-2.6.37_vanilla/arch/arm/mach-omap2/Makefile	2010-11-29 20:42:04.000000000 -0800
++++ linux-2.6.37-cywb/arch/arm/mach-omap2/Makefile	2010-12-13 16:04:08.378446603 -0800
+@@ -182,6 +182,7 @@ obj-y					+= $(usbfs-m) $(usbfs-y)
+ obj-y					+= usb-musb.o
+ obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o
+ obj-y					+= usb-ehci.o
++obj-$(CONFIG_WESTBRIDGE_ASTORIA)        += usb-cywb-pnand.o
+ 
+ onenand-$(CONFIG_MTD_ONENAND_OMAP2)	:= gpmc-onenand.o
+ obj-y					+= $(onenand-m) $(onenand-y)
+diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c
+--- linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c	1969-12-31 16:00:00.000000000 -0800
++++ linux-2.6.37-cywb/arch/arm/mach-omap2/usb-cywb-pnand.c	2010-12-14 15:51:13.710787480 -0800
+@@ -0,0 +1,182 @@
++/*
++ * linux /arch/arm/mach-omap2/usb-cywb-pnand.c
++ *
++ * Copyright (C) 2010  Cypress Semiconductor
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
 +
-+	transport_remove_device(&starget->dev);
-+	device_del(&starget->dev);
-+	scsi_target_destroy(starget);
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
++ * Boston, MA  02110-1301, USA.
++ */
++
++#include <linux/module.h>
++
++#include <plat/gpmc.h>
++
++/*
++ * chip select number on GPMC ( 0..7 )
++ */
++#define AST_GPMC_CS 4
++
++/*
++ * for use by gpmc_set_timings api, measured in ns, not clocks
++ */
++#define WB_GPMC_BUSCYC_t    (7 * 6)
++#define WB_GPMC_CS_t_o_n    (0)
++#define WB_GPMC_ADV_t_o_n   (0)
++#define WB_GPMC_OE_t_o_n    (0)
++#define WB_GPMC_OE_t_o_f_f  (5 * 6)
++#define WB_GPMC_WE_t_o_n    (1 * 6)
++#define WB_GPMC_WE_t_o_f_f  (5 * 6)
++#define WB_GPMC_RDS_ADJ     (2 * 6)
++#define WB_GPMC_RD_t_a_c_c  (WB_GPMC_OE_t_o_f_f + WB_GPMC_RDS_ADJ)
++#define WB_GPMC_WR_t_a_c_c  (WB_GPMC_BUSCYC_t)
++
++#define GPMC_16BIT_MODE 0
++#define GPMC_RETIME     1
++
++/*
++ * GPMC_CONFIG7[cs] register bit fields
++ * AS_CS_MASK - 3 bit mask for  A26,A25,A24,
++ * AS_CS_BADDR - 6 BIT VALUE  A29 ...A24
++ * CSVALID_B - CSVALID bit on GPMC_CONFIG7[cs] register
++ */
++#define AS_CS_MASK	(0X7 << 8)
++#define AS_CS_BADDR	 0x02
++#define CSVALID_B (1 << 6)
++
++#define BLKSZ_4K 0x1000
++
++/*
++ * switch GPMC DATA bus mode
++ */
++void cywb_gpmc_enable_16bit_bus(bool dbus16_enabled)
++{
++	uint32_t tmp32;
++
++	/*
++	 * disable gpmc CS4 operation 1st
++	 */
++	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS,
++				GPMC_CS_CONFIG7) & ~GPMC_CONFIG7_CSVALID;
++	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
++
++	/*
++	 * GPMC NAND data bus can be 8 or 16 bit wide
++	 */
++	if (dbus16_enabled) {
++		printk(KERN_INFO "enabling 16 bit bus\n");
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++				(GPMC_CONFIG1_DEVICETYPE(2) |
++				GPMC_CONFIG1_WAIT_PIN_SEL(2) |
++				GPMC_CONFIG1_DEVICESIZE_16)
++				);
++	} else {
++		printk(KERN_INFO "enabling 8 bit bus\n");
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++				(GPMC_CONFIG1_DEVICETYPE(2) |
++				GPMC_CONFIG1_WAIT_PIN_SEL(2))
++				);
++	}
++
++	/*
++	 * re-enable astoria CS operation on GPMC
++	 */
++	 gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
++			(tmp32 | GPMC_CONFIG7_CSVALID));
 +}
 +
- static struct scsi_target *__scsi_find_target(struct device *parent,
- 					      int channel, uint id)
- {
-@@ -427,6 +437,7 @@ static struct scsi_target *scsi_alloc_ta
- 	starget->state = STARGET_CREATED;
- 	starget->scsi_level = SCSI_2;
- 	starget->max_target_blocked = SCSI_DEFAULT_TARGET_BLOCKED;
-+	INIT_WORK(&starget->reap_work, scsi_target_reap_usercontext);
-  retry:
- 	spin_lock_irqsave(shost->host_lock, flags);
-
-@@ -462,21 +473,11 @@ static struct scsi_target *scsi_alloc_ta
- 	}
- 	/* Unfortunately, we found a dying target; need to
- 	 * wait until it's dead before we can get a new one */
-+	flush_work(&found_target->reap_work);
- 	put_device(&found_target->dev);
--	flush_scheduled_work();
- 	goto retry;
- }
-
--static void scsi_target_reap_usercontext(struct work_struct *work)
--{
--	struct scsi_target *starget =
--		container_of(work, struct scsi_target, ew.work);
--
--	transport_remove_device(&starget->dev);
--	device_del(&starget->dev);
--	scsi_target_destroy(starget);
--}
--
- /**
-  * scsi_target_reap - check to see if target is in use and destroy if not
-  * @starget: target to be checked
-@@ -507,8 +508,7 @@ void scsi_target_reap(struct scsi_target
- 	if (state == STARGET_CREATED)
- 		scsi_target_destroy(starget);
- 	else
--		execute_in_process_context(scsi_target_reap_usercontext,
--					   &starget->ew);
-+		queue_work(scsi_wq, &starget->reap_work);
- }
-
- /**
-Index: work/drivers/scsi/scsi_sysfs.c
-===================================================================
---- work.orig/drivers/scsi/scsi_sysfs.c
-+++ work/drivers/scsi/scsi_sysfs.c
-@@ -300,7 +300,7 @@ static void scsi_device_dev_release_user
- 	struct list_head *this, *tmp;
- 	unsigned long flags;
-
--	sdev = container_of(work, struct scsi_device, ew.work);
-+	sdev = container_of(work, struct scsi_device, release_work);
-
- 	parent = sdev->sdev_gendev.parent;
- 	starget = to_scsi_target(parent);
-@@ -343,8 +343,8 @@ static void scsi_device_dev_release_user
- static void scsi_device_dev_release(struct device *dev)
- {
- 	struct scsi_device *sdp = to_scsi_device(dev);
--	execute_in_process_context(scsi_device_dev_release_usercontext,
--				   &sdp->ew);
++int cywb_pnand_platform_retime(int action, bool dbus16_enabled)
++{
++	u32 tmp32;
++	struct gpmc_timings	timings;
++	int retval;
 +
-+	queue_work(scsi_wq, &sdp->release_work);
- }
-
- static struct class sdev_class = {
-@@ -1069,6 +1069,8 @@ void scsi_sysfs_device_initialize(struct
- 	dev_set_name(&sdev->sdev_dev, "%d:%d:%d:%d",
- 		     sdev->host->host_no, sdev->channel, sdev->id, sdev->lun);
- 	sdev->scsi_level = starget->scsi_level;
-+	INIT_WORK(&sdev->release_work, scsi_device_dev_release_usercontext);
++	switch (action) {
 +
- 	transport_setup_device(&sdev->sdev_gendev);
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_add_tail(&sdev->same_target_siblings, &starget->devices);
-Index: work/include/scsi/scsi_device.h
-===================================================================
---- work.orig/include/scsi/scsi_device.h
-+++ work/include/scsi/scsi_device.h
-@@ -168,7 +168,7 @@ struct scsi_device {
- 	struct device		sdev_gendev,
- 				sdev_dev;
-
--	struct execute_work	ew; /* used to get process context on put */
-+	struct work_struct	release_work; /* for process context on put */
-
- 	struct scsi_dh_data	*scsi_dh_data;
- 	enum scsi_device_state sdev_state;
-@@ -258,7 +258,7 @@ struct scsi_target {
- #define SCSI_DEFAULT_TARGET_BLOCKED	3
-
- 	char			scsi_level;
--	struct execute_work	ew;
-+	struct work_struct	reap_work;
- 	enum scsi_target_state	state;
- 	void 			*hostdata; /* available to low-level driver */
- 	unsigned long		starget_data[0]; /* for the transport */
-@@ -276,6 +276,8 @@ static inline struct scsi_target *scsi_t
- #define starget_printk(prefix, starget, fmt, a...)	\
- 	dev_printk(prefix, &(starget)->dev, fmt, ##a)
-
-+extern struct workqueue_struct *scsi_wq;
++	case GPMC_16BIT_MODE:
++		cywb_gpmc_enable_16bit_bus(dbus16_enabled);
++		retval = 0;
++		break;
++	case GPMC_RETIME:
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++						(GPMC_CONFIG1_DEVICETYPE(2) |
++						GPMC_CONFIG1_WAIT_PIN_SEL(2)));
 +
- extern struct scsi_device *__scsi_add_device(struct Scsi_Host *,
- 		uint, uint, uint, void *hostdata);
- extern int scsi_add_device(struct Scsi_Host *host, uint channel,
-Index: work/drivers/scsi/scsi.c
-===================================================================
---- work.orig/drivers/scsi/scsi.c
-+++ work/drivers/scsi/scsi.c
-@@ -70,6 +70,11 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/scsi.h>
-
-+/*
-+ * Utility multithreaded workqueue for SCSI.
-+ */
-+struct workqueue_struct *scsi_wq;
++		memset(&timings, 0, sizeof(timings));
 +
- static void scsi_done(struct scsi_cmnd *cmd);
++		/* cs timing */
++		timings.cs_on = WB_GPMC_CS_t_o_n;
++		timings.cs_wr_off = WB_GPMC_BUSCYC_t;
++		timings.cs_rd_off = WB_GPMC_BUSCYC_t;
++
++		/* adv timing */
++		timings.adv_on = WB_GPMC_ADV_t_o_n;
++		timings.adv_rd_off = WB_GPMC_BUSCYC_t;
++		timings.adv_wr_off = WB_GPMC_BUSCYC_t;
++
++		/* oe timing */
++		timings.oe_on = WB_GPMC_OE_t_o_n;
++		timings.oe_off = WB_GPMC_OE_t_o_f_f;
++		timings.access = WB_GPMC_RD_t_a_c_c;
++		timings.rd_cycle = WB_GPMC_BUSCYC_t;
++
++		/* we timing */
++		timings.we_on = WB_GPMC_WE_t_o_n;
++		timings.we_off = WB_GPMC_WE_t_o_f_f;
++		timings.wr_access = WB_GPMC_WR_t_a_c_c;
++		timings.wr_cycle = WB_GPMC_BUSCYC_t;
++
++		timings.page_burst_access = WB_GPMC_BUSCYC_t;
++		timings.wr_data_mux_bus = WB_GPMC_BUSCYC_t;
++		gpmc_cs_set_timings(AST_GPMC_CS, &timings);
++
++		/*
++		 * DISABLE cs4, NOTE GPMC REG7 is already configured
++		 * at this point by gpmc_cs_request
++		 */
++		tmp32 = gpmc_cs_read_reg(AST_GPMC_CS, GPMC_CS_CONFIG7) &
++						~GPMC_CONFIG7_CSVALID;
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
++
++		/*
++		 * PROGRAM chip select Region, (see OMAP3430 TRM PAGE 1088)
++		 */
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
++					(AS_CS_MASK | AS_CS_BADDR));
++
++		/*
++		 * by default configure GPMC into 8 bit mode
++		 * (to match astoria default mode)
++		 */
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
++					(GPMC_CONFIG1_DEVICETYPE(2) |
++					GPMC_CONFIG1_WAIT_PIN_SEL(2)));
++
++		/*
++		 * ENABLE astoria cs operation on GPMC
++		 */
++		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
++						(tmp32 | GPMC_CONFIG7_CSVALID));
++		retval = 0;
++		break;
++	default:
++		retval = -EINVAL;
++		break;
++	}
++
++	return retval;
++
++}
++EXPORT_SYMBOL(cywb_pnand_platform_retime);
++
 
- /*
-@@ -1306,11 +1311,14 @@ MODULE_PARM_DESC(scsi_logging_level, "a
 
- static int __init init_scsi(void)
- {
--	int error;
-+	int error = -ENOMEM;
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
 
-+	scsi_wq = alloc_workqueue("scsi", 0, 0);
-+	if (!scsi_wq)
-+		return error;
- 	error = scsi_init_queue();
- 	if (error)
--		return error;
-+		goto cleanup_wq;
- 	error = scsi_init_procfs();
- 	if (error)
- 		goto cleanup_queue;
-@@ -1342,6 +1350,8 @@ cleanup_procfs:
- 	scsi_exit_procfs();
- cleanup_queue:
- 	scsi_exit_queue();
-+cleanup_wq:
-+	destroy_workqueue(scsi_wq);
- 	printk(KERN_ERR "SCSI subsystem failed to initialize, error = %d\n",
- 	       -error);
- 	return error;
-@@ -1356,6 +1366,7 @@ static void __exit exit_scsi(void)
- 	scsi_exit_devinfo();
- 	scsi_exit_procfs();
- 	scsi_exit_queue();
-+	destroy_workqueue(scsi_wq);
- }
-
- subsys_initcall(init_scsi);
