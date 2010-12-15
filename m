@@ -1,196 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab0LOWvG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:51:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49603 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab0LOWvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:51:03 -0500
-Date: Wed, 15 Dec 2010 23:51:01 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Synaptics touchpad on Dell Vostro V13
-In-Reply-To: <20101214170027.GA11318@core.coreip.homeip.net>
-Message-ID: <alpine.LNX.2.00.1012152348440.16569@pobox.suse.cz>
-References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz> <20101214170027.GA11318@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753598Ab0LOWzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:55:16 -0500
+Received: from stinky.trash.net ([213.144.137.162]:60730 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab0LOWzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:55:13 -0500
+Message-ID: <4D09474E.1070100@trash.net>
+Date: Wed, 15 Dec 2010 23:55:10 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: KOVACS Krisztian <hidden@balabit.hu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        netfilter-devel@vger.kernel.org, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Balazs Scheidler <bazsi@balabit.hu>
+Subject: Re: linux-next: Tree for November 18 (netfilter)
+References: <20101118134256.fe132215.sfr@canb.auug.org.au>	 <20101118092520.6ad964c7.randy.dunlap@oracle.com>	 <4CE5712B.2080909@trash.net>  <1290428077.725556.3.camel@nienna.balabit> <1290428929.726241.1.camel@nienna.balabit> <4CEA97FE.4080006@oracle.com>
+In-Reply-To: <4CEA97FE.4080006@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010, Dmitry Torokhov wrote:
-
-> > I have a bugreport about Synaptics touchpad not working as proper 
-> > Synaptics, but only being detected as standard PS/2.
-> > 
-> > Looking at the i8042.debug output, the device is clearly buggy, as it 
-> > doesn't identify itself by 0x47 when queried:
-> > 
-> > 	91 -> i8042 (command) [58]
-> > 	e8 -> i8042 (parameter) [58]
-> > 	fa <- i8042 (interrupt, 3, 12) [59]
-> > 	91 -> i8042 (command) [59]
-> > 	00 -> i8042 (parameter) [59]
-> > 	fa <- i8042 (interrupt, 3, 12) [59]
-> > 	91 -> i8042 (command) [59]
-> > 	e8 -> i8042 (parameter) [59]
-> > 	fa <- i8042 (interrupt, 3, 12) [60]
-> > 	91 -> i8042 (command) [60]
-> > 	00 -> i8042 (parameter) [60]
-> > 	fa <- i8042 (interrupt, 3, 12) [61]
-> > 	91 -> i8042 (command) [61]
-> > 	e8 -> i8042 (parameter) [61]
-> > 	fa <- i8042 (interrupt, 3, 12) [61]
-> > 	91 -> i8042 (command) [61]
-> > 	00 -> i8042 (parameter) [61]
-> > 	fa <- i8042 (interrupt, 3, 12) [62]
-> > 	91 -> i8042 (command) [62]
-> > 	e8 -> i8042 (parameter) [62]
-> > 	fa <- i8042 (interrupt, 3, 12) [63]
-> > 	91 -> i8042 (command) [63]
-> > 	00 -> i8042 (parameter) [63]
-> > 	fa <- i8042 (interrupt, 3, 12) [64]
-> > 	91 -> i8042 (command) [64]
-> > 	e9 -> i8042 (parameter) [64]
-> > 	fa <- i8042 (interrupt, 3, 12) [64]
-> > 
-> > ... and here we time out after approximately 0.5s. nomux doesn't really 
-> > fix it, we start getting a lot of timeouts on i8042 with that.
-> > 
-> > Apparently the device works with Synaptics driver in Other OS(TM) though. 
-> > Do you have any idea what they might be doing differently so that they 
-> > make the touchpad identify itself properly?
+Am 22.11.2010 17:19, schrieb Randy Dunlap:
+> On 11/22/10 04:28, KOVACS Krisztian wrote:
+>> commit ec0ac6f3e7749e25f481c1e0f75766974820fe84
+>> Author: KOVACS Krisztian <hidden@balabit.hu>
+>> Date:   Mon Nov 22 13:07:15 2010 +0100
+>>
+>>     netfilter: fix compilation when conntrack is disabled but tproxy is enabled
+>>     
+>>     The IPv6 tproxy patches split IPv6 defragmentation off of conntrack, but
+>>     failed to update the #ifdef stanzas guarding the defragmentation related
+>>     fields and code in skbuff and conntrack related code in nf_defrag_ipv6.c.
+>>     
+>>     This patch adds the required #ifdefs so that IPv6 tproxy can truly be used
+>>     without connection tracking.
+>>     
+>>     Original report:
+>>     http://marc.info/?l=linux-netdev&m=129010118516341&w=2
+>>     
+>>     Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+>>     Signed-off-by: KOVACS Krisztian <hidden@balabit.hu>
 > 
-> Hi Jiri,
+> That builds.  Thanks.
 > 
-> Do you have the device in your possession? If so can you check if the
-> driver installed in Other OS uses active multiplexing? I think you can
-> infer whether it does or not by looking at the pointer properties - I
-> think it would "Synaptics Blah at port X" or something like that...
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Unfortunately I don't have the hardware myself, it's only bugreport that 
-reached me. I will check this, thanks.
-
-> Also you could try combining nomux with reset and see if it makes any
-> sense...
-
-Yes, I have already had the reporter to do this, but that's even better -- 
-a lot of commands time out, as you can see below
-
- 20 -> i8042 (command) [0]
- 47 <- i8042 (return) [0]
- 20 -> i8042 (command) [0]
- 47 <- i8042 (return) [0]
- 60 -> i8042 (command) [0]
- 56 -> i8042 (parameter) [0]
- d3 -> i8042 (command) [0]
- 5a -> i8042 (parameter) [0]
- 5a <- i8042 (return) [0]
- a7 -> i8042 (command) [0]
- 20 -> i8042 (command) [0]
- 76 <- i8042 (return) [0]
- a8 -> i8042 (command) [0]
- 20 -> i8042 (command) [0]
- 56 <- i8042 (return) [0]
- 60 -> i8042 (command) [0]
- 56 -> i8042 (parameter) [0]
- d3 -> i8042 (command) [0]
- a5 -> i8042 (parameter) [0]
- a5 <- i8042 (aux_test_irq, aux) [1]
- 60 -> i8042 (command) [1]
- 74 -> i8042 (parameter) [1]
- 60 -> i8042 (command) [1]
- 56 -> i8042 (parameter) [1]
- 60 -> i8042 (command) [1]
- 47 -> i8042 (parameter) [1]
-serio: i8042 KBD port at 0x60,0x64 irq 1
-serio: i8042 AUX port at 0x60,0x64 irq 12
-mice: PS/2 mouse device common for all mice
- f2 -> i8042 (kbd-data) [1]
- fa <- i8042 (interrupt, 0, 1, timeout) [1]
- ab <- i8042 (interrupt, 0, 1, timeout) [1]
- 83 <- i8042 (interrupt, 0, 1, timeout) [1]
- ed -> i8042 (kbd-data) [1]
- fa <- i8042 (interrupt, 0, 1, timeout) [1]
- 00 -> i8042 (kbd-data) [1]
- fa <- i8042 (interrupt, 0, 1, timeout) [1]
- f3 -> i8042 (kbd-data) [1]
- fa <- i8042 (interrupt, 0, 1, timeout) [1]
- 00 -> i8042 (kbd-data) [1]
- fa <- i8042 (interrupt, 0, 1, timeout) [1]
- f4 -> i8042 (kbd-data) [1]
- fa <- i8042 (interrupt, 0, 1, timeout) [1]
-input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
- d4 -> i8042 (command) [2]
- f2 -> i8042 (parameter) [2]
- fa <- i8042 (interrupt, 1, 12, timeout) [2]
- 00 <- i8042 (interrupt, 1, 12, timeout) [3]
- 60 -> i8042 (command) [3]
- 45 -> i8042 (parameter) [3]
- 60 -> i8042 (command) [3]
- 47 -> i8042 (parameter) [3]
- d4 -> i8042 (command) [3]
- f2 -> i8042 (parameter) [3]
- fa <- i8042 (interrupt, 1, 12, timeout) [4]
- 60 -> i8042 (command) [4]
- 45 -> i8042 (parameter) [4]
- 60 -> i8042 (command) [4]
- 47 -> i8042 (parameter) [4]
- 00 <- i8042 (interrupt, 1, 12, timeout) [5]
-
-...
-
- f3 -> i8042 (kbd-data) [6323]
- fa <- i8042 (interrupt, 0, 1, timeout) [6323]
- 20 -> i8042 (kbd-data) [6323]
- fa <- i8042 (interrupt, 0, 1, timeout) [6323]
- 2d <- i8042 (interrupt, 0, 1, timeout) [10631]
- 10 <- i8042 (interrupt, 0, 1, timeout) [10669]
- ad <- i8042 (interrupt, 0, 1, timeout) [10674]
- 90 <- i8042 (interrupt, 0, 1, timeout) [10692]
- 2f <- i8042 (interrupt, 0, 1, timeout) [10737]
- af <- i8042 (interrupt, 0, 1, timeout) [10760]
- 17 <- i8042 (interrupt, 0, 1, timeout) [10922]
- 97 <- i8042 (interrupt, 0, 1, timeout) [10945]
- 12 <- i8042 (interrupt, 0, 1, timeout) [10998]
- 92 <- i8042 (interrupt, 0, 1, timeout) [11025]
- 13 <- i8042 (interrupt, 0, 1, timeout) [11317]
- 93 <- i8042 (interrupt, 0, 1, timeout) [11345]
- 1c <- i8042 (interrupt, 0, 1, timeout) [11422]
- 9c <- i8042 (interrupt, 0, 1, timeout) [11449]
- 31 <- i8042 (interrupt, 0, 1, timeout) [11672]
- b1 <- i8042 (interrupt, 0, 1, timeout) [11697]
- 18 <- i8042 (interrupt, 0, 1, timeout) [11704]
- 98 <- i8042 (interrupt, 0, 1, timeout) [11729]
- 2f <- i8042 (interrupt, 0, 1, timeout) [11800]
- af <- i8042 (interrupt, 0, 1, timeout) [11821]
- 12 <- i8042 (interrupt, 0, 1, timeout) [11842]
- 92 <- i8042 (interrupt, 0, 1, timeout) [11866]
- 27 <- i8042 (interrupt, 0, 1, timeout) [11951]
- a7 <- i8042 (interrupt, 0, 1, timeout) [11969]
- 0e <- i8042 (interrupt, 0, 1, timeout) [12061]
- 8e <- i8042 (interrupt, 0, 1, timeout) [12089]
- 26 <- i8042 (interrupt, 0, 1, timeout) [12169]
- a6 <- i8042 (interrupt, 0, 1, timeout) [12187]
- 26 <- i8042 (interrupt, 0, 1, timeout) [12207]
- a6 <- i8042 (interrupt, 0, 1, timeout) [12227]
- 1c <- i8042 (interrupt, 0, 1, timeout) [12428]
- 9c <- i8042 (interrupt, 0, 1, timeout) [12456] 
-
-... and a lot of other timeouts.
-
-If the device wouldn't work with Synaptics driver in other OS, I'd just 
-claim the device to be broken behind hope and be done with this, but this 
-makes me really wonder what they do differently.
-
-Are you aware of any means of i8042 debugging/sniffing facility in the 
-other OS that could be used? :)
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Applied, thanks everyone.
