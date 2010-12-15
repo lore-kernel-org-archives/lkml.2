@@ -1,63 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab0LOVIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:08:11 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:40011 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab0LOVII (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:08:08 -0500
-Message-ID: <4D092E34.8060002@canonical.com>
-Date: Wed, 15 Dec 2010 16:08:04 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Chris Bagwell <chris@cnpbagwell.com>
-CC: Henrik Rydberg <rydberg@bitmath.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
-References: <4D0897F3.7040500@bitmath.org>	<4D08FD74.4060403@canonical.com> <AANLkTik4aS4mA_yrEDiG0QRxHx2pJ+KGGMKEWSDep1CB@mail.gmail.com>
-In-Reply-To: <AANLkTik4aS4mA_yrEDiG0QRxHx2pJ+KGGMKEWSDep1CB@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755539Ab0LOVHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:07:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752158Ab0LOVHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 16:07:44 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        paulmck@linux.vnet.ibm.com
+Cc: vgoyal@redhat.com, oleg@redhat.com
+Subject: [PATCH 2/2] blk-throttle: Some cleanups and race fixes in limit update code
+Date: Wed, 15 Dec 2010 16:07:35 -0500
+Message-Id: <1292447255-10698-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
+References: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 03:41 PM, Chris Bagwell wrote:
-> I meant to mention: once your initial draft gets committed I would
-> love to help update it some.  I specifically want to show two example
-> usage.  1) touchpad as 1 to 3 touchs occur and show special
-> considerations to ABS_* that apps should handle.  2) a touchscreen
-> that supports a pen as well and show how tool change (finger to pen)
-> should work.  For both those examples, it would be interesting to
-> discuss how MT can be used concurrently (does pen in slot 0 and touch
-> in slot 1 make sense for example).
+o When throttle group limits are updated through cgroups, a thread is woken
+  up to process these updates. While reviewing that code, oleg noted couple
+  of race conditions existed in the code and he also suggested that code can
+  be simplified.
 
-This is the other main reason I wanted to make the document. Having a
-place where best practices are detailed will help future driver writers
-and hopefully reduce errors in evdev code usage. I'd love to see this
-added to the document.
+o This patch fixes the races simplifies the code based on Oleg's suggestions.
+        - Use xchg().
+        - Introduced a common function throtl_update_blkio_group_common()
+          which is shared now by all iops/bps update functions.
 
-I do think that MT is complex enough that related documentation should
-be in multi-touch-protocol.txt, though. Anywhere I discussed MT in
-evdev-codes.txt I referred the reader to the other file. Henrik, does
-that sound good to you?
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-throttle.c |   96 +++++++++++++++++++++-----------------------------
+ 1 files changed, 40 insertions(+), 56 deletions(-)
 
-> I think it will be invaluable to document this stuff for driver
-> writers and apps but I'm not sure yet what level needs to be enforced.
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 91bd444..549bc8e 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -97,7 +97,7 @@ struct throtl_data
+ 	/* Work for dispatching throttled bios */
+ 	struct delayed_work throtl_work;
+ 
+-	atomic_t limits_changed;
++	bool limits_changed;
+ };
+ 
+ enum tg_state_flags {
+@@ -188,6 +188,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
+ 	RB_CLEAR_NODE(&tg->rb_node);
+ 	bio_list_init(&tg->bio_lists[0]);
+ 	bio_list_init(&tg->bio_lists[1]);
++	td->limits_changed = false;
+ 
+ 	/*
+ 	 * Take the initial reference that will be released on destroy
+@@ -725,34 +726,27 @@ static void throtl_process_limit_change(struct throtl_data *td)
+ 	struct throtl_grp *tg;
+ 	struct hlist_node *pos, *n;
+ 
+-	if (!atomic_read(&td->limits_changed))
++	if (!td->limits_changed)
+ 		return;
+ 
+-	throtl_log(td, "limit changed =%d", atomic_read(&td->limits_changed));
++	xchg(&td->limits_changed, false);
+ 
+-	/*
+-	 * Make sure updates from throtl_update_blkio_group_read_bps() group
+-	 * of functions to tg->limits_changed are visible. We do not
+-	 * want update td->limits_changed to be visible but update to
+-	 * tg->limits_changed not being visible yet on this cpu. Hence
+-	 * the read barrier.
+-	 */
+-	smp_rmb();
++	throtl_log(td, "limits changed");
+ 
+ 	hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
+-		if (throtl_tg_on_rr(tg) && tg->limits_changed) {
+-			throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
+-				" riops=%u wiops=%u", tg->bps[READ],
+-				tg->bps[WRITE], tg->iops[READ],
+-				tg->iops[WRITE]);
++		if (!tg->limits_changed)
++			continue;
++
++		if (!xchg(&tg->limits_changed, false))
++			continue;
++
++		throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
++			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
++			tg->iops[READ], tg->iops[WRITE]);
++
++		if (throtl_tg_on_rr(tg))
+ 			tg_update_disptime(td, tg);
+-			tg->limits_changed = false;
+-		}
+ 	}
+-
+-	smp_mb__before_atomic_dec();
+-	atomic_dec(&td->limits_changed);
+-	smp_mb__after_atomic_dec();
+ }
+ 
+ /* Dispatch throttled bios. Should be called without queue lock held. */
+@@ -887,6 +881,15 @@ void throtl_unlink_blkio_group(void *key, struct blkio_group *blkg)
+ 	spin_unlock_irqrestore(td->queue->queue_lock, flags);
+ }
+ 
++static void throtl_update_blkio_group_common(struct throtl_data *td,
++				struct throtl_grp *tg)
++{
++	xchg(&tg->limits_changed, true);
++	xchg(&td->limits_changed, true);
++	/* Schedule a work now to process the limit change */
++	throtl_schedule_delayed_work(td->queue, 0);
++}
++
+ /*
+  * For all update functions, key should be a valid pointer because these
+  * update functions are called under blkcg_lock, that means, blkg is
+@@ -900,61 +903,40 @@ static void throtl_update_blkio_group_read_bps(void *key,
+ 				struct blkio_group *blkg, u64 read_bps)
+ {
+ 	struct throtl_data *td = key;
++	struct throtl_grp *tg = tg_of_blkg(blkg);
+ 
+-	tg_of_blkg(blkg)->bps[READ] = read_bps;
+-	/* Make sure read_bps is updated before setting limits_changed */
+-	smp_wmb();
+-	tg_of_blkg(blkg)->limits_changed = true;
+-
+-	/* Make sure tg->limits_changed is updated before td->limits_changed */
+-	smp_mb__before_atomic_inc();
+-	atomic_inc(&td->limits_changed);
+-	smp_mb__after_atomic_inc();
+-
+-	/* Schedule a work now to process the limit change */
+-	throtl_schedule_delayed_work(td->queue, 0);
++	tg->bps[READ] = read_bps;
++	throtl_update_blkio_group_common(td, tg);
+ }
+ 
+ static void throtl_update_blkio_group_write_bps(void *key,
+ 				struct blkio_group *blkg, u64 write_bps)
+ {
+ 	struct throtl_data *td = key;
++	struct throtl_grp *tg = tg_of_blkg(blkg);
+ 
+-	tg_of_blkg(blkg)->bps[WRITE] = write_bps;
+-	smp_wmb();
+-	tg_of_blkg(blkg)->limits_changed = true;
+-	smp_mb__before_atomic_inc();
+-	atomic_inc(&td->limits_changed);
+-	smp_mb__after_atomic_inc();
+-	throtl_schedule_delayed_work(td->queue, 0);
++	tg->bps[WRITE] = write_bps;
++	throtl_update_blkio_group_common(td, tg);
+ }
+ 
+ static void throtl_update_blkio_group_read_iops(void *key,
+ 			struct blkio_group *blkg, unsigned int read_iops)
+ {
+ 	struct throtl_data *td = key;
++	struct throtl_grp *tg = tg_of_blkg(blkg);
+ 
+-	tg_of_blkg(blkg)->iops[READ] = read_iops;
+-	smp_wmb();
+-	tg_of_blkg(blkg)->limits_changed = true;
+-	smp_mb__before_atomic_inc();
+-	atomic_inc(&td->limits_changed);
+-	smp_mb__after_atomic_inc();
+-	throtl_schedule_delayed_work(td->queue, 0);
++	tg->iops[READ] = read_iops;
++	throtl_update_blkio_group_common(td, tg);
+ }
+ 
+ static void throtl_update_blkio_group_write_iops(void *key,
+ 			struct blkio_group *blkg, unsigned int write_iops)
+ {
+ 	struct throtl_data *td = key;
++	struct throtl_grp *tg = tg_of_blkg(blkg);
+ 
+-	tg_of_blkg(blkg)->iops[WRITE] = write_iops;
+-	smp_wmb();
+-	tg_of_blkg(blkg)->limits_changed = true;
+-	smp_mb__before_atomic_inc();
+-	atomic_inc(&td->limits_changed);
+-	smp_mb__after_atomic_inc();
+-	throtl_schedule_delayed_work(td->queue, 0);
++	tg->iops[WRITE] = write_iops;
++	throtl_update_blkio_group_common(td, tg);
+ }
+ 
+ void throtl_shutdown_timer_wq(struct request_queue *q)
+@@ -1001,6 +983,7 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+ 		 */
+ 		update_disptime = false;
+ 		goto queue_bio;
++
+ 	}
+ 
+ 	/* Bio is with-in rate limit of group */
+@@ -1041,7 +1024,7 @@ int blk_throtl_init(struct request_queue *q)
+ 
+ 	INIT_HLIST_HEAD(&td->tg_list);
+ 	td->tg_service_tree = THROTL_RB_ROOT;
+-	atomic_set(&td->limits_changed, 0);
++	td->limits_changed = false;
+ 
+ 	/* Init root group */
+ 	tg = &td->root_tg;
+@@ -1053,6 +1036,7 @@ int blk_throtl_init(struct request_queue *q)
+ 	/* Practically unlimited BW */
+ 	tg->bps[0] = tg->bps[1] = -1;
+ 	tg->iops[0] = tg->iops[1] = -1;
++	td->limits_changed = false;
+ 
+ 	/*
+ 	 * Set root group reference to 2. One reference will be dropped when
+-- 
+1.7.1
 
-That's the biggest issue I see right now. Do we want black and white
-specificity? For example, using terms like "must" and "may not" etc. Or
-do we want the document to merely hold best practices while not
-proscribing exact details? I think even with exact details we can loosen
-them if needed, but that has its own can of worms.
-
-Dmitry, what are your thoughts on this?
-
-Thanks,
-
--- Chase
