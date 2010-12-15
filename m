@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab0LOKjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:39:20 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46802 "EHLO
+	id S1752753Ab0LOKja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:39:30 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46804 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab0LOKjT (ORCPT
+	with ESMTP id S1752540Ab0LOKj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:39:19 -0500
-Message-Id: <E1PSolS-0008Tg-C8@ZenIV.linux.org.uk>
-Date: Wed, 15 Dec 2010 10:39:18 +0000
+	Wed, 15 Dec 2010 05:39:29 -0500
+Message-Id: <E1PSolc-0008To-CR@ZenIV.linux.org.uk>
+Date: Wed, 15 Dec 2010 10:39:28 +0000
 To: hans-christian.egtvedt@atmel.com
-Subject: [PATCH 2/6] avr32: get rid of useless args in signal.c before
- other work there
+Subject: [PATCH 3/6] avr32: fix handling of blocked signals
 Cc: linux-kernel@vger.kernel.org
 User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
@@ -23,75 +22,63 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+We do _not_ want to block anything on failure to set sigframe up
+and we do not want to ignore sa_mask even when SA_NODOFER is set.
+
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- arch/avr32/kernel/signal.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ arch/avr32/kernel/signal.c |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
 
 diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-index 64f886f..df7d75c 100644
+index df7d75c..25090d6 100644
 --- a/arch/avr32/kernel/signal.c
 +++ b/arch/avr32/kernel/signal.c
-@@ -224,7 +224,7 @@ static inline void setup_syscall_restart(struct pt_regs *regs)
- 
- static inline void
+@@ -226,33 +226,27 @@ static inline void
  handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
--	      sigset_t *oldset, struct pt_regs *regs, int syscall)
-+	      sigset_t *oldset, struct pt_regs *regs)
+ 	      sigset_t *oldset, struct pt_regs *regs)
  {
- 	int ret;
- 
-@@ -261,11 +261,12 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
-  * doesn't want to handle. Thus you cannot kill init even with a
-  * SIGKILL even by mistake.
-  */
--int do_signal(struct pt_regs *regs, sigset_t *oldset, int syscall)
-+static void do_signal(struct pt_regs *regs, int syscall)
- {
- 	siginfo_t info;
- 	int signr;
- 	struct k_sigaction ka;
-+	sigset_t *oldset;
+-	int ret;
+-
+ 	/*
+ 	 * Set up the stack frame
+ 	 */
+-	ret = setup_rt_frame(sig, ka, info, oldset, regs);
++	if (setup_rt_frame(sig, ka, info, oldset, regs) != 0)
++		goto fail;
  
  	/*
- 	 * We want the common case to go fast, which is why we may in
-@@ -273,11 +274,11 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset, int syscall)
- 	 * without doing anything if so.
+ 	 * Check that the resulting registers are sane
  	 */
- 	if (!user_mode(regs))
--		return 0;
-+		return;
+-	ret |= !valid_user_regs(regs);
++	if (!valid_user_regs(regs))
++		goto fail;
  
- 	if (test_thread_flag(TIF_RESTORE_SIGMASK))
- 		oldset = &current->saved_sigmask;
--	else if (!oldset)
-+	else
- 		oldset = &current->blocked;
+-	/*
+-	 * Block the signal if we were unsuccessful.
+-	 */
+-	if (ret != 0 || !(ka->sa.sa_flags & SA_NODEFER)) {
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked, &current->blocked,
+-			  &ka->sa.sa_mask);
++	spin_lock_irq(&current->sighand->siglock);
++	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
++	if (!(ka->sa.sa_flags & SA_NODEFER))
+ 		sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
+-	}
+-
+-	if (ret == 0)
+-		return;
++	recalc_sigpending();
++	spin_unlock_irq(&current->sighand->siglock);
++	return;
  
- 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-@@ -307,11 +308,10 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset, int syscall)
- 			clear_thread_flag(TIF_RESTORE_SIGMASK);
- 			sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
- 		}
--		return 0;
-+		return;
- 	}
- 
--	handle_signal(signr, &ka, &info, oldset, regs, syscall);
--	return 1;
-+	handle_signal(signr, &ka, &info, oldset, regs);
++fail:
+ 	force_sigsegv(sig, current);
  }
  
- asmlinkage void do_notify_resume(struct pt_regs *regs, struct thread_info *ti)
-@@ -322,7 +322,7 @@ asmlinkage void do_notify_resume(struct pt_regs *regs, struct thread_info *ti)
- 		syscall = 1;
- 
- 	if (ti->flags & (_TIF_SIGPENDING | _TIF_RESTORE_SIGMASK))
--		do_signal(regs, &current->blocked, syscall);
-+		do_signal(regs, syscall);
- 
- 	if (ti->flags & _TIF_NOTIFY_RESUME) {
- 		clear_thread_flag(TIF_NOTIFY_RESUME);
 -- 
 1.5.6.5
 
