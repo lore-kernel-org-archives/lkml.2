@@ -1,139 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab0LOVYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:24:48 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:48388 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab0LOVYr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:24:47 -0500
-Message-ID: <4D093218.8040707@canonical.com>
-Date: Wed, 15 Dec 2010 16:24:40 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1753908Ab0LOV0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:26:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753552Ab0LOV0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 16:26:17 -0500
+Date: Wed, 15 Dec 2010 16:26:05 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
+        Divyesh Shah <dpshah@google.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8] blkio-cgroup: "use_hierarchy" interface without any
+ functionality.
+Message-ID: <20101215212605.GA10234@redhat.com>
+References: <4CDF7BC5.9080803@cn.fujitsu.com>
+ <4CDF9CC6.2040106@cn.fujitsu.com>
+ <20101115165319.GI30792@redhat.com>
+ <4CE2718C.6010406@kernel.dk>
+ <4D01C6AB.9040807@cn.fujitsu.com>
+ <4D057AA3.8050308@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Chris Bagwell <chris@cnpbagwell.com>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: synaptics - add multitouch packet support
-References: <1292280948-1933-1-git-send-email-rydberg@euromail.se>	<4D06A7B1.6060609@canonical.com>	<4D06A90C.90009@euromail.se>	<4D07E38C.4020201@canonical.com>	<4D08CEE8.9080804@euromail.se>	<4D08FF4F.1020307@canonical.com> <AANLkTikM5dXSv2onvF5aqzqkEuwrvbS5DTeE0CiW91j3@mail.gmail.com>
-In-Reply-To: <AANLkTikM5dXSv2onvF5aqzqkEuwrvbS5DTeE0CiW91j3@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D057AA3.8050308@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 02:14 PM, Chris Bagwell wrote:
-> On Wed, Dec 15, 2010 at 11:47 AM, Chase Douglas
-> <chase.douglas@canonical.com> wrote:
->> On 12/15/2010 09:21 AM, Henrik Rydberg wrote:
->>>> After some testing this is mostly fine,
->>>
->>>  but I have one of those terrible
->>>> "integrated buttons" (or whatever we call it) trackpads. When switching
->>>> to multitouch mode, the cursor will sometimes jump when I go to push the
->>>> button.
->>>>
->>>> Take the following sequence:
->>>>
->>>> 1. Touch in top right corner of pad to position cursor
->>>> 2. Touch in bottom left corner over button
->>>> 3. Press button, but finger moves a little
->>>>
->>>> Step 3 causes the primary coordinates in the synaptics MT protocol to
->>>> flip to the button-pressing touch. This causes a cursor jump. *Many*
->>>> times I have gone to press an "Ok" dialog button and found that I
->>>> accidentally launched an application from my dock :).
->>>
->>>
->>> I see - the behavior of the primary coordinates seems to vary between models,
->>> then. On the other hand, if you point and click with the same finger, one could
->>> possibly go around this problem, even though it means less precision. On my MT
->>> laptop, I can click at the very edge of the pad without the cursor moving.
->>
->> Because of the mechanical properties of my particular touchpad, it's
->> nearly impossible to click without dragging. My touchpad isn't one of
->> the new clickpads where the entire pad hinges. On a clickpad, I would
->> hope depress without movement is easy. On my trackpad, the buttons are
->> somewhat stiff and flex non-uniformly, causing the unwanted movement.
->>
->> So, in Ubuntu we mask out the area of the touchpad where the buttons
->> are. Any movement in that area is discarded. Thus, the only way to be
->> sure of a click is to position with one touch, then lift the touch, then
->> click one of the buttons. Annoying :).
+On Mon, Dec 13, 2010 at 09:45:07AM +0800, Gui Jianfeng wrote:
+> This patch adds "use_hierarchy" in Root CGroup with out any functionality.
 > 
-> Is this custom code or in upstream (are you talking about
-> inside_active_area logic?)?  I'm not sure why your seeing a jump if
-> its being discarded.  There is a chance that something related to this
-> discard logic is defeating the other logic that handles jumps caused
-> during finger transitions.
-
-In Ubuntu 10.10 I think we are using an in-house patched hack. It was
-necessary for an Dell Minis, which was a paid OEM services project, so
-we needed a fix ASAP at the time. I believe xf86-input-synaptics has an
-option for this now, so we'll probably transition whenever someone gets
-a chance to take another look. It may be something that would be handled
-better by the upstream logic. When I get a chance I'll try the upstream
-logic instead.
-
->>>> I think we should perform some rudimentary touch tracking to ensure the
->>>> same touch is always used for reporting ABS_X/ABS_Y. A simple distance
->>>> comparison between the two touches, as I implemented in one of my other
->>>> patches, would suffice.
->>>
->>>
->>> One can certainly decide on the "best" coordinates when putting down the second
->>> finger, as we tried for elantech. However, after some movement, when the second
->>> finger is lifted, chances are you get a jump then instead.
->>
->> Chris, isn't this filtered out in xf86-input-synaptics based on the
->> change in the number of touches?
+> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> ---
+>  block/blk-cgroup.c  |   72 ++++++++++++++++++++++++++++++++++++++++++++++++--
+>  block/blk-cgroup.h  |    5 +++-
+>  block/cfq-iosched.c |   24 +++++++++++++++++
+>  3 files changed, 97 insertions(+), 4 deletions(-)
 > 
-> Yes, in version 1.30 or newer xf86-input-synaptics anyways.  And of
-> course the *TAP transition needs to come in same sync window as jump
-> for it to be helpful.  It may be able to handle if *TAP comes 1 sync
-> window before jump but that would be about the limit.
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index 455768a..9747ebb 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -25,7 +25,10 @@
+>  static DEFINE_SPINLOCK(blkio_list_lock);
+>  static LIST_HEAD(blkio_list);
+>  
+> -struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
+> +struct blkio_cgroup blkio_root_cgroup = {
+> +		.weight = 2*BLKIO_WEIGHT_DEFAULT,
+> +		.use_hierarchy = 1,
 
-Ahh! I'm only running 1.22.2, so maybe I should try out the newer
-synaptics too.
+Currently flat mode is the default. Lets not change the default. So lets
+start with use_hierarchy = 0.
 
-> Mind sending me a evtest log snippet during
-> touch-then-click-with-2nd-finger (with MT mode enabled)?  Seeing those
-> tends to be better for understanding then words for me.  I'm
-> interested for more then just this specific issue, btw.
-> 
-> I'm really interested in where the *TAP come (before or after)
-> relative to cursor jump and how close it was to being filtered out by
-> xf86-input-synaptics.
+Secondly, why don't you make it per cgroup something along the lines of
+memory controller where one can start the hierarchy lower in the cgroup
+chain and not necessarily at the root. This way we can avoid some
+accounting overhead for all the groups which are non-hierarchical.
 
-I'll get this when I get a chance. I'm really crazy backed up with work
-right now, and holidays are coming up. I'm supposed to be off for the
-rest of the year, but I doubt that will hold perfectly :). So, if I
-forget to get you data in the next week or two, feel free to ping me
-privately.
+> +	};
+>  EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+>  
+>  static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
+> @@ -1385,10 +1388,73 @@ struct cftype blkio_files[] = {
+>  #endif
+>  };
+>  
+> +static u64 blkiocg_use_hierarchy_read(struct cgroup *cgroup,
+> +				      struct cftype *cftype)
+> +{
+> +	struct blkio_cgroup *blkcg;
+> +
+> +	blkcg = cgroup_to_blkio_cgroup(cgroup);
+> +	return (u64)blkcg->use_hierarchy;
+> +}
+> +
+> +static int
+> +blkiocg_use_hierarchy_write(struct cgroup *cgroup,
+> +			    struct cftype *cftype, u64 val)
+> +{
+> +	struct blkio_cgroup *blkcg;
+> +	struct blkio_group *blkg;
+> +	struct hlist_node *n;
+> +	struct blkio_policy_type *blkiop;
+> +
+> +	blkcg = cgroup_to_blkio_cgroup(cgroup);
+> +
+> +	if (val > 1 || !list_empty(&cgroup->children))
+> +		return -EINVAL;
+> +
+> +	if (blkcg->use_hierarchy == val)
+> +		return 0;
+> +
+> +	spin_lock(&blkio_list_lock);
+> +	blkcg->use_hierarchy = val;
+> +
+> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+> +		list_for_each_entry(blkiop, &blkio_list, list) {
+> +			/*
+> +			 * If this policy does not own the blkg, do not change
+> +			 * cfq group scheduling mode.
+> +			 */
+> +			if (blkiop->plid != blkg->plid)
+> +				continue;
+> +
+> +			if (blkiop->ops.blkio_update_use_hierarchy_fn)
+> +				blkiop->ops.blkio_update_use_hierarchy_fn(blkg,
+> +									  val);
 
->>>> What do you think?
->>>
->>>
->>> The general approach we have taken for the kernel is to provide a left button
->>> for both the macbooks and these clickpads, and in addition provide enough
->>> information (read mt data) to solve this problem in userspace. In other words,
->>> one should probably see what additions are needed in the common X drivers to
->>> make the experience a pleasant one.
->>
->> I think we're confusing clickpads and my "integrated buttons" trackpad
->> (I know we settled on a different name, but I can't remember it now :).
->> I believe my issue is purely due to the primary coordinates switching
->> back and forth between two touches as I position and click with two fingers.
-> 
-> I would think they both have same issue... Just yours may have some
-> extra movement and pressure changes compared to the other.
+Should we really allow this? I mean allow changing hierarchy of a group
+when there are already children groups. I think memory controller does
+not allow this. We can design along the same lines. Keep use_hierarchy
+as 0 by default. Allow changing it only if there are no children cgroups.
+Otherwise we shall have to send notifications to subscribing policies
+and then change their structure etc. Lets keep it simple.
 
-Ok.
+I was playing with a use_hierarhcy patch for throttling and parts have been
+copied from memory controller. I am attaching that with the mail and see if
+you can make that working.  
 
-Thanks,
+---
+ block/blk-cgroup.c |   59 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ block/blk-cgroup.h |    2 +
+ 2 files changed, 60 insertions(+), 1 deletion(-)
 
--- Chase
+Index: linux-2.6/block/blk-cgroup.c
+===================================================================
+--- linux-2.6.orig/block/blk-cgroup.c	2010-11-19 10:30:27.129704770 -0500
++++ linux-2.6/block/blk-cgroup.c	2010-11-19 10:30:29.885671705 -0500
+@@ -1214,6 +1214,39 @@ static int blkio_weight_write(struct blk
+ 	return 0;
+ }
+ 
++static int blkio_throtl_use_hierarchy_write(struct cgroup *cgrp, u64 val)
++{
++	struct cgroup *parent = cgrp->parent;
++	struct blkio_cgroup *blkcg, *parent_blkcg;
++	int ret = 0;
++
++	if (val != 0 || val != 1)
++		return -EINVAL;
++
++	blkcg = cgroup_to_blkio_cgroup(cgrp);
++	if (parent)
++		parent_blkcg = cgroup_to_blkio_cgroup(parent);
++
++	cgroup_lock();
++	/*
++	 * If parent's use_hierarchy is set, we can't make any modifications
++	 * in the child subtrees. If it is unset, then the change can
++	 * occur, provided the current cgroup has no children.
++	 *
++	 * For the root cgroup, parent_mem is NULL, we allow value to be
++	 * set if there are no children.
++	 */
++	if (!parent_blkcg || !parent_blkcg->throtl_use_hier) {
++		if (list_empty(&cgrp->children))
++			blkcg->throtl_use_hier = val;
++		else
++			ret = -EBUSY;
++	} else
++		ret = -EINVAL;
++	cgroup_unlock();
++	return ret;
++}
++
+ static u64 blkiocg_file_read_u64 (struct cgroup *cgrp, struct cftype *cft) {
+ 	struct blkio_cgroup *blkcg;
+ 	enum blkio_policy_id plid = BLKIOFILE_POLICY(cft->private);
+@@ -1228,6 +1261,12 @@ static u64 blkiocg_file_read_u64 (struct
+ 			return (u64)blkcg->weight;
+ 		}
+ 		break;
++	case BLKIO_POLICY_THROTL:
++		switch(name) {
++		case BLKIO_THROTL_use_hierarchy:
++			return (u64)blkcg->throtl_use_hier;
++		}
++		break;
+ 	default:
+ 		BUG();
+ 	}
+@@ -1250,6 +1289,12 @@ blkiocg_file_write_u64(struct cgroup *cg
+ 			return blkio_weight_write(blkcg, val);
+ 		}
+ 		break;
++	case BLKIO_POLICY_THROTL:
++		switch(name) {
++		case BLKIO_THROTL_use_hierarchy:
++			return blkio_throtl_use_hierarchy_write(cgrp, val);
++		}
++		break;
+ 	default:
+ 		BUG();
+ 	}
+@@ -1373,6 +1418,13 @@ struct cftype blkio_files[] = {
+ 				BLKIO_THROTL_io_serviced),
+ 		.read_map = blkiocg_file_read_map,
+ 	},
++	{
++		.name = "throttle.use_hierarchy",
++		.private = BLKIOFILE_PRIVATE(BLKIO_POLICY_THROTL,
++				BLKIO_THROTL_use_hierarchy),
++		.read_u64 = blkiocg_file_read_u64,
++		.write_u64 = blkiocg_file_write_u64,
++	},
+ #endif /* CONFIG_BLK_DEV_THROTTLING */
+ 
+ #ifdef CONFIG_DEBUG_BLK_CGROUP
+@@ -1470,7 +1522,7 @@ static void blkiocg_destroy(struct cgrou
+ static struct cgroup_subsys_state *
+ blkiocg_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+ {
+-	struct blkio_cgroup *blkcg;
++	struct blkio_cgroup *blkcg, *parent_blkcg = NULL;
+ 	struct cgroup *parent = cgroup->parent;
+ 
+ 	if (!parent) {
+@@ -1483,11 +1535,16 @@ blkiocg_create(struct cgroup_subsys *sub
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	blkcg->weight = BLKIO_WEIGHT_DEFAULT;
++	parent_blkcg = cgroup_to_blkio_cgroup(parent);
+ done:
+ 	spin_lock_init(&blkcg->lock);
+ 	INIT_HLIST_HEAD(&blkcg->blkg_list);
+ 
+ 	INIT_LIST_HEAD(&blkcg->policy_list);
++	if (parent)
++		blkcg->throtl_use_hier = parent_blkcg->throtl_use_hier;
++	else
++		blkcg->throtl_use_hier = 0;
+ 	return &blkcg->css;
+ }
+ 
+Index: linux-2.6/block/blk-cgroup.h
+===================================================================
+--- linux-2.6.orig/block/blk-cgroup.h	2010-11-19 10:15:56.321149940 -0500
++++ linux-2.6/block/blk-cgroup.h	2010-11-19 10:30:29.885671705 -0500
+@@ -100,11 +100,13 @@ enum blkcg_file_name_throtl {
+ 	BLKIO_THROTL_write_iops_device,
+ 	BLKIO_THROTL_io_service_bytes,
+ 	BLKIO_THROTL_io_serviced,
++	BLKIO_THROTL_use_hierarchy,
+ };
+ 
+ struct blkio_cgroup {
+ 	struct cgroup_subsys_state css;
+ 	unsigned int weight;
++	bool throtl_use_hier;
+ 	spinlock_t lock;
+ 	struct hlist_head blkg_list;
+ 	/*
