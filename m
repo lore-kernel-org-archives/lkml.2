@@ -1,165 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0LOIPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 03:15:45 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:56485 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab0LOIPo convert rfc822-to-8bit (ORCPT
+	id S1754459Ab0LOIQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 03:16:56 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:28076 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab0LOIQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 03:15:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=m09l9r+QspeuLFW3nSVvyP2rLOBedVpX1NMmuPjnK/sXdg5C3WSsqbzvMrNc39hLS7
-         04eeoVIMsMdHA+i9bWJSEasiGVRzAWFcSukcsTguOCBw8958XjOEl5EMZ43mT9rsjH0M
-         npwjfogtxMOfGZJ8Z5EQr9Qs3JA9XsWg+JYJs=
-MIME-Version: 1.0
-In-Reply-To: <1292399418.303.8.camel@wall-e>
-References: <1292368360-32216-1-git-send-email-stefani@seibold.net>
-	<AANLkTi=HaS+wweLaAEcBuRFx+Dr1pKU=One1gOYF55CJ@mail.gmail.com>
-	<AANLkTikvN9u3dB_TzNUKjz7g39i+t+h4vt7EVKDLVjLg@mail.gmail.com>
-	<1292399418.303.8.camel@wall-e>
-Date: Wed, 15 Dec 2010 10:15:42 +0200
-X-Google-Sender-Auth: bjb_jzVx-n8MBf2ltxK6jmOim38
-Message-ID: <AANLkTimYpB2iw525_0wGT=sLkCcuy_bAx1QyG8tjRjOb@mail.gmail.com>
-Subject: Re: [PATCH] cramfs: generate unique inode number for better inode
- cache usage
-From: Pekka Enberg <penberg@kernel.org>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Dec 2010 03:16:54 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=dyVpuHYQJROgCHwBBw1H+I+7e1rgZIKdHwrI0HSbuo4= c=1 sm=1
+ a=T_s9W1-Te7oA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=zg_s4_ytUHLA_PBxeyIA:9
+ a=I5np2YJ04-EF1SHuVVoA:7 a=HO-cfWrDIEFq09kOX_JHV1tvSicA:4 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [patch] fs: scale vfsmount refcount (was Re: rcu-walk and  dcache scaling tree update and status)
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20101214124059.GA14493@amd>
+Date: Wed, 15 Dec 2010 01:16:52 -0700
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <3E111710-7F88-41A8-80B2-9275448BBCED@dilger.ca>
+References: <20101213023733.GB6522@amd> <20101213024217.GC6522@amd> <1292225113.18698.22.camel@edumazet-laptop> <20101214124059.GA14493@amd>
+To: Nick Piggin <npiggin@kernel.dk>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 9:50 AM, Stefani Seibold <stefani@seibold.net> wrote:
-> No, it makes no sense, for following reasons:
->
-> - Why pre-setup variables like iops, fops and aops which are in the most
-> cases not needed? Because the inode is still in the cache.
->
-> - Each branch is a little bit different.
->
-> - The default branch is completly different, because in this case the
-> init_special_inode() will be called, which sets the inode->fop.
->
-> What do you think about this solution:
->
-> static void setup_inode(struct inode *inode, struct cramfs_inode * cramfs_inode)
-> {
->        static struct timespec zerotime;
->        inode->i_mode = cramfs_inode->mode;
->        inode->i_uid = cramfs_inode->uid;
->        /* if the lower 2 bits are zero, the inode contains data */
->        if (!(inode->i_ino & 3)) {
->                inode->i_size = size;
->                inode->i_blocks = (size - 1) / 512 + 1;
->        }
->        inode->i_gid = cramfs_inode->gid;
->        /* Struct copy intentional */
->        inode->i_mtime = inode->i_atime = inode->i_ctime = zerotime;
->        /* inode->i_nlink is left 1 - arguably wrong for directories,
->           but it's the best we can do without reading the directory
->           contents.  1 yields the right result in GNU find, even
->           without -noleaf option. */
->        unlock_new_inode(inode);
-> }
->
-> static struct inode *get_cramfs_inode(struct super_block *sb,
->        struct cramfs_inode * cramfs_inode, unsigned int offset)
-> {
->        struct inode *inode;
->
->        switch (cram_inode->mode & S_IFMT) {
->        case S_IFREG:
->                inode = iget_locked(sb, cramino(cramfs_inode, offset));
->                if (inode && (inode->i_state & I_NEW)) {
->                        inode->i_fop = &generic_ro_fops;
->                        inode->i_data.a_ops = &cramfs_aops;
->                        setup_inode(inode, cramfs_inode);
->                }
->                break;
->        case S_IFDIR:
->                inode = iget_locked(sb, cramino(cramfs_inode, offset));
->                if (inode && (inode->i_state & I_NEW)) {
->                        inode->i_op = &cramfs_dir_inode_operations;
->                        inode->i_fop = &cramfs_directory_operations;
->                        setup_inode(inode, cramfs_inode);
->                }
->                break;
->        case S_IFLNK:
->                inode = iget_locked(sb, cramino(cramfs_inode, offset));
->                if (inode && (inode->i_state & I_NEW)) {
->                        inode->i_op = &page_symlink_inode_operations;
->                        inode->i_data.a_ops = &cramfs_aops;
->                        setup_inode(inode, cramfs_inode);
->                }
->                break;
->        default:
->                inode = iget_locked(sb, CRAMINO_UNIQ(offset));
->                if (inode && (inode->i_state & I_NEW)) {
->                        init_special_inode(inode, cramfs_inode->mode,
->                                old_decode_dev(cramfs_inode->size));
->                        setup_inode(inode, cramfs_inode);
->                }
->                break;
->        }
->        return inode;
-> }
+On 2010-12-14, at 05:40, Nick Piggin wrote:
+> +static inline void add_mnt_count(struct vfsmount *mnt, int n)
+> +static inline void set_mnt_count(struct vfsmount *mnt, int n)
+> +static inline void inc_mnt_count(struct vfsmount *mnt)
+> +static inline void dec_mnt_count(struct vfsmount *mnt)
+> +unsigned int count_mnt_count(struct vfsmount *mnt)
 
-I think Linus is after something like this:
+Minor nit - it is easier to find these related functions via tag
+completion if they are of the form "mnt_count_{add,set,inc,dec}"
+and it would also be more consistent and easier to understand if
+you rename count_mnt_count() to mnt_count_sum() or mnt_count_read().
 
-static struct inode *get_cramfs_inode(struct super_block *sb, struct
-cramfs_inode * cramfs_inode, unsigned int offset)
-{
-        struct inode *inode;
-        unsigned long ino;
+This also follows the kernel naming convention much more closely
+(e.g. atomic_{inc,dec,add,sub,set,read}(), mutex_{init,lock,unlock}(),
+etc), which is normally of the form {type}_{action}.
 
-        switch (cram_inode->mode & S_IFMT) {
-        case S_IFREG:
-        case S_IFDIR:
-        case S_IFLNK:
-                ino = cramino(cramfs_inode, offset);
-                break;
-        default:
-                ino = CRAMINO_UNIQ(offset);
-                break;
-        }
+Yes, I see the other {inc,dec,count}_mnt_writers() functions
+exist, but I'd prefer not to add more bad function names to
+the kernel.  Maybe a separate patch to clean up those names is
+in order...
 
-        inode = iget_locked(sb, ino);
-        if (!inode)
-                return ERR_PTR(-ENOMEM);
-        if (!(inode->i_state & I_NEW))
-                return inode;
+Cheers, Andreas
 
-       switch (cram_inode->mode & S_IFMT) {
-       case S_IFREG:
-               inode->i_fop = &generic_ro_fops;
-               inode->i_data.a_ops = &cramfs_aops;
-               setup_inode(inode, cramfs_inode);
-               break;
-       case S_IFDIR:
-               inode->i_op = &cramfs_dir_inode_operations;
-               inode->i_fop = &cramfs_directory_operations;
-               setup_inode(inode, cramfs_inode);
-               break;
-       case S_IFLNK:
-               inode->i_op = &page_symlink_inode_operations;
-               inode->i_data.a_ops = &cramfs_aops;
-               setup_inode(inode, cramfs_inode);
-               break;
-       default:
-               init_special_inode(inode, cramfs_inode->mode,
-old_decode_dev(cramfs_inode->size));
-               setup_inode(inode, cramfs_inode);
-               break;
-       }
-       return inode;
-}
 
-You should optimize for the in-cache case.
+
+
+
