@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab0LOPmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 10:42:18 -0500
-Received: from www.tglx.de ([62.245.132.106]:58111 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab0LOPmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 10:42:17 -0500
-Date: Wed, 15 Dec 2010 16:41:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-cc: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
-In-Reply-To: <4D08CE44.6000407@siemens.com>
-Message-ID: <alpine.LFD.2.00.1012151633510.12146@localhost6.localdomain6>
-References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6> <4D07F70A.30209@web.de> <alpine.LFD.2.00.1012151357030.12146@localhost6.localdomain6>
- <4D08CE44.6000407@siemens.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754610Ab0LOPp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:45:27 -0500
+Received: from nm17.bullet.mail.ird.yahoo.com ([77.238.189.70]:34860 "HELO
+	nm17.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752945Ab0LOPp0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 10:45:26 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 897013.33985.bm@omp1013.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.fr;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=LUk8VU5RmtIEWySJEPnK3nhzRN0RlRg9vrvLGSnqo74g/CAuYJPmQ1TjAlK5dQm6jEzUf2DE2/E8APgD1C6yQOSLltswD+SWjnruj2medbjzsj6Ndr6YVOaxzABHHtmwIgHORrRxwKKfv0b7R6lwtXzcd2CSaT9eaXISHbtRmMo=;
+Message-ID: <718694.20560.qm@web29214.mail.ird.yahoo.com>
+X-YMail-OSG: tlkoOI4VM1nkW9L5l88pDhbFFOaYEA6GRRjjicXfLS02X_N
+ WNHxbWLiri7AO.j_brOO3JQC42IhXn35dcWPmLDzZCrVDJixnQixr.h_nt2t
+ uLydbrei.awKhWSa228Zr4Dxk2fHkNGF0CR1XVtRBIa2vOMBmtfyGOIk6qfg
+ e38_FSRonCVd9pT4bFeMOkQhgL4e9KhJnzn.rE9.VnZfesSQw_A62E1uhA0G
+ 0tDD3XyP1VXM7MqMKCoRHu8vbkY_m6l9UgxeMYpCgJNIRVZXsifyFXA2kaBa
+ pxMQdnOJEYJRWRWYLboC3PP59BiIpDALROXaV
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Wed, 15 Dec 2010 15:45:24 +0000 (GMT)
+From: Didier Lagard <didier.lagard@yahoo.fr>
+Subject: Re : [PATCH] base: add sysfs socs info
+To: linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>
+In-Reply-To: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010, Jan Kiszka wrote:
-
-> Am 15.12.2010 14:04, Thomas Gleixner wrote:
-> > On Wed, 15 Dec 2010, Jan Kiszka wrote:
-> >> Am 14.12.2010 21:54, Thomas Gleixner wrote:
-> >>> On Mon, 13 Dec 2010, Jan Kiszka wrote:
-> >>>> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
-> >>>>  	/* Make sure it's not being used on another CPU: */
-> >>>>  	synchronize_irq(irq);
-> >>>>  
-> >>>> +	if (single_handler)
-> >>>> +		desc->irq_data.drv_status &= ~IRQS_SHARED;
-> >>>> +
-> >>>
-> >>> What's the reason to clear this flag outside of the desc->lock held
-> >>> region.
-> >>
-> >> We need to synchronize the irq first before clearing the flag.
-> >>
-> >> The problematic scenario behind this: An IRQ started in shared mode,
-> >> this the line was unmasked after the hardirq. Now we clear IRQS_SHARED
-> >> before calling into the threaded handler. And that handler may now think
-> >> that the line is still masked as IRQS_SHARED is set.
-> > 
-> > That should read "not set" I guess.
+<plagnioj@jcrosoft.com> a écrit :
+>
+> this provide an easy way to register
+> soc information
 > 
-> Can't remember who wrote this, but that guy might have been too tired
-> for clear sentences: Yes, of course, we could run into troubles, if
-> IRQS_SHARED was _not_ set while the IRQ line is unmasked between hard
-> and threaded handler.
+> arch, family, model, id, revision
 > 
-> > Hmm, needs more thoughts :(
+> as this for at91sam9g20
 > 
-> Be warned, might be painful.
+> $ cat /sys/devices/system/soc/soc0/arch
+> current
+> $ cat /sys/devices/system/soc/soc0/family
+> at91
+> $ cat /sys/devices/system/soc/soc0/id
+> at91sam9g20
+> $ cat /sys/devices/system/soc/soc0/model
+> 0x00000000019905a0
+> $ cat /sys/devices/system/soc/soc0/revision
+> 1.1
 
-Talking about headache. Your solution above does not prevent that
-scenario.
+Ouch, I've never seen so few explanations when it comes to add a new ABI...
 
- CPU 0                  CPU 1
-		
- synchronize_irq();
-		        hard irq comes in sees shared and unmasks
- clear IRQS_SHARED
-			thread handler runs and sees !SHARED
+Can you explain why this is needed at all ? How can it be usefull for an application for example ? Why make it a device ?
 
-Same scenario, just moved by a few lines :)
+I mean there are plenty of SoC supports in the kernel (take a look to arch/arm) and none of them need that so far.
 
-Thanks,
+So at least we can expect some motivations to include this stuff in mailine.
 
-	tglx
+Bye.
+
+
+      
