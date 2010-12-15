@@ -1,60 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab0LOJxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 04:53:12 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:47296 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab0LOJxK convert rfc822-to-8bit (ORCPT
+	id S1752245Ab0LOJxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 04:53:41 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42381 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0LOJxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 04:53:10 -0500
-Subject: Re: BUG: sleeping function called from invalid context at
- arch/x86/mm/fault.c:1081
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Alex Deucher <alexdeucher@gmail.com>,
-        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <AANLkTikj1bUvwAi5deZQ5M7kZN1gnsgTPETbuH4CWiHZ@mail.gmail.com>
-References: <20101214094040.GA2790@liondog.tnic>
-	 <AANLkTikj1bUvwAi5deZQ5M7kZN1gnsgTPETbuH4CWiHZ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Dec 2010 10:52:24 +0100
-Message-ID: <1292406744.6803.2913.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 15 Dec 2010 04:53:40 -0500
+Date: Wed, 15 Dec 2010 09:53:39 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs: fix kernel-doc for dcache::d_validate
+Message-ID: <20101215095339.GA30993@ZenIV.linux.org.uk>
+References: <20101118150245.f85f9603.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118150245.f85f9603.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-12-14 at 12:29 -0800, Linus Torvalds wrote:
-> which looks like one of the "list_for_each_entry()" uses of that
-> hash_head. In fact, building lockdep.lst and matching against that
-> 0x2a6 constant (it's a warn_slowpath_null thing and is the line
-> number), we can pinpoint exactly which one it seems to be. Afaik, it
-> seems to be this code in look_up_lock_class:
-> 
->         /*
->          * We can walk the hash lockfree, because the hash only
->          * grows, and we are careful when adding entries to the end:
->          */
->         list_for_each_entry(class, hash_head, hash_entry) {
->                 if (class->key == key) {
->                         WARN_ON_ONCE(class->name != lock->name);
->                         return class;
->                 }
->         }
-> 
-> Maybe the RCU list use in lockdep isn't entirely safe?
-> 
-> Added Peter and Ingo to the cc. It does look like some lockdep race.
-> 
-> Or then it's some general memory corruption, of course. That just
-> happened to hit the lockdep data structures. That would explain your
-> subsequent radeon GP fault too. 
+On Thu, Nov 18, 2010 at 03:02:45PM -0800, Randy Dunlap wrote:
 
-Typically such crashes in lockdep are indeed indicative of a scribble,
-typically a use after free with slab poisoning.
+> Fix function parameter kernel-doc for d_validate():
 
-But I'll try and run through that code later today to see if I can spot
-anything.
+Applied
