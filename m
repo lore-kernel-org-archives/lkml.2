@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab0LOVQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:16:38 -0500
-Received: from vms173005pub.verizon.net ([206.46.173.5]:61510 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab0LOVQf (ORCPT
+	id S1753388Ab0LOVQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:16:39 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:47384 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab0LOVQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Dec 2010 16:16:35 -0500
-Date: Wed, 15 Dec 2010 16:16:15 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Jack Steiner <steiner@sgi.com>
-Cc: hpa@zytor.com, hmh@hmh.eng.br, tony.luck@gmail.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gbeshers@sgi.com
-Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
-In-reply-to: <20101215164635.GA27373@sgi.com>
-Message-id: <alpine.LFD.2.00.1012151536510.21167@x980>
-References: <20101214220932.GA1206@sgi.com>
- <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>
- <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <4D09302C.4000309@canonical.com>
+Date: Wed, 15 Dec 2010 16:16:28 -0500
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2] input: Introduce device information ioctl
+References: <1292440807-18502-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1292440807-18502-1-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/15/2010 02:20 PM, Henrik Rydberg wrote:
+> Today, userspace sets up an input device based on the data it emits.
+> This is not always enough; a tablet and a touchscreen may emit exactly
+> the same data, for instance, but the former should be set up with a
+> pointer whereas the latter does not need to. Recently, a new type of
+> touchpad has emerged where the buttons are under the pad, which
+> changes handling logic without changing the emitted data. This patch
+> introduces a new ioctl, EVIOCGPROP, which enables user access to a set
+> of device properties useful during setup. The properties are given as
+> a bitmap in the same fashion as the event types.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi all,
+> 
+> Here is version two of the device information proposal. In addition to
+> implementing the feedback, this version only defines a single combined
+> type/capabilities field. Since we want to support a device being of
+> multiple types, it suggests that we are really after the properties
+> that make up a type, rather than the types themselves. And since
+> quirks are also properties, we end up with a single bitmap of
+> properties instead.
+> 
+> As an example of how this would work for the
+> touchpad/tablet/touchscreen triplet, there are two properties defined,
+> INPUT_PROP_POINTER and INPUT_PROP_DIRECT. A touchpad is an indirect
+> pointer device, a tablet is a direct pointer device, and the
+> touchscreen is simply a direct device.
+> 
+> What do you think?
 
-> Do you want me to resend the patch w/o the calls to e820?
+I must have missed the first version of this patch, but I give two
+thumbs way up :). The detection code for touchpad/tablet/touchscreen in
+xf86-input-evdev is large and unwieldy, and seemingly simple changes to
+an input driver can cause incorrect interpretation. Having this
+available should help quite a bit!
 
-Sure.
-
-I think this would be a 1 line-patch in acpi_os_map_memory()
-to change ioremap() to ioremap_cache() if ia64 had an ioremap_cache().
-
-Maybe it is a 2-line patch to define ioremap_cache() to ioremap()
-in ia64?  It appears that ia64 has an ioremap() and an ioremap_nocache()
-so presumably this would change no functionalty there.
-
-I actually don't like the original patch wording with map_table_permanent,
-since acpi_os_map_memory() is used for more than tables -- any AML
-memory opregion will use it, so lets avoid that.
-
-Granted, __acpi_map_table() isn't the best name either,
-though it happens to be used only for tables by virtue
-of being guarded by testing acpi_gbl_permenent_map.
-
-That said, we don't start using cached mappings until
-acpi_gbl_permanent_mmap is set in acpi_early_init(),
-(when you see "ACPI Core revision" in dmesg)
-
-I'll bet we can improve the boot sequence so that
-some of the stuff we do before we have cached mappings
-we can do with cached mappings...
-We checksum all the tables, enumerate the CPUs and the APICs
-all using non-cached mappings....
-
-
-thanks,
-Len Brown, Intel Open Source Technology Center
-
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
