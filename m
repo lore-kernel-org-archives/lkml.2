@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0LOPkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 10:40:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:49624 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab0LOPkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 10:40:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/9] ARM i.MX51: Add ipu clock support
-Date: Wed, 15 Dec 2010 16:40:03 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Zhang Lily-R58066" <r58066@freescale.com>
-References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-2-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1291902441-24712-2-git-send-email-s.hauer@pengutronix.de>
+	id S1754767Ab0LOPmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:42:18 -0500
+Received: from www.tglx.de ([62.245.132.106]:58111 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab0LOPmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 10:42:17 -0500
+Date: Wed, 15 Dec 2010 16:41:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+cc: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
+In-Reply-To: <4D08CE44.6000407@siemens.com>
+Message-ID: <alpine.LFD.2.00.1012151633510.12146@localhost6.localdomain6>
+References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6> <4D07F70A.30209@web.de> <alpine.LFD.2.00.1012151357030.12146@localhost6.localdomain6>
+ <4D08CE44.6000407@siemens.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012151640.03789.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZT82ED4QjmVbJwudFTGNpJ1SLuu8Nuh0bPlF3zanJ6B
- ZKMNHEt0H4jSTGrni/Wx7bDShGiBrhAT15VarPLc37a5OYwZkU
- Z1Sqh4wHYxjOyTtyhYa6KY9ENIywLOOV7NARKvkrFRpmrLOchj
- lqmNYTKLxzd5/XF/vzm3S79p+STqHpihD2SN5sJ7wEAuUV0s/w
- PyskYKXRZ21v8Q9GAnZ5Q==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 December 2010, Sascha Hauer wrote:
-> +static int clk_ipu_enable(struct clk *clk)
-> +{
-> +       u32 reg;
-> +
-> +       _clk_ccgr_enable(clk);
-> +
-> +       /* Enable handshake with IPU when certain clock rates are changed */
-> +       reg = __raw_readl(MXC_CCM_CCDR);
-> +       reg &= ~MXC_CCM_CCDR_IPU_HS_MASK;
-> +       __raw_writel(reg, MXC_CCM_CCDR);
-> +
-> +       /* Enable handshake with IPU when LPM is entered */
-> +       reg = __raw_readl(MXC_CCM_CLPCR);
-> +       reg &= ~MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
-> +       __raw_writel(reg, MXC_CCM_CLPCR);
-> +
-> +       return 0;
-> +}
+On Wed, 15 Dec 2010, Jan Kiszka wrote:
 
-Why __raw_readl?
+> Am 15.12.2010 14:04, Thomas Gleixner wrote:
+> > On Wed, 15 Dec 2010, Jan Kiszka wrote:
+> >> Am 14.12.2010 21:54, Thomas Gleixner wrote:
+> >>> On Mon, 13 Dec 2010, Jan Kiszka wrote:
+> >>>> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+> >>>>  	/* Make sure it's not being used on another CPU: */
+> >>>>  	synchronize_irq(irq);
+> >>>>  
+> >>>> +	if (single_handler)
+> >>>> +		desc->irq_data.drv_status &= ~IRQS_SHARED;
+> >>>> +
+> >>>
+> >>> What's the reason to clear this flag outside of the desc->lock held
+> >>> region.
+> >>
+> >> We need to synchronize the irq first before clearing the flag.
+> >>
+> >> The problematic scenario behind this: An IRQ started in shared mode,
+> >> this the line was unmasked after the hardirq. Now we clear IRQS_SHARED
+> >> before calling into the threaded handler. And that handler may now think
+> >> that the line is still masked as IRQS_SHARED is set.
+> > 
+> > That should read "not set" I guess.
+> 
+> Can't remember who wrote this, but that guy might have been too tired
+> for clear sentences: Yes, of course, we could run into troubles, if
+> IRQS_SHARED was _not_ set while the IRQ line is unmasked between hard
+> and threaded handler.
+> 
+> > Hmm, needs more thoughts :(
+> 
+> Be warned, might be painful.
 
-The regular accessor function for I/O registers is readl, which handles
-the access correctly with regard to atomicity, I/O ordering and byteorder.
+Talking about headache. Your solution above does not prevent that
+scenario.
 
-	Arnd
+ CPU 0                  CPU 1
+		
+ synchronize_irq();
+		        hard irq comes in sees shared and unmasks
+ clear IRQS_SHARED
+			thread handler runs and sees !SHARED
+
+Same scenario, just moved by a few lines :)
+
+Thanks,
+
+	tglx
