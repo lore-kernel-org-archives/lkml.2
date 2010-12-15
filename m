@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab0LOPe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 10:34:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:54779 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab0LOPez (ORCPT
+	id S1754823Ab0LOPfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:35:43 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56075 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945Ab0LOPfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 10:34:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 7/7] msm: Build support for the MSM8960 target
-Date: Wed, 15 Dec 2010 16:34:53 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, davidb@codeaurora.org,
+	Wed, 15 Dec 2010 10:35:41 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66935131"
+Date: Wed, 15 Dec 2010 07:35:40 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>, davidb@codeaurora.org,
         linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <1292384961-8851-8-git-send-email-stepanm@codeaurora.org>
-In-Reply-To: <1292384961-8851-8-git-send-email-stepanm@codeaurora.org>
+Subject: Re: [PATCH 1/7] msm: io: I/O register definitions for MSM8960
+Message-ID: <20101215153540.GA15817@huya.qualcomm.com>
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+ <1292384961-8851-2-git-send-email-stepanm@codeaurora.org>
+ <201012151631.11574.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012151634.53301.arnd@arndb.de>
-X-Provags-ID: V02:K0:CUDP//7rR1YWS+PGSTp719u0VAFWpNOrOvtqPjNJ7Wg
- FCW02JAaqF0Ncou7fzzFhmVtvXvca5YE6SiHfJhNLmik8k5eTQ
- kAcjh7b4ToXX/wLZUVFJGT2lIGbtwXwTHi+A6PHjMEXi6bLaXY
- K17126NKE90U8L+YfPkLV/DfBoYjHlkIwa04q1DRJ8lZuTwpCm
- l3VqLJe/noRiwpIRapr5g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012151631.11574.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 December 2010, Stepan Moskovchenko wrote:
-> Add the Kconfig options and Makefile options needed to
-> build for the MSM8960 target. Only the simulator is
-> supported at this time.
-> 
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+On Wed, Dec 15, 2010 at 04:31:11PM +0100, Arnd Bergmann wrote:
+> On Wednesday 15 December 2010, Stepan Moskovchenko wrote:
 
-There is no need to split the Makefile/Kconfig changes
-from the actual files implementing the functionality.
-It's better to keep these together, since neither of the
-patches does anything meaningful by itself.
+> In this particular case, it's rather confusing, because one would assume
+> that MSM8960 is a subset of MSM8X60!
 
-Splitting out the cleanup as you did is good though, it
-helps with review and with possible bisection or rebase
-of the patches.
+Unfortunately, this is not the case, and I'm not sure what better name
+to use for MSM8X60.  The MSM8X60 name covers MSM8260 and MSM8660, but
+MSM8960 is quite a bit different.  Any ideas for better names?
 
-	Arnd
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
