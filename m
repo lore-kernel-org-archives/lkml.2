@@ -1,153 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab0LOT6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:58:14 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11360 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab0LOT6L (ORCPT
+	id S1755287Ab0LOUHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:07:45 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:37130 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755257Ab0LOUHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:58:11 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66760943"
-Message-ID: <4D091DD2.3070300@codeaurora.org>
-Date: Wed, 15 Dec 2010 11:58:10 -0800
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 15 Dec 2010 15:07:44 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: FKL1am4VM1m00g2x0cv0S0JVfKadWBGJ5HJGFw5Jn3dCtHY
+ 6VSLsZYlg4IdobUxFDQ8A1V9WWbJZgnyNNDC35l7N6bcmKHeuK5uXwy7Cvm_
+ 7lm2HB7K8QRxSqY7a52x6tvVGZ7S51JIslyBPXGP20E7THjxw7FI1l2KzmBC
+ 3V5SISLAFzuipHNq45xYQOHPox1RQ_rxPbu6I60YftLDlxSxJITKUa9GNkjh
+ wKw8kBThz4FoMGtt.NAA7PttinmfVtAnHBYLYuC8K0aaclWoAU9f55StVU6q
+ ALoV95T38K4GduxB0CgBtfQWYuvWtJ_Q6gJLneP.lZzPv26g-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 15 Dec 2010 14:07:39 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Tejun Heo <tj@kernel.org>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        akpm@linux-foundation.org
+Subject: x86: A fast way to check capabilities of the current cpu
+Message-ID: <alpine.DEB.2.00.1012151404070.21102@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Lennert Buytenhek <buytenh@wantstofly.org>
-CC: Gregory Bean <gbean@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/10] gpio: sx150x: irq_data conversion.
-References: <cover.1292240053.git.buytenh@wantstofly.org> <20101213120302.GF15575@mail.wantstofly.org>
-In-Reply-To: <20101213120302.GF15575@mail.wantstofly.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2010 4:03 AM, Lennert Buytenhek wrote:
-> Signed-off-by: Lennert Buytenhek<buytenh@secretlab.ca>
-Tested-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
->   drivers/gpio/sx150x.c |   46 +++++++++++++++++++++++-----------------------
->   1 files changed, 23 insertions(+), 23 deletions(-)
->
-> diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
-> index 823559a..e60be00 100644
-> --- a/drivers/gpio/sx150x.c
-> +++ b/drivers/gpio/sx150x.c
-> @@ -304,36 +304,36 @@ static int sx150x_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
->   	return chip->irq_base + offset;
->   }
->
-> -static void sx150x_irq_mask(unsigned int irq)
-> +static void sx150x_irq_mask(struct irq_data *d)
->   {
-> -	struct irq_chip *ic = get_irq_chip(irq);
-> +	struct irq_chip *ic = irq_data_get_irq_chip(d);
->   	struct sx150x_chip *chip;
->   	unsigned n;
->
->   	chip = container_of(ic, struct sx150x_chip, irq_chip);
-> -	n = irq - chip->irq_base;
-> +	n = d->irq - chip->irq_base;
->
->   	sx150x_write_cfg(chip, n, 1, chip->dev_cfg->reg_irq_mask, 1);
->   	sx150x_write_cfg(chip, n, 2, chip->dev_cfg->reg_sense, 0);
->   }
->
-> -static void sx150x_irq_unmask(unsigned int irq)
-> +static void sx150x_irq_unmask(struct irq_data *d)
->   {
-> -	struct irq_chip *ic = get_irq_chip(irq);
-> +	struct irq_chip *ic = irq_data_get_irq_chip(d);
->   	struct sx150x_chip *chip;
->   	unsigned n;
->
->   	chip = container_of(ic, struct sx150x_chip, irq_chip);
-> -	n = irq - chip->irq_base;
-> +	n = d->irq - chip->irq_base;
->
->   	sx150x_write_cfg(chip, n, 1, chip->dev_cfg->reg_irq_mask, 0);
->   	sx150x_write_cfg(chip, n, 2, chip->dev_cfg->reg_sense,
->   			 chip->irq_sense>>  (n * 2));
->   }
->
-> -static int sx150x_irq_set_type(unsigned int irq, unsigned int flow_type)
-> +static int sx150x_irq_set_type(struct irq_data *d, unsigned int flow_type)
->   {
-> -	struct irq_chip *ic = get_irq_chip(irq);
-> +	struct irq_chip *ic = irq_data_get_irq_chip(d);
->   	struct sx150x_chip *chip;
->   	unsigned n, val = 0;
->
-> @@ -341,7 +341,7 @@ static int sx150x_irq_set_type(unsigned int irq, unsigned int flow_type)
->   		return -EINVAL;
->
->   	chip = container_of(ic, struct sx150x_chip, irq_chip);
-> -	n = irq - chip->irq_base;
-> +	n = d->irq - chip->irq_base;
->
->   	if (flow_type&  IRQ_TYPE_EDGE_RISING)
->   		val |= 0x1;
-> @@ -386,9 +386,9 @@ static irqreturn_t sx150x_irq_thread_fn(int irq, void *dev_id)
->   	return (nhandled>  0 ? IRQ_HANDLED : IRQ_NONE);
->   }
->
-> -static void sx150x_irq_bus_lock(unsigned int irq)
-> +static void sx150x_irq_bus_lock(struct irq_data *d)
->   {
-> -	struct irq_chip *ic = get_irq_chip(irq);
-> +	struct irq_chip *ic = irq_data_get_irq_chip(d);
->   	struct sx150x_chip *chip;
->
->   	chip = container_of(ic, struct sx150x_chip, irq_chip);
-> @@ -396,9 +396,9 @@ static void sx150x_irq_bus_lock(unsigned int irq)
->   	mutex_lock(&chip->lock);
->   }
->
-> -static void sx150x_irq_bus_sync_unlock(unsigned int irq)
-> +static void sx150x_irq_bus_sync_unlock(struct irq_data *d)
->   {
-> -	struct irq_chip *ic = get_irq_chip(irq);
-> +	struct irq_chip *ic = irq_data_get_irq_chip(d);
->   	struct sx150x_chip *chip;
->   	unsigned n;
->
-> @@ -437,16 +437,16 @@ static void sx150x_init_chip(struct sx150x_chip *chip,
->   	if (pdata->oscio_is_gpo)
->   		++chip->gpio_chip.ngpio;
->
-> -	chip->irq_chip.name            = client->name;
-> -	chip->irq_chip.mask            = sx150x_irq_mask;
-> -	chip->irq_chip.unmask          = sx150x_irq_unmask;
-> -	chip->irq_chip.set_type        = sx150x_irq_set_type;
-> -	chip->irq_chip.bus_lock        = sx150x_irq_bus_lock;
-> -	chip->irq_chip.bus_sync_unlock = sx150x_irq_bus_sync_unlock;
-> -	chip->irq_summary              = -1;
-> -	chip->irq_base                 = -1;
-> -	chip->irq_sense                = 0;
-> -	chip->irq_set_type_pending     = 0;
-> +	chip->irq_chip.name                = client->name;
-> +	chip->irq_chip.irq_mask            = sx150x_irq_mask;
-> +	chip->irq_chip.irq_unmask          = sx150x_irq_unmask;
-> +	chip->irq_chip.irq_set_type        = sx150x_irq_set_type;
-> +	chip->irq_chip.irq_bus_lock        = sx150x_irq_bus_lock;
-> +	chip->irq_chip.irq_bus_sync_unlock = sx150x_irq_bus_sync_unlock;
-> +	chip->irq_summary                  = -1;
-> +	chip->irq_base                     = -1;
-> +	chip->irq_sense                    = 0;
-> +	chip->irq_set_type_pending         = 0;
->   }
->
->   static int sx150x_init_io(struct sx150x_chip *chip, u8 base, u16 cfg)
 
+Subject: x86: A fast way to check capabilities of the current cpu
 
-Thanks,
-Rohit Vaswani
+Add this_cpu_has() which determines if the current cpu has a certain
+ability using a segment prefix and a bit test operation.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+For that we need to add bit operations to x86s percpu.h.
 
+Many uses of cpu_has use a pointer passed to a function to determine
+the current flags. That is no longer necessary after this patch.
+
+However, this patch only converts the straightforward cases where
+cpu_has is used with this_cpu_ptr. The rest is work for later.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+---
+ arch/x86/include/asm/cpufeature.h |   13 +++++++++----
+ arch/x86/include/asm/percpu.h     |   27 +++++++++++++++++++++++++++
+ arch/x86/kernel/apic/apic.c       |    2 +-
+ arch/x86/kernel/process.c         |    4 ++--
+ arch/x86/kernel/smpboot.c         |    4 ++--
+ 5 files changed, 41 insertions(+), 9 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/cpufeature.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/cpufeature.h	2010-12-15 12:38:52.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/cpufeature.h	2010-12-15 12:54:48.000000000 -0600
+@@ -206,8 +206,7 @@ extern const char * const x86_power_flag
+ #define test_cpu_cap(c, bit)						\
+ 	 test_bit(bit, (unsigned long *)((c)->x86_capability))
+
+-#define cpu_has(c, bit)							\
+-	(__builtin_constant_p(bit) &&					\
++#define REQUIRED_MASK_BIT_SET(bit)					\
+ 	 ( (((bit)>>5)==0 && (1UL<<((bit)&31) & REQUIRED_MASK0)) ||	\
+ 	   (((bit)>>5)==1 && (1UL<<((bit)&31) & REQUIRED_MASK1)) ||	\
+ 	   (((bit)>>5)==2 && (1UL<<((bit)&31) & REQUIRED_MASK2)) ||	\
+@@ -217,10 +216,16 @@ extern const char * const x86_power_flag
+ 	   (((bit)>>5)==6 && (1UL<<((bit)&31) & REQUIRED_MASK6)) ||	\
+ 	   (((bit)>>5)==7 && (1UL<<((bit)&31) & REQUIRED_MASK7)) ||	\
+ 	   (((bit)>>5)==8 && (1UL<<((bit)&31) & REQUIRED_MASK8)) ||	\
+-	   (((bit)>>5)==9 && (1UL<<((bit)&31) & REQUIRED_MASK9)) )	\
+-	  ? 1 :								\
++	   (((bit)>>5)==9 && (1UL<<((bit)&31) & REQUIRED_MASK9)) )
++
++#define cpu_has(c, bit)							\
++	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 :	\
+ 	 test_cpu_cap(c, bit))
+
++#define this_cpu_has(bit)						\
++	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 : 	\
++	 this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
++
+ #define boot_cpu_has(bit)	cpu_has(&boot_cpu_data, bit)
+
+ #define set_cpu_cap(c, bit)	set_bit(bit, (unsigned long *)((c)->x86_capability))
+Index: linux-2.6/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/apic.c	2010-12-15 12:38:52.000000000 -0600
++++ linux-2.6/arch/x86/kernel/apic/apic.c	2010-12-15 12:38:53.000000000 -0600
+@@ -516,7 +516,7 @@ static void __cpuinit setup_APIC_timer(v
+ {
+ 	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+
+-	if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_ARAT)) {
++	if (this_cpu_has(X86_FEATURE_ARAT)) {
+ 		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_C3STOP;
+ 		/* Make LAPIC timer preferrable over percpu HPET */
+ 		lapic_clockevent.rating = 150;
+Index: linux-2.6/arch/x86/include/asm/percpu.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-15 12:38:52.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-15 13:06:27.000000000 -0600
+@@ -545,6 +545,33 @@ do {									\
+ 	old__;								\
+ })
+
++static __always_inline int this_cpu_constant_test_bit(unsigned int nr,
++                        const unsigned long __percpu *addr)
++{
++	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
++
++	return ((1UL << (nr % BITS_PER_LONG)) & percpu_read_stable(*a)) != 0;
++}
++
++static inline int this_cpu_variable_test_bit(int nr,
++                        const unsigned long __percpu *addr)
++{
++	int oldbit;
++
++	asm volatile("bt "__percpu_arg(2)",%1\n\t"
++			"sbb %0,%0"
++			: "=r" (oldbit)
++			: "m" (*(unsigned long *)addr), "Ir" (nr));
++
++	return oldbit;
++}
++
++#define this_cpu_test_bit(nr, addr)			\
++	(__builtin_constant_p((nr))			\
++	 ? this_cpu_constant_test_bit((nr), (addr))	\
++	 : this_cpu_variable_test_bit((nr), (addr)))
++
++
+ #include <asm-generic/percpu.h>
+
+ /* We can use this directly for local CPU (faster). */
+Index: linux-2.6/arch/x86/kernel/process.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/process.c	2010-12-15 12:38:52.000000000 -0600
++++ linux-2.6/arch/x86/kernel/process.c	2010-12-15 12:38:53.000000000 -0600
+@@ -445,7 +445,7 @@ void mwait_idle_with_hints(unsigned long
+ {
+ 	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
+ 	if (!need_resched()) {
+-		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
+
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+@@ -460,7 +460,7 @@ static void mwait_idle(void)
+ {
+ 	if (!need_resched()) {
+ 		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
+
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+Index: linux-2.6/arch/x86/kernel/smpboot.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/smpboot.c	2010-12-15 12:38:52.000000000 -0600
++++ linux-2.6/arch/x86/kernel/smpboot.c	2010-12-15 12:38:53.000000000 -0600
+@@ -1397,9 +1397,9 @@ static inline void mwait_play_dead(void)
+ 	int i;
+ 	void *mwait_ptr;
+
+-	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_MWAIT))
++	if (!this_cpu_has(X86_FEATURE_MWAIT))
+ 		return;
+-	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLSH))
++	if (!this_cpu_has(X86_FEATURE_CLFLSH))
+ 		return;
+ 	if (__this_cpu_read(cpu_info.cpuid_level) < CPUID_MWAIT_LEAF)
+ 		return;
