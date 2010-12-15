@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab0LOQcp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:32:45 -0500
-Received: from THUNK.ORG ([69.25.196.29]:60967 "EHLO thunker.thunk.org"
+	id S1753470Ab0LOQdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:33:20 -0500
+Received: from hera.kernel.org ([140.211.167.34]:33878 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab0LOQco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:32:44 -0500
-Date: Wed, 15 Dec 2010 11:32:42 -0500
-Message-Id: <E1PSuHS-00071A-1U@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 update for 2.6.37-rc6
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1751187Ab0LOQdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:33:18 -0500
+Message-ID: <4D08EDA9.3090801@kernel.org>
+Date: Wed, 15 Dec 2010 17:32:41 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
+ of regular atomics
+References: <20101214162842.542421046@linux.com> <20101214162854.218751478@linux.com>
+In-Reply-To: <20101214162854.218751478@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 16:32:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 12/14/2010 05:28 PM, Christoph Lameter wrote:
+> The irq work queue is a per cpu object and it is sufficient for
+> synchronization if per cpu atomics are used. Doing so simplifies
+> the code and reduces the overhead of the code.
+> 
+> Before:
+> 
+> christoph@linux-2.6$ size kernel/irq_work.o
+>    text	   data	    bss	    dec	    hex	filename
+>     451	      8	      1	    460	    1cc	kernel/irq_work.o
+> 
+> After:
+> 
+> christoph@linux-2.6$ size kernel/irq_work.o 
+>    text	   data	    bss	    dec	    hex	filename
+>     438	      8	      1	    447	    1bf	kernel/irq_work.o
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Please pull from:
+Peter, can you please ack this one?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+Thanks.
 
-To get some regression fixes for ext4.  They're both hard to hit, and
-unfortunately I'm going to have to back out the multi-page submission
-feature for 2.6.37 (disabled by default; can be re-enable with a mount
-option) until I can figure what's going on with an edge case which Jon
-Nelson reported.
-
-						- Ted
-
-Aaro Koskinen (1):
-      ext4: fix typo which broke '..' detection in ext4_find_entry()
-
-Theodore Ts'o (1):
-      ext4: Turn off multiple page-io submission by default
-
- fs/ext4/ext4.h  |    1 +
- fs/ext4/inode.c |    5 ++++-
- fs/ext4/namei.c |    2 +-
- fs/ext4/super.c |   14 ++++++++++++--
- 4 files changed, 18 insertions(+), 4 deletions(-)
+-- 
+tejun
