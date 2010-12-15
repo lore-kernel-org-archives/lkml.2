@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab0LOWmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:42:36 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50949 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab0LOWme (ORCPT
+	id S1752796Ab0LOWtm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:49:42 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:47185 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab0LOWtl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:42:34 -0500
-Message-ID: <4D094411.2020303@kernel.org>
-Date: Wed, 15 Dec 2010 14:41:21 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Wed, 15 Dec 2010 17:49:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uEedgoPGsAa3PnM7r2SQl5GgDI8gCWpR0mtSFujQd78Y5B+o50PIXUVk20TzfFcvmH
+         FOPgeGDw5iNveP+cC+J0hxtwuE2lFljzOxTUikdgYNmXBbvlK2osc2Q/mIzbGHKKn7hc
+         ejOOag4tPKz8A6diIW5mRfwilbTNaoA8K9xcM=
 MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101207105053.GA2803@redhat.com> <4CFE89FE.1090901@kernel.org> <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com>
-In-Reply-To: <20101215103954.GA2243@redhat.com>
+In-Reply-To: <1292450256-4544-1-git-send-email-mk@lab.zgora.pl>
+References: <1292450256-4544-1-git-send-email-mk@lab.zgora.pl>
+Date: Wed, 15 Dec 2010 23:49:39 +0100
+Message-ID: <AANLkTi=Zz8eQTS+ja59eB9-F1aE2QP5DEVCwqBP50j8K@mail.gmail.com>
+Subject: Re: [PATCH] btrfs: fix memory leak on error path in btrfs_get_acl()
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Mariusz Kozlowski <mk@lab.zgora.pl>
+Cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 02:39 AM, Stanislaw Gruszka wrote:
-> I could debug this problem, but I do not suffer from free time right
-> now :-) Would be better someone bootmem/kdump experienced debug this.
-> I just check other laptop (T500, 2.6.37-rc5, x86_64, RHEL6 user space,
-> crashkernel=256M, 1.6G mem), kdump does not work there too. So I do
-> think problem is hard to reproduce.
+On Wed, Dec 15, 2010 at 10:57 PM, Mariusz Kozlowski <mk@lab.zgora.pl> wrote:
+> If posix_acl_from_xattr() fails we leak memory stored in 'value'.
+>
+> Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
+> ---
+>  fs/btrfs/acl.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/btrfs/acl.c b/fs/btrfs/acl.c
+> index 2222d16..11c9561 100644
+> --- a/fs/btrfs/acl.c
+> +++ b/fs/btrfs/acl.c
+> @@ -61,6 +61,7 @@ static struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
+>                if (size > 0) {
+>                        acl = posix_acl_from_xattr(value, size);
+>                        if (IS_ERR(acl))
+> +                               kfree(value);
 
-ok, will try to find some old machine with less memory and devices to duplicate the problem.
+Be careful with the evil { }
 
-Yinghai
+>                                return acl;
+>                        set_cached_acl(inode, type, acl);
+>                }
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
