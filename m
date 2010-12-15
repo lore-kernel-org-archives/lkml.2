@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab0LOJ72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 04:59:28 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:39316 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab0LOJ71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 04:59:27 -0500
-Date: Wed, 15 Dec 2010 17:59:23 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH] crypto: ghash-clmulni-intel_glue needs err.h
-Message-ID: <20101215095923.GA24313@gondor.apana.org.au>
-References: <20101214162641.3e229f12.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214162641.3e229f12.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752421Ab0LOKAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:00:38 -0500
+Received: from lo.gmane.org ([80.91.229.12]:41256 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752043Ab0LOKAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:00:37 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+Subject: Re: [ANNOUNCE] Linux 2.6.35.10 has been released
+Date: Wed, 15 Dec 2010 11:00:24 +0100
+Organization: Technische Universitaet Ilmenau, Germany
+Message-ID: <slrnigh4dp.80o.Mario.Holbe@darkside.dyn.samba-tng.org>
+References: <20101214232747.GA18757@basil.fritz.box>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p4fd561ad.dip.t-dialin.net
+User-Agent: slrn/pre1.0.0-18 (Linux)
+Cancel-Lock: sha1:Ft2modJ1/O9iwex1SDm8643d6So=
+Cc: stable@linux.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 04:26:41PM -0800, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Add missing header file:
-> 
-> arch/x86/crypto/ghash-clmulni-intel_glue.c:256: error: implicit declaration of function 'IS_ERR'
-> arch/x86/crypto/ghash-clmulni-intel_glue.c:257: error: implicit declaration of function 'PTR_ERR'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Hello Andi,
 
-Patch applied.  Thanks!
+Andi Kleen <andi@firstfloor.org> wrote:
+> A new longterm 2.6.35.10 kernel has been released. This release contains security
+...
+> ftp://ftp.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.35/linux-2.6.35.10.tar.gz
+
+Could you please also provide a ChangeLog-* file?
+I'm quite sure this would be helpful for people not reading your
+announcements on lkml and/or downloading new releases later.
+
+
+regards
+   Mario
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+If her DNA was off by one percentage point, she'd be a dolphin.
+                                -- Dr. Gregory House
+
