@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab0LOL0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 06:26:21 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38802 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab0LOL0U (ORCPT
+	id S1752772Ab0LOLur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 06:50:47 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:55774 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab0LOLuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 06:26:20 -0500
-Date: Wed, 15 Dec 2010 16:56:26 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
-        Amerigo Wang <amwang@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] [Patch 0/21] Non disruptive application core dump
- infrastructure
-Message-ID: <20101215165626.715007b5@suzukikp>
-In-Reply-To: <4D088C6C.8020800@kernel.org>
-References: <20101214152259.67896960@suzukikp>
-	<AANLkTim3h2EBcEUP19S2Z0CKA7Oe3k5pB=4LjXsOR3F9@mail.gmail.com>
-	<20101215110446.157bbb25@suzukikp>
-	<4D088C6C.8020800@kernel.org>
-Organization: IBM
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Dec 2010 06:50:46 -0500
+Date: Wed, 15 Dec 2010 19:50:35 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Fixes for 2.6.37
+Message-ID: <20101215115035.GA25248@gondor.apana.org.au>
+References: <20091020065442.GA5947@gondor.apana.org.au> <20091230021253.GA17067@gondor.apana.org.au> <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100903110722.GA31826@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010 10:37:48 +0100
-Tejun Heo <tj@kernel.org> wrote:
+Hi Linus:
 
-> Hello, Suzuki.
-> 
-> On 12/15/2010 06:34 AM, Suzuki K. Poulose wrote:
-> > I'd be very glad not using the freezer if there is a neat way to
-> > accomplish this without the undesired side effects. Tejun's ptrace
-> > enhancement would still require a userland program to control
-> > it(gcore); something contained in the kernel would be ideal.
-> 
-> Why is using gcore a bad thing?  If we make ptrace avoid the implicit
-> SIGSTOP, the side effects of ptrace would be the same as using freezer
-> but with the benefit that it's properly integrated to the process
-> model and job control.
+This push fixes a build problem under certain configurations due
+to a missing include.
 
-The advantages of the new approach are :
 
-1) A process can trigger a core synchronously, upon an event, say a signal 
-handler and continue from there. gcore would require a fork(), which is not 
-safe to use from a signal handler.
+Please pull from
 
-2) We can seek to only the data we need
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
-Thanks
-Suzuki
+or
 
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Randy Dunlap (1):
+      crypto: ghash-intel - ghash-clmulni-intel_glue needs err.h
+
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
