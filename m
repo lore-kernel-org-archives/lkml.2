@@ -1,46 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab0LOK4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:56:39 -0500
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:61322 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752814Ab0LOK4i (ORCPT
+	id S1753142Ab0LOK6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:58:31 -0500
+Received: from woolik.bumpclub.ee ([193.40.0.72]:38098 "EHLO
+	Woolik.BumpClub.Ee" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab0LOK63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:56:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYFAOorCE3CTtAn/2dsb2JhbACVeI4tc8FQhUoEins
-Date: Wed, 15 Dec 2010 11:56:26 +0100
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org
-Subject: timer Q : request callback 2 ms after interrupt to drop RTS on
-	RS485
-Message-ID: <20101215105626.GA3083@frolo.macqel>
+	Wed, 15 Dec 2010 05:58:29 -0500
+X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 05:58:29 EST
+Date: Wed, 15 Dec 2010 12:48:21 +0200 (EET)
+From: =?ISO-8859-15?Q?T=F5nu_Raitviir?= <jussuf@linux.ee>
+To: chris@chris-wilson.co.uk
+cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        airlied@linux.ie, linux-kernel@vger.kernel.org
+Subject: BUG: i915 causes NULL pointer dereference in 2.6.37-rc5-git4
+Message-ID: <alpine.DEB.2.00.1012151238570.4797@jbbyvx.ohzcpyho.rr>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-No-Archive: yes
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-09)
+Content-Type: MULTIPART/MIXED; BOUNDARY="683755520-406772781-1292410101=:4797"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello linux timer experts
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I need to arm a timer to expire about 1.5 ms after an interrupt.
+--683755520-406772781-1292410101=:4797
+Content-Type: TEXT/PLAIN; format=flowed; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-How can I do that ?
 
-Thanks in advance
+Asus P5E-VM HDMI motherboard with G35 chipset, only HDMI output is 
+connected. Last known good kernel was 2.6.36.2
 
-Philippe
-
-More context for the interested ones : I need to deactivate the RTS signal
-on a serial line, but I get only TxREADY interrupts, not TxEMPTY ones.
-Knowing the hardware and baud rate involved I know how much time is needed
-to flush the last bytes and bits and I need to drop RTS as soon as the
-last bit is sent.
-Of course, in the timer callback I'll do a small amount of busy waiting
-to be sure TxEMPTY state is reached.
+00:02.0 VGA compatible controller: Intel Corporation 82G35 Express Integrated Graphics Controller (rev 03)
+00:02.1 Display controller: Intel Corporation 82G35 Express Integrated Graphics Controller (rev 03)
 
 -- 
-Philippe De Muyter  phdm at macqel dot be  Tel +32 27029044
-Macq Electronique SA  rue de l'Aeronef 2  B-1140 Bruxelles  Fax +32 27029077
+Tõnu Raitviir
+LRU #36438
+--683755520-406772781-1292410101=:4797
+Content-Type: TEXT/plain; name=i915-oops.txt
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.00.1012151248210.4797@jbbyvx.ohzcpyho.rr>
+Content-Description: 
+Content-Disposition: attachment; filename=i915-oops.txt
+
+WyAgIDMyLjExNzAwNV0gW2RybV0gSW5pdGlhbGl6ZWQgZHJtIDEuMS4wIDIw
+MDYwODEwDQpbICAgMzIuMTgxODg1XSBpOTE1IDAwMDA6MDA6MDIuMDogUENJ
+IElOVCBBIC0+IEdTSSAxNiAobGV2ZWwsIGxvdykgLT4gSVJRIDE2DQpbICAg
+MzIuMTgxOTQxXSBpOTE1IDAwMDA6MDA6MDIuMDogc2V0dGluZyBsYXRlbmN5
+IHRpbWVyIHRvIDY0DQpbICAgMzIuMjAyNjc2XSBpOTE1IDAwMDA6MDA6MDIu
+MDogaXJxIDQzIGZvciBNU0kvTVNJLVgNClsgICAzMi4zNTU1MTFdIEJVRzog
+dW5hYmxlIHRvIGhhbmRsZSBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVmZXJl
+bmNlIGF0IDAwMDAwMDAwMDAwMDAzZmMNClsgICAzMi4zNTU2MTNdIElQOiBb
+PGZmZmZmZmZmODExZTMxNTA+XSBpZHJfcHJlX2dldCsweDViLzB4NmYNClsg
+ICAzMi4zNTU2NzldIFBHRCA3OGI5MzA2NyBQVUQgNzlkNDMwNjcgUE1EIDAg
+DQpbICAgMzIuMzU1NzcxXSBPb3BzOiAwMDAwIFsjMV0gU01QIA0KWyAgIDMy
+LjM1NTg0NF0gbGFzdCBzeXNmcyBmaWxlOiAvc3lzL2RldmljZXMvcGNpMDAw
+MDowMC8wMDAwOjAwOjAyLjAvaTJjLTUvdWV2ZW50DQpbICAgMzIuMzU1OTA3
+XSBDUFUgMCANClsgICAzMi4zNTU5MjhdIE1vZHVsZXMgbGlua2VkIGluOiBp
+OTE1KCspIGRybV9rbXNfaGVscGVyIGRybSBpMmNfYWxnb19iaXQgdmlkZW8g
+b3V0cHV0IGh3bW9uX3ZpZCBsaXJjX2ltb24oQykgcmNfZGliMDcwMF9yYzUg
+bXQyMDYwIHNuZF9oZGFfY29kZWNfaGRtaSBzbmRfaGRhX2NvZGVjX3JlYWx0
+ZWsgc25kX2hkYV9pbnRlbCBzbmRfaGRhX2NvZGVjIHNuZF9od2RlcCBkdmJf
+dXNiX2RpYjA3MDAgZGliNzAwMHAgZGliMDA5MCBzbmRfcGNtIGRpYjcwMDBt
+IHNuZF9zZXFfbWlkaSBzbmRfcmF3bWlkaSBzbmRfc2VxX21pZGlfZXZlbnQg
+c25kX3NlcSBpcl9saXJjX2NvZGVjIGxpcmNfZGV2IGlyX3NvbnlfZGVjb2Rl
+ciByY19pbW9uX3BhZCBzbmRfdGltZXIgaXJfanZjX2RlY29kZXIgZGliMDA3
+MCBkdmJfdXNiIGRpYjgwMDAgaXJfcmM2X2RlY29kZXIgc25kX3NlcV9kZXZp
+Y2UgZHZiX2NvcmUgZGliMzAwMG1jIGlyX3JjNV9kZWNvZGVyIGRpYngwMDBf
+Y29tbW9uIHRwbV90aXMgdHBtIGlyX25lY19kZWNvZGVyIGltb24gaW50ZWxf
+YWdwIGludGVsX2d0dCB0cG1fYmlvcyBpMmNfaTgwMSBzbmQgc291bmRjb3Jl
+IHNuZF9wYWdlX2FsbG9jIGlyX2NvcmUgcGNzcGtyIHNocGNocCBwY2lfaG90
+cGx1ZyBzZXJpb19yYXcgcmFpZDEwIHJhaWQ0NTYgYXN5bmNfcHEgYXN5bmNf
+eG9yIHhvciBhc3luY19tZW1jcHkgYXN5bmNfcmFpZDZfcmVjb3YgcmFpZDZf
+cHEgYXN5bmNfdHggcmFpZDAgbXVsdGlwYXRoIGxpbmVhciB1c2JoaWQgZmly
+ZXdpcmVfb2hjaSBhdGwxIGhpZCBzZyBmaXJld2lyZV9jb3JlIGNyY19pdHVf
+dCBwYXRhX2ptaWNyb24gW2xhc3QgdW5sb2FkZWQ6IHNjc2lfd2FpdF9zY2Fu
+XQ0KWyAgIDMyLjM1NjAwMF0gDQpbICAgMzIuMzU2MDAwXSBQaWQ6IDE0OTUs
+IGNvbW06IG1vZHByb2JlIFRhaW50ZWQ6IEcgICAgICAgICBDICAyLjYuMzct
+cmM1LWdpdDQgIzEgUDVFLVZNIEhETUkvUDVFLVZNIEhETUkNClsgICAzMi4z
+NTYwMDBdIFJJUDogMDAxMDpbPGZmZmZmZmZmODExZTMxNTA+XSAgWzxmZmZm
+ZmZmZjgxMWUzMTUwPl0gaWRyX3ByZV9nZXQrMHg1Yi8weDZmDQpbICAgMzIu
+MzU2MDAwXSBSU1A6IDAwMTg6ZmZmZjg4MDA3OTUwNTlhOCAgRUZMQUdTOiAw
+MDAxMDIwMg0KWyAgIDMyLjM1NjAwMF0gUkFYOiBmZmZmODgwMDc4OWRlYjIw
+IFJCWDogMDAwMDAwMDAwMDAwMDNlOCBSQ1g6IDAwMDAwMDAwMDAwMDAwMDAN
+ClsgICAzMi4zNTYwMDBdIFJEWDogMDAwMDAwMDBiMGIwYjBiMCBSU0k6IDAw
+MDAwMDAwMDAwMDAwZDAgUkRJOiAwMDAwMDAwMDAwMDAwM2U4DQpbICAgMzIu
+MzU2MDAwXSBSQlA6IGZmZmY4ODAwNzk1MDU5YzggUjA4OiAwMDAwMDAwMDAw
+MDAwMDA0IFIwOTogMDAwMDAwMDAwMDAwMDAwNA0KWyAgIDMyLjM1NjAwMF0g
+UjEwOiBmZmZmODgwMDAwMDAwMDA0IFIxMTogZmZmZjg4MDA3Yzg5N2RhMCBS
+MTI6IDAwMDAwMDAwMDAwMDgwZDANClsgICAzMi4zNTYwMDBdIFIxMzogMDAw
+MDAwMDAwMDAwMDQwMCBSMTQ6IDAwMDAwMDAwYjBiMGIwYjAgUjE1OiBmZmZm
+ODgwMDc5NTA1OWY0DQpbICAgMzIuMzU2MDAwXSBGUzogIDAwMDA3ZjVlMzZk
+ODQ3MDAoMDAwMCkgR1M6ZmZmZjg4MDA3ZjQwMDAwMCgwMDAwKSBrbmxHUzow
+MDAwMDAwMDAwMDAwMDAwDQpbICAgMzIuMzU2MDAwXSBDUzogIDAwMTAgRFM6
+IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAwMDAwMDgwMDUwMDNiDQpbICAgMzIu
+MzU2MDAwXSBDUjI6IDAwMDAwMDAwMDAwMDAzZmMgQ1IzOiAwMDAwMDAwMDc4
+MmIxMDAwIENSNDogMDAwMDAwMDAwMDA0MDZmMA0KWyAgIDMyLjM1NjAwMF0g
+RFIwOiAwMDAwMDAwMDAwMDAwMDAwIERSMTogMDAwMDAwMDAwMDAwMDAwMCBE
+UjI6IDAwMDAwMDAwMDAwMDAwMDANClsgICAzMi4zNTYwMDBdIERSMzogMDAw
+MDAwMDAwMDAwMDAwMCBEUjY6IDAwMDAwMDAwZmZmZjBmZjAgRFI3OiAwMDAw
+MDAwMDAwMDAwNDAwDQpbICAgMzIuMzU2MDAwXSBQcm9jZXNzIG1vZHByb2Jl
+IChwaWQ6IDE0OTUsIHRocmVhZGluZm8gZmZmZjg4MDA3OTUwNDAwMCwgdGFz
+ayBmZmZmODgwMDc4NjBiYTgwKQ0KWyAgIDMyLjM1NjAwMF0gU3RhY2s6DQpb
+ICAgMzIuMzU2MDAwXSAgZmZmZjg4MDA3OGJiODZkMCAwMDAwMDAwMDAwMDAw
+M2M4IDAwMDAwMDAwMDAwMDAzZTggMDAwMDAwMDBiMGIwYjBiMA0KWyAgIDMy
+LjM1NjAwMF0gIGZmZmY4ODAwNzk1MDVhMjggZmZmZmZmZmZhMDMxNzdjYSBm
+ZmZmODgwMDc5NTA1YTM3IDAwMDAwMDAwMDAwMDAwMDENClsgICAzMi4zNTYw
+MDBdICBmZmZmODgwMDc5NTA1YTE4IDAwMDAwMDAwMDAwMDAyNDYgMDAwMDAw
+MDAwMDAwMDAwMCAwMDAwMDAwMDAwMDAwMDAwDQpbICAgMzIuMzU2MDAwXSBD
+YWxsIFRyYWNlOg0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmZhMDMxNzdj
+YT5dIGRybV9tb2RlX29iamVjdF9nZXQrMHgzZC8weGEzIFtkcm1dDQpbICAg
+MzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEwMzE5N2QyPl0gZHJtX3Byb3BlcnR5
+X2NyZWF0ZSsweDVlLzB4YzQgW2RybV0NClsgICAzMi4zNTYwMDBdICBbPGZm
+ZmZmZmZmYTAzNzBmODI+XSBpbnRlbF9zZHZvX2R2aV9pbml0KzB4MTUyLzB4
+MWI2IFtpOTE1XQ0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmZhMDM3MTJk
+ZD5dIGludGVsX3Nkdm9faW5pdCsweDJmNy8weDZhMiBbaTkxNV0NClsgICAz
+Mi4zNTYwMDBdICBbPGZmZmZmZmZmYTAzNjhkNmI+XSBpbnRlbF9tb2Rlc2V0
+X2luaXQrMHg4ZWMvMHhjNzEgW2k5MTVdDQpbICAgMzIuMzU2MDAwXSAgWzxm
+ZmZmZmZmZmEwMzU0NjEzPl0gaTkxNV9kcml2ZXJfbG9hZCsweGM2Yy8weGQ5
+OCBbaTkxNV0NClsgICAzMi4zNTYwMDBdICBbPGZmZmZmZmZmODExZTQ1N2Y+
+XSA/IGtvYmpfYmNhc3RfZmlsdGVyKzB4MC8weDRiDQpbICAgMzIuMzU2MDAw
+XSAgWzxmZmZmZmZmZmEwMzE0ZDRmPl0gZHJtX2dldF9wY2lfZGV2KzB4MTYz
+LzB4MjY4IFtkcm1dDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEwMzdh
+NTJkPl0gaTkxNV9wY2lfcHJvYmUrMHgxMC8weDEyZiBbaTkxNV0NClsgICAz
+Mi4zNTYwMDBdICBbPGZmZmZmZmZmODExZjllMzM+XSBsb2NhbF9wY2lfcHJv
+YmUrMHg0OC8weDkxDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZjgxMWZh
+YmFlPl0gcGNpX2RldmljZV9wcm9iZSsweDYwLzB4OGYNClsgICAzMi4zNTYw
+MDBdICBbPGZmZmZmZmZmODEyNzZiYjk+XSA/IGRyaXZlcl9zeXNmc19hZGQr
+MHg2Yi8weDkwDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZjgxMjc2ZDBj
+Pl0gZHJpdmVyX3Byb2JlX2RldmljZSsweGIyLzB4MTRjDQpbICAgMzIuMzU2
+MDAwXSAgWzxmZmZmZmZmZjgxMjc2ZGZlPl0gX19kcml2ZXJfYXR0YWNoKzB4
+NTgvMHg3Yw0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmY4MTI3NmRhNj5d
+ID8gX19kcml2ZXJfYXR0YWNoKzB4MC8weDdjDQpbICAgMzIuMzU2MDAwXSAg
+WzxmZmZmZmZmZjgxMjc2MzI4Pl0gYnVzX2Zvcl9lYWNoX2RldisweDRlLzB4
+ODMNClsgICAzMi4zNTYwMDBdICBbPGZmZmZmZmZmODEyNzZiNGM+XSBkcml2
+ZXJfYXR0YWNoKzB4MTkvMHgxYg0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZm
+ZmY4MTI3NjdhYT5dIGJ1c19hZGRfZHJpdmVyKzB4YjEvMHgxZmYNClsgICAz
+Mi4zNTYwMDBdICBbPGZmZmZmZmZmODEyNzcwZDk+XSBkcml2ZXJfcmVnaXN0
+ZXIrMHg5OS8weDEwYQ0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmY4MTFm
+YWRmZT5dIF9fcGNpX3JlZ2lzdGVyX2RyaXZlcisweDUzLzB4YzMNClsgICAz
+Mi4zNTYwMDBdICBbPGZmZmZmZmZmYTAzMTRlODg+XSBkcm1fcGNpX2luaXQr
+MHgzNC8weDlhIFtkcm1dDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEw
+MzkyMDAwPl0gPyBpOTE1X2luaXQrMHgwLzB4OTYgW2k5MTVdDQpbICAgMzIu
+MzU2MDAwXSAgWzxmZmZmZmZmZmEwMzBlNmRkPl0gZHJtX2luaXQrMHg1ZC8w
+eDYxIFtkcm1dDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEwMzkyMDk0
+Pl0gaTkxNV9pbml0KzB4OTQvMHg5NiBbaTkxNV0NClsgICAzMi4zNTYwMDBd
+ICBbPGZmZmZmZmZmODEwMDAyMTA+XSBkb19vbmVfaW5pdGNhbGwrMHg3YS8w
+eDEyOQ0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmY4MTA1ZWUwOD5dIHN5
+c19pbml0X21vZHVsZSsweDljLzB4MWRjDQpbICAgMzIuMzU2MDAwXSAgWzxm
+ZmZmZmZmZjgxMDAyOTNiPl0gc3lzdGVtX2NhbGxfZmFzdHBhdGgrMHgxNi8w
+eDFiDQpbICAgMzIuMzU2MDAwXSBDb2RlOiA0OCA4NSBjMCA3NSAwNCAzMSBj
+MCBlYiAyZCA0YyA4OSBlZiBlOCA1MiBiZCAxZiAwMCA0OCA4YiA1MyAwOCA0
+OCA4OSBjNiA0OSA4OSA1NiAwOCA0YyA4OSBlZiA0YyA4OSA3MyAwOCBmZiA0
+MyAxNCBlOCA3MCBiZCAxZiAwMCA8ODM+IDdiIDE0IDBiIDc2IGJkIGI4IDAx
+IDAwIDAwIDAwIDViIDQxIDVjIDQxIDVkIDQxIDVlIGM5IGMzIDU1IA0KWyAg
+IDMyLjM1NjAwMF0gUklQICBbPGZmZmZmZmZmODExZTMxNTA+XSBpZHJfcHJl
+X2dldCsweDViLzB4NmYNClsgICAzMi4zNTYwMDBdICBSU1AgPGZmZmY4ODAw
+Nzk1MDU5YTg+DQpbICAgMzIuMzU2MDAwXSBDUjI6IDAwMDAwMDAwMDAwMDAz
+ZmMNClsgICAzMi4zNjMyNDldIC0tLVsgZW5kIHRyYWNlIDcxZWZhNWYxYzQ0
+ZjlhM2MgXS0tLQ0K
+
+--683755520-406772781-1292410101=:4797--
