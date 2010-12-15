@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab0LONjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 08:39:09 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:19137 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab0LONjI (ORCPT
+	id S1753717Ab0LONkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 08:40:42 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:59970 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0LONkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 08:39:08 -0500
-X-IronPort-AV: E=Sophos;i="4.59,348,1288569600"; 
-   d="scan'208";a="3360595"
-Date: Wed, 15 Dec 2010 13:39:27 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
+	Wed, 15 Dec 2010 08:40:41 -0500
+X-IronPort-AV: E=Sophos;i="4.59,349,1288584000"; 
+   d="scan'208";a="126991500"
+From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
-CC: xen-devel@lists.xensource.com,
+Cc: xen-devel@lists.xensource.com,
         Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: [PATCH 00/11] xen: allow usermode to map granted pages
-Message-ID: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 01/11] xen: define gnttab_set_map_op/unmap_op
+Date: Wed, 15 Dec 2010 13:40:36 +0000
+Message-Id: <1292420446-3348-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
+References: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
+X-OriginalArrivalTime: 15 Dec 2010 13:40:40.0375 (UTC) FILETIME=[A9BBF470:01CB9C5D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series introduces the gntdev device that allows usermode
-to map granted pages; gntdev is used by qemu to implement Xen backends
-in userspace.
+From: Ian Campbell <ian.campbell@citrix.com>
 
-Considering that granted pages still have the same entry in the m2p
-as before being granted, the following patches also add a mechanism to
-override portions of the m2p so that we can find out the pfn
-corresponding to the mfn of a granted page in the "receiver" domain.
-This is needed so that we can have pte_page work correctly for these
-pages. Once this requirement is satisfied, __get_user_pages_fast can
-work on granted pages and userspace applications (the xen block backend
-implemented in qemu) can use AIO on them.
+Impact: hypercall definitions
 
+These functions populate the gnttab data structures used by the
+granttab map and unmap ops and are used in the backend drivers.
 
-The list of patches and the diffstat follow:
+Originally xen-unstable.hg 9625:c3bb51c443a7
 
-Gerd Hoffmann (1):
-      xen/gntdev: allow usermode to map granted pages
+[ Include Stefano's fix for phys_addr_t ]
 
-Ian Campbell (2):
-      xen: define gnttab_set_map_op/unmap_op
-      xen: gntdev: move use of GNTMAP_contains_pte next to the map_op
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ include/xen/grant_table.h |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 38 insertions(+), 1 deletions(-)
 
-Jeremy Fitzhardinge (5):
-      xen/gntdev: add VM_PFNMAP to vma
-      xen: move p2m handling to separate file
-      xen: add m2p override mechanism
-      xen/gntdev: stop using "token" argument
-      xen p2m: clear the old pte when adding a page to m2p_override
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index 9a73170..1821aa1 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -37,10 +37,16 @@
+ #ifndef __ASM_GNTTAB_H__
+ #define __ASM_GNTTAB_H__
+ 
+-#include <asm/xen/hypervisor.h>
++#include <asm/page.h>
++
++#include <xen/interface/xen.h>
+ #include <xen/interface/grant_table.h>
++
++#include <asm/xen/hypervisor.h>
+ #include <asm/xen/grant_table.h>
+ 
++#include <xen/features.h>
++
+ /* NR_GRANT_FRAMES must be less than or equal to that configured in Xen */
+ #define NR_GRANT_FRAMES 4
+ 
+@@ -107,6 +113,37 @@ void gnttab_grant_foreign_access_ref(grant_ref_t ref, domid_t domid,
+ void gnttab_grant_foreign_transfer_ref(grant_ref_t, domid_t domid,
+ 				       unsigned long pfn);
+ 
++static inline void
++gnttab_set_map_op(struct gnttab_map_grant_ref *map, phys_addr_t addr,
++		  uint32_t flags, grant_ref_t ref, domid_t domid)
++{
++	if (flags & GNTMAP_contains_pte)
++		map->host_addr = addr;
++	else if (xen_feature(XENFEAT_auto_translated_physmap))
++		map->host_addr = __pa(addr);
++	else
++		map->host_addr = addr;
++
++	map->flags = flags;
++	map->ref = ref;
++	map->dom = domid;
++}
++
++static inline void
++gnttab_set_unmap_op(struct gnttab_unmap_grant_ref *unmap, phys_addr_t addr,
++		    uint32_t flags, grant_handle_t handle)
++{
++	if (flags & GNTMAP_contains_pte)
++		unmap->host_addr = addr;
++	else if (xen_feature(XENFEAT_auto_translated_physmap))
++		unmap->host_addr = __pa(addr);
++	else
++		unmap->host_addr = addr;
++
++	unmap->handle = handle;
++	unmap->dev_bus_addr = 0;
++}
++
+ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ 			   unsigned long max_nr_gframes,
+ 			   struct grant_entry **__shared);
+-- 
+1.5.6.5
 
-Stefano Stabellini (3):
-      xen p2m: transparently change the p2m mappings in the m2p override
-      xen: introduce gnttab_map_refs and gnttab_unmap_refs
-      xen gntdev: use gnttab_map_refs and gnttab_unmap_refs
-
- arch/x86/include/asm/xen/page.h |   16 +-
- arch/x86/xen/Makefile           |    3 +-
- arch/x86/xen/mmu.c              |  365 ---------------------
- arch/x86/xen/p2m.c              |  493 ++++++++++++++++++++++++++++
- drivers/xen/Kconfig             |    7 +
- drivers/xen/Makefile            |    2 +
- drivers/xen/gntdev.c            |  672 +++++++++++++++++++++++++++++++++++++++
- drivers/xen/grant-table.c       |   36 ++
- include/xen/gntdev.h            |  119 +++++++
- include/xen/grant_table.h       |   44 +++-
- 10 files changed, 1387 insertions(+), 370 deletions(-)
-
-
-Cheers,
-
-Stefano
-
-
-P.S.
-I'll be AFK for a couple of weeks, so don't expect an immediate reply.
