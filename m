@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab0LOKUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:20:43 -0500
-Received: from mga01.intel.com ([192.55.52.88]:20500 "EHLO mga01.intel.com"
+	id S1752671Ab0LOKfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:35:51 -0500
+Received: from csmtp3.one.com ([91.198.169.23]:36743 "EHLO csmtp3.one.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511Ab0LOKUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:20:42 -0500
-Message-Id: <5b55a1$iv0t6h@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,347,1288594800"; 
-   d="scan'208";a="636515537"
-Date: Wed, 15 Dec 2010 10:20:23 +0000
-To: Hui Zhu <teawater@gmail.com>
-Subject: Re: [BUG] i915 boot got black screen with 2.6.37-rc5+
-Cc: linux-kernel@vger.kernel.org, keithp@keithp.com, ak@linux.intel.com,
-        gregkh@suse.de, stable@kernel.org, Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <AANLkTim=k601vg+sJJH3bvdfAmrCbCEouL78XoVxuDwy@mail.gmail.com>
-References: <AANLkTimOOmFqxU=r+-RphdfPJ54Qr+6LHU60Grzpnerr@mail.gmail.com> <b9dded$hcr3k7@orsmga002.jf.intel.com> <AANLkTim=k601vg+sJJH3bvdfAmrCbCEouL78XoVxuDwy@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1752630Ab0LOKfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:35:50 -0500
+X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 05:35:49 EST
+Message-ID: <4D0897F3.7040500@bitmath.org>
+Date: Wed, 15 Dec 2010 11:26:59 +0100
+From: Henrik Rydberg <rydberg@bitmath.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Chase Douglas <chase.douglas@canonical.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010 17:28:45 +0800, Hui Zhu <teawater@gmail.com> wrote:
-> lspci | grep Display
-> 00:02.1 Display controller: Intel Corporation 82Q35 Express Integrated
-> Graphics Controller (rev 02)
+>> Ping has touched upon this subject as well, from the pen & touch perspective.
+>> Generally, some ABS axes are actually enumerations, for which we have no
+>> direct abstraction. If we had a way to declare the used values for such
+>> enumerations, it would resolve these and possibly other issues.
 
-Q35. I wasn't expecting that. Can you please add drm.debug=0xe to your
-boot line and attach the dmesg from rc3 and rc5? Thanks.
--Chris
+> I think that presence of pen/touch can be detected by having
+> BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
+> finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
+> this is another case where we should employ the proposed device flags?
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Yes. Having something like INPUT_QUIRK_SEMI_MT might be enough, and we could
+drop the whole MT_TOOL_ENVELOPE circus. Chase, Peter, Chris, would you be
+comfortable with such a solution?
+
+> Anyway, it looks like we have a few concerns with current
+> MT_TOOL_ENVELOPE so I want to rewind my 'next' branch.
+
+Yep. Should I also take the opportunity to sync from -rc1 instead, and fold the
+cleanup patches into the appropriate places?
+
+Thanks,
+Henrik
+
