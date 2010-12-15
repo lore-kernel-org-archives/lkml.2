@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab0LOFev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 00:34:51 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45873 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab0LOFeu convert rfc822-to-8bit (ORCPT
+	id S1752541Ab0LOFzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 00:55:19 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:32195 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751350Ab0LOFzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 00:34:50 -0500
-Date: Wed, 15 Dec 2010 11:04:46 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
-        Amerigo Wang <amwang@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] [Patch 0/21] Non disruptive application core dump
- infrastructure
-Message-ID: <20101215110446.157bbb25@suzukikp>
-In-Reply-To: <AANLkTim3h2EBcEUP19S2Z0CKA7Oe3k5pB=4LjXsOR3F9@mail.gmail.com>
-References: <20101214152259.67896960@suzukikp>
- <AANLkTim3h2EBcEUP19S2Z0CKA7Oe3k5pB=4LjXsOR3F9@mail.gmail.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Dec 2010 00:55:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAHvnB015Lc+z/2dsb2JhbACkG3nBL4VKBJED
+Date: Wed, 15 Dec 2010 16:54:50 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Nick Piggin <npiggin@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+Message-ID: <20101215055450.GC3398@amd>
+References: <20101209070938.GA3949@amd>
+ <19324.1291990997@jrobl>
+ <20101213014553.GA6522@amd>
+ <9580.1292225351@jrobl>
+ <AANLkTimeWSEUU6EYa4yWY11OyAVQqNu5eoBZc5ddqHQL@mail.gmail.com>
+ <20101215043840.GA7692@cr0.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101215043840.GA7692@cr0.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010 07:49:37 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Tue, Dec 14, 2010 at 1:52 AM, Suzuki K. Poulose <suzuki@in.ibm.com> wrote:
+On Wed, Dec 15, 2010 at 12:38:40PM +0800, Américo Wang wrote:
+> On Mon, Dec 13, 2010 at 07:25:05PM +1100, Nick Piggin wrote:
+> >On Mon, Dec 13, 2010 at 6:29 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+> >> But is the "rep cmp has quite a long latency" issue generic for all x86
+> >> architecture, or Westmere system specific?
 > >
-> > This is series of patches implementing an infrastructure for capturing the core
-> > of an application without disrupting its process semantics.
+> >I don't believe it is Westmere specific. Intel and AMD have
+> >been improving these instructions in the past few years, so
+> >Westmere is probably as good or better than any.
 > >
-> > The infrastructure makes use of the freezer subsystem in kernel to freeze the
-> > threads and then collect the information to generate  the core.
+> >That said, rep cmp may not be as heavily optimized as the
+> >set and copy string instructions.
+> >
+> >In short, I think the change should be suitable for all x86 CPUs,
+> >but I would like to hear more opinions or see numbers for other
+> >cores.
+> >
 > 
-> This seems to be a fundamentally flawed approach.
-> 
-> From a security standpoint, it looks like a total disaster. A frozen
-> process is really hard to get rid of, so it looks like an obvious DoS
-> attack to just create lots of processes, then sneakily freeze them
-> all, and then laugh at the poor system admin who has no idea what's
-> going on. While frozen, the things are basically unkillable but look
-> entirely normal, no?
+> How about other arch? If this is only for x86, shouldn't it be
+> protected by CONFIG_X86?
 
-You are right. We need a simple mechanism to hold the threads, so that we 
-could collect the register information of the process without affecting its 
-process semantics (eg, signals etc.). The suggestion by Kamezawa-san -a 
-freeze state variant which allows SIGKILL - is one possibility.
-
-I'd be very glad not using the freezer if there is a neat way to accomplish 
-this without the undesired side effects. Tejun's ptrace enhancement would 
-still require a userland program to control it(gcore); something contained 
-in the kernel would be ideal.
-
-
-Thanks
-
-Suzuki
-
-> 
->                                      Linus
+That's what I would like to know, but I suspect that for very short
+strings we are dealing with, the custom loop will be fine for
+everybody.
 
