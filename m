@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab0LOLW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 06:22:28 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:36808 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab0LOLW1 (ORCPT
+	id S1753417Ab0LOL0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 06:26:21 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:38802 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab0LOL0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 06:22:27 -0500
-To: Hugh Dickins <hughd@google.com>
-CC: miklos@szeredi.hu, akpm@linux-foundation.org, robert@swiecki.net,
-        lkml20101129@newton.leun.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-reply-to: <alpine.LSU.2.00.1012142020030.12693@tigran.mtv.corp.google.com>
-	(message from Hugh Dickins on Tue, 14 Dec 2010 20:32:49 -0800 (PST))
-Subject: Re: kernel BUG at mm/truncate.c:475!
-References: <20101130194945.58962c44@xenia.leun.net> <alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com> <E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu> <20101201124528.6809c539@xenia.leun.net> <E1PNqO1-0005px-9h@pomaz-ex.szeredi.hu>
- <20101202084159.6bff7355@xenia.leun.net> <20101202091552.4a63f717@xenia.leun.net> <E1PO5gh-00079U-Ma@pomaz-ex.szeredi.hu> <20101202115722.1c00afd5@xenia.leun.net> <20101203085350.55f94057@xenia.leun.net> <E1PPaIw-0004pW-Mk@pomaz-ex.szeredi.hu>
- <20101206204303.1de6277b@xenia.leun.net> <E1PRQDn-0007jZ-5S@pomaz-ex.szeredi.hu> <20101213142059.643f8080.akpm@linux-foundation.org> <E1PSSO8-0003sy-Vr@pomaz-ex.szeredi.hu> <alpine.LSU.2.00.1012142020030.12693@tigran.mtv.corp.google.com>
-Message-Id: <E1PSpQw-0005s5-QW@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 15 Dec 2010 12:22:10 +0100
+	Wed, 15 Dec 2010 06:26:20 -0500
+Date: Wed, 15 Dec 2010 16:56:26 +0530
+From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] [Patch 0/21] Non disruptive application core dump
+ infrastructure
+Message-ID: <20101215165626.715007b5@suzukikp>
+In-Reply-To: <4D088C6C.8020800@kernel.org>
+References: <20101214152259.67896960@suzukikp>
+	<AANLkTim3h2EBcEUP19S2Z0CKA7Oe3k5pB=4LjXsOR3F9@mail.gmail.com>
+	<20101215110446.157bbb25@suzukikp>
+	<4D088C6C.8020800@kernel.org>
+Organization: IBM
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010, Hugh Dickins wrote:
-> I'd feel rather happier about it if I thought it would also fix
-> Robert's kernel BUG at /build/buildd/linux-2.6.35/mm/filemap.c:128!
-> but I've still not found time to explain that one.
+On Wed, 15 Dec 2010 10:37:48 +0100
+Tejun Heo <tj@kernel.org> wrote:
 
-Me neither, all unmap_mapping_range() calls from shmfs are either with
-i_mutex or from evict_inode.
+> Hello, Suzuki.
+> 
+> On 12/15/2010 06:34 AM, Suzuki K. Poulose wrote:
+> > I'd be very glad not using the freezer if there is a neat way to
+> > accomplish this without the undesired side effects. Tejun's ptrace
+> > enhancement would still require a userland program to control
+> > it(gcore); something contained in the kernel would be ideal.
+> 
+> Why is using gcore a bad thing?  If we make ptrace avoid the implicit
+> SIGSTOP, the side effects of ptrace would be the same as using freezer
+> but with the benefit that it's properly integrated to the process
+> model and job control.
 
-Hmm, is there anything preventing remap_file_pages() installing a pte
-at an address that unmap_mapping_range() has already processed?
+The advantages of the new approach are :
 
-Thanks,
-Miklos
+1) A process can trigger a core synchronously, upon an event, say a signal 
+handler and continue from there. gcore would require a fork(), which is not 
+safe to use from a signal handler.
+
+2) We can seek to only the data we need
+
+Thanks
+Suzuki
+
