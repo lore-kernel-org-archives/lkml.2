@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab0LOWLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:11:34 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:54325 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab0LOWLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:11:31 -0500
-Subject: Re: [PATCH] adding gpmc configuration functions, west bridge
- related
-From: Sutharsan <srmt@cypress.com>
-To: Greg KH <greg@kroah.com>
-Cc: odc@cypress.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20101215201029.GA32710@kroah.com>
-References: <1292443046.1771.47.camel@sutharsan-laptop>
-	 <20101215201029.GA32710@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Dec 2010 14:11:15 -0800
-Message-ID: <1292451075.1771.86.camel@sutharsan-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+	id S1755401Ab0LOWO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:14:57 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:12048 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751819Ab0LOWOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:14:55 -0500
+Date: Wed, 15 Dec 2010 14:14:54 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] Show version information for built-in modules in sysfs
+Message-ID: <20101215221454.GB6560@dtor-ws.eng.vmware.com>
+References: <20101215220019.GA6560@dtor-ws.eng.vmware.com>
+ <AANLkTikuWubUkGp2nESWTLz+kQsczznh7fuixdLzMfdO@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikuWubUkGp2nESWTLz+kQsczznh7fuixdLzMfdO@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, Dec 15, 2010 at 02:06:03PM -0800, Alexey Dobriyan wrote:
+> On Thu, Dec 16, 2010 at 12:00 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
+> > Currently only drivers that are built as modules have their versions
+> > shown in /sys/module/<module_name>/version, but this information might
+> 
+> Can you create just /sys/module/x?
+> Module version info is quite useless by itself.
 
-The driver is in staging area, the patch I submitted is required to get
-the driver out of staging area. This patch is continuation of David
-Cross'(odc@cypress.com) earlier patch "[PATCH] gpmc, EXPORT_SYMBOLS,
-west bridge related".
+It is as useful as in the case where driver is built as a module. I am
+just trying to unify the behavior a bit.
 
-I've modified the driver to use the function exported by "[PATCH] adding
-gpmc configuration functions, west bridge related". I'll submit the
-modified driver as another patch.
+Code-wise it is almost as cheap to add /sys/module/x/version as adding
+just the directory.
 
 Thanks,
-Sutharsan.
 
-On Wed, 2010-12-15 at 12:10 -0800, Greg KH wrote:
-> On Wed, Dec 15, 2010 at 11:57:26AM -0800, Sutharsan wrote:
-> > 
-> > This patch adds and exports gpmc configuration functions. 
-> > 'gpmc' configuration functions will be used by westbridge device controller driver.
-> 
-> So this driver isn't submitted yet?
-> 
-> Then I would hold off on this until that time when it is needed by that
-> other driver.
-> 
-> Also, any USB related patches should be copied to the
-> linux-usb@vger.kernel.org list, and any ARM patches to that related
-> list, so next time cc: 2 more lists please.
-> 
-> thanks,
-> 
-> greg k-h
-> 
-
-
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+Dmitry
