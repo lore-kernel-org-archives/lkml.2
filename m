@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab0LOQfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:35:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41383 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab0LOQfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:35:12 -0500
-Date: Wed, 15 Dec 2010 16:34:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Zhang Lily-R58066 <r58066@freescale.com>, linux-fbdev@vger.kernel.org,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] ARM i.MX51: Add ipu clock support
-Message-ID: <20101215163445.GE9937@n2100.arm.linux.org.uk>
-References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-2-git-send-email-s.hauer@pengutronix.de> <201012151640.03789.arnd@arndb.de>
+	id S1753652Ab0LOQf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:35:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53675 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab0LOQfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:35:55 -0500
+Message-ID: <4D08EE11.3050603@zytor.com>
+Date: Wed, 15 Dec 2010 08:34:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012151640.03789.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Tejun Heo <tj@kernel.org>
+CC: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
+ of regular atomics
+References: <20101214162842.542421046@linux.com> <20101214162854.218751478@linux.com> <4D08EDA9.3090801@kernel.org>
+In-Reply-To: <4D08EDA9.3090801@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 04:40:03PM +0100, Arnd Bergmann wrote:
-> On Thursday 09 December 2010, Sascha Hauer wrote:
-> > +static int clk_ipu_enable(struct clk *clk)
-> > +{
-> > +       u32 reg;
-> > +
-> > +       _clk_ccgr_enable(clk);
-> > +
-> > +       /* Enable handshake with IPU when certain clock rates are changed */
-> > +       reg = __raw_readl(MXC_CCM_CCDR);
-> > +       reg &= ~MXC_CCM_CCDR_IPU_HS_MASK;
-> > +       __raw_writel(reg, MXC_CCM_CCDR);
-> > +
-> > +       /* Enable handshake with IPU when LPM is entered */
-> > +       reg = __raw_readl(MXC_CCM_CLPCR);
-> > +       reg &= ~MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
-> > +       __raw_writel(reg, MXC_CCM_CLPCR);
-> > +
-> > +       return 0;
-> > +}
+On 12/15/2010 08:32 AM, Tejun Heo wrote:
+> On 12/14/2010 05:28 PM, Christoph Lameter wrote:
+>> The irq work queue is a per cpu object and it is sufficient for
+>> synchronization if per cpu atomics are used. Doing so simplifies
+>> the code and reduces the overhead of the code.
+>>
+>> Before:
+>>
+>> christoph@linux-2.6$ size kernel/irq_work.o
+>>    text	   data	    bss	    dec	    hex	filename
+>>     451	      8	      1	    460	    1cc	kernel/irq_work.o
+>>
+>> After:
+>>
+>> christoph@linux-2.6$ size kernel/irq_work.o 
+>>    text	   data	    bss	    dec	    hex	filename
+>>     438	      8	      1	    447	    1bf	kernel/irq_work.o
+>>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > 
-> Why __raw_readl?
+> Peter, can you please ack this one?
 > 
-> The regular accessor function for I/O registers is readl, which handles
-> the access correctly with regard to atomicity, I/O ordering and byteorder.
+> Thanks.
+> 
 
-There's no possibility of those two being mis-ordered - they will be in
-program order whatever.
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-What isn't guaranteed is the ordering between I/O accesses (accesses to
-device memory) and SDRAM accesses (normal memory) which can pass each other
-without additional barriers.  Memory accesses can pass I/O accesses.
+... for tis whole series.
 
-So, (eg), if you're writing to a register which causes the hardware to
-begin reading DMA descriptors from an area allocated from dma_alloc_coherent(),
-you need a barrier to ensure that writes to the dma_alloc_coherent() are
-visible to the hardware before you write the enable register.
+	-hpa
 
-If you don't need normal vs device access ordering, using readl_relaxed()/
-writel_relaxed() is preferred, and avoids the (apparantly rather high)
-performance overhead of having to issue barriers all the way down to the
-L2 cache.
 
-Lastly, I don't see where atomicity comes into it - __raw_writel vs writel
-have the same atomicity.  Both are single access atomic provided they're
-naturally aligned.  Misaligned device accesses are not predictable.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
