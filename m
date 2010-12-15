@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab0LOU4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:56:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51011 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab0LOU4L (ORCPT
+	id S1755477Ab0LOU5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:57:03 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41910 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752158Ab0LOU47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 15:56:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Kmqbdyq8LkvN0PRRZen4yHdqJLg9uTTi7uxRX3ImLTpzVRGLU8bz1NYQ2r7YcbpbIm
-         5SSNJddIsRC5iH/jFximHpgzjnmroLZekyqMMheKsNG2lJyp9LqO3LZIkwnNB/1oSowD
-         gG/VroRBcs/+GA511tNKHKVKrSCb3k8pRmBNo=
-Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Xinan Tang <xinan.tang@intel.com>,
-        Junchang Wang <junchangwang@gmail.com>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1292446118.2603.11.camel@edumazet-laptop>
-References: <cover.1292405004.git.fenghua.yu@intel.com>
-	 <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
-	 <1292446118.2603.11.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Dec 2010 21:56:07 +0100
-Message-ID: <1292446567.2603.15.camel@edumazet-laptop>
+	Wed, 15 Dec 2010 15:56:59 -0500
+Date: Wed, 15 Dec 2010 12:56:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+Message-Id: <20101215125626.25f7d648.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1012151404070.21102@router.home>
+References: <alpine.DEB.2.00.1012151404070.21102@router.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 15 décembre 2010 à 21:48 +0100, Eric Dumazet a écrit :
-> Le mercredi 15 décembre 2010 à 12:02 -0800, Fenghua Yu a écrit :
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> > 
-> > Multiqueue and multicore provide packet parallel processing methodology.
-> > Current kernel and network drivers place one queue on one core. But the higher
-> > level socket doesn't know multiqueue. Current socket only can receive or send
-> > packets through one network interfaces. In some cases e.g. multi bpf filter
-> > tcpdump and snort, a lot of contentions come from socket operations like ring
-> > buffer. Even if the application itself has been fully parallelized and run on
-> > multi-core systems and NIC handlex tx/rx in multiqueue in parallel, network layer
-> > and NIC device driver assemble packets to a single, serialized queue. Thus the
-> > application cannot actually run in parallel in high speed.
+On Wed, 15 Dec 2010 14:07:39 -0600 (CST)
+Christoph Lameter <cl@linux.com> wrote:
 
-I forgot to say that your patches are not against net-next-2.6, and not
-apply anyway.
+> +#define cpu_has(c, bit)							\
+> +	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 :	\
+>  	 test_cpu_cap(c, bit))
+> 
+> +#define this_cpu_has(bit)						\
+> +	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 : 	\
+> +	 this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
+> +
 
-Always use David trees for networking patches...
+Isn't
 
+	a ? 1 : b
 
+a complex way of writing
+
+	a || b
+
+?
