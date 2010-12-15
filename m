@@ -1,249 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab0LOSQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 13:16:30 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:62222 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab0LOSQ3 convert rfc822-to-8bit (ORCPT
+	id S1754502Ab0LOSSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 13:18:46 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:40553 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab0LOSSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 13:16:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YG1E3yhcZqmxWJ7+ka2j5kYWRVrKzYKheZ1lkmdaUdq+CnMT843y52KjgRU46scSig
-         xXHjESDTMB5eVxZvQmMA==
+	Wed, 15 Dec 2010 13:18:43 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
+Date: Wed, 15 Dec 2010 11:18:28 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+References: <20101208213606.13026.47657.stgit@bob.kio> <20101215062650.GB2728@helgaas.com> <AANLkTi=U+CTn=RDvYG0w6JK0Owv_TEc9YNtAtm9DeLKi@mail.gmail.com>
+In-Reply-To: <AANLkTi=U+CTn=RDvYG0w6JK0Owv_TEc9YNtAtm9DeLKi@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1292242433.6803.199.camel@twins>
-References: <1292013506.13513.78.camel@laptop>
-	<AANLkTi=vUvNET2peva7uzWbzk5eK5EsKUrEQQSwLkNwM@mail.gmail.com>
-	<1292242433.6803.199.camel@twins>
-Date: Wed, 15 Dec 2010 10:16:25 -0800
-Message-ID: <AANLkTin86W-W69fGpj+5LCP7L-KQfA_tn506o+RZ_UED@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sched: Fix the irqtime code to deal with u64 wraps
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012151118.30512.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Wednesday, December 15, 2010 12:03:15 am Linus Torvalds wrote:
+> On Tue, Dec 14, 2010 at 10:26 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> >
+> > I don't know whether the other patches in this series make you
+> > unhappy.  I'm really not happy with how I implemented the avoidance
+> > of ACPI devices when doing PCI allocation, but I do think we need
+> > to avoid them *somehow*, and I was looking for a minimal quick
+> > fix at this point in the cycle.
+> 
+> So the "avoid ACPI devices" part makes sense, and doesn't involved
+> quirks, so I don't hate it at all the same way I hated the HP quirk.
+> 
+> However, I hate how it makes the allocation logic opaque. You can no
+> longer tell from the regular non-debug dmesg and the /proc/iomem _why_
+> something got allocated the way it did, because there are hidden
+> rules. That makes things awkward, methinks.
+> 
+> Also, quite frankly, I wonder what happens after release when somebody
+> shows another machine that simply stopped working because the
+> allocation strategy didn't work for it. The hw coverage that -rc6 gets
+> is tiny compared to a real release.
+> 
+> IOW, what's the long-term strategy for this? The only sane long-term
+> strategy I can see is the one we have _always_ done, which is to try
+> to populate the memory resource tree with what simply matches reality.
+> The whole "ok, we know the hardware better than the BIOS does" is a
+> _stable_ strategy. In contrast, the things you propose are NOT stable
+> strategies, they all depend on basically "we match windows exactly
+> and/or trust ACPI". Both of which are *known* to be failing models.
+> 
+> That's why I'm somewhat upset. Your whole strategy seems to depend on
+> a known broken model. We _know_ ACPI tables are crap much of the time.
+> So we know that "avoiding ACPI resources" is inevitably insufficient.
+> 
+> And that's why I hate the "switch everything around" model. Yes, we
+> have a known way to fix things up - namely to actually detect the
+> hardware itself properly when firmware inevitably screws up - but the
+> very act of switching things around will pretty much guarantee that
+> all our years of effort is of dubious value, and we'll end up finding
+> other laptops that used to work and no longer does.
+> 
+> Only switching around when _CRS is used is possible, and shouldn't
+> cause any regressions if we continue to default to not using _CRS. But
+> you want to switch that default around at some point, don't you? At
+> which point we'll be up sh*t creek again. See what I'm saying?
+> 
+> Which all makes me suspect that we'd be much better off just doing the
+> bottom-up allocation even for _CRS. And maybe CRS works fine then when
+> we combine our hardware knowledge with the ACPI region avoidance.
 
-This looks like something that happened while splitting this into two
-patches. I needed a trivial change like below before I could apply
-these two patches on linus-git.
+ACPI devices tend to be at high addresses, so allocating top-down
+is definitely more dangerous unless we explicitly avoid them.  I
+should have realized that and done something like patches 1-3 of
+this series before the top-down patches.
 
-Thanks,
-Venki
----
-@@ -641,17 +641,18 @@ static void sched_irq_time_avg_update(struct rq
-*rq, u64 irq_time);
+Doing it bottom-up would very likely work better than the "top-down
+without avoiding ACPI regions" model we currently have, at least in
+the short term.  We *would* have to do something to avoid E820
+reservations to fix this:
+  https://bugzilla.kernel.org/show_bug.cgi?id=16228,
+but that's doable.
 
- inline void update_rq_clock(struct rq *rq)
- {
--	if (!rq->skip_clock_update) {
--		int cpu = cpu_of(rq);
--		u64 irq_time;
-+	int cpu = cpu_of(rq);
-+	u64 irq_time;
+So here's my proposal for .37:
+  - Keep the current state of _CRS enabled by default (for 2008
+    and newer machines).
+  - Allocate bottom-up always
+  - Avoid E820 reservations
 
--		rq->clock = sched_clock_cpu(cpu);
--		irq_time = irq_time_cpu(cpu);
--		if (rq->clock - irq_time > rq->clock_task)
--			rq->clock_task = rq->clock - irq_time;
-+	if (rq->skip_clock_update)
-+		return;
+That should fix all the regressions I'm aware of.  I'll work on
+the patches this afternoon.
 
--		sched_irq_time_avg_update(rq, irq_time);
--	}
-+	rq->clock = sched_clock_cpu(cpu);
-+	irq_time = irq_time_cpu(cpu);
-+	if (rq->clock - irq_time > rq->clock_task)
-+		rq->clock_task = rq->clock - irq_time;
-+
-+	sched_irq_time_avg_update(rq, irq_time);
- }
-
- /*
-
----
-
-On Mon, Dec 13, 2010 at 4:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Subject: sched: Fix the irqtime code to deal with u64 wraps
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Thu Dec 09 14:15:34 CET 2010
->
-> Some ARM systems have a short sched_clock() [ which needs to be fixed
-> too ], but this exposed a bug in the irq_time code as well, it doesn't
-> deal with wraps at all.
->
-> Fix the irq_time code to deal with u64 wraps by re-writing the code to
-> only use delta increments, which avoids the whole issue.
->
-> Reviewed-by: Venkatesh Pallipadi <venki@google.com>
-> Reported-by: Mikael Pettersson <mikpe@it.uu.se>
-> Tested-by: Mikael Pettersson <mikpe@it.uu.se>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <new-submission>
-> ---
->  kernel/sched.c |   83 ++++++++++++++++++++++++++++++++++-----------------------
->  1 file changed, 50 insertions(+), 33 deletions(-)
->
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -636,23 +636,18 @@ static inline struct task_group *task_gr
->
->  #endif /* CONFIG_CGROUP_SCHED */
->
-> -static u64 irq_time_cpu(int cpu);
-> -static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
-> +static void update_rq_clock_task(struct rq *rq, s64 delta);
->
-> -inline void update_rq_clock(struct rq *rq)
-> +static void update_rq_clock(struct rq *rq)
->  {
-> -       int cpu = cpu_of(rq);
-> -       u64 irq_time;
-> +       s64 delta;
->
->        if (rq->skip_clock_update)
->                return;
->
-> -       rq->clock = sched_clock_cpu(cpu);
-> -       irq_time = irq_time_cpu(cpu);
-> -       if (rq->clock - irq_time > rq->clock_task)
-> -               rq->clock_task = rq->clock - irq_time;
-> -
-> -       sched_irq_time_avg_update(rq, irq_time);
-> +       delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-> +       rq->clock += delta;
-> +       update_rq_clock_task(rq, delta);
->  }
->
->  /*
-> @@ -1946,19 +1941,20 @@ void disable_sched_clock_irqtime(void)
->        sched_clock_irqtime = 0;
->  }
->
-> -static u64 irq_time_cpu(int cpu)
-> +static inline u64 irq_time_cpu(int cpu)
->  {
-> -       if (!sched_clock_irqtime)
-> -               return 0;
-> -
->        return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
->  }
->
-> +/*
-> + * Called before incrementing preempt_count on {soft,}irq_enter
-> + * and before decrementing preempt_count on {soft,}irq_exit.
-> + */
->  void account_system_vtime(struct task_struct *curr)
->  {
->        unsigned long flags;
-> +       s64 delta;
->        int cpu;
-> -       u64 now, delta;
->
->        if (!sched_clock_irqtime)
->                return;
-> @@ -1966,9 +1962,9 @@ void account_system_vtime(struct task_st
->        local_irq_save(flags);
->
->        cpu = smp_processor_id();
-> -       now = sched_clock_cpu(cpu);
-> -       delta = now - per_cpu(irq_start_time, cpu);
-> -       per_cpu(irq_start_time, cpu) = now;
-> +       delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
-> +       __this_cpu_add(irq_start_time, delta);
-> +
->        /*
->         * We do not account for softirq time from ksoftirqd here.
->         * We want to continue accounting softirq time to ksoftirqd thread
-> @@ -1976,33 +1972,54 @@ void account_system_vtime(struct task_st
->         * that do not consume any time, but still wants to run.
->         */
->        if (hardirq_count())
-> -               per_cpu(cpu_hardirq_time, cpu) += delta;
-> +               __this_cpu_add(cpu_hardirq_time, delta);
->        else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
-> -               per_cpu(cpu_softirq_time, cpu) += delta;
-> +               __this_cpu_add(cpu_softirq_time, delta);
->
->        local_irq_restore(flags);
->  }
->  EXPORT_SYMBOL_GPL(account_system_vtime);
->
-> -static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
-> +static void update_rq_clock_task(struct rq *rq, s64 delta)
->  {
-> -       if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
-> -               u64 delta_irq = curr_irq_time - rq->prev_irq_time;
-> -               rq->prev_irq_time = curr_irq_time;
-> -               sched_rt_avg_update(rq, delta_irq);
-> -       }
-> +       s64 irq_delta;
-> +
-> +       irq_delta = irq_time_cpu(cpu_of(rq)) - rq->prev_irq_time;
-> +
-> +       /*
-> +        * Since irq_time is only updated on {soft,}irq_exit, we might run into
-> +        * this case when a previous update_rq_clock() happened inside a
-> +        * {soft,}irq region.
-> +        *
-> +        * When this happens, we stop ->clock_task and only update the
-> +        * prev_irq_time stamp to account for the part that fit, so that a next
-> +        * update will consume the rest. This ensures ->clock_task is
-> +        * monotonic.
-> +        *
-> +        * It does however cause some slight miss-attribution of {soft,}irq
-> +        * time, a more accurate solution would be to update the irq_time using
-> +        * the current rq->clock timestamp, except that would require using
-> +        * atomic ops.
-> +        */
-> +       if (irq_delta > delta)
-> +               irq_delta = delta;
-> +
-> +       rq->prev_irq_time += irq_delta;
-> +       delta -= irq_delta;
-> +       rq->clock_task += delta;
-> +
-> +       if (irq_delta && sched_feat(NONIRQ_POWER))
-> +               sched_rt_avg_update(rq, irq_delta);
->  }
->
-> -#else
-> +#else /* CONFIG_IRQ_TIME_ACCOUNTING */
->
-> -static u64 irq_time_cpu(int cpu)
-> +static void update_rq_clock_task(struct rq *rq, s64 delta)
->  {
-> -       return 0;
-> +       rq->clock_task += delta;
->  }
->
-> -static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
-> -
-> -#endif
-> +#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
->
->  #include "sched_idletask.c"
->  #include "sched_fair.c"
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Bjorn
