@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab0LOOTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:19:06 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:24393 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752839Ab0LOOTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:19:05 -0500
-Message-ID: <4D08CE44.6000407@siemens.com>
-Date: Wed, 15 Dec 2010 15:18:44 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754341Ab0LOOVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 09:21:55 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:33350 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753942Ab0LOOVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 09:21:53 -0500
+Message-ID: <4D08CEE8.9080804@euromail.se>
+Date: Wed, 15 Dec 2010 15:21:28 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
-References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6> <4D07F70A.30209@web.de> <alpine.LFD.2.00.1012151357030.12146@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012151357030.12146@localhost6.localdomain6>
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Takashi Iwai <tiwai@suse.de>, Chris Bagwell <chris@cnpbagwell.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Input: synaptics - add multitouch packet support
+References: <1292280948-1933-1-git-send-email-rydberg@euromail.se> <4D06A7B1.6060609@canonical.com> <4D06A90C.90009@euromail.se> <4D07E38C.4020201@canonical.com>
+In-Reply-To: <4D07E38C.4020201@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PSsEZ-0002lk-74.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PSsEZ-0002lk-74 09e2ba208b523b6412a077f6440c7d2e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.12.2010 14:04, Thomas Gleixner wrote:
-> On Wed, 15 Dec 2010, Jan Kiszka wrote:
->> Am 14.12.2010 21:54, Thomas Gleixner wrote:
->>> On Mon, 13 Dec 2010, Jan Kiszka wrote:
->>>> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
->>>>  	/* Make sure it's not being used on another CPU: */
->>>>  	synchronize_irq(irq);
->>>>  
->>>> +	if (single_handler)
->>>> +		desc->irq_data.drv_status &= ~IRQS_SHARED;
->>>> +
->>>
->>> What's the reason to clear this flag outside of the desc->lock held
->>> region.
->>
->> We need to synchronize the irq first before clearing the flag.
->>
->> The problematic scenario behind this: An IRQ started in shared mode,
->> this the line was unmasked after the hardirq. Now we clear IRQS_SHARED
->> before calling into the threaded handler. And that handler may now think
->> that the line is still masked as IRQS_SHARED is set.
+>
+
+> After some testing this is mostly fine,
+
+ but I have one of those terrible
+> "integrated buttons" (or whatever we call it) trackpads. When switching
+> to multitouch mode, the cursor will sometimes jump when I go to push the
+> button.
 > 
-> That should read "not set" I guess.
+> Take the following sequence:
+> 
+> 1. Touch in top right corner of pad to position cursor
+> 2. Touch in bottom left corner over button
+> 3. Press button, but finger moves a little
+> 
+> Step 3 causes the primary coordinates in the synaptics MT protocol to
+> flip to the button-pressing touch. This causes a cursor jump. *Many*
+> times I have gone to press an "Ok" dialog button and found that I
+> accidentally launched an application from my dock :).
 
-Can't remember who wrote this, but that guy might have been too tired
-for clear sentences: Yes, of course, we could run into troubles, if
-IRQS_SHARED was _not_ set while the IRQ line is unmasked between hard
-and threaded handler.
 
-> Hmm, needs more thoughts :(
+I see - the behavior of the primary coordinates seems to vary between models,
+then. On the other hand, if you point and click with the same finger, one could
+possibly go around this problem, even though it means less precision. On my MT
+laptop, I can click at the very edge of the pad without the cursor moving.
 
-Be warned, might be painful.
+> I think we should perform some rudimentary touch tracking to ensure the
+> same touch is always used for reporting ABS_X/ABS_Y. A simple distance
+> comparison between the two touches, as I implemented in one of my other
+> patches, would suffice.
 
-Jan
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+One can certainly decide on the "best" coordinates when putting down the second
+finger, as we tried for elantech. However, after some movement, when the second
+finger is lifted, chances are you get a jump then instead.
+
+> What do you think?
+
+
+The general approach we have taken for the kernel is to provide a left button
+for both the macbooks and these clickpads, and in addition provide enough
+information (read mt data) to solve this problem in userspace. In other words,
+one should probably see what additions are needed in the common X drivers to
+make the experience a pleasant one.
+
+Thanks,
+Henrik
