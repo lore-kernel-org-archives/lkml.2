@@ -1,255 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab0LOM11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 07:27:27 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36532 "EHLO
-	denmail01.apm.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753452Ab0LOM1Z (ORCPT
+	id S1753561Ab0LOMfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 07:35:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43813 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab0LOMfS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 07:27:25 -0500
-Date: Wed, 15 Dec 2010 17:57:10 +0530
-From: Rupjyoti Sarmah <rsarmah@amcc.com>
-Message-Id: <201012151227.oBFCRA3S004752@amcc.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6] ppc44x:PHY fixup for USB on canyonlands board
-Cc: rsarmah@apm.com
+	Wed, 15 Dec 2010 07:35:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VvsP8oI6A4wu22jUj4DY05Xco5Qfi5aAJvHM63dKy9oKOpWofDpBJTGs5jUBXBGWcz
+         wzcOsvCAbvBhWV3GIdgzz6Q/Jp3n1qwJ7RB7TCjXP8901dsJZz+YMILF7Xg5ImJzhG3v
+         wtctKOqOgTH7kkKhxx2XrZhxX/Es3BfjHfQO8=
+MIME-Version: 1.0
+In-Reply-To: <1292302233-16194-6-git-send-email-johlstei@codeaurora.org>
+References: <1292302233-16194-1-git-send-email-johlstei@codeaurora.org>
+	<1292302233-16194-6-git-send-email-johlstei@codeaurora.org>
+Date: Wed, 15 Dec 2010 12:35:18 +0000
+X-Google-Sender-Auth: AOseNiUhRN-Ug69oYdahQetCIKw
+Message-ID: <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jeff Ohlstein <johlstei@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Steve Muckle <smuckle@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
+On 14 December 2010 04:50, Jeff Ohlstein <johlstei@codeaurora.org> wrote:
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/headsmp.S
+[...]
+> +ENTRY(msm_secondary_startup)
+> +       mrc     p15, 0, r0, c0, c0, 5   @ MPIDR
+> +       and     r0, r0, #15             @ What CPU am I
+> +       adr     r4, 1f                  @ address of
+> +       ldmia   r4, {r5, r6}            @ load curr addr and pen_rel addr
+> +       sub     r4, r4, r5              @ determine virtual/phys offsets
+> +       add     r6, r6, r4              @ apply
+> +pen:
+> +       wfe
+> +       dsb                             @ ensure subsequent access is
+> +                                       @ after event
 
-Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
----
-changes from previous version:
--- error paths updated
--- leakage of a node corrected
--- iounmap is called on vaddr
+As I wrote in a different e-mail, this DSB isn't actually needed as
+the processor shouldn't speculate beyond the WFE. But it's harmless
+anyway.
 
- arch/powerpc/boot/dts/canyonlands.dts      |   11 +++
- arch/powerpc/platforms/44x/44x.h           |    4 +
- arch/powerpc/platforms/44x/Kconfig         |    1 -
- arch/powerpc/platforms/44x/Makefile        |    1 +
- arch/powerpc/platforms/44x/canyonlands.c   |  134 ++++++++++++++++++++++++++++
- arch/powerpc/platforms/44x/ppc44x_simple.c |    1 -
- 6 files changed, 150 insertions(+), 2 deletions(-)
- create mode 100644 arch/powerpc/platforms/44x/canyonlands.c
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/platsmp.c
+[...]
+> +int boot_secondary(unsigned int cpu, struct task_struct *idle)
+> +{
+> +       static int cold_boot_done;
+> +       unsigned long timeout;
+> +       printk(KERN_DEBUG "Starting secondary CPU %d\n", cpu);
+> +
+> +       if (cold_boot_done == false) {
+> +               prepare_cold_cpu(cpu);
+> +               cold_boot_done = true;
+> +       }
+> +
+> +       pen_release = cpu;
+> +       __cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
+> +       outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
+> +       __asm__("sev");
+> +       dsb();
 
-diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
-index a303703..8ff1f3f 100644
---- a/arch/powerpc/boot/dts/canyonlands.dts
-+++ b/arch/powerpc/boot/dts/canyonlands.dts
-@@ -224,6 +224,11 @@
- 					};
- 				};
- 
-+				cpld@2,0 {
-+					compatible = "amcc,ppc460ex-bcsr";
-+					reg = <2 0x0 0x9>;
-+				};
-+
- 				ndfc@3,0 {
- 					compatible = "ibm,ndfc";
- 					reg = <0x00000003 0x00000000 0x00002000>;
-@@ -320,6 +325,12 @@
- 				interrupts = <0x3 0x4>;
- 			};
- 
-+			GPIO0: gpio@ef600b00 {
-+				compatible = "ibm,ppc4xx-gpio";
-+				reg = <0xef600b00 0x00000048>;
-+				gpio-controller;
-+			};
-+
- 			ZMII0: emac-zmii@ef600d00 {
- 				compatible = "ibm,zmii-460ex", "ibm,zmii";
- 				reg = <0xef600d00 0x0000000c>;
-diff --git a/arch/powerpc/platforms/44x/44x.h b/arch/powerpc/platforms/44x/44x.h
-index dbc4d2b..63f703e 100644
---- a/arch/powerpc/platforms/44x/44x.h
-+++ b/arch/powerpc/platforms/44x/44x.h
-@@ -4,4 +4,8 @@
- extern u8 as1_readb(volatile u8 __iomem  *addr);
- extern void as1_writeb(u8 data, volatile u8 __iomem *addr);
- 
-+#define GPIO0_OSRH	0xC
-+#define GPIO0_TSRH	0x14
-+#define GPIO0_ISR1H	0x34
-+
- #endif /* __POWERPC_PLATFORMS_44X_44X_H */
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index 0f979c5..f485fc5 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -115,7 +115,6 @@ config CANYONLANDS
- 	bool "Canyonlands"
- 	depends on 44x
- 	default n
--	select PPC44x_SIMPLE
- 	select 460EX
- 	select PCI
- 	select PPC4xx_PCI_EXPRESS
-diff --git a/arch/powerpc/platforms/44x/Makefile b/arch/powerpc/platforms/44x/Makefile
-index 82ff326..6854e73 100644
---- a/arch/powerpc/platforms/44x/Makefile
-+++ b/arch/powerpc/platforms/44x/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_WARP)	+= warp.o
- obj-$(CONFIG_XILINX_VIRTEX_5_FXT) += virtex.o
- obj-$(CONFIG_XILINX_ML510) += virtex_ml510.o
- obj-$(CONFIG_ISS4xx)	+= iss4xx.o
-+obj-$(CONFIG_CANYONLANDS)+= canyonlands.o
-diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
-new file mode 100644
-index 0000000..afc5e8e
---- /dev/null
-+++ b/arch/powerpc/platforms/44x/canyonlands.c
-@@ -0,0 +1,134 @@
-+/*
-+ * This contain platform specific code for APM PPC460EX based Canyonlands
-+ * board.
-+ *
-+ * Copyright (c) 2010, Applied Micro Circuits Corporation
-+ * Author: Rupjyoti Sarmah <rsarmah@apm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of
-+ * the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ *
-+ */
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <asm/pci-bridge.h>
-+#include <asm/ppc4xx.h>
-+#include <asm/udbg.h>
-+#include <asm/uic.h>
-+#include <linux/of_platform.h>
-+#include <linux/delay.h>
-+#include "44x.h"
-+
-+#define BCSR_USB_EN	0x11
-+
-+static __initdata struct of_device_id ppc460ex_of_bus[] = {
-+	{ .compatible = "ibm,plb4", },
-+	{ .compatible = "ibm,opb", },
-+	{ .compatible = "ibm,ebc", },
-+	{ .compatible = "simple-bus", },
-+	{},
-+};
-+
-+static int __init ppc460ex_device_probe(void)
-+{
-+	of_platform_bus_probe(NULL, ppc460ex_of_bus, NULL);
-+
-+	return 0;
-+}
-+machine_device_initcall(canyonlands, ppc460ex_device_probe);
-+
-+/* Using this code only for the Canyonlands board.  */
-+
-+static int __init ppc460ex_probe(void)
-+{
-+	unsigned long root = of_get_flat_dt_root();
-+	if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
-+		ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
-+		return 1;
-+		}
-+	return 0;
-+}
-+
-+/* USB PHY fixup code on Canyonlands kit. */
-+
-+static int __init ppc460ex_canyonlands_fixup(void)
-+{
-+	u8 __iomem *bcsr ;
-+	void __iomem *vaddr;
-+	struct device_node *np;
-+	int ret = 0;
-+
-+	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
-+	if (!np) {
-+		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
-+		return -ENODEV;
-+	}
-+
-+	bcsr = of_iomap(np, 0);
-+	of_node_put(np);
-+
-+	if (!bcsr) {
-+		printk(KERN_CRIT "Could not remap bcsr\n");
-+		ret = -ENODEV;
-+		goto err_bcsr;
-+	}
-+
-+	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
-+	if (!np) {
-+		printk(KERN_ERR "failed did not find ibm,ppc4xx-gpio node\n");
-+		return -ENODEV;
-+	}
-+
-+	vaddr = of_iomap(np, 0);
-+	of_node_put(np);
-+
-+	if (!vaddr) {
-+		printk(KERN_CRIT "Could not get gpio node address\n");
-+		ret = -ENODEV;
-+		goto err_gpio;
-+	}
-+	/* Disable USB, through the BCSR7 bits */
-+	setbits8(&bcsr[7], BCSR_USB_EN);
-+
-+	/* Wait for a while after reset */
-+	msleep(100);
-+
-+	/* Enable USB here */
-+	clrbits8(&bcsr[7], BCSR_USB_EN);
-+
-+	/*
-+	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
-+	 * source after USB reset. In this configuration gpio16 will be
-+	 * USB2HStop and gpio19 will be USB2DStop. For more details refer to
-+	 * table 34-7 of PPC460EX user manual.
-+	 */
-+	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
-+	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
-+err_gpio:
-+	iounmap(vaddr);
-+err_bcsr:
-+	iounmap(bcsr);
-+	return ret;
-+}
-+machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
-+define_machine(canyonlands) {
-+	.name = "Canyonlands",
-+	.probe = ppc460ex_probe,
-+	.progress = udbg_progress,
-+	.init_IRQ = uic_init_tree,
-+	.get_irq = uic_get_irq,
-+	.restart = ppc4xx_reset_system,
-+	.calibrate_decr = generic_calibrate_decr,
-+};
-diff --git a/arch/powerpc/platforms/44x/ppc44x_simple.c b/arch/powerpc/platforms/44x/ppc44x_simple.c
-index 7ddcba3..c81c19c 100644
---- a/arch/powerpc/platforms/44x/ppc44x_simple.c
-+++ b/arch/powerpc/platforms/44x/ppc44x_simple.c
-@@ -53,7 +53,6 @@ static char *board[] __initdata = {
- 	"amcc,arches",
- 	"amcc,bamboo",
- 	"amcc,bluestone",
--	"amcc,canyonlands",
- 	"amcc,glacier",
- 	"ibm,ebony",
- 	"amcc,eiger",
+What's the need for the dsb() here (one before SEV maybe)?
+
+Also, do we need to add a "memory" clobber to the SEV asm, not sure
+whether the compiler would try to reorder the code.
+
 -- 
-1.5.6.3
-
+Catalin
