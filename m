@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab0LOKwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:52:46 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:6033 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752602Ab0LOKwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:52:45 -0500
-Message-ID: <37A8EACCFB5248EDA51F34DE0BC2F34A@hacdom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Richard Cochran" <richardcochran@gmail.com>
-Cc: "LKML" <linux-kernel@vger.kernel.org>, "Arnd Bergmann" <arnd@arndb.de>
-References: <4C612AA4.5040100@dsn.okisemi.com> <001001cb3ddb$9929d9a0$66f8800a@maildom.okisemi.com> <20100817090637.GC3330@riccoc20.at.omicron.at> <201008171325.55761.arnd@arndb.de> <884C7BF624424621917562DB0C3E15E7@hacdom.okisemi.com> <20101214162100.GA10667@riccoc20.at.omicron.at>
-Subject: Re: [MeeGo-dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
-Date: Wed, 15 Dec 2010 19:52:42 +0900
+	id S1753028Ab0LOKwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:52:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab0LOKwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:52:47 -0500
+Message-ID: <4D089DEA.2060803@redhat.com>
+Date: Wed, 15 Dec 2010 18:52:26 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="UTF-8";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+To: Neil Horman <nhorman@redhat.com>
+CC: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [v3 PATCH 1/2] bonding: sync netpoll code with bridge
+References: <20101208075208.5792.45247.sendpatchset@localhost.localdomain> <20101208135746.GD11454@hmsreliant.think-freely.org> <4D008643.5040500@redhat.com>
+In-Reply-To: <4D008643.5040500@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
-
-Thank you for your PTP core's status information.
-Accepted by upstream, we will start our development.
-
-Thanks,
----
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
------ Original Message ----- 
-From: "Richard Cochran" <richardcochran@gmail.com>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Cc: "Arnd Bergmann" <arnd@arndb.de>; "LKML" <linux-kernel@vger.kernel.org>
-Sent: Wednesday, December 15, 2010 1:21 AM
-Subject: Re: [MeeGo-dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 
-2.6.35
-
-
-> On Tue, Dec 14, 2010 at 04:46:03PM +0900, Tomoya MORINAGA wrote:
->> We want to implement IEEE1588 driver for Intel EG20T PCH (Topcliff)
->> using PTP core according to you saying.
+于 2010年12月09日 15:33, Cong Wang 写道:
+> On 12/08/10 21:57, Neil Horman wrote:
+>> On Wed, Dec 08, 2010 at 02:52:08AM -0500, Amerigo Wang wrote:
+>>> -    bond_for_each_slave(bond, slave, i) {
+>>> -        if ((slave->dev->priv_flags&  IFF_DISABLE_NETPOLL) ||
+>>> -            !slave->dev->netdev_ops->ndo_poll_controller)
+>>> -            ret = false;
+>>> +    np = kmalloc(sizeof(*np), GFP_KERNEL);
+>>> +    err = -ENOMEM;
+>>> +    if (!np)
+>>> +        goto out;
+>>> +
+>>> +    np->dev = slave->dev;
+>>> +    err = __netpoll_setup(np);
+>> Setting up our own netpoll instance on each slave worries me a bit.  The
+>> implication here is that, by doing so, some frames will get entirely processed
+>> by the slave.  Most notably arp frames.  That means anything that gets queued up
+>> to the arp_tx queue in __netpoll_rx will get processed during that poll event,
+>> and responded to with the mac of the slave device, rather than with the mac of
+>> the bond device, which isn't always what you want.  I think if you go with this
+>> route, you'll need to add code to netpoll_poll_dev, right before the call to
+>> service_arp_queue, to check if IFF_SLAVE is set in priv_flags, and move the list
+>> to the master device, or some such.
 >
-> That is good news.
 >
->> However, it seems PTP core module is not accepted by upstream.
->> How about your PTP status ?
->
-> I posted v6 back on September 23. Based on the comments, I think the
-> patch set is almost good enough for mainline inclusion (at least, I
-> hope so).
->
-> I am just getting ready to post v7, and the kernel interface will
-> change a bit. I will post it before Christmas, so perhaps you can wait
-> a bit. You can take look at the v6 code, since the general ideas will
-> not change very much.
->
-> Thanks,
-> Richard
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Good point! Will fix i
 
+Hi, Neil,
+
+I think we should do that in bond_poll_controller() rather than netpoll_poll_dev(),
+right? Since this is bond-specific. Does moving all arp_tx of slaves to their bond
+address your concern?
+
+Thanks!
