@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0LONoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 08:44:17 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1948 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab0LONoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 08:44:15 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66715182"
-Date: Wed, 15 Dec 2010 05:44:14 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
-Message-ID: <20101215134414.GA8682@huya.qualcomm.com>
-References: <1292302233-16194-1-git-send-email-johlstei@codeaurora.org>
- <1292302233-16194-6-git-send-email-johlstei@codeaurora.org>
- <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com>
+	id S1753898Ab0LONwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 08:52:35 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36910 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752815Ab0LONwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 08:52:33 -0500
+Message-ID: <4D08C81D.8020606@kernel.org>
+Date: Wed, 15 Dec 2010 14:52:29 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Chan <mchan@broadcom.com>, "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next-2.6] bnx2: remove cancel_work_sync() from remove_one
+References: <4D0796D7.3030309@kernel.org> <1292348880.7394.63.camel@nseg_linux_HP1.broadcom.com>
+In-Reply-To: <1292348880.7394.63.camel@nseg_linux_HP1.broadcom.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 13:52:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 12:35:18PM +0000, Catalin Marinas wrote:
-> On 14 December 2010 04:50, Jeff Ohlstein <johlstei@codeaurora.org> wrote:
-> > +       outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
-> > +       __asm__("sev");
-> > +       dsb();
+On 12/14/2010 06:48 PM, Michael Chan wrote:
 > 
-> What's the need for the dsb() here (one before SEV maybe)?
+> On Tue, 2010-12-14 at 08:09 -0800, Tejun Heo wrote:
+>> Michael pointed out that bnx2_close() already cancels bp->reset_task
+>> and thus it is guaranteed to be idle when bnx2_remove_one() is called.
+>> Remove the unnecessary cancel_work_sync() in remove_one.
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>> Cc: Michael Chan <mchan@broadcom.com>
 > 
-> Also, do we need to add a "memory" clobber to the SEV asm, not sure
-> whether the compiler would try to reorder the code.
+> Acked-by: Michael Chan <mchan@broadcom.com>
 
-It doesn't seem to, but it seems to me that it would be allowed to,
-so, I would think the "memory" clobber should be there.
+After looking through the code, I don't think this is necessarily
+correct.  ->ndo_close() doesn't guarantee that the watchdog timer has
+finished running (the timer is deleted with del_timer() not
+del_timer_sync()).  ie. the watchdog timer could still be running
+after ->ndo_close() and may schedule reset_task.  If remove_one
+doesn't flush the task, it may still be running when remove_one() is
+called.
 
-David
+David, am I missing something?  Wouldn't it cleaner to guarantee that
+->ndo_close() is called with the guarantee that the watchdog timer is
+not running anymore?
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+tejun
