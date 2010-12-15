@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab0LODuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 22:50:55 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39884 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759365Ab0LODt1 (ORCPT
+	id S1760293Ab0LOEDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 23:03:46 -0500
+Received: from vms173003pub.verizon.net ([206.46.173.3]:53068 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759208Ab0LOEDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 22:49:27 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66872368"
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: davidb@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 2/7] msm: Physical offset for MSM8960
-Date: Tue, 14 Dec 2010 19:49:16 -0800
-Message-Id: <1292384961-8851-3-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+	Tue, 14 Dec 2010 23:03:45 -0500
+Date: Tue, 14 Dec 2010 23:03:38 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Jack Steiner <steiner@sgi.com>
+Cc: hpa@zytor.com, hmh@hmh.eng.br, tony.luck@gmail.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gbeshers@sgi.com
+Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
+In-reply-to: <20101215024136.GB19601@sgi.com>
+Message-id: <alpine.LFD.2.00.1012142302110.4878@x980>
+References: <20101214220932.GA1206@sgi.com>
+ <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the physical memory offset value for the Qualcomm
-MSM8960 chip.
+-       free_initmem();
++//     free_initmem();
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
- arch/arm/mach-msm/include/mach/memory.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+allows this patch to boot, so the problem is with use of code and 
+data marked __init.
 
-diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
-index 070e17d..014bbd3 100644
---- a/arch/arm/mach-msm/include/mach/memory.h
-+++ b/arch/arm/mach-msm/include/mach/memory.h
-@@ -25,6 +25,8 @@
- #define PHYS_OFFSET		UL(0x00200000)
- #elif defined(CONFIG_ARCH_MSM8X60)
- #define PHYS_OFFSET		UL(0x40200000)
-+#elif defined(CONFIG_ARCH_MSM8960)
-+#define PHYS_OFFSET		UL(0x40200000)
- #else
- #define PHYS_OFFSET		UL(0x10000000)
- #endif
---
-1.7.0.2
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+thanks,
+Len Brown, Intel Open Source Technology Center
 
