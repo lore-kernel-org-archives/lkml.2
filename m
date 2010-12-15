@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab0LOSSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 13:18:46 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:40553 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab0LOSSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 13:18:43 -0500
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
-Date: Wed, 15 Dec 2010 11:18:28 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-References: <20101208213606.13026.47657.stgit@bob.kio> <20101215062650.GB2728@helgaas.com> <AANLkTi=U+CTn=RDvYG0w6JK0Owv_TEc9YNtAtm9DeLKi@mail.gmail.com>
-In-Reply-To: <AANLkTi=U+CTn=RDvYG0w6JK0Owv_TEc9YNtAtm9DeLKi@mail.gmail.com>
+	id S1754606Ab0LOSTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 13:19:10 -0500
+Received: from cantor.suse.de ([195.135.220.2]:48876 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754480Ab0LOSTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 13:19:08 -0500
+Date: Wed, 15 Dec 2010 10:18:54 -0800
+From: Greg KH <gregkh@suse.de>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] bind/unbind uevent
+Message-ID: <20101215181854.GA29205@suse.de>
+References: <20101208160255.GB10313@suse.de>
+ <alpine.LFD.2.02.1012132026430.2013@localhost6.localdomain6>
+ <20101213193617.GA18262@suse.de>
+ <alpine.LFD.2.02.1012141918520.1988@localhost6.localdomain6>
+ <20101214192952.GA9106@suse.de>
+ <20101215142113.7d416d78@gondolin>
+ <20101215162316.GA31141@suse.de>
+ <20101215183508.2f0b608b@gondolin>
+ <AANLkTikC5hLpam0c-goU0KKLezgQJNBnWFJSKn8kdx0a@mail.gmail.com>
+ <20101215190844.2b757eea@gondolin>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012151118.30512.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101215190844.2b757eea@gondolin>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 15, 2010 12:03:15 am Linus Torvalds wrote:
-> On Tue, Dec 14, 2010 at 10:26 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> >
-> > I don't know whether the other patches in this series make you
-> > unhappy.  I'm really not happy with how I implemented the avoidance
-> > of ACPI devices when doing PCI allocation, but I do think we need
-> > to avoid them *somehow*, and I was looking for a minimal quick
-> > fix at this point in the cycle.
+On Wed, Dec 15, 2010 at 07:08:44PM +0100, Cornelia Huck wrote:
+> On Wed, 15 Dec 2010 18:51:48 +0100,
+> Kay Sievers <kay.sievers@vrfy.org> wrote:
 > 
-> So the "avoid ACPI devices" part makes sense, and doesn't involved
-> quirks, so I don't hate it at all the same way I hated the HP quirk.
+> > 2010/12/15 Cornelia Huck <cornelia.huck@de.ibm.com>:
+> > > On Wed, 15 Dec 2010 08:23:16 -0800, Greg KH <gregkh@suse.de> wrote:
+> > >> On Wed, Dec 15, 2010 at 02:21:13PM +0100, Cornelia Huck wrote:
+> > 
+> > >> How about I turn it around for you, please show me how the driver core
+> > >> does _not_ support this today?  If you can prove that this isn't working
+> > >> properly, then great, I'll gladly accept patches to resolve it.
+> > >
+> > > Looking at device_add():
+> > 
+> > ...
+> > 
+> > > This will not be a problem if a device driver registers a child device
+> > > (since it can specify the attributes there).
+> > 
+> > Which is the proper way to do it. No driver should ever mangle a
+> > device which it does not own. It's like adding properties of a block
+> > device directly to a usb_interface device. That just can not work
+> > correctly for many reasons, inside and outside of the kernel.
 > 
-> However, I hate how it makes the allocation logic opaque. You can no
-> longer tell from the regular non-debug dmesg and the /proc/iomem _why_
-> something got allocated the way it did, because there are hidden
-> rules. That makes things awkward, methinks.
-> 
-> Also, quite frankly, I wonder what happens after release when somebody
-> shows another machine that simply stopped working because the
-> allocation strategy didn't work for it. The hw coverage that -rc6 gets
-> is tiny compared to a real release.
-> 
-> IOW, what's the long-term strategy for this? The only sane long-term
-> strategy I can see is the one we have _always_ done, which is to try
-> to populate the memory resource tree with what simply matches reality.
-> The whole "ok, we know the hardware better than the BIOS does" is a
-> _stable_ strategy. In contrast, the things you propose are NOT stable
-> strategies, they all depend on basically "we match windows exactly
-> and/or trust ACPI". Both of which are *known* to be failing models.
-> 
-> That's why I'm somewhat upset. Your whole strategy seems to depend on
-> a known broken model. We _know_ ACPI tables are crap much of the time.
-> So we know that "avoiding ACPI resources" is inevitably insufficient.
-> 
-> And that's why I hate the "switch everything around" model. Yes, we
-> have a known way to fix things up - namely to actually detect the
-> hardware itself properly when firmware inevitably screws up - but the
-> very act of switching things around will pretty much guarantee that
-> all our years of effort is of dubious value, and we'll end up finding
-> other laptops that used to work and no longer does.
-> 
-> Only switching around when _CRS is used is possible, and shouldn't
-> cause any regressions if we continue to default to not using _CRS. But
-> you want to switch that default around at some point, don't you? At
-> which point we'll be up sh*t creek again. See what I'm saying?
-> 
-> Which all makes me suspect that we'd be much better off just doing the
-> bottom-up allocation even for _CRS. And maybe CRS works fine then when
-> we combine our hardware knowledge with the ACPI region avoidance.
+> That's fine for new device drivers.
 
-ACPI devices tend to be at high addresses, so allocating top-down
-is definitely more dangerous unless we explicitly avoid them.  I
-should have realized that and done something like patches 1-3 of
-this series before the top-down patches.
+No, that's for _all_ drivers, why should yours be "special" and not work
+this way?
 
-Doing it bottom-up would very likely work better than the "top-down
-without avoiding ACPI regions" model we currently have, at least in
-the short term.  We *would* have to do something to avoid E820
-reservations to fix this:
-  https://bugzilla.kernel.org/show_bug.cgi?id=16228,
-but that's doable.
+> > > I think the basic problem is that the KOBJ_ADD uevent notifies
+> > > userspace that "a device is there", while the device will only be
+> > > really useable by userspace once a driver has bound to it.
+> > 
+> > This device represents a device on a bus, and can usually do its own
+> > things. A driver can bind to it, but should not mangle it.
+> > 
+> > > A module
+> > > load triggered by KOBJ_ADD is fine, but trying to actually use the
+> > > device after KOBJ_ADD is racy. This will not matter in the usual case,
+> > > since either the matching/probing is fast enough or userspace will wait
+> > > for something like a block device anyway, but we've seen problems on
+> > > s390. A KOBJ_BIND/UNBIND would make a proper distinction between
+> > > "device is there" and "device is usable".
+> > 
+> > We don't rally want any such events. We expect a new child device
+> > being created from the driver, instead of re-using the existing bus
+> > device.
+> 
+> Do we want to force a device driver to create a child device just to
+> notify userspace of the bind?
 
-So here's my proposal for .37:
-  - Keep the current state of _CRS enabled by default (for 2008
-    and newer machines).
-  - Allocate bottom-up always
-  - Avoid E820 reservations
+That's the way all other buses and drivers work, again, why are your
+devices and drivers "special" here?
 
-That should fix all the regressions I'm aware of.  I'll work on
-the patches this afternoon.
+> > > (Besides, what happens on unbind/bind? Shouldn't userspace know that a
+> > > device is now bound to a different driver?)
+> > 
+> > It does that by watching the child devices the driver creates and destroys.
+> > 
+> > We already have enough events to handle on today's boxes, we really
+> > don't want to add new ones, which are only needed to work around such
+> > use cases, which ideally just should be fixed.
+> > 
+> > If you can not change the current drivers to create child devices, the
+> > driver can probably just send change events for the already existing
+> > devices it mangles from the driver.
+> 
+> Since introducing child devices would change the userspace interface, a
+> change event on BUS_NOTIFY_BOUND_DRIVER would probably be the most
+> reasonable for our busses.
 
-Bjorn
+No, you _already_ get those events, and you can add attributes
+automatically when that happens today!
+
+thanks,
+
+greg k-h
