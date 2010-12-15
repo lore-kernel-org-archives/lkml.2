@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0LOHoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 02:44:13 -0500
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:32809 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753434Ab0LOHoM (ORCPT
+	id S1754056Ab0LOHsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 02:48:30 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:40162 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752183Ab0LOHs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 02:44:12 -0500
-Date: Wed, 15 Dec 2010 08:39:20 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>
-Subject: Re: [PATCH] base: add sysfs socs info
-Message-ID: <20101215073920.GU19897@game.jcrosoft.org>
-References: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
- <20101214161130.GB1857@suse.de>
- <20101215012511.GQ19897@game.jcrosoft.org>
- <20101215034713.GB3297@suse.de>
+	Wed, 15 Dec 2010 02:48:29 -0500
+Date: Wed, 15 Dec 2010 08:48:11 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jeff Ohlstein <johlstei@codeaurora.org>
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/5] msm: Secure Channel Manager (SCM) support
+Message-ID: <20101215074811.GA2483@ucw.cz>
+References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org>
+ <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101215034713.GB3297@suse.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+In-Reply-To: <1291619778-30289-2-git-send-email-johlstei@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 8196832797711575952
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.500023/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > 
-> > > Also, isn't this information already in /proc/cpu/ today?
-> > no all this information are not present in /proc/cpu and a cpu is not a soc
-> > 
-> > basicaly on a board you will have one soc but some boards have more as example
-> > some ST boards you have two sh4 soc or on some amcc you have two powerpc soc
-> > 
-> > with these information you are allow to dynamise the userspace based on the
-> > soc or the companion soc and also be able to display this information in a UI
-> 
-> Ok, but then why not make it "real" devices and not sysdev?  We are
-> trying to fix the sysdev code to be semi-real devices, so you might as
-> well make them real ones now.
-ok I base my work on drivers/base/cpu.c
+Hi!
 
-where we also use sysdev
+> +/**
+> + * struct scm_response - one SCM response buffer
+> + * @len: total available memory for response
+> + * @buf_offset: start of response data relative to start of scm_response
+> + * @is_complete: indicates if the command has finished processing
+> + */
+> +struct scm_response {
+> +	u32	len;
+> +	u32	buf_offset;
+> +	u32 is_complete;
+> +};
 
-can we point me a code how you want I implement it
+Alignment is off here.
 
-Best Regards,
-J.
+> +static u32 smc(dma_addr_t cmd_addr)
+> +{
+> +	int context_id;
+> +	register u32 r0 asm("r0") = 1;
+> +	register u32 r1 asm("r1") = (u32)&context_id;
+> +	register u32 r2 asm("r2") = (u32)cmd_addr;
+
+Are these neccessary?
+
+> +	asm(
+> +		__asmeq("%0", "r0")
+> +		__asmeq("%1", "r0")
+> +		__asmeq("%2", "r1")
+> +		__asmeq("%3", "r2")
+> +		"smc	#0	@ switch to secure world\n"
+> +		: "=r" (r0)
+> +		: "r" (r0), "r" (r1), "r" (r2)
+> +		: "r3");
+> +	return r0;
+> +}
+
+> +u32 scm_get_version(void)
+> +{
+> +	int context_id;
+> +	static u32 version = -1;
+> +	register u32 r0 asm("r0") = 0x1 << 8;
+> +	register u32 r1 asm("r1") = (u32)&context_id;
+
+And does this even work?
+
+> +	if (version != -1)
+> +		return version;
+> +
+> +	mutex_lock(&scm_lock);
+> +	asm(
+> +		__asmeq("%0", "r1")
+> +		__asmeq("%1", "r0")
+> +		__asmeq("%2", "r1")
+> +		"smc	#0	@ switch to secure world\n"
+> +		: "=r" (r1)
+> +		: "r" (r0), "r" (r1)
+> +		: "r2", "r3");
+> +	version = r1;
+> +	mutex_unlock(&scm_lock);
+> +
+> +	return version;
+> +}
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
