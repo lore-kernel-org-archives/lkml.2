@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab0LOPt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 10:49:57 -0500
-Received: from david.siemens.de ([192.35.17.14]:15148 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab0LOPt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 10:49:56 -0500
-Message-ID: <4D08E391.2090205@siemens.com>
-Date: Wed, 15 Dec 2010 16:49:37 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754789Ab0LOPuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:50:03 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:50665 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746Ab0LOPuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 10:50:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 6/9] ARM i.MX51: Add IPU device support
+Date: Wed, 15 Dec 2010 16:49:45 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Zhang Lily-R58066" <r58066@freescale.com>
+References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-7-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1291902441-24712-7-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
-References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6> <4D07F70A.30209@web.de> <alpine.LFD.2.00.1012151357030.12146@localhost6.localdomain6> <4D08CE44.6000407@siemens.com> <alpine.LFD.2.00.1012151633510.12146@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012151633510.12146@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012151649.45199.arnd@arndb.de>
+X-Provags-ID: V02:K0:tw4Lgd98QDQ/c/pRX/etPPI6NstKlp+m3hDl6V8AJlT
+ tIfw5jyWlMK99DOR4q0AJAkbMz/30dBKajHFkibed8v0I5G0Le
+ 9zmIQLDVnu/UceHXSny6Zs+d47Vmhpn1InBrw2N6YmBU4V33Qg
+ yuDUZLKgQTiW9M7LJuNzUe+lR8183ZuIvJouoIdcaWSeXO37ta
+ 2r/7Q2so1axGgoDYO7VNQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.12.2010 16:41, Thomas Gleixner wrote:
-> On Wed, 15 Dec 2010, Jan Kiszka wrote:
-> 
->> Am 15.12.2010 14:04, Thomas Gleixner wrote:
->>> On Wed, 15 Dec 2010, Jan Kiszka wrote:
->>>> Am 14.12.2010 21:54, Thomas Gleixner wrote:
->>>>> On Mon, 13 Dec 2010, Jan Kiszka wrote:
->>>>>> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
->>>>>>  	/* Make sure it's not being used on another CPU: */
->>>>>>  	synchronize_irq(irq);
->>>>>>  
->>>>>> +	if (single_handler)
->>>>>> +		desc->irq_data.drv_status &= ~IRQS_SHARED;
->>>>>> +
->>>>>
->>>>> What's the reason to clear this flag outside of the desc->lock held
->>>>> region.
->>>>
->>>> We need to synchronize the irq first before clearing the flag.
->>>>
->>>> The problematic scenario behind this: An IRQ started in shared mode,
->>>> this the line was unmasked after the hardirq. Now we clear IRQS_SHARED
->>>> before calling into the threaded handler. And that handler may now think
->>>> that the line is still masked as IRQS_SHARED is set.
->>>
->>> That should read "not set" I guess.
->>
->> Can't remember who wrote this, but that guy might have been too tired
->> for clear sentences: Yes, of course, we could run into troubles, if
->> IRQS_SHARED was _not_ set while the IRQ line is unmasked between hard
->> and threaded handler.
->>
->>> Hmm, needs more thoughts :(
->>
->> Be warned, might be painful.
-> 
-> Talking about headache. Your solution above does not prevent that
-> scenario.
-> 
->  CPU 0                  CPU 1
-> 		
->  synchronize_irq();
-> 		        hard irq comes in sees shared and unmasks
+On Thursday 09 December 2010, Sascha Hauer wrote:
+> +#define imx51_add_ipuv3(pdata) \
+> +       imx_add_ipuv3(&imx51_ipuv3_data, pdata)
 
-Nope, IRQ_ONESHOT is already cleared at that point.
+This looks  like a pointless abstraction, it does not make
+the code smaller or easier to read. I know it's sometimes
+tempting to use macros, but in most cases, you should try
+not to.
 
->  clear IRQS_SHARED
-> 			thread handler runs and sees !SHARED
-> 
-> Same scenario, just moved by a few lines :)
+> +#define imx51_ipuv3_data_entry_single(soc)				\
+> +	{								\
+> +		.iobase = soc ## _IPU_CTRL_BASE_ADDR,			\
+> +		.irq_err = soc ## _INT_IPU_ERR,				\
+> +		.irq = soc ## _INT_IPU_SYN,				\
+> +	}
+> +
+> +#ifdef CONFIG_SOC_IMX51
+> +const struct imx_ipuv3_data imx51_ipuv3_data __initconst =
+> +	imx51_ipuv3_data_entry_single(MX51);
+> +#endif /* ifdef CONFIG_SOC_IMX35 */
 
-The same, just the other way around - and mostly harmless, I hope. :)
+This looks really strange: You define a macro that is used
+in only a single place, and the only user is a data structure
+that references data from other files and is used elsewhere
+as well.
 
-Jan
+Avoiding the macro would make it easier to grep for the use
+of the identifiers.
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+If you put the data structure in the place where it is used,
+you can avoid the #ifdef and make it static.
+
+Also, the comment on the #endif does not match the #if.
+
+	Arnd
