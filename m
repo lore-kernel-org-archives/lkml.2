@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab0LOPCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 10:02:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62150 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab0LOPCB (ORCPT
+	id S1754758Ab0LOPEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:04:33 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:56885 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753826Ab0LOPEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 10:02:01 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=_YN-YSBCZZuuKr2N7HIA:9 a=dyW98CHlEwFYJEa7U-9C0SUiXwUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
- task can take the lock and reduce unrelated boosting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1012151550190.12146@localhost6.localdomain6>
-References: <4D07330A.7020600@cn.fujitsu.com>
-	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
-	 <4D083900.1050801@cn.fujitsu.com>
-	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
-	 <4D0877D2.10000@cn.fujitsu.com>
-	 <alpine.LFD.2.00.1012151029090.12146@localhost6.localdomain6>
-	 <AANLkTi=x-_ffBnFL4TMtjGBBpbu9aBvSHKiQ7BgNy7J0@mail.gmail.com>
-	 <alpine.LFD.2.00.1012151550190.12146@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 15 Dec 2010 10:01:58 -0500
-Message-ID: <1292425318.5015.1892.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Dec 2010 10:04:30 -0500
+X-IronPort-AV: E=Sophos;i="4.59,349,1288566000"; 
+   d="scan'208";a="83979966"
+Date: Wed, 15 Dec 2010 16:04:26 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Microcai <microcai@fedoraproject.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Lisa Milne <lisa@ltmnet.com>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+Subject: Re: VT console need rewrite
+Message-ID: <20101215150426.GA26989@const.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Pavel Machek <pavel@ucw.cz>, Microcai <microcai@fedoraproject.org>,
+	Ted Ts'o <tytso@mit.edu>, Lisa Milne <lisa@ltmnet.com>,
+	"jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+	linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
+References: <1290951770.13526.18.camel@cai.gentoo> <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com> <20101129020610.7ea7c79e.lisa@ltmnet.com> <1290961207.13526.31.camel@cai.gentoo> <20101128194624.GP2767@thunk.org> <1290993244.877.3.camel@cai.gentoo> <20101129085829.GM5142@const.bordeaux.inria.fr> <1291023157.9785.2.camel@cai.gentoo> <20101129095823.GQ5142@const.bordeaux.inria.fr> <20101215144501.GB10467@ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101215144501.GB10467@ucw.cz>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-15 at 15:52 +0100, Thomas Gleixner wrote:
-
-> RT itself will stress test the rtmutex code as much as it goes as we
-> convert almost every lock into a rtmutex there.
+Pavel Machek, le Wed 15 Dec 2010 15:45:02 +0100, a écrit :
+> > But complete unicode support (with arabic ligatures, tibetan
+> > combinations, etc.) won't ever be accepted in the kernel as that's far
+> > too involved in terms of font rendering.  So the userland way needs to
+> > be fixed for these anyway, and then things like chinese will go along...
 > 
-> Steven, could you have a look at that ?
-> 
+> Well... english has ligatures, too (fi);
 
-Yep, I'll look to porting it today.
+English ligatures are extremely far from what arabic needs. People
+don't even actually know that there are ligatures in English, while for
+arabic, people would even have a hard time reading something that isn't
+using ligatures.
 
--- Steve
+> console does not support them nicely and we still use it.
 
+Err, I've very rarely seen the fi/ff ligatures on the console, it was
+mostly from copy/pastes from pdf documents.
 
+> Support for eastern european characters by default would be very very
+> nice... and yes, that's just breaking the 256 char limit, nothing more
+> complex.
+
+The console can do 512 glyphs, not only 256, so eastern europe support
+is a matter of combining a latin1 font with parts of the other latin
+fonts. That already covers a lot of european languages.
+
+Samuel
