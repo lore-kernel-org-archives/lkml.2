@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760426Ab0LOBKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 20:10:30 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41285 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760330Ab0LOBK2 (ORCPT
+	id S932436Ab0LOBOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 20:14:32 -0500
+Received: from web120701.mail.ne1.yahoo.com ([98.138.82.208]:36429 "HELO
+	web120701.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760423Ab0LOBOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 20:10:28 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 15 Dec 2010 10:04:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
-        Amerigo Wang <amwang@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] [Patch 0/21] Non disruptive application core dump
- infrastructure
-Message-Id: <20101215100437.ce38fde6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101214152259.67896960@suzukikp>
-References: <20101214152259.67896960@suzukikp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Dec 2010 20:14:31 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Dec 2010 20:14:30 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=OYPTz7v21/duMISaXPLvKF/9cslLgD0Eszt/6X4p7mPnEgpPcHNZ3cPQkJnzt8FvxquZRzhF6b67TNTpc/KGMBhZtAl3rRLOuHlkL3x4Ly+G7I29ohz7aa+hFgWBNWyvK40YKP3RvZyxoqPu6uBfnmiiUhiOfd0kk/EcY0fzip0=;
+Message-ID: <43532.6714.qm@web120701.mail.ne1.yahoo.com>
+X-YMail-OSG: 7An5b4EVM1k4p2TlSmkODmp5Bv7DkkeP_2I9tbFqM__9iNO
+ hwHVshY1uFkG8SxZAvG7KU6OOp8ES7h2FAA4DzHh9NleUofTvABo60FMO9pf
+ iG1A5rN.aDnezN74jimLPYcHzcTiQgQs9vhqhsjkJ6RHKVwZg7DkansoTmAW
+ OyRikQj_dWvqoRD2gG6ZdZrzWu2uUi0D7H9mP4s7W7KsMwvCvh6133zDatyi
+ 1gAmByEcJHgkWPRek9w--
+X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
+Date: Tue, 14 Dec 2010 17:07:49 -0800 (PST)
+From: Daniel Kopko <dk_fedorabugs@yahoo.com>
+Subject: RE: [PATCH 1/2] sched: Fix the irqtime code to deal with u64 wraps
+To: linux-kernel@vger.kernel.org
+Cc: dk_fedorabugs@yahoo.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010 15:22:59 +0530
-"Suzuki K. Poulose" <suzuki@in.ibm.com> wrote:
 
-> Hi all,
-> 
-> This is series of patches implementing an infrastructure for capturing the core 
-> of an application without disrupting its process semantics.
-> 
-> The infrastructure makes use of the freezer subsystem in kernel to freeze the 
-> threads and then collect the information to generate  the core.
-> 
-> The interface is provided by a /proc/pid/core file, reading which can give the 
-> ELF formatted core of the process with "pid". The interface supports "seek" 
-> operation on the fd, allowing the dumper to have control on the data that is 
-> being dumped. Also it allows the user to store the dump at any location.
-> 
-> The current implementation supports both native as well as the compat ELF 
-> tasks.
-> 
-> An open() call to the /proc/pid/core will try to freeze the threads in the 
-> process and the read() requests will dynamically generate the contents for the 
-> core file. The ELF header & Program Headers are stored in a kernel buffer to 
-> allow us to map the fpos to the required data section.
-> 
-> In case a thread is not frozen within a time interval, after issuing the freeze 
-> request, we fill the register state information with 0's to indicate we could 
-> not capture the data.
-> 
-> A close() would kick the threads out of the refrigerator().
-> 
-> 
-> The implementation reuses some of the existing ELF core generation code by 
-> exporting them. Some of the code common to both native and compat ELF class 
-> support has been moved to a common place, elfcore-common.c. Also some of the 
-> reusable functions, specific to the ELF class handling, has been made global, 
-> after renaming the compat version of the same.
-> 
-> We also added a new API -elf_core_copy_extra_phdrs() -for "reading" the arch 
-> specific program headers, versus the existing elf_core_write_extra_phdrs().
-> 
-> Patches 1 to 9 deals with re-arranging the ELF code to be reusable by the 
-> infrastructure.
-> 
-> Patches 10 to 21 implements the infrastructure.
-> 
-> TODO: Add support for collecting the arch specific notes, currently used only 
-> by Cell platform.
-> 
-> Please let me know your review comments / thoughts.
-> 
+Sorry for the lack of quoted text and lack of In-Reply-To headers.  (I am 
+replying from a webmail account in reference to the following message:  
+http://marc.info/?l=linux-arm-kernel&m=129224292425624&w=2 ).  It seems that 
+perhaps an unintentional omission of inline happened in this patch set, when 
+converting update_rq_clock to static linkage.
 
-Your purpose of this patch is to debug an application without attaching to gdb
-or take coredump by gcore ? 
+ 
+-inline void update_rq_clock(struct rq *rq)
++static void update_rq_clock(struct rq *rq)
 
-IIUC, "freeze" is a bit dangerous because no one can ends the application while
-it's freezed and there is no information "it's frozen" via usaual user commands
-as 'ps' or 'top'. 
 
-Can you add a new freeze state where the application can get SIGKILL,
-at least ? and show task's state as "frozen" in some way ? as
-task_state_array[] shows it in /proc/<pid>/status
+The rest of the functions which had static linkage added retained
+the inline modifier.
+
+This is my first message to LKML.  Can anyone recommend a decent free
+email provider that will work well here?  Also, please CC me directly if 
+convenient
+for any replies.
 
 Thanks,
--Kame
+
+Daniel Kopko
 
 
-
-
+      
