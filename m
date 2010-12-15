@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab0LOJEx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 04:04:53 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:51458 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab0LOJEt (ORCPT
+	id S1751874Ab0LOJPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 04:15:51 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:7166 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab0LOJPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 04:04:49 -0500
-Subject: Re: linux-next: build failure after merge of the voltage tree
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yong Shen <yong.shen@linaro.org>
-In-Reply-To: <20101215130911.e6edddfe.sfr@canb.auug.org.au>
-References: <20101215130911.e6edddfe.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Dec 2010 09:04:44 +0000
-Message-ID: <1292403884.3348.6.camel@odin>
+	Wed, 15 Dec 2010 04:15:49 -0500
+Date: Wed, 15 Dec 2010 10:15:41 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] GPIO_SCH and I2C_SCH: select MFD_SUPPORT to eliminate 
+ kconfig warnings
+Message-ID: <20101215101541.5952780f@endymion.delvare>
+In-Reply-To: <20101214162656.b8550c70.randy.dunlap@oracle.com>
+References: <20101214162656.b8550c70.randy.dunlap@oracle.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-15 at 13:09 +1100, Stephen Rothwell wrote:
-> Hi Liam,
-> 
-> After merging the voltage tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/built-in.o: In function `mc13xxx_regulator_is_enabled':
-> mc13xxx-regulator-core.c:(.text+0x9b01c): undefined reference to `mc13xxx_lock'
-> mc13xxx-regulator-core.c:(.text+0x9b038): undefined reference to `mc13xxx_reg_read'
-> mc13xxx-regulator-core.c:(.text+0x9b04a): undefined reference to `mc13xxx_unlock'
-> drivers/built-in.o: In function `mc13xxx_regulator_disable':
-> mc13xxx-regulator-core.c:(.text+0x9b256): undefined reference to `mc13xxx_lock'
-> mc13xxx-regulator-core.c:(.text+0x9b26f): undefined reference to `mc13xxx_reg_rmw'
-> mc13xxx-regulator-core.c:(.text+0x9b281): undefined reference to `mc13xxx_unlock'
-> drivers/built-in.o: In function `mc13xxx_regulator_enable':
-> mc13xxx-regulator-core.c:(.text+0x9b323): undefined reference to `mc13xxx_lock'
-> mc13xxx-regulator-core.c:(.text+0x9b33c): undefined reference to `mc13xxx_reg_rmw'
-> mc13xxx-regulator-core.c:(.text+0x9b34e): undefined reference to `mc13xxx_unlock'
-> drivers/built-in.o: In function `mc13xxx_regulator_get_voltage':
-> mc13xxx-regulator-core.c:(.text+0x9b3f5): undefined reference to `mc13xxx_lock'
-> mc13xxx-regulator-core.c:(.text+0x9b40c): undefined reference to `mc13xxx_reg_read'
-> mc13xxx-regulator-core.c:(.text+0x9b41f): undefined reference to `mc13xxx_unlock'
-> drivers/built-in.o: In function `mc13xxx_regulator_set_voltage':
-> mc13xxx-regulator-core.c:(.text+0x9b67f): undefined reference to `mc13xxx_lock'
-> mc13xxx-regulator-core.c:(.text+0x9b6a4): undefined reference to `mc13xxx_reg_rmw'
-> mc13xxx-regulator-core.c:(.text+0x9b6b6): undefined reference to `mc13xxx_unlock'
-> 
-> Please build test this stuff ...
-> 
+Hi Randy,
 
-Sorry, this driver does build as built-in.
+On Tue, 14 Dec 2010 16:26:56 -0800, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> I2C_ISCH and GPIO_SCH need to select MFD_SUPPORT so that the
+> dependency tree hierarchy is satisfied.  This eliminates the
+> kconfig warning:
+> 
+> warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI) selects LPC_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI)
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: linux-i2c@vger.kernel.org
+> ---
+>  drivers/gpio/Kconfig       |    1 +
+>  drivers/i2c/busses/Kconfig |    1 +
+>  2 files changed, 2 insertions(+)
+> 
+> --- lnx-2637-rc4.orig/drivers/gpio/Kconfig
+> +++ lnx-2637-rc4/drivers/gpio/Kconfig
+> @@ -102,6 +102,7 @@ config GPIO_VR41XX
+>  config GPIO_SCH
+>  	tristate "Intel SCH GPIO"
+>  	depends on GPIOLIB && PCI
+> +	select MFD_SUPPORT
+>  	select MFD_CORE
+>  	select LPC_SCH
+>  	help
+> --- lnx-2637-rc4.orig/drivers/i2c/busses/Kconfig
+> +++ lnx-2637-rc4/drivers/i2c/busses/Kconfig
+> @@ -107,6 +107,7 @@ config I2C_I801
+>  config I2C_ISCH
+>  	tristate "Intel SCH SMBus 1.0"
+>  	depends on PCI
+> +	select MFD_SUPPORT
+>  	select MFD_CORE
+>  	select LPC_SCH
+>  	help
 
-Yong, can you send a patch *today* that fixes the modular build for
-this.
+It seems wrong to have to select both MFD_SUPPORT and MFD_CORE. Can't
+the MFD subsystem be cleaned up so that subdrivers have a single symbol
+to select beyond their own?
 
-Thanks
-
-Liam 
+I don't quite get the point of MFD_CORE. MFD_SUPPORT could be made
+tristate, and MFD_CORE dropped (and then MFD_SUPPORT renamed to
+MFD_CORE to minimize the changes.) This is exactly how I2C support is
+implemented, for example.
 
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Jean Delvare
