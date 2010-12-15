@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0LOQdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:33:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36993 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab0LOQdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:33:38 -0500
-Message-ID: <4D08EDA8.90702@zytor.com>
-Date: Wed, 15 Dec 2010 08:32:40 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1753407Ab0LOQfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:35:14 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41383 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab0LOQfM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:35:12 -0500
+Date: Wed, 15 Dec 2010 16:34:45 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Zhang Lily-R58066 <r58066@freescale.com>, linux-fbdev@vger.kernel.org,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] ARM i.MX51: Add ipu clock support
+Message-ID: <20101215163445.GE9937@n2100.arm.linux.org.uk>
+References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-2-git-send-email-s.hauer@pengutronix.de> <201012151640.03789.arnd@arndb.de>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg double V1 2/4] x86: this_cpu_cmpxchg_double()
- support
-References: <20101214174847.887713690@linux.com> <20101214174900.659284593@linux.com> <4D080FDC.7030005@zytor.com> <4D081225.8000007@zytor.com> <alpine.DEB.2.00.1012151011550.12186@router.home>
-In-Reply-To: <alpine.DEB.2.00.1012151011550.12186@router.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012151640.03789.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 08:12 AM, Christoph Lameter wrote:
-> On Tue, 14 Dec 2010, H. Peter Anvin wrote:
+On Wed, Dec 15, 2010 at 04:40:03PM +0100, Arnd Bergmann wrote:
+> On Thursday 09 December 2010, Sascha Hauer wrote:
+> > +static int clk_ipu_enable(struct clk *clk)
+> > +{
+> > +       u32 reg;
+> > +
+> > +       _clk_ccgr_enable(clk);
+> > +
+> > +       /* Enable handshake with IPU when certain clock rates are changed */
+> > +       reg = __raw_readl(MXC_CCM_CCDR);
+> > +       reg &= ~MXC_CCM_CCDR_IPU_HS_MASK;
+> > +       __raw_writel(reg, MXC_CCM_CCDR);
+> > +
+> > +       /* Enable handshake with IPU when LPM is entered */
+> > +       reg = __raw_readl(MXC_CCM_CLPCR);
+> > +       reg &= ~MXC_CCM_CLPCR_BYPASS_IPU_LPM_HS;
+> > +       __raw_writel(reg, MXC_CCM_CLPCR);
+> > +
+> > +       return 0;
+> > +}
 > 
->>> NAK on this.  This is acceptable for cmpxchg8b only because we don't
->>> support SMP on 486s anymore.  x86-64 is another matter...
->>>
->>
->> Hm, this is meant to be a CPU local operation, isn't it... it isn't very
->> clear from the comments or naming *in this file*.
+> Why __raw_readl?
 > 
-> Ok. But the code is correct as far as I can tell. Its not a global cmpxchg
-> but local. Interrupt disable is ok.
-> 
->> Could you make it a little clearer in the local code, please?
-> 
-> ok.
-> 
+> The regular accessor function for I/O registers is readl, which handles
+> the access correctly with regard to atomicity, I/O ordering and byteorder.
 
-Yes, that's what I meant... the code is correct, it's just not obvious
-from someone who looks at the code that it is correct, because the
-intended function of the code isn't obvious from that file by itself (in
-fact, it looks almost exactly like the 486 cmpxchg ersatz code.)
+There's no possibility of those two being mis-ordered - they will be in
+program order whatever.
 
-	-hpa
+What isn't guaranteed is the ordering between I/O accesses (accesses to
+device memory) and SDRAM accesses (normal memory) which can pass each other
+without additional barriers.  Memory accesses can pass I/O accesses.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+So, (eg), if you're writing to a register which causes the hardware to
+begin reading DMA descriptors from an area allocated from dma_alloc_coherent(),
+you need a barrier to ensure that writes to the dma_alloc_coherent() are
+visible to the hardware before you write the enable register.
 
+If you don't need normal vs device access ordering, using readl_relaxed()/
+writel_relaxed() is preferred, and avoids the (apparantly rather high)
+performance overhead of having to issue barriers all the way down to the
+L2 cache.
+
+Lastly, I don't see where atomicity comes into it - __raw_writel vs writel
+have the same atomicity.  Both are single access atomic provided they're
+naturally aligned.  Misaligned device accesses are not predictable.
