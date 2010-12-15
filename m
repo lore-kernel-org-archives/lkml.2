@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0LOQ5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:57:37 -0500
-Received: from hera.kernel.org ([140.211.167.34]:49667 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab0LOQ5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:57:36 -0500
-Message-ID: <4D08F362.4000808@kernel.org>
-Date: Wed, 15 Dec 2010 17:57:06 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+	id S1753152Ab0LORBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:01:32 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:28696 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752241Ab0LORBb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 12:01:31 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: YYSSxG4VM1klDJ.FKnm7tOMmskfHOYLraION5RBZ40_O2D7
+ ZQ5zskn.KSoyJtws6h5W2utoHetVKbJM8_BL5RxB_8GmBtDzQsUz14hkkQFW
+ HSuyz8UPPgvAwjKc_LfFYVCvWNhE.fTi5m2ScyhperA0KklW5KgeHadO8663
+ ZFOdsX7Ze7Hsnm2QY4OHwnGwlxJSEnx2cPY5hMMXD9tJK6QUj.ShA2k6lChj
+ m0KNi3UZA.ZadCDGiuS7CII2paLKnyOm5WnEtQrU.IZes2UITlyxIb4HnM9F
+ wUX6HcT4R4a1BcyvQeOG3biUNrH.PjtecP65j2dBfywc.Hts-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 15 Dec 2010 11:01:27 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg double V1 4/4] Lockless (and preemptless) fastpaths
- for slub
-References: <20101214174847.887713690@linux.com>	<20101214174901.827380447@linux.com>	<4D08F21B.3000706@kernel.org> <AANLkTik8Wnhvr+7h=rwpxmBHSnyvdT0uu77CMELTVUTd@mail.gmail.com>
-In-Reply-To: <AANLkTik8Wnhvr+7h=rwpxmBHSnyvdT0uu77CMELTVUTd@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 16:57:08 +0000 (UTC)
+Subject: Re: [cpuops cmpxchg V2 4/5] vmstat: User per cpu atomics to avoid
+ interrupt disable / enable
+In-Reply-To: <4D08F0A2.9010301@kernel.org>
+Message-ID: <alpine.DEB.2.00.1012151056280.13049@router.home>
+References: <20101214162842.542421046@linux.com> <20101214162854.811759020@linux.com> <4D08F0A2.9010301@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Wed, 15 Dec 2010, Tejun Heo wrote:
 
-On 12/15/2010 05:55 PM, Pekka Enberg wrote:
-> On Wed, Dec 15, 2010 at 6:51 PM, Tejun Heo <tj@kernel.org> wrote:
->> The first two look good to me but I frankly don't have much idea about
->> the latter two.  Pekka, can you please ack those?  Alternatively, you
->> can later pull the percpu tree in and apply the allocator bits in your
->> tree, which I actually prefer.
-> 
-> I'd prefer to pull the first two from your tree and put the allocator
-> changes to slab.git.
+> +		/*
+> +		 * The fetching of the stat_threshold is racy. We may apply
+> +		 * a counter threshold to the wrong the cpu if we get
+> +		 * rescheduled while executing here. However, the following
+> +		 * will apply the threshold again and therefore bring the
+> +		 * counter under the threshold.
+> +		 */
+>
+> What does "the following" mean here?  Later executions of the
+> function?  It seems like the counter can go out of the threshold at
+> least temporarily, which probably is okay but I think the comment can
+> be improved a bit.
 
-Great, then I'll let you know after the percpu tree is frozen with the
-new changes.
+I meant later execution of the function. I will fix the comment.
 
-Thanks.
+Subject: vmstat comment fix
 
--- 
-tejun
+Clarify comments for the threshold a bit.
+
+Signed-off-by: Christoh Lameter <cl@linux.com>
+
+---
+ mm/vmstat.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/mm/vmstat.c
+===================================================================
+--- linux-2.6.orig/mm/vmstat.c	2010-12-15 10:57:44.000000000 -0600
++++ linux-2.6/mm/vmstat.c	2010-12-15 10:58:46.000000000 -0600
+@@ -277,9 +277,12 @@ static inline void mod_state(struct zone
+ 		/*
+ 		 * The fetching of the stat_threshold is racy. We may apply
+ 		 * a counter threshold to the wrong the cpu if we get
+-		 * rescheduled while executing here. However, the following
+-		 * will apply the threshold again and therefore bring the
+-		 * counter under the threshold.
++		 * rescheduled while executing here. However, the next
++		 * counter update will apply the threshold again and
++		 * therefore bring the counter under the threshold again.
++		 *
++		 * Most of the time the thresholds are the same anyways
++		 * for all cpus in a zone.
+ 		 */
+ 		t = this_cpu_read(pcp->stat_threshold);
+
