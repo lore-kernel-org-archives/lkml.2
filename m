@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649Ab0LOCvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 21:51:45 -0500
-Received: from ausc60ps301.us.dell.com ([143.166.148.206]:22765 "EHLO
-	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab0LOCvn (ORCPT
+	id S1758959Ab0LODDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 22:03:22 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:43151 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758698Ab0LODDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 21:51:43 -0500
-X-Loopcount0: from 143.166.82.43
-Date: Tue, 14 Dec 2010 20:51:41 -0600
-From: Matt Domsch <Matt_Domsch@Dell.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Narendra_K@Dell.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jordan_Hargrave@Dell.com,
-        Charles_Rose@Dell.com
-Subject: Re: [PATCH] Enable pci=bfsort by default on future Dell systems
-Message-ID: <20101215025141.GA32334@auslistsprd01.us.dell.com>
-References: <20101214175048.GC31345@fedora-14-r710.oslab.blr.amer.dell.com> <20101214195445.GA31714@auslistsprd01.us.dell.com> <20101214201242.GC21909@parisc-linux.org>
+	Tue, 14 Dec 2010 22:03:21 -0500
+X-Sasl-enc: n7op4OKfHDgKc9wlfaIqWBhj3OPa5JTFxklB+TTniVgq 1292382199
+Subject: Re: [autofs] [PATCH][RFC] autofs4: Do not potentially dereference
+ null pointer returned by fget() in autofs_dev_ioctl_setpipefd()
+From: Ian Kent <raven@themaw.net>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: autofs@linux.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1012122357570.9206@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012122357570.9206@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 11:03:15 +0800
+Message-ID: <1292382195.2979.17.camel@perseus>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214201242.GC21909@parisc-linux.org>
-User-Agent: Mutt/1.5.11
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 01:12:43PM -0700, Matthew Wilcox wrote:
-> Actually, how about we introduce a smaller patch that just makes
-> bfsort the default for all machines with a BIOS date of 2011 or later?
-> bfsort was what we always intended; it was unintentionally broken for,
-> what, five years, and the only reason not to revert it was to not break
-> setups that had come to rely on it.
+On Mon, 2010-12-13 at 00:02 +0100, Jesper Juhl wrote:
+> Hi,
 > 
-> So just make it the default for all future systems, no matter what
-> manufacturer.
+> In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
+> which may return NULL, but we do not explicitly test for that NULL return 
+> so we may end up dereferencing a NULL pointer - bad.
 
-This approach would hit all systems that install a newly issued BIOS
-after 2010, which could cause a change in behaviour for such systems.
-I don't know how to get a "system manufactured" date or "system first
-powered on" date generically (IIRC these might be exposed in
-vendor-specific fields on Dell systems).
+Oops, thanks for this.
 
-I'm not opposed, but it could result in a change of behavior for
-still-maintained (as evidenced by newly issued BIOSes) systems.
+> 
+> A comment in fget() says "File object ref couldn't be taken" when that 
+> function returns NULL, so I guess EBUSY is the proper error to return from 
+> autofs_dev_ioctl_setpipefd() when this happens, but I'm far from sure 
+> about this, so I'd like some feedback before this patch is merged.
 
--- 
-Matt Domsch
-Technology Strategist
-Dell | Office of the CTO
+Not sure EBUSY is the one to use.
+
+What is happening here is that user space has opened a file handle it
+thinks is against an autofs mount point (which may actually be covered
+by another mount, hence the need for an ioctl) and is asking the kernel
+to set it in the super block info struct so it can be used for control
+operations. By the look of fget() a NULL return would happen if the file
+table was full (ENFILE) or the file handle had already been closed
+(probably EBADF) so perhaps EBADF would be a better choice.
+
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  dev-ioctl.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+>  compile tested only.
+> 
+> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+> index eff9a41..ab551ee 100644
+> --- a/fs/autofs4/dev-ioctl.c
+> +++ b/fs/autofs4/dev-ioctl.c
+> @@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+>  		return -EBUSY;
+>  	} else {
+>  		struct file *pipe = fget(pipefd);
+> +		if (!pipe) {
+> +			err = -EBUSY;
+> +			goto out;
+> +		}
+>  		if (!pipe->f_op || !pipe->f_op->write) {
+>  			err = -EPIPE;
+>  			fput(pipe);
+> 
+> 
+> 
+
+
