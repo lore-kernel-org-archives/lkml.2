@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959Ab0LODDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 22:03:22 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:43151 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758698Ab0LODDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 22:03:21 -0500
-X-Sasl-enc: n7op4OKfHDgKc9wlfaIqWBhj3OPa5JTFxklB+TTniVgq 1292382199
-Subject: Re: [autofs] [PATCH][RFC] autofs4: Do not potentially dereference
- null pointer returned by fget() in autofs_dev_ioctl_setpipefd()
-From: Ian Kent <raven@themaw.net>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: autofs@linux.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1012122357570.9206@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012122357570.9206@swampdragon.chaosbits.net>
+	id S1758972Ab0LODEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 22:04:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46462 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754331Ab0LODEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 22:04:43 -0500
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D078052.3040800@kernel.org>
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>
+	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>
+	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>
+	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Dec 2010 11:03:15 +0800
-Message-ID: <1292382195.2979.17.camel@perseus>
+Date: Tue, 14 Dec 2010 22:04:05 -0500
+Message-ID: <1292382245.19511.56.camel@mulgrave.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 00:02 +0100, Jesper Juhl wrote:
-> Hi,
+On Tue, 2010-12-14 at 15:33 +0100, Tejun Heo wrote:
+> Hello,
 > 
-> In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
-> which may return NULL, but we do not explicitly test for that NULL return 
-> so we may end up dereferencing a NULL pointer - bad.
+> On 12/14/2010 03:26 PM, James Bottomley wrote:
+> > Depends what you're doing about the flush problem.  The synchronisation
+> > is inherent in the use (we're holding a reference to the module within
+> > the executed code).  The flush is to try to speed things up so the user
+> > doesn't get annoyed during rmmod.  We don't need a sync, just an
+> > accelerator.
+> 
+> Hmmm, I'm confused.  How does it drop the reference then?
 
-Oops, thanks for this.
+Um, the same way it does in your new code: inside the executed function.
 
-> 
-> A comment in fget() says "File object ref couldn't be taken" when that 
-> function returns NULL, so I guess EBUSY is the proper error to return from 
-> autofs_dev_ioctl_setpipefd() when this happens, but I'm far from sure 
-> about this, so I'd like some feedback before this patch is merged.
+>   Something
+> outside of the callback should wait for its completion and drop the
+> reference as otherwise nothing can guarantee that the modules doesn't
+> go away between the reference drop and the actual completion of the
+> callback.
 
-Not sure EBUSY is the one to use.
+Well, if that's an actual problem, your patch doesn't solve it.  In both
+cases the work structure is part of the object that will be released.
+The way it should happen is that workqueues dequeue the work (so now no
+refs) and execute the callback with the data, so the callback is OK to
+free the work structure.  As long as it still does that, there's no
+problem in either case.
 
-What is happening here is that user space has opened a file handle it
-thinks is against an autofs mount point (which may actually be covered
-by another mount, hence the need for an ioctl) and is asking the kernel
-to set it in the super block info struct so it can be used for control
-operations. By the look of fget() a NULL return would happen if the file
-table was full (ENFILE) or the file handle had already been closed
-(probably EBADF) so perhaps EBADF would be a better choice.
+> >> Compelling reason for it to exist.  Why not just use work when you
+> >> need execution context and the caller might or might not have one?
+> > 
+> > Because it's completely lame to have user context and not use it.
+> 
+> It may be lame but I think it's better than having an optimization
+> interface which is incomplete and, more importantly, unnecessary.
 
+But you're thinking of it as a workqueue issue ... it isn't, it's an API
+which says "just make sure I have user context".  The workqueue is just
+the implementation detail.
+
+> >> But, really, let's just remove it.  At this point, we either need to
+> >> fortify the interface or remove it and given the current usage, I
+> >> think we're better off with the latter.
+> > 
+> > I really don't think the open coding is a good idea.  It's complex and
+> > error prone; exactly the type of thing that should be in an API.
 > 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  dev-ioctl.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
->  compile tested only.
-> 
-> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-> index eff9a41..ab551ee 100644
-> --- a/fs/autofs4/dev-ioctl.c
-> +++ b/fs/autofs4/dev-ioctl.c
-> @@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
->  		return -EBUSY;
->  	} else {
->  		struct file *pipe = fget(pipefd);
-> +		if (!pipe) {
-> +			err = -EBUSY;
-> +			goto out;
-> +		}
->  		if (!pipe->f_op || !pipe->f_op->write) {
->  			err = -EPIPE;
->  			fput(pipe);
-> 
-> 
-> 
+> Yeah, just schedule work like everyone else.
+
+As I said: the required open coding then becomes error prone.
+
+James
 
 
