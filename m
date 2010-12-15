@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab0LON0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 08:26:31 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:45344 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab0LON0a (ORCPT
+	id S1753667Ab0LONjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 08:39:09 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:19137 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0LONjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 08:26:30 -0500
-Message-ID: <4D08C1C8.3090100@ru.mvista.com>
-Date: Wed, 15 Dec 2010 16:25:28 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 15 Dec 2010 08:39:08 -0500
+X-IronPort-AV: E=Sophos;i="4.59,348,1288569600"; 
+   d="scan'208";a="3360595"
+Date: Wed, 15 Dec 2010 13:39:27 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: linux-kernel@vger.kernel.org
+CC: xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH 00/11] xen: allow usermode to map granted pages
+Message-ID: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MTD: m25p80: add debugging trace in sst_write()
-References: <1292414372-17085-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1292414372-17085-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi all,
+this patch series introduces the gntdev device that allows usermode
+to map granted pages; gntdev is used by qemu to implement Xen backends
+in userspace.
 
-On 15-12-2010 14:59, Nicolas Ferre wrote:
+Considering that granted pages still have the same entry in the m2p
+as before being granted, the following patches also add a mechanism to
+override portions of the m2p so that we can find out the pfn
+corresponding to the mfn of a granted page in the "receiver" domain.
+This is needed so that we can have pte_page work correctly for these
+pages. Once this requirement is satisfied, __get_user_pages_fast can
+work on granted pages and userspace applications (the xen block backend
+implemented in qemu) can use AIO on them.
 
-> Add a DEBUG(MTD_DEBUG_LEVEL2, ..) trace at beginning of sst_write() function as
-> it is done in m25p80_write() function.
 
-> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
-[...]
+The list of patches and the diffstat follow:
 
-> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-> index bf5a002..e6b5707 100644
-> --- a/drivers/mtd/devices/m25p80.c
-> +++ b/drivers/mtd/devices/m25p80.c
-> @@ -482,6 +482,10 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
->   	size_t actual;
->   	int cmd_sz, ret;
->
-> +	DEBUG(MTD_DEBUG_LEVEL2, "%s: %s %s 0x%08x, len %zd\n",
-> +			dev_name(&flash->spi->dev), __func__, "to",
+Gerd Hoffmann (1):
+      xen/gntdev: allow usermode to map granted pages
 
-    What's the point of printing "to" as variable? :-)
+Ian Campbell (2):
+      xen: define gnttab_set_map_op/unmap_op
+      xen: gntdev: move use of GNTMAP_contains_pte next to the map_op
 
-> +			(u32)to, len);
-> +
+Jeremy Fitzhardinge (5):
+      xen/gntdev: add VM_PFNMAP to vma
+      xen: move p2m handling to separate file
+      xen: add m2p override mechanism
+      xen/gntdev: stop using "token" argument
+      xen p2m: clear the old pte when adding a page to m2p_override
 
-WBR, Sergei
+Stefano Stabellini (3):
+      xen p2m: transparently change the p2m mappings in the m2p override
+      xen: introduce gnttab_map_refs and gnttab_unmap_refs
+      xen gntdev: use gnttab_map_refs and gnttab_unmap_refs
+
+ arch/x86/include/asm/xen/page.h |   16 +-
+ arch/x86/xen/Makefile           |    3 +-
+ arch/x86/xen/mmu.c              |  365 ---------------------
+ arch/x86/xen/p2m.c              |  493 ++++++++++++++++++++++++++++
+ drivers/xen/Kconfig             |    7 +
+ drivers/xen/Makefile            |    2 +
+ drivers/xen/gntdev.c            |  672 +++++++++++++++++++++++++++++++++++++++
+ drivers/xen/grant-table.c       |   36 ++
+ include/xen/gntdev.h            |  119 +++++++
+ include/xen/grant_table.h       |   44 +++-
+ 10 files changed, 1387 insertions(+), 370 deletions(-)
+
+
+Cheers,
+
+Stefano
+
+
+P.S.
+I'll be AFK for a couple of weeks, so don't expect an immediate reply.
