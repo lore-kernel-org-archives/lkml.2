@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab0LOVwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:52:37 -0500
-Received: from mail-iw0-f180.google.com ([209.85.214.180]:38926 "EHLO
-	mail-iw0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab0LOVwe (ORCPT
+	id S1755238Ab0LOVx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:53:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab0LOVxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:52:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=dfHHf/N0q6Rt3Wm379YVJsiNPX3HHx3uh+mQwkBJV9ObGBpAcwHCngEUs5Or36j1sn
-         ESNSrJsOU+yaBY/8xc+dErD5wnS3/KknRsJQKrCYNOd54pb840pKnpoDSUUMHUMoE/jr
-         b6Zlf2tPcWPIC0/rvF6HpzyffiJXiILhPDMSk=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Subject: Re: [RFC v2] input: Introduce device information ioctl
-Date: Wed, 15 Dec 2010 13:52:22 -0800
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.5.3; x86_64; ; )
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1292440807-18502-1-git-send-email-rydberg@euromail.se> <4D09302C.4000309@canonical.com>
-In-Reply-To: <4D09302C.4000309@canonical.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 15 Dec 2010 16:53:25 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BjzRWlmGuKg7lRy-EUAA:9 a=mI6qW1v0b7LwcfN9cSkA:7 a=HKDoiJtHXNmYrel01ZrCSwTAOBcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4D0877D2.10000@cn.fujitsu.com>
+References: <4D07330A.7020600@cn.fujitsu.com>
+	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
+	 <4D083900.1050801@cn.fujitsu.com>
+	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
+	 <4D0877D2.10000@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 15 Dec 2010 16:53:22 -0500
+Message-ID: <1292450002.5015.1903.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012151352.23229.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 15, 2010 01:16:28 pm Chase Douglas wrote:
-> On 12/15/2010 02:20 PM, Henrik Rydberg wrote:
-> > Today, userspace sets up an input device based on the data it emits.
-> > This is not always enough; a tablet and a touchscreen may emit exactly
-> > the same data, for instance, but the former should be set up with a
-> > pointer whereas the latter does not need to. Recently, a new type of
-> > touchpad has emerged where the buttons are under the pad, which
-> > changes handling logic without changing the emitted data. This patch
-> > introduces a new ioctl, EVIOCGPROP, which enables user access to a set
-> > of device properties useful during setup. The properties are given as
-> > a bitmap in the same fashion as the event types.
-> > 
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> > Hi all,
-> > 
-> > Here is version two of the device information proposal. In addition to
-> > implementing the feedback, this version only defines a single combined
-> > type/capabilities field. Since we want to support a device being of
-> > multiple types, it suggests that we are really after the properties
-> > that make up a type, rather than the types themselves. And since
-> > quirks are also properties, we end up with a single bitmap of
-> > properties instead.
-> > 
-> > As an example of how this would work for the
-> > touchpad/tablet/touchscreen triplet, there are two properties defined,
-> > INPUT_PROP_POINTER and INPUT_PROP_DIRECT. A touchpad is an indirect
-> > pointer device, a tablet is a direct pointer device, and the
-> > touchscreen is simply a direct device.
-> > 
-> > What do you think?
-> 
-> I must have missed the first version of this patch, but I give two
-> thumbs way up :). The detection code for touchpad/tablet/touchscreen in
-> xf86-input-evdev is large and unwieldy, and seemingly simple changes to
-> an input driver can cause incorrect interpretation. Having this
-> available should help quite a bit!
-> 
-> Acked-by: Chase Douglas <chase.douglas@canonical.com>
+On Wed, 2010-12-15 at 16:09 +0800, Lai Jiangshan wrote:
 
-As long as we document that !pointer && !direct means "unknown" or
-"unspecified" so as to avoid having to update all devices at once that
-should be OK.
 
-We also need to wire up uinput.
+>  /*
+> @@ -543,11 +491,13 @@ static void remove_waiter(struct rt_mutex *lock,
+>  
+>  	raw_spin_lock_irqsave(&current->pi_lock, flags);
+>  	plist_del(&waiter->list_entry, &lock->wait_list);
+> -	waiter->task = NULL;
+>  	current->pi_blocked_on = NULL;
+>  	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+>  
+> -	if (first && owner != current) {
+> +	if (!owner)
+> +		return;
+> +
+> +	if (first) {
 
-Thanks.
+This is a bug. There's a small chance that the mutex timed out, and at
+that same time, the owner gave up the lock and woke this task up. Which
+means this task is the new owner of the lock iff it was the
+rt_mutex_top_waiter().
 
--- 
-Dmitry
+The fix is to do this:
+
+
+	if (!owner) {
+		if (first) {
+			ret = try_to_take_rt_mutex();
+			BUG_ON(!ret);
+		}
+		return first;
+	}
+
+	if (first) {
+
+We need to make remove_waiter return 1 if it took the lock and 0 if it
+did not, so it can pass this information back to the caller.
+
+	if (unlikely(ret)) {
+		if (remove_waiter(...))
+			ret = 0;
+	}
+
+-- Steve
+
+
