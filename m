@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0LONVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 08:21:08 -0500
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:32948 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab0LONVG (ORCPT
+	id S1753495Ab0LONV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 08:21:58 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:40704 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679Ab0LONV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 08:21:06 -0500
-Date: Wed, 15 Dec 2010 14:21:13 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] bind/unbind uevent
-Message-ID: <20101215142113.7d416d78@gondolin>
-In-Reply-To: <20101214192952.GA9106@suse.de>
-References: <alpine.LFD.2.02.1012071713500.1897@localhost6.localdomain6>
-	<20101207162755.GA32328@suse.de>
-	<alpine.LFD.2.02.1012071814160.1998@localhost6.localdomain6>
-	<20101207183305.GA21802@suse.de>
-	<AANLkTinmuxDYU9-zGvWB0mDDuXZEfZnuVxtSYGk62c8P@mail.gmail.com>
-	<alpine.LFD.2.02.1012081116530.1909@localhost6.localdomain6>
-	<20101208160255.GB10313@suse.de>
-	<alpine.LFD.2.02.1012132026430.2013@localhost6.localdomain6>
-	<20101213193617.GA18262@suse.de>
-	<alpine.LFD.2.02.1012141918520.1988@localhost6.localdomain6>
-	<20101214192952.GA9106@suse.de>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzender des
- Aufsichtsrats: Martin Jetter =?ISO-8859-15?Q?Gesch=E4ftsf=FChrung:?= Dirk
- Wittkopp Sitz der Gesellschaft: =?ISO-8859-15?Q?B=F6blingen?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 15 Dec 2010 08:21:57 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.37-rc5: well done, thanks!
+Date: Wed, 15 Dec 2010 14:21:40 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-tp42; KDE/4.5.3; i686; ; )
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1817730.HxLKfM1dZp";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012151421.53800.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010 11:29:52 -0800,
-Greg KH <gregkh@suse.de> wrote:
+--nextPart1817730.HxLKfM1dZp
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, Dec 14, 2010 at 07:26:40PM +0100, Sebastian Ott wrote:
-> > 
-> > On Mon, 13 Dec 2010, Greg KH wrote:
-> > > On Mon, Dec 13, 2010 at 08:27:45PM +0100, Sebastian Ott wrote:
+Hi!
 
-> > > Don't do that, have your _driver_ register the attributes with the bus
-> > > it is on, then when the binding happens, the attributes will
-> > > automatically get created for the device before the notification is sent
-> > > to userspace.  That is the proper proceedure here.
-> > 
-> > are you suggesting that these driver specific device attributes should be
-> > created by the bus code which registers the device?
-> 
-> Yes.
-> 
-> > at this time it is not determinable which driver will bind to the device
-> > (and therefore which attributes to create), also driver specific data may 
-> > not be initialized.
-> 
-> {sigh}
-> 
-> Please go _look_ at how the driver model handles this type of thing.  It
-> does _exactly_ what you want, as we have been doing it for _years_
-> properly.
-> 
+I think when I complain about kernel quality its also important to say,=20
+when I perceive it got better again[1].
 
-I don't understand how this could work. All of the attribute (groups)
-registered before the uevent are driver-ignorant. If the bus wants to
-specify the attributes, it needs to know the driver the device will
-bind to (regardless of whatever tables exist that show the driver <->
-attribute relationship). But it cannot know the driver until after the
-uevent. Or else it would need to create _all_ attributes for _all_
-devices (surely you didn't mean that)? And what happens with drivers
-that are loaded later on?
+Well it has. I am especially fond of 2.6.37-rc5[2] cause it even got=20
+noticably faster on my laptop - likely related to the tighter integration=20
+of Ext4 into the block layer and the replacement of barriers by Cache/FUA=20
+requests. Tab completion under I/O load has gotten noticably faster.
 
-Could you please elaborate on how the attributes could be created in a
-compatible way with today's driver core?
+But more important the reported bugs I mentioned are fixed:
 
-Cornelia
+=2D bug 15969 by Jerome Glisse
+=2D bug 15788 by Alan Stern
+
+Alex Deucher fixed the radeon DRM/KMS freeze bug #16376 which was the tip=20
+on the ice berg. I didn't even report back then cause I didn't have much=20
+to report other than that it freezes randomly. I bisected it down to about=
+=20
+10 revisions while some other guys did it on a freedesktop bug report[3].
+
+There are some issues here and there, I reported them. I asked what to do=20
+if reports receive no reaction and started bringing up some here on the=20
+kernel mailing list. I think I will ping some more specific mailing lists=20
+for some of them as I tend to believe that bugzilla is a good way to track=
+=20
+issues, but not a good way to contact the right people about them,=20
+especially as it does only accept mail addresses of bugzilla account=20
+owners in the Cc field and the default assignee may not always be up to=20
+date. I will to ask about and resolve this on a per bug report base.
+
+But overall I am quite happy with the current state of affairs.
+
+And before someone mentions it: I know its subjective perception (which is=
+=20
+what matters for my usage of Linux).
+
+[1] http://lkml.org/lkml/2010/7/11/17
+
+[2] Yes, I compile and test rc kernels now ;)
+
+[3] https://bugs.freedesktop.org/show_bug.cgi?id=3D28402
+
+Thanks,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart1817730.HxLKfM1dZp
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAk0IwOUACgkQmRvqrKWZhMdIqQCeLMqkcBhCEUooT3jvFmOe+c+O
++GYAn1QxCiQdmJbg4nnQjReTOWmY7Oon
+=Upm8
+-----END PGP SIGNATURE-----
+
+--nextPart1817730.HxLKfM1dZp--
