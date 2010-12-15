@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab0LOXdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 18:33:09 -0500
-Received: from mail-px0-f179.google.com ([209.85.212.179]:60998 "EHLO
-	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab0LOXdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 18:33:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dEsFFOGMU80IVGrwFp3k7boS9+sEvh61Ixg/BlWlLhtIK7q9pgxZHeb0ph/J+msRpi
-         yAMk4jDI7IzVL35wLgdHy7//bXNjrhyXMa/6pLqDNr1zRK4B/2JmQzYMggbWZfRzu/TV
-         ZUGGANGyxG6WXy5hjOE6gnu/VcNjCn0w4Bhbc=
+	id S1755826Ab0LOXgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 18:36:40 -0500
+Received: from claw.goop.org ([74.207.240.146]:42196 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753046Ab0LOXgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 18:36:37 -0500
+Message-ID: <4D095102.6010505@goop.org>
+Date: Wed, 15 Dec 2010 15:36:34 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20101215221454.GB6560@dtor-ws.eng.vmware.com>
-References: <20101215220019.GA6560@dtor-ws.eng.vmware.com>
-	<AANLkTikuWubUkGp2nESWTLz+kQsczznh7fuixdLzMfdO@mail.gmail.com>
-	<20101215221454.GB6560@dtor-ws.eng.vmware.com>
-Date: Thu, 16 Dec 2010 01:25:27 +0200
-Message-ID: <AANLkTindv4GUp3E8Vzkzm_JzGxxOP+TdaAsVhxrEVOw6@mail.gmail.com>
-Subject: Re: [PATCH] Show version information for built-in modules in sysfs
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+To: stefano.stabellini@eu.citrix.com
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 08/11] xen p2m: transparently change the p2m
+ mappings in the m2p override
+References: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop> <1292420446-3348-8-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1292420446-3348-8-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 12:14 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
-> On Wed, Dec 15, 2010 at 02:06:03PM -0800, Alexey Dobriyan wrote:
->> On Thu, Dec 16, 2010 at 12:00 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
->> > Currently only drivers that are built as modules have their versions
->> > shown in /sys/module/<module_name>/version, but this information might
->>
->> Can you create just /sys/module/x?
->> Module version info is quite useless by itself.
+On 12/15/2010 05:40 AM, stefano.stabellini@eu.citrix.com wrote:
+> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 >
-> It is as useful as in the case where driver is built as a module. I am
-> just trying to unify the behavior a bit.
+> In m2p_add_override store the original mfn into page->index and then
+> change the p2m mapping, setting mfns as FOREIGN_FRAME.
 >
-> Code-wise it is almost as cheap to add /sys/module/x/version as adding
-> just the directory.
+> In m2p_remove_override restore the original mapping.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/p2m.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 8db19d5..7dde8e4 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -407,8 +407,11 @@ static unsigned long mfn_hash(unsigned long mfn)
+>  void m2p_add_override(unsigned long mfn, struct page *page)
+>  {
+>  	unsigned long flags;
+> +	unsigned long pfn = page_to_pfn(page);
+>  	page->private = mfn;
+> +	page->index = pfn_to_mfn(pfn);
 
-OK.
+Is there any risk that a page being used for a granted mfn will end up
+getting xen_create_contiguous_region() applied to it via the DMA API? 
+That would be messy...
 
-Still, people are using /sys/module/x presence as indicator of modular
-built (unsurprisingly).
+    J
 
-http://codesearch.google.com/codesearch/p?hl=en#wZuuyuB8jKQ/src/third_party/autotest/files/client/profilers/powertop/src/bluetooth.c&q=/sys/modules&sa=N&cd=3&ct=rc&l=105
+
+>  
+> +	__set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> @@ -420,6 +423,7 @@ void m2p_remove_override(struct page *page)
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_del(&page->lru);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> +	__set_phys_to_machine(page_to_pfn(page), page->index);
+>  }
+>  
+>  struct page *m2p_find_override(unsigned long mfn)
+
