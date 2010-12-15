@@ -1,133 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab0LOTO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:14:56 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52695 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab0LOTOx convert rfc822-to-8bit (ORCPT
+	id S1755068Ab0LOTPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:15:23 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:39001 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab0LOTPV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:14:53 -0500
+	Wed, 15 Dec 2010 14:15:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fSrrwx2qAy68XpMPE7m2PB6QV9DU2flthH4zKsks3sw5tLQ058iODbraRYs+ZZdhM7
+         ssL/FJPB3B3qdxGCHSbqo9WJobdSq62Z1CpXSdNFjaLL5XYtbHu0S1aMRtQCdyWx5Cja
+         geNY0S2F+9OKIRgLSnHTir9Mm7++ycN3VwFLs=
 MIME-Version: 1.0
-In-Reply-To: <4D08FF4F.1020307@canonical.com>
-References: <1292280948-1933-1-git-send-email-rydberg@euromail.se>
-	<4D06A7B1.6060609@canonical.com>
-	<4D06A90C.90009@euromail.se>
-	<4D07E38C.4020201@canonical.com>
-	<4D08CEE8.9080804@euromail.se>
-	<4D08FF4F.1020307@canonical.com>
-Date: Wed, 15 Dec 2010 13:14:52 -0600
-Message-ID: <AANLkTikM5dXSv2onvF5aqzqkEuwrvbS5DTeE0CiW91j3@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Input: synaptics - add multitouch packet support
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinMWS-yyzWJ3oBo_KS9jXt4p4pveo+SPTLiWnCt@mail.gmail.com>
+References: <20101210023852.GB3059@thunk.org>
+	<AANLkTikJ1Q=L15wcMLn=U8-Qx9PbppY-AX=LpmjDkk2V@mail.gmail.com>
+	<AANLkTikeiv2jQM5hhghs1Zd2d=5CbRLKMgYvqHqpm76m@mail.gmail.com>
+	<AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
+	<AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
+	<20101212023415.GG3059@thunk.org>
+	<AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
+	<AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
+	<20101212124354.GA4513@thunk.org>
+	<AANLkTikZkCs7Wee2=uhe3bw96Pggcv0jsCkZ+nkWEQ+=@mail.gmail.com>
+	<20101213020657.GB4513@thunk.org>
+	<AANLkTinMWS-yyzWJ3oBo_KS9jXt4p4pveo+SPTLiWnCt@mail.gmail.com>
+Date: Wed, 15 Dec 2010 20:15:18 +0100
+Message-ID: <AANLkTimjM_HptLaCSuQivxruWpoc7todyMe0wnszrSYU@mail.gmail.com>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+From: Matt <jackdachef@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Jon Nelson <jnelson@jamponi.net>, Chris Mason <chris.mason@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+        Milan Broz <mbroz@redhat.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 11:47 AM, Chase Douglas
-<chase.douglas@canonical.com> wrote:
-> On 12/15/2010 09:21 AM, Henrik Rydberg wrote:
->>> After some testing this is mostly fine,
+On Mon, Dec 13, 2010 at 7:56 PM, Jon Nelson <jnelson@jamponi.net> wrote:
+> On Sun, Dec 12, 2010 at 8:06 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>> On Sun, Dec 12, 2010 at 07:11:28AM -0600, Jon Nelson wrote:
+>>> I'm glad you've been able to reproduce the problem! If you should need
+>>> any further assistance, please do not hesitate to ask.
 >>
->>  but I have one of those terrible
->>> "integrated buttons" (or whatever we call it) trackpads. When switching
->>> to multitouch mode, the cursor will sometimes jump when I go to push the
->>> button.
->>>
->>> Take the following sequence:
->>>
->>> 1. Touch in top right corner of pad to position cursor
->>> 2. Touch in bottom left corner over button
->>> 3. Press button, but finger moves a little
->>>
->>> Step 3 causes the primary coordinates in the synaptics MT protocol to
->>> flip to the button-pressing touch. This causes a cursor jump. *Many*
->>> times I have gone to press an "Ok" dialog button and found that I
->>> accidentally launched an application from my dock :).
+>> This patch seems to fix the problem for me.  (Unless the partition is
+>> mounted with mblk_io_submit.)
 >>
->>
->> I see - the behavior of the primary coordinates seems to vary between models,
->> then. On the other hand, if you point and click with the same finger, one could
->> possibly go around this problem, even though it means less precision. On my MT
->> laptop, I can click at the very edge of the pad without the cursor moving.
+>> Could you confirm that it fixes it for you as well?
 >
-> Because of the mechanical properties of my particular touchpad, it's
-> nearly impossible to click without dragging. My touchpad isn't one of
-> the new clickpads where the entire pad hinges. On a clickpad, I would
-> hope depress without movement is easy. On my trackpad, the buttons are
-> somewhat stiff and flex non-uniformly, causing the unwanted movement.
+> I believe I have applied the (relevant) inode.c changes to
+> bd2d0210cf22f2bd0cef72eb97cf94fc7d31d8cc, rebuilt and begun testing.
+> Now at 28 passes without error, I think I can say that the patch
+> appears to resolve the issue.
 >
-> So, in Ubuntu we mask out the area of the touchpad where the buttons
-> are. Any movement in that area is discarded. Thus, the only way to be
-> sure of a click is to position with one touch, then lift the touch, then
-> click one of the buttons. Annoying :).
+> --
+> Jon
+>
 
-Is this custom code or in upstream (are you talking about
-inside_active_area logic?)?  I'm not sure why your seeing a jump if
-its being discarded.  There is a chance that something related to this
-discard logic is defeating the other logic that handles jumps caused
-during finger transitions.
+Confirmed !
 
->
->>> I think we should perform some rudimentary touch tracking to ensure the
->>> same touch is always used for reporting ABS_X/ABS_Y. A simple distance
->>> comparison between the two touches, as I implemented in one of my other
->>> patches, would suffice.
->>
->>
->> One can certainly decide on the "best" coordinates when putting down the second
->> finger, as we tried for elantech. However, after some movement, when the second
->> finger is lifted, chances are you get a jump then instead.
->
-> Chris, isn't this filtered out in xf86-input-synaptics based on the
-> change in the number of touches?
+I'm running my box for 5+ hours right now with your patch applied in
+addition to Andi's/Milan's patch
+(http://www.kernel.org/pub/linux/kernel/people/agk/patches/2.6/editing/dm-crypt-scale-to-multiple-CPUs.patch)
+, Ted, and can't see any indications of corruptions so far (while
+doing an emerge -e system) and doing everyday stuff.
+My /home partition (with ext4) is also still intact [which of course
+has a backup] so it seems to fix it for me, too
 
-Yes, in version 1.30 or newer xf86-input-synaptics anyways.  And of
-course the *TAP transition needs to come in same sync window as jump
-for it to be helpful.  It may be able to handle if *TAP comes 1 sync
-window before jump but that would be about the limit.
+so the corruption I was seeing was similar in a way to that of Jon
 
-Mind sending me a evtest log snippet during
-touch-then-click-with-2nd-finger (with MT mode enabled)?  Seeing those
-tends to be better for understanding then words for me.  I'm
-interested for more then just this specific issue, btw.
+You can add a
+Tested-by: Matthias Bayer <jackdachef@gmail.com>
 
-I'm really interested in where the *TAP come (before or after)
-relative to cursor jump and how close it was to being filtered out by
-xf86-input-synaptics.
+Thanks a lot to everyone for your support ! :)
 
->
->>> What do you think?
->>
->>
->> The general approach we have taken for the kernel is to provide a left button
->> for both the macbooks and these clickpads, and in addition provide enough
->> information (read mt data) to solve this problem in userspace. In other words,
->> one should probably see what additions are needed in the common X drivers to
->> make the experience a pleasant one.
->
-> I think we're confusing clickpads and my "integrated buttons" trackpad
-> (I know we settled on a different name, but I can't remember it now :).
-> I believe my issue is purely due to the primary coordinates switching
-> back and forth between two touches as I position and click with two fingers.
 
-I would think they both have same issue... Just yours may have some
-extra movement and pressure changes compared to the other.
+I have a question though: the deactivation of multiple page-io
+submission support most likely only would affect bigger systems or
+also desktop systems (like mine) ?
 
-Chris
+Regards
 
->
-> Also, I have been told by an OEM partner that my trackpad will *never*
-> be used again :). We could consider quirking it if what makes this
-> trackpad work is detrimental to other trackpads.
->
-> Thanks,
->
-> -- Chase
->
+Matt
