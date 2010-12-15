@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab0LOW6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:58:03 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38388 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab0LOW57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:57:59 -0500
-Message-ID: <4D0947BC.9050909@kernel.org>
-Date: Wed, 15 Dec 2010 14:57:00 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
- num limitation
-References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org> <4D094703.7080701@zytor.com>
-In-Reply-To: <4D094703.7080701@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753554Ab0LOXDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 18:03:48 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:57766 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751681Ab0LOXDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 18:03:47 -0500
+Subject: Re: [PATCH] adding gpmc configuration functions, west bridge
+ related
+From: Sutharsan <srmt@cypress.com>
+To: Greg KH <greg@kroah.com>
+Cc: odc@cypress.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20101215221837.GA12908@kroah.com>
+References: <1292443046.1771.47.camel@sutharsan-laptop>
+	 <20101215201029.GA32710@kroah.com>
+	 <1292451075.1771.86.camel@sutharsan-laptop>
+	 <20101215221837.GA12908@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 15:03:29 -0800
+Message-ID: <1292454209.1771.183.camel@sutharsan-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 02:53 PM, H. Peter Anvin wrote:
-> On 12/15/2010 02:40 PM, Yinghai Lu wrote:
->> On 12/15/2010 02:01 PM, H. Peter Anvin wrote:
->>> On 11/13/2010 05:38 PM, Yinghai Lu wrote:
->>>> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
->>>> ===================================================================
->>>> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
->>>> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
->>>> @@ -198,6 +198,13 @@ static void __cpuinit acpi_register_lapi
->>>>  {
->>>>  	unsigned int ver = 0;
->>>>  
->>>> +#ifdef CONFIG_X86_64
->>>> +	if (id >= (MAX_APICS-1)) {
->>>> +		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
->>>> +		return;
->>>> +	}
->>>> +#endif
->>>> +
->>>>  	if (!enabled) {
->>>>  		++disabled_cpus;
->>>>  		return;
->>>
->>> Why the #ifdef?
->>
->> try to limit the affects to 32bit's bunch sub arch etc.
->>
+On Wed, 2010-12-15 at 14:18 -0800, Greg KH wrote:
+> A: No.
+> Q: Should I include quotations after my reply?
 > 
-> I really, really don't like that... we want more unification, not less...
+> http://daringfireball.net/2007/07/on_top
+Thanks.
+> 
+> On Wed, Dec 15, 2010 at 02:11:15PM -0800, Sutharsan wrote:
+> > Hi Greg,
+> > 
+> > The driver is in staging area, the patch I submitted is required to get
+> > the driver out of staging area.
+> 
+> But you didn't say that, the patch you sent was not for the staging
+> tree, right?
+That's right. 
+> 
+> > This patch is continuation of David Cross'(odc@cypress.com) earlier
+> > patch "[PATCH] gpmc, EXPORT_SYMBOLS, west bridge related".
+> > 
+> > I've modified the driver to use the function exported by "[PATCH] adding
+> > gpmc configuration functions, west bridge related". I'll submit the
+> > modified driver as another patch.
+> 
+> that would be good, thanks.
+> 
+> greg k-h
+> 
 
-ok, will try to remove them.
 
-Yinghai
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
