@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab0LOWh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:37:27 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:64800 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab0LOWhY (ORCPT
+	id S1752765Ab0LOWll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:41:41 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49853 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab0LOWli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:37:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH 1/7] msm: io: I/O register definitions for MSM8960
-Date: Wed, 15 Dec 2010 23:37:19 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <201012151740.24933.arnd@arndb.de> <20101215220317.GA22394@huya.qualcomm.com>
-In-Reply-To: <20101215220317.GA22394@huya.qualcomm.com>
+	Wed, 15 Dec 2010 17:41:38 -0500
+Message-ID: <4D0943D5.1090404@kernel.org>
+Date: Wed, 15 Dec 2010 14:40:21 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
+ num limitation
+References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <4D093ABB.4030206@zytor.com>
+In-Reply-To: <4D093ABB.4030206@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012152337.19475.arnd@arndb.de>
-X-Provags-ID: V02:K0:r0uXX2pzZy9mKgRMdSMEawL2KrWhc5nnI0baUO1gNSt
- tIiK+m5bazjAd/6kfy0paeYwv8gBGEl05F+cvMs5XuWQz0pO2c
- Of/AVjoOI7bV0O/JPqATKgOYbkcKlLdEc+KDWhfmzPP4L7oe3m
- 22FcpSiLtOF4t8ycZOiOkK4VHimd5G1978uf8HcF8Gv2+Rtjvq
- qXiFZtlPqYjbUSxW80vfA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 December 2010, David Brown wrote:
+On 12/15/2010 02:01 PM, H. Peter Anvin wrote:
+> On 11/13/2010 05:38 PM, Yinghai Lu wrote:
+>> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
+>> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
+>> @@ -198,6 +198,13 @@ static void __cpuinit acpi_register_lapi
+>>  {
+>>  	unsigned int ver = 0;
+>>  
+>> +#ifdef CONFIG_X86_64
+>> +	if (id >= (MAX_APICS-1)) {
+>> +		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
+>> +		return;
+>> +	}
+>> +#endif
+>> +
+>>  	if (!enabled) {
+>>  		++disabled_cpus;
+>>  		return;
 > 
-> On Wed, Dec 15, 2010 at 05:40:24PM +0100, Arnd Bergmann wrote:
-> 
-> > My point was really that they should not be exclusive, even if they
-> > are rather different. If the code is structured in a more modular
-> > way, you can turn all MSM/QSD options from the "Qualcomm MSM SoC Type"
-> > choice into separate "bool" config options. You probably don't want
-> > to do that now for all the existing ones, but I would suggest you
-> > try not add more to the pile ;-).
-> 
-> It's kind of hard to do too much of this, though, until ARM kernels
-> can be relocated.  They mostly all live at different base addresses
-> (and 8960 might also move).  Throw CPU differences into the mix and it
-> gets messier.
-> 
-> I'm not saying it isn't solvable, but there are a lot of things that
-> need to be done to get there.
+> Why the #ifdef?
 
-Yes, I understand that it's hard for many reasons, but my impression
-is that there is a general agreement on the idea. As I said, I don't
-expect you to fix it all at once, but it shouldn't be too hard
-to take care when adding new code.
+try to limit the affects to 32bit's bunch sub arch etc.
 
-We already have infrastructure that deals with different CPU cores
-in one kernel binary, at least from v5 to v7, and some platforms
-like omap and realview can already be built for a variety of very
-different machines without such problems.
+Thanks
 
-	Arnd
+	Yinghai
+
