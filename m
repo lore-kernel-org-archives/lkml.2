@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0LOUdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:33:51 -0500
-Received: from nm10-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.198]:24839 "HELO
-	nm10-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751022Ab0LOUdr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752585Ab0LOUdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:33:55 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:52895 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053Ab0LOUdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Dec 2010 15:33:47 -0500
-X-Yahoo-Newman-Id: 595017.88518.bm@omp1051.mail.sp2.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: Px7ONM4VM1lCnSxvlFhOSRp0J_nvuSuB5vD.wgVAqfoBtZN
- .SRk394Tcsoj.26fb_L7TqHYwYTWeKdfP5Zwk5VSYoTxHlXx8zuInY.aLM6V
- fa3SPvZZd3IBrRloxVds3OfHhk8V_TxSGdfvxP3b4W2Dn5srxARrz3JjfxBb
- Xcpvpa2jlZllDQ7Rtr6a_OIr6s3Xn3vfPm_vYBmJ9mgon4N_rzObRHOKsrMk
- pH6.Wtusv6RNmPxli95icMAMTHpuf3CeQA_03e1IQY71VXoZcCT7apWPw9gl
- iQPqcw34ZV3qXgpNHSexOGDw-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Ravi Anand <ravi.anand@qlogic.com>
-Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC 0/3] target: qla2xxx LLD target mode and tcm_qla2xxx fabric module
-Date: Wed, 15 Dec 2010 12:33:35 -0800
-Message-Id: <1292445218-15005-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+Date: Wed, 15 Dec 2010 21:33:42 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, P??draig Brady <P@draigBrady.com>,
+        Am??rico Wang <xiyou.wangcong@gmail.com>, wharms@bfs.de,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+In-Reply-To: <0BAF9CFC-72BF-49A1-93D3-BF60B892389B@dilger.ca>
+Message-ID: <Pine.LNX.4.64.1012152133010.29684@ask.diku.dk>
+References: <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+ <20101114092533.GB5323@albatros> <20101114180643.593d19ac.akpm@linux-foundation.org>
+ <1289848341.2607.125.camel@edumazet-laptop> <20101123140111.GA3816@hack>
+ <4CEBD37E.5060107@bfs.de> <203E1F2A-2D04-4B7F-8D1B-9DC24522CB5E@dilger.ca>
+ <4CECECA2.6070301@draigBrady.com> <20101124110535.GD5139@cr0.nay.redhat.com>
+ <4CECFB19.1090003@draigBrady.com> <20101215094953.GG19804@ZenIV.linux.org.uk>
+ <0BAF9CFC-72BF-49A1-93D3-BF60B892389B@dilger.ca>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Wed, 15 Dec 2010, Andreas Dilger wrote:
 
-Greetings all,
+> On 2010-12-15, at 02:49, Al Viro wrote:
+> > Incorrect.  See 6.2.6.1 in C99; basically, padding bytes have unspecified
+> > contents.  Implementation is allowed to leave them in any state
+> > (including not bothering to copy them when doing struct assignments,
+> > etc.).  See Appendix J (portability issues) as well.
+> > 
+> > The bottom line: if you rely on that, you are relying on non-portable
+> > details of compiler behaviour.  Moreover, the authors are not even
+> > required to document what they are doing or to keep that behaviour
+> > consistent.
+> 
+> I thought my proposed solution was reasonable - add explicit padding fields where there are holes in the structure, which would be unused by the kernel, but since they are defined fields the compiler is obligated to initialize them.
 
-Attached is the initial RFC series for adding QLA2XXX LLD target mode support
-against v8.03.04-k0 on .37-rc3, along a new tcm_qla2xxx.ko fabric module in
-complete (eg: non incremental) form in order to add a bit more context for review.
-At this point this code should be considered a 'for-39' item, and is being posted
-for early review now in order to get the discussion rolling on necessary changes
-required to enable target mode within the mainline qla2xxx LLD.
+Is the presence of holes always apparent at the source code level?  Or is 
+it dependent on the compiler or target architecture?
 
-An overview of the current status and mini-howto is available here:
+julia
 
-http://www.linux-iscsi.org/index.php/Qlogic
-
-The series has been broken up into three individual patches:
-
-This qla2xxx LLD changes in patch #1 and #2 are based on qla2x00t v8.02.01-k4 /
-.26 and qla2x00t-target.ko from the SCST project, and are a modern refactoring ->
-forward port of this logic to mainline qla2xxx code.
-
-Patch #1 adds the main qla2x_target.c logic and associated headers into the
-qla2xxx LLD, including the main struct qla_target_template API for interaction
-with tcm_qla2xxx.
-
-Patch #2 adds the various callbacks into struct qla_hw_data->qla2x_tmpl and
-qla2x_target.c logic within qla2xxx proper.
-
-Patch #3 adds the seperate tcm_qla2xxx fabric module using a generic configfs
-control plane on modern v4 target mode code.  This module defines it's own set
-of struct qla_target_template callers for interaction with qla2x_target.c ->
-qla2xxx LLD code.
-
-The LLD changes and tcm_qla2xxx should currently be considered ALPHA -> BETA
-status, and thus far has been run exclusively using PCIe device passthrough
-with MSI-X interrupts into KVM guest.  Large block I/O is stable, and is able
-to run for sustained periods at line-rate (1000 MB/sec) in non NPIV mode.
-The FC nexus handling in qla2x_target.c is stable and able to pass initial
-testing (shutdown, cable pull, etc).  This also includes being able to shutdown
-tcm_qla2xx and disable target mode on an individual struct qla_hw_data, and
-then reload tcm_qla2xxx and recreate the configfs groups, re-enable target
-mode on the same qla_hw_data and everything work as expected w/o shutting
-down qla2xxx LLD.
-
-There will be ongoing work to continue to improve and stabilize this code
-for future mainline acceptance.  Code review and feedback are welcome.
-
-Best Regards,
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-
-Nicholas Bellinger (3):
-  qla2xxx: Add target mode support into 2xxx series LLD code
-  qla2xxx: Enable 2xxx series LLD target mode support
-  tcm_qla2xxx: Add HW target mode I/O, control and TMR path code
-
- drivers/scsi/qla2xxx/Makefile                     |    4 +-
- drivers/scsi/qla2xxx/qla2x_target.c               | 5060 +++++++++++++++++++++
- drivers/scsi/qla2xxx/qla2x_target.h               |  290 ++
- drivers/scsi/qla2xxx/qla2x_tgt.h                  |  140 +
- drivers/scsi/qla2xxx/qla2x_tgt_def.h              |  717 +++
- drivers/scsi/qla2xxx/qla_attr.c                   |   14 +-
- drivers/scsi/qla2xxx/qla_def.h                    |   68 +-
- drivers/scsi/qla2xxx/qla_fw.h                     |   10 +
- drivers/scsi/qla2xxx/qla_gbl.h                    |   11 +
- drivers/scsi/qla2xxx/qla_gs.c                     |   14 +-
- drivers/scsi/qla2xxx/qla_init.c                   |  329 ++-
- drivers/scsi/qla2xxx/qla_iocb.c                   |  105 +-
- drivers/scsi/qla2xxx/qla_isr.c                    |  232 +-
- drivers/scsi/qla2xxx/qla_mbx.c                    |  172 +-
- drivers/scsi/qla2xxx/qla_mid.c                    |   35 +-
- drivers/scsi/qla2xxx/qla_os.c                     |  250 +-
- drivers/target/tcm_qla2xxx/Kbuild                 |    6 +
- drivers/target/tcm_qla2xxx/Kconfig                |    6 +
- drivers/target/tcm_qla2xxx/tcm_qla2xxx_base.h     |   91 +
- drivers/target/tcm_qla2xxx/tcm_qla2xxx_configfs.c | 1319 ++++++
- drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.c   |  766 ++++
- drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.h   |   48 +
- 22 files changed, 9631 insertions(+), 56 deletions(-)
- create mode 100644 drivers/scsi/qla2xxx/qla2x_target.c
- create mode 100644 drivers/scsi/qla2xxx/qla2x_target.h
- create mode 100644 drivers/scsi/qla2xxx/qla2x_tgt.h
- create mode 100644 drivers/scsi/qla2xxx/qla2x_tgt_def.h
- create mode 100644 drivers/target/tcm_qla2xxx/Kbuild
- create mode 100644 drivers/target/tcm_qla2xxx/Kconfig
- create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_base.h
- create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_configfs.c
- create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.c
- create mode 100644 drivers/target/tcm_qla2xxx/tcm_qla2xxx_fabric.h
-
--- 
-1.7.3.3
-
+> This wouldn't add any overhead in cases where the compiler is already initializing the fields, and is still going to be less overhead than doing a memset(0) on the whole structure, and then initializing the other fields explicitly.
+> 
+> That has the added bonus that it becomes instantly clear where there are padding fields in the structure, and possibly they can be put to use in the future.
+> 
+> Cheers, Andreas
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
