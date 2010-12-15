@@ -1,167 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab0LOK6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:58:31 -0500
-Received: from woolik.bumpclub.ee ([193.40.0.72]:38098 "EHLO
-	Woolik.BumpClub.Ee" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab0LOK63 (ORCPT
+	id S1753318Ab0LOLSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 06:18:36 -0500
+Received: from fmmailgate03.web.de ([217.72.192.234]:39110 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab0LOLSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:58:29 -0500
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 05:58:29 EST
-Date: Wed, 15 Dec 2010 12:48:21 +0200 (EET)
-From: =?ISO-8859-15?Q?T=F5nu_Raitviir?= <jussuf@linux.ee>
-To: chris@chris-wilson.co.uk
-cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        airlied@linux.ie, linux-kernel@vger.kernel.org
-Subject: BUG: i915 causes NULL pointer dereference in 2.6.37-rc5-git4
-Message-ID: <alpine.DEB.2.00.1012151238570.4797@jbbyvx.ohzcpyho.rr>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-No-Archive: yes
+	Wed, 15 Dec 2010 06:18:34 -0500
+Date: Wed, 15 Dec 2010 12:17:41 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Liu Ying <liu.y.victor@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Zhang Lily-R58066 <r58066@freescale.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>
+Subject: Re: [PATCH 5/9] Add i.MX5 framebuffer driver
+Message-ID: <20101215111741.GB6017@pengutronix.de>
+References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-6-git-send-email-s.hauer@pengutronix.de> <AANLkTikZowDCK4JPiCyEou1ekRuYA1qGnKrBPT5dXB+8@mail.gmail.com> <20101213113830.GE6017@pengutronix.de> <AANLkTikwTjUUzc6BovFKXq-FverNMqg-ustodk+sKUCY@mail.gmail.com> <20101214084546.GT6017@pengutronix.de> <AANLkTimG644a0-dKejs1gidboa+0NJBB9XC3ohkF2xs4@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="683755520-406772781-1292410101=:4797"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimG644a0-dKejs1gidboa+0NJBB9XC3ohkF2xs4@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:16:50 up 165 days,  2:27, 60 users,  load average: 0.87, 1.32,
+	0.81
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Provags-ID: V01U2FsdGVkX1+22wnjhQzBjijXcxJO14DzK8qv1UVMXN4XHGuF
+	FzfI3MFrOVs0R2A8YVEFEoVMb+z05qJsnU+Z/na+JcYLMvU+ci
+	y3/7qeSoY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, Dec 14, 2010 at 09:23:30PM +0800, Liu Ying wrote:
+> 2010/12/14 Sascha Hauer <s.hauer@pengutronix.de>:
+> > On Tue, Dec 14, 2010 at 02:40:09PM +0800, Liu Ying wrote:
+> >> Hello, Sascha,
+> >>
+> >> Please find my feedback with [LY] embedded.
+> >>
+> >> And, a bug related with this patch:
+> >> 1) Bootup the babbage board.
+> >> 2) echo U:640x480p-60 > /sys/class/graphics/fb0/mode
+> >> 3) cat /sys/class/graphics/fb0/virtual_size, it shows '640,480'.
+> >> 4) echo 640,960 > /sys/class/graphics/fb0/virtual_size, change virtual
+> >> yres to be 960.
+> >> 5) cat /sys/class/graphics/fb0/virtual_size, it still shows '640,480'.
+> >> I think this is caused by 'var->yres_virtual = var->yres;' in custom
+> >> fb_set_par() function(Sorry, I cannot make the comment inline this
+> >> time, as I don't find the original code within the mail I am
+> >> replying). This makes fb0 use only one block of memory whose size is
+> >> equal to screen size, so pan display can not really play her role and
+> >> screen tearing issue may happen.
+> 
+> Sascha,
+> 
+> Just would like to know if you've caught this bug.
 
---683755520-406772781-1292410101=:4797
-Content-Type: TEXT/PLAIN; format=flowed; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Yes, it will be fixed in the next series. It was the framebuffer driver
+forcing yres_virtual to yres in set_par.
 
+Sascha
 
-Asus P5E-VM HDMI motherboard with G35 chipset, only HDMI output is 
-connected. Last known good kernel was 2.6.36.2
-
-00:02.0 VGA compatible controller: Intel Corporation 82G35 Express Integrated Graphics Controller (rev 03)
-00:02.1 Display controller: Intel Corporation 82G35 Express Integrated Graphics Controller (rev 03)
+> 
+> >>
+> >> Best Regards,
+> >> Liu Ying
+> >>
+> >> 2010/12/13 Sascha Hauer <s.hauer@pengutronix.de>:
+> >> > On Sun, Dec 12, 2010 at 02:13:40PM +0800, Liu Ying wrote:
+> >> >> Hello, Sascha,
+> >> >>
+> >> >> I have following comments to this patch:
+> >> >> 1) Please modify the commit message, as IPUv3 is not embedded in i.MX50 SoC.
+> >> >
+> >> > ok.
+> >> >
+> >> >> 2) ADC is not supported yet in the framebuffer driver, so please
+> >> >> modify this comment:
+> >> >>    > + * Framebuffer Framebuffer Driver for SDC and ADC.
+> >> >
+> >> > ok.
+> >> >
+> >> >> 3) 'ipu_dp_set_window_pos()' is called only once in
+> >> >> imx_ipu_fb_set_par_overlay(). So, the framebuffer driver doesn't
+> >> >> support to change the overlay framebuffer position. Need a
+> >> >> mechanism/interface for users to change the overlay framebuffer
+> >> >> position.
+> >> >
+> >> > Yes. The overlay support is currently only present in the driver because
+> >> > I didn't want to break it in general. There is no generic overlay API in
+> >> > the kernel and I didn't want to invent the n+1 API. Currently the
+> >> > possible use cases of the overlay support are not clear to me. Number
+> >> > one use case would probably be to display video output, but the
+> >> > corresponding driver would be a v4l2 driver, so in this case we would
+> >> > only need an in-kernel API.
+> >> > Anyway, I have not the resources to implement complete overlay support.
+> >> > So either we keep it like it is and it more has an example character
+> >> > or we remove it completely from the driver for now.
+> >> >
+> >> >> 4) Need to make sure the framebuffer on DP-FG is blanked before the
+> >> >> framebuffer on DP-BG is blanked. Meanwhile, the framebuffer on DP-FG
+> >> >> should be unblanked after the framebuffer on DP-BG is unblanked
+> >> >> 5) Need to check the framebuffer on DP-FG doesn't run out of the range
+> >> >> of the framebuffer on DP-BG.
+> >> >
+> >> > I tend to remove the overlay support.
+> >> >
+> >> >> 6) I prefer to find the video mode in modedb first, and if we cannot
+> >> >> find the video mode in common video mode data base, we can find a
+> >> >> video mode in custom video mode data base which is defined in platform
+> >> >> data. In this way, we don't need to export common modefb.
+> >> >
+> >> > I exported the modedb to be able to show the different modes under
+> >> > /sys/class/graphics/fb0/modes and to set it with
+> >> > /sys/class/graphics/fb0/mode. If you want this there is no way around
+> >> > exporting it. The ioctl interface for mode setting is independent of the
+> >> > specific modes anyway.
+> >> [LY]  Just a concern. If a platform choose to add the generic video
+> >> mode data base to IPUv3 framebuffer modelist, 'cat
+> >> /sys/class/graphics/fb0/modes' will show all the video modes in the
+> >> generic data base to users. I am not sure whether showing them to
+> >> users means the IPUv3 framebuffer driver acknowledges to support all
+> >> of them or not. I tried to do 'echo U:1800x1440p-70 >
+> >> /sys/class/graphics/fb0/mode' with the kernel on ipuv3 branch, there
+> >> will be a kernel dump(seems it can not allocate enough memory).
+> >
+> > We'll have to increase the dma coherent size (and max zone order) for
+> > these resolutions to work. I have patches for this in my local tree but
+> > decided to wait until some contiguous memory allocator hits the tree.
+> > Also, the fb driver should sanity check the generic modes before adding
+> > them to the list. FOr example the IPU can't do 1920x1200@60. This code
+> > is missing currently.
+> >
+> > Sascha
+> >
+> >
+> > --
+> > Pengutronix e.K.                           |                             |
+> > Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> > Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> >
+> 
+> 
+> 
+> -- 
+> Best Regards,
+> Liu Ying
+> 
 
 -- 
-Tõnu Raitviir
-LRU #36438
---683755520-406772781-1292410101=:4797
-Content-Type: TEXT/plain; name=i915-oops.txt
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1012151248210.4797@jbbyvx.ohzcpyho.rr>
-Content-Description: 
-Content-Disposition: attachment; filename=i915-oops.txt
-
-WyAgIDMyLjExNzAwNV0gW2RybV0gSW5pdGlhbGl6ZWQgZHJtIDEuMS4wIDIw
-MDYwODEwDQpbICAgMzIuMTgxODg1XSBpOTE1IDAwMDA6MDA6MDIuMDogUENJ
-IElOVCBBIC0+IEdTSSAxNiAobGV2ZWwsIGxvdykgLT4gSVJRIDE2DQpbICAg
-MzIuMTgxOTQxXSBpOTE1IDAwMDA6MDA6MDIuMDogc2V0dGluZyBsYXRlbmN5
-IHRpbWVyIHRvIDY0DQpbICAgMzIuMjAyNjc2XSBpOTE1IDAwMDA6MDA6MDIu
-MDogaXJxIDQzIGZvciBNU0kvTVNJLVgNClsgICAzMi4zNTU1MTFdIEJVRzog
-dW5hYmxlIHRvIGhhbmRsZSBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVmZXJl
-bmNlIGF0IDAwMDAwMDAwMDAwMDAzZmMNClsgICAzMi4zNTU2MTNdIElQOiBb
-PGZmZmZmZmZmODExZTMxNTA+XSBpZHJfcHJlX2dldCsweDViLzB4NmYNClsg
-ICAzMi4zNTU2NzldIFBHRCA3OGI5MzA2NyBQVUQgNzlkNDMwNjcgUE1EIDAg
-DQpbICAgMzIuMzU1NzcxXSBPb3BzOiAwMDAwIFsjMV0gU01QIA0KWyAgIDMy
-LjM1NTg0NF0gbGFzdCBzeXNmcyBmaWxlOiAvc3lzL2RldmljZXMvcGNpMDAw
-MDowMC8wMDAwOjAwOjAyLjAvaTJjLTUvdWV2ZW50DQpbICAgMzIuMzU1OTA3
-XSBDUFUgMCANClsgICAzMi4zNTU5MjhdIE1vZHVsZXMgbGlua2VkIGluOiBp
-OTE1KCspIGRybV9rbXNfaGVscGVyIGRybSBpMmNfYWxnb19iaXQgdmlkZW8g
-b3V0cHV0IGh3bW9uX3ZpZCBsaXJjX2ltb24oQykgcmNfZGliMDcwMF9yYzUg
-bXQyMDYwIHNuZF9oZGFfY29kZWNfaGRtaSBzbmRfaGRhX2NvZGVjX3JlYWx0
-ZWsgc25kX2hkYV9pbnRlbCBzbmRfaGRhX2NvZGVjIHNuZF9od2RlcCBkdmJf
-dXNiX2RpYjA3MDAgZGliNzAwMHAgZGliMDA5MCBzbmRfcGNtIGRpYjcwMDBt
-IHNuZF9zZXFfbWlkaSBzbmRfcmF3bWlkaSBzbmRfc2VxX21pZGlfZXZlbnQg
-c25kX3NlcSBpcl9saXJjX2NvZGVjIGxpcmNfZGV2IGlyX3NvbnlfZGVjb2Rl
-ciByY19pbW9uX3BhZCBzbmRfdGltZXIgaXJfanZjX2RlY29kZXIgZGliMDA3
-MCBkdmJfdXNiIGRpYjgwMDAgaXJfcmM2X2RlY29kZXIgc25kX3NlcV9kZXZp
-Y2UgZHZiX2NvcmUgZGliMzAwMG1jIGlyX3JjNV9kZWNvZGVyIGRpYngwMDBf
-Y29tbW9uIHRwbV90aXMgdHBtIGlyX25lY19kZWNvZGVyIGltb24gaW50ZWxf
-YWdwIGludGVsX2d0dCB0cG1fYmlvcyBpMmNfaTgwMSBzbmQgc291bmRjb3Jl
-IHNuZF9wYWdlX2FsbG9jIGlyX2NvcmUgcGNzcGtyIHNocGNocCBwY2lfaG90
-cGx1ZyBzZXJpb19yYXcgcmFpZDEwIHJhaWQ0NTYgYXN5bmNfcHEgYXN5bmNf
-eG9yIHhvciBhc3luY19tZW1jcHkgYXN5bmNfcmFpZDZfcmVjb3YgcmFpZDZf
-cHEgYXN5bmNfdHggcmFpZDAgbXVsdGlwYXRoIGxpbmVhciB1c2JoaWQgZmly
-ZXdpcmVfb2hjaSBhdGwxIGhpZCBzZyBmaXJld2lyZV9jb3JlIGNyY19pdHVf
-dCBwYXRhX2ptaWNyb24gW2xhc3QgdW5sb2FkZWQ6IHNjc2lfd2FpdF9zY2Fu
-XQ0KWyAgIDMyLjM1NjAwMF0gDQpbICAgMzIuMzU2MDAwXSBQaWQ6IDE0OTUs
-IGNvbW06IG1vZHByb2JlIFRhaW50ZWQ6IEcgICAgICAgICBDICAyLjYuMzct
-cmM1LWdpdDQgIzEgUDVFLVZNIEhETUkvUDVFLVZNIEhETUkNClsgICAzMi4z
-NTYwMDBdIFJJUDogMDAxMDpbPGZmZmZmZmZmODExZTMxNTA+XSAgWzxmZmZm
-ZmZmZjgxMWUzMTUwPl0gaWRyX3ByZV9nZXQrMHg1Yi8weDZmDQpbICAgMzIu
-MzU2MDAwXSBSU1A6IDAwMTg6ZmZmZjg4MDA3OTUwNTlhOCAgRUZMQUdTOiAw
-MDAxMDIwMg0KWyAgIDMyLjM1NjAwMF0gUkFYOiBmZmZmODgwMDc4OWRlYjIw
-IFJCWDogMDAwMDAwMDAwMDAwMDNlOCBSQ1g6IDAwMDAwMDAwMDAwMDAwMDAN
-ClsgICAzMi4zNTYwMDBdIFJEWDogMDAwMDAwMDBiMGIwYjBiMCBSU0k6IDAw
-MDAwMDAwMDAwMDAwZDAgUkRJOiAwMDAwMDAwMDAwMDAwM2U4DQpbICAgMzIu
-MzU2MDAwXSBSQlA6IGZmZmY4ODAwNzk1MDU5YzggUjA4OiAwMDAwMDAwMDAw
-MDAwMDA0IFIwOTogMDAwMDAwMDAwMDAwMDAwNA0KWyAgIDMyLjM1NjAwMF0g
-UjEwOiBmZmZmODgwMDAwMDAwMDA0IFIxMTogZmZmZjg4MDA3Yzg5N2RhMCBS
-MTI6IDAwMDAwMDAwMDAwMDgwZDANClsgICAzMi4zNTYwMDBdIFIxMzogMDAw
-MDAwMDAwMDAwMDQwMCBSMTQ6IDAwMDAwMDAwYjBiMGIwYjAgUjE1OiBmZmZm
-ODgwMDc5NTA1OWY0DQpbICAgMzIuMzU2MDAwXSBGUzogIDAwMDA3ZjVlMzZk
-ODQ3MDAoMDAwMCkgR1M6ZmZmZjg4MDA3ZjQwMDAwMCgwMDAwKSBrbmxHUzow
-MDAwMDAwMDAwMDAwMDAwDQpbICAgMzIuMzU2MDAwXSBDUzogIDAwMTAgRFM6
-IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAwMDAwMDgwMDUwMDNiDQpbICAgMzIu
-MzU2MDAwXSBDUjI6IDAwMDAwMDAwMDAwMDAzZmMgQ1IzOiAwMDAwMDAwMDc4
-MmIxMDAwIENSNDogMDAwMDAwMDAwMDA0MDZmMA0KWyAgIDMyLjM1NjAwMF0g
-RFIwOiAwMDAwMDAwMDAwMDAwMDAwIERSMTogMDAwMDAwMDAwMDAwMDAwMCBE
-UjI6IDAwMDAwMDAwMDAwMDAwMDANClsgICAzMi4zNTYwMDBdIERSMzogMDAw
-MDAwMDAwMDAwMDAwMCBEUjY6IDAwMDAwMDAwZmZmZjBmZjAgRFI3OiAwMDAw
-MDAwMDAwMDAwNDAwDQpbICAgMzIuMzU2MDAwXSBQcm9jZXNzIG1vZHByb2Jl
-IChwaWQ6IDE0OTUsIHRocmVhZGluZm8gZmZmZjg4MDA3OTUwNDAwMCwgdGFz
-ayBmZmZmODgwMDc4NjBiYTgwKQ0KWyAgIDMyLjM1NjAwMF0gU3RhY2s6DQpb
-ICAgMzIuMzU2MDAwXSAgZmZmZjg4MDA3OGJiODZkMCAwMDAwMDAwMDAwMDAw
-M2M4IDAwMDAwMDAwMDAwMDAzZTggMDAwMDAwMDBiMGIwYjBiMA0KWyAgIDMy
-LjM1NjAwMF0gIGZmZmY4ODAwNzk1MDVhMjggZmZmZmZmZmZhMDMxNzdjYSBm
-ZmZmODgwMDc5NTA1YTM3IDAwMDAwMDAwMDAwMDAwMDENClsgICAzMi4zNTYw
-MDBdICBmZmZmODgwMDc5NTA1YTE4IDAwMDAwMDAwMDAwMDAyNDYgMDAwMDAw
-MDAwMDAwMDAwMCAwMDAwMDAwMDAwMDAwMDAwDQpbICAgMzIuMzU2MDAwXSBD
-YWxsIFRyYWNlOg0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmZhMDMxNzdj
-YT5dIGRybV9tb2RlX29iamVjdF9nZXQrMHgzZC8weGEzIFtkcm1dDQpbICAg
-MzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEwMzE5N2QyPl0gZHJtX3Byb3BlcnR5
-X2NyZWF0ZSsweDVlLzB4YzQgW2RybV0NClsgICAzMi4zNTYwMDBdICBbPGZm
-ZmZmZmZmYTAzNzBmODI+XSBpbnRlbF9zZHZvX2R2aV9pbml0KzB4MTUyLzB4
-MWI2IFtpOTE1XQ0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmZhMDM3MTJk
-ZD5dIGludGVsX3Nkdm9faW5pdCsweDJmNy8weDZhMiBbaTkxNV0NClsgICAz
-Mi4zNTYwMDBdICBbPGZmZmZmZmZmYTAzNjhkNmI+XSBpbnRlbF9tb2Rlc2V0
-X2luaXQrMHg4ZWMvMHhjNzEgW2k5MTVdDQpbICAgMzIuMzU2MDAwXSAgWzxm
-ZmZmZmZmZmEwMzU0NjEzPl0gaTkxNV9kcml2ZXJfbG9hZCsweGM2Yy8weGQ5
-OCBbaTkxNV0NClsgICAzMi4zNTYwMDBdICBbPGZmZmZmZmZmODExZTQ1N2Y+
-XSA/IGtvYmpfYmNhc3RfZmlsdGVyKzB4MC8weDRiDQpbICAgMzIuMzU2MDAw
-XSAgWzxmZmZmZmZmZmEwMzE0ZDRmPl0gZHJtX2dldF9wY2lfZGV2KzB4MTYz
-LzB4MjY4IFtkcm1dDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEwMzdh
-NTJkPl0gaTkxNV9wY2lfcHJvYmUrMHgxMC8weDEyZiBbaTkxNV0NClsgICAz
-Mi4zNTYwMDBdICBbPGZmZmZmZmZmODExZjllMzM+XSBsb2NhbF9wY2lfcHJv
-YmUrMHg0OC8weDkxDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZjgxMWZh
-YmFlPl0gcGNpX2RldmljZV9wcm9iZSsweDYwLzB4OGYNClsgICAzMi4zNTYw
-MDBdICBbPGZmZmZmZmZmODEyNzZiYjk+XSA/IGRyaXZlcl9zeXNmc19hZGQr
-MHg2Yi8weDkwDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZjgxMjc2ZDBj
-Pl0gZHJpdmVyX3Byb2JlX2RldmljZSsweGIyLzB4MTRjDQpbICAgMzIuMzU2
-MDAwXSAgWzxmZmZmZmZmZjgxMjc2ZGZlPl0gX19kcml2ZXJfYXR0YWNoKzB4
-NTgvMHg3Yw0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmY4MTI3NmRhNj5d
-ID8gX19kcml2ZXJfYXR0YWNoKzB4MC8weDdjDQpbICAgMzIuMzU2MDAwXSAg
-WzxmZmZmZmZmZjgxMjc2MzI4Pl0gYnVzX2Zvcl9lYWNoX2RldisweDRlLzB4
-ODMNClsgICAzMi4zNTYwMDBdICBbPGZmZmZmZmZmODEyNzZiNGM+XSBkcml2
-ZXJfYXR0YWNoKzB4MTkvMHgxYg0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZm
-ZmY4MTI3NjdhYT5dIGJ1c19hZGRfZHJpdmVyKzB4YjEvMHgxZmYNClsgICAz
-Mi4zNTYwMDBdICBbPGZmZmZmZmZmODEyNzcwZDk+XSBkcml2ZXJfcmVnaXN0
-ZXIrMHg5OS8weDEwYQ0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmY4MTFm
-YWRmZT5dIF9fcGNpX3JlZ2lzdGVyX2RyaXZlcisweDUzLzB4YzMNClsgICAz
-Mi4zNTYwMDBdICBbPGZmZmZmZmZmYTAzMTRlODg+XSBkcm1fcGNpX2luaXQr
-MHgzNC8weDlhIFtkcm1dDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEw
-MzkyMDAwPl0gPyBpOTE1X2luaXQrMHgwLzB4OTYgW2k5MTVdDQpbICAgMzIu
-MzU2MDAwXSAgWzxmZmZmZmZmZmEwMzBlNmRkPl0gZHJtX2luaXQrMHg1ZC8w
-eDYxIFtkcm1dDQpbICAgMzIuMzU2MDAwXSAgWzxmZmZmZmZmZmEwMzkyMDk0
-Pl0gaTkxNV9pbml0KzB4OTQvMHg5NiBbaTkxNV0NClsgICAzMi4zNTYwMDBd
-ICBbPGZmZmZmZmZmODEwMDAyMTA+XSBkb19vbmVfaW5pdGNhbGwrMHg3YS8w
-eDEyOQ0KWyAgIDMyLjM1NjAwMF0gIFs8ZmZmZmZmZmY4MTA1ZWUwOD5dIHN5
-c19pbml0X21vZHVsZSsweDljLzB4MWRjDQpbICAgMzIuMzU2MDAwXSAgWzxm
-ZmZmZmZmZjgxMDAyOTNiPl0gc3lzdGVtX2NhbGxfZmFzdHBhdGgrMHgxNi8w
-eDFiDQpbICAgMzIuMzU2MDAwXSBDb2RlOiA0OCA4NSBjMCA3NSAwNCAzMSBj
-MCBlYiAyZCA0YyA4OSBlZiBlOCA1MiBiZCAxZiAwMCA0OCA4YiA1MyAwOCA0
-OCA4OSBjNiA0OSA4OSA1NiAwOCA0YyA4OSBlZiA0YyA4OSA3MyAwOCBmZiA0
-MyAxNCBlOCA3MCBiZCAxZiAwMCA8ODM+IDdiIDE0IDBiIDc2IGJkIGI4IDAx
-IDAwIDAwIDAwIDViIDQxIDVjIDQxIDVkIDQxIDVlIGM5IGMzIDU1IA0KWyAg
-IDMyLjM1NjAwMF0gUklQICBbPGZmZmZmZmZmODExZTMxNTA+XSBpZHJfcHJl
-X2dldCsweDViLzB4NmYNClsgICAzMi4zNTYwMDBdICBSU1AgPGZmZmY4ODAw
-Nzk1MDU5YTg+DQpbICAgMzIuMzU2MDAwXSBDUjI6IDAwMDAwMDAwMDAwMDAz
-ZmMNClsgICAzMi4zNjMyNDldIC0tLVsgZW5kIHRyYWNlIDcxZWZhNWYxYzQ0
-ZjlhM2MgXS0tLQ0K
-
---683755520-406772781-1292410101=:4797--
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
