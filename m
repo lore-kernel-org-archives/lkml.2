@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab0LOQvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:51:40 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:38756 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0LOQvj convert rfc822-to-8bit (ORCPT
+	id S1753132Ab0LOQvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:51:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46353 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751541Ab0LOQvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:51:39 -0500
-Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
- of regular atomics
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <4D08EDA9.3090801@kernel.org>
-References: <20101214162842.542421046@linux.com>
-	 <20101214162854.218751478@linux.com>  <4D08EDA9.3090801@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 15 Dec 2010 17:50:39 +0100
-Message-ID: <1292431839.2708.30.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 15 Dec 2010 11:51:50 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] platform/x86: Consistently select LEDS Kconfig options
+Date: Wed, 15 Dec 2010 16:51:37 +0000
+Message-Id: <1292431897-13770-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-15 at 17:32 +0100, Tejun Heo wrote:
-> On 12/14/2010 05:28 PM, Christoph Lameter wrote:
-> > The irq work queue is a per cpu object and it is sufficient for
-> > synchronization if per cpu atomics are used. Doing so simplifies
-> > the code and reduces the overhead of the code.
-> > 
-> > Before:
-> > 
-> > christoph@linux-2.6$ size kernel/irq_work.o
-> >    text	   data	    bss	    dec	    hex	filename
-> >     451	      8	      1	    460	    1cc	kernel/irq_work.o
-> > 
-> > After:
-> > 
-> > christoph@linux-2.6$ size kernel/irq_work.o 
-> >    text	   data	    bss	    dec	    hex	filename
-> >     438	      8	      1	    447	    1bf	kernel/irq_work.o
-> > 
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> Peter, can you please ack this one?
+Currently the x86 platform devices are not consistent about selecting
+or depending on the LEDs Kconfig variables, and this inconsistency
+leads to Kconfig getting upset and refusing to offer LEDs (even on
+non-x86 platforms):
 
-I guess so, I don't much like the bare preempt_disable/enable there, and
-I'm wondering, aren't %fs prefixed insn slower than regular insn? Does
-it really pay to avoid this one address computation if there's multiple
-users in a function. %fs prefixes do take another byte, so it will also
-result in larger code at some point.
+drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
+drivers/platform/x86/Kconfig:422:       symbol EEEPC_WMI depends on ACPI_WMI
+drivers/platform/x86/Kconfig:438:       symbol ACPI_WMI is selected by ACER_WMI
+drivers/platform/x86/Kconfig:18:        symbol ACER_WMI depends on LEDS_CLASS
+drivers/leds/Kconfig:10:        symbol LEDS_CLASS is selected by EEEPC_WMI
+
+Fix this by always selecting rather than depending on the symbols as
+slightly more drivers use this approach already and it seems more
+user friendly.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/platform/x86/Kconfig |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 4c7f8b9..fa18c25 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -18,8 +18,8 @@ if X86_PLATFORM_DEVICES
+ config ACER_WMI
+ 	tristate "Acer WMI Laptop Extras"
+ 	depends on ACPI
+-	depends on LEDS_CLASS
+-	depends on NEW_LEDS
++	select LEDS_CLASS
++	select NEW_LEDS
+ 	depends on BACKLIGHT_CLASS_DEVICE
+ 	depends on SERIO_I8042
+ 	depends on RFKILL || RFKILL = n
+@@ -513,8 +513,8 @@ config TOPSTAR_LAPTOP
+ config ACPI_TOSHIBA
+ 	tristate "Toshiba Laptop Extras"
+ 	depends on ACPI
+-	depends on LEDS_CLASS
+-	depends on NEW_LEDS
++	select LEDS_CLASS
++	select NEW_LEDS
+ 	depends on BACKLIGHT_CLASS_DEVICE
+ 	depends on INPUT
+ 	depends on RFKILL || RFKILL = n
+-- 
+1.7.1
+
