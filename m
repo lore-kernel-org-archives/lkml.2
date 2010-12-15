@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab0LORhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:37:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38296 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab0LORhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:37:23 -0500
-Message-ID: <4D08FC9A.8040702@zytor.com>
-Date: Wed, 15 Dec 2010 09:36:26 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1753094Ab0LORkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:40:11 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:53246 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab0LORkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 12:40:09 -0500
+Message-ID: <4D08FD74.4060403@canonical.com>
+Date: Wed, 15 Dec 2010 12:40:04 -0500
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg double V1 2/4] x86: this_cpu_cmpxchg_double()
- support
-References: <20101214174847.887713690@linux.com> <20101214174900.659284593@linux.com> <4D080FDC.7030005@zytor.com> <4D081225.8000007@zytor.com> <alpine.DEB.2.00.1012151011550.12186@router.home> <alpine.DEB.2.00.1012151020030.12470@router.home>
-In-Reply-To: <alpine.DEB.2.00.1012151020030.12470@router.home>
+To: Henrik Rydberg <rydberg@bitmath.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
+References: <4D0897F3.7040500@bitmath.org>
+In-Reply-To: <4D0897F3.7040500@bitmath.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 08:20 AM, Christoph Lameter wrote:
-> Better comments:
+On 12/15/2010 05:26 AM, Henrik Rydberg wrote:
+>>> Ping has touched upon this subject as well, from the pen & touch perspective.
+>>> Generally, some ABS axes are actually enumerations, for which we have no
+>>> direct abstraction. If we had a way to declare the used values for such
+>>> enumerations, it would resolve these and possibly other issues.
 > 
-> Subject: Fixup comments for cmpxchg16b_cpuops_emu
+>> I think that presence of pen/touch can be detected by having
+>> BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
+>> finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
+>> this is another case where we should employ the proposed device flags?
 > 
-> Indicate that the sematics are not fullly atomic but just per cpu atomic.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  arch/x86/lib/cmpxchg16b_emu.S |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> Index: linux-2.6/arch/x86/lib/cmpxchg16b_emu.S
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/lib/cmpxchg16b_emu.S	2010-12-15 10:18:18.000000000 -0600
-> +++ linux-2.6/arch/x86/lib/cmpxchg16b_emu.S	2010-12-15 10:19:11.000000000 -0600
-> @@ -30,6 +30,10 @@ CFI_STARTPROC
->  # Emulate 'cmpxchg16b %gs:(%rsi)' except we return the result in
->  # al not via the ZF. Caller will access al to get result.
->  #
-> +# Note that this is only useful for a cpuops operation. Meaning that we
-> +# do *not* have a fully atomic operation but just an operation that is
-> +# *atomic* on a single cpu (as provided by the this_cpu_xx class of macros)
-> +#
->  cmpxchg16b_cpuops_emu:
->  	pushf
->  	cli
-> 
+> Yes. Having something like INPUT_QUIRK_SEMI_MT might be enough, and we could
+> drop the whole MT_TOOL_ENVELOPE circus. Chase, Peter, Chris, would you be
+> comfortable with such a solution?
 
-Could we rename it this_cpu_cmpxchg16b_emu or something like that?
+That sounds like a good solution to me. I believe it would resolve all
+the issues I had.
 
-	-hpa
+As I attempted to write up more documentation, I thought of the
+following. What do you think?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+With regards to partial MT devices, if the device provides a single
+valued property, such as pressure and tool type for synaptics, it may
+only be provided through the traditional property semantics, i.e.
+ABS_PRESSURE and BTN_TOOL_*. If the device provides multiple values for
+a property, then ABS_MT_* types may be used as well to provide up to two
+values, though the client should understand there's no direct
+correlation between the slot's coordinates and the property. I could see
+this being used to provide info on multiple tool types or a high and low
+pressure.
 
+Enforcing the above behaviour provides even more information about the
+capabilities of the device based solely on the evdev codes published.
+
+Thanks,
+
+-- Chase
