@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab0LOUju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:39:50 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:10693 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab0LOUio (ORCPT
+	id S1755316Ab0LOUkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:40:14 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10405 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab0LOUim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 15:38:44 -0500
-Date: Wed, 15 Dec 2010 21:34:31 +0100
+	Wed, 15 Dec 2010 15:38:42 -0500
+Date: Wed, 15 Dec 2010 21:34:28 +0100
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv8 11/12] mm: cma: Test device and application added
+Subject: [PATCHv8 08/12] mm: MIGRATE_CMA migration type added
 In-reply-to: <cover.1292443200.git.m.nazarewicz@samsung.com>
 To: Michal Nazarewicz <mina86@mina86.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
@@ -20,7 +20,7 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
         Mel Gorman <mel@csn.ul.ie>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         linux-mm@kvack.org
-Message-id: <24ee8d41cc16cb5a0f1836754ca4d1c17abfb4d9.1292443200.git.m.nazarewicz@samsung.com>
+Message-id: <cf5d348eabe3feeda65a2ee93467e29a674c6690.1292443200.git.m.nazarewicz@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.2.3
 Content-type: TEXT/PLAIN
@@ -30,815 +30,324 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a "cma" misc device which lets user space use the
-CMA API.  This device is meant for testing.  A testing application
-is also provided.
+The MIGRATE_CMA migration type has two main characteristics:
+(i) only movable pages can be allocated from MIGRATE_CMA
+pageblocks and (ii) page allocator will never change migration
+type of MIGRATE_CMA pageblocks.
+
+This guarantees that page in a MIGRATE_CMA page block can
+always be migrated somewhere else (unless there's no memory left
+in the system).
+
+It is designed to be used with Contiguous Memory Allocator
+(CMA) for allocating big chunks (eg. 10MiB) of physically
+contiguous memory.  Once driver requests contiguous memory,
+CMA will migrate pages from MIGRATE_CMA pageblocks.
+
+To minimise number of migrations, MIGRATE_CMA migration type
+is the last type tried when page allocator falls back to other
+migration types then requested.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/misc/Kconfig   |   28 +++
- drivers/misc/Makefile  |    1 +
- drivers/misc/cma-dev.c |  238 +++++++++++++++++++++++++
- include/linux/cma.h    |   29 +++
- tools/cma/cma-test.c   |  457 ++++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 753 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/cma-dev.c
- create mode 100644 tools/cma/cma-test.c
+ include/linux/mmzone.h |   43 ++++++++++++++++++++----
+ mm/Kconfig             |   14 ++++++++
+ mm/compaction.c        |   10 +++++
+ mm/internal.h          |    3 ++
+ mm/page_alloc.c        |   87 +++++++++++++++++++++++++++++++++++++----------
+ 5 files changed, 131 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 1e1a4be..b90e36b 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -458,4 +458,32 @@ source "drivers/misc/cb710/Kconfig"
- source "drivers/misc/iwmc3200top/Kconfig"
- source "drivers/misc/ti-st/Kconfig"
- 
-+# Selet this for platforms/machines that implemented code making
-+# the CMA test device usable.
-+config CMA_DEVICE_POSSIBLE
-+	bool
-+
-+config CMA_DEVICE
-+	tristate "CMA test device (DEVELOPEMENT)"
-+	depends on CMA && CMA_DEVICE_POSSIBLE
-+	help
-+	  The CMA misc device allows allocating contiguous memory areas
-+	  from user space.  This is for testing of the CMA framework.
-+
-+	  If unsure, say "n"
-+
-+# Selet this for platforms/machines that implemented code making
-+# the CMA test device usable.
-+config CMA_DEVICE_POSSIBLE
-+	bool
-+
-+config CMA_DEVICE
-+	tristate "CMA test device (DEVELOPEMENT)"
-+	depends on CMA && CMA_DEVICE_POSSIBLE
-+	help
-+	  The CMA misc device allows allocating contiguous memory areas
-+	  from user space.  This is for testing of the CMA framework.
-+
-+	  If unsure, say "n"
-+
- endif # MISC_DEVICES
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 98009cc..f8eadd4 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -42,3 +42,4 @@ obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
- obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
- obj-y				+= ti-st/
- obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
-+obj-$(CONFIG_CMA_DEVICE)	+= cma-dev.o
-diff --git a/drivers/misc/cma-dev.c b/drivers/misc/cma-dev.c
-new file mode 100644
-index 0000000..6c36064
---- /dev/null
-+++ b/drivers/misc/cma-dev.c
-@@ -0,0 +1,238 @@
-+/*
-+ * Contiguous Memory Allocator userspace driver
-+ * Copyright (c) 2010 by Samsung Electronics.
-+ * Written by Michal Nazarewicz (m.nazarewicz@samsung.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of the
-+ * License or (at your optional) any later version of the license.
-+ */
-+
-+#define pr_fmt(fmt) "cma: " fmt
-+
-+#ifdef CONFIG_CMA_DEBUG
-+#  define DEBUG
-+#endif
-+
-+#include <linux/errno.h>       /* Error numbers */
-+#include <linux/err.h>         /* IS_ERR_VALUE() */
-+#include <linux/fs.h>          /* struct file */
-+#include <linux/mm.h>          /* Memory stuff */
-+#include <linux/mman.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>      /* Standard module stuff */
-+#include <linux/device.h>      /* struct device, dev_dbg() */
-+#include <linux/types.h>       /* Just to be safe ;) */
-+#include <linux/uaccess.h>     /* __copy_{to,from}_user */
-+#include <linux/miscdevice.h>  /* misc_register() and company */
-+
-+#include <linux/cma.h>
-+
-+#include <plat/cma-stub.h>
-+
-+static int  cma_file_open(struct inode *inode, struct file *file);
-+static int  cma_file_release(struct inode *inode, struct file *file);
-+static long cma_file_ioctl(struct file *file, unsigned cmd, unsigned long arg);
-+static int  cma_file_mmap(struct file *file, struct vm_area_struct *vma);
-+
-+static struct miscdevice cma_miscdev = {
-+	.minor = MISC_DYNAMIC_MINOR,
-+	.name  = "cma",
-+	.fops  = &(const struct file_operations) {
-+		.owner          = THIS_MODULE,
-+		.open           = cma_file_open,
-+		.release        = cma_file_release,
-+		.unlocked_ioctl = cma_file_ioctl,
-+		.mmap           = cma_file_mmap,
-+	},
-+};
-+#define cma_dev (cma_miscdev.this_device)
-+
-+struct cma_private_data {
-+	struct cm	*cm;
-+	unsigned long	size;
-+	unsigned long	phys;
-+};
-+
-+static int  cma_file_open(struct inode *inode, struct file *file)
-+{
-+	struct cma_private_data *prv;
-+
-+	dev_dbg(cma_dev, "%s(%p)\n", __func__, (void *)file);
-+
-+	if (!cma_ctx)
-+		return -EOPNOTSUPP;
-+
-+	prv = kzalloc(sizeof *prv, GFP_KERNEL);
-+	if (!prv)
-+		return -ENOMEM;
-+
-+	file->private_data = prv;
-+
-+	return 0;
-+}
-+
-+static int  cma_file_release(struct inode *inode, struct file *file)
-+{
-+	struct cma_private_data *prv = file->private_data;
-+
-+	dev_dbg(cma_dev, "%s(%p)\n", __func__, (void *)file);
-+
-+	if (prv->cm) {
-+		cm_unpin(prv->cm);
-+		cm_free(prv->cm);
-+	}
-+	kfree(prv);
-+
-+	return 0;
-+}
-+
-+static long cma_file_ioctl_req(struct cma_private_data *prv, unsigned long arg)
-+{
-+	struct cma_alloc_request req;
-+	struct cm *cm;
-+
-+	dev_dbg(cma_dev, "%s()\n", __func__);
-+
-+	if (!arg)
-+		return -EINVAL;
-+
-+	if (copy_from_user(&req, (void *)arg, sizeof req))
-+		return -EFAULT;
-+
-+	if (req.magic != CMA_MAGIC)
-+		return -ENOTTY;
-+
-+	/* May happen on 32 bit system. */
-+	if (req.size > ~(unsigned long)0 || req.alignment > ~(unsigned long)0)
-+		return -EINVAL;
-+
-+	req.size = PAGE_ALIGN(req.size);
-+	if (req.size > ~(unsigned long)0)
-+		return -EINVAL;
-+
-+	cm = cm_alloc(cma_ctx, req.size, req.alignment);
-+	if (IS_ERR(cm))
-+		return PTR_ERR(cm);
-+
-+	prv->phys = cm_pin(cm);
-+	prv->size = req.size;
-+	req.start = prv->phys;
-+	if (copy_to_user((void *)arg, &req, sizeof req)) {
-+		cm_free(cm);
-+		return -EFAULT;
-+	}
-+	prv->cm    = cm;
-+
-+	dev_dbg(cma_dev, "allocated %p@%p\n",
-+		(void *)prv->size, (void *)prv->phys);
-+
-+	return 0;
-+}
-+
-+static long
-+cma_file_ioctl_pattern(struct cma_private_data *prv, unsigned long arg)
-+{
-+	unsigned long *_it, *it, *end, v;
-+
-+	dev_dbg(cma_dev, "%s(%s)\n", __func__, arg ? "fill" : "verify");
-+
-+	_it = phys_to_virt(prv->phys);
-+	end = _it + prv->size / sizeof *_it;
-+
-+	if (arg)
-+		for (v = 0, it = _it; it != end; ++v, ++it)
-+			*it = v;
-+
-+	for (v = 0, it = _it; it != end; ++v, ++it)
-+		if (*it != v)
-+			goto error;
-+
-+	return prv->size;
-+
-+error:
-+	dev_dbg(cma_dev, "at %p + %x got %lx, expected %lx\n",
-+		(void *)_it, (it - _it) * sizeof *it, *it, v);
-+	print_hex_dump(KERN_DEBUG, "cma: ", DUMP_PREFIX_ADDRESS,
-+		       16, sizeof *it, it,
-+		       min_t(size_t, 128, (end - it) * sizeof *it), 0);
-+	return (it - _it) * sizeof *it;
-+}
-+
-+static long cma_file_ioctl_dump(struct cma_private_data *prv, unsigned long len)
-+{
-+	unsigned long *it;
-+
-+	dev_dbg(cma_dev, "%s(%p)\n", __func__, (void *)len);
-+
-+	it    = phys_to_virt(prv->phys);
-+	len   = min(len & ~(sizeof *it - 1), prv->size);
-+	print_hex_dump(KERN_DEBUG, "cma: ", DUMP_PREFIX_ADDRESS,
-+		       16, sizeof *it, it, len, 0);
-+
-+	return 0;
-+}
-+
-+static long cma_file_ioctl(struct file *file, unsigned cmd, unsigned long arg)
-+{
-+	struct cma_private_data *prv = file->private_data;
-+
-+	dev_dbg(cma_dev, "%s(%p)\n", __func__, (void *)file);
-+
-+	if ((cmd == IOCTL_CMA_ALLOC) != !prv->cm)
-+		return -EBADFD;
-+
-+	switch (cmd) {
-+	case IOCTL_CMA_ALLOC:
-+		return cma_file_ioctl_req(prv, arg);
-+
-+	case IOCTL_CMA_PATTERN:
-+		return cma_file_ioctl_pattern(prv, arg);
-+
-+	case IOCTL_CMA_DUMP:
-+		return cma_file_ioctl_dump(prv, arg);
-+
-+	default:
-+		return -ENOTTY;
-+	}
-+}
-+
-+static int  cma_file_mmap(struct file *file, struct vm_area_struct *vma)
-+{
-+	struct cma_private_data *prv = file->private_data;
-+	unsigned long pgoff, offset, length;
-+
-+	dev_dbg(cma_dev, "%s(%p)\n", __func__, (void *)file);
-+
-+	if (!prv->cm)
-+		return -EBADFD;
-+
-+	pgoff  = vma->vm_pgoff;
-+	offset = pgoff << PAGE_SHIFT;
-+	length = vma->vm_end - vma->vm_start;
-+
-+	if (offset          >= prv->size
-+	 || length          >  prv->size
-+	 || offset + length >  prv->size)
-+		return -ENOSPC;
-+
-+	return remap_pfn_range(vma, vma->vm_start,
-+			       __phys_to_pfn(prv->phys) + pgoff,
-+			       length, vma->vm_page_prot);
-+}
-+
-+static int __init cma_dev_init(void)
-+{
-+	int ret = misc_register(&cma_miscdev);
-+	pr_debug("miscdev: register returned: %d\n", ret);
-+	return ret;
-+}
-+module_init(cma_dev_init);
-+
-+static void __exit cma_dev_exit(void)
-+{
-+	dev_dbg(cma_dev, "deregisterring\n");
-+	misc_deregister(&cma_miscdev);
-+}
-+module_exit(cma_dev_exit);
-diff --git a/include/linux/cma.h b/include/linux/cma.h
-index 8952531..fe5d2ba 100644
---- a/include/linux/cma.h
-+++ b/include/linux/cma.h
-@@ -89,6 +89,35 @@
-  *   to be called after SLAB is initialised.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 39c24eb..cc798b1 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -35,13 +35,37 @@
   */
+ #define PAGE_ALLOC_COSTLY_ORDER 3
  
-+#include <linux/ioctl.h>
-+#include <linux/types.h>
-+
-+
-+#define CMA_MAGIC (('c' << 24) | ('M' << 16) | ('a' << 8) | 0x42)
-+
-+/**
-+ * An information about area exportable to user space.
-+ * @magic:	must always be CMA_MAGIC.
-+ * @_pad:	padding (ignored).
-+ * @size:	size of the chunk to allocate.
-+ * @alignment:	desired alignment of the chunk (must be power of two or zero).
-+ * @start:	when ioctl() finishes this stores physical address of the chunk.
-+ */
-+struct cma_alloc_request {
-+	__u32 magic;
-+	__u32 _pad;
-+
-+	/* __u64 to be compatible accross 32 and 64 bit systems. */
-+	__u64 size;
-+	__u64 alignment;
-+	__u64 start;
+-#define MIGRATE_UNMOVABLE     0
+-#define MIGRATE_RECLAIMABLE   1
+-#define MIGRATE_MOVABLE       2
+-#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
+-#define MIGRATE_RESERVE       3
+-#define MIGRATE_ISOLATE       4 /* can't allocate from here */
+-#define MIGRATE_TYPES         5
++enum {
++	MIGRATE_UNMOVABLE,
++	MIGRATE_RECLAIMABLE,
++	MIGRATE_MOVABLE,
++	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
++	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
++#ifdef CONFIG_MIGRATE_CMA
++	/*
++	 * MIGRATE_CMA migration type is designed to mimic the way
++	 * ZONE_MOVABLE works.  Only movable pages can be allocated
++	 * from MIGRATE_CMA pageblocks and page allocator never
++	 * implicitly change migration type of MIGRATE_CMA pageblock.
++	 *
++	 * The way to use it is to change migratetype of a range of
++	 * pageblocks to MIGRATE_CMA which can be done by
++	 * __free_pageblock_cma() function.  What is important though
++	 * is that a range of pageblocks must be aligned to
++	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
++	 * a single pageblock.
++	 */
++	MIGRATE_CMA,
++#endif
++	MIGRATE_ISOLATE,	/* can't allocate from here */
++	MIGRATE_TYPES
 +};
 +
-+#define IOCTL_CMA_ALLOC     _IOWR('p', 0, struct cma_alloc_request)
-+#define IOCTL_CMA_PATTERN   _IO('p', 1)
-+#define IOCTL_CMA_DUMP      _IO('p', 2)
-+
-+
- /***************************** Kernel level API *****************************/
++#ifdef CONFIG_MIGRATE_CMA
++#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
++#else
++#  define is_migrate_cma(migratetype) false
++#endif
  
- #if defined __KERNEL__ && defined CONFIG_CMA
-diff --git a/tools/cma/cma-test.c b/tools/cma/cma-test.c
-new file mode 100644
-index 0000000..6275ef5
---- /dev/null
-+++ b/tools/cma/cma-test.c
-@@ -0,0 +1,457 @@
+ #define for_each_migratetype_order(order, type) \
+ 	for (order = 0; order < MAX_ORDER; order++) \
+@@ -54,6 +78,11 @@ static inline int get_pageblock_migratetype(struct page *page)
+ 	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+ }
+ 
++static inline bool is_pageblock_cma(struct page *page)
++{
++	return is_migrate_cma(get_pageblock_migratetype(page));
++}
++
+ struct free_area {
+ 	struct list_head	free_list[MIGRATE_TYPES];
+ 	unsigned long		nr_free;
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 2beab4d..32fb085 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -343,6 +343,20 @@ config CMA
+ 
+ 	  For more information see <include/linux/cma.h>.  If unsure, say "n".
+ 
++config MIGRATE_CMA
++	bool "Use MIGRATE_CMA migratetype"
++	depends on CMA
++	default y
++	help
++	  This enables the use the MIGRATE_CMA migrate type in the CMA.
++	  MIGRATE_CMA lets CMA work on almost arbitrary memory range and
++	  not only inside ZONE_MOVABLE.
++
++	  This option can also be selected by code that uses MIGRATE_CMA
++	  even if CMA is not present.
++
++	  If unsure, say "y".
++
+ config CMA_DEBUG
+ 	bool "CMA debug messages (DEVELOPEMENT)"
+ 	depends on CMA
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 4d709ee..c5e404b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -113,6 +113,16 @@ static bool suitable_migration_target(struct page *page)
+ 	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
+ 		return false;
+ 
++	/* Keep MIGRATE_CMA alone as well. */
++	/*
++	 * XXX Revisit.  We currently cannot let compaction touch CMA
++	 * pages since compaction insists on changing their migration
++	 * type to MIGRATE_MOVABLE (see split_free_page() called from
++	 * isolate_freepages_block() above).
++	 */
++	if (is_migrate_cma(migratetype))
++		return false;
++
+ 	/* If the page is a large free page, then allow migration */
+ 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+ 		return true;
+diff --git a/mm/internal.h b/mm/internal.h
+index dedb0af..cc24e74 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -49,6 +49,9 @@ extern void putback_lru_page(struct page *page);
+  * in mm/page_alloc.c
+  */
+ extern void __free_pages_bootmem(struct page *page, unsigned int order);
++#ifdef CONFIG_MIGRATE_CMA
++extern void __free_pageblock_cma(struct page *page);
++#endif
+ extern void prep_compound_page(struct page *page, unsigned long order);
+ #ifdef CONFIG_MEMORY_FAILURE
+ extern bool is_free_buddy_page(struct page *page);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 008a6e8..e706282 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -717,6 +717,30 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
+ 	}
+ }
+ 
++#ifdef CONFIG_MIGRATE_CMA
++
 +/*
-+ * cma-test.c -- CMA testing application
-+ *
-+ * Copyright (C) 2010 Samsung Electronics
-+ *                    Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ * Free whole pageblock and set it's migration type to MIGRATE_CMA.
 + */
-+
-+/* $(CROSS_COMPILE)gcc -Wall -Wextra -g -o cma-test cma-test.c  */
-+
-+#include <sys/ioctl.h>
-+#include <sys/stat.h>
-+#include <sys/types.h>
-+#include <sys/mman.h>
-+
-+#include <fcntl.h>
-+#include <unistd.h>
-+
-+#include <ctype.h>
-+#include <errno.h>
-+#include <limits.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <stdint.h>
-+
-+#include <linux/cma.h>
-+
-+struct chunk {
-+	struct chunk *next, *prev;
-+	int fd;
-+	unsigned long size;
-+	unsigned long start;
-+};
-+
-+static struct chunk root = {
-+	.next = &root,
-+	.prev = &root,
-+};
-+
-+#define for_each(a) for (a = root.next; a != &root; a = a->next)
-+
-+static struct chunk *chunk_create(const char *prefix)
++void __init __free_pageblock_cma(struct page *page)
 +{
-+	struct chunk *chunk;
-+	int fd;
++	struct page *p = page;
++	unsigned i = pageblock_nr_pages;
 +
-+	chunk = malloc(sizeof *chunk);
-+	if (!chunk) {
-+		fprintf(stderr, "%s: %s\n", prefix, strerror(errno));
-+		return NULL;
-+	}
-+
-+	fd = open("/dev/cma", O_RDWR);
-+	if (fd < 0) {
-+		fprintf(stderr, "%s: /dev/cma: %s\n", prefix, strerror(errno));
-+		return NULL;
-+	}
-+
-+	chunk->prev = chunk;
-+	chunk->next = chunk;
-+	chunk->fd   = fd;
-+	return chunk;
-+}
-+
-+static void chunk_destroy(struct chunk *chunk)
-+{
-+	chunk->prev->next = chunk->next;
-+	chunk->next->prev = chunk->prev;
-+	close(chunk->fd);
-+}
-+
-+static void chunk_add(struct chunk *chunk)
-+{
-+	chunk->next = &root;
-+	chunk->prev = root.prev;
-+	root.prev->next = chunk;
-+	root.prev = chunk;
-+}
-+
-+/* Parsing helpers  */
-+#define SKIP_SPACE(ch) do { while (isspace(*(ch))) ++(ch); } while (0)
-+
-+static int memparse(char *ptr, char **retptr, unsigned long *ret)
-+{
-+	unsigned long val;
-+
-+	SKIP_SPACE(ptr);
-+
-+	errno = 0;
-+	val = strtoul(ptr, &ptr, 0);
-+	if (errno)
-+		return -1;
-+
-+	switch (*ptr) {
-+	case 'G':
-+	case 'g':
-+		val <<= 10;
-+	case 'M':
-+	case 'm':
-+		val <<= 10;
-+	case 'K':
-+	case 'k':
-+		val <<= 10;
-+		++ptr;
-+	}
-+
-+	if (retptr) {
-+		SKIP_SPACE(ptr);
-+		*retptr = ptr;
-+	}
-+
-+	*ret = val;
-+	return 0;
-+}
-+
-+static void cmd_list(char *name, char *line, int arg)
-+{
-+	struct chunk *chunk;
-+
-+	(void)name; (void)line; (void)arg;
-+
-+	for_each(chunk)
-+		printf("%3d: %p@%p\n", chunk->fd,
-+		       (void *)chunk->size, (void *)chunk->start);
-+}
-+
-+static void cmd_alloc(char *name, char *line, int arg)
-+{
-+	unsigned long size, alignment = 0;
-+	struct cma_alloc_request req;
-+	struct chunk *chunk;
-+	int ret;
-+
-+	(void)arg;
-+
-+	if (memparse(line, &line, &size) < 0 || !size) {
-+		fprintf(stderr, "%s: invalid size\n", name);
-+		return;
-+	}
-+
-+	if (*line == '/')
-+		if (memparse(line, &line, &alignment) < 0) {
-+			fprintf(stderr, "%s: invalid alignment\n", name);
-+			return;
-+		}
-+
-+	SKIP_SPACE(line);
-+	if (*line) {
-+		fprintf(stderr, "%s: unknown argument(s) at the end: %s\n",
-+			name, line);
-+		return;
-+	}
-+
-+	chunk = chunk_create(name);
-+	if (!chunk)
-+		return;
-+
-+	fprintf(stderr, "%s: allocating %p/%p\n", name,
-+		(void *)size, (void *)alignment);
-+
-+	req.magic     = CMA_MAGIC;
-+	req.size      = size;
-+	req.alignment = alignment;
-+	req.start     = 0;
-+
-+	ret = ioctl(chunk->fd, IOCTL_CMA_ALLOC, &req);
-+	if (ret < 0) {
-+		fprintf(stderr, "%s: cma_alloc: %s\n", name, strerror(errno));
-+		chunk_destroy(chunk);
-+	} else {
-+		chunk->size  = req.size;
-+		chunk->start = req.start;
-+		chunk_add(chunk);
-+
-+		printf("%3d: %p@%p\n", chunk->fd,
-+		       (void *)chunk->size, (void *)chunk->start);
-+	}
-+}
-+
-+static struct chunk *_cmd_numbered(char *name, char *line)
-+{
-+	struct chunk *chunk;
-+
-+	SKIP_SPACE(line);
-+
-+	if (*line) {
-+		unsigned long num;
-+
-+		errno = 0;
-+		num = strtoul(line, &line, 10);
-+
-+		if (errno || num > INT_MAX) {
-+			fprintf(stderr, "%s: invalid number\n", name);
-+			return NULL;
-+		}
-+
-+		SKIP_SPACE(line);
-+		if (*line) {
-+			fprintf(stderr,
-+				"%s: unknown arguments at the end: %s\n",
-+				name, line);
-+			return NULL;
-+		}
-+
-+		for_each(chunk)
-+			if (chunk->fd == (int)num)
-+				return chunk;
-+		fprintf(stderr, "%s: no chunk %3lu\n", name, num);
-+		return NULL;
-+
-+	} else {
-+		chunk = root.prev;
-+		if (chunk == &root) {
-+			fprintf(stderr, "%s: no chunks\n", name);
-+			return NULL;
-+		}
-+		return chunk;
-+	}
-+}
-+
-+static void cmd_free(char *name, char *line, int arg)
-+{
-+	struct chunk *chunk = _cmd_numbered(name, line);
-+	(void)arg;
-+	if (chunk) {
-+		fprintf(stderr, "%s: freeing %p@%p\n", name,
-+			(void *)chunk->size, (void *)chunk->start);
-+		chunk_destroy(chunk);
-+	}
-+}
-+
-+static void _cmd_pattern(char *name, unsigned long *ptr, unsigned long size,
-+			  int arg)
-+{
-+	unsigned long *end = ptr + size / sizeof *ptr, *it, v;
-+
-+	if (arg)
-+		for (v = 0, it = ptr; it != end; ++v, ++it)
-+			*it = v;
-+
-+	for (v = 0, it = ptr; it != end && *it == v; ++v, ++it)
-+		/* nop */;
-+
-+	if (it != end)
-+		fprintf(stderr, "%s: at +[%lx] got %lx, expected %lx\n",
-+			name, (unsigned long)(it - ptr) * sizeof *it, *it, v);
-+	else
-+		fprintf(stderr, "%s: done\n", name);
-+}
-+
-+static void _cmd_dump(char *name, uint32_t *ptr)
-+{
-+	unsigned lines = 32, groups;
-+	uint32_t *it = ptr;
-+
++	prefetchw(p);
 +	do {
-+		printf("%s: %04lx:", name,
-+		       (unsigned long)(it - ptr) * sizeof *it);
++		if (--i)
++			prefetchw(p + 1);
++		__ClearPageReserved(p);
++		set_page_count(p, 0);
++	} while (++p, i);
 +
-+		groups = 4;
-+		do {
-+			printf(" %08lx", (unsigned long)*it);
-+			++it;
-+		} while (--groups);
-+
-+		putchar('\n');
-+	} while (--lines);
++	set_page_refcounted(page);
++	set_pageblock_migratetype(page, MIGRATE_CMA);
++	__free_pages(page, pageblock_order);
 +}
 +
-+static void cmd_mapped(char *name, char *line, int arg)
-+{
-+	struct chunk *chunk = _cmd_numbered(name, line);
-+	void *ptr;
-+
-+	if (!chunk)
-+		return;
-+
-+	ptr = mmap(NULL, chunk->size,
-+		   arg != 2 ? PROT_READ | PROT_WRITE : PROT_READ,
-+		   MAP_SHARED, chunk->fd, 0);
-+
-+	if (ptr == (void *)-1) {
-+		fprintf(stderr, "%s: mapping failed: %s\n", name,
-+			strerror(errno));
-+		return;
-+	}
-+
-+	switch (arg) {
-+	case 0:
-+	case 1:
-+		_cmd_pattern(name, ptr, chunk->size, arg);
-+		break;
-+
-+	case 2:
-+		_cmd_dump(name, ptr);
-+	}
-+
-+	munmap(ptr, chunk->size);
-+}
-+
-+static void cmd_kpattern(char *name, char *line, int arg)
-+{
-+	struct chunk *chunk = _cmd_numbered(name, line);
-+	if (chunk) {
-+		int ret;
-+
-+		fprintf(stderr, "%s: requesting kernel to %s %p@%p\n",
-+			name, arg ? "fill" : "verify",
-+			(void *)chunk->size, (void *)chunk->start);
-+
-+		ret = ioctl(chunk->fd, IOCTL_CMA_PATTERN, arg);
-+		if (ret < 0)
-+			fprintf(stderr, "%s: %s\n", name, strerror(errno));
-+		else if ((unsigned long)ret < chunk->size)
-+			fprintf(stderr, "%s: failed at +[%x]\n", name, ret);
++#endif
+ 
+ /*
+  * The order of subdivision here is critical for the IO subsystem.
+@@ -824,11 +848,15 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+  * This array describes the order lists are fallen back to when
+  * the free lists for the desirable migrate type are depleted
+  */
+-static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
++static int fallbacks[MIGRATE_TYPES][4] = {
+ 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
+ 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
++#ifdef CONFIG_MIGRATE_CMA
++	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_CMA    , MIGRATE_RESERVE },
++#else
+ 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+-	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
++#endif
++	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
+ };
+ 
+ /*
+@@ -924,12 +952,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 	/* Find the largest possible block of pages in the other list */
+ 	for (current_order = MAX_ORDER-1; current_order >= order;
+ 						--current_order) {
+-		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
++		for (i = 0; i < ARRAY_SIZE(fallbacks[0]); i++) {
+ 			migratetype = fallbacks[start_migratetype][i];
+ 
+ 			/* MIGRATE_RESERVE handled later if necessary */
+ 			if (migratetype == MIGRATE_RESERVE)
+-				continue;
++				break;
+ 
+ 			area = &(zone->free_area[current_order]);
+ 			if (list_empty(&area->free_list[migratetype]))
+@@ -944,19 +972,29 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 			 * pages to the preferred allocation list. If falling
+ 			 * back for a reclaimable kernel allocation, be more
+ 			 * agressive about taking ownership of free pages
++			 *
++			 * On the other hand, never change migration
++			 * type of MIGRATE_CMA pageblocks nor move CMA
++			 * pages on different free lists. We don't
++			 * want unmovable pages to be allocated from
++			 * MIGRATE_CMA areas.
+ 			 */
+-			if (unlikely(current_order >= (pageblock_order >> 1)) ||
+-					start_migratetype == MIGRATE_RECLAIMABLE ||
+-					page_group_by_mobility_disabled) {
+-				unsigned long pages;
++			if (!is_pageblock_cma(page) &&
++			    (unlikely(current_order >= pageblock_order / 2) ||
++			     start_migratetype == MIGRATE_RECLAIMABLE ||
++			     page_group_by_mobility_disabled)) {
++				int pages;
+ 				pages = move_freepages_block(zone, page,
+-								start_migratetype);
++							     start_migratetype);
+ 
+-				/* Claim the whole block if over half of it is free */
++				/*
++				 * Claim the whole block if over half
++				 * of it is free
++				 */
+ 				if (pages >= (1 << (pageblock_order-1)) ||
+-						page_group_by_mobility_disabled)
++				    page_group_by_mobility_disabled)
+ 					set_pageblock_migratetype(page,
+-								start_migratetype);
++							start_migratetype);
+ 
+ 				migratetype = start_migratetype;
+ 			}
+@@ -966,11 +1004,14 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 			rmv_page_order(page);
+ 
+ 			/* Take ownership for orders >= pageblock_order */
+-			if (current_order >= pageblock_order)
++			if (current_order >= pageblock_order &&
++			    !is_pageblock_cma(page))
+ 				change_pageblock_range(page, current_order,
+ 							start_migratetype);
+ 
+-			expand(zone, page, order, current_order, area, migratetype);
++			expand(zone, page, order, current_order, area,
++			       is_migrate_cma(start_migratetype)
++			     ? start_migratetype : migratetype);
+ 
+ 			trace_mm_page_alloc_extfrag(page, order, current_order,
+ 				start_migratetype, migratetype);
+@@ -1042,7 +1083,12 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+ 			list_add(&page->lru, list);
+ 		else
+ 			list_add_tail(&page->lru, list);
+-		set_page_private(page, migratetype);
++#ifdef CONFIG_MIGRATE_CMA
++		if (is_pageblock_cma(page))
++			set_page_private(page, MIGRATE_CMA);
 +		else
-+			fprintf(stderr, "%s: done\n", name);
-+	}
-+}
-+
-+static void cmd_kdump(char *name, char *line, int arg)
-+{
-+	struct chunk *chunk = _cmd_numbered(name, line);
-+
-+	(void)arg;
-+
-+	if (chunk) {
-+		int ret;
-+
-+		fprintf(stderr, "%s: requesting kernel to dump 256B@%p\n",
-+			name, (void *)chunk->start);
-+
-+		ret = ioctl(chunk->fd, IOCTL_CMA_DUMP, 256);
-+		if (ret < 0)
-+			fprintf(stderr, "%s: %s\n", name, strerror(errno));
-+		else
-+			fprintf(stderr, "%s: done\n", name);
-+	}
-+}
-+
-+static const struct command {
-+	const char short_name;
-+	const char name[8];
-+	void (*handle)(char *name, char *line, int arg);
-+	int arg;
-+	const char *help_args, *help;
-+} commands[] = {
-+	{ 'l', "list",    cmd_list,     0,
-+	  "", "list allocated chunks" },
-+	{ 'a', "alloc",   cmd_alloc,    0,
-+	  "<size>[/<alignment>]", "allocate chunk" },
-+	{ 'f', "free",    cmd_free,     0,
-+	  "[<num>]", "free an chunk" },
-+	{ 'w', "write",   cmd_mapped,   1,
-+	  "[<num>]", "write data to chunk" },
-+	{ 'W', "kwrite",  cmd_kpattern, 1,
-+	  "[<num>]", "let kernel write data to chunk" },
-+	{ 'v', "verify",  cmd_mapped,   0,
-+	  "[<num>]", "verify chunk's content" },
-+	{ 'V', "kverify", cmd_kpattern, 0,
-+	  "[<num>]", "let kernel verify chunk's contet" },
-+	{ 'd', "dump",    cmd_mapped,   2,
-+	  "[<num>]", "dump (some) content" },
-+	{ 'D', "kdump",   cmd_kdump,    0,
-+	  "[<num>]", "let kernel dump (some) content" },
-+	{ '\0', "", NULL, 0, NULL, NULL }
-+};
-+
-+static void handle_command(char *line)
-+{
-+	static char last_line[1024];
-+
-+	const struct command *cmd;
-+	char *name, short_name = '\0';
-+
-+	SKIP_SPACE(line);
-+	if (*line == '#')
-+		return;
-+
-+	if (!*line)
-+		strcpy(line, last_line);
-+	else
-+		strcpy(last_line, line);
-+
-+	name = line;
-+	while (*line && !isspace(*line))
-+		++line;
-+
-+	if (*line) {
-+		*line = '\0';
-+		++line;
-+	}
-+
-+	if (!name[1])
-+		short_name = name[0];
-+
-+	for (cmd = commands; *(cmd->name); ++cmd)
-+		if (short_name
-+		  ? short_name == cmd->short_name
-+		  : !strcmp(name, cmd->name)) {
-+			cmd->handle(name, line, cmd->arg);
-+			return;
-+		}
-+
-+	fprintf(stderr, "%s: unknown command\n", name);
-+}
-+
-+int main(void)
-+{
-+	const struct command *cmd = commands;
-+	unsigned no = 1;
-+	char line[1024];
-+	int skip = 0;
-+
-+	fputs("commands:\n", stderr);
-+	do {
-+		fprintf(stderr, " %c or %-7s  %-10s  %s\n",
-+			cmd->short_name, cmd->name, cmd->help_args, cmd->help);
-+	} while ((++cmd)->handle);
-+	fputs(" # ...                        comment\n"
-+	      " <empty line>                 repeat previous\n"
-+	      "\n", stderr);
-+
-+	while (fgets(line, sizeof line, stdin)) {
-+		char *nl = strchr(line, '\n');
-+		if (nl) {
-+			if (skip) {
-+				fprintf(stderr, "cma: %d: line too long\n", no);
-+				skip = 0;
-+			} else {
-+				*nl = '\0';
-+				handle_command(line);
-+			}
-+			++no;
-+		} else {
-+			skip = 1;
-+		}
-+	}
-+
-+	if (skip)
-+		fprintf(stderr, "cma: %d: no new line at EOF\n", no);
-+	return 0;
-+}
++#endif
++			set_page_private(page, migratetype);
+ 		list = &page->lru;
+ 	}
+ 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
+@@ -1178,8 +1224,8 @@ void free_hot_cold_page(struct page *page, int cold)
+ 	/*
+ 	 * We only track unmovable, reclaimable and movable on pcp lists.
+ 	 * Free ISOLATE pages back to the allocator because they are being
+-	 * offlined but treat RESERVE as movable pages so we can get those
+-	 * areas back if necessary. Otherwise, we may have to free
++	 * offlined but treat RESERVE and CMA as movable pages so we can get
++	 * those areas back if necessary. Otherwise, we may have to free
+ 	 * excessively into the page allocator
+ 	 */
+ 	if (migratetype >= MIGRATE_PCPTYPES) {
+@@ -1272,7 +1318,9 @@ int split_free_page(struct page *page)
+ 	if (order >= pageblock_order - 1) {
+ 		struct page *endpage = page + (1 << order) - 1;
+ 		for (; page < endpage; page += pageblock_nr_pages)
+-			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
++			if (!is_pageblock_cma(page))
++				set_pageblock_migratetype(page,
++							  MIGRATE_MOVABLE);
+ 	}
+ 
+ 	return 1 << order;
+@@ -5309,7 +5357,8 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+ 	if (zone_idx(zone) == ZONE_MOVABLE)
+ 		return true;
+ 
+-	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE)
++	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE ||
++	    is_pageblock_cma(page))
+ 		return true;
+ 
+ 	pfn = page_to_pfn(page);
 -- 
 1.7.2.3
 
