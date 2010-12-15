@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0LOPuD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 10:50:03 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:50665 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab0LOPuA (ORCPT
+	id S1754884Ab0LOPuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:50:14 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:34983 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811Ab0LOPuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 10:50:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/9] ARM i.MX51: Add IPU device support
-Date: Wed, 15 Dec 2010 16:49:45 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Zhang Lily-R58066" <r58066@freescale.com>
-References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <1291902441-24712-7-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1291902441-24712-7-git-send-email-s.hauer@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012151649.45199.arnd@arndb.de>
-X-Provags-ID: V02:K0:tw4Lgd98QDQ/c/pRX/etPPI6NstKlp+m3hDl6V8AJlT
- tIfw5jyWlMK99DOR4q0AJAkbMz/30dBKajHFkibed8v0I5G0Le
- 9zmIQLDVnu/UceHXSny6Zs+d47Vmhpn1InBrw2N6YmBU4V33Qg
- yuDUZLKgQTiW9M7LJuNzUe+lR8183ZuIvJouoIdcaWSeXO37ta
- 2r/7Q2so1axGgoDYO7VNQ==
+	Wed, 15 Dec 2010 10:50:13 -0500
+To: akpm@linux-foundation.org
+CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: add replace_page_cache_page() function
+Message-Id: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 15 Dec 2010 16:49:58 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 December 2010, Sascha Hauer wrote:
-> +#define imx51_add_ipuv3(pdata) \
-> +       imx_add_ipuv3(&imx51_ipuv3_data, pdata)
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-This looks  like a pointless abstraction, it does not make
-the code smaller or easier to read. I know it's sometimes
-tempting to use macros, but in most cases, you should try
-not to.
+This function basically does:
 
-> +#define imx51_ipuv3_data_entry_single(soc)				\
-> +	{								\
-> +		.iobase = soc ## _IPU_CTRL_BASE_ADDR,			\
-> +		.irq_err = soc ## _INT_IPU_ERR,				\
-> +		.irq = soc ## _INT_IPU_SYN,				\
-> +	}
-> +
-> +#ifdef CONFIG_SOC_IMX51
-> +const struct imx_ipuv3_data imx51_ipuv3_data __initconst =
-> +	imx51_ipuv3_data_entry_single(MX51);
-> +#endif /* ifdef CONFIG_SOC_IMX35 */
+     remove_from_page_cache(old);
+     page_cache_release(old);
+     add_to_page_cache_locked(new);
 
-This looks really strange: You define a macro that is used
-in only a single place, and the only user is a data structure
-that references data from other files and is used elsewhere
-as well.
+Except it does this atomically, so there's no possibility for the
+"add" to fail because of a race.
 
-Avoiding the macro would make it easier to grep for the use
-of the identifiers.
+This is used by fuse to move pages into the page cache.
 
-If you put the data structure in the place where it is used,
-you can avoid the #ifdef and make it static.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/fuse/dev.c           |   10 ++++------
+ include/linux/pagemap.h |    1 +
+ mm/filemap.c            |   41 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 46 insertions(+), 6 deletions(-)
 
-Also, the comment on the #endif does not match the #if.
-
-	Arnd
+Index: linux-2.6/mm/filemap.c
+===================================================================
+--- linux-2.6.orig/mm/filemap.c	2010-12-15 16:39:55.000000000 +0100
++++ linux-2.6/mm/filemap.c	2010-12-15 16:41:24.000000000 +0100
+@@ -389,6 +389,47 @@ int filemap_write_and_wait_range(struct
+ }
+ EXPORT_SYMBOL(filemap_write_and_wait_range);
+ 
++int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
++{
++	int error;
++
++	VM_BUG_ON(!PageLocked(old));
++	VM_BUG_ON(!PageLocked(new));
++	VM_BUG_ON(new->mapping);
++
++	error = mem_cgroup_cache_charge(new, current->mm,
++					gfp_mask & GFP_RECLAIM_MASK);
++	if (error)
++		goto out;
++
++	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
++	if (error == 0) {
++		struct address_space *mapping = old->mapping;
++		pgoff_t offset = old->index;
++
++		page_cache_get(new);
++		new->mapping = mapping;
++		new->index = offset;
++
++		spin_lock_irq(&mapping->tree_lock);
++		__remove_from_page_cache(old);
++		error = radix_tree_insert(&mapping->page_tree, offset, new);
++		BUG_ON(error);
++		mapping->nrpages++;
++		__inc_zone_page_state(new, NR_FILE_PAGES);
++		if (PageSwapBacked(new))
++			__inc_zone_page_state(new, NR_SHMEM);
++		spin_unlock_irq(&mapping->tree_lock);
++		radix_tree_preload_end();
++		mem_cgroup_uncharge_cache_page(old);
++		page_cache_release(old);
++	} else
++		mem_cgroup_uncharge_cache_page(new);
++out:
++	return error;
++}
++EXPORT_SYMBOL_GPL(replace_page_cache_page);
++
+ /**
+  * add_to_page_cache_locked - add a locked page to the pagecache
+  * @page:	page to add
+Index: linux-2.6/include/linux/pagemap.h
+===================================================================
+--- linux-2.6.orig/include/linux/pagemap.h	2010-12-15 16:39:39.000000000 +0100
++++ linux-2.6/include/linux/pagemap.h	2010-12-15 16:41:24.000000000 +0100
+@@ -457,6 +457,7 @@ int add_to_page_cache_lru(struct page *p
+ 				pgoff_t index, gfp_t gfp_mask);
+ extern void remove_from_page_cache(struct page *page);
+ extern void __remove_from_page_cache(struct page *page);
++int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
+ 
+ /*
+  * Like add_to_page_cache_locked, but used to add newly allocated pages:
+Index: linux-2.6/fs/fuse/dev.c
+===================================================================
+--- linux-2.6.orig/fs/fuse/dev.c	2010-12-15 16:39:39.000000000 +0100
++++ linux-2.6/fs/fuse/dev.c	2010-12-15 16:41:24.000000000 +0100
+@@ -729,14 +729,12 @@ static int fuse_try_move_page(struct fus
+ 	if (WARN_ON(PageMlocked(oldpage)))
+ 		goto out_fallback_unlock;
+ 
+-	remove_from_page_cache(oldpage);
+-	page_cache_release(oldpage);
+-
+-	err = add_to_page_cache_locked(newpage, mapping, index, GFP_KERNEL);
++	err = replace_page_cache_page(oldpage, newpage, GFP_KERNEL);
+ 	if (err) {
+-		printk(KERN_WARNING "fuse_try_move_page: failed to add page");
+-		goto out_fallback_unlock;
++		unlock_page(newpage);
++		return err;
+ 	}
++
+ 	page_cache_get(newpage);
+ 
+ 	if (!(buf->flags & PIPE_BUF_FLAG_LRU))
