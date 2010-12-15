@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0LOUvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:51:54 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24412 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab0LOUvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 15:51:52 -0500
-Message-ID: <4D092A38.7020407@oracle.com>
-Date: Wed, 15 Dec 2010 12:51:04 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755415Ab0LOUwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:52:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20198 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755396Ab0LOUwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 15:52:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,351,1288594800"; 
+   d="scan'208";a="584088458"
+Message-ID: <4D092A72.2000401@intel.com>
+Date: Wed, 15 Dec 2010 12:52:02 -0800
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: =?UTF-8?B?UGV0ZXIgSMO8d2U=?= <PeterHuewe@gmx.de>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sedat Dilek <sedat.dilek@googlemail.com>
-Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
-References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de>	<201012152135.35941.PeterHuewe@gmx.de> <AANLkTin+vOvpK4geMKdcx4wiOSc_EdPNwXJAcFTaCcnf@mail.gmail.com>
-In-Reply-To: <AANLkTin+vOvpK4geMKdcx4wiOSc_EdPNwXJAcFTaCcnf@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Tang, Xinan" <xinan.tang@intel.com>,
+        Junchang Wang <junchangwang@gmail.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
+References: <cover.1292405004.git.fenghua.yu@intel.com> <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
+In-Reply-To: <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/10 12:49, Corentin Chary wrote:
-> On Wed, Dec 15, 2010 at 9:35 PM, Peter Hüwe <PeterHuewe@gmx.de> wrote:
->> Am Donnerstag 09 Dezember 2010, 00:29:30 schrieb Peter Huewe:
->>> This patch removes a recursive dependency which causes a build failure
->>> [1-3] by changing the ASUS_WMI from select ACPI_WMI to depend on
->>> ACPI_WMI as most other _WMI config options do.
->>>
->>> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+On 12/15/2010 12:02 PM, Yu, Fenghua wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> Hi, another patch was posted before:
+> Multiqueue and multicore provide packet parallel processing methodology.
+> Current kernel and network drivers place one queue on one core. But the higher
+> level socket doesn't know multiqueue. Current socket only can receive or send
+> packets through one network interfaces. In some cases e.g. multi bpf filter
+> tcpdump and snort, a lot of contentions come from socket operations like ring
+> buffer. Even if the application itself has been fully parallelized and run on
+> multi-core systems and NIC handlex tx/rx in multiqueue in parallel, network layer
+> and NIC device driver assemble packets to a single, serialized queue. Thus the
+> application cannot actually run in parallel in high speed.
 > 
-> http://article.gmane.org/gmane.linux.drivers.platform.x86.devel/970/match=acpi_wmi
+> To break the serialized packets assembling bottleneck in kernel, one way is to
+> allow socket to know multiqueue associated with a NIC interface. So each socket
+> can handle tx/rx in one queue in parallel.
 > 
-> Randy Dunlap sort of Acked it ("Ah, that's what Sedat's patch does.  Good.")
-> http://article.gmane.org/gmane.linux.drivers.platform.x86.devel/971/match=acpi_wmi
-
-For Matthew:
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
+> Kernel provides several interfaces by which sockets can be bound to rx/tx queues.
+> User applications can configure socket by providing several sockets that each
+> bound to a single queue, applications can get data from kernel in parallel. After
+> that, competitions mentioned above can be removed.
 > 
-> Your patch seems to miss TC1100_WMI section.
+> With this patch, the user-space receiving speed on a Intel SR1690 server with
+> a single L5640 6-core processor and a single ixgbe-based NIC goes from 0.73Mpps
+> to 4.20Mpps, nearly a linear speedup. A Intel SR1625 server two E5530 4-core
+> processors and a single ixgbe-based NIC goes from 0.80Mpps to 4.6Mpps. We noticed
+> the performance penalty comes from NUMA memory allocation.
+> 
+> This patch set provides kernel ioctl interfaces for user space. User space can
+> either directly call the interfaces or libpcap interfaces can be further provided
+> on the top of the kernel ioctl interfaces.
+> 
+> The order of tx/rx packets is up to user application. In some cases, e.g. network
+> monitors, ordering is not a big problem because they more care how to receive and
+> analyze packets in highest performance in parallel.
+> 
+> This patch set only implements multiqueue interfaces for AF_PACKET and Intel
+> ixgbe NIC. Other protocols and NIC's can be handled on the top of this patch set.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> Signed-off-by: Junchang Wang <junchangwang@gmail.com>
+> Signed-off-by: Xinan Tang <xinan.tang@intel.com>
+> ---
 
-Yes, it would be better to do both (all) of them the same way.
+I think it would be easier to manipulate the sk_hash to accomplish this. Allowing this from user space doesn't seem so great to me. You don't really want to pick the tx/rx bindings for sockets I think what you actually want is to optimize the hashing for this case to avoid the bottleneck you observe.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I'm not too familiar with the af_packet stuff but could you do this with a single flag that indicates the sk_hash should be set in {t}packet_snd(). Maybe I missed your point or there is a reason this wouldn't work. But, then you don't need to do funny stuff in select_queue and it works with rps/xps as well.
+
+--John.
