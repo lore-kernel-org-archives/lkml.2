@@ -1,225 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0LOVHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:07:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752158Ab0LOVHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:07:44 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        paulmck@linux.vnet.ibm.com
-Cc: vgoyal@redhat.com, oleg@redhat.com
-Subject: [PATCH 2/2] blk-throttle: Some cleanups and race fixes in limit update code
-Date: Wed, 15 Dec 2010 16:07:35 -0500
-Message-Id: <1292447255-10698-3-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
-References: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
+	id S1753380Ab0LOVNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:13:12 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:44965 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab0LOVNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 16:13:10 -0500
+Message-ID: <4D092F61.7000405@canonical.com>
+Date: Wed, 15 Dec 2010 16:13:05 -0500
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@bitmath.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
+References: <4D0897F3.7040500@bitmath.org> <4D08FD74.4060403@canonical.com> <4D0918A8.6080207@bitmath.org>
+In-Reply-To: <4D0918A8.6080207@bitmath.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o When throttle group limits are updated through cgroups, a thread is woken
-  up to process these updates. While reviewing that code, oleg noted couple
-  of race conditions existed in the code and he also suggested that code can
-  be simplified.
+On 12/15/2010 02:36 PM, Henrik Rydberg wrote:
+>>>> I think that presence of pen/touch can be detected by having
+> 
+>>>> BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
+>>>> finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
+>>>> this is another case where we should employ the proposed device flags?
+>>>
+>>> Yes. Having something like INPUT_QUIRK_SEMI_MT might be enough, and we could
+>>> drop the whole MT_TOOL_ENVELOPE circus. Chase, Peter, Chris, would you be
+>>> comfortable with such a solution?
+>>
+>> That sounds like a good solution to me. I believe it would resolve all
+>> the issues I had.
+> 
+> 
+> Sounds good.
+> 
+> 
+>> As I attempted to write up more documentation, I thought of the
+>> following. What do you think?
+>>
+>> With regards to partial MT devices, if the device provides a single
+>> valued property, such as pressure and tool type for synaptics, it may
+>> only be provided through the traditional property semantics, i.e.
+>> ABS_PRESSURE and BTN_TOOL_*. If the device provides multiple values for
+>> a property, then ABS_MT_* types may be used as well to provide up to two
+>> values, though the client should understand there's no direct
+>> correlation between the slot's coordinates and the property. I could see
+>> this being used to provide info on multiple tool types or a high and low
+>> pressure.
+>>
+>> Enforcing the above behaviour provides even more information about the
+>> capabilities of the device based solely on the evdev codes published.
+> 
+> 
+> Looks good, but I do not think we need to formalize all possibilities here, only
+> the usage of MT data for bounding rectangle and ST data for finger count.
+> Referring to the patch just sent: whenever INPUT_PROP_SEMI_MT is true, this
+> behavior is expected. In the event of new odd hardware, the combination of a new
+> property quirk and a documented recipe should do the trick.
 
-o This patch fixes the races simplifies the code based on Oleg's suggestions.
-        - Use xchg().
-        - Introduced a common function throtl_update_blkio_group_common()
-          which is shared now by all iops/bps update functions.
+Would you feel comfortable stating the above in less concrete terms, as
+sort of a best practices guide? I'd like to know for this specific case
+if you agree beyond ST finger count data, or if you feel we should do
+something else like always provide as much data as possible in MT
+properties? It's a real corner case, and I don't care too much one way
+or another. I just don't want synaptics implemented one way, elantech
+another, etc.
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-throttle.c |   96 +++++++++++++++++++++-----------------------------
- 1 files changed, 40 insertions(+), 56 deletions(-)
+Thanks,
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 91bd444..549bc8e 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -97,7 +97,7 @@ struct throtl_data
- 	/* Work for dispatching throttled bios */
- 	struct delayed_work throtl_work;
- 
--	atomic_t limits_changed;
-+	bool limits_changed;
- };
- 
- enum tg_state_flags {
-@@ -188,6 +188,7 @@ static struct throtl_grp * throtl_find_alloc_tg(struct throtl_data *td,
- 	RB_CLEAR_NODE(&tg->rb_node);
- 	bio_list_init(&tg->bio_lists[0]);
- 	bio_list_init(&tg->bio_lists[1]);
-+	td->limits_changed = false;
- 
- 	/*
- 	 * Take the initial reference that will be released on destroy
-@@ -725,34 +726,27 @@ static void throtl_process_limit_change(struct throtl_data *td)
- 	struct throtl_grp *tg;
- 	struct hlist_node *pos, *n;
- 
--	if (!atomic_read(&td->limits_changed))
-+	if (!td->limits_changed)
- 		return;
- 
--	throtl_log(td, "limit changed =%d", atomic_read(&td->limits_changed));
-+	xchg(&td->limits_changed, false);
- 
--	/*
--	 * Make sure updates from throtl_update_blkio_group_read_bps() group
--	 * of functions to tg->limits_changed are visible. We do not
--	 * want update td->limits_changed to be visible but update to
--	 * tg->limits_changed not being visible yet on this cpu. Hence
--	 * the read barrier.
--	 */
--	smp_rmb();
-+	throtl_log(td, "limits changed");
- 
- 	hlist_for_each_entry_safe(tg, pos, n, &td->tg_list, tg_node) {
--		if (throtl_tg_on_rr(tg) && tg->limits_changed) {
--			throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
--				" riops=%u wiops=%u", tg->bps[READ],
--				tg->bps[WRITE], tg->iops[READ],
--				tg->iops[WRITE]);
-+		if (!tg->limits_changed)
-+			continue;
-+
-+		if (!xchg(&tg->limits_changed, false))
-+			continue;
-+
-+		throtl_log_tg(td, tg, "limit change rbps=%llu wbps=%llu"
-+			" riops=%u wiops=%u", tg->bps[READ], tg->bps[WRITE],
-+			tg->iops[READ], tg->iops[WRITE]);
-+
-+		if (throtl_tg_on_rr(tg))
- 			tg_update_disptime(td, tg);
--			tg->limits_changed = false;
--		}
- 	}
--
--	smp_mb__before_atomic_dec();
--	atomic_dec(&td->limits_changed);
--	smp_mb__after_atomic_dec();
- }
- 
- /* Dispatch throttled bios. Should be called without queue lock held. */
-@@ -887,6 +881,15 @@ void throtl_unlink_blkio_group(void *key, struct blkio_group *blkg)
- 	spin_unlock_irqrestore(td->queue->queue_lock, flags);
- }
- 
-+static void throtl_update_blkio_group_common(struct throtl_data *td,
-+				struct throtl_grp *tg)
-+{
-+	xchg(&tg->limits_changed, true);
-+	xchg(&td->limits_changed, true);
-+	/* Schedule a work now to process the limit change */
-+	throtl_schedule_delayed_work(td->queue, 0);
-+}
-+
- /*
-  * For all update functions, key should be a valid pointer because these
-  * update functions are called under blkcg_lock, that means, blkg is
-@@ -900,61 +903,40 @@ static void throtl_update_blkio_group_read_bps(void *key,
- 				struct blkio_group *blkg, u64 read_bps)
- {
- 	struct throtl_data *td = key;
-+	struct throtl_grp *tg = tg_of_blkg(blkg);
- 
--	tg_of_blkg(blkg)->bps[READ] = read_bps;
--	/* Make sure read_bps is updated before setting limits_changed */
--	smp_wmb();
--	tg_of_blkg(blkg)->limits_changed = true;
--
--	/* Make sure tg->limits_changed is updated before td->limits_changed */
--	smp_mb__before_atomic_inc();
--	atomic_inc(&td->limits_changed);
--	smp_mb__after_atomic_inc();
--
--	/* Schedule a work now to process the limit change */
--	throtl_schedule_delayed_work(td->queue, 0);
-+	tg->bps[READ] = read_bps;
-+	throtl_update_blkio_group_common(td, tg);
- }
- 
- static void throtl_update_blkio_group_write_bps(void *key,
- 				struct blkio_group *blkg, u64 write_bps)
- {
- 	struct throtl_data *td = key;
-+	struct throtl_grp *tg = tg_of_blkg(blkg);
- 
--	tg_of_blkg(blkg)->bps[WRITE] = write_bps;
--	smp_wmb();
--	tg_of_blkg(blkg)->limits_changed = true;
--	smp_mb__before_atomic_inc();
--	atomic_inc(&td->limits_changed);
--	smp_mb__after_atomic_inc();
--	throtl_schedule_delayed_work(td->queue, 0);
-+	tg->bps[WRITE] = write_bps;
-+	throtl_update_blkio_group_common(td, tg);
- }
- 
- static void throtl_update_blkio_group_read_iops(void *key,
- 			struct blkio_group *blkg, unsigned int read_iops)
- {
- 	struct throtl_data *td = key;
-+	struct throtl_grp *tg = tg_of_blkg(blkg);
- 
--	tg_of_blkg(blkg)->iops[READ] = read_iops;
--	smp_wmb();
--	tg_of_blkg(blkg)->limits_changed = true;
--	smp_mb__before_atomic_inc();
--	atomic_inc(&td->limits_changed);
--	smp_mb__after_atomic_inc();
--	throtl_schedule_delayed_work(td->queue, 0);
-+	tg->iops[READ] = read_iops;
-+	throtl_update_blkio_group_common(td, tg);
- }
- 
- static void throtl_update_blkio_group_write_iops(void *key,
- 			struct blkio_group *blkg, unsigned int write_iops)
- {
- 	struct throtl_data *td = key;
-+	struct throtl_grp *tg = tg_of_blkg(blkg);
- 
--	tg_of_blkg(blkg)->iops[WRITE] = write_iops;
--	smp_wmb();
--	tg_of_blkg(blkg)->limits_changed = true;
--	smp_mb__before_atomic_inc();
--	atomic_inc(&td->limits_changed);
--	smp_mb__after_atomic_inc();
--	throtl_schedule_delayed_work(td->queue, 0);
-+	tg->iops[WRITE] = write_iops;
-+	throtl_update_blkio_group_common(td, tg);
- }
- 
- void throtl_shutdown_timer_wq(struct request_queue *q)
-@@ -1001,6 +983,7 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
- 		 */
- 		update_disptime = false;
- 		goto queue_bio;
-+
- 	}
- 
- 	/* Bio is with-in rate limit of group */
-@@ -1041,7 +1024,7 @@ int blk_throtl_init(struct request_queue *q)
- 
- 	INIT_HLIST_HEAD(&td->tg_list);
- 	td->tg_service_tree = THROTL_RB_ROOT;
--	atomic_set(&td->limits_changed, 0);
-+	td->limits_changed = false;
- 
- 	/* Init root group */
- 	tg = &td->root_tg;
-@@ -1053,6 +1036,7 @@ int blk_throtl_init(struct request_queue *q)
- 	/* Practically unlimited BW */
- 	tg->bps[0] = tg->bps[1] = -1;
- 	tg->iops[0] = tg->iops[1] = -1;
-+	td->limits_changed = false;
- 
- 	/*
- 	 * Set root group reference to 2. One reference will be dropped when
--- 
-1.7.1
-
+-- Chase
