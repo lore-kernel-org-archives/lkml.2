@@ -1,105 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab0LORme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:42:34 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57224 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab0LORmb (ORCPT
+	id S1753743Ab0LORoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:44:30 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34131 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab0LORo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:42:31 -0500
-Date: Wed, 15 Dec 2010 12:40:18 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Carpenter <error27@gmail.com>, Brian Rogers <brian@xyzw.org>,
-        Jeff Mahoney <jeffm@suse.com>, linux-kernel@vger.kernel.org,
-        Guillaume Chazarain <guichaz@gmail.com>
-Subject: Re: [patch] delayacct: fix iotop on x86_64
-Message-ID: <20101215071018.GD2657@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101213113745.GE1620@bicker>
- <20101213125709.GB14178@balbir.in.ibm.com>
- <4D0639B2.4060903@suse.com>
- <4D068869.7040305@xyzw.org>
- <20101213212253.GI1620@bicker>
- <20101214070243.GJ1620@bicker>
- <20101214080239.GC14178@balbir.in.ibm.com>
- <20101214121641.7c337509.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101214121641.7c337509.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 15 Dec 2010 12:44:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Pn4hHdnEfu/OKVZ7aL8MOLrSPAWBjwDdGUlKUaszLVubgWUiC0aGbdB7mBkGOBdmZr
+         e0BzQ7PNNodHSYIUxy5Fyrm35UIjz0I4kpA8Ce0c1CqXxTD1uIEX9m6r8CgC89ifg2LW
+         IpW3wfGgaffDqj8Y8A3tdaG5qqXk6lqAc2vq4=
+From: Xenofon Foukas <foukas.xenofon@gmail.com>
+To: gregkh@suse.de, arun.thomas@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Xenofon Foukas <foukas.xenofon@gmail.com>
+Subject: [PATCH] Fix checkpatch.pl issues in file s526.c
+Date: Wed, 15 Dec 2010 19:44:20 +0200
+Message-Id: <1292435060-14669-1-git-send-email-foukas.xenofon@gmail.com>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Morton <akpm@linux-foundation.org> [2010-12-14 12:16:41]:
+This patch fixes the following issues in s526.c:
 
-> On Tue, 14 Dec 2010 13:32:39 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> 
-> > * Dan Carpenter <error27@gmail.com> [2010-12-14 10:02:43]:
-> > 
-> > > We changed how the taskstats was exported to user space in:
-> > > 85893120699 "delayacct: align to 8 byte boundary on 64-bit systems"
-> > > This was important because it fixes a run time warning on IA64.  In
-> > > theory it shouldn't have broken anything, if you just assume that user
-> > > space programmers don't smoke crack all day long.
-> > > 
-> > > But actually it breaks iotop on x86_64.
-> > > 
-> > > Reported-by: Brian Rogers <brian@xyzw.org>
-> > > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> > > 
-> > > diff --git a/kernel/taskstats.c b/kernel/taskstats.c
-> > > index c8231fb..a0758de 100644
-> > > --- a/kernel/taskstats.c
-> > > +++ b/kernel/taskstats.c
-> > > @@ -358,7 +358,19 @@ static struct taskstats *mk_reply(struct sk_buff *skb, int type, u32 pid)
-> > >  	 * This causes lots of runtime warnings on systems requiring 8 byte
-> > >  	 * alignment */
-> > >  	u32 pids[2] = { pid, 0 };
-> > > -	int pid_size = ALIGN(sizeof(pid), sizeof(long));
-> > > +	int pid_size;
-> > > +
-> > > +	/*
-> > > +	 * IA64 can't be aligned on a 4 byte boundary.  But iotop on x86_64
-> > > +	 * depends on the current struct layout.  The next version of iotop
-> > > +	 * will fix this so maybe we can move everything to the new code in
-> > > +	 * a couple years.
-> > > +	 */
-> > > +#if defined(CONFIG_IA64)
-> > > +	pid_size = ALIGN(sizeof(pid), sizeof(long));
-> > > +#else
-> > > +	pid_size = sizeof(u32);
-> > > +#endif
-> > 
-> > I would rather abstract this better
-> 
-> Well.  Abstracting something tends to make it permanent.  When you have
-> an ugly, special-case temporary hack, there is merit to having it
-> sitting there in the middle of the code staring you in the face.  It's
-> very explicit and we won't forget about it.
->
+WARNING: printk() should include KERN_ facility level
+WARNING: line over 80 characters
+ERROR: do not use C99 // comments
+WARNING: space prohibited between function name and open parenthesis '('
+WARNING: braces {} are not necessary for any arm of this statement
+WARNING: suspect code indent for conditional statements (16, 16)
 
-OK, agreed and learnt
+Signed-off-by: Xenofon Foukas <foukas.xenofon@gmail.com>
+---
+ drivers/staging/comedi/drivers/s526.c |  139 +++++++++++++++++++-------------
+ 1 files changed, 82 insertions(+), 57 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/s526.c b/drivers/staging/comedi/drivers/s526.c
+index 3607aae..2b34dae 100644
+--- a/drivers/staging/comedi/drivers/s526.c
++++ b/drivers/staging/comedi/drivers/s526.c
+@@ -114,7 +114,7 @@ static const int s526_ports[] = {
+ };
  
-> > and I'd be apprehensive about the
-> > fix if iotop was at fault to begin with, I would rather fix iotop.
-> > IOW, are we fixing what iotop got wrong? Isn't it easier to backport
-> > the correct behaviour in iotop. I understand we broke the ABI, but
-> > user space can still live.
-> 
-> Nah, let's not knowingly break a userspace app.
->
-
-Fair enough!
+ struct counter_mode_register_t {
+-#if defined (__LITTLE_ENDIAN_BITFIELD)
++#if defined(__LITTLE_ENDIAN_BITFIELD)
+ 	unsigned short coutSource:1;
+ 	unsigned short coutPolarity:1;
+ 	unsigned short autoLoadResetRcap:3;
+@@ -207,7 +207,9 @@ static const struct s526_board s526_boards[] = {
  
-> 
-> This is a versioned interface, is it not?  How is that supposed
-> to work?  Should we have upped the version number when making this
-> change?
-
+ /* this structure is for data unique to this hardware driver.  If
+    several hardware drivers keep similar information in this structure,
+-   feel free to suggest moving the variable to the struct comedi_device struct.  */
++   feel free to suggest moving the variable to the struct comedi_device
++   struct.
++*/
+ struct s526_private {
+ 
+ 	int data;
+@@ -304,7 +306,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ /* int subdev_channel = 0; */
+ 	union cmReg cmReg;
+ 
+-	printk("comedi%d: s526: ", dev->minor);
++	printk(KERN_INFO "comedi%d: s526: ", dev->minor);
+ 
+ 	iobase = it->options[0];
+ 	if (!iobase || !request_region(iobase, S526_IOSIZE, thisboard->name)) {
+@@ -317,7 +319,8 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	/*** make it a little quieter, exw, 8/29/06
+ 	for (i = 0; i < S526_NUM_PORTS; i++) {
+-		printk("0x%02x: 0x%04x\n", ADDR_REG(s526_ports[i]), inw(ADDR_REG(s526_ports[i])));
++		printk("0x%02x: 0x%04x\n", ADDR_REG(s526_ports[i]),
++				inw(ADDR_REG(s526_ports[i])));
+ 	}
+ 	***/
+ 
+@@ -402,7 +405,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("attached\n");
++	printk(KERN_INFO "attached\n");
+ 
+ 	return 1;
+ 
+@@ -411,7 +414,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* One-shot (software trigger) */
+ 	cmReg.reg.coutSource = 0;	/*  out RCAP */
+ 	cmReg.reg.coutPolarity = 1;	/*  Polarity inverted */
+-	cmReg.reg.autoLoadResetRcap = 1;	/*  Auto load 0:disabled, 1:enabled */
++	cmReg.reg.autoLoadResetRcap = 1;/*  Auto load 0:disabled, 1:enabled */
+ 	cmReg.reg.hwCtEnableSource = 3;	/*  NOT RCAP */
+ 	cmReg.reg.ctEnableCtrl = 2;	/*  Hardware */
+ 	cmReg.reg.clockSource = 2;	/*  Internal */
+@@ -426,10 +429,12 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	outw(0x0001, ADDR_CHAN_REG(REG_C0H, subdev_channel));
+ 	outw(0x3C68, ADDR_CHAN_REG(REG_C0L, subdev_channel));
+ 
+-	outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Reset the counter */
+-	outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Load the counter from PR0 */
+-
+-	outw(0x0008, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Reset RCAP (fires one-shot) */
++	/*  Reset the counter */
++	outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
++	/*  Load the counter from PR0 */
++	outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
++	/*  Reset RCAP (fires one-shot) */
++	outw(0x0008, ADDR_CHAN_REG(REG_C0C, subdev_channel));
+ 
+ #else
+ 
+@@ -447,11 +452,12 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	cmReg.reg.reserved = 0;
+ 
+ 	n = 0;
+-	printk("Mode reg=0x%04x, 0x%04lx\n", cmReg.value, ADDR_CHAN_REG(REG_C0M,
+-									n));
++	printk(KERN_INFO "Mode reg=0x%04x, 0x%04lx\n",
++		cmReg.value, ADDR_CHAN_REG(REG_C0M, n));
+ 	outw(cmReg.value, ADDR_CHAN_REG(REG_C0M, n));
+ 	udelay(1000);
+-	printk("Read back mode reg=0x%04x\n", inw(ADDR_CHAN_REG(REG_C0M, n)));
++	printk(KERN_INFO "Read back mode reg=0x%04x\n",
++		inw(ADDR_CHAN_REG(REG_C0M, n)));
+ 
+ 	/*  Load the pre-load register high word */
+ /* value = (short) (0x55); */
+@@ -466,20 +472,23 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	/*  Reset the counter if it is software preload */
+ 	if (cmReg.reg.autoLoadResetRcap == 0) {
+-		outw(0x8000, ADDR_CHAN_REG(REG_C0C, n));	/*  Reset the counter */
+-		outw(0x4000, ADDR_CHAN_REG(REG_C0C, n));	/*  Load the counter from PR0 */
++		/*  Reset the counter */
++		outw(0x8000, ADDR_CHAN_REG(REG_C0C, n));
++		/*  Load the counter from PR0 */
++		outw(0x4000, ADDR_CHAN_REG(REG_C0C, n));
+ 	}
+ 
+ 	outw(cmReg.value, ADDR_CHAN_REG(REG_C0M, n));
+ 	udelay(1000);
+-	printk("Read back mode reg=0x%04x\n", inw(ADDR_CHAN_REG(REG_C0M, n)));
++	printk(KERN_INFO "Read back mode reg=0x%04x\n",
++			inw(ADDR_CHAN_REG(REG_C0M, n)));
+ 
+ #endif
+-	printk("Current registres:\n");
++	printk(KERN_INFO "Current registres:\n");
+ 
+ 	for (i = 0; i < S526_NUM_PORTS; i++) {
+-		printk("0x%02lx: 0x%04x\n", ADDR_REG(s526_ports[i]),
+-		       inw(ADDR_REG(s526_ports[i])));
++		printk(KERN_INFO "0x%02lx: 0x%04x\n",
++			ADDR_REG(s526_ports[i]), inw(ADDR_REG(s526_ports[i])));
+ 	}
+ 	return 1;
+ }
+@@ -494,7 +503,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+  */
+ static int s526_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: s526: remove\n", dev->minor);
++	printk(KERN_INFO "comedi%d: s526: remove\n", dev->minor);
+ 
+ 	if (dev->iobase > 0)
+ 		release_region(dev->iobase, S526_IOSIZE);
+@@ -513,7 +522,7 @@ static int s526_gpct_rinsn(struct comedi_device *dev,
+ 
+ 	/*  Check if (n > 0) */
+ 	if (insn->n <= 0) {
+-		printk("s526: INSN_READ: n should be > 0\n");
++		printk(KERN_ERR "s526: INSN_READ: n should be > 0\n");
+ 		return -EINVAL;
+ 	}
+ 	/*  Read the low word first */
+@@ -522,7 +531,8 @@ static int s526_gpct_rinsn(struct comedi_device *dev,
+ 		datahigh = inw(ADDR_CHAN_REG(REG_C0H, counter_channel));
+ 		data[i] = (int)(datahigh & 0x00FF);
+ 		data[i] = (data[i] << 16) | (datalow & 0xFFFF);
+-/* printk("s526 GPCT[%d]: %x(0x%04x, 0x%04x)\n", counter_channel, data[i], datahigh, datalow); */
++		/* printk("s526 GPCT[%d]: %x(0x%04x, 0x%04x)\n",
++		   counter_channel, data[i], datahigh, datalow); */
+ 	}
+ 	return i;
+ }
+@@ -536,7 +546,8 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 	short value;
+ 	union cmReg cmReg;
+ 
+-/* printk("s526: GPCT_INSN_CONFIG: Configuring Channel %d\n", subdev_channel); */
++	/* printk("s526: GPCT_INSN_CONFIG: Configuring Channel %d\n",
++						subdev_channel); */
+ 
+ 	for (i = 0; i < MAX_GPCT_CONFIG_DATA; i++) {
+ 		devpriv->s526_gpct_config[subdev_channel].data[i] =
+@@ -554,7 +565,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		   data[2]: Pre-load Register Value
+ 		   data[3]: Conter Control Register
+ 		 */
+-		printk("s526: GPCT_INSN_CONFIG: Configuring Encoder\n");
++		printk(KERN_INFO "s526: GPCT_INSN_CONFIG: Configuring Encoder\n");
+ 		devpriv->s526_gpct_config[subdev_channel].app =
+ 		    PositionMeasurement;
+ 
+@@ -563,7 +574,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		/* One-shot (software trigger) */
+ 		cmReg.reg.coutSource = 0;	/*  out RCAP */
+ 		cmReg.reg.coutPolarity = 1;	/*  Polarity inverted */
+-		cmReg.reg.autoLoadResetRcap = 0;	/*  Auto load disabled */
++		cmReg.reg.autoLoadResetRcap = 0;/*  Auto load disabled */
+ 		cmReg.reg.hwCtEnableSource = 3;	/*  NOT RCAP */
+ 		cmReg.reg.ctEnableCtrl = 2;	/*  Hardware */
+ 		cmReg.reg.clockSource = 2;	/*  Internal */
+@@ -578,10 +589,13 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		outw(0x0001, ADDR_CHAN_REG(REG_C0H, subdev_channel));
+ 		outw(0x3C68, ADDR_CHAN_REG(REG_C0L, subdev_channel));
+ 
+-		outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Reset the counter */
+-		outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Load the counter from PR0 */
++		/*  Reset the counter */
++		outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
++		/*  Load the counter from PR0 */
++		outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
+ 
+-		outw(0x0008, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Reset RCAP (fires one-shot) */
++		/*  Reset RCAP (fires one-shot) */
++		outw(0x0008, ADDR_CHAN_REG(REG_C0C, subdev_channel));
+ 
+ #endif
+ 
+@@ -594,30 +608,34 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 
+ 		/*  Reset the counter if it is software preload */
+ 		if (cmReg.reg.autoLoadResetRcap == 0) {
+-			outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Reset the counter */
+-/* outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));    Load the counter from PR0 */
++			/*  Reset the counter */
++			outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
++			/* Load the counter from PR0
++			 * outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
++			 */
+ 		}
+ #else
+-		cmReg.reg.countDirCtrl = 0;	/*  0 quadrature, 1 software control */
++		/*  0 quadrature, 1 software control */
++		cmReg.reg.countDirCtrl = 0;
+ 
+ 		/*  data[1] contains GPCT_X1, GPCT_X2 or GPCT_X4 */
+-		if (insn->data[1] == GPCT_X2) {
++		if (insn->data[1] == GPCT_X2)
+ 			cmReg.reg.clockSource = 1;
+-		} else if (insn->data[1] == GPCT_X4) {
++		else if (insn->data[1] == GPCT_X4)
+ 			cmReg.reg.clockSource = 2;
+-		} else {
++		else
+ 			cmReg.reg.clockSource = 0;
+-		}
+ 
+ 		/*  When to take into account the indexpulse: */
+-		if (insn->data[2] == GPCT_IndexPhaseLowLow) {
++		/*if (insn->data[2] == GPCT_IndexPhaseLowLow) {
+ 		} else if (insn->data[2] == GPCT_IndexPhaseLowHigh) {
+ 		} else if (insn->data[2] == GPCT_IndexPhaseHighLow) {
+ 		} else if (insn->data[2] == GPCT_IndexPhaseHighHigh) {
+-		}
++		}*/
+ 		/*  Take into account the index pulse? */
+ 		if (insn->data[3] == GPCT_RESET_COUNTER_ON_INDEX)
+-			cmReg.reg.autoLoadResetRcap = 4;	/*  Auto load with INDEX^ */
++			/*  Auto load with INDEX^ */
++			cmReg.reg.autoLoadResetRcap = 4;
+ 
+ 		/*  Set Counter Mode Register */
+ 		cmReg.value = (short)(insn->data[1] & 0xFFFF);
+@@ -638,8 +656,10 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		}
+ 		/*  Reset the counter if it is software preload */
+ 		if (cmReg.reg.autoLoadResetRcap == 0) {
+-			outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Reset the counter */
+-			outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));	/*  Load the counter from PR0 */
++			/*  Reset the counter */
++			outw(0x8000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
++			/*  Load the counter from PR0 */
++			outw(0x4000, ADDR_CHAN_REG(REG_C0C, subdev_channel));
+ 		}
+ #endif
+ 		break;
+@@ -652,7 +672,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		   data[3]: Pre-load Register 1 Value
+ 		   data[4]: Conter Control Register
+ 		 */
+-		printk("s526: GPCT_INSN_CONFIG: Configuring SPG\n");
++		printk(KERN_INFO "s526: GPCT_INSN_CONFIG: Configuring SPG\n");
+ 		devpriv->s526_gpct_config[subdev_channel].app =
+ 		    SinglePulseGeneration;
+ 
+@@ -697,7 +717,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		   data[3]: Pre-load Register 1 Value
+ 		   data[4]: Conter Control Register
+ 		 */
+-		printk("s526: GPCT_INSN_CONFIG: Configuring PTG\n");
++		printk(KERN_INFO "s526: GPCT_INSN_CONFIG: Configuring PTG\n");
+ 		devpriv->s526_gpct_config[subdev_channel].app =
+ 		    PulseTrainGeneration;
+ 
+@@ -735,7 +755,7 @@ static int s526_gpct_insn_config(struct comedi_device *dev,
+ 		break;
+ 
+ 	default:
+-		printk("s526: unsupported GPCT_insn_config\n");
++		printk(KERN_ERR "s526: unsupported GPCT_insn_config\n");
+ 		return -EINVAL;
+ 		break;
+ 	}
+@@ -751,20 +771,21 @@ static int s526_gpct_winsn(struct comedi_device *dev,
+ 	short value;
+ 	union cmReg cmReg;
+ 
+-	printk("s526: GPCT_INSN_WRITE on channel %d\n", subdev_channel);
++	printk(KERN_INFO "s526: GPCT_INSN_WRITE on channel %d\n",
++					subdev_channel);
+ 	cmReg.value = inw(ADDR_CHAN_REG(REG_C0M, subdev_channel));
+-	printk("s526: Counter Mode Register: %x\n", cmReg.value);
++	printk(KERN_INFO "s526: Counter Mode Register: %x\n", cmReg.value);
+ 	/*  Check what Application of Counter this channel is configured for */
+ 	switch (devpriv->s526_gpct_config[subdev_channel].app) {
+ 	case PositionMeasurement:
+-		printk("S526: INSN_WRITE: PM\n");
++		printk(KERN_INFO "S526: INSN_WRITE: PM\n");
+ 		outw(0xFFFF & ((*data) >> 16), ADDR_CHAN_REG(REG_C0H,
+ 							     subdev_channel));
+ 		outw(0xFFFF & (*data), ADDR_CHAN_REG(REG_C0L, subdev_channel));
+ 		break;
+ 
+ 	case SinglePulseGeneration:
+-		printk("S526: INSN_WRITE: SPG\n");
++		printk(KERN_INFO "S526: INSN_WRITE: SPG\n");
+ 		outw(0xFFFF & ((*data) >> 16), ADDR_CHAN_REG(REG_C0H,
+ 							     subdev_channel));
+ 		outw(0xFFFF & (*data), ADDR_CHAN_REG(REG_C0L, subdev_channel));
+@@ -777,14 +798,14 @@ static int s526_gpct_winsn(struct comedi_device *dev,
+ 		   The above periods must be expressed as a multiple of the
+ 		   pulse frequency on the selected source
+ 		 */
+-		printk("S526: INSN_WRITE: PTG\n");
++		printk(KERN_INFO "S526: INSN_WRITE: PTG\n");
+ 		if ((insn->data[1] > insn->data[0]) && (insn->data[0] > 0)) {
+ 			(devpriv->s526_gpct_config[subdev_channel]).data[0] =
+ 			    insn->data[0];
+ 			(devpriv->s526_gpct_config[subdev_channel]).data[1] =
+ 			    insn->data[1];
+ 		} else {
+-			printk("s526: INSN_WRITE: PTG: Problem with Pulse params -> %d %d\n",
++			printk(KERN_ERR "s526: INSN_WRITE: PTG: Problem with Pulse params -> %d %d\n",
+ 				insn->data[0], insn->data[1]);
+ 			return -EINVAL;
+ 		}
+@@ -873,7 +894,7 @@ static int s526_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		if (i == TIMEOUT) {
+ 			/* printk() should be used instead of printk()
+ 			 * whenever the code can be called from real-time. */
+-			printk("s526: ADC(0x%04x) timeout\n",
++			printk(KERN_ERR "s526: ADC(0x%04x) timeout\n",
+ 			       inw(ADDR_REG(REG_ISR)));
+ 			return -ETIMEDOUT;
+ 		}
+@@ -906,11 +927,14 @@ static int s526_ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	 * very useful, but that's how the interface is defined. */
+ 	for (i = 0; i < insn->n; i++) {
+ 		/* a typical programming sequence */
+-/* outw(data[i], dev->iobase + REG_ADD);    write the data to preload register */
+-		outw(data[i], ADDR_REG(REG_ADD));	/*  write the data to preload register */
++		/* write the data to preload register
++		 * outw(data[i], dev->iobase + REG_ADD);
++		 */
++		/* write the data to preload register */
++		outw(data[i], ADDR_REG(REG_ADD));
+ 		devpriv->ao_readback[chan] = data[i];
+ /* outw(val + 1, dev->iobase + REG_DAC);  starts the D/A conversion. */
+-		outw(val + 1, ADDR_REG(REG_DAC));	/*  starts the D/A conversion. */
++		outw(val + 1, ADDR_REG(REG_DAC)); /*starts the D/A conversion.*/
+ 	}
+ 
+ 	/* return the number of samples read/written */
+@@ -954,7 +978,7 @@ static int s526_dio_insn_bits(struct comedi_device *dev,
+ 
+ 	/* on return, data[1] contains the value of the digital
+ 	 * input and output lines. */
+-	data[1] = inw(ADDR_REG(REG_DIO)) & 0xFF;	/*  low 8 bits are the data */
++	data[1] = inw(ADDR_REG(REG_DIO)) & 0xFF; /* low 8 bits are the data */
+ 	/* or we could just return the software copy of the output values if
+ 	 * it was a purely digital output subdevice */
+ 	/* data[1]=s->state & 0xFF; */
+@@ -969,7 +993,7 @@ static int s526_dio_insn_config(struct comedi_device *dev,
+ 	int chan = CR_CHAN(insn->chanspec);
+ 	int group, mask;
+ 
+-	printk("S526 DIO insn_config\n");
++	printk(KERN_INFO "S526 DIO insn_config\n");
+ 
+ 	/* The input or output configuration of each digital line is
+ 	 * configured by a special insn_config instruction.  chanspec
+@@ -980,11 +1004,12 @@ static int s526_dio_insn_config(struct comedi_device *dev,
+ 	mask = 0xF << (group << 2);
+ 	switch (data[0]) {
+ 	case INSN_CONFIG_DIO_OUTPUT:
+-		s->state |= 1 << (group + 10);  // bit 10/11 set the group 1/2's mode
++		/* bit 10/11 set the group 1/2's mode */
++		s->state |= 1 << (group + 10);
+ 		s->io_bits |= mask;
+ 		break;
+ 	case INSN_CONFIG_DIO_INPUT:
+-		s->state &= ~(1 << (group + 10));// 1 is output, 0 is input.
++		s->state &= ~(1 << (group + 10)); /* 1 is output, 0 is input. */
+ 		s->io_bits &= ~mask;
+ 		break;
+ 	case INSN_CONFIG_DIO_QUERY:
 -- 
-	Three Cheers,
-	Balbir
+1.7.3.3
+
