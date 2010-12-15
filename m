@@ -1,54 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab0LOUfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:35:50 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:59118 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751081Ab0LOUfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 15:35:44 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/+TdctlX3+sV5lTZu9qs5GroAfd0iIMsAZ0/55fe
-	R1KshyvrTYExp+
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
-Date: Wed, 15 Dec 2010 21:35:35 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012152135.35941.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1754355Ab0LOUis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:38:48 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10405 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab0LOUio (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 15:38:44 -0500
+Date: Wed, 15 Dec 2010 21:34:32 +0100
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv8 12/12] ARM: cma: Added CMA to Aquila,
+ Goni and c210 universal boards
+In-reply-to: <cover.1292443200.git.m.nazarewicz@samsung.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org
+Message-id: <b6bff95982066048cbca83920953aa30ac23394c.1292443200.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.2.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <cover.1292443200.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 09 Dezember 2010, 00:29:30 schrieb Peter Huewe:
-> This patch removes a recursive dependency which causes a build failure
-> [1-3] by changing the ASUS_WMI from select ACPI_WMI to depend on
-> ACPI_WMI as most other _WMI config options do.
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
-> Error Message:
-> drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
-> drivers/platform/x86/Kconfig:422:	symbol EEEPC_WMI depends on ACPI_WMI
-> drivers/platform/x86/Kconfig:438:	symbol ACPI_WMI is selected by ACER_WMI
-> drivers/platform/x86/Kconfig:18:	symbol ACER_WMI depends on LEDS_CLASS
-> drivers/leds/Kconfig:10:	symbol LEDS_CLASS is selected by EEEPC_WMI
-> 
-> 
-> References:
-> [1] http://kisskb.ellerman.id.au/kisskb/buildresult/3607123/
-> [2] http://kisskb.ellerman.id.au/kisskb/buildresult/3607218/
-> [3] http://kisskb.ellerman.id.au/kisskb/buildresult/3607139/
-> 
-> KernelVersion: linux-next-20101208
-> 
+This commit adds CMA memory reservation code to Aquila, Goni and c210
+universal boards.
 
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/mach-s5pv210/Kconfig               |    2 +
+ arch/arm/mach-s5pv210/mach-aquila.c         |    2 +
+ arch/arm/mach-s5pv210/mach-goni.c           |    2 +
+ arch/arm/mach-s5pv310/Kconfig               |    1 +
+ arch/arm/mach-s5pv310/mach-universal_c210.c |    2 +
+ arch/arm/plat-s5p/Makefile                  |    2 +
+ arch/arm/plat-s5p/cma-stub.c                |   49 +++++++++++++++++++++++++++
+ arch/arm/plat-s5p/include/plat/cma-stub.h   |   21 +++++++++++
+ 8 files changed, 81 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/plat-s5p/cma-stub.c
+ create mode 100644 arch/arm/plat-s5p/include/plat/cma-stub.h
 
-Ping - Any updates yet ?
+diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
+index 53aabef..b395a16 100644
+--- a/arch/arm/mach-s5pv210/Kconfig
++++ b/arch/arm/mach-s5pv210/Kconfig
+@@ -68,6 +68,7 @@ config MACH_AQUILA
+ 	select S5P_DEV_ONENAND
+ 	select S5PV210_SETUP_FB_24BPP
+ 	select S5PV210_SETUP_SDHCI
++	select CMA_DEVICE_POSSIBLE
+ 	help
+ 	  Machine support for the Samsung Aquila target based on S5PC110 SoC
+ 
+@@ -92,6 +93,7 @@ config MACH_GONI
+ 	select S5PV210_SETUP_I2C2
+ 	select S5PV210_SETUP_KEYPAD
+ 	select S5PV210_SETUP_SDHCI
++	select CMA_DEVICE_POSSIBLE
+ 	help
+ 	  Machine support for Samsung GONI board
+ 	  S5PC110(MCP) is one of package option of S5PV210
+diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
+index 28677ca..8608a16 100644
+--- a/arch/arm/mach-s5pv210/mach-aquila.c
++++ b/arch/arm/mach-s5pv210/mach-aquila.c
+@@ -39,6 +39,7 @@
+ #include <plat/fb.h>
+ #include <plat/fimc-core.h>
+ #include <plat/sdhci.h>
++#include <plat/cma-stub.h>
+ 
+ /* Following are default values for UCON, ULCON and UFCON UART registers */
+ #define AQUILA_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
+@@ -690,4 +691,5 @@ MACHINE_START(AQUILA, "Aquila")
+ 	.map_io		= aquila_map_io,
+ 	.init_machine	= aquila_machine_init,
+ 	.timer		= &s3c24xx_timer,
++	.reserve	= cma_mach_reserve,
+ MACHINE_END
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index b1dcf96..b1bf079 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -45,6 +45,7 @@
+ #include <plat/keypad.h>
+ #include <plat/sdhci.h>
+ #include <plat/clock.h>
++#include <plat/cma-stub.h>
+ 
+ /* Following are default values for UCON, ULCON and UFCON UART registers */
+ #define GONI_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
+@@ -865,4 +866,5 @@ MACHINE_START(GONI, "GONI")
+ 	.map_io		= goni_map_io,
+ 	.init_machine	= goni_machine_init,
+ 	.timer		= &s3c24xx_timer,
++	.reserve	= cma_mach_reserve,
+ MACHINE_END
+diff --git a/arch/arm/mach-s5pv310/Kconfig b/arch/arm/mach-s5pv310/Kconfig
+index d64efe0..ae4e0da 100644
+--- a/arch/arm/mach-s5pv310/Kconfig
++++ b/arch/arm/mach-s5pv310/Kconfig
+@@ -85,6 +85,7 @@ config MACH_UNIVERSAL_C210
+ 	select S5P_DEV_ONENAND
+ 	select S3C_DEV_I2C1
+ 	select S5PV310_SETUP_I2C1
++	select CMA_DEVICE_POSSIBLE
+ 	help
+ 	  Machine support for Samsung Mobile Universal S5PC210 Reference
+ 	  Board. S5PC210(MCP) is one of package option of S5PV310
+diff --git a/arch/arm/mach-s5pv310/mach-universal_c210.c b/arch/arm/mach-s5pv310/mach-universal_c210.c
+index 16d8fc0..d65703a 100644
+--- a/arch/arm/mach-s5pv310/mach-universal_c210.c
++++ b/arch/arm/mach-s5pv310/mach-universal_c210.c
+@@ -21,6 +21,7 @@
+ #include <plat/s5pv310.h>
+ #include <plat/cpu.h>
+ #include <plat/devs.h>
++#include <plat/cma-stub.h>
+ 
+ #include <mach/map.h>
+ 
+@@ -152,6 +153,7 @@ MACHINE_START(UNIVERSAL_C210, "UNIVERSAL_C210")
+ 	.boot_params	= S5P_PA_SDRAM + 0x100,
+ 	.init_irq	= s5pv310_init_irq,
+ 	.map_io		= universal_map_io,
++	.reserve	= cma_mach_reserve,
+ 	.init_machine	= universal_machine_init,
+ 	.timer		= &s5pv310_timer,
+ MACHINE_END
+diff --git a/arch/arm/plat-s5p/Makefile b/arch/arm/plat-s5p/Makefile
+index de65238..6fdb6ce 100644
+--- a/arch/arm/plat-s5p/Makefile
++++ b/arch/arm/plat-s5p/Makefile
+@@ -28,3 +28,5 @@ obj-$(CONFIG_S5P_DEV_FIMC0)	+= dev-fimc0.o
+ obj-$(CONFIG_S5P_DEV_FIMC1)	+= dev-fimc1.o
+ obj-$(CONFIG_S5P_DEV_FIMC2)	+= dev-fimc2.o
+ obj-$(CONFIG_S5P_DEV_ONENAND)	+= dev-onenand.o
++
++obj-$(CONFIG_CMA) += cma-stub.o
+diff --git a/arch/arm/plat-s5p/cma-stub.c b/arch/arm/plat-s5p/cma-stub.c
+new file mode 100644
+index 0000000..c175ba8
+--- /dev/null
++++ b/arch/arm/plat-s5p/cma-stub.c
+@@ -0,0 +1,49 @@
++/*
++ * This file is just a quick and dirty hack to get CMA testing device
++ * working.  The cma_mach_reserve() should be called as mach's reserve
++ * callback.  CMA testing device will use cma_ctx for allocations.
++ */
++
++#include <plat/cma-stub.h>
++
++#include <linux/cma.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++
++struct cma *cma_ctx;
++
++#define cma_size (32UL << 20) /* 32 MiB */
++
++static unsigned long cma_start __initdata;
++
++void __init cma_mach_reserve(void)
++{
++	unsigned long start = cma_reserve(0, cma_size, 0, true);
++	if (IS_ERR_VALUE(start))
++		printk(KERN_WARNING "cma: unable to reserve %lu for CMA: %d\n",
++		       cma_size >> 20, (int)start);
++	else
++		cma_start = start;
++}
++
++static int __init cma_mach_init(void)
++{
++	int ret = -ENOMEM;
++
++	if (cma_start) {
++		struct cma *ctx = cma_create(cma_start, cma_size);
++		if (IS_ERR(ctx)) {
++			ret = PTR_ERR(ctx);
++			printk(KERN_WARNING
++			       "cma: cma_create(%p, %p) failed: %d\n",
++			       (void *)cma_start, (void *)cma_size, ret);
++		} else {
++			cma_ctx = ctx;
++			ret = 0;
++		}
++	}
++
++	return ret;
++}
++device_initcall(cma_mach_init);
+diff --git a/arch/arm/plat-s5p/include/plat/cma-stub.h b/arch/arm/plat-s5p/include/plat/cma-stub.h
+new file mode 100644
+index 0000000..a24a03b
+--- /dev/null
++++ b/arch/arm/plat-s5p/include/plat/cma-stub.h
+@@ -0,0 +1,21 @@
++/*
++ * This file is just a quick and dirty hack to get CMA testing device
++ * working.  The cma_mach_reserve() should be called as mach's reserve
++ * callback.  CMA testing device will use cma_ctx for allocations.
++ */
++
++struct cma;
++
++#ifdef CONFIG_CMA
++
++extern struct cma *cma_ctx;
++
++void cma_mach_reserve(void);
++
++#else
++
++#define cma_ctx ((struct cma *)NULL)
++
++#define cma_mach_reserve NULL
++
++#endif
+-- 
+1.7.2.3
+
