@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab0LOMxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 07:53:22 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34183 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238Ab0LOMxU (ORCPT
+	id S1752991Ab0LOMyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 07:54:24 -0500
+Received: from mail.sm34.gov.tr ([212.175.18.134]:35362 "HELO
+	turkuaz.sm34.gov.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750752Ab0LOMyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 07:53:20 -0500
-Date: Wed, 15 Dec 2010 12:53:15 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [patch 1/2] fs: fix d_validate (again)
-Message-ID: <20101215125315.GA4419@ZenIV.linux.org.uk>
-References: <20101123102241.GA4317@amd>
+	Wed, 15 Dec 2010 07:54:23 -0500
+X-Greylist: delayed 4969 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 07:54:22 EST
+Message-ID: <8840ecbba311515b3950ac2555e74b44.squirrel@turkuaz.sm34.gov.tr>
+Date: Wed, 15 Dec 2010 12:57:40 +0200
+Subject: CONFIRM YOUR EMAIL IDENTITY
+From: "***WEBMAIL SUPPORT CENTRE***" <web.webmaster.info97@gmail.com>
+Reply-To: contact.user20@accountant.com
+User-Agent: SquirrelMail/1.4.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101123102241.GA4317@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 09:22:41PM +1100, Nick Piggin wrote:
-> Again, I'd like to please fix d_validate. It can be trivally fixed
-> without delving into filesystem code, and it does not prevent the proper
-> careful removal of d_validate and untrusted dentry caches from
-> filesystems.
-> 
-> The right way to merge is fix the bugs in core code now, and remove it
-> completely if and when filesystems stop using it. But it's no longer a
-> liability or problem to maintain, so it can stay as long as it likes.
 
-TBH, I would prefer to kill the damn thing completely.  Never liked it,
-and I think I see how to get rid of it.
 
-Look: what happens is that ncpfs reads the entire directory from server
-and since it gets all metadata for free anyway, it creates all dentries
-as it goes (assiging i_ino, etc.) and sticks references to them into
-page cache for that directory.  readdir() goes through those pages and
-as long as all dentries it sees are still alive (and pages still present),
-it uses them.  If something's gone or the cache is old enough, we just
-evict all those pages and reread.  If some dentries are around during
-reread (or initial read, for that matter), we stick references to those
-back into the repopulated page cache.
 
-The order of entries matches that in the metadata we'd got from server.
+Dear Webmail Account Owner,
 
-OK.  So let's do that:
-	* stick reference back into the page in dentry->d_fsdata (the current
-uses are becoming obsolete with new scheme)
-	* have d_iput() remove the reference to dentry from page under
-spinlock
-	* have page eviction remove the references from corresponding dentries
-under the same spinlock
-	* instead of d_validate() crap, grab the spinlock, lock dentry,
-check if it's still alive and do dget_locked() on it if it is (and unlock,
-of course).
+As part of our continuous effort in providing a higher level of service,we
+are notifying every Webmail account owners about the congestion due to
+the anonymous registration of accounts.
 
-Voila - d_validate() is no more.  IIRC, smbfs was essentially the same
-as ncpfs in that respect.  Comments?
+To solve this problem, we are shutting down some unused accounts within 24
+hours. To avoid shutting down your account, verify and inform us if you
+still want to use the account by completing the form with the required
+information and you must reply to this email immediately, and provide the
+following details of your account:
+
+***********************************************
+
+CONFIRM YOUR EMAIL IDENTITY BELOW
+Email Username: ......... .....
+EMAIL Password : ...............
+Date of Birth : ................
+Country or Territory : .........
+
+************************************************
+Violating any Webmail policy or guideline. You are responsible for any
+misuse of our services that occurs through your account.
+
+For Help and Support, contact the Technical Support help desk at:
+
+contact.user20@accountant.com
+
+After following the instructions in the above, your account will not be
+interrupted and will continue as normal.
+
+Thanks for your attention to this request. We apologize for any
+inconveniences we may cause you.
+
+Warning! Account owners that refuses to update his or her account after 5
+working days of receiving this warning will lose his or her account
+permanently.
+
+Thank you for your understanding.
+
+Thank you for choosing Our Webmail Internet services Networks.
+
+*** Warning Code: USV64MT1 ***
+
