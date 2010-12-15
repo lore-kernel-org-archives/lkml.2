@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab0LOWDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:03:21 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:23615 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab0LOWDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:03:18 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66778937"
-Date: Wed, 15 Dec 2010 14:03:17 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: David Brown <davidb@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] msm: io: I/O register definitions for MSM8960
-Message-ID: <20101215220317.GA22394@huya.qualcomm.com>
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
- <201012151631.11574.arnd@arndb.de>
- <20101215153540.GA15817@huya.qualcomm.com>
- <201012151740.24933.arnd@arndb.de>
+	id S1755554Ab0LOWET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:04:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60267 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753851Ab0LOWER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:04:17 -0500
+Message-ID: <4D093ABB.4030206@zytor.com>
+Date: Wed, 15 Dec 2010 14:01:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012151740.24933.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
+ num limitation
+References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org>
+In-Reply-To: <4CDF3DA1.2090806@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 05:40:24PM +0100, Arnd Bergmann wrote:
+On 11/13/2010 05:38 PM, Yinghai Lu wrote:
+> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
+> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
+> @@ -198,6 +198,13 @@ static void __cpuinit acpi_register_lapi
+>  {
+>  	unsigned int ver = 0;
+>  
+> +#ifdef CONFIG_X86_64
+> +	if (id >= (MAX_APICS-1)) {
+> +		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
+> +		return;
+> +	}
+> +#endif
+> +
+>  	if (!enabled) {
+>  		++disabled_cpus;
+>  		return;
 
-> My point was really that they should not be exclusive, even if they
-> are rather different. If the code is structured in a more modular
-> way, you can turn all MSM/QSD options from the "Qualcomm MSM SoC Type"
-> choice into separate "bool" config options. You probably don't want
-> to do that now for all the existing ones, but I would suggest you
-> try not add more to the pile ;-).
+Why the #ifdef?
 
-It's kind of hard to do too much of this, though, until ARM kernels
-can be relocated.  They mostly all live at different base addresses
-(and 8960 might also move).  Throw CPU differences into the mix and it
-gets messier.
 
-I'm not saying it isn't solvable, but there are a lot of things that
-need to be done to get there.
+> Index: linux-2.6/arch/x86/mm/srat_64.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/mm/srat_64.c
+> +++ linux-2.6/arch/x86/mm/srat_64.c
+> @@ -134,6 +134,10 @@ acpi_numa_x2apic_affinity_init(struct ac
+>  	}
+>  
+>  	apic_id = pa->apic_id;
+> +	if (apic_id >= MAX_LOCAL_APIC) {
+> +		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped that apicid too big\n", pxm, apic_id, node);
+> +		return;
+> +	}
+>  	apicid_to_node[apic_id] = node;
+>  	node_set(node, cpu_nodes_parsed);
+>  	acpi_numa = 1;
+> @@ -168,6 +172,10 @@ acpi_numa_processor_affinity_init(struct
+>  		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
+>  	else
+>  		apic_id = pa->apic_id;
+> +	if (apic_id >= MAX_LOCAL_APIC) {
+> +		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+> +		return;
+> +	}
+>  	apicid_to_node[apic_id] = node;
+>  	node_set(node, cpu_nodes_parsed);
+>  	acpi_numa = 1;
+> Index: linux-2.6/drivers/acpi/numa.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/numa.c
+> +++ linux-2.6/drivers/acpi/numa.c
+> @@ -275,13 +275,23 @@ acpi_table_parse_srat(enum acpi_srat_typ
+>  int __init acpi_numa_init(void)
+>  {
+>  	int ret = 0;
+> +	int nr_cpu_entries = nr_cpu_ids;
+> +
+> +#ifdef CONFIG_X86_64
+> +	/*
+> +	 * Should not limit number with cpu num that will handle,
+> +	 * SRAT cpu entries could have different order with that in MADT.
+> +	 * So go over all cpu entries in SRAT to get apicid to node mapping.
+> +	 */
+> +	nr_cpu_entries = MAX_LOCAL_APIC;
+> +#endif
+>  
 
-David
+Same here...
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+	-hpa
