@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab0LORwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:52:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54118 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab0LORwF convert rfc822-to-8bit (ORCPT
+	id S1754077Ab0LORxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:53:36 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:45851 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751226Ab0LORxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:52:05 -0500
+	Wed, 15 Dec 2010 12:53:35 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: HAC8Q_sVM1nXKGqbfS.QtdQO76DNjqnNsZUFe9GGq9AKsN5
+ HVnsYxbHvJLclWjl5k2E5LHx.Gq5KhUH1U78rxsh4WB2hcmUJkuqhX9TIWH8
+ 8EFszRtlTpaE17BBqqifv4_rY_zGfbXgl8CJHbkISP7vD4G0oxZQQWDStLK_
+ VT31KDDt3J1VTC4WDzTm1Znuw5ItA0b.h5C1UpW8_cApssDDe6C3.LVjuJYV
+ s5NFosan5n6IFAv9Fe0QkQwXdAklAmJXJTzEZZHsThMnz4GSfcsoHKs8Xy9b
+ Uj4f2zFsYNS_E7NWRrAMbYIdtvkHbgYA_jO28WWfq.kCw_8I-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 15 Dec 2010 11:53:31 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V1 2/4] x86: this_cpu_cmpxchg_double()
+ support
+In-Reply-To: <4D08FC9A.8040702@zytor.com>
+Message-ID: <alpine.DEB.2.00.1012151149560.14964@router.home>
+References: <20101214174847.887713690@linux.com> <20101214174900.659284593@linux.com> <4D080FDC.7030005@zytor.com> <4D081225.8000007@zytor.com> <alpine.DEB.2.00.1012151011550.12186@router.home> <alpine.DEB.2.00.1012151020030.12470@router.home>
+ <4D08FC9A.8040702@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101215183508.2f0b608b@gondolin>
-References: <alpine.LFD.2.02.1012071814160.1998@localhost6.localdomain6>
- <20101207183305.GA21802@suse.de> <AANLkTinmuxDYU9-zGvWB0mDDuXZEfZnuVxtSYGk62c8P@mail.gmail.com>
- <alpine.LFD.2.02.1012081116530.1909@localhost6.localdomain6>
- <20101208160255.GB10313@suse.de> <alpine.LFD.2.02.1012132026430.2013@localhost6.localdomain6>
- <20101213193617.GA18262@suse.de> <alpine.LFD.2.02.1012141918520.1988@localhost6.localdomain6>
- <20101214192952.GA9106@suse.de> <20101215142113.7d416d78@gondolin>
- <20101215162316.GA31141@suse.de> <20101215183508.2f0b608b@gondolin>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 15 Dec 2010 18:51:48 +0100
-Message-ID: <AANLkTikC5hLpam0c-goU0KKLezgQJNBnWFJSKn8kdx0a@mail.gmail.com>
-Subject: Re: [RFC] bind/unbind uevent
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Greg KH <gregkh@suse.de>, Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/15 Cornelia Huck <cornelia.huck@de.ibm.com>:
-> On Wed, 15 Dec 2010 08:23:16 -0800, Greg KH <gregkh@suse.de> wrote:
->> On Wed, Dec 15, 2010 at 02:21:13PM +0100, Cornelia Huck wrote:
+On Wed, 15 Dec 2010, H. Peter Anvin wrote:
 
->> How about I turn it around for you, please show me how the driver core
->> does _not_ support this today?  If you can prove that this isn't working
->> properly, then great, I'll gladly accept patches to resolve it.
+> >  cmpxchg16b_cpuops_emu:
+> >  	pushf
+> >  	cli
+> >
 >
-> Looking at device_add():
+> Could we rename it this_cpu_cmpxchg16b_emu or something like that?
 
-...
+Ok. New fixup patch:
 
-> This will not be a problem if a device driver registers a child device
-> (since it can specify the attributes there).
 
-Which is the proper way to do it. No driver should ever mangle a
-device which it does not own. It's like adding properties of a block
-device directly to a usb_interface device. That just can not work
-correctly for many reasons, inside and outside of the kernel.
 
-> I think the basic problem is that the KOBJ_ADD uevent notifies
-> userspace that "a device is there", while the device will only be
-> really useable by userspace once a driver has bound to it.
+Subject: x86, percpu: Rename cmpxchg16b_cpuops_emu to this_cpu_cmpxchg16b_emu
 
-This device represents a device on a bus, and can usually do its own
-things. A driver can bind to it, but should not mangle it.
+Rename the function to make clear what it is used for. Also add some comments
+to explain the nature of the atomicness.
 
-> A module
-> load triggered by KOBJ_ADD is fine, but trying to actually use the
-> device after KOBJ_ADD is racy. This will not matter in the usual case,
-> since either the matching/probing is fast enough or userspace will wait
-> for something like a block device anyway, but we've seen problems on
-> s390. A KOBJ_BIND/UNBIND would make a proper distinction between
-> "device is there" and "device is usable".
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-We don't rally want any such events. We expect a new child device
-being created from the driver, instead of re-using the existing bus
-device.
+---
+ arch/x86/include/asm/percpu.h |    2 +-
+ arch/x86/lib/cmpxchg16b_emu.S |   10 +++++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-> (Besides, what happens on unbind/bind? Shouldn't userspace know that a
-> device is now bound to a different driver?)
+Index: linux-2.6/arch/x86/lib/cmpxchg16b_emu.S
+===================================================================
+--- linux-2.6.orig/arch/x86/lib/cmpxchg16b_emu.S	2010-12-15 10:57:21.000000000 -0600
++++ linux-2.6/arch/x86/lib/cmpxchg16b_emu.S	2010-12-15 11:47:50.000000000 -0600
+@@ -23,14 +23,18 @@
+  * %rcx : high 64 bits of new value
+  * %al  : Operation successful
+  */
+-ENTRY(cmpxchg16b_cpuops_emu)
++ENTRY(this_cpu_cmpxchg16b_emu)
+ CFI_STARTPROC
 
-It does that by watching the child devices the driver creates and destroys.
+ #
+ # Emulate 'cmpxchg16b %gs:(%rsi)' except we return the result in
+ # al not via the ZF. Caller will access al to get result.
+ #
+-cmpxchg16b_cpuops_emu:
++# Note that this is only useful for a cpuops operation. Meaning that we
++# do *not* have a fully atomic operation but just an operation that is
++# *atomic* on a single cpu (as provided by the this_cpu_xx class of macros)
++#
++this_cpu_cmpxchg16b_emu:
+ 	pushf
+ 	cli
 
-We already have enough events to handle on today's boxes, we really
-don't want to add new ones, which are only needed to work around such
-use cases, which ideally just should be fixed.
+@@ -53,6 +57,6 @@ cmpxchg16b_cpuops_emu:
 
-If you can not change the current drivers to create child devices, the
-driver can probably just send change events for the already existing
-devices it mangles from the driver.
+ CFI_ENDPROC
 
-We don't want to encourage any such use model in general, and such
-hacks should be bus/driver specific (and only for legacy reasons), and
-they do not belong into the driver core.
+-ENDPROC(cmpxchg16b_cpuops)
++ENDPROC(this_cpu_cmpxchg16b_emu)
 
-Kay
+
+Index: linux-2.6/arch/x86/include/asm/percpu.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2010-12-15 11:48:09.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2010-12-15 11:48:26.000000000 -0600
+@@ -520,7 +520,7 @@ do {									\
+ 	typeof(o2) __o2 = o2;						\
+ 	typeof(o2) __n2 = n2;						\
+ 	typeof(o2) __dummy;						\
+-	alternative_io("call cmpxchg16b_cpuops_emu\n\t" P6_NOP4,		\
++	alternative_io("call this_cpu_cmpxchg16b_emu\n\t" P6_NOP4,		\
+ 			"cmpxchg16b %%gs:(%%rsi)\n\tsetz %0\n\t",	\
+ 			X86_FEATURE_CX16,				\
+ 		    	ASM_OUTPUT2("=a"(__ret), "=d"(__dummy)),	\
