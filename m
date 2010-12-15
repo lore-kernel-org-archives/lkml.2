@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab0LOQ3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:29:48 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:61602 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab0LOQ3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:29:45 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-Subject: Re: [PATCH 6/9] ARM i.MX51: Add IPU device support
-Date: Wed, 15 Dec 2010 17:29:33 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Zhang Lily-R58066" <r58066@freescale.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1291902441-24712-1-git-send-email-s.hauer@pengutronix.de> <201012151649.45199.arnd@arndb.de> <87pqt3c89f.fsf@lechat.rtp-net.org>
-In-Reply-To: <87pqt3c89f.fsf@lechat.rtp-net.org>
+	id S1753319Ab0LOQaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:30:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:35576 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752740Ab0LOQaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:30:06 -0500
+Message-ID: <4D08ECEF.3040909@kernel.org>
+Date: Wed, 15 Dec 2010 17:29:35 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
+ lock semantics
+References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com>
+In-Reply-To: <4D0814AF.7080209@zytor.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012151729.34021.arnd@arndb.de>
-X-Provags-ID: V02:K0:3AEw9RQ9EZnr3dWtK0erd8CsMCMSzKp1WNV3VnUp5sF
- PsDN6VqaPxuN8HJinfFYdlHYT4ryJjxSGssgccQUtQNlvparY5
- ZwWCXQclfg5KZc2fBQtgmL7te12Qn4gbNNdvhv64YEuXH0B/mS
- jazxXd7bvgMPtF0+E1anExEHAE2iyItTXQIT6X0d8K//4KQdF3
- zflvhSmT2EFXyQLtkwhEA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 16:29:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 December 2010, Arnaud Patard wrote:
-> The thing is that I would consider removing the imx*add* stuff to be
-> a cleanup and should be done in a different patch, not in a patchset
-> adding IPU support for imx51.
+Hello,
 
-Yes, that sounds reasonable.
+On 12/15/2010 02:06 AM, H. Peter Anvin wrote:
+> It's probably easiest if you just add them with my Acked-by: then.
+> Alternatively, I could pick them up so they go into -tip and the tip
+> test machinery.
 
-	Arnd
+All patches accepted into percpu till now are in the following branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-next
+
+The tree is based on v2.6.37-rc5 and v2.6.37-rc5..for-next would give
+21 patches.  I think most of these don't fit x86 tree but there are
+several which would fit there much better.  d80aadf9 (x86: Replace
+uses of current_cpu_data with this_cpu ops) and e5195e91 (x86: Use
+this_cpu_inc_return for nmi counter).
+
+As it would be beneficial to push these through -tip testing anyway,
+how about the following?
+
+* If you review and ack the x86 related bits in the series, I'll
+  regenerated and add the ACKs.
+
+* It would be better if the two commits mentioned above get routed
+  through x86 tree rather than percpu tree, so I'll drop the above two
+  from percpu tree and you can pull percpu into x86 and then apply
+  those in x86 tree.
+
+Thanks.
+
+-- 
+tejun
