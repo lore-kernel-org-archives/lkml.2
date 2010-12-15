@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab0LOWZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:25:54 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58136 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab0LOWZu (ORCPT
+	id S1752541Ab0LOWh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:37:27 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64800 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab0LOWhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:25:50 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=bLmJrh3I8mQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=rOUgymgbAAAA:8 a=D19gQVrFAAAA:8 a=l0BGnYWgph-KsVvwJcwA:9 a=oHc7uLkC02BaH_EAkVQA:7 a=EYYRtAOnwl5Sis2nJdYilFM-paoA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: ftrace/MIPS related x86_64 build failure on in Linus' tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        John Reiser <jreiser@bitwagon.com>, Wu Zhangjin <wuzhangjin@gmail.com>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20101216090019.639191a1.sfr@canb.auug.org.au>
-References: <20101215160440.bafbe38c.sfr@canb.auug.org.au>
-	 <AANLkTimgNVUaQcRdva_usq1XX=vp1xwHM3rUeT_hNCZd@mail.gmail.com>
-	 <20101216090019.639191a1.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 15 Dec 2010 17:25:36 -0500
-Message-ID: <1292451936.5015.1905.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 15 Dec 2010 17:37:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH 1/7] msm: io: I/O register definitions for MSM8960
+Date: Wed, 15 Dec 2010 23:37:19 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <201012151740.24933.arnd@arndb.de> <20101215220317.GA22394@huya.qualcomm.com>
+In-Reply-To: <20101215220317.GA22394@huya.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201012152337.19475.arnd@arndb.de>
+X-Provags-ID: V02:K0:r0uXX2pzZy9mKgRMdSMEawL2KrWhc5nnI0baUO1gNSt
+ tIiK+m5bazjAd/6kfy0paeYwv8gBGEl05F+cvMs5XuWQz0pO2c
+ Of/AVjoOI7bV0O/JPqATKgOYbkcKlLdEc+KDWhfmzPP4L7oe3m
+ 22FcpSiLtOF4t8ycZOiOkK4VHimd5G1978uf8HcF8Gv2+Rtjvq
+ qXiFZtlPqYjbUSxW80vfA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 09:00 +1100, Stephen Rothwell wrote:
-> Hi Arnaud,
+On Wednesday 15 December 2010, David Brown wrote:
 > 
-> On Wed, 15 Dec 2010 01:45:45 -0500 Arnaud Lacombe <lacombar@gmail.com> wrote:
-> >
-> > On Wed, Dec 15, 2010 at 12:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > >
-> > > Since October 31 our x86_64 allmodconfig builds have been failing like this:
-> > >
-> > > /opt/crosstool/gcc-4.4.3-nolibc/x86_64-linux/bin/x86_64-linux-ld: arch/x86/ia32/sys_ia32.o: bad reloc symbol index (0x1000000 >= 0x6b) for offset 0x808080 in section `__mcount_loc'
-> > > arch/x86/ia32/sys_ia32.o: could not read symbols: Bad value
-> > >
-> > I got the same on mips, target was BE, toolchain's host was LE.
-> > Doesn't https://lkml.org/lkml/2010/12/2/224 address the issue ? This
-> > patch does not seem to have reached Linus tree yet.
+> On Wed, Dec 15, 2010 at 05:40:24PM +0100, Arnd Bergmann wrote:
 > 
-> Thanks for pointing that out.  I wonder how we can push that along.
+> > My point was really that they should not be exclusive, even if they
+> > are rather different. If the code is structured in a more modular
+> > way, you can turn all MSM/QSD options from the "Qualcomm MSM SoC Type"
+> > choice into separate "bool" config options. You probably don't want
+> > to do that now for all the existing ones, but I would suggest you
+> > try not add more to the pile ;-).
+> 
+> It's kind of hard to do too much of this, though, until ARM kernels
+> can be relocated.  They mostly all live at different base addresses
+> (and 8960 might also move).  Throw CPU differences into the mix and it
+> gets messier.
+> 
+> I'm not saying it isn't solvable, but there are a lot of things that
+> need to be done to get there.
 
-I did some poking, it should be moving along soon.
+Yes, I understand that it's hard for many reasons, but my impression
+is that there is a general agreement on the idea. As I said, I don't
+expect you to fix it all at once, but it shouldn't be too hard
+to take care when adding new code.
 
-Thanks!
+We already have infrastructure that deals with different CPU cores
+in one kernel binary, at least from v5 to v7, and some platforms
+like omap and realview can already be built for a variety of very
+different machines without such problems.
 
--- Steve
-
-
+	Arnd
