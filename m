@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab0LOQvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:51:53 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46353 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751541Ab0LOQvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:51:50 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] platform/x86: Consistently select LEDS Kconfig options
-Date: Wed, 15 Dec 2010 16:51:37 +0000
-Message-Id: <1292431897-13770-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752804Ab0LOQwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:52:55 -0500
+Received: from hera.kernel.org ([140.211.167.34]:41088 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab0LOQwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:52:54 -0500
+Message-ID: <4D08F21B.3000706@kernel.org>
+Date: Wed, 15 Dec 2010 17:51:39 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg double V1 4/4] Lockless (and preemptless) fastpaths
+ for slub
+References: <20101214174847.887713690@linux.com> <20101214174901.827380447@linux.com>
+In-Reply-To: <20101214174901.827380447@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 16:51:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the x86 platform devices are not consistent about selecting
-or depending on the LEDs Kconfig variables, and this inconsistency
-leads to Kconfig getting upset and refusing to offer LEDs (even on
-non-x86 platforms):
+On 12/14/2010 06:48 PM, Christoph Lameter wrote:
+> Use the this_cpu_cmpxchg_double functionality to implement a lockless
+> allocation algorithm on arches that support fast this_cpu_ops.
+> 
+> Each of the per cpu pointers is paired with a transaction id that ensures
+> that updates of the per cpu information can only occur in sequence on
+> a certain cpu.
+> 
+> A transaction id is a "long" integer that is comprised of an event number
+> and the cpu number. The event number is incremented for every change to the
+> per cpu state. This means that the cmpxchg instruction can verify for an
+> update that nothing interfered and that we are updating the percpu structure
+> for the processor where we picked up the information and that we are also
+> currently on that processor when we update the information.
+> 
+> This results in a significant decrease of the overhead in the fastpaths. It
+> also makes it easy to adopt the fast path for realtime kernels since this
+> is lockless and does not require the use of the current per cpu area
+> over the critical section. It is only important that the per cpu area is
+> current at the beginning of the critical section and at the end.
+> 
+> So there is no need even to disable preemption.
+> 
+> Test results show that the fastpath cycle count is reduced by up to ~ 40%
+> (alloc/free test goes from ~140 cycles down to ~80). The slowpath for kfree
+> adds a few cycles.
+> 
+> Sadly this does nothing for the slowpath which is where the main issues with
+> performance in slub are but the best case performance rises significantly.
+> (For that see the more complex slub patches that require cmpxchg_double)
 
-drivers/platform/x86/Kconfig:422:error: recursive dependency detected!
-drivers/platform/x86/Kconfig:422:       symbol EEEPC_WMI depends on ACPI_WMI
-drivers/platform/x86/Kconfig:438:       symbol ACPI_WMI is selected by ACER_WMI
-drivers/platform/x86/Kconfig:18:        symbol ACER_WMI depends on LEDS_CLASS
-drivers/leds/Kconfig:10:        symbol LEDS_CLASS is selected by EEEPC_WMI
+The first two look good to me but I frankly don't have much idea about
+the latter two.  Pekka, can you please ack those?  Alternatively, you
+can later pull the percpu tree in and apply the allocator bits in your
+tree, which I actually prefer.
 
-Fix this by always selecting rather than depending on the symbols as
-slightly more drivers use this approach already and it seems more
-user friendly.
+Thanks.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/platform/x86/Kconfig |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 4c7f8b9..fa18c25 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -18,8 +18,8 @@ if X86_PLATFORM_DEVICES
- config ACER_WMI
- 	tristate "Acer WMI Laptop Extras"
- 	depends on ACPI
--	depends on LEDS_CLASS
--	depends on NEW_LEDS
-+	select LEDS_CLASS
-+	select NEW_LEDS
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on SERIO_I8042
- 	depends on RFKILL || RFKILL = n
-@@ -513,8 +513,8 @@ config TOPSTAR_LAPTOP
- config ACPI_TOSHIBA
- 	tristate "Toshiba Laptop Extras"
- 	depends on ACPI
--	depends on LEDS_CLASS
--	depends on NEW_LEDS
-+	select LEDS_CLASS
-+	select NEW_LEDS
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on INPUT
- 	depends on RFKILL || RFKILL = n
 -- 
-1.7.1
-
+tejun
