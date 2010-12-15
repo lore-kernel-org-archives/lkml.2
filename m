@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab0LOTRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:17:00 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:60573 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab0LOTQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:16:58 -0500
-Date: Wed, 15 Dec 2010 20:16:56 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Matt <jackdachef@gmail.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Jon Nelson <jnelson@jamponi.net>,
-        Chris Mason <chris.mason@oracle.com>, Andi Kleen <andi@firstfloor.org>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        dm-devel <dm-devel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
- barrier support is effective)
-Message-ID: <20101215191655.GA6163@basil.fritz.box>
-References: <AANLkTinMt6saGeeX3MbwAzZ-+f6AL5BegeFqyPgGwiDo@mail.gmail.com>
- <AANLkTi=cn04WZGMnVX6ie5PSM+9v0tJSSg0kD8_W5N11@mail.gmail.com>
- <20101212023415.GG3059@thunk.org>
- <AANLkTim=i8wDnML+K4uGK_neNDCiWxtKGDx01O+3joaE@mail.gmail.com>
- <AANLkTinhHTqqpP=pQ8Foyc9xeaZi65GHGHGY51OyZtvF@mail.gmail.com>
- <20101212124354.GA4513@thunk.org>
- <AANLkTikZkCs7Wee2=uhe3bw96Pggcv0jsCkZ+nkWEQ+=@mail.gmail.com>
- <20101213020657.GB4513@thunk.org>
- <AANLkTinMWS-yyzWJ3oBo_KS9jXt4p4pveo+SPTLiWnCt@mail.gmail.com>
- <AANLkTimjM_HptLaCSuQivxruWpoc7todyMe0wnszrSYU@mail.gmail.com>
+	id S1755058Ab0LOTT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:19:27 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59277 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754614Ab0LOTTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 14:19:24 -0500
+Message-ID: <4D0914B5.20208@kernel.org>
+Date: Wed, 15 Dec 2010 20:19:17 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimjM_HptLaCSuQivxruWpoc7todyMe0wnszrSYU@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org> <1292440246.4688.416.camel@mulgrave.site>
+In-Reply-To: <1292440246.4688.416.camel@mulgrave.site>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 19:19:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have a question though: the deactivation of multiple page-io
-> submission support most likely only would affect bigger systems or
-> also desktop systems (like mine) ?
+Hello,
 
-I think this is not a final fix, just a workaround.
-The problem with the other path still really needs to be tracked down.
+On 12/15/2010 08:10 PM, James Bottomley wrote:
+>> Yes, it would do, but we were already too far with the existing
+>> implementation and I don't agree we need more when replacing it with
+>> usual workqueue usage would remove the issue.  So, when we actually
+>> need them, let's consider that or any other way to do it, please.
+>> A core API with only a few users which can be easily replaced isn't
+>> really worth keeping around.  Wouldn't you agree?
+> 
+> Not really ... since the fix is small and obvious.
 
--Andi
+IMHO, it's a bit too subtle to be a good API.  The callee is called
+under different (locking) context depending on the callsite and I've
+been already bitten enough times from implicit THIS_MODULEs.  Both
+properties increase possbility of introducing problems which can be
+quite difficult to detect and reproduce.
+
+> Plus now it can't be moved into SCSI because I need the unremovable
+> call chain.
+
+Yes, with the proposed change, it cannot be moved to SCSI.
+
+> Show me how you propose to fix it differently first, since we both agree
+> the initial attempt doesn't work, and we can take the discussion from
+> there.
+
+Given that the structures containing the work items are dynamically
+allocated, I would introduce a scsi_wq, unconditionally schedule
+release works on them and flush them before unloading.  Please note
+that workqueues no longer require dedicated threads, so it's quite
+cheap.
+
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+tejun
