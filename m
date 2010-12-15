@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab0LORdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:33:03 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:38582 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751246Ab0LORdA (ORCPT
+	id S1752702Ab0LORfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:35:07 -0500
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:47569 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab0LORfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:33:00 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: RvBkGb8VM1lvf70Q8O8XSLVgNv9fsCVE45rLnrkWIT__S9A
- TccUd9zWwcyNE6vI0v7ZDxcsKL_oq52R358c4eMCcSYKMVGTo1s6g0juUrRc
- r5Hgbu9RjCDcjVJYeyuNIXd0S40zSgMrqt967I7MqeOdVkFNbyGI.Dd4dCkO
- WrVXj75x7cp6zpE5gAU2qhMy41DjFte3lPv97lVcCLDu02LkIN5awanMw8g9
- X.Bj3fW_YMBhwamPDDeO2GgPnn8YzJkqxO6DLc_7qufy9bM4u_oKBmiKhEje
- fgRjfDjfsAaSycg38Z8SGwMurynXabLtHTHoKfXujIQWJHzU-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 15 Dec 2010 11:32:56 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
- of regular atomics
-In-Reply-To: <1292433517.2708.41.camel@laptop>
-Message-ID: <alpine.DEB.2.00.1012151126190.13049@router.home>
-References: <20101214162842.542421046@linux.com>  <20101214162854.218751478@linux.com>  <4D08EDA9.3090801@kernel.org>  <1292431839.2708.30.camel@laptop>  <alpine.DEB.2.00.1012151059430.13049@router.home> <1292433517.2708.41.camel@laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 15 Dec 2010 12:35:02 -0500
+Date: Wed, 15 Dec 2010 18:35:08 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] bind/unbind uevent
+Message-ID: <20101215183508.2f0b608b@gondolin>
+In-Reply-To: <20101215162316.GA31141@suse.de>
+References: <alpine.LFD.2.02.1012071814160.1998@localhost6.localdomain6>
+	<20101207183305.GA21802@suse.de>
+	<AANLkTinmuxDYU9-zGvWB0mDDuXZEfZnuVxtSYGk62c8P@mail.gmail.com>
+	<alpine.LFD.2.02.1012081116530.1909@localhost6.localdomain6>
+	<20101208160255.GB10313@suse.de>
+	<alpine.LFD.2.02.1012132026430.2013@localhost6.localdomain6>
+	<20101213193617.GA18262@suse.de>
+	<alpine.LFD.2.02.1012141918520.1988@localhost6.localdomain6>
+	<20101214192952.GA9106@suse.de>
+	<20101215142113.7d416d78@gondolin>
+	<20101215162316.GA31141@suse.de>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzender des
+ Aufsichtsrats: Martin Jetter =?ISO-8859-15?Q?Gesch=E4ftsf=FChrung:?= Dirk
+ Wittkopp Sitz der Gesellschaft: =?ISO-8859-15?Q?B=F6blingen?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010, Peter Zijlstra wrote:
+On Wed, 15 Dec 2010 08:23:16 -0800,
+Greg KH <gregkh@suse.de> wrote:
 
-> > A prefix is one byte which is less that multiple arithmetic operations to
-> > calculate an address.
->
-> I thought you'd only need a single arithmetic op to calculate the
-> address, anyway at some point those 1 byte prefixes will add up to more
-> than the ops saved.
+> On Wed, Dec 15, 2010 at 02:21:13PM +0100, Cornelia Huck wrote:
+> > On Tue, 14 Dec 2010 11:29:52 -0800,
+> > Greg KH <gregkh@suse.de> wrote:
+> > 
+> > > On Tue, Dec 14, 2010 at 07:26:40PM +0100, Sebastian Ott wrote:
+> > > > 
+> > > > On Mon, 13 Dec 2010, Greg KH wrote:
+> > > > > On Mon, Dec 13, 2010 at 08:27:45PM +0100, Sebastian Ott wrote:
+> > 
+> > > > > Don't do that, have your _driver_ register the attributes with the bus
+> > > > > it is on, then when the binding happens, the attributes will
+> > > > > automatically get created for the device before the notification is sent
+> > > > > to userspace.  That is the proper proceedure here.
+> > > > 
+> > > > are you suggesting that these driver specific device attributes should be
+> > > > created by the bus code which registers the device?
+> > > 
+> > > Yes.
+> > > 
+> > > > at this time it is not determinable which driver will bind to the device
+> > > > (and therefore which attributes to create), also driver specific data may 
+> > > > not be initialized.
+> > > 
+> > > {sigh}
+> > > 
+> > > Please go _look_ at how the driver model handles this type of thing.  It
+> > > does _exactly_ what you want, as we have been doing it for _years_
+> > > properly.
+> > > 
+> > 
+> > I don't understand how this could work. All of the attribute (groups)
+> > registered before the uevent are driver-ignorant. If the bus wants to
+> > specify the attributes, it needs to know the driver the device will
+> > bind to (regardless of whatever tables exist that show the driver <->
+> > attribute relationship). But it cannot know the driver until after the
+> > uevent. Or else it would need to create _all_ attributes for _all_
+> > devices (surely you didn't mean that)? And what happens with drivers
+> > that are loaded later on?
+> > 
+> > Could you please elaborate on how the attributes could be created in a
+> > compatible way with today's driver core?
+> 
+> Come on people, just look at the code!  It does exactly this today just
+> fine with no changes needed to the driver core.
+> 
+> How about I turn it around for you, please show me how the driver core
+> does _not_ support this today?  If you can prove that this isn't working
+> properly, then great, I'll gladly accept patches to resolve it.
 
-Yes if you have enough of those then it may no longer be worth it. But
-here you only have two. And the segment address calculation is efficiently
-implemented in the processors.
+Looking at device_add():
 
-> Still, non of this is really fast-path code, so I really wonder why
-> we're optimizing this over keeping the code obvious.
+various setup
+add kobject to tree
+...
+call device_add_attrs
+(this adds pre-specified attribute
+groups, depending on dev->type,
+dev->class or the device specific
+attribute groups)
+call bus_add_device
+(add per-bus pre-specified attributes;
+the bus does not know the driver yet)
+...
+call kobject_uevent                       <--- first time userspace knows
+                                               about device
+call bus_probe_device                     <--- first time a driver may
+                                               actually see the device
+                                               (depending on the ->match
+                                                and ->probe functions,
+                                                this may be quite a bit of
+                                                time afterwards)
 
-I was looking for usecases that already exist for cmpxchg (because the
-patches introduce this_cpu_cmpxchg also for other uses) and found this one
-here and it looked like an easy way to use the prefixed operation.  Its
-not that high of a priority but it seems that we are saving code and
-cycles.
+This will not be a problem if a device driver registers a child device
+(since it can specify the attributes there).
 
-The code is cleaner IMHO. this_cpu_xx documents that the actions here
-only have local effects and that there is no need of serialization with
-other processors.
+I think the basic problem is that the KOBJ_ADD uevent notifies
+userspace that "a device is there", while the device will only be
+really useable by userspace once a driver has bound to it. A module
+load triggered by KOBJ_ADD is fine, but trying to actually use the
+device after KOBJ_ADD is racy. This will not matter in the usual case,
+since either the matching/probing is fast enough or userspace will wait
+for something like a block device anyway, but we've seen problems on
+s390. A KOBJ_BIND/UNBIND would make a proper distinction between
+"device is there" and "device is usable".
 
+(Besides, what happens on unbind/bind? Shouldn't userspace know that a
+device is now bound to a different driver?)
+
+Cornelia
