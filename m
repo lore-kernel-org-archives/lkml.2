@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab0LOKAi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:00:38 -0500
-Received: from lo.gmane.org ([80.91.229.12]:41256 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043Ab0LOKAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:00:37 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-Subject: Re: [ANNOUNCE] Linux 2.6.35.10 has been released
-Date: Wed, 15 Dec 2010 11:00:24 +0100
-Organization: Technische Universitaet Ilmenau, Germany
-Message-ID: <slrnigh4dp.80o.Mario.Holbe@darkside.dyn.samba-tng.org>
-References: <20101214232747.GA18757@basil.fritz.box>
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: p4fd561ad.dip.t-dialin.net
-User-Agent: slrn/pre1.0.0-18 (Linux)
-Cancel-Lock: sha1:Ft2modJ1/O9iwex1SDm8643d6So=
-Cc: stable@linux.kernel.org
+	id S1752521Ab0LOKKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:10:39 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41591 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab0LOKKh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:10:37 -0500
+Date: Wed, 15 Dec 2010 10:10:27 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
+        Greg Ungerer <gerg@snapgear.com>
+Subject: Re: Signal patchset (was: Re: aranym bug, manifests as "ida_remove
+ called for id=13" on recent kernels)
+Message-ID: <20101215101027.GA31097@ZenIV.linux.org.uk>
+References: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andi,
+On Sun, Dec 05, 2010 at 12:15:10PM +0100, Geert Uytterhoeven wrote:
 
-Andi Kleen <andi@firstfloor.org> wrote:
-> A new longterm 2.6.35.10 kernel has been released. This release contains security
-...
-> ftp://ftp.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.35/linux-2.6.35.10.tar.gz
+> Unless someone objects, I'm inclined to apply Al's patchset, as it improves the
+> situation anyway.
+> 
+> OK?
 
-Could you please also provide a ChangeLog-* file?
-I'm quite sure this would be helpful for people not reading your
-announcements on lkml and/or downloading new releases later.
-
-
-regards
-   Mario
--- 
-If her DNA was off by one percentage point, she'd be a dolphin.
-                                -- Dr. Gregory House
-
+FWIW, there's an m68knommu counterpart (ACKed by gerg a while ago).  The
+entire bunch is on ftp.linux.org.uk/pub/people/viro/m68k-signals - both m68k
+and m68knommu sets.  I don't know how you guys would prefer it done, since
+there's a trivial dependency between m68k and m68knommu parts of series -
+the former has
++#ifndef __uClinux__
++#define __ARCH_WANT_SYS_RT_SIGSUSPEND
++#endif
+in unistd.h and the latter does
+-#ifndef __uClinux__
+ #define __ARCH_WANT_SYS_RT_SIGSUSPEND
+-#endif
+Both parts switch to generic sys_rt_sigsuspend(), for mmu and nommu resp.,
+so they need __ARCH_WANT_SYS_RT_SIGSUSPEND defined as soon as conversion
+is done.  Other than that they are independent.
