@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab0LOKKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:10:39 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41591 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab0LOKKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:10:37 -0500
-Date: Wed, 15 Dec 2010 10:10:27 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        Greg Ungerer <gerg@snapgear.com>
-Subject: Re: Signal patchset (was: Re: aranym bug, manifests as "ida_remove
- called for id=13" on recent kernels)
-Message-ID: <20101215101027.GA31097@ZenIV.linux.org.uk>
-References: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752613Ab0LOKUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:20:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:20500 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511Ab0LOKUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:20:42 -0500
+Message-Id: <5b55a1$iv0t6h@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,347,1288594800"; 
+   d="scan'208";a="636515537"
+Date: Wed, 15 Dec 2010 10:20:23 +0000
+To: Hui Zhu <teawater@gmail.com>
+Subject: Re: [BUG] i915 boot got black screen with 2.6.37-rc5+
+Cc: linux-kernel@vger.kernel.org, keithp@keithp.com, ak@linux.intel.com,
+        gregkh@suse.de, stable@kernel.org, Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <AANLkTim=k601vg+sJJH3bvdfAmrCbCEouL78XoVxuDwy@mail.gmail.com>
+References: <AANLkTimOOmFqxU=r+-RphdfPJ54Qr+6LHU60Grzpnerr@mail.gmail.com> <b9dded$hcr3k7@orsmga002.jf.intel.com> <AANLkTim=k601vg+sJJH3bvdfAmrCbCEouL78XoVxuDwy@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 05, 2010 at 12:15:10PM +0100, Geert Uytterhoeven wrote:
+On Wed, 15 Dec 2010 17:28:45 +0800, Hui Zhu <teawater@gmail.com> wrote:
+> lspci | grep Display
+> 00:02.1 Display controller: Intel Corporation 82Q35 Express Integrated
+> Graphics Controller (rev 02)
 
-> Unless someone objects, I'm inclined to apply Al's patchset, as it improves the
-> situation anyway.
-> 
-> OK?
+Q35. I wasn't expecting that. Can you please add drm.debug=0xe to your
+boot line and attach the dmesg from rc3 and rc5? Thanks.
+-Chris
 
-FWIW, there's an m68knommu counterpart (ACKed by gerg a while ago).  The
-entire bunch is on ftp.linux.org.uk/pub/people/viro/m68k-signals - both m68k
-and m68knommu sets.  I don't know how you guys would prefer it done, since
-there's a trivial dependency between m68k and m68knommu parts of series -
-the former has
-+#ifndef __uClinux__
-+#define __ARCH_WANT_SYS_RT_SIGSUSPEND
-+#endif
-in unistd.h and the latter does
--#ifndef __uClinux__
- #define __ARCH_WANT_SYS_RT_SIGSUSPEND
--#endif
-Both parts switch to generic sys_rt_sigsuspend(), for mmu and nommu resp.,
-so they need __ARCH_WANT_SYS_RT_SIGSUSPEND defined as soon as conversion
-is done.  Other than that they are independent.
+-- 
+Chris Wilson, Intel Open Source Technology Centre
