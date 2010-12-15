@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab0LOOMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:12:52 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:55249 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab0LOOMv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:12:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qVmxuVMptr+Hvy4o+y6ttoDgCTKnEZ7aZGqp7QPEYoktbHgLi83c6zjJHNaFX9N9rg
-         /I3Pkfu4zavgPIq0BM/drUJ6xmreVwLpS0VWr9jV/+s602d4Hhs8BVEOC+rwM4fK812u
-         EuN7pSzzRRPk7VBcWvJXyYRYJSIf+y4qtSwSs=
+	id S1754318Ab0LOOQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 09:16:54 -0500
+Received: from www.tglx.de ([62.245.132.106]:56373 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826Ab0LOOQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 09:16:53 -0500
+Date: Wed, 15 Dec 2010 15:16:28 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] rtmutex: multiple candidate owners without unrelated
+ boosting
+In-Reply-To: <1292421766.5015.1866.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1012151515230.12146@localhost6.localdomain6>
+References: <4D07330A.7020600@cn.fujitsu.com>  <1292379516.5015.1837.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1012150850380.12146@localhost6.localdomain6> <1292421766.5015.1866.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201012142058.04469.rjw@sisk.pl>
-References: <201012130128.31243.rjw@sisk.pl>
-	<AANLkTi=UVOQb15EdpfSeD+Qh8x779pJpsSCTyGvf-gxG@mail.gmail.com>
-	<AANLkTim+UoR+GeEK8T1_jgie3gwq6Pdt_=sRiSf8qx6K@mail.gmail.com>
-	<201012142058.04469.rjw@sisk.pl>
-Date: Wed, 15 Dec 2010 22:12:49 +0800
-Message-ID: <AANLkTikT-8XjqBfSPAVRZRKp5BQq_D8DeUo2YN3c4ntF@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/4] PM: Remove redundant checks from core device
- resume routines
-From: Ming Lei <tom.leiming@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/15 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Tuesday, December 14, 2010, Ming Lei wrote:
+On Wed, 15 Dec 2010, Steven Rostedt wrote:
 
->> Seems it may apply in other cases(dpm_prepare/dpm_suspend
->> /dpm_suspend_noirq) too?
->
-> I thought about that, but in these cases the status is changed after the
-> callback has returned and only if it's succeeded.  Moreover, if the callback
-> hasn't been successful, the device is not moved to the new list, so I think
-> it's better to leave that as is.
+> On Wed, 2010-12-15 at 09:02 +0100, Thomas Gleixner wrote:
+> > On Tue, 14 Dec 2010, Steven Rostedt wrote:
+> > 
+> > > On Tue, 2010-12-14 at 17:04 +0800, Lai Jiangshan wrote:
+> > > 
+> > > OK, I was looking at this in a bit more detail (the coffee finally set
+> > > in) and I was at first looking to nuke the cand_owner since it is
+> > > redundant to cand_seq. But I think we can nuke the cand_seq instead and
+> > > use the top_waiter as the decider.
+> > 
+> > So you just use cand_owner (the name sucks) to flag that the waiter
+> > has been woken up either by the boost code or by an unlock. The waiter
+> > clears that flag with waiter->lock->wait_lock held before calling
+> > schedule().
+> > 
+> > Though I think we do need it at all. wakeup of an already running task
+> > is almost a nop, so having one less state to worry about is good.
+> 
+> I was hoping to remove it completely, and yes I was hoping we could
+> because a wakeup of a woken task is almost a nop. But then I saw this in
+> rt_mutex_adjust_prio_chain():
+> 
+> 
+> >         /*
+> >          * Check the orig_waiter state. After we dropped the locks,
+> >          * the previous owner of the lock might have released the lock
+> > -        * and made us the pending owner:
+> > +        * and made us candidate owner:
+> >          */
+> > -       if (orig_waiter && !orig_waiter->task)
+> > +       if (orig_waiter && orig_waiter->cand_owner)
+> >                 goto out_unlock_pi;
+> >  
+> 
+> I'm not sure what else we could use to check if the original waiter has
+> been given the lock.
 
-Yes, you are right, sorry for my noise, :-(
+That does not matter. The interesting part is whether the lock on
+which orig_waiter is blocked on was unlocked. Lai's follow up patch does:
 
++       if (orig_waiter && !rt_mutex_owner(orig_lock))
+                goto out_unlock_pi;
 
-thanks,
--- 
-Lei Ming
+Thanks,
+
+	tglx
