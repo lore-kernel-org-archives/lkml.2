@@ -1,109 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab0LOWET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:04:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60267 "EHLO mail.zytor.com"
+	id S1755573Ab0LOWFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:05:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65346 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab0LOWER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:04:17 -0500
-Message-ID: <4D093ABB.4030206@zytor.com>
-Date: Wed, 15 Dec 2010 14:01:31 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1751281Ab0LOWFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:05:05 -0500
+Date: Wed, 15 Dec 2010 17:04:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
+        Divyesh Shah <dpshah@google.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8 v2] cfq-iosched: Introduce hierarchical scheduling
+ with CFQ queue and group at the same level
+Message-ID: <20101215220453.GA11382@redhat.com>
+References: <4CDF7BC5.9080803@cn.fujitsu.com>
+ <4CDF9CC6.2040106@cn.fujitsu.com>
+ <20101115165319.GI30792@redhat.com>
+ <4CE2718C.6010406@kernel.dk>
+ <4D01C6AB.9040807@cn.fujitsu.com>
+ <4D057A9D.1090809@cn.fujitsu.com>
+ <20101214034914.GA8713@redhat.com>
+ <4D08680C.5000905@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
- num limitation
-References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org>
-In-Reply-To: <4CDF3DA1.2090806@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D08680C.5000905@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2010 05:38 PM, Yinghai Lu wrote:
-> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
-> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
-> @@ -198,6 +198,13 @@ static void __cpuinit acpi_register_lapi
->  {
->  	unsigned int ver = 0;
->  
-> +#ifdef CONFIG_X86_64
-> +	if (id >= (MAX_APICS-1)) {
-> +		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
-> +		return;
-> +	}
-> +#endif
-> +
->  	if (!enabled) {
->  		++disabled_cpus;
->  		return;
+On Wed, Dec 15, 2010 at 03:02:36PM +0800, Gui Jianfeng wrote:
+[..]
+> >>  static inline unsigned
+> >>  cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
+> >>  {
+> >> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> >>  	struct cfq_entity *cfqe = &cfqg->cfqe;
+> >> +	struct cfq_rb_root *st = cfqe->service_tree;
+> >>  
+> >> -	return cfq_target_latency * cfqe->weight / st->total_weight;
+> >> +	if (st)
+> >> +		return cfq_target_latency * cfqe->weight
+> >> +			/ st->total_weight;
+> > 
+> > Is it still true in hierarchical mode. Previously group used to be
+> > at the top and there used to be only one service tree for groups so
+> > st->total_weight represented total weight in the system.
+> >  
+> > Now with hierarhcy this will not/should not be true. So a group slice
+> > calculation should be different?
+> 
+> I just keep the original group slice calculation here. I was thinking that
+> calculate group slice in a hierachical way, this might get a really small
+> group slice and not sure how it works. So I just keep the original calculation.
+> Any thoughts?
 
-Why the #ifdef?
+Corrado already had minimum per queue limits (16ms or something) so don't
+worry about it getting too small. But we have to do hierarchical groups
+share calculation otherwise what's the point of writting this code and
+all the logic of trying to meet soft latency of 300ms.
 
+> 
 
-> Index: linux-2.6/arch/x86/mm/srat_64.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/mm/srat_64.c
-> +++ linux-2.6/arch/x86/mm/srat_64.c
-> @@ -134,6 +134,10 @@ acpi_numa_x2apic_affinity_init(struct ac
->  	}
->  
->  	apic_id = pa->apic_id;
-> +	if (apic_id >= MAX_LOCAL_APIC) {
-> +		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped that apicid too big\n", pxm, apic_id, node);
-> +		return;
-> +	}
->  	apicid_to_node[apic_id] = node;
->  	node_set(node, cpu_nodes_parsed);
->  	acpi_numa = 1;
-> @@ -168,6 +172,10 @@ acpi_numa_processor_affinity_init(struct
->  		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
->  	else
->  		apic_id = pa->apic_id;
-> +	if (apic_id >= MAX_LOCAL_APIC) {
-> +		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
-> +		return;
-> +	}
->  	apicid_to_node[apic_id] = node;
->  	node_set(node, cpu_nodes_parsed);
->  	acpi_numa = 1;
-> Index: linux-2.6/drivers/acpi/numa.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/numa.c
-> +++ linux-2.6/drivers/acpi/numa.c
-> @@ -275,13 +275,23 @@ acpi_table_parse_srat(enum acpi_srat_typ
->  int __init acpi_numa_init(void)
->  {
->  	int ret = 0;
-> +	int nr_cpu_entries = nr_cpu_ids;
-> +
-> +#ifdef CONFIG_X86_64
-> +	/*
-> +	 * Should not limit number with cpu num that will handle,
-> +	 * SRAT cpu entries could have different order with that in MADT.
-> +	 * So go over all cpu entries in SRAT to get apicid to node mapping.
-> +	 */
-> +	nr_cpu_entries = MAX_LOCAL_APIC;
-> +#endif
->  
+> > 
+> >> +	else
+> >> +		/* If this is the root group, give it a full slice. */
+> >> +		return cfq_target_latency;
+> >>  }
+> >>  
+> >>  static inline void
+> >> @@ -804,17 +809,6 @@ static struct cfq_entity *cfq_rb_first(struct cfq_rb_root *root)
+> >>  	return NULL;
+> >>  }
+> >>  
+> >> -static struct cfq_entity *cfq_rb_first_entity(struct cfq_rb_root *root)
+> >> -{
+> >> -	if (!root->left)
+> >> -		root->left = rb_first(&root->rb);
+> >> -
+> >> -	if (root->left)
+> >> -		return rb_entry_entity(root->left);
+> >> -
+> >> -	return NULL;
+> >> -}
+> >> -
+> >>  static void rb_erase_init(struct rb_node *n, struct rb_root *root)
+> >>  {
+> >>  	rb_erase(n, root);
+> >> @@ -888,12 +882,15 @@ __cfq_entity_service_tree_add(struct cfq_rb_root *st, struct cfq_entity *cfqe)
+> >>  
+> >>  	rb_link_node(&cfqe->rb_node, parent, node);
+> >>  	rb_insert_color(&cfqe->rb_node, &st->rb);
+> >> +
+> >> +	update_min_vdisktime(st);
+> >>  }
+> >>  
+> >>  static void
+> >>  cfq_entity_service_tree_add(struct cfq_rb_root *st, struct cfq_entity *cfqe)
+> >>  {
+> >>  	__cfq_entity_service_tree_add(st, cfqe);
+> >> +	cfqe->reposition_time = jiffies;
+> >>  	st->count++;
+> >>  	st->total_weight += cfqe->weight;
+> >>  }
+> >> @@ -901,34 +898,57 @@ cfq_entity_service_tree_add(struct cfq_rb_root *st, struct cfq_entity *cfqe)
+> >>  static void
+> >>  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+> >>  {
+> >> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> >>  	struct cfq_entity *cfqe = &cfqg->cfqe;
+> >> -	struct cfq_entity *__cfqe;
+> >>  	struct rb_node *n;
+> >> +	struct cfq_entity *entity;
+> >> +	struct cfq_rb_root *st;
+> >> +	struct cfq_group *__cfqg;
+> >>  
+> >>  	cfqg->nr_cfqq++;
+> >> +
+> >> +	/*
+> >> +	 * Root group doesn't belongs to any service
+> >> +	 */
+> >> +	if (cfqg == &cfqd->root_group)
+> >> +		return;
+> > 
+> > Can we keep root group on cfqd->grp_service_tree?  In hierarchical mode
+> > there will be only 1 group on grp service tree and in flat mode there
+> > can be many.
+> 
+> Keep top service tree different for hierarchical mode and flat mode is just
+> fine to me. If you don't strongly object, I'd to keep the current way. :)
 
-Same here...
+I am saying that keep one top tree both for hierarchical and flat mode and
+not separate trees.
 
-	-hpa
+for flat mode everything goes on cfqd->grp_service_tree.
+
+			grp_service_tree
+			  /  |     \
+		       root test1  test2
+
+for hierarchical mode it will look as follows.
+
+			grp_service_tree
+			  	|	
+		       	       root
+				/ \
+			     test1 test2
+
+Or it could looks as follows if user has set use_hier=1 in test2 only.
+
+			grp_service_tree
+			 |     |      | 
+		       	 root  test1  test2
+					|
+				      test3
+
+Thanks
+Vivek
