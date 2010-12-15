@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab0LOQuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:50:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22022 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219Ab0LOQu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:50:29 -0500
-Message-ID: <4D08F1A2.6040801@redhat.com>
-Date: Wed, 15 Dec 2010 11:49:38 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: add replace_page_cache_page() function
-References: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
-In-Reply-To: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752937Ab0LOQvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:51:40 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:38756 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab0LOQvj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:51:39 -0500
+Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
+ of regular atomics
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <4D08EDA9.3090801@kernel.org>
+References: <20101214162842.542421046@linux.com>
+	 <20101214162854.218751478@linux.com>  <4D08EDA9.3090801@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Dec 2010 17:50:39 +0100
+Message-ID: <1292431839.2708.30.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 10:49 AM, Miklos Szeredi wrote:
-> From: Miklos Szeredi<mszeredi@suse.cz>
->
-> This function basically does:
->
->       remove_from_page_cache(old);
->       page_cache_release(old);
->       add_to_page_cache_locked(new);
->
-> Except it does this atomically, so there's no possibility for the
-> "add" to fail because of a race.
->
-> This is used by fuse to move pages into the page cache.
->
-> Signed-off-by: Miklos Szeredi<mszeredi@suse.cz>
+On Wed, 2010-12-15 at 17:32 +0100, Tejun Heo wrote:
+> On 12/14/2010 05:28 PM, Christoph Lameter wrote:
+> > The irq work queue is a per cpu object and it is sufficient for
+> > synchronization if per cpu atomics are used. Doing so simplifies
+> > the code and reduces the overhead of the code.
+> > 
+> > Before:
+> > 
+> > christoph@linux-2.6$ size kernel/irq_work.o
+> >    text	   data	    bss	    dec	    hex	filename
+> >     451	      8	      1	    460	    1cc	kernel/irq_work.o
+> > 
+> > After:
+> > 
+> > christoph@linux-2.6$ size kernel/irq_work.o 
+> >    text	   data	    bss	    dec	    hex	filename
+> >     438	      8	      1	    447	    1bf	kernel/irq_work.o
+> > 
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Peter, can you please ack this one?
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
+I guess so, I don't much like the bare preempt_disable/enable there, and
+I'm wondering, aren't %fs prefixed insn slower than regular insn? Does
+it really pay to avoid this one address computation if there's multiple
+users in a function. %fs prefixes do take another byte, so it will also
+result in larger code at some point.
