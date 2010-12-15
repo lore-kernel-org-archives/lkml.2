@@ -1,64 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab0LOWtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:49:42 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:47185 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0LOWtl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:49:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uEedgoPGsAa3PnM7r2SQl5GgDI8gCWpR0mtSFujQd78Y5B+o50PIXUVk20TzfFcvmH
-         FOPgeGDw5iNveP+cC+J0hxtwuE2lFljzOxTUikdgYNmXBbvlK2osc2Q/mIzbGHKKn7hc
-         ejOOag4tPKz8A6diIW5mRfwilbTNaoA8K9xcM=
+	id S1754250Ab0LOWvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:51:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49603 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab0LOWvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:51:03 -0500
+Date: Wed, 15 Dec 2010 23:51:01 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Synaptics touchpad on Dell Vostro V13
+In-Reply-To: <20101214170027.GA11318@core.coreip.homeip.net>
+Message-ID: <alpine.LNX.2.00.1012152348440.16569@pobox.suse.cz>
+References: <alpine.LNX.2.00.1012141547570.15140@pobox.suse.cz> <20101214170027.GA11318@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1292450256-4544-1-git-send-email-mk@lab.zgora.pl>
-References: <1292450256-4544-1-git-send-email-mk@lab.zgora.pl>
-Date: Wed, 15 Dec 2010 23:49:39 +0100
-Message-ID: <AANLkTi=Zz8eQTS+ja59eB9-F1aE2QP5DEVCwqBP50j8K@mail.gmail.com>
-Subject: Re: [PATCH] btrfs: fix memory leak on error path in btrfs_get_acl()
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: Mariusz Kozlowski <mk@lab.zgora.pl>
-Cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 10:57 PM, Mariusz Kozlowski <mk@lab.zgora.pl> wrote:
-> If posix_acl_from_xattr() fails we leak memory stored in 'value'.
->
-> Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
-> ---
->  fs/btrfs/acl.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/btrfs/acl.c b/fs/btrfs/acl.c
-> index 2222d16..11c9561 100644
-> --- a/fs/btrfs/acl.c
-> +++ b/fs/btrfs/acl.c
-> @@ -61,6 +61,7 @@ static struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
->                if (size > 0) {
->                        acl = posix_acl_from_xattr(value, size);
->                        if (IS_ERR(acl))
-> +                               kfree(value);
+On Tue, 14 Dec 2010, Dmitry Torokhov wrote:
 
-Be careful with the evil { }
+> > I have a bugreport about Synaptics touchpad not working as proper 
+> > Synaptics, but only being detected as standard PS/2.
+> > 
+> > Looking at the i8042.debug output, the device is clearly buggy, as it 
+> > doesn't identify itself by 0x47 when queried:
+> > 
+> > 	91 -> i8042 (command) [58]
+> > 	e8 -> i8042 (parameter) [58]
+> > 	fa <- i8042 (interrupt, 3, 12) [59]
+> > 	91 -> i8042 (command) [59]
+> > 	00 -> i8042 (parameter) [59]
+> > 	fa <- i8042 (interrupt, 3, 12) [59]
+> > 	91 -> i8042 (command) [59]
+> > 	e8 -> i8042 (parameter) [59]
+> > 	fa <- i8042 (interrupt, 3, 12) [60]
+> > 	91 -> i8042 (command) [60]
+> > 	00 -> i8042 (parameter) [60]
+> > 	fa <- i8042 (interrupt, 3, 12) [61]
+> > 	91 -> i8042 (command) [61]
+> > 	e8 -> i8042 (parameter) [61]
+> > 	fa <- i8042 (interrupt, 3, 12) [61]
+> > 	91 -> i8042 (command) [61]
+> > 	00 -> i8042 (parameter) [61]
+> > 	fa <- i8042 (interrupt, 3, 12) [62]
+> > 	91 -> i8042 (command) [62]
+> > 	e8 -> i8042 (parameter) [62]
+> > 	fa <- i8042 (interrupt, 3, 12) [63]
+> > 	91 -> i8042 (command) [63]
+> > 	00 -> i8042 (parameter) [63]
+> > 	fa <- i8042 (interrupt, 3, 12) [64]
+> > 	91 -> i8042 (command) [64]
+> > 	e9 -> i8042 (parameter) [64]
+> > 	fa <- i8042 (interrupt, 3, 12) [64]
+> > 
+> > ... and here we time out after approximately 0.5s. nomux doesn't really 
+> > fix it, we start getting a lot of timeouts on i8042 with that.
+> > 
+> > Apparently the device works with Synaptics driver in Other OS(TM) though. 
+> > Do you have any idea what they might be doing differently so that they 
+> > make the touchpad identify itself properly?
+> 
+> Hi Jiri,
+> 
+> Do you have the device in your possession? If so can you check if the
+> driver installed in Other OS uses active multiplexing? I think you can
+> infer whether it does or not by looking at the pointer properties - I
+> think it would "Synaptics Blah at port X" or something like that...
 
->                                return acl;
->                        set_cached_acl(inode, type, acl);
->                }
-> --
-> 1.7.0.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Unfortunately I don't have the hardware myself, it's only bugreport that 
+reached me. I will check this, thanks.
+
+> Also you could try combining nomux with reset and see if it makes any
+> sense...
+
+Yes, I have already had the reporter to do this, but that's even better -- 
+a lot of commands time out, as you can see below
+
+ 20 -> i8042 (command) [0]
+ 47 <- i8042 (return) [0]
+ 20 -> i8042 (command) [0]
+ 47 <- i8042 (return) [0]
+ 60 -> i8042 (command) [0]
+ 56 -> i8042 (parameter) [0]
+ d3 -> i8042 (command) [0]
+ 5a -> i8042 (parameter) [0]
+ 5a <- i8042 (return) [0]
+ a7 -> i8042 (command) [0]
+ 20 -> i8042 (command) [0]
+ 76 <- i8042 (return) [0]
+ a8 -> i8042 (command) [0]
+ 20 -> i8042 (command) [0]
+ 56 <- i8042 (return) [0]
+ 60 -> i8042 (command) [0]
+ 56 -> i8042 (parameter) [0]
+ d3 -> i8042 (command) [0]
+ a5 -> i8042 (parameter) [0]
+ a5 <- i8042 (aux_test_irq, aux) [1]
+ 60 -> i8042 (command) [1]
+ 74 -> i8042 (parameter) [1]
+ 60 -> i8042 (command) [1]
+ 56 -> i8042 (parameter) [1]
+ 60 -> i8042 (command) [1]
+ 47 -> i8042 (parameter) [1]
+serio: i8042 KBD port at 0x60,0x64 irq 1
+serio: i8042 AUX port at 0x60,0x64 irq 12
+mice: PS/2 mouse device common for all mice
+ f2 -> i8042 (kbd-data) [1]
+ fa <- i8042 (interrupt, 0, 1, timeout) [1]
+ ab <- i8042 (interrupt, 0, 1, timeout) [1]
+ 83 <- i8042 (interrupt, 0, 1, timeout) [1]
+ ed -> i8042 (kbd-data) [1]
+ fa <- i8042 (interrupt, 0, 1, timeout) [1]
+ 00 -> i8042 (kbd-data) [1]
+ fa <- i8042 (interrupt, 0, 1, timeout) [1]
+ f3 -> i8042 (kbd-data) [1]
+ fa <- i8042 (interrupt, 0, 1, timeout) [1]
+ 00 -> i8042 (kbd-data) [1]
+ fa <- i8042 (interrupt, 0, 1, timeout) [1]
+ f4 -> i8042 (kbd-data) [1]
+ fa <- i8042 (interrupt, 0, 1, timeout) [1]
+input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
+ d4 -> i8042 (command) [2]
+ f2 -> i8042 (parameter) [2]
+ fa <- i8042 (interrupt, 1, 12, timeout) [2]
+ 00 <- i8042 (interrupt, 1, 12, timeout) [3]
+ 60 -> i8042 (command) [3]
+ 45 -> i8042 (parameter) [3]
+ 60 -> i8042 (command) [3]
+ 47 -> i8042 (parameter) [3]
+ d4 -> i8042 (command) [3]
+ f2 -> i8042 (parameter) [3]
+ fa <- i8042 (interrupt, 1, 12, timeout) [4]
+ 60 -> i8042 (command) [4]
+ 45 -> i8042 (parameter) [4]
+ 60 -> i8042 (command) [4]
+ 47 -> i8042 (parameter) [4]
+ 00 <- i8042 (interrupt, 1, 12, timeout) [5]
+
+...
+
+ f3 -> i8042 (kbd-data) [6323]
+ fa <- i8042 (interrupt, 0, 1, timeout) [6323]
+ 20 -> i8042 (kbd-data) [6323]
+ fa <- i8042 (interrupt, 0, 1, timeout) [6323]
+ 2d <- i8042 (interrupt, 0, 1, timeout) [10631]
+ 10 <- i8042 (interrupt, 0, 1, timeout) [10669]
+ ad <- i8042 (interrupt, 0, 1, timeout) [10674]
+ 90 <- i8042 (interrupt, 0, 1, timeout) [10692]
+ 2f <- i8042 (interrupt, 0, 1, timeout) [10737]
+ af <- i8042 (interrupt, 0, 1, timeout) [10760]
+ 17 <- i8042 (interrupt, 0, 1, timeout) [10922]
+ 97 <- i8042 (interrupt, 0, 1, timeout) [10945]
+ 12 <- i8042 (interrupt, 0, 1, timeout) [10998]
+ 92 <- i8042 (interrupt, 0, 1, timeout) [11025]
+ 13 <- i8042 (interrupt, 0, 1, timeout) [11317]
+ 93 <- i8042 (interrupt, 0, 1, timeout) [11345]
+ 1c <- i8042 (interrupt, 0, 1, timeout) [11422]
+ 9c <- i8042 (interrupt, 0, 1, timeout) [11449]
+ 31 <- i8042 (interrupt, 0, 1, timeout) [11672]
+ b1 <- i8042 (interrupt, 0, 1, timeout) [11697]
+ 18 <- i8042 (interrupt, 0, 1, timeout) [11704]
+ 98 <- i8042 (interrupt, 0, 1, timeout) [11729]
+ 2f <- i8042 (interrupt, 0, 1, timeout) [11800]
+ af <- i8042 (interrupt, 0, 1, timeout) [11821]
+ 12 <- i8042 (interrupt, 0, 1, timeout) [11842]
+ 92 <- i8042 (interrupt, 0, 1, timeout) [11866]
+ 27 <- i8042 (interrupt, 0, 1, timeout) [11951]
+ a7 <- i8042 (interrupt, 0, 1, timeout) [11969]
+ 0e <- i8042 (interrupt, 0, 1, timeout) [12061]
+ 8e <- i8042 (interrupt, 0, 1, timeout) [12089]
+ 26 <- i8042 (interrupt, 0, 1, timeout) [12169]
+ a6 <- i8042 (interrupt, 0, 1, timeout) [12187]
+ 26 <- i8042 (interrupt, 0, 1, timeout) [12207]
+ a6 <- i8042 (interrupt, 0, 1, timeout) [12227]
+ 1c <- i8042 (interrupt, 0, 1, timeout) [12428]
+ 9c <- i8042 (interrupt, 0, 1, timeout) [12456] 
+
+... and a lot of other timeouts.
+
+If the device wouldn't work with Synaptics driver in other OS, I'd just 
+claim the device to be broken behind hope and be done with this, but this 
+makes me really wonder what they do differently.
+
+Are you aware of any means of i8042 debugging/sniffing facility in the 
+other OS that could be used? :)
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
