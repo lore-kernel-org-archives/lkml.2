@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab0LOT2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:28:17 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:60126 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755152Ab0LOT2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:28:14 -0500
-Date: Wed, 15 Dec 2010 11:28:07 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-geode@lists.infradead.org,
-        dsd@laptop.org, pgf@laptop.org
-Subject: [PATCH 1/2] cs5535-gpio: don't apply errata #36 to edge detect
- GPIOs
-Message-ID: <20101215112807.2c85e991@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755140Ab0LOTbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:31:20 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65387 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab0LOTbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 14:31:19 -0500
+To: Hugh Dickins <hughd@google.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Ric Wheeler <ricwheeler@gmail.com>,
+        Christian Brandt <brandtc@psi5.com>, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: swap storage alignment and stride size
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <4CFFBA7D.6060802@psi5.com> <4CFFE2EA.9040909@gmail.com>
+	<yq1d3p486qe.fsf@sermon.lab.mkp.net>
+	<alpine.LSU.2.00.1012142038430.13004@tigran.mtv.corp.google.com>
+Date: Wed, 15 Dec 2010 14:30:44 -0500
+In-Reply-To: <alpine.LSU.2.00.1012142038430.13004@tigran.mtv.corp.google.com>
+	(Hugh Dickins's message of "Tue, 14 Dec 2010 20:57:28 -0800 (PST)")
+Message-ID: <yq18vzq6dgb.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Hugh" == Hugh Dickins <hughd@google.com> writes:
 
-The edge detect status GPIOs function differently from the other atomic model
-CS5536 GPIO registers; writing 1 to the high bits clears the GPIO, but writing
-1 to the lower bits also clears the bit.  This means that read-modify-write
-doesn't actually work for it, so don't apply the errata here.  If a negative
-edge status gets lost after resume.. well, we tried our best!
+Hugh> (scan_swap_map does try to allocate in 1MB clusters, but they're
+Hugh> not written out that way, and there's no attempt to align: if it
+Hugh> worked out better for the lower level to require that these 1MB
+Hugh> clusters are aligned, we could probably go for that - though the
+Hugh> swap header page might then be a nuisance.)
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-Tested-by: Daniel Drake <dsd@laptop.org>
----
- drivers/gpio/cs5535-gpio.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+You called it a "header page". Does that imply that it is page sized?
+Or will it cause pages written to a 4k-aligned swap device to be
+misaligned?
 
-diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
-index 599f6c9..79eb9c5 100644
---- a/drivers/gpio/cs5535-gpio.c
-+++ b/drivers/gpio/cs5535-gpio.c
-@@ -56,15 +56,22 @@ static struct cs5535_gpio_chip {
-  * registers, see include/linux/cs5535.h.
-  */
- 
--static void errata_outl(u32 val, unsigned long addr)
-+static void errata_outl(struct cs5535_gpio_chip *chip, u32 val,
-+		unsigned int reg)
- {
-+	unsigned long addr = chip->base + 0x80 + reg;
-+
- 	/*
- 	 * According to the CS5536 errata (#36), after suspend
- 	 * a write to the high bank GPIO register will clear all
- 	 * non-selected bits; the recommended workaround is a
- 	 * read-modify-write operation.
-+	 *
-+	 * Don't apply this errata to the edge status GPIOs, as writing
-+	 * to their lower bits will clear them.
- 	 */
--	val |= inl(addr);
-+	if (reg != GPIO_POSITIVE_EDGE_STS && reg != GPIO_NEGATIVE_EDGE_STS)
-+		val |= inl(addr);
- 	outl(val, addr);
- }
- 
-@@ -76,7 +83,7 @@ static void __cs5535_gpio_set(struct cs5535_gpio_chip *chip, unsigned offset,
- 		outl(1 << offset, chip->base + reg);
- 	else
- 		/* high bank register */
--		errata_outl(1 << (offset - 16), chip->base + 0x80 + reg);
-+		errata_outl(chip, 1 << (offset - 16), reg);
- }
- 
- void cs5535_gpio_set(unsigned offset, unsigned int reg)
-@@ -98,7 +105,7 @@ static void __cs5535_gpio_clear(struct cs5535_gpio_chip *chip, unsigned offset,
- 		outl(1 << (offset + 16), chip->base + reg);
- 	else
- 		/* high bank register */
--		errata_outl(1 << offset, chip->base + 0x80 + reg);
-+		errata_outl(chip, 1 << offset, reg);
- }
- 
- void cs5535_gpio_clear(unsigned offset, unsigned int reg)
 -- 
-1.7.2.3
-
+Martin K. Petersen	Oracle Linux Engineering
