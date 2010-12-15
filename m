@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab0LOGRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 01:17:48 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:15953 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab0LOGRq (ORCPT
+	id S1752794Ab0LOG0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 01:26:55 -0500
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:54977 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752398Ab0LOG0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 01:17:46 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
-To: Len Brown <lenb@kernel.org>, Jack Steiner <steiner@sgi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <linux-kernel@vger.kernel.org>
-Message-Id: <acpi-map-cache-err@mdm.bga.com>
-In-Reply-To: <alpine.LFD.2.00.1012142317450.4878@x980>
-References: <alpine.LFD.2.00.1012142317450.4878@x980>
-	<20101214220932.GA1206@sgi.com>
-	<alpine.LFD.2.00.1012141903210.25387@x980>
-	<20101215024136.GB19601@sgi.com>
-	<alpine.LFD.2.00.1012142302110.4878@x980>
-Date: Wed, 15 Dec 2010 00:17:44 -0600
-X-Originating-IP: 71.22.127.106
+	Wed, 15 Dec 2010 01:26:53 -0500
+Date: Tue, 14 Dec 2010 23:26:51 -0700
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+Subject: Re: [PATCH 5/5] PNP: HP nx6325 fixup: reserve unreported resources
+Message-ID: <20101215062650.GB2728@helgaas.com>
+References: <20101208213606.13026.47657.stgit@bob.kio>
+ <20101208213627.13026.18854.stgit@bob.kio>
+ <AANLkTinhHkqpVQp10y6uRp9ug73iXRuF4Bed2okPOdit@mail.gmail.com>
+ <20101212061743.GA4974@helgaas.com>
+ <AANLkTikogB78xPGiQZpg6nWKYVffr61A_Adm0a+C3mbR@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikogB78xPGiQZpg6nWKYVffr61A_Adm0a+C3mbR@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010 at about 23:35:28 -0500 (EST), Len Brown wrote:
+On Tue, Dec 14, 2010 at 12:34:20PM -0800, Linus Torvalds wrote:
+> On Sat, Dec 11, 2010 at 10:17 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> >
+> > Not really -- the main point here is to make multi-host bridge
+> > machines work reliably, and I really don't see a way to do that
+> > without using _CRS.
+> >
+> > If we're going to use _CRS, I think in the long run we'll be better
+> > off if we do it similarly to Windows, despite these early problems.
 > 
-> [ 1.444475] LENB: free_initmem() NOT!
-> is where free_initmem(); would have been called.
+> It's not about any "despite these early problems".
 > 
-> So the calls to acpi_os_map_memory() at 2.586160, kill the machine.
+> It's about "clearly we're not doing things at all like Windows, and
+> it's just broken".
 > 
-> My guess is that they are related to the opregion stuff used by i915;
-> but there is no reason that acpi_os_map_memory can't be called
-> as a result of AML at run-time any-time later.
-> 
-> BTW. what, exactly does this notation do for us?
-> 
-> void __iomem *__init_refok acpi_os_map_memory(...) {
+> The thing is, we will never be able to match Windows exactly. It may
+> well have random hardcoded quirks we simply don't know about.
 
-A function that returns a void pointer for dereference via iomem
-accessors that is not init but may conditionally call init text.
+Granted.
 
-__init_refok says that the code was audited to conditionally
-use init vs non-init text and data.
+> I'm perfectly happy with you aiming to use _CRS. I am _not_ happy with
+> you then using that as an excuse to then do things that don't work.
 
-> 
-> Also, I see no calls within E820_RAM.
-> 
-> I see a call at 0.534537 which is not in E820_RAM, ACPI, or NVS,
-> but is in a reserved region.
-> 
-> I'm not sure the concept of checking against E820
-> is better than simply calling ioremap_cache() always.
-> 
-> thanks,
+I don't want to do things that make you unhappy :)  
 
-after digging back through the thread for the patch, it would seem
-that both __acpi_map_table_permanent and e820_all_mapped would
-need to be moved from init to normal text, as this is replacing
-the non-init path.  I'll let the maintainers decide if that is the
-right solution (vs unconditonally mapping cached, or something else).
+> We will NOT start doing random BIOS-specific quirks just because
+> top-down allocations hit other bugs than bottom-up ones do. Just no.
+> We'll continue doing that we have tried to do, which is to perhaps
+> have quirks that are specific to *hardware* (like the ones in
+> drivers/pci/quirks.c) and just filling in stuff that some BIOSes are
+> known to get wrong.
 
-milton
+I've only proposed one BIOS-specific quirk, which is the one for the
+nx6325 unreported regions, and I identified things we do differently
+than Windows that explain why we see the problem and Windows doesn't.
+
+If we stop opening windows on subtractive-decode bridges, we don't
+need that quirk to avoid the hang.  We will still need it if we
+want to use more than 40-odd MB of space on a PC Card.
+
+I'm pretty confident that if we could find PC Cards that require
+enough space, they wouldn't work under Windows either.
+
+I don't know whether the other patches in this series make you
+unhappy.  I'm really not happy with how I implemented the avoidance
+of ACPI devices when doing PCI allocation, but I do think we need
+to avoid them *somehow*, and I was looking for a minimal quick
+fix at this point in the cycle.
+
+Avoiding ACPI devices fixes the Matthew's 2530p problem.  We can
+also avoid that particular problem with the simple PCIBIOS_MAX_MEM_32
+change you proposed.  However, avoiding ACPI devices fixes other
+problems at the same time, such as this one:
+    https://bugzilla.kernel.org/show_bug.cgi?id=23802
+where we put the intel-gtt "flush page" on top of an ACPI TPM
+device.
+
+Bjorn
