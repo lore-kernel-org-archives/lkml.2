@@ -1,89 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0LOOzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:55:09 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:59105 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab0LOOzH (ORCPT
+	id S1754665Ab0LOPBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 10:01:25 -0500
+Received: from draco.telkomsa.net ([196.25.211.120]:47254 "EHLO
+	draco.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab0LOPBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:55:07 -0500
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: miklos@szeredi.hu, dave@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, shenlinf@cn.ibm.com,
-        volobuev@us.ibm.com, mel@linux.vnet.ibm.com, dingc@cn.ibm.com,
-        lnxninja@us.ibm.com
-In-reply-to: <20101215052450.GQ5638@random.random> (message from Andrea
-	Arcangeli on Wed, 15 Dec 2010 06:24:50 +0100)
-Subject: Re: Deadlocks with transparent huge pages and userspace fs daemons
-References: <1288817005.4235.11393.camel@nimitz>
- <20101214174626.GN5638@random.random>
- <E1PSc21-0004ob-M6@pomaz-ex.szeredi.hu> <20101215052450.GQ5638@random.random>
-Message-Id: <E1PSskf-00066t-US@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 15 Dec 2010 15:54:45 +0100
+	Wed, 15 Dec 2010 10:01:23 -0500
+Date: Wed, 15 Dec 2010 17:01:21 +0200 (SAST)
+From: online1050076@telkomsa.net
+Reply-To: oxfam_15@yahoo.gr
+Message-ID: <1389200158.7247261292425281969.JavaMail.root@zimbra8-vm1.telkomsa.net>
+Subject: 
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.53]
+X-Mailer: Zimbra 5.0.11_GA_2695.RHEL5_64 (zclient/5.0.11_GA_2695.RHEL5_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010, Andrea Arcangeli wrote:
-> Hello Miklos and everyone,
-> 
-> On Tue, Dec 14, 2010 at 10:03:33PM +0100, Miklos Szeredi wrote:
-> > This is all fine and dandy, but please let's not forget about the
-> > other thing that Dave's test uncovered.  Namely that page migration
-> > triggered by transparent hugepages takes the page lock on arbitrary
-> > filesystems.  This is also deadlocky on fuse, but also not a good idea
-> > for any filesystem where page reading time is not bounded (think NFS
-> > with network down).
-> 
-> In #33 I fixed the mmap_sem write issue which is more clear to me and
-> it makes the code better.
-> 
-> The page lock I don't have full picture on it. Notably there is no
-> waiting on page lock on khugepaged and khugepaged can't use page
-> migration (it's not migrating, it's collapsing).
-> 
-> The page lock mentioned in migration context I don't see how can it be
-> related to THP. There's not a _single_ lock_page in mm/huge_memory.c .
-> 
-> If fuse has deadlock troubles in migration lock_page then I would
-> guess THP has nothing to do with it memory compaction, and it can
-> trigger already in upstream stable 2.6.36 when CONFIG_COMPACTION=y by
-> just doing:
-> 	
-> 	echo 1024 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-> 
-> or by simply insmodding a driver that tries a large
-> alloc_pages(order).
-> 
-> My understanding of Dave's trace is that THP makes it easier to
-> reproduce, but this isn't really THP related, it can happen already
-> upstream without my patchset applied, and it's just a pure coincidence
-> that THP makes it more easy to reproduce.
 
-Right, it's questionable whether any page migration should wait for
-I/O as it can introduce large delays, and even complete lockup of an
-unrelated process (as in case of NFS server being offline).
 
-The man page for move_pages() clearly defines I/O as an error
-condition:
+I have a message for you.
 
-  -EBUSY The page is currently busy and cannot be moved.  Try again
-    later.  This occurs if a page is undergoing I/O or another ker-
-    nel subsystem is holding a reference to the page.
+E-mail:oxfam_15@yahoo.gr
 
-yet the actual code waits for I/O, both read and write.  That might be
-OK with some timeouts.  Page migration is best effort anyway, so
-waiting forever on I/O makes little sense.
+cordially,
 
->  How to fix I'm not sure yet
-> as I didn't look into it closely as I was focusing on rolling a THP
-> specific update first, but at the moment it even sounds more like an
-> issue with strict migration than memory compaction.
-
-Yes, this is a page migration issue.  But the fact is, THP will make
-it more visible exactly because it can be used without any special
-configuration.
-
-Thanks,
-Miklos
+Mr.james
