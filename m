@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0LOUyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 15:54:12 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:33935 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752158Ab0LOUyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 15:54:11 -0500
-X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 15:54:11 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ai0JACS3CE3O+J1F/2dsb2JhbACVUo1AgR10w3aFSgSEZIwfgWo
-X-IronPort-AV: E=Sophos;i="4.59,351,1288584000"; 
-   d="scan'208";a="85563557"
-From: matthew@wil.cx
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH 2/5] uas: Use kzalloc instead of kmalloc
-Date: Wed, 15 Dec 2010 15:44:03 -0500
-Message-Id: <1292445846-12101-2-git-send-email-matthew@wil.cx>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101215204147.GA1263@parisc-linux.org>
-References: <20101215204147.GA1263@parisc-linux.org>
+	id S1755440Ab0LOUyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 15:54:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12677 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755423Ab0LOUyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 15:54:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,351,1288594800"; 
+   d="scan'208";a="584089043"
+Message-ID: <4D092AF9.9050802@intel.com>
+Date: Wed, 15 Dec 2010 12:54:17 -0800
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Tang, Xinan" <xinan.tang@intel.com>,
+        Junchang Wang <junchangwang@gmail.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] drivers/net/ixgbe/ixgbe_main.c: get tx queue mapping
+ specified in socket
+References: <cover.1292405004.git.fenghua.yu@intel.com> <e37daf1b95d0e61008c69298db5520d6b97acdba.1292405004.git.fenghua.yu@intel.com>
+In-Reply-To: <e37daf1b95d0e61008c69298db5520d6b97acdba.1292405004.git.fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <matthew@wil.cx>
+On 12/15/2010 12:02 PM, Yu, Fenghua wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Instead of using calculated tx queue mapping, this patch selects tx queue mapping
+> which is specified in socket.
+> 
+> By doing this, tx queue mapping can be bigger than the number of cores and
+> stressfully use multiqueue TSS. Or application can specify some of cores/queues
+> to send packets and implement flexible load balance policies.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> Signed-off-by: Junchang Wang <junchangwang@gmail.com>
+> Signed-off-by: Xinan Tang <xinan.tang@intel.com>
+> ---
+>  drivers/net/ixgbe/ixgbe_main.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
+> index eee0b29..4d98928 100644
+> --- a/drivers/net/ixgbe/ixgbe_main.c
+> +++ b/drivers/net/ixgbe/ixgbe_main.c
+> @@ -6255,7 +6255,14 @@ static int ixgbe_maybe_stop_tx(struct net_device *netdev,
+>  static u16 ixgbe_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  {
+>  	struct ixgbe_adapter *adapter = netdev_priv(dev);
+> -	int txq = smp_processor_id();
+> +	int txq;
+> +
+> +	txq = sk_tx_queue_get(skb->sk);
+> +
+> +	if (txq >= 0 && txq < dev->real_num_tx_queues)
+> +		return txq;
+> +
+> +	txq = smp_processor_id();
+>  #ifdef IXGBE_FCOE
+>  	__be16 protocol;
+>  
 
-The IUs are not being fully initialised by the driver (due to the reserved
-space).  Since we should be zeroing reserved fields, use kzalloc to do
-it for us.
+We are trying to remove stuff from select_queue not add it. I believe however you solve this problem should be generic and not specific to ixgbe.
 
-Reported-by: Luben Tuikov <ltuikov@yahoo.com>
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
----
- drivers/usb/storage/uas.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index ca277c2..981fdef 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -297,7 +297,7 @@ static struct urb *uas_alloc_sense_urb(struct uas_dev_info *devinfo, gfp_t gfp,
- 	if (!urb)
- 		goto out;
- 
--	iu = kmalloc(sizeof(*iu), gfp);
-+	iu = kzalloc(sizeof(*iu), gfp);
- 	if (!iu)
- 		goto free;
- 
-@@ -328,7 +328,7 @@ static struct urb *uas_alloc_cmd_urb(struct uas_dev_info *devinfo, gfp_t gfp,
- 	if (len < 0)
- 		len = 0;
- 	len = ALIGN(len, 4);
--	iu = kmalloc(sizeof(*iu) + len, gfp);
-+	iu = kzalloc(sizeof(*iu) + len, gfp);
- 	if (!iu)
- 		goto free;
- 
--- 
-1.7.2.3
-
+Thanks,
+John.
