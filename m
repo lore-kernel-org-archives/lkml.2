@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab0LOKul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:50:41 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:44654 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752653Ab0LOKuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:50:39 -0500
-Message-ID: <4D089D59.9030007@euromail.se>
-Date: Wed, 15 Dec 2010 11:50:01 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Richard Nauber <richard.nauber@googlemail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: egalax: Extend support for touchscreen used in "Samsung
- NB30 touch" netbook.
-References: <1292362579.2232.84.camel@itzy>
-In-Reply-To: <1292362579.2232.84.camel@itzy>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PSovq-0008Q4-5y.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PSovq-0008Q4-5y 2a5f9351ef6450c8123ef0d32e73221d
+	id S1752921Ab0LOKun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:50:43 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:43386 "EHLO atmel-es2.atmel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab0LOKum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:50:42 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: dwmw2@infradead.org, linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] MTD: m25p80: add debugging trace in sst_write()
+Date: Wed, 15 Dec 2010 12:59:32 +0100
+Message-Id: <1292414372-17085-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+Add a DEBUG(MTD_DEBUG_LEVEL2, ..) trace at beginning of sst_write() function as
+it is done in m25p80_write() function.
 
-> I got me a brand new "Samsung NB30 touch" and with this patch I have
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/mtd/devices/m25p80.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> the full multitouch power at my fingertips. At least at two of them... 
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index bf5a002..e6b5707 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -482,6 +482,10 @@ static int sst_write(struct mtd_info *mtd, loff_t to, size_t len,
+ 	size_t actual;
+ 	int cmd_sz, ret;
+ 
++	DEBUG(MTD_DEBUG_LEVEL2, "%s: %s %s 0x%08x, len %zd\n",
++			dev_name(&flash->spi->dev), __func__, "to",
++			(u32)to, len);
++
+ 	*retlen = 0;
+ 
+ 	/* sanity checks */
+-- 
+1.7.3
 
-
-Thank you very much for this patch. Will be applied.
-
-> BTW: I have not found a suitable tuio bridge for linux mt devices, 
-> so I wrote a small mtdev2tuio tool. It uses libmtdev and liblo 
-> and allows to interact with lots of existing software (e.g. a 
-> compiz plugin, numtyphysics, ...). If someone is interested, I 
-> can upload it (might take a while).
-
-
-Very nice! If you have a git tree, that would be fantastic.
-
-Thanks,
-Henrik
