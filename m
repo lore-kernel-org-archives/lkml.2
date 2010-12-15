@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab0LOKkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 05:40:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22795 "EHLO mx1.redhat.com"
+	id S1752762Ab0LOKnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 05:43:06 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34299 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596Ab0LOKkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 05:40:09 -0500
-Date: Wed, 15 Dec 2010 11:39:54 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101215103954.GA2243@redhat.com>
-References: <20101207105053.GA2803@redhat.com>
- <4CFE89FE.1090901@kernel.org>
- <20101208141942.GA2335@redhat.com>
- <4D00823A.9050808@kernel.org>
- <20101209124117.GA6032@redhat.com>
- <4D01377B.5070809@kernel.org>
- <20101213100848.GA2237@redhat.com>
- <4D0663F0.2060103@kernel.org>
- <4D06783C.6040009@zytor.com>
- <20101214224135.GB19693@redhat.com>
+	id S1752653Ab0LOKnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 05:43:03 -0500
+Date: Wed, 15 Dec 2010 10:42:44 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Simon Kirby <sim@hostway.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] mm: kswapd: Stop high-order balancing when any
+	suitable zone is balanced
+Message-ID: <20101215104244.GH13914@csn.ul.ie>
+References: <1291995985-5913-1-git-send-email-mel@csn.ul.ie> <1291995985-5913-2-git-send-email-mel@csn.ul.ie> <20101214143306.485f2c7c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20101214224135.GB19693@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20101214143306.485f2c7c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 05:41:36PM -0500, Vivek Goyal wrote:
-> On Mon, Dec 13, 2010 at 11:47:08AM -0800, H. Peter Anvin wrote:
-> > On 12/13/2010 10:20 AM, Yinghai Lu wrote:
-> > > 
-> > > it seems 32bit kdump need crashkernel much low than we expect...
-> > > 
-> > > Maybe we have to find_in_range_low() to make 32bit kdump happy.
-> > > 
-> > 
-> > Not this garbage again... sigh.  Once again, I will want to know what
-> > the actual constraint is... not just "oh, this seems to work on this one
-> > system."
-> > 
-> > I realize that the kdump interfaces are probably beyond saving -- we
-> > have had this discussion enough times -- but I'm not happy about it and
-> > I will really want to know what the heck the real issue is.
+On Tue, Dec 14, 2010 at 02:33:06PM -0800, Andrew Morton wrote:
+> On Fri, 10 Dec 2010 15:46:20 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Same here Yinghai. We need to debug that what is that upper limit for
-> loading x86 32bit kernel and if we know/understand that, we can fail
-> the loading of kdump kernel citing the appropriate reason. Last time
-> our understanding was that as long as we allocate memory below 896MB
-> things should be fine.
+> > When the allocator enters its slow path, kswapd is woken up to balance the
+> > node. It continues working until all zones within the node are balanced. For
+> > order-0 allocations, this makes perfect sense but for higher orders it can
+> > have unintended side-effects. If the zone sizes are imbalanced, kswapd may
+> > reclaim heavily within a smaller zone discarding an excessive number of
+> > pages.
 > 
-> Stanislaw, how much memory you are reserving at what address with -rc4
-> kernel? 
+> Why was it doing this?  
+> 
 
-crashkernel=128M, system has 1G mem.
+Partially because of lumpy reclaim but mostly because it simply stays
+awake. If the zone is unbalanced, kswapd will reclaim in there,
+shrinking slabs, rotating lists etc. even if ultimately it cannot
+balance that zone.
 
-> Can you please look at  /proc/iomem? And try to reserve same
-> amount of memory at roughly same address at 2.6.36 kernel, and see if
-> kdump works.
+> > The user-visible behaviour is that kswapd is awake and reclaiming
+> > even though plenty of pages are free from a suitable zone.
 > 
-> So how I used to debug problems in kdump path. 
+> Suitable for what?  I assume you refer to a future allocation which can
+> be satisfied from more than one of the zones?
 > 
-> - Try earlyprintk for second kernel.
-> - Try --debug, --console-serial options with kexec while loading second
->   kernel. Important thing to know here is control reached to purgatory
->   or not.
-> - If that gives me nothing then it boils down to putting some outb()
->   statements in first kernel and second kernel boot path to know where
->   things went wrong.
-> 
->   Because the issue was resolved by reserving memory in low memory
->   area, it sounds like second kernel failed to boot early. So early
->   printk might help otherwise outb() and serial console is the friend.
 
-I could debug this problem, but I do not suffer from free time right
-now :-) Would be better someone bootmem/kdump experienced debug this.
-I just check other laptop (T500, 2.6.37-rc5, x86_64, RHEL6 user space,
-crashkernel=256M, 1.6G mem), kdump does not work there too. So I do
-think problem is hard to reproduce.
+Yes.
 
-Stanislaw
+> But what if that allocation wanted to allocate a high-order page from
+> a zone which we just abandoned?
+> 
+
+classzone_idx is taken into account by the series overall and it doesn't
+count zones above the classzone_idx.
+
+> > This patch alters the "balance" logic for high-order reclaim allowing kswapd
+> > to stop if any suitable zone becomes balanced to reduce the number of pages
+> 
+> again, suitable for what?
+> 
+
+Suitable for a future allocation of the same type that woke kswapd.
+
+> > it reclaims from other zones. kswapd still tries to ensure that order-0
+> > watermarks for all zones are met before sleeping.
+> 
+> Handling order-0 pages differently from higher-order pages sounds weird
+> and wrong.
+> 
+> I don't think I understand this patch.
+> 
+
+The objective is that kswapd will go to sleep again. It has been found
+when there is a constant source of high-order allocations that kswapd
+stays awake constantly trying to reclaim even though a suitable zone had
+free pages.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
