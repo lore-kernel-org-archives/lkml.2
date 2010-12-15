@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab0LOROz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:14:55 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:35885 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752996Ab0LOROx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:14:53 -0500
-Date: Wed, 15 Dec 2010 11:14:45 -0600
-From: Martin Hicks <mort@sgi.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Lin Ming <ming.m.lin@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, Carl Love <cel@linux.ibm.com>
-Subject: Re: [RFC PATCH 3/3 v3] perf: Update perf tool to monitor uncore events
-Message-ID: <20101215171445.GR2977@alcatraz.americas.sgi.com>
-References: <1291267238.2405.315.camel@minggr.sh.intel.com> <4D06C846.4030804@linux.vnet.ibm.com> <1292292908.10384.137.camel@minggr.sh.intel.com> <1292330007.6803.1629.camel@twins> <20101214141314.GC21257@basil.fritz.box>
+	id S1753747Ab0LORSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:18:55 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59699 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab0LORSy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 12:18:54 -0500
+Subject: Re: [cpuops cmpxchg V2 3/5] irq_work: Use per cpu atomics instead
+ of regular atomics
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <alpine.DEB.2.00.1012151059430.13049@router.home>
+References: <20101214162842.542421046@linux.com>
+	 <20101214162854.218751478@linux.com>  <4D08EDA9.3090801@kernel.org>
+	 <1292431839.2708.30.camel@laptop>
+	 <alpine.DEB.2.00.1012151059430.13049@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 15 Dec 2010 18:18:37 +0100
+Message-ID: <1292433517.2708.41.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214141314.GC21257@basil.fritz.box>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-12-15 at 11:04 -0600, Christoph Lameter wrote:
 
-On Tue, Dec 14, 2010 at 03:13:14PM +0100, Andi Kleen wrote:
-> On Tue, Dec 14, 2010 at 01:33:27PM +0100, Peter Zijlstra wrote:
-> > > > First of all, "uncore" is an x86-specific term and so it's not clear to 
-> > > > me if you meant for all arches to utilize this encoding for all "not 
-> > > > core but on the same die" events (IBM Power arch refers to this as 
-> > > > "nest" logic).
-> > 
-> > I don't think the x86 uncore matches the "not on core but on the same
-> > die" definition. The x86-uncore thing is more like a memory controller
-> > PMU (and since the memory controller is on die it is of course on die,
-> 
-> memory controller + interconnect + cache + power management + various other things.
-> 
-> Older x86 CPUs also had special PMUs on die for parts of that, but
-> without memory controller.
-> 
-> > but its not just any random on-die thing).
-> > 
-> > The wire-speed thing has tons of special purpose 'cores' on die, each of
-> > them having a PMU.
-> 
-> Modern x86 CPUs also have other PMUs, at least in package (e.g. in the 
-> GPU) 
-> 
-> > Using the sysfs stuff you could actually expose each individually.
-> 
-> I expect this will be also needed on x86. Also there are x86 SOCs
-> where other parts of the SOC will have their own counters too.
-> So in general a flexible scheme to describe that is useful.
+> Prefixes are faster than explicit address calculations. A prefix allows
+> you to integrate the per cpu address calculation into an arithmetic
+> operation.
 
-Definitely.  For instance, SGI intends to use this to expose the
-performance metrics that are found in the ASIC hub chip that does the
-cache coherency in the big SSI systems.  There will be one of these per
-blade.
+Well, depends on how often you need that address I'd think. If you'd
+have a per-cpu struct and need to frob lots of variables in that struct
+it might be cheaper to simply compute the struct address once and then
+use relative addresses than to prefix everything with %fs.
 
-mh
+> A prefix is one byte which is less that multiple arithmetic operations to
+> calculate an address.
 
+I thought you'd only need a single arithmetic op to calculate the
+address, anyway at some point those 1 byte prefixes will add up to more
+than the ops saved.
+
+In the current code you add 2 bytes (although you safe one from loosing
+the LOCK prefix, but that could have been achieved by using
+cmpxchg_local() as well. These 2 bytes are probably less than the
+address computation for head (and not needing the head pointer again
+saves on register pressure) so its probably a win here.
+
+Still, non of this is really fast-path code, so I really wonder why
+we're optimizing this over keeping the code obvious.
+
+> I am not sure that the preempt_disable/enable is needed. They are just
+> there because you had a get/put_cpu there.
+> 
+> If the code is run from hardirq context then preempt is already disabled.
+> We can just drop those then.
+
+Afaik the current callers are all from IRQ/NMI context, but I don't want
+to mandate callers be from such contexts.
+
+The problem is that we need to guarantee we raise the self-IPI on the
+same cpu we queued the worklet on.
