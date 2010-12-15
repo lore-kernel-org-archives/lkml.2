@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab0LOWzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:55:16 -0500
-Received: from stinky.trash.net ([213.144.137.162]:60730 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab0LOWzN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:55:13 -0500
-Message-ID: <4D09474E.1070100@trash.net>
-Date: Wed, 15 Dec 2010 23:55:10 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755628Ab0LOWza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:55:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54413 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755579Ab0LOWz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:55:27 -0500
+Message-ID: <4D094703.7080701@zytor.com>
+Date: Wed, 15 Dec 2010 14:53:55 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: KOVACS Krisztian <hidden@balabit.hu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        netfilter-devel@vger.kernel.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Balazs Scheidler <bazsi@balabit.hu>
-Subject: Re: linux-next: Tree for November 18 (netfilter)
-References: <20101118134256.fe132215.sfr@canb.auug.org.au>	 <20101118092520.6ad964c7.randy.dunlap@oracle.com>	 <4CE5712B.2080909@trash.net>  <1290428077.725556.3.camel@nienna.balabit> <1290428929.726241.1.camel@nienna.balabit> <4CEA97FE.4080006@oracle.com>
-In-Reply-To: <4CEA97FE.4080006@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
+ num limitation
+References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org>
+In-Reply-To: <4D0943D5.1090404@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.11.2010 17:19, schrieb Randy Dunlap:
-> On 11/22/10 04:28, KOVACS Krisztian wrote:
->> commit ec0ac6f3e7749e25f481c1e0f75766974820fe84
->> Author: KOVACS Krisztian <hidden@balabit.hu>
->> Date:   Mon Nov 22 13:07:15 2010 +0100
+On 12/15/2010 02:40 PM, Yinghai Lu wrote:
+> On 12/15/2010 02:01 PM, H. Peter Anvin wrote:
+>> On 11/13/2010 05:38 PM, Yinghai Lu wrote:
+>>> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
+>>> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
+>>> @@ -198,6 +198,13 @@ static void __cpuinit acpi_register_lapi
+>>>  {
+>>>  	unsigned int ver = 0;
+>>>  
+>>> +#ifdef CONFIG_X86_64
+>>> +	if (id >= (MAX_APICS-1)) {
+>>> +		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
+>>> +		return;
+>>> +	}
+>>> +#endif
+>>> +
+>>>  	if (!enabled) {
+>>>  		++disabled_cpus;
+>>>  		return;
 >>
->>     netfilter: fix compilation when conntrack is disabled but tproxy is enabled
->>     
->>     The IPv6 tproxy patches split IPv6 defragmentation off of conntrack, but
->>     failed to update the #ifdef stanzas guarding the defragmentation related
->>     fields and code in skbuff and conntrack related code in nf_defrag_ipv6.c.
->>     
->>     This patch adds the required #ifdefs so that IPv6 tproxy can truly be used
->>     without connection tracking.
->>     
->>     Original report:
->>     http://marc.info/?l=linux-netdev&m=129010118516341&w=2
->>     
->>     Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
->>     Signed-off-by: KOVACS Krisztian <hidden@balabit.hu>
+>> Why the #ifdef?
 > 
-> That builds.  Thanks.
+> try to limit the affects to 32bit's bunch sub arch etc.
 > 
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Applied, thanks everyone.
+I really, really don't like that... we want more unification, not less...
+
+	-hpa
