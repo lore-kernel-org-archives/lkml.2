@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab0LOXxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 18:53:13 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:17976 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753080Ab0LOXxM (ORCPT
+	id S1755920Ab0LOX6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 18:58:11 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54712 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755893Ab0LOX6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 18:53:12 -0500
-Date: Wed, 15 Dec 2010 15:53:12 -0800
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] Show version information for built-in modules in sysfs
-Message-ID: <20101215235312.GA15328@dtor-ws.eng.vmware.com>
-References: <20101215220019.GA6560@dtor-ws.eng.vmware.com>
- <AANLkTikuWubUkGp2nESWTLz+kQsczznh7fuixdLzMfdO@mail.gmail.com>
- <20101215221454.GB6560@dtor-ws.eng.vmware.com>
- <AANLkTindv4GUp3E8Vzkzm_JzGxxOP+TdaAsVhxrEVOw6@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTindv4GUp3E8Vzkzm_JzGxxOP+TdaAsVhxrEVOw6@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Dec 2010 18:58:05 -0500
+Date: Wed, 15 Dec 2010 15:55:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: Re: Transparent Hugepage Support #33
+Message-Id: <20101215155545.303ca2c2.akpm@linux-foundation.org>
+In-Reply-To: <20101215051540.GP5638@random.random>
+References: <20101215051540.GP5638@random.random>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 03:25:27PM -0800, Alexey Dobriyan wrote:
-> On Thu, Dec 16, 2010 at 12:14 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
-> > On Wed, Dec 15, 2010 at 02:06:03PM -0800, Alexey Dobriyan wrote:
-> >> On Thu, Dec 16, 2010 at 12:00 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
-> >> > Currently only drivers that are built as modules have their versions
-> >> > shown in /sys/module/<module_name>/version, but this information might
-> >>
-> >> Can you create just /sys/module/x?
-> >> Module version info is quite useless by itself.
-> >
-> > It is as useful as in the case where driver is built as a module. I am
-> > just trying to unify the behavior a bit.
-> >
-> > Code-wise it is almost as cheap to add /sys/module/x/version as adding
-> > just the directory.
-> 
-> OK.
-> 
-> Still, people are using /sys/module/x presence as indicator of modular
-> built (unsurprisingly).
-> 
-> http://codesearch.google.com/codesearch/p?hl=en#wZuuyuB8jKQ/src/third_party/autotest/files/client/profilers/powertop/src/bluetooth.c&q=/sys/modules&sa=N&cd=3&ct=rc&l=105
+On Wed, 15 Dec 2010 06:15:40 +0100
+Andrea Arcangeli <aarcange@redhat.com> wrote:
 
-Yeah, I hate to disappoint them but it will break as soon as someone
-adds a module_param() to one of the objects... That's even without my
-changes.
+> Some of some relevant user of the project:
+> 
+> KVM Virtualization
+> GCC (kernel build included, requires a few liner patch to enable)
+> JVM
+> VMware Workstation
+> HPC
+> 
+> It would be great if it could go in -mm.
 
--- 
-Dmitry
+That all merged pretty easily on top of the current mm pile.  Except
+for kvm-mmu-transparent-hugepage-support.patch which needs some thought
+and testing to get it merged into the KVM changes in linux-next.  I
+simply omitted kvm-mmu-transparent-hugepage-support.patch so please
+take a look?
+
+
