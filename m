@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab0LOIxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 03:53:25 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55180 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab0LOIxY (ORCPT
+	id S1751663Ab0LOJEx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 04:04:53 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:51458 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab0LOJEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 03:53:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=H8egErREVO338ZWQoyMEOlxECpHNAkG3syM4vmD/S1WgSU3/xNRmivUPSviDP7VpeW
-         Bll6mO+XF08jYiwqmPcHEWi5u0ljC3YENvTyDdvAEo+4lSLGBCDL1NJxgMT+HPKBp31k
-         zExUgg4cOUYySe750F65x8ZF6UZjg8hUxEdjI=
-Date: Wed, 15 Dec 2010 11:53:05 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Rene Sapiens <rene.sapiens@ti.com>
-Cc: omar.ramirez@ti.com, nm@ti.com, ohad@wizery.com, ionut.nicu@mindbit.ro,
-        devel@driverdev.osuosl.org, ivan.gomez@ti.com, x0095078@ti.com,
-        felipe.contreras@gmail.com, ernesto@ti.com,
-        linux-kernel@vger.kernel.org, x0095840@ti.com,
-        linux-omap@vger.kernel.org, ameya.palande@nokia.com
-Subject: Re: [PATCH 05/12] staging:tidspbridge - set5 remove hungarian from
- structs
-Message-ID: <20101215085305.GC1639@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Rene Sapiens <rene.sapiens@ti.com>, omar.ramirez@ti.com, nm@ti.com,
-	ohad@wizery.com, ionut.nicu@mindbit.ro, devel@driverdev.osuosl.org,
-	ivan.gomez@ti.com, x0095078@ti.com, felipe.contreras@gmail.com,
-	ernesto@ti.com, linux-kernel@vger.kernel.org, x0095840@ti.com,
-	linux-omap@vger.kernel.org, ameya.palande@nokia.com
-References: <1292358798-25875-1-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-2-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-3-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-4-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-5-git-send-email-rene.sapiens@ti.com>
- <1292358798-25875-6-git-send-email-rene.sapiens@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292358798-25875-6-git-send-email-rene.sapiens@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 15 Dec 2010 04:04:49 -0500
+Subject: Re: linux-next: build failure after merge of the voltage tree
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yong Shen <yong.shen@linaro.org>
+In-Reply-To: <20101215130911.e6edddfe.sfr@canb.auug.org.au>
+References: <20101215130911.e6edddfe.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 09:04:44 +0000
+Message-ID: <1292403884.3348.6.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 02:33:11PM -0600, Rene Sapiens wrote:
-> -				    pfn_unload(pnode->nldr_node_obj,
-> +				    load(pnode->nldr_node_obj,
->  					       NLDR_EXECUTE);
+On Wed, 2010-12-15 at 13:09 +1100, Stephen Rothwell wrote:
+> Hi Liam,
+> 
+> After merging the voltage tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/built-in.o: In function `mc13xxx_regulator_is_enabled':
+> mc13xxx-regulator-core.c:(.text+0x9b01c): undefined reference to `mc13xxx_lock'
+> mc13xxx-regulator-core.c:(.text+0x9b038): undefined reference to `mc13xxx_reg_read'
+> mc13xxx-regulator-core.c:(.text+0x9b04a): undefined reference to `mc13xxx_unlock'
+> drivers/built-in.o: In function `mc13xxx_regulator_disable':
+> mc13xxx-regulator-core.c:(.text+0x9b256): undefined reference to `mc13xxx_lock'
+> mc13xxx-regulator-core.c:(.text+0x9b26f): undefined reference to `mc13xxx_reg_rmw'
+> mc13xxx-regulator-core.c:(.text+0x9b281): undefined reference to `mc13xxx_unlock'
+> drivers/built-in.o: In function `mc13xxx_regulator_enable':
+> mc13xxx-regulator-core.c:(.text+0x9b323): undefined reference to `mc13xxx_lock'
+> mc13xxx-regulator-core.c:(.text+0x9b33c): undefined reference to `mc13xxx_reg_rmw'
+> mc13xxx-regulator-core.c:(.text+0x9b34e): undefined reference to `mc13xxx_unlock'
+> drivers/built-in.o: In function `mc13xxx_regulator_get_voltage':
+> mc13xxx-regulator-core.c:(.text+0x9b3f5): undefined reference to `mc13xxx_lock'
+> mc13xxx-regulator-core.c:(.text+0x9b40c): undefined reference to `mc13xxx_reg_read'
+> mc13xxx-regulator-core.c:(.text+0x9b41f): undefined reference to `mc13xxx_unlock'
+> drivers/built-in.o: In function `mc13xxx_regulator_set_voltage':
+> mc13xxx-regulator-core.c:(.text+0x9b67f): undefined reference to `mc13xxx_lock'
+> mc13xxx-regulator-core.c:(.text+0x9b6a4): undefined reference to `mc13xxx_reg_rmw'
+> mc13xxx-regulator-core.c:(.text+0x9b6b6): undefined reference to `mc13xxx_unlock'
+> 
+> Please build test this stuff ...
+> 
 
-Unload got swapped with load here.
+Sorry, this driver does build as built-in.
 
-This might have been easier to with Coccinelle instead of by hand...
+Yong, can you send a patch *today* that fixes the modular build for
+this.
 
-regards,
-dan carpenter
+Thanks
+
+Liam 
+
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
