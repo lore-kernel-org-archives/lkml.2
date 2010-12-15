@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0LOOtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:49:17 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:48473 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab0LOOtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:49:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=jFnnXZxloRl0WLNmxbCSZejISG3SSFlJyG6bswqX+uSzm5lkbrqqpKmgEyWzEPW7kM
-         wCl5LjKUmnrLQTQ4rE9m5xsVr+6ITv7ElbA41uWawYyqukCthADrr1NsmN/dMJGA+bjg
-         g+/ld64B3gDWAZCr+D8w0oerj5X1lWFw3Sf+s=
-Message-ID: <4D08D568.5040801@gmail.com>
-Date: Wed, 15 Dec 2010 15:49:12 +0100
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754626Ab0LOOuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 09:50:11 -0500
+Received: from www.tglx.de ([62.245.132.106]:38645 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754520Ab0LOOuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 09:50:09 -0500
+Date: Wed, 15 Dec 2010 15:49:27 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+cc: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
+In-Reply-To: <4D08CE44.6000407@siemens.com>
+Message-ID: <alpine.LFD.2.00.1012151534540.12146@localhost6.localdomain6>
+References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012142147420.12146@localhost6.localdomain6> <4D07F70A.30209@web.de> <alpine.LFD.2.00.1012151357030.12146@localhost6.localdomain6>
+ <4D08CE44.6000407@siemens.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-References: <1291255347.12777.116.camel@sli10-conroe> <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe> <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe> <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe> <4D08CBF4.6040102@gmail.com>
-In-Reply-To: <4D08CBF4.6040102@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 15 Dec 2010, Jan Kiszka wrote:
 
-On 12/15/2010 03:08 PM, Tejun Heo wrote:
->> +#ifdef INTERNODE_CACHE_BYTES
->> +#define INTERNODE_CACHEALIGNED						\
->> +	. = ALIGN(INTERNODE_CACHE_BYTES);
->> +#else
->> +#define INTERNODE_CACHEALIGNED
->> +#endif
+> Am 15.12.2010 14:04, Thomas Gleixner wrote:
+> > On Wed, 15 Dec 2010, Jan Kiszka wrote:
+> >> Am 14.12.2010 21:54, Thomas Gleixner wrote:
+> >>> On Mon, 13 Dec 2010, Jan Kiszka wrote:
+> >>>> @@ -943,6 +950,9 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+> >>>>  	/* Make sure it's not being used on another CPU: */
+> >>>>  	synchronize_irq(irq);
+> >>>>  
+> >>>> +	if (single_handler)
+> >>>> +		desc->irq_data.drv_status &= ~IRQS_SHARED;
+> >>>> +
+> >>>
+> >>> What's the reason to clear this flag outside of the desc->lock held
+> >>> region.
+> >>
+> >> We need to synchronize the irq first before clearing the flag.
+> >>
+> >> The problematic scenario behind this: An IRQ started in shared mode,
+> >> this the line was unmasked after the hardirq. Now we clear IRQS_SHARED
+> >> before calling into the threaded handler. And that handler may now think
+> >> that the line is still masked as IRQS_SHARED is set.
+> > 
+> > That should read "not set" I guess.
 > 
-> Yeah, this looks good.
+> Can't remember who wrote this, but that guy might have been too tired
+> for clear sentences: Yes, of course, we could run into troubles, if
+> IRQS_SHARED was _not_ set while the IRQ line is unmasked between hard
+> and threaded handler.
 
-Just one more thing.  If you look at various arch linker scripts,
-cache line size is always present.  After all, RW_DATA_SECTION() needs
-it.  They're different define's or sometimes hardcoded values but it
-would be nice if we can take this chance to unify them and use it for
-this too.  Would you be interested in doing that?
+Right.
 
-Thanks.
+As a side note, the current implementation requires that you lookup
+irq_data.drv_status for every invocation of the handler or have a
+reference to irq_data.drv_status somewhere locally, which I don't like
+either.
 
--- 
-tejun
+I have an evil and nasy idea how to avoid that, need to look how ugly
+it gets. Worst case we need to go back to that notification thing
+which I wanted really avoid in the first place.
+ 
+Though I like the register_mutex idea which came out of this a lot as
+it allows us to reduce desc->lock held and interrupt disabled regions
+quite nicely.
+
+/me goes back to stare at the code
+
+> > Hmm, needs more thoughts :(
+> 
+> Be warned, might be painful.
+
+Bah, my brain became pain resistant when I started hacking that code.
+
+Thanks,
+
+	tglx
