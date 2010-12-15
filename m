@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab0LOQD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:03:59 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34540 "EHLO
+	id S1752074Ab0LOQHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:07:31 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43934 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0LOQDz (ORCPT
+	with ESMTP id S1751093Ab0LOQHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:03:55 -0500
-Date: Wed, 15 Dec 2010 16:03:23 +0000
+	Wed, 15 Dec 2010 11:07:25 -0500
+Date: Wed, 15 Dec 2010 16:07:00 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: David Brown <davidb@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
+Cc: Pavel Machek <pavel@ucw.cz>, Jeff Ohlstein <johlstei@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
-Message-ID: <20101215160323.GA9937@n2100.arm.linux.org.uk>
-References: <1292302233-16194-1-git-send-email-johlstei@codeaurora.org> <1292302233-16194-6-git-send-email-johlstei@codeaurora.org> <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com> <20101215134414.GA8682@huya.qualcomm.com>
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH 1/5] msm: Secure Channel Manager (SCM) support
+Message-ID: <20101215160700.GB9937@n2100.arm.linux.org.uk>
+References: <1291619778-30289-1-git-send-email-johlstei@codeaurora.org> <1291619778-30289-2-git-send-email-johlstei@codeaurora.org> <20101215074811.GA2483@ucw.cz> <20101215140558.GA9736@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101215134414.GA8682@huya.qualcomm.com>
+In-Reply-To: <20101215140558.GA9736@huya.qualcomm.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 05:44:14AM -0800, David Brown wrote:
-> On Wed, Dec 15, 2010 at 12:35:18PM +0000, Catalin Marinas wrote:
-> > On 14 December 2010 04:50, Jeff Ohlstein <johlstei@codeaurora.org> wrote:
-> > > +       outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
-> > > +       __asm__("sev");
-> > > +       dsb();
-> > 
-> > What's the need for the dsb() here (one before SEV maybe)?
-> > 
-> > Also, do we need to add a "memory" clobber to the SEV asm, not sure
-> > whether the compiler would try to reorder the code.
+On Wed, Dec 15, 2010 at 06:05:58AM -0800, David Brown wrote:
+> On Wed, Dec 15, 2010 at 08:48:11AM +0100, Pavel Machek wrote:
 > 
-> It doesn't seem to, but it seems to me that it would be allowed to,
-> so, I would think the "memory" clobber should be there.
+> > > +static u32 smc(dma_addr_t cmd_addr)
+> > > +{
+> > > +	int context_id;
+> > > +	register u32 r0 asm("r0") = 1;
+> > > +	register u32 r1 asm("r1") = (u32)&context_id;
+> > > +	register u32 r2 asm("r2") = (u32)cmd_addr;
+> > 
+> > Are these neccessary?
+> 
+> The values have to be in specific registers.  Without them it doesn't
+> generate the right code.
+...
+> > > +	int context_id;
+> > > +	static u32 version = -1;
+> > > +	register u32 r0 asm("r0") = 0x1 << 8;
+> > > +	register u32 r1 asm("r1") = (u32)&context_id;
+> > 
+> > And does this even work?
+> 
+> In what sense?  It generates the desired code.
 
-For each difference in the SMP and hotplug code from Realview (if it's
-mostly identical to Realview), I'd personally like to see explainations
-why it's necessary, either as comments in the code or at the very least
-in the commit log.
+What you're doing is entirely valid and supported by gcc.  There's no
+problem with it.
 
-As far as hotplug code goes, I wish folk would see what their hardware
-can actually do with the secondary CPUs - can they take the CPU fully
-offline and into a proper dormant state, and when they reawaken it, can
-they wake it in the same manner as the CPU is brought online during
-boot.
+> > > +	mutex_lock(&scm_lock);
+> > > +	asm(
+> > > +		__asmeq("%0", "r1")
+> > > +		__asmeq("%1", "r0")
+> > > +		__asmeq("%2", "r1")
 
-Realview doesn't do this because it can't reset the secondary CPUs
-independent of the boot CPU, so the pattern it gives you should not
-be followed unless your hardware is similarly restricted.
+And even if you use an older gcc version where this trips over bugs,
+these asmeq() will save you from having silently generated wrong code.
+
+So don't worry about this, you're not doing anything wrong.
