@@ -1,56 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760392Ab0LOBIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 20:08:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50730 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757455Ab0LOBIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 20:08:16 -0500
-Message-ID: <4D0814AF.7080209@zytor.com>
-Date: Tue, 14 Dec 2010 17:06:55 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
- lock semantics
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org>
-In-Reply-To: <4D07A95C.7030703@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1760426Ab0LOBKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 20:10:30 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41285 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760330Ab0LOBK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 20:10:28 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 15 Dec 2010 10:04:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC] [Patch 0/21] Non disruptive application core dump
+ infrastructure
+Message-Id: <20101215100437.ce38fde6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101214152259.67896960@suzukikp>
+References: <20101214152259.67896960@suzukikp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 09:29 AM, Tejun Heo wrote:
-> Hello,
+On Tue, 14 Dec 2010 15:22:59 +0530
+"Suzuki K. Poulose" <suzuki@in.ibm.com> wrote:
+
+> Hi all,
 > 
-> On 12/14/2010 06:22 PM, H. Peter Anvin wrote:
->> On 12/14/2010 09:19 AM, Christoph Lameter wrote:
->>>>
->>>> Is it genuinely faster to do the pre-load mov, or can we drop that too?
->>>>  My guess would be that yes it is, but if it happens not to be it would
->>>> be nice to reduce the code size.
->>>
->>> Dropping the load increases the cycle count from 11 to 16.
->>
->> Great, that answers that!  I'll pick up the patch hopefully today (I'm
->> finally ramping back up on arch/x86 again after having been diverted to
->> an internal project for a while...)
+> This is series of patches implementing an infrastructure for capturing the core 
+> of an application without disrupting its process semantics.
 > 
-> How do you want to route these?  All patches before this series is
-> already in the percpu tree.  I can pull the generic bits and leave out
-> the x86 bits so that x86 tree can pull in percpu bits and then put x86
-> stuff on top of it.  If you wanna go that way, I would drop all x86
-> related patches from the previous patchsets too.
+> The infrastructure makes use of the freezer subsystem in kernel to freeze the 
+> threads and then collect the information to generate  the core.
+> 
+> The interface is provided by a /proc/pid/core file, reading which can give the 
+> ELF formatted core of the process with "pid". The interface supports "seek" 
+> operation on the fd, allowing the dumper to have control on the data that is 
+> being dumped. Also it allows the user to store the dump at any location.
+> 
+> The current implementation supports both native as well as the compat ELF 
+> tasks.
+> 
+> An open() call to the /proc/pid/core will try to freeze the threads in the 
+> process and the read() requests will dynamically generate the contents for the 
+> core file. The ELF header & Program Headers are stored in a kernel buffer to 
+> allow us to map the fpos to the required data section.
+> 
+> In case a thread is not frozen within a time interval, after issuing the freeze 
+> request, we fill the register state information with 0's to indicate we could 
+> not capture the data.
+> 
+> A close() would kick the threads out of the refrigerator().
+> 
+> 
+> The implementation reuses some of the existing ELF core generation code by 
+> exporting them. Some of the code common to both native and compat ELF class 
+> support has been moved to a common place, elfcore-common.c. Also some of the 
+> reusable functions, specific to the ELF class handling, has been made global, 
+> after renaming the compat version of the same.
+> 
+> We also added a new API -elf_core_copy_extra_phdrs() -for "reading" the arch 
+> specific program headers, versus the existing elf_core_write_extra_phdrs().
+> 
+> Patches 1 to 9 deals with re-arranging the ELF code to be reusable by the 
+> infrastructure.
+> 
+> Patches 10 to 21 implements the infrastructure.
+> 
+> TODO: Add support for collecting the arch specific notes, currently used only 
+> by Cell platform.
+> 
+> Please let me know your review comments / thoughts.
 > 
 
-It's probably easiest if you just add them with my Acked-by: then.
-Alternatively, I could pick them up so they go into -tip and the tip
-test machinery.
+Your purpose of this patch is to debug an application without attaching to gdb
+or take coredump by gcore ? 
 
-	-hpa
+IIUC, "freeze" is a bit dangerous because no one can ends the application while
+it's freezed and there is no information "it's frozen" via usaual user commands
+as 'ps' or 'top'. 
+
+Can you add a new freeze state where the application can get SIGKILL,
+at least ? and show task's state as "frozen" in some way ? as
+task_state_array[] shows it in /proc/<pid>/status
+
+Thanks,
+-Kame
+
+
+
+
