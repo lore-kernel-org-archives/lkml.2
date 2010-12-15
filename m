@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0LOOI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:08:58 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:41645 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab0LOOI4 (ORCPT
+	id S1754272Ab0LOOKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 09:10:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55824 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753691Ab0LOOKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:08:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=utocVvkZBaDZ22yBAM69ogqTfVHiJITCx6WGBgwKiWdoWYP6AzSNSGPLxFC4MuieGv
-         YT1KykfGyR9Fn/5WNH4K8MRQU8SecEK5xLmZm8k2TGT7BxFfZiqYZ98VRnu5MUAWt4SZ
-         5N8iQ3F1L9txpCpnleWnVLYpQzk4LRni9sldA=
-Message-ID: <4D08CBF4.6040102@gmail.com>
-Date: Wed, 15 Dec 2010 15:08:52 +0100
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
-Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
- correctly align
-References: <1291255347.12777.116.camel@sli10-conroe> <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe> <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe> <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe>
-In-Reply-To: <1292378268.2323.464.camel@sli10-conroe>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Dec 2010 09:10:30 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>, Yong Shen <yong.shen@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Allow modular build of mc13xxx-core
+Date: Wed, 15 Dec 2010 14:10:25 +0000
+Message-Id: <1292422225-27530-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101215140344.GF5723@sirena.org.uk>
+References: <20101215140344.GF5723@sirena.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Since the MFD core for this device and the regulator drivers for these
+devices can be built modular we should also support modular build of
+the shared code for the regulator drivers, otherwise we try to link
+built in code against modular code with unfortunate results.
 
-On 12/15/2010 02:57 AM, Shaohua Li wrote:
-> How about this one?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/Kconfig                  |    2 +-
+ drivers/regulator/mc13xxx-regulator-core.c |    5 +++++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-Much better.  :-)
-
-> +#ifdef INTERNODE_CACHE_BYTES
-> +#define INTERNODE_CACHEALIGNED						\
-> +	. = ALIGN(INTERNODE_CACHE_BYTES);
-> +#else
-> +#define INTERNODE_CACHEALIGNED
-> +#endif
-
-Yeah, this looks good.
-
-> Index: linux/arch/x86/kernel/vmlinux.lds.S
-> ===================================================================
-> --- linux.orig/arch/x86/kernel/vmlinux.lds.S	2010-12-15 09:37:01.000000000 +0800
-> +++ linux/arch/x86/kernel/vmlinux.lds.S	2010-12-15 09:37:06.000000000 +0800
-> @@ -20,11 +20,11 @@
->  #define LOAD_OFFSET __START_KERNEL_map
->  #endif
->  
-> -#include <asm-generic/vmlinux.lds.h>
->  #include <asm/asm-offsets.h>
->  #include <asm/thread_info.h>
->  #include <asm/page_types.h>
->  #include <asm/cache.h>
-> +#include <asm-generic/vmlinux.lds.h>
->  #include <asm/boot.h>
-
-Why do we need this chunk?
-
-Thanks.
-
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 485a9bc..e1d9436 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -187,7 +187,7 @@ config REGULATOR_PCAP
+ 	 PCAP2 PMIC.
+ 
+ config REGULATOR_MC13XXX_CORE
+-	bool
++	tristate
+ 
+ config REGULATOR_MC13783
+ 	tristate "Support regulators on Freescale MC13783 PMIC"
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+index 448e8f4..da46b3c 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -123,6 +123,7 @@ int mc13xxx_get_best_voltage_index(struct regulator_dev *rdev,
+ 	}
+ 	return bestindex;
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_get_best_voltage_index);
+ 
+ static int mc13xxx_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
+ 		int max_uV, unsigned *selector)
+@@ -185,6 +186,7 @@ struct regulator_ops mc13xxx_regulator_ops = {
+ 	.set_voltage = mc13xxx_regulator_set_voltage,
+ 	.get_voltage = mc13xxx_regulator_get_voltage,
+ };
++EXPORT_SYMBOL_GPL(mc13xxx_regulator_ops);
+ 
+ int mc13xxx_fixed_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
+ 	       int max_uV, unsigned *selector)
+@@ -202,6 +204,7 @@ int mc13xxx_fixed_regulator_set_voltage(struct regulator_dev *rdev, int min_uV,
+ 	else
+ 		return -EINVAL;
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_set_voltage);
+ 
+ int mc13xxx_fixed_regulator_get_voltage(struct regulator_dev *rdev)
+ {
+@@ -213,6 +216,7 @@ int mc13xxx_fixed_regulator_get_voltage(struct regulator_dev *rdev)
+ 
+ 	return mc13xxx_regulators[id].voltages[0];
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_get_voltage);
+ 
+ struct regulator_ops mc13xxx_fixed_regulator_ops = {
+ 	.enable = mc13xxx_regulator_enable,
+@@ -222,6 +226,7 @@ struct regulator_ops mc13xxx_fixed_regulator_ops = {
+ 	.set_voltage = mc13xxx_fixed_regulator_set_voltage,
+ 	.get_voltage = mc13xxx_fixed_regulator_get_voltage,
+ };
++EXPORT_SYMBOL_GPL(mc13xxx_fixed_regulator_ops);
+ 
+ int mc13xxx_sw_regulator_is_enabled(struct regulator_dev *rdev)
+ {
 -- 
-tejun
+1.7.1
+
