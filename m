@@ -1,174 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab0LOSob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 13:44:31 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36364 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab0LOSo0 (ORCPT
+	id S1754454Ab0LOSsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 13:48:43 -0500
+Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:61802 "EHLO
+	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751114Ab0LOSsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 13:44:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=W06YAZo8fOMPu4mvwMOFEoOxIBxsTUl4KTot4HCljbiMtVIaji6VFRJxFSWjHloX/Q
-         lwxojQHvxGkFw9j+1sBeq6jBRM3XUF4kmzNV6TPAiOkYr+YfKKyYK14wpOCrfKhW9Sxr
-         sL7Byu4mjU3I7WpXOOZD1VUwQ+cFg602StoZY=
-From: Chris Clayton <chris2553@googlemail.com>
-Reply-To: chris2553@googlemail.com
-To: Brandon Philips <brandon@ifup.org>
-Subject: Re: [PATCH] bttv: fix mutex use before init
-Date: Wed, 15 Dec 2010 18:44:04 +0000
-User-Agent: KMail/1.9.10
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-References: <20101212131550.GA2608@darkstar> <AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com> <20101214003024.GA3575@hanuman.home.ifup.org>
-In-Reply-To: <20101214003024.GA3575@hanuman.home.ifup.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Wed, 15 Dec 2010 13:48:42 -0500
+Subject: Re: [PATCH 04/35] writeback: reduce per-bdi dirty threshold ramp
+ up time
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101214135910.GA21401@localhost>
+References: <20101213144646.341970461@intel.com>
+	 <20101213150326.856922289@intel.com> <1292333854.2019.16.camel@castor.rsk>
+	 <20101214135910.GA21401@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 18:48:29 +0000
+Message-ID: <1292438909.1998.10.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201012151844.04105.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 December 2010, Brandon Philips wrote:
-> On 17:13 Sun 12 Dec 2010, Torsten Kaiser wrote:
-> >  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
-> > &btv->init.cap.vb_lock
-> >  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in
-> > bttv_probe()
->
-> That seems like a reasonable suggestion. An openSUSE user submitted this
-> bug to our tracker too. Here is the patch I am having him test.
->
-> Would you mind testing it?
->
-> From 456dc0ce36db523c4c0c8a269f4eec43a72de1dc Mon Sep 17 00:00:00 2001
-> From: Brandon Philips <bphilips@suse.de>
-> Date: Mon, 13 Dec 2010 16:21:55 -0800
-> Subject: [PATCH] bttv: fix locking for btv->init
->
-> Fix locking for the btv->init by using btv->init.cap.vb_lock and in the
-> process fix uninitialized deref introduced in c37db91fd0d.
->
-> Signed-off-by: Brandon Philips <bphilips@suse.de>
-> ---
->  drivers/media/video/bt8xx/bttv-driver.c |   24 +++++++++++++-----------
->  1 files changed, 13 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/media/video/bt8xx/bttv-driver.c
-> b/drivers/media/video/bt8xx/bttv-driver.c index a529619..e656424 100644
-> --- a/drivers/media/video/bt8xx/bttv-driver.c
-> +++ b/drivers/media/video/bt8xx/bttv-driver.c
-> @@ -2391,16 +2391,11 @@ static int setup_window_lock(struct bttv_fh *fh,
-> struct bttv *btv, fh->ov.field    = win->field;
->  	fh->ov.setup_ok = 1;
->
-> -	/*
-> -	 * FIXME: btv is protected by btv->lock mutex, while btv->init
-> -	 *	  is protected by fh->cap.vb_lock. This seems to open the
-> -	 *	  possibility for some race situations. Maybe the better would
-> -	 *	  be to unify those locks or to use another way to store the
-> -	 *	  init values that will be consumed by videobuf callbacks
-> -	 */
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	btv->init.ov.w.width   = win->w.width;
->  	btv->init.ov.w.height  = win->w.height;
->  	btv->init.ov.field     = win->field;
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->
->  	/* update overlay if needed */
->  	retval = 0;
-> @@ -2620,9 +2615,11 @@ static int bttv_s_fmt_vid_cap(struct file *file,
-> void *priv, fh->cap.last         = V4L2_FIELD_NONE;
->  	fh->width            = f->fmt.pix.width;
->  	fh->height           = f->fmt.pix.height;
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	btv->init.fmt        = fmt;
->  	btv->init.width      = f->fmt.pix.width;
->  	btv->init.height     = f->fmt.pix.height;
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  	mutex_unlock(&fh->cap.vb_lock);
->
->  	return 0;
-> @@ -2855,6 +2852,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
->
->  	retval = 0;
->  	fh->ovfmt = fmt;
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	btv->init.ovfmt = fmt;
->  	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
->  		fh->ov.w.left   = 0;
-> @@ -2876,6 +2874,7 @@ static int bttv_s_fbuf(struct file *file, void *f,
->  			retval = bttv_switch_overlay(btv, fh, new);
->  		}
->  	}
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  	mutex_unlock(&fh->cap.vb_lock);
->  	return retval;
->  }
-> @@ -3141,6 +3140,7 @@ static int bttv_s_crop(struct file *file, void *f,
-> struct v4l2_crop *crop) fh->do_crop = 1;
->
->  	mutex_lock(&fh->cap.vb_lock);
-> +	mutex_lock(&btv->init.cap.vb_lock);
->
->  	if (fh->width < c.min_scaled_width) {
->  		fh->width = c.min_scaled_width;
-> @@ -3158,6 +3158,7 @@ static int bttv_s_crop(struct file *file, void *f,
-> struct v4l2_crop *crop) btv->init.height = c.max_scaled_height;
->  	}
->
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->  	mutex_unlock(&fh->cap.vb_lock);
->
->  	return 0;
-> @@ -3302,9 +3303,9 @@ static int bttv_open(struct file *file)
->  	 * Let's first copy btv->init at fh, holding cap.vb_lock, and then work
->  	 * with the rest of init, holding btv->lock.
->  	 */
-> -	mutex_lock(&fh->cap.vb_lock);
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	*fh = btv->init;
-> -	mutex_unlock(&fh->cap.vb_lock);
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->
->  	fh->type = type;
->  	fh->ov.setup_ok = 0;
-> @@ -3502,9 +3503,9 @@ static int radio_open(struct file *file)
->  	if (unlikely(!fh))
->  		return -ENOMEM;
->  	file->private_data = fh;
-> -	mutex_lock(&fh->cap.vb_lock);
-> +	mutex_lock(&btv->init.cap.vb_lock);
->  	*fh = btv->init;
-> -	mutex_unlock(&fh->cap.vb_lock);
-> +	mutex_unlock(&btv->init.cap.vb_lock);
->
->  	mutex_lock(&btv->lock);
->  	v4l2_prio_open(&btv->prio, &fh->prio);
-> @@ -4489,6 +4490,7 @@ static int __devinit bttv_probe(struct pci_dev *dev,
->  	btv->opt_coring     = coring;
->
->  	/* fill struct bttv with some useful defaults */
-> +	mutex_init(&btv->init.cap.vb_lock);
->  	btv->init.btv         = btv;
->  	btv->init.ov.w.width  = 320;
->  	btv->init.ov.w.height = 240;
+On Tue, 2010-12-14 at 21:59 +0800, Wu Fengguang wrote:
+> Hi Richard,
+> 
+> On Tue, Dec 14, 2010 at 09:37:34PM +0800, Richard Kennedy wrote:
+> > On Mon, 2010-12-13 at 22:46 +0800, Wu Fengguang wrote:
+> > > plain text document attachment
+> > > (writeback-speedup-per-bdi-threshold-ramp-up.patch)
+> > > Reduce the dampening for the control system, yielding faster
+> > > convergence.
+> > > 
+> > > Currently it converges at a snail's pace for slow devices (in order of
+> > > minutes).  For really fast storage, the convergence speed should be fine.
+> > > 
+> > > It makes sense to make it reasonably fast for typical desktops.
+> > > 
+> > > After patch, it converges in ~10 seconds for 60MB/s writes and 4GB mem.
+> > > So expect ~1s for a fast 600MB/s storage under 4GB mem, or ~4s under
+> > > 16GB mem, which seems reasonable.
+> > > 
+> > > $ while true; do grep BdiDirtyThresh /debug/bdi/8:0/stats; sleep 1; done
+> > > BdiDirtyThresh:            0 kB
+> > > BdiDirtyThresh:       118748 kB
+> > > BdiDirtyThresh:       214280 kB
+> > > BdiDirtyThresh:       303868 kB
+> > > BdiDirtyThresh:       376528 kB
+> > > BdiDirtyThresh:       411180 kB
+> > > BdiDirtyThresh:       448636 kB
+> > > BdiDirtyThresh:       472260 kB
+> > > BdiDirtyThresh:       490924 kB
+> > > BdiDirtyThresh:       499596 kB
+> > > BdiDirtyThresh:       507068 kB
+> > > ...
+> > > DirtyThresh:          530392 kB
+> > > 
+> > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > CC: Richard Kennedy <richard@rsk.demon.co.uk>
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > ---
+> > >  mm/page-writeback.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > --- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:11.000000000 +0800
+> > > +++ linux-next/mm/page-writeback.c	2010-12-13 21:46:11.000000000 +0800
+> > > @@ -145,7 +145,7 @@ static int calc_period_shift(void)
+> > >  	else
+> > >  		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+> > >  				100;
+> > > -	return 2 + ilog2(dirty_total - 1);
+> > > +	return ilog2(dirty_total - 1) - 1;
+> > >  }
+> > >  
+> > >  /*
+> > > 
+> > > 
+> > Hi Fengguang,
+> > 
+> > I've been running my test set on your v3 series and generally it's
+> > giving good results in line with the mainline kernel, with much less
+> > variability and lower standard deviation of the results so it is much
+> > more repeatable.
+> 
+> Glad to hear that, and thank you very much for trying it out!
+> 
+> > However, it doesn't seem to be honouring the background_dirty_threshold.
+> 
+> > The attached graph is from a simple fio write test of 400Mb on ext4.
+> > All dirty pages are completely written in 15 seconds, but I expect to
+> > see up to background_dirty_threshold pages staying dirty until the 30
+> > second background task writes them out. So it is much too eager to write
+> > back dirty pages.
+>  
+> This is interesting, and seems easy to root cause. When testing v4,
+> would you help collect the following trace events?
+> 
+> echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
+> echo 1 > /debug/tracing/events/writeback/balance_dirty_state/enable
+> echo 1 > /debug/tracing/events/writeback/writeback_single_inode/enable
+> 
+> They'll have good opportunity to disclose the bug.
+> 
+> > As to the ramp up time, when writing to 2 disks at the same time I see
+> > the per_bdi_threshold taking up to 20 seconds to converge on a steady
+> > value after one of the write stops. So I think this could be speeded up
+> > even more, at least on my setup.
+> 
+> I have the roughly same ramp up time on the 1-disk 3GB mem test:
+> 
+> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/tests/3G/ext4-1dd-1M-8p-2952M-2.6.37-rc5+-2010-12-09-00-37/dirty-pages.png
+>  
+> Given that it's the typical desktop, it does seem reasonable to speed
+> it up further.
+> 
+> > I am just about to start testing v4 & will report anything interesting.
+> 
+> Thanks!
+> 
+> Fengguang
 
-The patch is good here too. Thanks.
+I just mailed the trace log to Fengguang, it is a bit big to post to
+this list. If anyone wants it, let me know and I'll mail to them
+directly.
 
-Tested-by: Chris Clayton <chris2553@googlemail.com>
+I'm also seeing a write stall in some of my tests. When writing 400Mb
+after about 6 seconds I'm see a few seconds when there are no reported
+sectors written to sda & there are no pages under writeback although
+there are lots of dirty pages. ( the graph I sent previously shows this
+stall as well )
+
+regards
+Richard
 
 
 
--- 
-The more I see, the more I know. The more I know, the less I understand. 
-Changing Man - Paul Weller
