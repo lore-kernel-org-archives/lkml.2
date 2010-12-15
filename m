@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab0LONoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 08:44:05 -0500
-Received: from mail.atmel.fr ([81.80.104.162]:44584 "EHLO atmel-es2.atmel.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753653Ab0LONoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 08:44:03 -0500
-Message-ID: <4D08C61B.8010006@atmel.com>
-Date: Wed, 15 Dec 2010 14:43:55 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753982Ab0LONoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 08:44:17 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1948 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab0LONoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 08:44:15 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6197"; a="66715182"
+Date: Wed, 15 Dec 2010 05:44:14 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Steve Muckle <smuckle@codeaurora.org>
+Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
+Message-ID: <20101215134414.GA8682@huya.qualcomm.com>
+References: <1292302233-16194-1-git-send-email-johlstei@codeaurora.org>
+ <1292302233-16194-6-git-send-email-johlstei@codeaurora.org>
+ <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MTD: m25p80: add debugging trace in sst_write()
-References: <1292414372-17085-1-git-send-email-nicolas.ferre@atmel.com> <4D08C1C8.3090100@ru.mvista.com>
-In-Reply-To: <4D08C1C8.3090100@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/12/2010 14:25, Sergei Shtylyov :
-> Hello.
+On Wed, Dec 15, 2010 at 12:35:18PM +0000, Catalin Marinas wrote:
+> On 14 December 2010 04:50, Jeff Ohlstein <johlstei@codeaurora.org> wrote:
+> > +       outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
+> > +       __asm__("sev");
+> > +       dsb();
 > 
-> On 15-12-2010 14:59, Nicolas Ferre wrote:
+> What's the need for the dsb() here (one before SEV maybe)?
 > 
->> Add a DEBUG(MTD_DEBUG_LEVEL2, ..) trace at beginning of sst_write()
->> function as
->> it is done in m25p80_write() function.
-> 
->> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
-> [...]
-> 
->> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
->> index bf5a002..e6b5707 100644
->> --- a/drivers/mtd/devices/m25p80.c
->> +++ b/drivers/mtd/devices/m25p80.c
->> @@ -482,6 +482,10 @@ static int sst_write(struct mtd_info *mtd, loff_t
->> to, size_t len,
->>       size_t actual;
->>       int cmd_sz, ret;
->>
->> +    DEBUG(MTD_DEBUG_LEVEL2, "%s: %s %s 0x%08x, len %zd\n",
->> +            dev_name(&flash->spi->dev), __func__, "to",
-> 
->    What's the point of printing "to" as variable? :-)
+> Also, do we need to add a "memory" clobber to the SEV asm, not sure
+> whether the compiler would try to reorder the code.
 
-Good question... Maybe a way to have the same shape of messages...
+It doesn't seem to, but it seems to me that it would be allowed to,
+so, I would think the "memory" clobber should be there.
 
-In my patch it is for sure to comply with this driver way of dealing
-with DEBUG messages.
-It is "to" in this function like its sister m25p80_write(). But it is
-also "from" or "at" in others...
+David
 
->> +            (u32)to, len);
->> +
-
-Cheers,
 -- 
-Nicolas Ferre
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
