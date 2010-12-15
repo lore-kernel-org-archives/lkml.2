@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab0LOQkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:40:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:33409 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab0LOQkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:40:42 -0500
-Message-ID: <4D08EF4E.8070403@kernel.org>
-Date: Wed, 15 Dec 2010 17:39:42 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
+	id S1753367Ab0LOQlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:41:07 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:31154 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752622Ab0LOQlF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:41:05 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: A3w0NjkVM1kBu1t0zb5sw2zhz8uwJuX2aOeEtZW8PJCAbma
+ 5EejtrdRZhGqw3Rfyso8BDY6tHu1xseRju.eJ3YTPeprJvp6OUkqqS4xUHZ9
+ adqvN_X86uZaXCBJdWLJWmM5m3m1tongtNOq7DUZJLRVia_BR7lQRxAlHOhj
+ 9bCp2WIrTakm5MAGJCbWuKGv60wlc4TcSVPRcVusQV47j5LRhr5ud_K5Qrrj
+ se9hTe.KmrO5xBMjS4gz7GfEmImUwHj1VHnrvlPYRrMOerylalUJoJxBh9g5
+ iKmJpgTb.F_8bIDZ324aljxFBYFqAll_ecer6HURb6Z8rdYo-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 15 Dec 2010 10:41:01 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
 To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
+cc: Tejun Heo <tj@kernel.org>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
- lock semantics
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com>
-In-Reply-To: <4D08EE57.8010602@zytor.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 16:39:43 +0000 (UTC)
+Subject: Re: [cpuops cmpxchg double V1 2/4] x86: this_cpu_cmpxchg_double()
+ support
+In-Reply-To: <4D08EDA8.90702@zytor.com>
+Message-ID: <alpine.DEB.2.00.1012151040150.12470@router.home>
+References: <20101214174847.887713690@linux.com> <20101214174900.659284593@linux.com> <4D080FDC.7030005@zytor.com> <4D081225.8000007@zytor.com> <alpine.DEB.2.00.1012151011550.12186@router.home> <4D08EDA8.90702@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 15 Dec 2010, H. Peter Anvin wrote:
 
-On 12/15/2010 05:35 PM, H. Peter Anvin wrote:
-> I think we can do that... let me look through the tree first officially
-> committing.  Alternatively, I can pull the patches from your tree and
-> individually review them and add them to a tip branch, if you prefer.
+> Yes, that's what I meant... the code is correct, it's just not obvious
+> from someone who looks at the code that it is correct, because the
+> intended function of the code isn't obvious from that file by itself (in
+> fact, it looks almost exactly like the 486 cmpxchg ersatz code.)
 
-I'd prefer percpu things going through percpu tree, if for nothing
-else for git history's sake, but I don't think it really matters.  The
-series is spread all over the place anyway.  As long as each
-maintainer is properly alerted about the changes, it should be okay.
-Please let me know whether you agree with the changes currently queued
-in percpu#for-next.  I'll update the tree with your Acked-by's and
-freeze it.
+Confirmed. It is a copy of that 486 ersatz code ... But its ok for the use
+case here.
 
-Thanks.
 
--- 
-tejun
