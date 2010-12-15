@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab0LOGrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 01:47:39 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36832 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab0LOGrf convert rfc822-to-8bit (ORCPT
+	id S1753488Ab0LOGxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 01:53:37 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60621 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab0LOGxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 01:47:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l5BzU6XVDPTwCqex02/i4LfFuHqiK6znP+oa4BYwWs7DtFldBRY7Hfx0oCSJkzNpmm
-         BwdRGJDQJU05hcBhnu1BZCn7oI6pUAJ1/GIIoFQJB0mBNjme+nIY4HiLDz9QWUGp2ydn
-         5LISEfiRp3Cn0ocpVeniH4/Jw1nW0Aezm5JoY=
+	Wed, 15 Dec 2010 01:53:36 -0500
+Date: Wed, 15 Dec 2010 12:15:22 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 2/3] Refactor zone_reclaim (v2)
+Message-ID: <20101215064522.GA2657@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101210142745.29934.29186.stgit@localhost6.localdomain6>
+ <20101210143018.29934.11893.stgit@localhost6.localdomain6>
+ <AANLkTimeecObDMQMbWzNhL1mE+UT9D3o1WWS4bmxtR4U@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101214214306.GC5900@hanuman.home.ifup.org>
-References: <20101212131550.GA2608@darkstar>
-	<AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
-	<20101214003024.GA3575@hanuman.home.ifup.org>
-	<AANLkTi=ic4i+whV7-gtA7jvWJkPE+bizLdra6OMDf6Cp@mail.gmail.com>
-	<20101214214306.GC5900@hanuman.home.ifup.org>
-Date: Wed, 15 Dec 2010 07:47:34 +0100
-Message-ID: <AANLkTi=nMXmXc01RNezRcws7Tqc66PzODSk8JFy14kNM@mail.gmail.com>
-Subject: Re: [PATCH] bttv: fix mutex use before init
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Brandon Philips <brandon@ifup.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Clayton <chris2553@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimeecObDMQMbWzNhL1mE+UT9D3o1WWS4bmxtR4U@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 10:43 PM, Brandon Philips <brandon@ifup.org> wrote:
-> On 21:56 Tue 14 Dec 2010, Torsten Kaiser wrote:
->> On Tue, Dec 14, 2010 at 1:30 AM, Brandon Philips <brandon@ifup.org> wrote:
->> > On 17:13 Sun 12 Dec 2010, Torsten Kaiser wrote:
->> >>  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
->> >> &btv->init.cap.vb_lock
->> >>  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
->> >
->> > That seems like a reasonable suggestion. An openSUSE user submitted this
->> > bug to our tracker too. Here is the patch I am having him test.
->> >
->> > Would you mind testing it?
->>
->> No. :-)
->>
->> Without this patch (==vanilla 2.6.37-rc5) I got 2 more OOPSe by
->> restarting hal around 20 times.
->> After applying this patch, I did not see a single OOPS after 100 restarts.
->> So it looks like the fix is correct.
->
-> Dave, Torsten- Great thanks for testing, can I get both you and Dave's
-> Tested-by then?
+* MinChan Kim <minchan.kim@gmail.com> [2010-12-14 19:01:26]:
 
-Tested-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> Hi Balbir,
+> 
+> On Fri, Dec 10, 2010 at 11:31 PM, Balbir Singh
+> <balbir@linux.vnet.ibm.com> wrote:
+> > Move reusable functionality outside of zone_reclaim.
+> > Make zone_reclaim_unmapped_pages modular
+> >
+> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > ---
+> >  mm/vmscan.c |   35 +++++++++++++++++++++++------------
+> >  1 files changed, 23 insertions(+), 12 deletions(-)
+> >
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index e841cae..4e2ad05 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2815,6 +2815,27 @@ static long zone_pagecache_reclaimable(struct zone *zone)
+> >  }
+> >
+> >  /*
+> > + * Helper function to reclaim unmapped pages, we might add something
+> > + * similar to this for slab cache as well. Currently this function
+> > + * is shared with __zone_reclaim()
+> > + */
+> > +static inline void
+> > +zone_reclaim_unmapped_pages(struct zone *zone, struct scan_control *sc,
+> > +                               unsigned long nr_pages)
+> > +{
+> > +       int priority;
+> > +       /*
+> > +        * Free memory by calling shrink zone with increasing
+> > +        * priorities until we have enough memory freed.
+> > +        */
+> > +       priority = ZONE_RECLAIM_PRIORITY;
+> > +       do {
+> > +               shrink_zone(priority, zone, sc);
+> > +               priority--;
+> > +       } while (priority >= 0 && sc->nr_reclaimed < nr_pages);
+> > +}
+> 
+> As I said previous version, zone_reclaim_unmapped_pages doesn't have
+> any functions related to reclaim unmapped pages.
+> The function name is rather strange.
+> It would be better to add scan_control setup in function inner to
+> reclaim only unmapped pages.
 
-Thanks for providing this patch.
+OK, that is an idea worth looking at, I'll revisit this function.
 
-Torsten
+Thanks for the review!
+
+-- 
+	Three Cheers,
+	Balbir
