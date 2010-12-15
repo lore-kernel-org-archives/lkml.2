@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab0LOIQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 03:16:56 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:28076 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab0LOIQy (ORCPT
+	id S1754509Ab0LOIR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 03:17:58 -0500
+Received: from mail-gx0-f180.google.com ([209.85.161.180]:44744 "EHLO
+	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab0LOIR5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 03:16:54 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=dyVpuHYQJROgCHwBBw1H+I+7e1rgZIKdHwrI0HSbuo4= c=1 sm=1
- a=T_s9W1-Te7oA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=zg_s4_ytUHLA_PBxeyIA:9
- a=I5np2YJ04-EF1SHuVVoA:7 a=HO-cfWrDIEFq09kOX_JHV1tvSicA:4 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [patch] fs: scale vfsmount refcount (was Re: rcu-walk and  dcache scaling tree update and status)
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20101214124059.GA14493@amd>
-Date: Wed, 15 Dec 2010 01:16:52 -0700
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <3E111710-7F88-41A8-80B2-9275448BBCED@dilger.ca>
-References: <20101213023733.GB6522@amd> <20101213024217.GC6522@amd> <1292225113.18698.22.camel@edumazet-laptop> <20101214124059.GA14493@amd>
-To: Nick Piggin <npiggin@kernel.dk>
-X-Mailer: Apple Mail (2.1082)
+	Wed, 15 Dec 2010 03:17:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101215073920.GU19897@game.jcrosoft.org>
+References: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
+ <20101214161130.GB1857@suse.de> <20101215012511.GQ19897@game.jcrosoft.org>
+ <20101215034713.GB3297@suse.de> <20101215073920.GU19897@game.jcrosoft.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 15 Dec 2010 09:17:39 +0100
+Message-ID: <AANLkTi=PFqpC64Qm9=Z_6HkuLJ_DsxzAHmO45J+SV508@mail.gmail.com>
+Subject: Re: [PATCH] base: add sysfs socs info
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-12-14, at 05:40, Nick Piggin wrote:
-> +static inline void add_mnt_count(struct vfsmount *mnt, int n)
-> +static inline void set_mnt_count(struct vfsmount *mnt, int n)
-> +static inline void inc_mnt_count(struct vfsmount *mnt)
-> +static inline void dec_mnt_count(struct vfsmount *mnt)
-> +unsigned int count_mnt_count(struct vfsmount *mnt)
+On Wed, Dec 15, 2010 at 08:39, Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com> wrote:
+>> > >
+>> > > Also, isn't this information already in /proc/cpu/ today?
+>> > no all this information are not present in /proc/cpu and a cpu is not a soc
+>> >
+>> > basicaly on a board you will have one soc but some boards have more as example
+>> > some ST boards you have two sh4 soc or on some amcc you have two powerpc soc
+>> >
+>> > with these information you are allow to dynamise the userspace based on the
+>> > soc or the companion soc and also be able to display this information in a UI
+>>
+>> Ok, but then why not make it "real" devices and not sysdev?  We are
+>> trying to fix the sysdev code to be semi-real devices, so you might as
+>> well make them real ones now.
+> ok I base my work on drivers/base/cpu.c
+>
+> where we also use sysdev
+>
+> can we point me a code how you want I implement it
 
-Minor nit - it is easier to find these related functions via tag
-completion if they are of the form "mnt_count_{add,set,inc,dec}"
-and it would also be more consistent and easier to understand if
-you rename count_mnt_count() to mnt_count_sum() or mnt_count_read().
+Sysdevs devices in general are really broken concept. They duplicate
+all the usual class/bus/subsystem logic in some stupid custom way,
+which does not fit into the rest of the driver model. They have a have
+broken event handling, so that  udev/libudev can not even "see" them
+properly.
 
-This also follows the kernel naming convention much more closely
-(e.g. atomic_{inc,dec,add,sub,set,read}(), mutex_{init,lock,unlock}(),
-etc), which is normally of the form {type}_{action}.
+Create your own bus "soc", and register a device "id" there which has
+these attributes in a group, which is assigned to the device before it
+is registered.
 
-Yes, I see the other {inc,dec,count}_mnt_writers() functions
-exist, but I'd prefer not to add more bad function names to
-the kernel.  Maybe a separate patch to clean up those names is
-in order...
+Or maybe (really no idea ow how that fits) use the "dmi" class's
+device "id", if that fits, or create a "soc" device in the "dmi" class
+that has all these attributes.
 
-Cheers, Andreas
-
-
-
-
-
+Kay
