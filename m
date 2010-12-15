@@ -1,181 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab0LOHSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 02:18:13 -0500
-Received: from serv04.lahn.de ([213.239.197.57]:52098 "EHLO serv04.lahn.de"
+	id S1754142Ab0LOHUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 02:20:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60842 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057Ab0LOHSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 02:18:11 -0500
-Date: Wed, 15 Dec 2010 08:16:06 +0100
-From: Michael Leun <lkml20101129@newton.leun.net>
-To: "Matt Carlson" <mcarlson@broadcom.com>
-Cc: "Jesse Gross" <jesse@nicira.com>, "Michael Chan" <mchan@broadcom.com>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Miller" <davem@davemloft.net>,
-        "Ben Greear" <greearb@candelatech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-Message-ID: <20101215081606.18e12fc9@xenia.leun.net>
-In-Reply-To: <20101215013431.GA21173@mcarlson.broadcom.com>
-References: <20101205114404.7c0cddc2@xenia.leun.net>
-	<AANLkTikrDTCDxsyOG4m0XcrOY=3pTRwWqnPGsio9cBFj@mail.gmail.com>
-	<20101206203437.54b550e0@xenia.leun.net>
-	<AANLkTikKkAesHc4Fi4SwAkV0e65D0TQRztrRYoDNu3MP@mail.gmail.com>
-	<20101206222703.32fbe852@xenia.leun.net>
-	<AANLkTinLMCzKz7n45HdeAwNxsWjCADAkgfK+MjXVcFqh@mail.gmail.com>
-	<20101213224510.GB17400@mcarlson.broadcom.com>
-	<AANLkTi=9BYt=vkNkAiTBxnfnCjCX7AqCG=ML6coc4vdZ@mail.gmail.com>
-	<20101214191500.GD19951@mcarlson.broadcom.com>
-	<20101215012430.120fd47f@xenia.leun.net>
-	<20101215013431.GA21173@mcarlson.broadcom.com>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753709Ab0LOHUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 02:20:47 -0500
+Message-ID: <4D086C1A.5000907@redhat.com>
+Date: Wed, 15 Dec 2010 15:19:54 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+CC: linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch 18/21] Generate the data sections for ELF Core
+References: <20101214152259.67896960@suzukikp> <20101214155200.06b56e57@suzukikp>
+In-Reply-To: <20101214155200.06b56e57@suzukikp>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010 17:34:31 -0800
-"Matt Carlson" <mcarlson@broadcom.com> wrote:
-
-> On Tue, Dec 14, 2010 at 04:24:30PM -0800, Michael Leun wrote:
-> > On Tue, 14 Dec 2010 11:15:00 -0800
-> > "Matt Carlson" <mcarlson@broadcom.com> wrote:
-> > > Michael, I'm wondering if the difference in behavior can be
-> > > explained by the presence or absence of management firmware.  Can
-> > > you look at the driver sign-on messages in your syslogs for
-> > > ASF[]?  I'm half expecting the 5752 to show "ASF[0]" and the 5714
-> > > to show "ASF[1]". If you see this, and the below patch doesn't
-> > > fix the problem, let me know.  I have another test I'd like you
-> > > to run.
-> > 
-> > Do I understand this correct? "Management firmware" or ASF is some
-> > feature, vendor decides to built into network card (firmware) or
-> > not?
-> 
-> Right.
-> 
-> > If so, would'nt one expect two oneboard network cards in one server
-> > to look alike?
-> 
-> Mostly, yes.  Except for.....
-> 
-> > HP Proliant DL320G5
-> > 
-> > <6>tg3.c:v3.113 (August 2, 2010)
-> > <6>tg3 0000:03:04.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-> > <6>tg3 0000:03:04.0: eth0: Tigon3 [partno(N/A) rev 9003]
-> > (PCIX:133MHz:64-bit) MAC address xx:xx:xx:xx:xx:xx <6>tg3
-> > 0000:03:04.0: eth0: attached PHY is 5714 (10/100/1000Base-T
-> > Ethernet) (WireSpeed[1]) <6>tg3 0000:03:04.0: eth0: RXcsums[1]
-> > LinkChgREG[0] MIirq[0] ASF[1] TSOcap[1]
->                                                       This =>  ^^^^^^
-> > <6>tg3 0000:03:04.0: eth0: dma_rwctrl[76148000] dma_mask[64-bit]
-> > <6>tg3 0000:03:04.1: PCI INT B -> GSI 17 (level, low) -> IRQ 17
-> > <6>tg3 0000:03:04.1: eth1: Tigon3 [partno(N/A) rev 9003]
-> > (PCIX:133MHz:64-bit) MAC address xx:xx:xx:xx:xx:xx <6>tg3
-> > 0000:03:04.1: eth1: attached PHY is 5714 (10/100/1000Base-T
-> > Ethernet) (WireSpeed[1]) <6>tg3 0000:03:04.1: eth1: RXcsums[1]
-> > LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
->                                                   And this =>  ^^^^^^
-> > <6>tg3 0000:03:04.1: eth1: dma_rwctrl[76148000] dma_mask[64-bit]
-> 
-> So management firmware is turned off on the second port.
-> 
-> > Lenovo ThinkPad z61m
-> > 
-> > [    2.679130] tg3.c:v3.113 (August 2, 2010)
-> > [    2.679176] tg3 0000:02:00.0: PCI INT A -> GSI 16 (level, low)
-> > -> IRQ 16 [    2.679188] tg3 0000:02:00.0: setting latency timer to
-> > 64 [    2.728572] tg3 0000:02:00.0: eth0: Tigon3 [partno(BCM95752m)
-> > rev 6002] (PCI Express) MAC address xx:xx:xx:xx:xx:xx
-> > [    2.728577] tg3 0000:02:00.0: eth0: attached PHY is 5752
-> > (10/100/1000Base-T Ethernet) (WireSpeed[1]) [    2.728581] tg3
-> > 0000:02:00.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0]
-> > TSOcap[1]
->                                                                            ^^^^^^
-> And it isn't present on the 5752.
-> 
-> > [    2.728585] tg3 0000:02:00.0: eth0: dma_rwctrl[76180000]
-> > dma_mask[64-bit]
-> > 
-> > 
-> > > ----
-> > > 
-> > > [PATCH] tg3: Use new VLAN code
-> > 
-> > Unfortunately had'nt time to try much now, but with 2.6.37-rc5 /
-> > your patch on the DL320, single user mode (nothing configured on
-> > eth) just after ifconfig eth0/eth1 up I see NO vlan tags on eth0
-> > but I see vlan tags on eth1, so there clearly is a difference.
-> > 
-> > I should have checked if I still see vlan tags on eth1 if I
-> > configure some vlan there - if helpful maybe I can do this (have to
-> > look, when I can effort another downtime).
-> 
-> This would be helpful, just to solidify our findings.
-> 
-> > I wonder, if the difference in that both onboard cards is really
-> > there or if there is some malfunction in detecion?
-> 
-> Please run the above test first, but afterwards, can you apply the
-> below patch on top of your current sources.  I suspect eth1 will
-> begin to act like eth0.
-> 
-> This patch is just a test.
-> 
-> [PATCH] tg3: Always strip VLAN tags
-> 
-> This patch configures the hardware to always strip VLAN tags from
-> incoming packets.
-
-OK - all tests done on that DL320G5:
-
-For completeness, 2.6.37-rc5 unpatched:
-
-eth0, no vlan configured: totally broken - see double tagged vlans
-without tag, single or untagged packets missing at all
-
-eth0, vlan configured: see packets without vlan tag (see double tagged
-packets with one vlan tag)
-
-eth1 same as originally reported:
-without vlan configured see vlan tags (single and double tagged as
-expected)
-with vlan configured: see packets without vlan tag (see double tagged
-packets with one vlan tag)
+于 2010年12月14日 18:22, Suzuki K. Poulose 写道:
+...
+> +	/*
+> +	 * Read from the vma segments
+> +	 * a. verify if the *fpos is within a phdr
+> +	 * b. Use access_process_vm() to get data page by page
+> +	 * c. copy_to_user into user buffer
+> +	 */
 
 
-2.6.37-rc5, your tg3 use new vlan-code patch:
-
-eth0, no vlan configured:  see packets without vlan tag (see double
-tagged packets with one vlan tag)
-eth1, no vlan configured: see vlan tags (single and double tagged as
-expected)
+This kind of comments is useless, "code tells you how, comments tell you why."
 
 
-eth0, vlan configured: as without vlan
-eth1, vlan configured: as without vlan
+> +
+> +	while (buflen) {
+> +		size_t bufsz, offset, bytes;
+> +		char *readbuf;
+> +		struct elf_phdr *phdr = get_pos_elfphdr(cp, *fpos);
+> +
+> +		if (!phdr)
+> +			break;
+> +
+> +		bufsz = (buflen>  PAGE_SIZE) ? PAGE_SIZE : buflen;
+> +		readbuf = kmalloc(bufsz, GFP_KERNEL);
+> +		if (!readbuf) {
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+> +
+> +		offset = *fpos - phdr->p_offset;
+> +		bytes = access_process_vm(cp->task, (phdr->p_vaddr + offset),
+> +						readbuf, bufsz, 0);
+> +		if (!bytes) {
+> +			ret = -EIO;
+> +			goto out;
 
-2.6.37-rc5, your tg3 use new vlan-code patch with test patch ontop
 
-eth1 no vlan configured: see packets without vlan tag (see double tagged
-packets with one vlan tag)
-eth1 with vlan: the same
+Why you don't kfree(readbuf) here?
 
-Hope I did not miss a test I should have done - hope, I did not confuse
-anything. If something is not what you would expect you might ask, I've
-a script from that session and can look (but cannot post that, sorry).
+> +		}
+> +		if (copy_to_user(buffer, readbuf, bytes)) {
+> +			ret = -EFAULT;
+> +			kfree(readbuf);
+> +			goto out;
+> +		} else
+> +			acc += bytes;
+> +
+> +		kfree(readbuf);
+> +		buflen -= bytes;
+> +		buffer += bytes;
+> +		*fpos += bytes;
+> +	}
+> +
+> +	/* Fill extnum section header if present */
+> +	if (buflen&&
+> +		elf_hdr->e_shoff&&
+> +		(*fpos>= elf_hdr->e_shoff)&&
+> +		(*fpos<  (elf_hdr->e_shoff + sizeof(struct elf_shdr)))) {
 
 
+This indention seems ugly.
 
+> +
+> +		off_t offset = *fpos - elf_hdr->e_shoff;
 
--- 
-MfG,
+Are you sure it is 'off_t' not 'loff_t'?
 
-Michael Leun
+> +		size_t shdrsz = sizeof(struct elf_shdr) - offset;
+> +
+> +		shdrsz = (buflen<  shdrsz) ? buflen : shdrsz;
+> +		if (copy_to_user(buffer, ((char *)cp->shdr) + offset, shdrsz)) {
+> +			ret = -EFAULT;
+> +			goto out;
+> +		} else {
+> +			acc += shdrsz;
+> +			buflen -= shdrsz;
+> +			buffer += shdrsz;
+> +		}
+> +	}
+>
+> +done:
+> +	ret = acc;
+>   out:
+>   	return ret;
+>   }
 
+Thanks.
