@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab0LOTom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:44:42 -0500
-Received: from [130.75.117.88] ([130.75.117.88]:47772 "EHLO htj.dyndns.org"
+	id S1755252Ab0LOTrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:47:04 -0500
+Received: from [130.75.117.88] ([130.75.117.88]:47791 "EHLO htj.dyndns.org"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753299Ab0LOTok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:44:40 -0500
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 14:44:40 EST
-Message-ID: <4D091847.2030201@suse.de>
-Date: Wed, 15 Dec 2010 20:34:31 +0100
+	id S1753299Ab0LOTrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 14:47:03 -0500
+Message-ID: <4D091B32.4020309@suse.de>
+Date: Wed, 15 Dec 2010 20:46:58 +0100
 From: Tejun Heo <teheo@suse.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
@@ -17,8 +16,8 @@ CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
         FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         lkml <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org> <1292440246.4688.416.camel@mulgrave.site> <4D0914B5.20208@kernel.org>
-In-Reply-To: <4D0914B5.20208@kernel.org>
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org>	 <1292440246.4688.416.camel@mulgrave.site>  <4D0914B5.20208@kernel.org> <1292441610.4688.457.camel@mulgrave.site> <4D091A20.3060202@kernel.org>
+In-Reply-To: <4D091A20.3060202@kernel.org>
 X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -26,14 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 08:19 PM, Tejun Heo wrote:
-> Given that the structures containing the work items are dynamically
-> allocated, I would introduce a scsi_wq, unconditionally schedule
-> release works on them and flush them before unloading.  Please note
-> that workqueues no longer require dedicated threads, so it's quite
-> cheap.
+On 12/15/2010 08:42 PM, Tejun Heo wrote:
+> Yeap, that's an interesting point actually.  I just sent the patch
 
-So, something like the following.
+Hmm... I remember sending but don't see it anywhere.  Where did it go?
+Anyways, here it is again.
 
 ---
  drivers/scsi/scsi.c        |   15 +++++++++++++--
