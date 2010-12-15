@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab0LOVFB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:05:01 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62270 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab0LOVE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:04:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
-Subject: Re: [PATCH] msm: rmnet: msm rmnet smd virtual ethernet driver
-Date: Wed, 15 Dec 2010 22:04:41 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Brian Swetland <swetland@google.com>
-References: <1292437866-11652-1-git-send-email-nvishwan@codeaurora.org>
-In-Reply-To: <1292437866-11652-1-git-send-email-nvishwan@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012152204.42002.arnd@arndb.de>
-X-Provags-ID: V02:K0:KPWTYugZKB+Uy7WTRR+UDQwXYlsW4zM72/2xXfqsLEi
- c03wka+JxIOz7hkBuyMUo1aWxW4v/nkNknKgRFc5cyzCu+o6/w
- 6fl/HPt+i6c9QOEHmf6rlmG1IM2NEYpH+cWFtQvLR0tpF/Htec
- ara5YnH/W4uRZ+C8zXP4ilgiF+oRG+SMtr7ZwoZ+BuFJTsftuY
- XiSaLOSuwh/yaYCo5JkUA==
+	id S1755311Ab0LOVHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:07:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab0LOVHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 16:07:43 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        paulmck@linux.vnet.ibm.com
+Cc: vgoyal@redhat.com, oleg@redhat.com
+Subject: [PATCH 0/2] blk-throttle: Couple of more fixes
+Date: Wed, 15 Dec 2010 16:07:33 -0500
+Message-Id: <1292447255-10698-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 December 2010 19:31:06 Niranjana Vishwanathapura wrote:
-> +struct rmnet_private {
-> +       smd_channel_t *ch;
-> +       struct net_device_stats stats;
-> +       const char *chname;
-> +#ifdef CONFIG_MSM_RMNET_DEBUG
-> +       ktime_t last_packet;
-> +       short active_countdown; /* Number of times left to check */
-> +       short restart_count; /* Number of polls seems so far */
-> +       unsigned long wakeups_xmit;
-> +       unsigned long wakeups_rcv;
-> +       unsigned long timeout_us;
-> +       unsigned long awake_time_ms;
-> +       struct delayed_work work;
-> +#endif
-> +};
+Hi Jens,
 
-It feels like a significant portion of the code and the complexity
-(of which there fortunately is very little otherwise) is in the
-debugging code. How important is that debugging code still?
+Please find attached couple of more fixes for blk-throttle code. These are
+based on top of "for-linus" branch of your block tree. 
 
-In my experience, once a driver gets stable enough for inclusion,
-most of the debugging code that you have put in there to write
-the driver becomes obsolete, because the next bug is not going
-to be found with it anyway.
+Oleg had pointed out couple of race conditions in cgroup weight update code.
+I think these race conditions are hard to hit and not disastrous so I would
+not be too concerned about pushing these patches in 2.6.37 and can queue
+up for 2.6.38.
 
-How about deleting the debug code now? You still have the code and
-if something goes wrong, you can always put it back to analyse
-the problem.
+Paul,
 
-> +/* Called in soft-irq context */
-> +static void smd_net_data_handler(unsigned long arg)
-> +{
-> ...
-> +}
-> +
-> +static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
-> +
-> +static void smd_net_notify(void *_dev, unsigned event)
-> +{
-> +       if (event != SMD_EVENT_DATA)
-> +               return;
-> +
-> +       smd_net_data_tasklet.data = (unsigned long) _dev;
-> +
-> +       tasklet_schedule(&smd_net_data_tasklet);
-> +}
+Based on discussion in other mail thread, I have used xchg() based
+implementation for updating and processing limtis.  Can you please have a look
+if it is correct implementation and do I need any ACCESS_ONCE() or barriers
+somewhere. If this implementation is not correct then I can go back to atomic
+variable based implementation as suggested by you in other mail thread.
+Appreciate the help.
 
-It appears strange to do all the receive work in a tasklet. The
-common networking code already has infrastructure for deferring
-the rx to softirq time, and using the NAPI poll() logic likely gives
-you better performance as well.
+Thanks
+Vivek
 
-Aside from these, the driver looks very nice and clean to me.
+Vivek Goyal (2):
+  blk-throttle: process limit change only through one function
+  blk-throttle: Some cleanups and race fixes in limit update code
 
-	Arnd
+ block/blk-throttle.c |  104 ++++++++++++++++++++------------------------------
+ 1 files changed, 41 insertions(+), 63 deletions(-)
+
