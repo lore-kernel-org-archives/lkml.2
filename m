@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab0LOTbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:31:20 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65387 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab0LOTbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:31:19 -0500
-To: Hugh Dickins <hughd@google.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Ric Wheeler <ricwheeler@gmail.com>,
-        Christian Brandt <brandtc@psi5.com>, linux-kernel@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: Re: swap storage alignment and stride size
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <4CFFBA7D.6060802@psi5.com> <4CFFE2EA.9040909@gmail.com>
-	<yq1d3p486qe.fsf@sermon.lab.mkp.net>
-	<alpine.LSU.2.00.1012142038430.13004@tigran.mtv.corp.google.com>
-Date: Wed, 15 Dec 2010 14:30:44 -0500
-In-Reply-To: <alpine.LSU.2.00.1012142038430.13004@tigran.mtv.corp.google.com>
-	(Hugh Dickins's message of "Tue, 14 Dec 2010 20:57:28 -0800 (PST)")
-Message-ID: <yq18vzq6dgb.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755173Ab0LOTdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:33:36 -0500
+Received: from cantor.suse.de ([195.135.220.2]:50554 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754984Ab0LOTdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 14:33:35 -0500
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D0914B5.20208@kernel.org>
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>
+	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>
+	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>
+	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>
+	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>
+	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>
+	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org>
+	 <1292440246.4688.416.camel@mulgrave.site>  <4D0914B5.20208@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 14:33:30 -0500
+Message-ID: <1292441610.4688.457.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Hugh" == Hugh Dickins <hughd@google.com> writes:
+On Wed, 2010-12-15 at 20:19 +0100, Tejun Heo wrote:
+> Hello,
+> 
+> On 12/15/2010 08:10 PM, James Bottomley wrote:
+> >> Yes, it would do, but we were already too far with the existing
+> >> implementation and I don't agree we need more when replacing it with
+> >> usual workqueue usage would remove the issue.  So, when we actually
+> >> need them, let's consider that or any other way to do it, please.
+> >> A core API with only a few users which can be easily replaced isn't
+> >> really worth keeping around.  Wouldn't you agree?
+> > 
+> > Not really ... since the fix is small and obvious.
+> 
+> IMHO, it's a bit too subtle to be a good API.  The callee is called
+> under different (locking) context depending on the callsite and I've
+> been already bitten enough times from implicit THIS_MODULEs.  Both
+> properties increase possbility of introducing problems which can be
+> quite difficult to detect and reproduce.
 
-Hugh> (scan_swap_map does try to allocate in 1MB clusters, but they're
-Hugh> not written out that way, and there's no attempt to align: if it
-Hugh> worked out better for the lower level to require that these 1MB
-Hugh> clusters are aligned, we could probably go for that - though the
-Hugh> swap header page might then be a nuisance.)
+Both have subtleties ... see below.
 
-You called it a "header page". Does that imply that it is page sized?
-Or will it cause pages written to a 4k-aligned swap device to be
-misaligned?
+> > Plus now it can't be moved into SCSI because I need the unremovable
+> > call chain.
+> 
+> Yes, with the proposed change, it cannot be moved to SCSI.
+> 
+> > Show me how you propose to fix it differently first, since we both agree
+> > the initial attempt doesn't work, and we can take the discussion from
+> > there.
+> 
+> Given that the structures containing the work items are dynamically
+> allocated, I would introduce a scsi_wq, unconditionally schedule
+> release works on them and flush them before unloading.  Please note
+> that workqueues no longer require dedicated threads, so it's quite
+> cheap.
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+A single flush won't quite work.  The target is a parent of the device,
+both of which release methods have execute_in_process_context()
+requirements.  What can happen here is that the last put of the device
+will release the target (from the function).  If both are moved to
+workqueues, a single flush could cause the execution of the device work,
+which then queues up target work (and makes it still pending).  A double
+flush will solve this (because I think our nesting level doesn't go
+beyond 2) but it's a bit ugly ...
+
+execute_in_process_context() doesn't have this problem because the first
+call automatically executes the second inline (because it now has
+context).
+
+James
+
+
