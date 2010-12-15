@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab0LOMrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 07:47:32 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:24774 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab0LOMra (ORCPT
+	id S1753841Ab0LOMxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 07:53:22 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34183 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab0LOMxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 07:47:30 -0500
-Message-ID: <4D08B8DF.9080503@panasas.com>
-Date: Wed, 15 Dec 2010 14:47:27 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 15 Dec 2010 07:53:20 -0500
+Date: Wed, 15 Dec 2010 12:53:15 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [patch 1/2] fs: fix d_validate (again)
+Message-ID: <20101215125315.GA4419@ZenIV.linux.org.uk>
+References: <20101123102241.GA4317@amd>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: linux-next: Tree for November 18
-References: <20101118134256.fe132215.sfr@canb.auug.org.au>	<4CE54562.9030603@panasas.com>	<20101119103300.243b17c8.sfr@canb.auug.org.au>	<4CE92F96.7000002@panasas.com> <20101214135917.5b5a73e5.randy.dunlap@oracle.com>
-In-Reply-To: <20101214135917.5b5a73e5.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Dec 2010 12:47:29.0427 (UTC) FILETIME=[3BC7EE30:01CB9C56]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101123102241.GA4317@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 11:59 PM, Randy Dunlap wrote:
-> On Sun, 21 Nov 2010 16:41:26 +0200 Boaz Harrosh wrote:
+On Tue, Nov 23, 2010 at 09:22:41PM +1100, Nick Piggin wrote:
+> Again, I'd like to please fix d_validate. It can be trivally fixed
+> without delving into filesystem code, and it does not prevent the proper
+> careful removal of d_validate and untrusted dentry caches from
+> filesystems.
 > 
->>
->> Meanwhile I have setup a cron job for every-night to checkout linux-next
->> and "make". As a backup for above, until it is fixed.
->>
->> Anything else I can contribute to this cause?
-> 
-> 
-> From my small testing, it looks like ARCH=um "defconfig" is about the only
-> config that comes close to building reliably.  allmodconfig/allyesconfig and
-> several randconfig attempts all failed with many horrible errors.
-> 
-> Is that about right?
-> 
-> ---
-> ~Randy
+> The right way to merge is fix the bugs in core code now, and remove it
+> completely if and when filesystems stop using it. But it's no longer a
+> liability or problem to maintain, so it can stay as long as it likes.
 
-Hi Randy
+TBH, I would prefer to kill the damn thing completely.  Never liked it,
+and I think I see how to get rid of it.
 
-Yes you are basically right. One must start with defconfig and add anything
-he needs. UM has neglected to play it nice with Kernel, missing some basic
-implementations of simple things, just for example ndelay. So some code that
-should theoretically work, fails to compile.
+Look: what happens is that ncpfs reads the entire directory from server
+and since it gets all metadata for free anyway, it creates all dentries
+as it goes (assiging i_ino, etc.) and sticks references to them into
+page cache for that directory.  readdir() goes through those pages and
+as long as all dentries it sees are still alive (and pages still present),
+it uses them.  If something's gone or the cache is old enough, we just
+evict all those pages and reread.  If some dentries are around during
+reread (or initial read, for that matter), we stick references to those
+back into the repopulated page cache.
 
-I have around an allmodconfig with the minimum of configs turned off, so
-to compile a maximum possible coverage. I have this pet project of half
-Kconfig "depends on !UM" and half "implement some missing parts". But I
-never have time to actually clean it up, patch it and send it upstream.
+The order of entries matches that in the metadata we'd got from server.
 
-Thanks
-Boaz
+OK.  So let's do that:
+	* stick reference back into the page in dentry->d_fsdata (the current
+uses are becoming obsolete with new scheme)
+	* have d_iput() remove the reference to dentry from page under
+spinlock
+	* have page eviction remove the references from corresponding dentries
+under the same spinlock
+	* instead of d_validate() crap, grab the spinlock, lock dentry,
+check if it's still alive and do dget_locked() on it if it is (and unlock,
+of course).
+
+Voila - d_validate() is no more.  IIRC, smbfs was essentially the same
+as ncpfs in that respect.  Comments?
