@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab0LOXk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 18:40:57 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:37582 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753046Ab0LOXk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 18:40:57 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/FS58pHY7FA/QgN2Vsuixgv0fS/5yPiDYGsSHHrS
-	BLf7kT0VSPjUNs
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH v2] include/linux: Add missing include / fix build failure
-Date: Thu, 16 Dec 2010 00:40:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org
-References: <201012152204.18881.PeterHuewe@gmx.de> <20101216103141.6f0a418c.sfr@canb.auug.org.au>
-In-Reply-To: <20101216103141.6f0a418c.sfr@canb.auug.org.au>
+	id S1755857Ab0LOXmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 18:42:37 -0500
+Received: from leo.clearchain.com ([199.73.29.74]:43001 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755771Ab0LOXmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 18:42:36 -0500
+Date: Thu, 16 Dec 2010 09:42:29 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Chris Bagwell <chris@cnpbagwell.com>, Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Input: synaptics - add multitouch packet support
+Message-ID: <20101215234228.GA4694@salty.local>
+References: <1292280948-1933-1-git-send-email-rydberg@euromail.se>
+ <4D06A7B1.6060609@canonical.com>
+ <4D06A90C.90009@euromail.se>
+ <4D07E38C.4020201@canonical.com>
+ <4D08CEE8.9080804@euromail.se>
+ <4D08FF4F.1020307@canonical.com>
+ <AANLkTikM5dXSv2onvF5aqzqkEuwrvbS5DTeE0CiW91j3@mail.gmail.com>
+ <4D093218.8040707@canonical.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012160040.54313.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D093218.8040707@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Thu, 16 Dec 2010 10:12:35 +1030 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Wed, Dec 15, 2010 at 04:24:40PM -0500, Chase Douglas wrote:
+> > Is this custom code or in upstream (are you talking about
+> > inside_active_area logic?)?  I'm not sure why your seeing a jump if
+> > its being discarded.  There is a chance that something related to this
+> > discard logic is defeating the other logic that handles jumps caused
+> > during finger transitions.
+> 
+> In Ubuntu 10.10 I think we are using an in-house patched hack. It was
+> necessary for an Dell Minis, which was a paid OEM services project, so
+> we needed a fix ASAP at the time. I believe xf86-input-synaptics has an
+> option for this now, so we'll probably transition whenever someone gets
+> a chance to take another look. It may be something that would be handled
+> better by the upstream logic. When I get a chance I'll try the upstream
+> logic instead.
 
-This patch fixes a build failure[1-2] by adding the missing asm/memory.h
-include needed for arch_is_coherent().
+mostly identical logic, but the Ubuntu patches only covered the bottom edge
+(MovementBottomEdge option, IIRC). The upstream version covers all four
+edges with AreaLeftEdge and friends.
+recent X servers also support a percentage as option, so instead of the
+hardcoded value for the edge, you can say Option "AreaBottomEdge" "20%"
 
-Error message:
-In file included from include/linux/list_bl.h:5,
-                 from include/linux/rculist_bl.h:7,
-                 from include/linux/dcache.h:7,
-                 from include/linux/fs.h:381,
-                 from arch/arm/mm/mmap.c:4:
-include/linux/bit_spinlock.h: In function 'bit_spin_unlock':
-include/linux/bit_spinlock.h:61: error: implicit declaration of function 
-'arch_is_coherent'
+I've had a few attempts to fix this touchpad to work slighlty better but
+the box died on me before I could finish it. Feel free to send me one of
+these machines if you want it fixed, it's been bugging me for ages :)
 
-KernelVersion: linux-next-20101215
-Used configs: hackkit_defconfig (arm), ep93xx_defconfig (arm)
-
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/3651495/
-[2] http://kisskb.ellerman.id.au/kisskb/buildresult/3651425/
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-v2:
-moved additional information in the commit message.
-
- include/linux/bit_spinlock.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
-index e612575..053fad7 100644
---- a/include/linux/bit_spinlock.h
-+++ b/include/linux/bit_spinlock.h
-@@ -4,6 +4,7 @@
- #include <linux/kernel.h>
- #include <linux/preempt.h>
- #include <asm/atomic.h>
-+#include <asm/memory.h>
- 
- /*
-  *  bit-based spin_lock()
--- 
-1.7.2.2
-
+Cheers,
+  Peter
