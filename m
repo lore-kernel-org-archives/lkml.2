@@ -1,80 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab0LOIKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 03:10:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46901 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab0LOIKx (ORCPT
+	id S1754384Ab0LOIPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 03:15:45 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:56485 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab0LOIPo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 03:10:53 -0500
+	Wed, 15 Dec 2010 03:15:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=W/Bry5KyIaL7y9y/cafyXMey+T5MHa2nldqhGUNvHx+n+N0Q3tQ9j2E2AgVlCFcknM
-         niy25rYSAvOesgyeh4KhIafCXFkAtTyUsyKdoP8JYIQFpDCkXUcNG0lqxQ74VxNrGZNl
-         B3sYLCo1/6if3cm04KGACEXu8Ty78meJqlzUQ=
-Date: Wed, 15 Dec 2010 00:10:46 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Azael Avalos <coproscefalo@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] toshiba_acpi: FULL TOS1900 device support
-Message-ID: <20101215081046.GB11920@core.coreip.homeip.net>
-References: <AANLkTimW5ro7EQBgoqMLSxnEsVrinL2S+USu207-Nbh=@mail.gmail.com>
- <20101210213551.GE1630@core.coreip.homeip.net>
- <AANLkTimhgLyx=Di2yBimFWm=Hg5-2CGOxHfuB+Gb-9_Q@mail.gmail.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=m09l9r+QspeuLFW3nSVvyP2rLOBedVpX1NMmuPjnK/sXdg5C3WSsqbzvMrNc39hLS7
+         04eeoVIMsMdHA+i9bWJSEasiGVRzAWFcSukcsTguOCBw8958XjOEl5EMZ43mT9rsjH0M
+         npwjfogtxMOfGZJ8Z5EQr9Qs3JA9XsWg+JYJs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimhgLyx=Di2yBimFWm=Hg5-2CGOxHfuB+Gb-9_Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1292399418.303.8.camel@wall-e>
+References: <1292368360-32216-1-git-send-email-stefani@seibold.net>
+	<AANLkTi=HaS+wweLaAEcBuRFx+Dr1pKU=One1gOYF55CJ@mail.gmail.com>
+	<AANLkTikvN9u3dB_TzNUKjz7g39i+t+h4vt7EVKDLVjLg@mail.gmail.com>
+	<1292399418.303.8.camel@wall-e>
+Date: Wed, 15 Dec 2010 10:15:42 +0200
+X-Google-Sender-Auth: bjb_jzVx-n8MBf2ltxK6jmOim38
+Message-ID: <AANLkTimYpB2iw525_0wGT=sLkCcuy_bAx1QyG8tjRjOb@mail.gmail.com>
+Subject: Re: [PATCH] cramfs: generate unique inode number for better inode
+ cache usage
+From: Pekka Enberg <penberg@kernel.org>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Azael,
+On Wed, Dec 15, 2010 at 9:50 AM, Stefani Seibold <stefani@seibold.net> wrote:
+> No, it makes no sense, for following reasons:
+>
+> - Why pre-setup variables like iops, fops and aops which are in the most
+> cases not needed? Because the inode is still in the cache.
+>
+> - Each branch is a little bit different.
+>
+> - The default branch is completly different, because in this case the
+> init_special_inode() will be called, which sets the inode->fop.
+>
+> What do you think about this solution:
+>
+> static void setup_inode(struct inode *inode, struct cramfs_inode * cramfs_inode)
+> {
+>        static struct timespec zerotime;
+>        inode->i_mode = cramfs_inode->mode;
+>        inode->i_uid = cramfs_inode->uid;
+>        /* if the lower 2 bits are zero, the inode contains data */
+>        if (!(inode->i_ino & 3)) {
+>                inode->i_size = size;
+>                inode->i_blocks = (size - 1) / 512 + 1;
+>        }
+>        inode->i_gid = cramfs_inode->gid;
+>        /* Struct copy intentional */
+>        inode->i_mtime = inode->i_atime = inode->i_ctime = zerotime;
+>        /* inode->i_nlink is left 1 - arguably wrong for directories,
+>           but it's the best we can do without reading the directory
+>           contents.  1 yields the right result in GNU find, even
+>           without -noleaf option. */
+>        unlock_new_inode(inode);
+> }
+>
+> static struct inode *get_cramfs_inode(struct super_block *sb,
+>        struct cramfs_inode * cramfs_inode, unsigned int offset)
+> {
+>        struct inode *inode;
+>
+>        switch (cram_inode->mode & S_IFMT) {
+>        case S_IFREG:
+>                inode = iget_locked(sb, cramino(cramfs_inode, offset));
+>                if (inode && (inode->i_state & I_NEW)) {
+>                        inode->i_fop = &generic_ro_fops;
+>                        inode->i_data.a_ops = &cramfs_aops;
+>                        setup_inode(inode, cramfs_inode);
+>                }
+>                break;
+>        case S_IFDIR:
+>                inode = iget_locked(sb, cramino(cramfs_inode, offset));
+>                if (inode && (inode->i_state & I_NEW)) {
+>                        inode->i_op = &cramfs_dir_inode_operations;
+>                        inode->i_fop = &cramfs_directory_operations;
+>                        setup_inode(inode, cramfs_inode);
+>                }
+>                break;
+>        case S_IFLNK:
+>                inode = iget_locked(sb, cramino(cramfs_inode, offset));
+>                if (inode && (inode->i_state & I_NEW)) {
+>                        inode->i_op = &page_symlink_inode_operations;
+>                        inode->i_data.a_ops = &cramfs_aops;
+>                        setup_inode(inode, cramfs_inode);
+>                }
+>                break;
+>        default:
+>                inode = iget_locked(sb, CRAMINO_UNIQ(offset));
+>                if (inode && (inode->i_state & I_NEW)) {
+>                        init_special_inode(inode, cramfs_inode->mode,
+>                                old_decode_dev(cramfs_inode->size));
+>                        setup_inode(inode, cramfs_inode);
+>                }
+>                break;
+>        }
+>        return inode;
+> }
 
-On Fri, Dec 10, 2010 at 05:06:09PM -0700, Azael Avalos wrote:
-> 
-> - err_remove_notify:
-> -	acpi_remove_notify_handler(toshiba_acpi.handle,
-> -				   ACPI_DEVICE_NOTIFY, toshiba_acpi_notify);
-> - err_free_keymap:
-> +err_free_keymap:
->  	sparse_keymap_free(toshiba_acpi.hotkey_dev);
-> - err_free_dev:
-> +	if (toshiba_acpi.hci_type == 2)
-> +		i8042_remove_filter(toshiba_i8042_filter);
+I think Linus is after something like this:
 
-You need to remove filter before you free the keymap. Also
-cancel_work_sync() is needed.
+static struct inode *get_cramfs_inode(struct super_block *sb, struct
+cramfs_inode * cramfs_inode, unsigned int offset)
+{
+        struct inode *inode;
+        unsigned long ino;
 
-> +err_free_dev:
->  	input_free_device(toshiba_acpi.hotkey_dev);
->  	toshiba_acpi.hotkey_dev = NULL;
->  	return error;
->  }
-> 
+        switch (cram_inode->mode & S_IFMT) {
+        case S_IFREG:
+        case S_IFDIR:
+        case S_IFLNK:
+                ino = cramino(cramfs_inode, offset);
+                break;
+        default:
+                ino = CRAMINO_UNIQ(offset);
+                break;
+        }
 
-...
+        inode = iget_locked(sb, ino);
+        if (!inode)
+                return ERR_PTR(-ENOMEM);
+        if (!(inode->i_state & I_NEW))
+                return inode;
 
-> +static int toshiba_acpi_remove(struct acpi_device *device, int type)
-> +{
-> +	if (toshiba_acpi.hci_type == 2)
-> +		i8042_remove_filter(toshiba_i8042_filter);
+       switch (cram_inode->mode & S_IFMT) {
+       case S_IFREG:
+               inode->i_fop = &generic_ro_fops;
+               inode->i_data.a_ops = &cramfs_aops;
+               setup_inode(inode, cramfs_inode);
+               break;
+       case S_IFDIR:
+               inode->i_op = &cramfs_dir_inode_operations;
+               inode->i_fop = &cramfs_directory_operations;
+               setup_inode(inode, cramfs_inode);
+               break;
+       case S_IFLNK:
+               inode->i_op = &page_symlink_inode_operations;
+               inode->i_data.a_ops = &cramfs_aops;
+               setup_inode(inode, cramfs_inode);
+               break;
+       default:
+               init_special_inode(inode, cramfs_inode->mode,
+old_decode_dev(cramfs_inode->size));
+               setup_inode(inode, cramfs_inode);
+               break;
+       }
+       return inode;
+}
 
-You also need to call cancel_work_sync() here to make sure the work is
-not running while you are tearing down the device.
-
-> +
-> +	toshiba_acpi_cleanup();
-> +
-> +	return 0;
-> +}
-> +
-
-Thanks.
-
--- 
-Dmitry
+You should optimize for the in-cache case.
