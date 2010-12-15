@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab0LORkL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:40:11 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:53246 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0LORkJ (ORCPT
+	id S1753632Ab0LORmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:42:18 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24730 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab0LORmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:40:09 -0500
-Message-ID: <4D08FD74.4060403@canonical.com>
-Date: Wed, 15 Dec 2010 12:40:04 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 15 Dec 2010 12:42:15 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66741910"
+Message-ID: <4D08FDF6.3040403@codeaurora.org>
+Date: Wed, 15 Dec 2010 09:42:14 -0800
+From: Steve Muckle <smuckle@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101019 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@bitmath.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
-References: <4D0897F3.7040500@bitmath.org>
-In-Reply-To: <4D0897F3.7040500@bitmath.org>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Brown <davidb@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
+References: <1292302233-16194-1-git-send-email-johlstei@codeaurora.org> <1292302233-16194-6-git-send-email-johlstei@codeaurora.org> <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com> <20101215134414.GA8682@huya.qualcomm.com> <20101215160323.GA9937@n2100.arm.linux.org.uk>
+In-Reply-To: <20101215160323.GA9937@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 05:26 AM, Henrik Rydberg wrote:
->>> Ping has touched upon this subject as well, from the pen & touch perspective.
->>> Generally, some ABS axes are actually enumerations, for which we have no
->>> direct abstraction. If we had a way to declare the used values for such
->>> enumerations, it would resolve these and possibly other issues.
-> 
->> I think that presence of pen/touch can be detected by having
->> BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
->> finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
->> this is another case where we should employ the proposed device flags?
-> 
-> Yes. Having something like INPUT_QUIRK_SEMI_MT might be enough, and we could
-> drop the whole MT_TOOL_ENVELOPE circus. Chase, Peter, Chris, would you be
-> comfortable with such a solution?
+Hi Russell,
 
-That sounds like a good solution to me. I believe it would resolve all
-the issues I had.
+On 12/15/10 08:03, Russell King - ARM Linux wrote:
+> As far as hotplug code goes, I wish folk would see what their hardware
+> can actually do with the secondary CPUs - can they take the CPU fully
+> offline and into a proper dormant state, and when they reawaken it, can
+> they wake it in the same manner as the CPU is brought online during
+> boot.
 
-As I attempted to write up more documentation, I thought of the
-following. What do you think?
+This is possible with MSM8660 and we have this working internally, but
+it relies on a fair amount of power management code that is not ready to
+be sent out yet. This hotplug support is just meant as a starting point
+while getting the core MSM8660 support in.
 
-With regards to partial MT devices, if the device provides a single
-valued property, such as pressure and tool type for synaptics, it may
-only be provided through the traditional property semantics, i.e.
-ABS_PRESSURE and BTN_TOOL_*. If the device provides multiple values for
-a property, then ABS_MT_* types may be used as well to provide up to two
-values, though the client should understand there's no direct
-correlation between the slot's coordinates and the property. I could see
-this being used to provide info on multiple tool types or a high and low
-pressure.
+thanks,
+Steve
 
-Enforcing the above behaviour provides even more information about the
-capabilities of the device based solely on the evdev codes published.
-
-Thanks,
-
--- Chase
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
