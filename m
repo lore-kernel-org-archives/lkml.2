@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab0LOVEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:04:31 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:58130 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751053Ab0LOVEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:04:30 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/BbFNlgVDBAIHsRBq4+Z+89fnMsx/m/c0uJPyjyL
-	RkKylgIZVsHK+8
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Nick Piggin <npiggin@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] include/linux: Add missing include / fix build failure
-Date: Wed, 15 Dec 2010 22:04:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36.2; KDE/4.4.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
+	id S1755496Ab0LOVEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:04:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33396 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755334Ab0LOVEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 16:04:46 -0500
+Message-ID: <4D092D15.7030700@zytor.com>
+Date: Wed, 15 Dec 2010 13:03:17 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+References: <alpine.DEB.2.00.1012151404070.21102@router.home> <20101215125626.25f7d648.akpm@linux-foundation.org>
+In-Reply-To: <20101215125626.25f7d648.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012152204.18881.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On 12/15/2010 12:56 PM, Andrew Morton wrote:
+> On Wed, 15 Dec 2010 14:07:39 -0600 (CST)
+> Christoph Lameter <cl@linux.com> wrote:
+> 
+>> +#define cpu_has(c, bit)							\
+>> +	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 :	\
+>>  	 test_cpu_cap(c, bit))
+>>
+>> +#define this_cpu_has(bit)						\
+>> +	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 : 	\
+>> +	 this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
+>> +
+> 
+> Isn't
+> 
+> 	a ? 1 : b
+> 
+> a complex way of writing
+> 
+> 	a || b
+> 
 
-This patch fixes a build failure[1-2] by adding the missing asm/memory.h
-include needed for arch_is_coherent().
+Not if b is not a bool.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next-20101215
-Used configs: hackkit_defconfig (arm), ep93xx_defconfig (arm)
-
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/3651495/
-[2] http://kisskb.ellerman.id.au/kisskb/buildresult/3651425/
-
-Error Message:
-In file included from include/linux/list_bl.h:5,
-                 from include/linux/rculist_bl.h:7,
-                 from include/linux/dcache.h:7,
-                 from include/linux/fs.h:381,
-                 from arch/arm/mm/mmap.c:4:
-include/linux/bit_spinlock.h: In function 'bit_spin_unlock':
-include/linux/bit_spinlock.h:61: error: implicit declaration of function 'arch_is_coherent'
-
-
-
- include/linux/bit_spinlock.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
-index e612575..053fad7 100644
---- a/include/linux/bit_spinlock.h
-+++ b/include/linux/bit_spinlock.h
-@@ -4,6 +4,7 @@
- #include <linux/kernel.h>
- #include <linux/preempt.h>
- #include <asm/atomic.h>
-+#include <asm/memory.h>
- 
- /*
-  *  bit-based spin_lock()
--- 
-1.7.2.2
+	-hpa
 
