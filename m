@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab0LORmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 12:42:18 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24730 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab0LORmP (ORCPT
+	id S1753847Ab0LORme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 12:42:34 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57224 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab0LORmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 12:42:15 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66741910"
-Message-ID: <4D08FDF6.3040403@codeaurora.org>
-Date: Wed, 15 Dec 2010 09:42:14 -0800
-From: Steve Muckle <smuckle@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101019 Lightning/1.0b3pre Thunderbird/3.1.4
+	Wed, 15 Dec 2010 12:42:31 -0500
+Date: Wed, 15 Dec 2010 12:40:18 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Carpenter <error27@gmail.com>, Brian Rogers <brian@xyzw.org>,
+        Jeff Mahoney <jeffm@suse.com>, linux-kernel@vger.kernel.org,
+        Guillaume Chazarain <guichaz@gmail.com>
+Subject: Re: [patch] delayacct: fix iotop on x86_64
+Message-ID: <20101215071018.GD2657@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101213113745.GE1620@bicker>
+ <20101213125709.GB14178@balbir.in.ibm.com>
+ <4D0639B2.4060903@suse.com>
+ <4D068869.7040305@xyzw.org>
+ <20101213212253.GI1620@bicker>
+ <20101214070243.GJ1620@bicker>
+ <20101214080239.GC14178@balbir.in.ibm.com>
+ <20101214121641.7c337509.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: David Brown <davidb@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
-References: <1292302233-16194-1-git-send-email-johlstei@codeaurora.org> <1292302233-16194-6-git-send-email-johlstei@codeaurora.org> <AANLkTimnuTcv+5cWNzvV-Z=1LHsAmTojDSBJMjjOs7K+@mail.gmail.com> <20101215134414.GA8682@huya.qualcomm.com> <20101215160323.GA9937@n2100.arm.linux.org.uk>
-In-Reply-To: <20101215160323.GA9937@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101214121641.7c337509.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+* Andrew Morton <akpm@linux-foundation.org> [2010-12-14 12:16:41]:
 
-On 12/15/10 08:03, Russell King - ARM Linux wrote:
-> As far as hotplug code goes, I wish folk would see what their hardware
-> can actually do with the secondary CPUs - can they take the CPU fully
-> offline and into a proper dormant state, and when they reawaken it, can
-> they wake it in the same manner as the CPU is brought online during
-> boot.
+> On Tue, 14 Dec 2010 13:32:39 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * Dan Carpenter <error27@gmail.com> [2010-12-14 10:02:43]:
+> > 
+> > > We changed how the taskstats was exported to user space in:
+> > > 85893120699 "delayacct: align to 8 byte boundary on 64-bit systems"
+> > > This was important because it fixes a run time warning on IA64.  In
+> > > theory it shouldn't have broken anything, if you just assume that user
+> > > space programmers don't smoke crack all day long.
+> > > 
+> > > But actually it breaks iotop on x86_64.
+> > > 
+> > > Reported-by: Brian Rogers <brian@xyzw.org>
+> > > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > > 
+> > > diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+> > > index c8231fb..a0758de 100644
+> > > --- a/kernel/taskstats.c
+> > > +++ b/kernel/taskstats.c
+> > > @@ -358,7 +358,19 @@ static struct taskstats *mk_reply(struct sk_buff *skb, int type, u32 pid)
+> > >  	 * This causes lots of runtime warnings on systems requiring 8 byte
+> > >  	 * alignment */
+> > >  	u32 pids[2] = { pid, 0 };
+> > > -	int pid_size = ALIGN(sizeof(pid), sizeof(long));
+> > > +	int pid_size;
+> > > +
+> > > +	/*
+> > > +	 * IA64 can't be aligned on a 4 byte boundary.  But iotop on x86_64
+> > > +	 * depends on the current struct layout.  The next version of iotop
+> > > +	 * will fix this so maybe we can move everything to the new code in
+> > > +	 * a couple years.
+> > > +	 */
+> > > +#if defined(CONFIG_IA64)
+> > > +	pid_size = ALIGN(sizeof(pid), sizeof(long));
+> > > +#else
+> > > +	pid_size = sizeof(u32);
+> > > +#endif
+> > 
+> > I would rather abstract this better
+> 
+> Well.  Abstracting something tends to make it permanent.  When you have
+> an ugly, special-case temporary hack, there is merit to having it
+> sitting there in the middle of the code staring you in the face.  It's
+> very explicit and we won't forget about it.
+>
 
-This is possible with MSM8660 and we have this working internally, but
-it relies on a fair amount of power management code that is not ready to
-be sent out yet. This hotplug support is just meant as a starting point
-while getting the core MSM8660 support in.
+OK, agreed and learnt
+ 
+> > and I'd be apprehensive about the
+> > fix if iotop was at fault to begin with, I would rather fix iotop.
+> > IOW, are we fixing what iotop got wrong? Isn't it easier to backport
+> > the correct behaviour in iotop. I understand we broke the ABI, but
+> > user space can still live.
+> 
+> Nah, let's not knowingly break a userspace app.
+>
 
-thanks,
-Steve
+Fair enough!
+ 
+> 
+> This is a versioned interface, is it not?  How is that supposed
+> to work?  Should we have upped the version number when making this
+> change?
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+	Three Cheers,
+	Balbir
