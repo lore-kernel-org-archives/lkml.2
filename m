@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257Ab0LOIhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 03:37:04 -0500
-Received: from lauca.usach.cl ([158.170.64.28]:46389 "HELO
-	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1751005Ab0LOIhD (ORCPT
+	id S1751426Ab0LOIxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 03:53:25 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55180 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab0LOIxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 03:37:03 -0500
-X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Dec 2010 03:37:02 EST
-From: " Mail Administrator" <mail.a1@gmx.com>
-Subject: Email Quota Exceeded
-To: admin@admin.com
-X-Mailer: CommuniGate Pro WebUser v5.1.8
-Date: Wed, 15 Dec 2010 04:33:45 -0300
-Message-ID: <web-24816855@correoantiguo.usach.cl>
+	Wed, 15 Dec 2010 03:53:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=H8egErREVO338ZWQoyMEOlxECpHNAkG3syM4vmD/S1WgSU3/xNRmivUPSviDP7VpeW
+         Bll6mO+XF08jYiwqmPcHEWi5u0ljC3YENvTyDdvAEo+4lSLGBCDL1NJxgMT+HPKBp31k
+         zExUgg4cOUYySe750F65x8ZF6UZjg8hUxEdjI=
+Date: Wed, 15 Dec 2010 11:53:05 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Rene Sapiens <rene.sapiens@ti.com>
+Cc: omar.ramirez@ti.com, nm@ti.com, ohad@wizery.com, ionut.nicu@mindbit.ro,
+        devel@driverdev.osuosl.org, ivan.gomez@ti.com, x0095078@ti.com,
+        felipe.contreras@gmail.com, ernesto@ti.com,
+        linux-kernel@vger.kernel.org, x0095840@ti.com,
+        linux-omap@vger.kernel.org, ameya.palande@nokia.com
+Subject: Re: [PATCH 05/12] staging:tidspbridge - set5 remove hungarian from
+ structs
+Message-ID: <20101215085305.GC1639@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Rene Sapiens <rene.sapiens@ti.com>, omar.ramirez@ti.com, nm@ti.com,
+	ohad@wizery.com, ionut.nicu@mindbit.ro, devel@driverdev.osuosl.org,
+	ivan.gomez@ti.com, x0095078@ti.com, felipe.contreras@gmail.com,
+	ernesto@ti.com, linux-kernel@vger.kernel.org, x0095840@ti.com,
+	linux-omap@vger.kernel.org, ameya.palande@nokia.com
+References: <1292358798-25875-1-git-send-email-rene.sapiens@ti.com>
+ <1292358798-25875-2-git-send-email-rene.sapiens@ti.com>
+ <1292358798-25875-3-git-send-email-rene.sapiens@ti.com>
+ <1292358798-25875-4-git-send-email-rene.sapiens@ti.com>
+ <1292358798-25875-5-git-send-email-rene.sapiens@ti.com>
+ <1292358798-25875-6-git-send-email-rene.sapiens@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="iso-8859-1";format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292358798-25875-6-git-send-email-rene.sapiens@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear User,
+On Tue, Dec 14, 2010 at 02:33:11PM -0600, Rene Sapiens wrote:
+> -				    pfn_unload(pnode->nldr_node_obj,
+> +				    load(pnode->nldr_node_obj,
+>  					       NLDR_EXECUTE);
 
+Unload got swapped with load here.
 
-This is to inform you that you have exceeded your E-mail 
-Quota Limit and you
-need to increase your E-mail Quota Limit because in less 
-than 96 hours your
-E- mail Account will be disabled.Increase your E-mail 
-Quota Limit and continue
-to use your Webmail Account.
+This might have been easier to with Coccinelle instead of by hand...
 
+regards,
+dan carpenter
 
-To increase your E-mail Quota Limit to 2.7GB, Fill in your 
-Details as below
-and send to the E-mail Quota Webmaster by CLICKING REPLY:
-
-
-EMAIL ADDRESS:
-USERNAME:
-PASSWORD:
-CONFIRM PASSWORD:
-DATE OF BIRTH:
-
-
-Thank you for your understanding and corperation in 
-helping us give you the
-Best of E-mail Service.
-
-
-
-Copyright ©2010 E-mail Service Webmaster Centre
