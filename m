@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222Ab0LOAkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 19:40:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41980 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab0LOAka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 19:40:30 -0500
-From: Rob Landley <rob@landley.net>
-Organization: Boundaries Unlimited
-To: Jason Lunz <lunz@acm.org>
-Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
-Date: Tue, 14 Dec 2010 18:40:25 -0600
-User-Agent: KMail/1.11.2 (Linux/2.6.28-19-generic; KDE/4.2.2; x86_64; ; )
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        "richard -rw- weinberger" <richard.weinberger@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>,
-        atom ota <atomota@sleepyhammer.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Jeff Dike <jdike@addtoit.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org
-References: <20071024011712.GA3762@falooley.org> <1292356893.29257.1.camel@koala> <20101214212349.GA6937@falooley.org>
-In-Reply-To: <20101214212349.GA6937@falooley.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201012141840.27529.rob@landley.net>
+	id S1760263Ab0LOApj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 19:45:39 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:35531 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752542Ab0LOAph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 19:45:37 -0500
+Date: Wed, 15 Dec 2010 11:45:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vladislav Zolotarov <vladz@broadcom.com>
+Subject: linux-next: manual merge of the net tree with the net-current tree
+Message-Id: <20101215114531.bebdc892.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__15_Dec_2010_11_45_31_+1100_8hmpxv4lRrWvzIRs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 December 2010 15:23:49 Jason Lunz wrote:
-> On one hand you've got uml, which simply doesn't have mmio. On the other
-> there's mtd, which began as a method for accessing hardware devices that
-> are often accessed using mmio. But then the mtd subsystem developed
-> emulations of that hardware that are software based and thus don't
-> require mmio. It's mainly these emulated backends I'm interested in
-> exposing.
->
-> Nothing is going to change so that it makes sense to have any real
-> mmio-using hardware driver run on uml. The question you raise is, are
-> there other classes of driver with a software-only subset that can be
-> exposed on uml? And if so, would adding stub implementations of
-> readb/writeb and friends actually be enough to make those work? I'm not
-> aware of any, so at present I don't think the argument for implementing
-> this in uml arch code is very strong. Or in other words, I don't think a
-> "general solution" would be very general.
+--Signature=_Wed__15_Dec_2010_11_45_31_+1100_8hmpxv4lRrWvzIRs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For what it's worth, QEMU had replaced all my use cases for UML in the past 
-few years.  If I wanted to play with loopback mounting jffs2 I'd build a kernel 
-to run under QEMU, and have that emulate the flash.
+Hi all,
 
-Rob
--- 
-GPLv3: as worthy a successor as The Phantom Menace, as timely as Duke Nukem 
-Forever, and as welcome as New Coke.
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/bnx2x/bnx2x.h between commit
+9f5449611c9d6d7bdcae8020a197d8b4d9b6443c ("bnx2x: Advance a version
+number to 1.60.01-0") from the net-current tree and commit
+f404c2fea37e02bec7c8b6edddf5edd22ca60505 ("bnx2x: Update version number
+and a date") from the net tree.
+
+So the net tree one has a later date, but a lower version number ... I
+just used the version from the net tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__15_Dec_2010_11_45_31_+1100_8hmpxv4lRrWvzIRs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNCA+rAAoJEDMEi1NhKgbs46sH/RTyWMbETb7/aagU9vbYEs/D
+/FbBaNUvEkIxwQZUUQ6H/9hwyAwGyAMXEUADSiHtCHBxf8jLcH83Tjq1PpCwVKCV
+viNFwgdYSb74gjZpx6fM2bUcGhoorJM/atoPZ35vTRKydzrtmv3s94oDYC8cTiXl
+OeAUdIXtPAIhgH8K8TvlHEPnZy0LpNkziZlQabE+/XCt458x7CFNxCd1GGK5IZ6U
+u8E8dNRnr/GU5iigVfU7hP3k8qREiS1BI4yBc5sHOUMh8CoIDoNhLjlSTiG0wafw
+KIA+OlYibCFjpBKZqyi6n6cenhOav/DkJEhjZqTgBSk4sfk03y1QIRIo/Y5N79Y=
+=ydrw
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Dec_2010_11_45_31_+1100_8hmpxv4lRrWvzIRs--
