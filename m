@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab0LOVaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:30:25 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49860 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab0LOVaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:30:22 -0500
-Subject: Re: [PATCH] regulator: Allow modular build of mc13xxx-core
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Yong Shen <yong.shen@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        patches@opensource.wolfsonmicro.com
-In-Reply-To: <1292422225-27530-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20101215140344.GF5723@sirena.org.uk>
-	 <1292422225-27530-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Dec 2010 21:30:16 +0000
-Message-ID: <1292448616.3348.33.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754174Ab0LOVkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:40:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45059 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752948Ab0LOVkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 16:40:32 -0500
+Message-ID: <4D093580.9000303@zytor.com>
+Date: Wed, 15 Dec 2010 13:39:12 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+References: <alpine.DEB.2.00.1012151404070.21102@router.home>	<20101215125626.25f7d648.akpm@linux-foundation.org>	<4D092D15.7030700@zytor.com> <AANLkTimhdmWGhxW9qnFWYxiVDManH4XG4RqTLJb_Fdbk@mail.gmail.com>
+In-Reply-To: <AANLkTimhdmWGhxW9qnFWYxiVDManH4XG4RqTLJb_Fdbk@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-12-15 at 14:10 +0000, Mark Brown wrote:
-> Since the MFD core for this device and the regulator drivers for these
-> devices can be built modular we should also support modular build of
-> the shared code for the regulator drivers, otherwise we try to link
-> built in code against modular code with unfortunate results.
+On 12/15/2010 01:30 PM, Miguel Ojeda wrote:
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> In this case it this_cpu_*_test_bit() return an int, but they act as a
+> bool and are used in if()s; where is the catch?
+> 
 
-Thanks Mark !
+If they aren't, and are stored in a variable for whatever reason, then
+the || form will generate additional instructions to booleanize the
+value for no good reason.
 
-It looks like you sent the wrong patch as I had to also add :-
-
-diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
-index da46b3c..f53d31b 100644
---- a/drivers/regulator/mc13xxx-regulator-core.c
-+++ b/drivers/regulator/mc13xxx-regulator-core.c
-@@ -89,6 +89,7 @@ int mc13xxx_regulator_list_voltage(struct regulator_dev *rdev,
- 
-        return mc13xxx_regulators[id].voltages[selector];
- }
-+EXPORT_SYMBOL_GPL(mc13xxx_regulator_list_voltage);
- 
- int mc13xxx_get_best_voltage_index(struct regulator_dev *rdev,
-                                                int min_uV, int max_uV)
-@@ -232,6 +233,7 @@ int mc13xxx_sw_regulator_is_enabled(struct regulator_dev *rdev)
- {
-        return 1;
- }
-+EXPORT_SYMBOL_GPL(mc13xxx_sw_regulator_is_enabled);
- 
- MODULE_LICENSE("GPL v2");
- MODULE_AUTHOR("Yong Shen <yong.shen@linaro.org>");
-
-To get it all building.
-
-Now applied and squashed with above.
-
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+	-hpa
