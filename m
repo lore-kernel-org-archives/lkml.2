@@ -1,122 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab0LOBzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 20:55:13 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:61624 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab0LOBzL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 20:55:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MF/L/GPuPaJTHxbSDLOGsBK8AuCOzHSHF0Csp4Tri3xOhaI63gh9YfujWkxNQXVCxD
-         dH3rnIQKzAs67OFLpjUPfXMYksaWdTYD3sgTEZTfL4Iscza4XyeqBau4grhyMdnzZMYm
-         HWafTYn/K0uGRWjxEs49bvGc3ZwrS6SoAeOgk=
-MIME-Version: 1.0
-In-Reply-To: <1292340409.2538.40.camel@localhost>
-References: <1290156045-11719-1-git-send-email-r64343@freescale.com>
-	<1292340409.2538.40.camel@localhost>
-Date: Wed, 15 Dec 2010 09:55:08 +0800
-Message-ID: <AANLkTi=zB7UBjkvGYv_wdwZpH1Ghatn6eye1z5616h4X@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mtd: nand: add check for out of page read
-From: Jason Liu <liu.h.jason@gmail.com>
-To: dedekind1@gmail.com
-Cc: Jason Liu <r64343@freescale.com>, David.Woodhouse@intel.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8BIT
+	id S1753665Ab0LOB6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 20:58:11 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34883 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab0LOB6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 20:58:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,345,1288594800"; 
+   d="scan'208";a="636405468"
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+In-Reply-To: <4D073FA9.9020801@gmail.com>
+References: <1291255347.12777.116.camel@sli10-conroe>
+	 <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe>
+	 <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe>
+	 <4D073FA9.9020801@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 09:57:48 +0800
+Message-ID: <1292378268.2323.464.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Artem,
+On Tue, 2010-12-14 at 17:58 +0800, Tejun Heo wrote:
+> Hello,
+> 
+> On 12/14/2010 02:08 AM, Shaohua Li wrote:
+> > I don't understand what you mean. defining a cachine line size macro
+> > for all archs? There is such macro, but using it in vmlinux.ld.h
+> > always report error. There is some other defines which can't be
+> > included in a link script.
+> 
+> I haven't really looked through it but wouldn't it be possible to
+> ifdef it.  ie. if cacheline macro is available, align it to it;
+> otherwise, don't.  And, ultimately, the correct thing to do is making
+> it cacheline aligned on all archs.  There can be several different
+> ways to get there but it might just as well be making cacheline size
+> available in all archs first and then update the PERCPU macro.
+How about this one?
 
-2010/12/14 Artem Bityutskiy <dedekind1@gmail.com>:
-> On Fri, 2010-11-19 at 16:40 +0800, Jason Liu wrote:
->> When run mtd_oobtest case, there will be one error for step(4),
->> which turned out it need add one check for out of page read in
->> nand_do_read_oob just like mtd_do_write_oob did it already.
->> This commit also fix one typo error for comments in mtd_do_write_oob
->>
->> Signed-off-by: Jason Liu <r64343@freescale.com>
->
-> I cannot reproduce this with nandsim, can you?
->
-> I tried:
->
-> 1. sudo modprobe nandsim
-> š sudo modprobe mtd_oobtest dev=0
->
-> 2. sudo ./load_nandsim.sh 128 128 2048
-> š sudo modprobe mtd_oobtest dev=0
->
-> In both cases the test passes: "mtd_oobtest: finished with 0 errors"
->
-> And in 'nand_do_read_oob()' I see the following piece of code:
->
-> š š š š/* Do not allow reads past end of device */
-> š š š šif (unlikely(from >= mtd->size ||
-> š š š š š š š š š š ops->ooboffs + readlen > ((mtd->size >> chip->page_shift) -
-> š š š š š š š š š š š š š š š š š š š š(from >> chip->page_shift)) * len)) {
-> š š š š š š š šDEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt read beyond end "
-> š š š š š š š š š š š š š š š š š š š š"of device\n", __func__);
-> š š š š š š š šreturn -EINVAL;
-> š š š š}
+Subject: Make x86 percpu readmostly section correctly aligned
 
-Here the mtd->size in nand_base.c should be the NAND flash chip size,
-while in nand_oobtest,
+percpu readmostly section should start and end at address cachline aligned to
+avoid cache false sharing. For ARCHs care about the cache false sharing,
+they should define INTERNODE_CACHE_BYTES. We use it to do the alignment.
+Currently only x86 has percpu readmostly section, so only changed it so far.
 
-              /* Attempt to read off end of device */
-                ops.mode      = MTD_OOB_AUTO;
-                ops.len       = 0;
-                ops.retlen    = 0;
-                ops.ooblen    = mtd->ecclayout->oobavail;
-                ops.oobretlen = 0;
-                ops.ooboffs   = 1;
-                ops.datbuf    = NULL;
-                ops.oobbuf    = readbuf;
-                printk(PRINT_PREF "attempting to read past end of device\n");
-                printk(PRINT_PREF "an error is expected...\n");
-                err = mtd->read_oob(mtd, mtd->size - mtd->writesize, &ops);
-                if (err) {
-                        printk(PRINT_PREF "error occurred as expected\n");
-                        err = 0;
-                } else {
-                        printk(PRINT_PREF "error: read past end of device\n");
-                        errcnt += 1;
-                }
-        }
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-here, mtd->size is mtd partition size right? when the mtd partition is
-not the last MTD partition, the error will happen.
+---
+ arch/x86/kernel/vmlinux.lds.S     |    2 +-
+ include/asm-generic/vmlinux.lds.h |   11 +++++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-I have tested on real NAND, while not on nandsim.
+Index: linux/include/asm-generic/vmlinux.lds.h
+===================================================================
+--- linux.orig/include/asm-generic/vmlinux.lds.h	2010-12-15 09:27:26.000000000 +0800
++++ linux/include/asm-generic/vmlinux.lds.h	2010-12-15 09:55:22.000000000 +0800
+@@ -665,6 +665,13 @@
+ 	*(.discard.*)							\
+ 	}
+ 
++#ifdef INTERNODE_CACHE_BYTES
++#define INTERNODE_CACHEALIGNED						\
++	. = ALIGN(INTERNODE_CACHE_BYTES);
++#else
++#define INTERNODE_CACHEALIGNED
++#endif
++
+ /**
+  * PERCPU_VADDR - define output section for percpu area
+  * @vaddr: explicit base address (optional)
+@@ -692,7 +699,9 @@
+ 		*(.data..percpu..first)					\
+ 		. = ALIGN(PAGE_SIZE);					\
+ 		*(.data..percpu..page_aligned)				\
++		INTERNODE_CACHEALIGNED					\
+ 		*(.data..percpu..readmostly)				\
++		INTERNODE_CACHEALIGNED					\
+ 		*(.data..percpu)					\
+ 		*(.data..percpu..shared_aligned)			\
+ 		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
+@@ -720,7 +729,9 @@
+ 		*(.data..percpu..first)					\
+ 		. = ALIGN(PAGE_SIZE);					\
+ 		*(.data..percpu..page_aligned)				\
++		INTERNODE_CACHEALIGNED					\
+ 		*(.data..percpu..readmostly)				\
++		INTERNODE_CACHEALIGNED					\
+ 		*(.data..percpu)					\
+ 		*(.data..percpu..shared_aligned)			\
+ 		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
+Index: linux/arch/x86/kernel/vmlinux.lds.S
+===================================================================
+--- linux.orig/arch/x86/kernel/vmlinux.lds.S	2010-12-15 09:37:01.000000000 +0800
++++ linux/arch/x86/kernel/vmlinux.lds.S	2010-12-15 09:37:06.000000000 +0800
+@@ -20,11 +20,11 @@
+ #define LOAD_OFFSET __START_KERNEL_map
+ #endif
+ 
+-#include <asm-generic/vmlinux.lds.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/thread_info.h>
+ #include <asm/page_types.h>
+ #include <asm/cache.h>
++#include <asm-generic/vmlinux.lds.h>
+ #include <asm/boot.h>
+ 
+ #undef i386     /* in case the preprocessor is a 32bit one */
 
->
-> which should handle the case AFAICS.
->
-> So, although I did think hard about this, it looks like there is no
-> problem. What is the kernel version you are looking at? I checked it
-> with my l2-mtd-2.6.git, which is the latest mtd-2.6.git plus a revert
-> commit of your patch:
->
-> http://git.infradead.org/users/dedekind/l2-mtd-2.6.git
 
-Yes, as I have written the email to you before in a private email to
-tell that this patch has issue and please drop it.
-
-Thanks,
-
->
-> --
-> Best Regards,
-> Artem Bityutskiy (áÒÔ£Í âÉÔÀÃËÉÊ)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at šhttp://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at šhttp://www.tux.org/lkml/
->
