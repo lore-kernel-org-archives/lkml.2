@@ -1,114 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab0LOMKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 07:10:43 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26377 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab0LOMKl convert rfc822-to-8bit (ORCPT
+	id S1753531Ab0LOM11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 07:27:27 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36532 "EHLO
+	denmail01.apm.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753452Ab0LOM1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 07:10:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=j+FQHCSDqvp1TkesTjeOOoGyAJnnU+3Q4CeuhNfpD6euyQLsFzS89qkc4bTFGqlYI1
-         tn8GXjYAO7GavhP4CiMQ==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimUiPVrJ8KY1Tj_qGJmDbSmy3BUuudeAWeQ88Fc@mail.gmail.com>
-References: <20101121133744.GA10765@elte.hu> <1290700829.4759.16.camel@maggy.simson.net>
- <1290954299.30515.15.camel@marge.simson.net> <4CF5C379.8030204@google.com>
- <1291184173.7466.147.camel@marge.simson.net> <4CF87C14.8000708@google.com>
- <AANLkTimmZE0QROje3vLKJOa+uVFfNqiGNF_MJ9vt9xHW@mail.gmail.com>
- <AANLkTikPwXjNixYg+Wc=hrfPzpy7uygQ+zmYUKYAcrkd@mail.gmail.com> <AANLkTimUiPVrJ8KY1Tj_qGJmDbSmy3BUuudeAWeQ88Fc@mail.gmail.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 15 Dec 2010 04:10:08 -0800
-Message-ID: <AANLkTikdNe4mhx8E0J1C9vcOu4cdmr8KAMnAvrJeWzGq@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-To: James Courtier-Dutton <james.dutton@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 15 Dec 2010 07:27:25 -0500
+Date: Wed, 15 Dec 2010 17:57:10 +0530
+From: Rupjyoti Sarmah <rsarmah@amcc.com>
+Message-Id: <201012151227.oBFCRA3S004752@amcc.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v6] ppc44x:PHY fixup for USB on canyonlands board
+Cc: rsarmah@apm.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This goose is now cooked.
+This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
 
-It turns out the new shares code is doing the "right" thing, but in
-the wrong order for tasks with very small time slices.  This made it
-rather gnarly to track down since at all times the new evaluation /
-the old evaluation / and an "OPT" evaluation were all in agreement!
+Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+---
+changes from previous version:
+-- error paths updated
+-- leakage of a node corrected
+-- iounmap is called on vaddr
 
-As we hierarchically dequeue we now instantaneously adjust entity
-weights to account for the new global state (good).  However, when we
-then update on the parent (e.g. the group entity owning the
-just-adjusted cfs_rq), the accrued unaccounted time is charged at the
-new weight for that entity instead of the old.
+ arch/powerpc/boot/dts/canyonlands.dts      |   11 +++
+ arch/powerpc/platforms/44x/44x.h           |    4 +
+ arch/powerpc/platforms/44x/Kconfig         |    1 -
+ arch/powerpc/platforms/44x/Makefile        |    1 +
+ arch/powerpc/platforms/44x/canyonlands.c   |  134 ++++++++++++++++++++++++++++
+ arch/powerpc/platforms/44x/ppc44x_simple.c |    1 -
+ 6 files changed, 150 insertions(+), 2 deletions(-)
+ create mode 100644 arch/powerpc/platforms/44x/canyonlands.c
 
-For longer running processes, the periodic updates hide this.
-However, for an interactive process, such as Xorg (which uses many
-_small_ timeslices -- e.g. almost all accounting ends up being at
-dequeue as opposed to periodic) this results in significant vruntime
-over-charging and a loss of fairness.  In Xorg's case the loss of
-fairness is compounded by the fact that there is only one runnable
-thread means we transition between NICE_0_LOAD and MIN_SHARES for the
-over-charging above.
+diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+index a303703..8ff1f3f 100644
+--- a/arch/powerpc/boot/dts/canyonlands.dts
++++ b/arch/powerpc/boot/dts/canyonlands.dts
+@@ -224,6 +224,11 @@
+ 					};
+ 				};
+ 
++				cpld@2,0 {
++					compatible = "amcc,ppc460ex-bcsr";
++					reg = <2 0x0 0x9>;
++				};
++
+ 				ndfc@3,0 {
+ 					compatible = "ibm,ndfc";
+ 					reg = <0x00000003 0x00000000 0x00002000>;
+@@ -320,6 +325,12 @@
+ 				interrupts = <0x3 0x4>;
+ 			};
+ 
++			GPIO0: gpio@ef600b00 {
++				compatible = "ibm,ppc4xx-gpio";
++				reg = <0xef600b00 0x00000048>;
++				gpio-controller;
++			};
++
+ 			ZMII0: emac-zmii@ef600d00 {
+ 				compatible = "ibm,zmii-460ex", "ibm,zmii";
+ 				reg = <0xef600d00 0x0000000c>;
+diff --git a/arch/powerpc/platforms/44x/44x.h b/arch/powerpc/platforms/44x/44x.h
+index dbc4d2b..63f703e 100644
+--- a/arch/powerpc/platforms/44x/44x.h
++++ b/arch/powerpc/platforms/44x/44x.h
+@@ -4,4 +4,8 @@
+ extern u8 as1_readb(volatile u8 __iomem  *addr);
+ extern void as1_writeb(u8 data, volatile u8 __iomem *addr);
+ 
++#define GPIO0_OSRH	0xC
++#define GPIO0_TSRH	0x14
++#define GPIO0_ISR1H	0x34
++
+ #endif /* __POWERPC_PLATFORMS_44X_44X_H */
+diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
+index 0f979c5..f485fc5 100644
+--- a/arch/powerpc/platforms/44x/Kconfig
++++ b/arch/powerpc/platforms/44x/Kconfig
+@@ -115,7 +115,6 @@ config CANYONLANDS
+ 	bool "Canyonlands"
+ 	depends on 44x
+ 	default n
+-	select PPC44x_SIMPLE
+ 	select 460EX
+ 	select PCI
+ 	select PPC4xx_PCI_EXPRESS
+diff --git a/arch/powerpc/platforms/44x/Makefile b/arch/powerpc/platforms/44x/Makefile
+index 82ff326..6854e73 100644
+--- a/arch/powerpc/platforms/44x/Makefile
++++ b/arch/powerpc/platforms/44x/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_WARP)	+= warp.o
+ obj-$(CONFIG_XILINX_VIRTEX_5_FXT) += virtex.o
+ obj-$(CONFIG_XILINX_ML510) += virtex_ml510.o
+ obj-$(CONFIG_ISS4xx)	+= iss4xx.o
++obj-$(CONFIG_CANYONLANDS)+= canyonlands.o
+diff --git a/arch/powerpc/platforms/44x/canyonlands.c b/arch/powerpc/platforms/44x/canyonlands.c
+new file mode 100644
+index 0000000..afc5e8e
+--- /dev/null
++++ b/arch/powerpc/platforms/44x/canyonlands.c
+@@ -0,0 +1,134 @@
++/*
++ * This contain platform specific code for APM PPC460EX based Canyonlands
++ * board.
++ *
++ * Copyright (c) 2010, Applied Micro Circuits Corporation
++ * Author: Rupjyoti Sarmah <rsarmah@apm.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ */
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <asm/pci-bridge.h>
++#include <asm/ppc4xx.h>
++#include <asm/udbg.h>
++#include <asm/uic.h>
++#include <linux/of_platform.h>
++#include <linux/delay.h>
++#include "44x.h"
++
++#define BCSR_USB_EN	0x11
++
++static __initdata struct of_device_id ppc460ex_of_bus[] = {
++	{ .compatible = "ibm,plb4", },
++	{ .compatible = "ibm,opb", },
++	{ .compatible = "ibm,ebc", },
++	{ .compatible = "simple-bus", },
++	{},
++};
++
++static int __init ppc460ex_device_probe(void)
++{
++	of_platform_bus_probe(NULL, ppc460ex_of_bus, NULL);
++
++	return 0;
++}
++machine_device_initcall(canyonlands, ppc460ex_device_probe);
++
++/* Using this code only for the Canyonlands board.  */
++
++static int __init ppc460ex_probe(void)
++{
++	unsigned long root = of_get_flat_dt_root();
++	if (of_flat_dt_is_compatible(root, "amcc,canyonlands")) {
++		ppc_pci_set_flags(PPC_PCI_REASSIGN_ALL_RSRC);
++		return 1;
++		}
++	return 0;
++}
++
++/* USB PHY fixup code on Canyonlands kit. */
++
++static int __init ppc460ex_canyonlands_fixup(void)
++{
++	u8 __iomem *bcsr ;
++	void __iomem *vaddr;
++	struct device_node *np;
++	int ret = 0;
++
++	np = of_find_compatible_node(NULL, NULL, "amcc,ppc460ex-bcsr");
++	if (!np) {
++		printk(KERN_ERR "failed did not find amcc, ppc460ex bcsr node\n");
++		return -ENODEV;
++	}
++
++	bcsr = of_iomap(np, 0);
++	of_node_put(np);
++
++	if (!bcsr) {
++		printk(KERN_CRIT "Could not remap bcsr\n");
++		ret = -ENODEV;
++		goto err_bcsr;
++	}
++
++	np = of_find_compatible_node(NULL, NULL, "ibm,ppc4xx-gpio");
++	if (!np) {
++		printk(KERN_ERR "failed did not find ibm,ppc4xx-gpio node\n");
++		return -ENODEV;
++	}
++
++	vaddr = of_iomap(np, 0);
++	of_node_put(np);
++
++	if (!vaddr) {
++		printk(KERN_CRIT "Could not get gpio node address\n");
++		ret = -ENODEV;
++		goto err_gpio;
++	}
++	/* Disable USB, through the BCSR7 bits */
++	setbits8(&bcsr[7], BCSR_USB_EN);
++
++	/* Wait for a while after reset */
++	msleep(100);
++
++	/* Enable USB here */
++	clrbits8(&bcsr[7], BCSR_USB_EN);
++
++	/*
++	 * Configure multiplexed gpio16 and gpio19 as alternate1 output
++	 * source after USB reset. In this configuration gpio16 will be
++	 * USB2HStop and gpio19 will be USB2DStop. For more details refer to
++	 * table 34-7 of PPC460EX user manual.
++	 */
++	setbits32((vaddr + GPIO0_OSRH), 0x42000000);
++	setbits32((vaddr + GPIO0_TSRH), 0x42000000);
++err_gpio:
++	iounmap(vaddr);
++err_bcsr:
++	iounmap(bcsr);
++	return ret;
++}
++machine_device_initcall(canyonlands, ppc460ex_canyonlands_fixup);
++define_machine(canyonlands) {
++	.name = "Canyonlands",
++	.probe = ppc460ex_probe,
++	.progress = udbg_progress,
++	.init_IRQ = uic_init_tree,
++	.get_irq = uic_get_irq,
++	.restart = ppc4xx_reset_system,
++	.calibrate_decr = generic_calibrate_decr,
++};
+diff --git a/arch/powerpc/platforms/44x/ppc44x_simple.c b/arch/powerpc/platforms/44x/ppc44x_simple.c
+index 7ddcba3..c81c19c 100644
+--- a/arch/powerpc/platforms/44x/ppc44x_simple.c
++++ b/arch/powerpc/platforms/44x/ppc44x_simple.c
+@@ -53,7 +53,6 @@ static char *board[] __initdata = {
+ 	"amcc,arches",
+ 	"amcc,bamboo",
+ 	"amcc,bluestone",
+-	"amcc,canyonlands",
+ 	"amcc,glacier",
+ 	"ibm,ebony",
+ 	"amcc,eiger",
+-- 
+1.5.6.3
 
-This is fixed by charging the unaccounted time versus a group entity
-before we manipulate its weight (as a result of child movement).
-
-Thanks for your patience while I tracked this down.. it's been a few
-sleepless nights while I cranked through a number of dead-end theories
-(rather frustrating when the numbers are all right but the results are
-all wrong! ;).  Cleaned up patch inbound in the morning.
-
-- Paul
-
-On Tue, Dec 7, 2010 at 3:32 AM, Paul Turner <pjt@google.com> wrote:
-> Desktop hardware came in today and I can now reproduce the issues
-> Mike's been seeing; tuning in progress.
->
-> On Sat, Dec 4, 2010 at 9:11 PM, Paul Turner <pjt@google.com> wrote:
->> On Sat, Dec 4, 2010 at 3:55 PM, James Courtier-Dutton
->> <james.dutton@gmail.com> wrote:
->>> On 3 December 2010 05:11, Paul Turner <pjt@google.com> wrote:
->>>>
->>>> I actually don't have a desktop setup handy to test "interactivity" (sad but
->>>> true -- working on grabbing one).  But it looks better on under synthetic
->>>> load.
->>>>
->>>
->>> What tools are actually used to test "interactivity" ?
->>> I posted a tool to the list some time ago, but I don't think anyone noticed.
->>> My tool is very simple.
->>> When you hold a key down, it should repeat. It should repeat at a
->>> constant predictable interval.
->>> So, my tool just waits for key presses and times when each one occurred.
->>> The tester simply presses a key and holds it down.
->>> If the time between each key press is constant, it indicates good
->>> "interactivity". If the time between each key press varies a lot, it
->>> indicates bad "interactivity".
->>> You can reliably test if one kernel is better than the next using
->>> actual measurable figures.
->>>
->>> Kind Regards
->>>
->>> James
->>>
->>
->> Could you drop me a pointer?  I can certainly give it a try.  It would
->> be extra useful if it included any histogram functionality.
->>
->> I've been using a combination of various synthetic wakeup and load
->> scripts and measuring the received bandwidth / wakeup latency.
->>
->> They have not succeeded in reproducing the starvation or poor latency
->> observed by Mike above however.  (Although I've pulled a box to try
->> reproducing his exact conditions [ e.g. user environment ] on Monday).
->>
->
