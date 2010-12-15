@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab0LOOpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:45:14 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57317 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752158Ab0LOOpM (ORCPT
+	id S1754568Ab0LOOtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 09:49:17 -0500
+Received: from mail-bw0-f45.google.com ([209.85.214.45]:48473 "EHLO
+	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab0LOOtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:45:12 -0500
-Date: Wed, 15 Dec 2010 15:45:02 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Microcai <microcai@fedoraproject.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Lisa Milne <lisa@ltmnet.com>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101215144501.GB10467@ucw.cz>
-References: <73BC440E-833E-4E1B-ACCC-5D68BAB89D83@mit.edu>
- <1290951770.13526.18.camel@cai.gentoo>
- <AANLkTimQDWHo4-8-H+5bB_uzrgzU=gqbDBuerq983moR@mail.gmail.com>
- <20101129020610.7ea7c79e.lisa@ltmnet.com>
- <1290961207.13526.31.camel@cai.gentoo>
- <20101128194624.GP2767@thunk.org>
- <1290993244.877.3.camel@cai.gentoo>
- <20101129085829.GM5142@const.bordeaux.inria.fr>
- <1291023157.9785.2.camel@cai.gentoo>
- <20101129095823.GQ5142@const.bordeaux.inria.fr>
+	Wed, 15 Dec 2010 09:49:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=jFnnXZxloRl0WLNmxbCSZejISG3SSFlJyG6bswqX+uSzm5lkbrqqpKmgEyWzEPW7kM
+         wCl5LjKUmnrLQTQ4rE9m5xsVr+6ITv7ElbA41uWawYyqukCthADrr1NsmN/dMJGA+bjg
+         g+/ld64B3gDWAZCr+D8w0oerj5X1lWFw3Sf+s=
+Message-ID: <4D08D568.5040801@gmail.com>
+Date: Wed, 15 Dec 2010 15:49:12 +0100
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101129095823.GQ5142@const.bordeaux.inria.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+References: <1291255347.12777.116.camel@sli10-conroe> <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe> <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe> <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe> <4D08CBF4.6040102@gmail.com>
+In-Reply-To: <4D08CBF4.6040102@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello,
 
-> > I have many different kinds of patchs that did it in different ways.
-> > 
-> > What realy matters is that, do we agree that add unicode font support is
-> > acceptable ?
+On 12/15/2010 03:08 PM, Tejun Heo wrote:
+>> +#ifdef INTERNODE_CACHE_BYTES
+>> +#define INTERNODE_CACHEALIGNED						\
+>> +	. = ALIGN(INTERNODE_CACHE_BYTES);
+>> +#else
+>> +#define INTERNODE_CACHEALIGNED
+>> +#endif
 > 
-> Simple unicode font (i.e. just go beyond the arbitrary historical-vga
-> 512 glyphs limit for fbcon) might go in.  Double-width is questionable,
+> Yeah, this looks good.
 
-That would be very nice, yes.
+Just one more thing.  If you look at various arch linker scripts,
+cache line size is always present.  After all, RW_DATA_SECTION() needs
+it.  They're different define's or sometimes hardcoded values but it
+would be nice if we can take this chance to unify them and use it for
+this too.  Would you be interested in doing that?
 
-> But complete unicode support (with arabic ligatures, tibetan
-> combinations, etc.) won't ever be accepted in the kernel as that's far
-> too involved in terms of font rendering.  So the userland way needs to
-> be fixed for these anyway, and then things like chinese will go along...
+Thanks.
 
-Well... english has ligatures, too (fi); console does not support them
-nicely and we still use it. Support for eastern european characters by
-default would be very very nice... and yes, that's just breaking the
-256 char limit, nothing more complex.
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+tejun
