@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab0LOC1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 21:27:39 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:36337 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757753Ab0LOC1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 21:27:37 -0500
-Date: Tue, 14 Dec 2010 20:27:35 -0600
-From: Jack Steiner <steiner@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: lenb@kernel.org, hmh@hmh.eng.br, tony.luck@gmail.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gbeshers@sgi.com
-Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
-Message-ID: <20101215022735.GA19601@sgi.com>
-References: <20101214220932.GA1206@sgi.com> <4D07F6A2.2030706@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D07F6A2.2030706@zytor.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1758151Ab0LOC2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 21:28:40 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48798 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab0LOC2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 21:28:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=uGn+9otwlNg9IeypZL52XPIVu5o/5dArjf0zpVgcsGCkNUvZZZ3JufsUyIYeJmLpst
+         sLgfYIUC6AUXDrGJrIKH68LdhG6elXIA4x5RqAhofJDnCKkTrJrtFSa9qm9vAgbv9UZT
+         ZsmWv1Pu+7kGre/OI+sW46UioW/Im46Me6nsA=
+From: Trevor Woerner <twoerner@gmail.com>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Trevor Woerner <twoerner@gmail.com>
+Subject: [PATCH cgroups] Remove deprecated subsystem from examples.
+Date: Tue, 14 Dec 2010 21:28:08 -0500
+Message-Id: <1292380088-2604-1-git-send-email-twoerner@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 02:58:42PM -0800, H. Peter Anvin wrote:
-> On 12/14/2010 02:09 PM, Jack Steiner wrote:
-> > Map ACPI tables as WB on x86_64. No substantive changes to IA64.
-> 
-> Why just x86-64?
+From: Trevor Woerner <twoerner@gmail.com>
 
-We never observed a performance problem on IA64. Not sure if it maps
-ACPI space as WB or not. Since I did not have easy access to
-an ia64, I chose not to make any changes to the way it maps
-the table.
+The 'ns' cgroup is considered deprecated. Change the cgroup subsystem
+used in the examples of the cgroup documentation from 'ns' to 'blkio'.
+
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+Acked-by: Paul Menage <menage@google.com>
+Signed-off-by: Trevor Woerner <twoerner@gmail.com>
+---
+ Documentation/cgroups/cgroups.txt |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index 190018b..44b8b7a 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -355,13 +355,13 @@ subsystems, type:
+ 
+ To change the set of subsystems bound to a mounted hierarchy, just
+ remount with different options:
+-# mount -o remount,cpuset,ns hier1 /dev/cgroup
++# mount -o remount,cpuset,blkio hier1 /dev/cgroup
+ 
+-Now memory is removed from the hierarchy and ns is added.
++Now memory is removed from the hierarchy and blkio is added.
+ 
+-Note this will add ns to the hierarchy but won't remove memory or
++Note this will add blkio to the hierarchy but won't remove memory or
+ cpuset, because the new options are appended to the old ones:
+-# mount -o remount,ns /dev/cgroup
++# mount -o remount,blkio /dev/cgroup
+ 
+ To Specify a hierarchy's release_agent:
+ # mount -t cgroup -o cpuset,release_agent="/sbin/cpuset_release_agent" \
+-- 
+1.7.1
 
