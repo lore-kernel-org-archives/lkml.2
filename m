@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab0LOBgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 20:36:36 -0500
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:52904 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752106Ab0LOBgf (ORCPT
+	id S1757021Ab0LOBiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 20:38:16 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:59936 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753518Ab0LOBiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 20:36:35 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Dec 2010 20:36:35 EST
-Date: Wed, 15 Dec 2010 02:25:11 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Patrice VILCHEZ <patrice.vilchez@atmel.com>
-Subject: Re: [PATCH] base: add sysfs socs info
-Message-ID: <20101215012511.GQ19897@game.jcrosoft.org>
-References: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
- <20101214161130.GB1857@suse.de>
+	Tue, 14 Dec 2010 20:38:14 -0500
+Message-ID: <4D081BF2.7000202@euromail.se>
+Date: Wed, 15 Dec 2010 02:37:54 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101214161130.GB1857@suse.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 1877719569764625296
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
+References: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com> <20101214221241.GA11519@core.coreip.homeip.net> <4D080A13.6050601@canonical.com>
+In-Reply-To: <4D080A13.6050601@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PSgJa-000260-Ap.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PSgJa-000260-Ap d65f47302f0f249790cf1b85f05d41c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08:11 Tue 14 Dec     , Greg KH wrote:
-> On Tue, Dec 14, 2010 at 01:40:17PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > this provide an easy way to register soc information
-> > 
-> > arch, family, model, id, revision
-> > 
-> > as this for at91sam9g20
-> > 
-> > $ cat /sys/devices/system/soc/soc0/arch
-> > current
-> > $ cat /sys/devices/system/soc/soc0/family
-> > at91
-> > $ cat /sys/devices/system/soc/soc0/id
-> > at91sam9g20
-> > $ cat /sys/devices/system/soc/soc0/model
-> > 0x00000000019905a0
-> > $ cat /sys/devices/system/soc/soc0/revision
-> > 1.1
-> 
-> What is this for?  When you add sysfs files, you are required to add
-> entries to the Documentation/ABI/ files as well, please always provide
-> this so we are able to review the code easier.
-I'll add a doc in Documentation/ABI
- 
-> > +struct soc {
-> > +	u64 id;
-> > +	char *arch;
-> > +	char *family;
-> > +	char *model;
-> > +	char *revision;
-> > +	struct sys_device sysdev;
-> > +};
-> 
-> What is a "SOC"?  A "Small Ordinary Creature"?
-:) Systen On Chip
-> 
-> And does every system have one of these?  Just one?  Not multiple?  We
-> need a whole lot more information here as to why this code is needed,
-> and who will be using it.
-> 
-> Also, isn't this information already in /proc/cpu/ today?
-no all this information are not present in /proc/cpu and a cpu is not a soc
+Hi Chase,
 
-basicaly on a board you will have one soc but some boards have more as example
-some ST boards you have two sh4 soc or on some amcc you have two powerpc soc
+>
 
-with these information you are allow to dynamise the userspace based on the
-soc or the companion soc and also be able to display this information in a UI
+> I gave this some more thought, and I was close to accepting it with
+> documentation of the above restrictions. Then I thought of how the
+> following two devices would be presented to userspace:
+> 
+> 1. A real MT device supporting up to 2 touches (e.g. a bamboo touch)
+>   - ABS_{X,Y}, BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP for ST
+>   - ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_{X,Y}, ABS_MT_TOOL_TYPE
+> 
+> 2. A partial MT device using MT_TOOL_ENVELOPE (e.g. synaptics MT)
+>   - ABS_{X,Y}, BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP for ST
+>   - ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_{X,Y}, ABS_MT_TOOL_TYPE
+> 
+> Note that they are identical! The range of values for each axis would be
+> identical too. The only way to tell the two apart would be to watch for
+> the ABS_MT_TOOL_TYPE axis.
 
-Best Regards,
-J.
+
+Ping has touched upon this subject as well, from the pen & touch perspective.
+Generally, some ABS axes are actually enumerations, for which we have no direct
+abstraction. If we had a way to declare the used values for such enumerations,
+it would resolve these and possibly other issues.
+
+Thanks,
+Henrik
+
