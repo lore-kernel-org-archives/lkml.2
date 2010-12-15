@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab0LOByT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 20:54:19 -0500
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:54707 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752280Ab0LOByS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 20:54:18 -0500
+	id S1757280Ab0LOBzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 20:55:13 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:61624 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab0LOBzL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 20:55:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MF/L/GPuPaJTHxbSDLOGsBK8AuCOzHSHF0Csp4Tri3xOhaI63gh9YfujWkxNQXVCxD
+         dH3rnIQKzAs67OFLpjUPfXMYksaWdTYD3sgTEZTfL4Iscza4XyeqBau4grhyMdnzZMYm
+         HWafTYn/K0uGRWjxEs49bvGc3ZwrS6SoAeOgk=
 MIME-Version: 1.0
-In-Reply-To: <1292374443-4055-1-git-send-email-fernando.lugo@ti.com>
-References: <1292374443-4055-1-git-send-email-fernando.lugo@ti.com>
-Date: Tue, 14 Dec 2010 19:54:17 -0600
-Message-ID: <AANLkTi=CCVe0ST0UiwMrfy8RsP-xfS9gCxUewv1q5Vu=@mail.gmail.com>
-Subject: Re: [PATCHv7 0/4] omap: iovmm - fixes for iovmm module
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Cc: Hiroshi.DOYU@nokia.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1292340409.2538.40.camel@localhost>
+References: <1290156045-11719-1-git-send-email-r64343@freescale.com>
+	<1292340409.2538.40.camel@localhost>
+Date: Wed, 15 Dec 2010 09:55:08 +0800
+Message-ID: <AANLkTi=zB7UBjkvGYv_wdwZpH1Ghatn6eye1z5616h4X@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mtd: nand: add check for out of page read
+From: Jason Liu <liu.h.jason@gmail.com>
+To: dedekind1@gmail.com
+Cc: Jason Liu <r64343@freescale.com>, David.Woodhouse@intel.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=KOI8-R
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fernando,
+Hi, Artem,
 
-For omap patches, follow the convention
+2010/12/14 Artem Bityutskiy <dedekind1@gmail.com>:
+> On Fri, 2010-11-19 at 16:40 +0800, Jason Liu wrote:
+>> When run mtd_oobtest case, there will be one error for step(4),
+>> which turned out it need add one check for out of page read in
+>> nand_do_read_oob just like mtd_do_write_oob did it already.
+>> This commit also fix one typo error for comments in mtd_do_write_oob
+>>
+>> Signed-off-by: Jason Liu <r64343@freescale.com>
+>
+> I cannot reproduce this with nandsim, can you?
+>
+> I tried:
+>
+> 1. sudo modprobe nandsim
+> š sudo modprobe mtd_oobtest dev=0
+>
+> 2. sudo ./load_nandsim.sh 128 128 2048
+> š sudo modprobe mtd_oobtest dev=0
+>
+> In both cases the test passes: "mtd_oobtest: finished with 0 errors"
+>
+> And in 'nand_do_read_oob()' I see the following piece of code:
+>
+> š š š š/* Do not allow reads past end of device */
+> š š š šif (unlikely(from >= mtd->size ||
+> š š š š š š š š š š ops->ooboffs + readlen > ((mtd->size >> chip->page_shift) -
+> š š š š š š š š š š š š š š š š š š š š(from >> chip->page_shift)) * len)) {
+> š š š š š š š šDEBUG(MTD_DEBUG_LEVEL0, "%s: Attempt read beyond end "
+> š š š š š š š š š š š š š š š š š š š š"of device\n", __func__);
+> š š š š š š š šreturn -EINVAL;
+> š š š š}
 
-OMAP: iommu: <subject>
-OMAP: iovmm: <subject>
+Here the mtd->size in nand_base.c should be the NAND flash chip size,
+while in nand_oobtest,
 
-Ref: http://www.spinics.net/lists/linux-omap/msg39956.html
+              /* Attempt to read off end of device */
+                ops.mode      = MTD_OOB_AUTO;
+                ops.len       = 0;
+                ops.retlen    = 0;
+                ops.ooblen    = mtd->ecclayout->oobavail;
+                ops.oobretlen = 0;
+                ops.ooboffs   = 1;
+                ops.datbuf    = NULL;
+                ops.oobbuf    = readbuf;
+                printk(PRINT_PREF "attempting to read past end of device\n");
+                printk(PRINT_PREF "an error is expected...\n");
+                err = mtd->read_oob(mtd, mtd->size - mtd->writesize, &ops);
+                if (err) {
+                        printk(PRINT_PREF "error occurred as expected\n");
+                        err = 0;
+                } else {
+                        printk(PRINT_PREF "error: read past end of device\n");
+                        errcnt += 1;
+                }
+        }
 
+here, mtd->size is mtd partition size right? when the mtd partition is
+not the last MTD partition, the error will happen.
 
-On Tue, Dec 14, 2010 at 6:53 PM, Fernando Guzman Lugo
-<fernando.lugo@ti.com> wrote:
-> Misc fixes found while working with iovmm module. They are
-> needed in order to tidspbridge can work properly along with
-> iovmm module.
->
-> Version 7:
-> * Change 4/4 patch base on Felipe Contreras comments about
->  having start/end in platform data and struct iommu.
->
-> Version 6:
-> * Rebase on Russell King branch.
->  - for details see:
->  http://marc.info/?l=linux-omap&m=129228495723001&w=2
->
-> Version 5:
-> * Changes in "iommu: create new api to set valid da range"
->  - Change range variables to platform data structure.
->
-> Version 4:
-> * Changes in "iommu: create new api to set valid da range"
->  - Validate range for fixed address.
->  - Change way of change boundaries to avoid possible overflow
->  instead of style :
->     start + bytes >= end     which start + end can overflow
->  use style:
->     end - start < bytes
->
-> Version 3:
-> * change patch 2 base on Felipe Contreras' comments,
->  now it uses min_t and I deleted some blank lines.
-> * patch "create new api to set valid da range" is base on
->  "iovmm: IVA2 MMU range is from 0x11000000 to 0xFFFFFFFF"
->  patch and on Hiroshi's comments and now it is added to
->  this set.
->
-> Version 2:
-> * Removed "iovmm: fixes for iovmm module" that patch was already
->  sent.
-> * Modified "iovmm: fix roundup for next area and end check for the
->  last area" patch, base on Davin Cohen's comments and rename it
->  to a proper name that describes what it is doing now.
->
->
-> Guzman Lugo, Fernando (4):
->  omap: iovmm - no gap checking for fixed address
->  omap: iovmm - add superpages support to fixed da address
->  omap: iovmm - replace __iounmap with iounmap
->  omap: iommu - create new api to set valid da range
->
->  arch/arm/mach-omap2/omap-iommu.c        |    8 +++
->  arch/arm/plat-omap/include/plat/iommu.h |    5 ++
->  arch/arm/plat-omap/iommu.c              |   24 +++++++++
->  arch/arm/plat-omap/iovmm.c              |   81 +++++++++++++++++-------------
->  4 files changed, 83 insertions(+), 35 deletions(-)
->
->
+I have tested on real NAND, while not on nandsim.
 
+>
+> which should handle the case AFAICS.
+>
+> So, although I did think hard about this, it looks like there is no
+> problem. What is the kernel version you are looking at? I checked it
+> with my l2-mtd-2.6.git, which is the latest mtd-2.6.git plus a revert
+> commit of your patch:
+>
+> http://git.infradead.org/users/dedekind/l2-mtd-2.6.git
 
+Yes, as I have written the email to you before in a private email to
+tell that this patch has issue and please drop it.
 
--- 
-Thank you,
-Best regards,
-Hari Kanigeri
+Thanks,
+
+>
+> --
+> Best Regards,
+> Artem Bityutskiy (áÒÔ£Í âÉÔÀÃËÉÊ)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at šhttp://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at šhttp://www.tux.org/lkml/
+>
