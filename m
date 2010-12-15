@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab0LOVsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:48:36 -0500
-Received: from mail-gx0-f180.google.com ([209.85.161.180]:33117 "EHLO
-	mail-gx0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0LOVse convert rfc822-to-8bit (ORCPT
+	id S1754844Ab0LOVwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:52:37 -0500
+Received: from mail-iw0-f180.google.com ([209.85.214.180]:38926 "EHLO
+	mail-iw0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab0LOVwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:48:34 -0500
+	Wed, 15 Dec 2010 16:52:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CZPQJ0E4I9RTQ56fUYYwv2BpHhdgbzl7B7dqHF45SHign9guTHYXNXWLBhKUL2C7MS
-         /Gh6DpFAJruaDurfi/FptUJ5CZfBr+Z9/8Q+hD/smDBlU14QA+WzUtBeIlHA7PuWYJ15
-         KQJaa+4HYAUK77d6Z8G/dGwO2hEfpugHB33J4=
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=dfHHf/N0q6Rt3Wm379YVJsiNPX3HHx3uh+mQwkBJV9ObGBpAcwHCngEUs5Or36j1sn
+         ESNSrJsOU+yaBY/8xc+dErD5wnS3/KknRsJQKrCYNOd54pb840pKnpoDSUUMHUMoE/jr
+         b6Zlf2tPcWPIC0/rvF6HpzyffiJXiILhPDMSk=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Subject: Re: [RFC v2] input: Introduce device information ioctl
+Date: Wed, 15 Dec 2010 13:52:22 -0800
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5+; KDE/4.5.3; x86_64; ; )
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1292440807-18502-1-git-send-email-rydberg@euromail.se> <4D09302C.4000309@canonical.com>
+In-Reply-To: <4D09302C.4000309@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <4D093580.9000303@zytor.com>
-References: <alpine.DEB.2.00.1012151404070.21102@router.home>
-	<20101215125626.25f7d648.akpm@linux-foundation.org>
-	<4D092D15.7030700@zytor.com>
-	<AANLkTimhdmWGhxW9qnFWYxiVDManH4XG4RqTLJb_Fdbk@mail.gmail.com>
-	<4D093580.9000303@zytor.com>
-Date: Wed, 15 Dec 2010 22:48:33 +0100
-Message-ID: <AANLkTin=GXnLuDZncSL9rWKh5teCQP=3iQB-Rz8zxsnk@mail.gmail.com>
-Subject: Re: x86: A fast way to check capabilities of the current cpu
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012151352.23229.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 10:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/15/2010 01:30 PM, Miguel Ojeda wrote:
->>
->> In this case it this_cpu_*_test_bit() return an int, but they act as a
->> bool and are used in if()s; where is the catch?
->>
->
-> If they aren't, and are stored in a variable for whatever reason, then
-> the || form will generate additional instructions to booleanize the
-> value for no good reason.
+On Wednesday, December 15, 2010 01:16:28 pm Chase Douglas wrote:
+> On 12/15/2010 02:20 PM, Henrik Rydberg wrote:
+> > Today, userspace sets up an input device based on the data it emits.
+> > This is not always enough; a tablet and a touchscreen may emit exactly
+> > the same data, for instance, but the former should be set up with a
+> > pointer whereas the latter does not need to. Recently, a new type of
+> > touchpad has emerged where the buttons are under the pad, which
+> > changes handling logic without changing the emitted data. This patch
+> > introduces a new ioctl, EVIOCGPROP, which enables user access to a set
+> > of device properties useful during setup. The properties are given as
+> > a bitmap in the same fashion as the event types.
+> > 
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> > Hi all,
+> > 
+> > Here is version two of the device information proposal. In addition to
+> > implementing the feedback, this version only defines a single combined
+> > type/capabilities field. Since we want to support a device being of
+> > multiple types, it suggests that we are really after the properties
+> > that make up a type, rather than the types themselves. And since
+> > quirks are also properties, we end up with a single bitmap of
+> > properties instead.
+> > 
+> > As an example of how this would work for the
+> > touchpad/tablet/touchscreen triplet, there are two properties defined,
+> > INPUT_PROP_POINTER and INPUT_PROP_DIRECT. A touchpad is an indirect
+> > pointer device, a tablet is a direct pointer device, and the
+> > touchscreen is simply a direct device.
+> > 
+> > What do you think?
+> 
+> I must have missed the first version of this patch, but I give two
+> thumbs way up :). The detection code for touchpad/tablet/touchscreen in
+> xf86-input-evdev is large and unwieldy, and seemingly simple changes to
+> an input driver can cause incorrect interpretation. Having this
+> available should help quite a bit!
+> 
+> Acked-by: Chase Douglas <chase.douglas@canonical.com>
 
-Thanks! I suppose that is the 't' of being "a fast way" ;-)
+As long as we document that !pointer && !direct means "unknown" or
+"unspecified" so as to avoid having to update all devices at once that
+should be OK.
 
->
->        -hpa
->
+We also need to wire up uinput.
+
+Thanks.
+
+-- 
+Dmitry
