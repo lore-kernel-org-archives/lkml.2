@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab0LOVaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 16:30:10 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57323 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab0LOVaG convert rfc822-to-8bit (ORCPT
+	id S1754243Ab0LOVaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 16:30:25 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49860 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab0LOVaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 16:30:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uFj9y6ggGSk0EAtRgF1pBXYTtQW4Ym/a6JY+QmcqYONMCp1a5IYepOrkrxiiNLbGoV
-         gXDKqOI0apJZEorPLwITtmkwETEaClHQuF1xzAo335fztf940jwDTPp7ETLC9zbbTCNQ
-         RVnS0nhSyzuShdP88Ra5WRgl38rCzqqehjLcg=
-MIME-Version: 1.0
-In-Reply-To: <4D092D15.7030700@zytor.com>
-References: <alpine.DEB.2.00.1012151404070.21102@router.home>
-	<20101215125626.25f7d648.akpm@linux-foundation.org>
-	<4D092D15.7030700@zytor.com>
-Date: Wed, 15 Dec 2010 22:30:05 +0100
-Message-ID: <AANLkTimhdmWGhxW9qnFWYxiVDManH4XG4RqTLJb_Fdbk@mail.gmail.com>
-Subject: Re: x86: A fast way to check capabilities of the current cpu
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Dec 2010 16:30:22 -0500
+Subject: Re: [PATCH] regulator: Allow modular build of mc13xxx-core
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Yong Shen <yong.shen@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        patches@opensource.wolfsonmicro.com
+In-Reply-To: <1292422225-27530-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <20101215140344.GF5723@sirena.org.uk>
+	 <1292422225-27530-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Dec 2010 21:30:16 +0000
+Message-ID: <1292448616.3348.33.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 10:03 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/15/2010 12:56 PM, Andrew Morton wrote:
->> On Wed, 15 Dec 2010 14:07:39 -0600 (CST)
->> Christoph Lameter <cl@linux.com> wrote:
->>
->>> +#define cpu_has(c, bit)                                                     \
->>> +    (__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 :  \
->>>       test_cpu_cap(c, bit))
->>>
->>> +#define this_cpu_has(bit)                                           \
->>> +    (__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 :  \
->>> +     this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
->>> +
->>
->> Isn't
->>
->>       a ? 1 : b
->>
->> a complex way of writing
->>
->>       a || b
->>
->
-> Not if b is not a bool.
->
+On Wed, 2010-12-15 at 14:10 +0000, Mark Brown wrote:
+> Since the MFD core for this device and the regulator drivers for these
+> devices can be built modular we should also support modular build of
+> the shared code for the regulator drivers, otherwise we try to link
+> built in code against modular code with unfortunate results.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-In this case it this_cpu_*_test_bit() return an int, but they act as a
-bool and are used in if()s; where is the catch?
+Thanks Mark !
 
->        -hpa
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+It looks like you sent the wrong patch as I had to also add :-
+
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+index da46b3c..f53d31b 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -89,6 +89,7 @@ int mc13xxx_regulator_list_voltage(struct regulator_dev *rdev,
+ 
+        return mc13xxx_regulators[id].voltages[selector];
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_regulator_list_voltage);
+ 
+ int mc13xxx_get_best_voltage_index(struct regulator_dev *rdev,
+                                                int min_uV, int max_uV)
+@@ -232,6 +233,7 @@ int mc13xxx_sw_regulator_is_enabled(struct regulator_dev *rdev)
+ {
+        return 1;
+ }
++EXPORT_SYMBOL_GPL(mc13xxx_sw_regulator_is_enabled);
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Yong Shen <yong.shen@linaro.org>");
+
+To get it all building.
+
+Now applied and squashed with above.
+
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
