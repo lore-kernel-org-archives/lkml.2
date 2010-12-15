@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0LOOlI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 09:41:08 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:50474 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752371Ab0LOOlG (ORCPT
+	id S1754525Ab0LOOlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 09:41:11 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:54909 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab0LOOlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 09:41:06 -0500
-Date: Wed, 15 Dec 2010 15:40:55 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>, microcai@fedoraproject.org,
-        linux-kernel@vger.kernel.org, linux-console@vger.kernel.org
-Subject: Re: VT console need rewrite
-Message-ID: <20101215144055.GA10467@ucw.cz>
-References: <1290941875.13526.15.camel@cai.gentoo>
- <87mxosla7p.fsf@basil.nowhere.org>
- <20101213071328.GB2328@ucw.cz>
- <20101213101801.1f698c7c@lxorguk.ukuu.org.uk>
+	Wed, 15 Dec 2010 09:41:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Hunt <joshhunt00@gmail.com>
+Subject: Re: cpumask: fix compat getaffinity
+Date: Wed, 15 Dec 2010 15:40:51 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Milton Miller <miltonm@bga.com>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        anton@samba.org
+References: <1273653045_3386@mail4.comsite.net> <20100517134320.A190.A69D9226@jp.fujitsu.com> <AANLkTi=ghZn9o_7Dab2GQebZUZBZk+um0vYbZZLC3dMf@mail.gmail.com>
+In-Reply-To: <AANLkTi=ghZn9o_7Dab2GQebZUZBZk+um0vYbZZLC3dMf@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101213101801.1f698c7c@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012151540.51975.arnd@arndb.de>
+X-Provags-ID: V02:K0:I7LFc+t5hS3mNr+Jlp4dyy2FF0awA9dFsqlxUHteQ0I
+ sH3KCQnCmz+KXXTDCSYhFCZO+bbWTEoaST9G9+0K0Nq54G6nAe
+ ITHIf/ZITQozGEefFt38UN4eWrQu8K86u4izK44YDCxYE2rV3L
+ TWNlKJBcYM5FgFW2gUceYyGSoZYon/tlkDcttUfN+qMFTlKHHi
+ K6/LpFFgobnwlQ0mkU5PQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Yes. These days kernel sources and kernel messages both contain
-> > non-ASCII characters... as well as many filesystems.
+On Tuesday 14 December 2010, Josh Hunt wrote:
 > 
-> But not in kernel printed messages.
+> I realize this thread is fairly old, but I have a question about this
+> statement in the changelog:
+> 
+> > On NUMA systems with less than 32 possibly CPUs, the
+> > current compat_sys_sched_getaffinity now returns '4'
+> > instead of the actual NR_CPUS/8, which makes libnuma
+> > bail out when parsing the cpumap.
+> 
+> This does not seem accurate, at least not on my system with NR_CPUS=32
+> and nr_cpu_ids=8. The smallest value retlen will ever be set to is
+> sizeof(long) which is 8 on most modern systems. This breaks the
+> statement that this function will now return NR_CPUS/8.
 
-Yes, even in those (but something eats my mail).
+Yes, I think the description is a bit misleading there.
+The point was that it should return the number that the
+sysfs files are based on, instead of the smallest multiple
+of sizeof(compat_long) that can hold the installed CPUs.
 
-CAFE driver has non-ascii characters in pci device name, and that
-leaks to dmesg.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+	Arnd
