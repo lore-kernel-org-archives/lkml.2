@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab0LOQg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 11:36:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53685 "EHLO mail.zytor.com"
+	id S1754043Ab0LOQkP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 11:40:15 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36915 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753779Ab0LOQg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 11:36:56 -0500
-Message-ID: <4D08EE57.8010602@zytor.com>
-Date: Wed, 15 Dec 2010 08:35:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1751608Ab0LOQkL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 11:40:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,349,1288594800"; 
+   d="scan'208";a="868565146"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Huang, Ying" <ying.huang@intel.com>, Len Brown <lenb@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Date: Wed, 15 Dec 2010 08:40:09 -0800
+Subject: RE: [RFC] ACPI, APEI, Generic Hardware Error Source POLL/IRQ/NMI
+ notification type support
+Thread-Topic: [RFC] ACPI, APEI, Generic Hardware Error Source POLL/IRQ/NMI
+ notification type support
+Thread-Index: AcucGa/zcDU6xkcbTlmIxJxsu+huFgAXKT5Q
+Message-ID: <987664A83D2D224EAE907B061CE93D530193C9D504@orsmsx505.amr.corp.intel.com>
+References: <1292391242.12648.1202.camel@yhuang-dev>
+In-Reply-To: <1292391242.12648.1202.camel@yhuang-dev>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
- lock semantics
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org>
-In-Reply-To: <4D08ECEF.3040909@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 08:29 AM, Tejun Heo wrote:
-> Hello,
-> 
-> On 12/15/2010 02:06 AM, H. Peter Anvin wrote:
->> It's probably easiest if you just add them with my Acked-by: then.
->> Alternatively, I could pick them up so they go into -tip and the tip
->> test machinery.
-> 
-> All patches accepted into percpu till now are in the following branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-next
-> 
-> The tree is based on v2.6.37-rc5 and v2.6.37-rc5..for-next would give
-> 21 patches.  I think most of these don't fit x86 tree but there are
-> several which would fit there much better.  d80aadf9 (x86: Replace
-> uses of current_cpu_data with this_cpu ops) and e5195e91 (x86: Use
-> this_cpu_inc_return for nmi counter).
-> 
-> As it would be beneficial to push these through -tip testing anyway,
-> how about the following?
-> 
-> * If you review and ack the x86 related bits in the series, I'll
->   regenerated and add the ACKs.
-> 
-> * It would be better if the two commits mentioned above get routed
->   through x86 tree rather than percpu tree, so I'll drop the above two
->   from percpu tree and you can pull percpu into x86 and then apply
->   those in x86 tree.
-> 
+>Because the memory area used to transfer hardware error information
+>from BIOS to Linux can be determined only in NMI, IRQ or timer
+>handler, but general ioremap can not be used in atomic context, so a
+>special version of atomic ioremap is implemented for that.
+>
+>Known issue:
+>
+>- Error information can not be printed for recoverable errors notified
+>  via NMI, because printk is not NMI-safe. Will fix this via delay
+>  printing to IRQ context via irq_work or make printk NMI-safe.
 
-I think we can do that... let me look through the tree first officially
-committing.  Alternatively, I can pull the patches from your tree and
-individually review them and add them to a tip branch, if you prefer.
+Would it be possible to defer the "ioremap" to a work queue too? Then
+we wouldn't need the special versions of ioremap.
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+-Tony
