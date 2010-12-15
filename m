@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760320Ab0LOAyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 19:54:22 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:55879 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756453Ab0LOAyT (ORCPT
+	id S1760326Ab0LOAyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 19:54:25 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:51420 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756453Ab0LOAyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 19:54:19 -0500
+	Tue, 14 Dec 2010 19:54:23 -0500
 From: Fernando Guzman Lugo <fernando.lugo@ti.com>
 To: <Hiroshi.DOYU@nokia.com>, <linux@arm.linux.org.uk>, <h-kanigeri2@ti.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <tony@atomide.com>,
         "Guzman Lugo, Fernando" <x0095840@ti.com>
-Subject: [PATCHv7 2/4] omap: iovmm - add superpages support to fixed da address
-Date: Tue, 14 Dec 2010 18:54:01 -0600
-Message-Id: <1292374443-4055-3-git-send-email-fernando.lugo@ti.com>
+Subject: [PATCHv7 4/4] omap: iommu - create new api to set valid da range
+Date: Tue, 14 Dec 2010 18:54:03 -0600
+Message-Id: <1292374443-4055-5-git-send-email-fernando.lugo@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1292374443-4055-1-git-send-email-fernando.lugo@ti.com>
 References: <1292374443-4055-1-git-send-email-fernando.lugo@ti.com>
@@ -24,157 +24,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Guzman Lugo, Fernando <x0095840@ti.com>
 
-This patch adds superpages support to fixed ad address
-inside iommu_kmap function.
+Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF range.
+With this new API the valid range can be set.
 
 Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
 ---
- arch/arm/plat-omap/iovmm.c |   62 +++++++++++++++++++++++++------------------
- 1 files changed, 36 insertions(+), 26 deletions(-)
+ arch/arm/mach-omap2/omap-iommu.c        |    8 ++++++++
+ arch/arm/plat-omap/include/plat/iommu.h |    5 +++++
+ arch/arm/plat-omap/iommu.c              |   24 ++++++++++++++++++++++++
+ arch/arm/plat-omap/iovmm.c              |   15 ++++++++-------
+ 4 files changed, 45 insertions(+), 7 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
+index f5a1aad..6be548c 100644
+--- a/arch/arm/mach-omap2/omap-iommu.c
++++ b/arch/arm/mach-omap2/omap-iommu.c
+@@ -33,6 +33,8 @@ static struct iommu_device omap3_devices[] = {
+ 			.name = "isp",
+ 			.nr_tlb_entries = 8,
+ 			.clk_name = "cam_ick",
++			.da_start = 0x0,
++			.da_end = 0xFFFFF000,
+ 		},
+ 	},
+ #if defined(CONFIG_MPU_BRIDGE_IOMMU)
+@@ -43,6 +45,8 @@ static struct iommu_device omap3_devices[] = {
+ 			.name = "iva2",
+ 			.nr_tlb_entries = 32,
+ 			.clk_name = "iva2_ck",
++			.da_start = 0x11000000,
++			.da_end = 0xFFFFF000,
+ 		},
+ 	},
+ #endif
+@@ -64,6 +68,8 @@ static struct iommu_device omap4_devices[] = {
+ 			.name = "ducati",
+ 			.nr_tlb_entries = 32,
+ 			.clk_name = "ducati_ick",
++			.da_start = 0x0,
++			.da_end = 0xFFFFF000,
+ 		},
+ 	},
+ #if defined(CONFIG_MPU_TESLA_IOMMU)
+@@ -74,6 +80,8 @@ static struct iommu_device omap4_devices[] = {
+ 			.name = "tesla",
+ 			.nr_tlb_entries = 32,
+ 			.clk_name = "tesla_ick",
++			.da_start = 0x0,
++			.da_end = 0xFFFFF000,
+ 		},
+ 	},
+ #endif
+diff --git a/arch/arm/plat-omap/include/plat/iommu.h b/arch/arm/plat-omap/include/plat/iommu.h
+index 33c7d41..69230d6 100644
+--- a/arch/arm/plat-omap/include/plat/iommu.h
++++ b/arch/arm/plat-omap/include/plat/iommu.h
+@@ -50,6 +50,8 @@ struct iommu {
+ 	int (*isr)(struct iommu *obj);
+ 
+ 	void *ctx; /* iommu context: registres saved area */
++	u32 da_start;
++	u32 da_end;
+ };
+ 
+ struct cr_regs {
+@@ -103,6 +105,8 @@ struct iommu_platform_data {
+ 	const char *name;
+ 	const char *clk_name;
+ 	const int nr_tlb_entries;
++	u32 da_start;
++	u32 da_end;
+ };
+ 
+ #if defined(CONFIG_ARCH_OMAP1)
+@@ -152,6 +156,7 @@ extern void flush_iotlb_all(struct iommu *obj);
+ extern int iopgtable_store_entry(struct iommu *obj, struct iotlb_entry *e);
+ extern size_t iopgtable_clear_entry(struct iommu *obj, u32 iova);
+ 
++extern int iommu_set_da_range(struct iommu *obj, u32 start, u32 end);
+ extern struct iommu *iommu_get(const char *name);
+ extern void iommu_put(struct iommu *obj);
+ 
+diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+index 6cd151b..b1107c0 100644
+--- a/arch/arm/plat-omap/iommu.c
++++ b/arch/arm/plat-omap/iommu.c
+@@ -830,6 +830,28 @@ static int device_match_by_alias(struct device *dev, void *data)
+ }
+ 
+ /**
++ * iommu_set_da_range - Set a valid device address range
++ * @obj:		target iommu
++ * @start		Start of valid range
++ * @end			End of valid range
++ **/
++int iommu_set_da_range(struct iommu *obj, u32 start, u32 end)
++{
++
++	if (!obj)
++		return -EFAULT;
++
++	if (end < start || !PAGE_ALIGN(start | end))
++		return -EINVAL;
++
++	obj->da_start = start;
++	obj->da_end = end;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(iommu_set_da_range);
++
++/**
+  * iommu_get - Get iommu handler
+  * @name:	target iommu name
+  **/
+@@ -922,6 +944,8 @@ static int __devinit omap_iommu_probe(struct platform_device *pdev)
+ 	obj->name = pdata->name;
+ 	obj->dev = &pdev->dev;
+ 	obj->ctx = (void *)obj + sizeof(*obj);
++	obj->da_start = pdata->da_start;
++	obj->da_end = pdata->da_end;
+ 
+ 	mutex_init(&obj->iommu_lock);
+ 	mutex_init(&obj->mmap_lock);
 diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index 34f0012..93a34d9 100644
+index fa6e643..6dc1296 100644
 --- a/arch/arm/plat-omap/iovmm.c
 +++ b/arch/arm/plat-omap/iovmm.c
-@@ -87,35 +87,43 @@ static size_t sgtable_len(const struct sg_table *sgt)
- }
- #define sgtable_ok(x)	(!!sgtable_len(x))
+@@ -280,13 +280,14 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+ 	alignement = PAGE_SIZE;
  
-+static unsigned max_alignment(u32 addr)
-+{
-+	int i;
-+	unsigned pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
-+	for (i = 0; i < ARRAY_SIZE(pagesize) && addr & (pagesize[i] - 1); i++)
-+		;
-+	return (i < ARRAY_SIZE(pagesize)) ? pagesize[i] : 0;
-+}
+ 	if (flags & IOVMF_DA_ANON) {
+-		/*
+-		 * Reserve the first page for NULL
+-		 */
+-		start = PAGE_SIZE;
++		start = obj->da_start;
 +
- /*
-  * calculate the optimal number sg elements from total bytes based on
-  * iommu superpages
-  */
--static unsigned int sgtable_nents(size_t bytes)
-+static unsigned sgtable_nents(size_t bytes, u32 da, u32 pa)
- {
--	int i;
--	unsigned int nr_entries;
--	const unsigned long pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
-+	unsigned nr_entries = 0, ent_sz;
- 
- 	if (!IS_ALIGNED(bytes, PAGE_SIZE)) {
- 		pr_err("%s: wrong size %08x\n", __func__, bytes);
- 		return 0;
+ 		if (flags & IOVMF_LINEAR)
+ 			alignement = iopgsz_max(bytes);
+ 		start = roundup(start, alignement);
++	} else if (start < obj->da_start || start > obj->da_end ||
++					obj->da_end - start < bytes) {
++		return ERR_PTR(-EINVAL);
  	}
  
--	nr_entries = 0;
--	for (i = 0; i < ARRAY_SIZE(pagesize); i++) {
--		if (bytes >= pagesize[i]) {
--			nr_entries += (bytes / pagesize[i]);
--			bytes %= pagesize[i];
--		}
-+	while (bytes) {
-+		ent_sz = max_alignment(da | pa);
-+		ent_sz = min_t(unsigned, ent_sz, iopgsz_max(bytes));
-+		nr_entries++;
-+		da += ent_sz;
-+		pa += ent_sz;
-+		bytes -= ent_sz;
+ 	tmp = NULL;
+@@ -299,16 +300,16 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+ 		if (prev_end > start)
+ 			break;
+ 
+-		if (start + bytes <= tmp->da_start)
++		if (tmp->da_start > start && (tmp->da_start - start) >= bytes)
+ 			goto found;
+ 
+-		if (flags & IOVMF_DA_ANON)
++		if (tmp->da_end >= start && flags & IOVMF_DA_ANON)
+ 			start = roundup(tmp->da_end + 1, alignement);
+ 
+ 		prev_end = tmp->da_end;
  	}
--	BUG_ON(bytes);
  
- 	return nr_entries;
- }
+-	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
++	if ((start >= prev_end) && (obj->da_end - start >= bytes))
+ 		goto found;
  
- /* allocate and initialize sg_table header(a kind of 'superblock') */
--static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags)
-+static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags,
-+							u32 da, u32 pa)
- {
- 	unsigned int nr_entries;
- 	int err;
-@@ -127,9 +135,8 @@ static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags)
- 	if (!IS_ALIGNED(bytes, PAGE_SIZE))
- 		return ERR_PTR(-EINVAL);
- 
--	/* FIXME: IOVMF_DA_FIXED should support 'superpages' */
--	if ((flags & IOVMF_LINEAR) && (flags & IOVMF_DA_ANON)) {
--		nr_entries = sgtable_nents(bytes);
-+	if (flags & IOVMF_LINEAR) {
-+		nr_entries = sgtable_nents(bytes, da, pa);
- 		if (!nr_entries)
- 			return ERR_PTR(-EINVAL);
- 	} else
-@@ -409,7 +416,8 @@ static inline void sgtable_drain_vmalloc(struct sg_table *sgt)
- 	BUG_ON(!sgt);
- }
- 
--static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
-+static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 da,
-+								size_t len)
- {
- 	unsigned int i;
- 	struct scatterlist *sg;
-@@ -418,9 +426,10 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
- 	va = phys_to_virt(pa);
- 
- 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
--		size_t bytes;
-+		unsigned bytes;
- 
--		bytes = iopgsz_max(len);
-+		bytes = max_alignment(da | pa);
-+		bytes = min_t(unsigned, bytes, iopgsz_max(len));
- 
- 		BUG_ON(!iopgsz_ok(bytes));
- 
-@@ -429,6 +438,7 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
- 		 * 'pa' is cotinuous(linear).
- 		 */
- 		pa += bytes;
-+		da += bytes;
- 		len -= bytes;
- 	}
- 	BUG_ON(len);
-@@ -695,18 +705,18 @@ u32 iommu_vmalloc(struct iommu *obj, u32 da, size_t bytes, u32 flags)
- 	if (!va)
- 		return -ENOMEM;
- 
--	sgt = sgtable_alloc(bytes, flags);
-+	flags &= IOVMF_HW_MASK;
-+	flags |= IOVMF_DISCONT;
-+	flags |= IOVMF_ALLOC;
-+	flags |= (da ? IOVMF_DA_FIXED : IOVMF_DA_ANON);
-+
-+	sgt = sgtable_alloc(bytes, flags, da, 0);
- 	if (IS_ERR(sgt)) {
- 		da = PTR_ERR(sgt);
- 		goto err_sgt_alloc;
- 	}
- 	sgtable_fill_vmalloc(sgt, va);
- 
--	flags &= IOVMF_HW_MASK;
--	flags |= IOVMF_DISCONT;
--	flags |= IOVMF_ALLOC;
--	flags |= (da ? IOVMF_DA_FIXED : IOVMF_DA_ANON);
--
- 	da = __iommu_vmap(obj, da, sgt, va, bytes, flags);
- 	if (IS_ERR_VALUE(da))
- 		goto err_iommu_vmap;
-@@ -746,11 +756,11 @@ static u32 __iommu_kmap(struct iommu *obj, u32 da, u32 pa, void *va,
- {
- 	struct sg_table *sgt;
- 
--	sgt = sgtable_alloc(bytes, flags);
-+	sgt = sgtable_alloc(bytes, flags, da, pa);
- 	if (IS_ERR(sgt))
- 		return PTR_ERR(sgt);
- 
--	sgtable_fill_kmalloc(sgt, pa, bytes);
-+	sgtable_fill_kmalloc(sgt, pa, da, bytes);
- 
- 	da = map_iommu_region(obj, da, sgt, va, bytes, flags);
- 	if (IS_ERR_VALUE(da)) {
+ 	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
 -- 
 1.7.0.4
 
