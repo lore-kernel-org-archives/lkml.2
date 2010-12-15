@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab0LOHUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 02:20:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753709Ab0LOHUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 02:20:47 -0500
-Message-ID: <4D086C1A.5000907@redhat.com>
-Date: Wed, 15 Dec 2010 15:19:54 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1754103Ab0LOHZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 02:25:37 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54617 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434Ab0LOHZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 02:25:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=J6jrbIOVT7/QiBfclOEx+ofpnGZAVz/6dKmXw/aO1o0DcEB0q991thP5R41z1st6Kk
+         ju/ZkjIywR3J0kgJOZNm3NvBg8BPjqO+3T8yxlU2Nfd9BrPAt9AuaNHR7isyF2py+lWq
+         V+XeufVs3QoONvwS0g/BeTQ562xehrrx/r9e4=
+Date: Tue, 14 Dec 2010 23:25:29 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
+Message-ID: <20101215072528.GB11867@core.coreip.homeip.net>
+References: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com>
+ <20101214221241.GA11519@core.coreip.homeip.net>
+ <4D080A13.6050601@canonical.com>
+ <4D081BF2.7000202@euromail.se>
 MIME-Version: 1.0
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch 18/21] Generate the data sections for ELF Core
-References: <20101214152259.67896960@suzukikp> <20101214155200.06b56e57@suzukikp>
-In-Reply-To: <20101214155200.06b56e57@suzukikp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D081BF2.7000202@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2010年12月14日 18:22, Suzuki K. Poulose 写道:
-...
-> +	/*
-> +	 * Read from the vma segments
-> +	 * a. verify if the *fpos is within a phdr
-> +	 * b. Use access_process_vm() to get data page by page
-> +	 * c. copy_to_user into user buffer
-> +	 */
+On Wed, Dec 15, 2010 at 02:37:54AM +0100, Henrik Rydberg wrote:
+> Hi Chase,
+> 
+> >
+> 
+> > I gave this some more thought, and I was close to accepting it with
+> > documentation of the above restrictions. Then I thought of how the
+> > following two devices would be presented to userspace:
+> > 
+> > 1. A real MT device supporting up to 2 touches (e.g. a bamboo touch)
+> >   - ABS_{X,Y}, BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP for ST
+> >   - ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_{X,Y}, ABS_MT_TOOL_TYPE
+> > 
+> > 2. A partial MT device using MT_TOOL_ENVELOPE (e.g. synaptics MT)
+> >   - ABS_{X,Y}, BTN_TOUCH, BTN_TOOL_FINGER, and BTN_TOOL_DOUBLETAP for ST
+> >   - ABS_MT_SLOT, ABS_MT_TRACKING_ID, ABS_MT_POSITION_{X,Y}, ABS_MT_TOOL_TYPE
+> > 
+> > Note that they are identical! The range of values for each axis would be
+> > identical too. The only way to tell the two apart would be to watch for
+> > the ABS_MT_TOOL_TYPE axis.
 
+Question: does the driver really need to know this data beforehand?  I'd
+expect MT-aware driver simply having handlers for both styles and then
+doing the best it can with the data stream it gets... There should not
+be ambiguity as to what event is - I believe we should be sending
+BTN_TOOL_ENVELOPE even for the single/first contact for devices that do
+not do full MT tracking.
 
-This kind of comments is useless, "code tells you how, comments tell you why."
+> 
+> 
+> Ping has touched upon this subject as well, from the pen & touch perspective.
+> Generally, some ABS axes are actually enumerations, for which we have no direct
+> abstraction. If we had a way to declare the used values for such enumerations,
+> it would resolve these and possibly other issues.
 
+I think that presence of pen/touch can be detected by having
+BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
+finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
+this is another case where we should employ the proposed device flags?
 
-> +
-> +	while (buflen) {
-> +		size_t bufsz, offset, bytes;
-> +		char *readbuf;
-> +		struct elf_phdr *phdr = get_pos_elfphdr(cp, *fpos);
-> +
-> +		if (!phdr)
-> +			break;
-> +
-> +		bufsz = (buflen>  PAGE_SIZE) ? PAGE_SIZE : buflen;
-> +		readbuf = kmalloc(bufsz, GFP_KERNEL);
-> +		if (!readbuf) {
-> +			ret = -ENOMEM;
-> +			goto out;
-> +		}
-> +
-> +		offset = *fpos - phdr->p_offset;
-> +		bytes = access_process_vm(cp->task, (phdr->p_vaddr + offset),
-> +						readbuf, bufsz, 0);
-> +		if (!bytes) {
-> +			ret = -EIO;
-> +			goto out;
+Anyway, it looks like we have a few concerns with current
+MT_TOOL_ENVELOPE so I want to rewind my 'next' branch.
 
-
-Why you don't kfree(readbuf) here?
-
-> +		}
-> +		if (copy_to_user(buffer, readbuf, bytes)) {
-> +			ret = -EFAULT;
-> +			kfree(readbuf);
-> +			goto out;
-> +		} else
-> +			acc += bytes;
-> +
-> +		kfree(readbuf);
-> +		buflen -= bytes;
-> +		buffer += bytes;
-> +		*fpos += bytes;
-> +	}
-> +
-> +	/* Fill extnum section header if present */
-> +	if (buflen&&
-> +		elf_hdr->e_shoff&&
-> +		(*fpos>= elf_hdr->e_shoff)&&
-> +		(*fpos<  (elf_hdr->e_shoff + sizeof(struct elf_shdr)))) {
-
-
-This indention seems ugly.
-
-> +
-> +		off_t offset = *fpos - elf_hdr->e_shoff;
-
-Are you sure it is 'off_t' not 'loff_t'?
-
-> +		size_t shdrsz = sizeof(struct elf_shdr) - offset;
-> +
-> +		shdrsz = (buflen<  shdrsz) ? buflen : shdrsz;
-> +		if (copy_to_user(buffer, ((char *)cp->shdr) + offset, shdrsz)) {
-> +			ret = -EFAULT;
-> +			goto out;
-> +		} else {
-> +			acc += shdrsz;
-> +			buflen -= shdrsz;
-> +			buffer += shdrsz;
-> +		}
-> +	}
->
-> +done:
-> +	ret = acc;
->   out:
->   	return ret;
->   }
-
-Thanks.
+-- 
+Dmitry
