@@ -1,196 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab0LONmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 08:42:31 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:47832 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab0LONkq (ORCPT
+	id S1753877Ab0LONnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 08:43:39 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:26703 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350Ab0LONni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 08:40:46 -0500
-X-IronPort-AV: E=Sophos;i="4.59,349,1288584000"; 
-   d="scan'208";a="126991581"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 05/11] xen: add m2p override mechanism
-Date: Wed, 15 Dec 2010 13:40:40 +0000
-Message-Id: <1292420446-3348-5-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 15 Dec 2010 08:43:38 -0500
+X-IronPort-AV: E=Sophos;i="4.59,349,1288569600"; 
+   d="scan'208";a="3360729"
+Date: Wed, 15 Dec 2010 13:43:59 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH 00/11] xen: allow usermode to map granted pages
 In-Reply-To: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
+Message-ID: <alpine.DEB.2.00.1012151341270.2390@kaball-desktop>
 References: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
-X-OriginalArrivalTime: 15 Dec 2010 13:40:45.0640 (UTC) FILETIME=[ACDF5480:01CB9C5D]
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Wed, 15 Dec 2010, Stefano Stabellini wrote:
+> Hi all,
+> this patch series introduces the gntdev device that allows usermode
+> to map granted pages; gntdev is used by qemu to implement Xen backends
+> in userspace.
+> 
+> Considering that granted pages still have the same entry in the m2p
+> as before being granted, the following patches also add a mechanism to
+> override portions of the m2p so that we can find out the pfn
+> corresponding to the mfn of a granted page in the "receiver" domain.
+> This is needed so that we can have pte_page work correctly for these
+> pages. Once this requirement is satisfied, __get_user_pages_fast can
+> work on granted pages and userspace applications (the xen block backend
+> implemented in qemu) can use AIO on them.
+> 
+> 
 
-Add a simple hashtable based mechanism to override some portions of the
-m2p, so that we can find out the pfn corresponding to an mfn of a
-granted page. In fact entries corresponding to granted pages in the m2p
-hold the original pfn value of the page in the source domain that
-granted it.
+I forgot to add that a branch with this series based on 2.6.37-rc5 is
+available here:
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/include/asm/xen/page.h |   16 ++++++-
- arch/x86/xen/p2m.c              |   80 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 93 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 8760cc6..50f0a0f 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -42,6 +42,11 @@ extern unsigned int   machine_to_phys_order;
- extern unsigned long get_phys_to_machine(unsigned long pfn);
- extern bool set_phys_to_machine(unsigned long pfn, unsigned long mfn);
- 
-+extern void m2p_add_override(unsigned long mfn, struct page *page);
-+extern void m2p_remove_override(struct page *page);
-+extern struct page *m2p_find_override(unsigned long mfn);
-+extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
-+
- static inline unsigned long pfn_to_mfn(unsigned long pfn)
- {
- 	unsigned long mfn;
-@@ -72,9 +77,6 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return mfn;
- 
--	if (unlikely((mfn >> machine_to_phys_order) != 0))
--		return ~0;
--
- 	pfn = 0;
- 	/*
- 	 * The array access can fail (e.g., device space beyond end of RAM).
-@@ -83,6 +85,14 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
- 	 */
- 	__get_user(pfn, &machine_to_phys_mapping[mfn]);
- 
-+	/*
-+	 * If this appears to be a foreign mfn (because the pfn
-+	 * doesn't map back to the mfn), then check the local override
-+	 * table to see if there's a better pfn to use.
-+	 */
-+	if (get_phys_to_machine(pfn) != mfn)
-+		pfn = m2p_find_override_pfn(mfn, pfn);
-+
- 	return pfn;
- }
- 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 259ec3b..8db19d5 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -27,6 +27,8 @@
- 
- #include <linux/init.h>
- #include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/hash.h>
- 
- #include <asm/cache.h>
- #include <asm/setup.h>
-@@ -37,6 +39,8 @@
- 
- #include "xen-ops.h"
- 
-+static void __init m2p_override_init(void);
-+
- unsigned long xen_max_p2m_pfn __read_mostly;
- 
- #define P2M_PER_PAGE		(PAGE_SIZE / sizeof(unsigned long))
-@@ -234,6 +238,8 @@ void __init xen_build_dynamic_phys_to_machine(void)
- 
- 		p2m_top[topidx][mididx] = &mfn_list[pfn];
- 	}
-+
-+	m2p_override_init();
- }
- 
- unsigned long get_phys_to_machine(unsigned long pfn)
-@@ -374,3 +380,77 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 
- 	return true;
- }
-+
-+#define M2P_OVERRIDE_HASH_SHIFT	10
-+#define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
-+
-+static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
-+static DEFINE_SPINLOCK(m2p_override_lock);
-+
-+static void __init m2p_override_init(void)
-+{
-+	unsigned i;
-+
-+	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
-+				   sizeof(unsigned long));
-+
-+	for (i = 0; i < M2P_OVERRIDE_HASH; i++)
-+		INIT_LIST_HEAD(&m2p_overrides[i]);
-+}
-+
-+static unsigned long mfn_hash(unsigned long mfn)
-+{
-+	return hash_long(mfn, M2P_OVERRIDE_HASH_SHIFT);
-+}
-+
-+/* Add an MFN override for a particular page */
-+void m2p_add_override(unsigned long mfn, struct page *page)
-+{
-+	unsigned long flags;
-+	page->private = mfn;
-+
-+	spin_lock_irqsave(&m2p_override_lock, flags);
-+	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
-+	spin_unlock_irqrestore(&m2p_override_lock, flags);
-+}
-+
-+void m2p_remove_override(struct page *page)
-+{
-+	unsigned long flags;
-+	spin_lock_irqsave(&m2p_override_lock, flags);
-+	list_del(&page->lru);
-+	spin_unlock_irqrestore(&m2p_override_lock, flags);
-+}
-+
-+struct page *m2p_find_override(unsigned long mfn)
-+{
-+	unsigned long flags;
-+	struct list_head *bucket = &m2p_overrides[mfn_hash(mfn)];
-+	struct page *p, *ret;
-+
-+	ret = NULL;
-+
-+	spin_lock_irqsave(&m2p_override_lock, flags);
-+
-+	list_for_each_entry(p, bucket, lru) {
-+		if (p->private == mfn) {
-+			ret = p;
-+			break;
-+		}
-+	}
-+
-+	spin_unlock_irqrestore(&m2p_override_lock, flags);
-+
-+	return ret;
-+}
-+
-+unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn)
-+{
-+	struct page *p = m2p_find_override(mfn);
-+	unsigned long ret = pfn;
-+
-+	if (p)
-+		ret = page_to_pfn(p);
-+
-+	return ret;
-+}
--- 
-1.5.6.5
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc5-gntdev-2
 
