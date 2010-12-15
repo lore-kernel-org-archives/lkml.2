@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab0LOTF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 14:05:27 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58006 "EHLO hera.kernel.org"
+	id S1754885Ab0LOTGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 14:06:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3055 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab0LOTF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 14:05:26 -0500
-Message-ID: <4D09116C.6010508@kernel.org>
-Date: Wed, 15 Dec 2010 20:05:16 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753181Ab0LOTGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 14:06:46 -0500
+Date: Wed, 15 Dec 2010 19:59:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Chris Mason <chris.mason@oracle.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, tglx <tglx@linutronix.de>
+Subject: Re: [PATCH RFC] reduce runqueue lock contention
+Message-ID: <20101215185929.GA18803@redhat.com>
+References: <20100520204810.GA19188@think> <1277114522.1875.469.camel@laptop> <1277117647.1875.503.camel@laptop> <1277125479.1875.510.camel@laptop> <4D06D968.9070004@am.sony.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org> <1292433773.4688.278.camel@mulgrave.site>
-In-Reply-To: <1292433773.4688.278.camel@mulgrave.site>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Dec 2010 19:05:19 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D06D968.9070004@am.sony.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, James.
+On 12/13, Frank Rowand wrote:
+>
+> I have not been able to make sense of the task_running() check in
+> try_to_wake_up(), even with that clue.  The try_to_wake_up() code in
+> question is:
+> ...
+>
+> What am I missing, or is the task_running() test not needed?
 
-On 12/15/2010 06:22 PM, James Bottomley wrote:
-> Hmm, I suppose the original coding didn't contemplate pre-emption.  This
-> should fix it then, I think (with no alteration to the callsites because
-> of the encapsulating API).  It does assume the function being executed
-> is local to the file doing the execution, which is true in all current
-> cases.
+I am afraid I can misuderstood this all, including the question ;)
 
-Yes, it would do, but we were already too far with the existing
-implementation and I don't agree we need more when replacing it with
-usual workqueue usage would remove the issue.  So, when we actually
-need them, let's consider that or any other way to do it, please.
-A core API with only a few users which can be easily replaced isn't
-really worth keeping around.  Wouldn't you agree?
+But, with __ARCH_WANT_UNLOCKED_CTXSW task_running() checks ->oncpu.
+However, schedule() drops rq->lock after prev was deactivated but
+before it clears prev->oncpu.
 
-Thanks.
+Oleg.
 
--- 
-tejun
