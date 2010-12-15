@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab0LODoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 22:44:12 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:50068 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab0LODoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 22:44:10 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 14 Dec 2010 22:44:09 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clarify a usage constraint for cnt32_to_63()
-Message-id: <alpine.LFD.2.00.1012142219240.10437@xanadu.home>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759321Ab0LODqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 22:46:35 -0500
+Received: from cantor.suse.de ([195.135.220.2]:51218 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753198Ab0LODqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 22:46:34 -0500
+Date: Tue, 14 Dec 2010 19:47:13 -0800
+From: Greg KH <gregkh@suse.de>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Patrice VILCHEZ <patrice.vilchez@atmel.com>
+Subject: Re: [PATCH] base: add sysfs socs info
+Message-ID: <20101215034713.GB3297@suse.de>
+References: <1292330417-13703-1-git-send-email-plagnioj@jcrosoft.com>
+ <20101214161130.GB1857@suse.de>
+ <20101215012511.GQ19897@game.jcrosoft.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101215012511.GQ19897@game.jcrosoft.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cnt32_to_63 algorithm relies on proper counter data evaluation
-ordering to work properly. This was missing from the provided
-documentation.
+On Wed, Dec 15, 2010 at 02:25:11AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 08:11 Tue 14 Dec     , Greg KH wrote:
+> > On Tue, Dec 14, 2010 at 01:40:17PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > > this provide an easy way to register soc information
+> > > 
+> > > arch, family, model, id, revision
+> > > 
+> > > as this for at91sam9g20
+> > > 
+> > > $ cat /sys/devices/system/soc/soc0/arch
+> > > current
+> > > $ cat /sys/devices/system/soc/soc0/family
+> > > at91
+> > > $ cat /sys/devices/system/soc/soc0/id
+> > > at91sam9g20
+> > > $ cat /sys/devices/system/soc/soc0/model
+> > > 0x00000000019905a0
+> > > $ cat /sys/devices/system/soc/soc0/revision
+> > > 1.1
+> > 
+> > What is this for?  When you add sysfs files, you are required to add
+> > entries to the Documentation/ABI/ files as well, please always provide
+> > this so we are able to review the code easier.
+> I'll add a doc in Documentation/ABI
+>  
+> > > +struct soc {
+> > > +	u64 id;
+> > > +	char *arch;
+> > > +	char *family;
+> > > +	char *model;
+> > > +	char *revision;
+> > > +	struct sys_device sysdev;
+> > > +};
+> > 
+> > What is a "SOC"?  A "Small Ordinary Creature"?
+> :) Systen On Chip
+> > 
+> > And does every system have one of these?  Just one?  Not multiple?  We
+> > need a whole lot more information here as to why this code is needed,
+> > and who will be using it.
+> > 
+> > Also, isn't this information already in /proc/cpu/ today?
+> no all this information are not present in /proc/cpu and a cpu is not a soc
+> 
+> basicaly on a board you will have one soc but some boards have more as example
+> some ST boards you have two sh4 soc or on some amcc you have two powerpc soc
+> 
+> with these information you are allow to dynamise the userspace based on the
+> soc or the companion soc and also be able to display this information in a UI
 
-Let's augment the documentation with the missing usage constraint and
-fix the only instance that got it wrong.
+Ok, but then why not make it "real" devices and not sysdev?  We are
+trying to fix the sysdev code to be semi-real devices, so you might as
+well make them real ones now.
 
-Signed-off-by: Nicolas Pitre <nico@fluxnic.net>
-Cc: David Howells <dhowells@redhat.com>
+thanks,
 
-diff --git a/arch/mn10300/kernel/time.c b/arch/mn10300/kernel/time.c
-index 8f7f6d2..6090f46 100644
---- a/arch/mn10300/kernel/time.c
-+++ b/arch/mn10300/kernel/time.c
-@@ -51,18 +51,15 @@ unsigned long long sched_clock(void)
- 		unsigned long long ll;
- 		unsigned l[2];
- 	} tsc64, result;
--	unsigned long tsc, tmp;
-+	unsigned long tmp;
- 	unsigned product[3]; /* 96-bit intermediate value */
- 
--	/* read the TSC value
--	 */
--	tsc = 0 - get_cycles(); /* get_cycles() counts down */
--
--	/* expand to 64-bits.
-+	/* expand the tsc value to 64-bits.
- 	 * - sched_clock() must be called once a minute or better or the
- 	 *   following will go horribly wrong - see cnt32_to_63()
-+	 * - get_cycles() counts down
- 	 */
--	tsc64.ll = cnt32_to_63(tsc) & 0x7fffffffffffffffULL;
-+	tsc64.ll = cnt32_to_63(0 - get_cycles()) & 0x7fffffffffffffffULL;
- 
- 	/* scale the 64-bit TSC value to a nanosecond value via a 96-bit
- 	 * intermediate
-diff --git a/include/linux/cnt32_to_63.h b/include/linux/cnt32_to_63.h
-index 7605fdd..e3d8bf2 100644
---- a/include/linux/cnt32_to_63.h
-+++ b/include/linux/cnt32_to_63.h
-@@ -61,13 +61,31 @@ union cnt32_to_63 {
-  *
-  * 2) this code must not be preempted for a duration longer than the
-  *    32-bit counter half period minus the longest period between two
-- *    calls to this code.
-+ *    calls to this code;
-  *
-  * Those requirements ensure proper update to the state bit in memory.
-  * This is usually not a problem in practice, but if it is then a kernel
-  * timer should be scheduled to manage for this code to be executed often
-  * enough.
-  *
-+ * And finally:
-+ *
-+ * 3) the cnt_lo argument must be seen as a globally incrementing value,
-+ *    meaning that it should be a direct reference to the counter data which
-+ *    can be evaluated according to a specific ordering within the macro,
-+ *    and not the result of a previous evaluation stored in a variable.
-+ *
-+ * For example, this is wrong:
-+ *
-+ *	u32 partial = get_hw_count();
-+ *	u64 full = cnt32_to_63(partial);
-+ *	return full;
-+ *
-+ * This is fine:
-+ *
-+ *	u64 full = cnt32_to_63(get_hw_count());
-+ *	return full;
-+ *
-  * Note that the top bit (bit 63) in the returned value should be considered
-  * as garbage.  It is not cleared here because callers are likely to use a
-  * multiplier on the returned value which can get rid of the top bit
+greg k-h
