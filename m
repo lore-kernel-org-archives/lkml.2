@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab0LOGmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 01:42:38 -0500
-Received: from web120709.mail.ne1.yahoo.com ([98.138.82.216]:40904 "HELO
-	web120709.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752661Ab0LOGmh (ORCPT
+	id S1753029Ab0LOGpq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 01:45:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65534 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab0LOGpp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 01:42:37 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=4LJHQnj/CxNww1eDfGHtYfihd/raSKbtbvDack42n7tFBWODoj/fXl0N76OhOPgKNvwO9a/jT+vcgZXJrQcmGOO07Frwq5F/UkZLdhODiGI4KyhqG61OKo5kTmkL8ZQ42A3j04DlJU2NmnldRtHRibXSeaNPJCka/Kye7bqcRh8=;
-Message-ID: <294021.5068.qm@web120709.mail.ne1.yahoo.com>
-X-YMail-OSG: WUdrQpMVM1m4Nqgy89Y0lA7Bk8oPDBleEgtW8qqQchbC5LO
- Np62psP8jEg1bRJZkZ4I0bkEb35GeNrJ.rMhe.v3C299QSNR5avuY4tPunr7
- CwzOnN5ku962.7ONtq1GVAI0SLHqzDlPtRJyuW8cY1iloVqgFwr4HEsACpiA
- tIV2qYxSqQrxTl4_xKh4pxbCmo6VIwYS33nkn5IuPRo.a_TJuQAnQmBiQGO3
- ZrHC79WQxa0lji5FgeQ--
-X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
-Date: Tue, 14 Dec 2010 22:42:36 -0800 (PST)
-From: Daniel Kopko <dk_fedorabugs@yahoo.com>
-Subject: likely() vs. unlikely()
-To: linux-kernel@vger.kernel.org
-Cc: srostedt@redhat.com
+	Wed, 15 Dec 2010 01:45:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cQJvPBizyaQO6nNTb5QXG50S9NxcQldwhRcfnCype9PxWFTbDLUaGL5gQFOyfV4Ie9
+         KLWt7PEFC0lTj0M9j7Tmhef/UOq6k8eMQ7AuBaf1dQyGoPZUjxxxbB3CSaZKHrtfSeE7
+         R7nXO72EItEq95hdr0yR6QDTaYk7UfEcKWYW0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20101215160440.bafbe38c.sfr@canb.auug.org.au>
+References: <20101215160440.bafbe38c.sfr@canb.auug.org.au>
+Date: Wed, 15 Dec 2010 01:45:45 -0500
+Message-ID: <AANLkTimgNVUaQcRdva_usq1XX=vp1xwHM3rUeT_hNCZd@mail.gmail.com>
+Subject: Re: ftrace/MIPS related x86_64 build failure on in Linus' tree
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Reiser <jreiser@bitwagon.com>,
+        Wu Zhangjin <wuzhangjin@gmail.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Mr. Rostedt, LKML,
+Hi,
 
-I've noticed the patch series by Steven Rostedt.  I am a bit of a lurker here, 
-but I noticed something that I could perhaps contribute to.  Mr. Rostedt has 
-done some great work deducing exactly whether or not these clauses meet their 
-stated presumptions of "likeliness".  However, I think there may be some cases 
-where accurately codifying branch biases based on literal likeliness might 
-produce worse performance overall.  An example:
+On Wed, Dec 15, 2010 at 12:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Since October 31 our x86_64 allmodconfig builds have been failing like this:
+>
+> /opt/crosstool/gcc-4.4.3-nolibc/x86_64-linux/bin/x86_64-linux-ld: arch/x86/ia32/sys_ia32.o: bad reloc symbol index (0x1000000 >= 0x6b) for offset 0x808080 in section `__mcount_loc'
+> arch/x86/ia32/sys_ia32.o: could not read symbols: Bad value
+>
+I got the same on mips, target was BE, toolchain's host was LE.
+Doesn't https://lkml.org/lkml/2010/12/2/224 address the issue ? This
+patch does not seem to have reached Linus tree yet.
 
-if(X)
-    some_expensive_code();   //takes 500 ms
-else
-    some_very_cheap_code();  //takes 100 us
+ - Arnaud
 
-Now, let's say X is true 90% of the time.  The literal encoding of that would be 
-"if(likely(X))".  However, it may make much more sense to encode it *wrongly* 
-for the sake of cheapening the already cheap code, as the delay of the branch 
-misprediction may be readily "absorbed" into the more expensive code.  In which 
-case, even with X being likely, we may want to encode it as "if(unlikely(X))".  
-(Also, to avoid obscuring things, please keep in mind that the bodies of the two 
-halves of the branch above need not actually be function calls.)
-
-I think that this type of thing may be most noticeable around any branches where 
-there is a fastpath that may be run if ideal conditions are met, but which are 
-met less than 50% of the time.  In such cases, the likely()/unlikely() may be 
-used "wrongly" to cause the branch misprediction to occur in the 
-already-high-latency (some_expensive_function()) case, and lower latencies in 
-the already-low-latency (some_very_cheap_function()) case.  This would lead to 
-lower attainable latencies overall (by at least the cost of a branch miss which 
-would otherwise have been spent in the fast code), and further encourage coding 
-to meet the ideal conditions of the fastpath.
-
-So, several points:
-1)  Please let me know if any of the above is outright wrong.
-2)  I don't know if any such cases occur in the likely()/unlikely() patch 
-series.  A place where it obviously DOESN'T occur would be:
-http://marc.info/?l=linux-kernel&m=129229014528892&w=2
-A place where I thought it MAY occur:
-http://marc.info/?l=linux-kernel&m=129228728125413&w=2
-3)  If there is overall agreement on the above, then I would also suggest that 
-perhaps some additional macro names would be appropriate for the 
-__builtin_expect() use (for cases where we want __builtin_expect(!!(X),1), but 
-for which it isn't truly "likely", and for cases where we want 
-__builtin_expect((X), 0), but for which it isn't truly "unlikely").  These would 
-be parallel to likely()/unlikely() and have the same implementations, but 
-different titles, to better document the intent of the code where they're used.  
-Names maybe slow_branch_path() and fast_branch_path()? 
-slow_branch()/fast_branch()?
-4) I'm very sorry if this winds up ill-formatted.  I have a yahoo webmail 
-client.  Open to suggestions for different free email providers on this front.
-
-
-Thanks,
-
-Daniel Kopko
-
-
-      
+> and many similar
+> (http://fandango2.ozlabs.ibm.com/kisskb/buildresult/3423985/).  I finally
+> got around to bisecting it and it comes down to this commit:
+>
+> a2d49358ba9bc93204dc001d5568c5bdb299b77d is the first bad commit
+> commit a2d49358ba9bc93204dc001d5568c5bdb299b77d
+> Author: John Reiser <jreiser@BitWagon.com>
+> Date:   Wed Oct 27 18:59:07 2010 +0800
+>
+>    ftrace/MIPS: Add MIPS64 support for C version of recordmcount
+>
+>    MIPS64 has 'weird' Elf64_Rel.r_info[1,2], which must be used instead of
+>    the generic Elf64_Rel.r_info, otherwise, the C version of recordmcount
+>    will not work for "segmentation fault".
+>
+>    Usage of "union mips_r_info" and the functions MIPS64_r_sym() and
+>    MIPS64_r_info() written by Maciej W. Rozycki <macro@linux-mips.org>
+>
+>    ----
+>    [1] http://techpubs.sgi.com/library/manuals/4000/007-4658-001/pdf/007-4658-001.pdf
+>    [2] arch/mips/include/asm/module.h
+>
+>    Tested-by: Wu Zhangjin <wuzhangjin@gmail.com>
+>    Signed-off-by: John Reiser <jreiser@BitWagon.com>
+>    Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
+>    LKML-Reference: <AANLkTinwXjLAYACUfhLYaocHD_vBbiErLN3NjwN8JqSy@mail.gmail.com>
+>    LKML-Reference: <910dc2d5ae1ed042df4f96815fe4a433078d1c2a.1288176026.git.wuzhangjin@gmail.com>
+>    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>    Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+>
+> :040000 040000 c208c976b8bd3eb28791d0e96dcb24967586fbb0 28da1214674ed267e0c4aa249379504bc8b20216 M      scripts
+>
+> This seems to be tool chain specific.  We are using a PowerPC hosted
+> x86_64 cross compiler:
+>
+> x86_64-linux-gcc (GCC) 4.4.3
+> GNU ld (GNU Binutils) 2.20
+>
+> [It does *not* fail for our x86_64 hosted x86_64 compiler:
+>
+> x86_64-linux-gcc (GCC) 4.4.4
+> GNU ld (GNU Binutils) 2.20
+> ]
+>
+> I tried reverting that commit (and the next commit
+> 412910cd046c1f14f0fba9c0aec401d47e57dcd1 "ftrace/MIPS: Add module support
+> for C version of recordmcount" because of conflicts) and the build of
+> Linus' current tree now succeeds with the above toolchain,
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
