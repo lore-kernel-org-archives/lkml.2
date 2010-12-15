@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0LOWVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 17:21:00 -0500
-Received: from claw.goop.org ([74.207.240.146]:47910 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab0LOWUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 17:20:12 -0500
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>, Linux-MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Xen-devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 7/9] vmalloc: use apply_to_page_range_batch() in alloc_vm_area()
-Date: Wed, 15 Dec 2010 14:19:53 -0800
-Message-Id: <cd5ee25e08c2b503750513b142f39920473f05a6.1292450600.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <cover.1292450600.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1292450600.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1292450600.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1292450600.git.jeremy.fitzhardinge@citrix.com>
+	id S1755584Ab0LOWZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 17:25:54 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58136 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab0LOWZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 17:25:50 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=bLmJrh3I8mQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=rOUgymgbAAAA:8 a=D19gQVrFAAAA:8 a=l0BGnYWgph-KsVvwJcwA:9 a=oHc7uLkC02BaH_EAkVQA:7 a=EYYRtAOnwl5Sis2nJdYilFM-paoA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: ftrace/MIPS related x86_64 build failure on in Linus' tree
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        John Reiser <jreiser@bitwagon.com>, Wu Zhangjin <wuzhangjin@gmail.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101216090019.639191a1.sfr@canb.auug.org.au>
+References: <20101215160440.bafbe38c.sfr@canb.auug.org.au>
+	 <AANLkTimgNVUaQcRdva_usq1XX=vp1xwHM3rUeT_hNCZd@mail.gmail.com>
+	 <20101216090019.639191a1.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 15 Dec 2010 17:25:36 -0500
+Message-ID: <1292451936.5015.1905.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Thu, 2010-12-16 at 09:00 +1100, Stephen Rothwell wrote:
+> Hi Arnaud,
+> 
+> On Wed, 15 Dec 2010 01:45:45 -0500 Arnaud Lacombe <lacombar@gmail.com> wrote:
+> >
+> > On Wed, Dec 15, 2010 at 12:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > >
+> > > Since October 31 our x86_64 allmodconfig builds have been failing like this:
+> > >
+> > > /opt/crosstool/gcc-4.4.3-nolibc/x86_64-linux/bin/x86_64-linux-ld: arch/x86/ia32/sys_ia32.o: bad reloc symbol index (0x1000000 >= 0x6b) for offset 0x808080 in section `__mcount_loc'
+> > > arch/x86/ia32/sys_ia32.o: could not read symbols: Bad value
+> > >
+> > I got the same on mips, target was BE, toolchain's host was LE.
+> > Doesn't https://lkml.org/lkml/2010/12/2/224 address the issue ? This
+> > patch does not seem to have reached Linus tree yet.
+> 
+> Thanks for pointing that out.  I wonder how we can push that along.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- mm/vmalloc.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I did some poking, it should be moving along soon.
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 0e845bb..a1ecf33 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1991,9 +1991,9 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
- }
- 
- 
--static int f(pte_t *pte, unsigned long addr, void *data)
-+static int f(pte_t *pte, unsigned count, unsigned long addr, void *data)
- {
--	/* apply_to_page_range() does all the hard work. */
-+	/* apply_to_page_range_batch() does all the hard work. */
- 	return 0;
- }
- 
-@@ -2022,8 +2022,8 @@ struct vm_struct *alloc_vm_area(size_t size)
- 	 * This ensures that page tables are constructed for this region
- 	 * of kernel virtual address space and mapped into init_mm.
- 	 */
--	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
--				area->size, f, NULL)) {
-+	if (apply_to_page_range_batch(&init_mm, (unsigned long)area->addr,
-+				      area->size, f, NULL)) {
- 		free_vm_area(area);
- 		return NULL;
- 	}
--- 
-1.7.3.3
+Thanks!
+
+-- Steve
+
 
