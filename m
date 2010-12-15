@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664Ab0LOClk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Dec 2010 21:41:40 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:48865 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752291Ab0LOCli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Dec 2010 21:41:38 -0500
-Date: Tue, 14 Dec 2010 20:41:36 -0600
-From: Jack Steiner <steiner@sgi.com>
-To: Len Brown <lenb@kernel.org>
-Cc: hpa@zytor.com, hmh@hmh.eng.br, tony.luck@gmail.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gbeshers@sgi.com
-Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
-Message-ID: <20101215024136.GB19601@sgi.com>
-References: <20101214220932.GA1206@sgi.com> <alpine.LFD.2.00.1012141903210.25387@x980>
+	id S1758516Ab0LOCmx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Dec 2010 21:42:53 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64694 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab0LOCmv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Dec 2010 21:42:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EyW7wGoT8hFKTLNaW4765zvlhges+j1TdZRNlqRGZic3TwZrPMSqMBDrDj6gjW9y5E
+         L0wdPKszIuAIpiRitihWBQshetaelVi24lorC1lMlAMY34MlYP1CdzkcF2mRAieYKzl3
+         tXwzpccTtepxFogFJWWCU40zSywLuX0wcKmtw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1012141903210.25387@x980>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101214214306.GC5900@hanuman.home.ifup.org>
+References: <20101212131550.GA2608@darkstar>
+	<AANLkTinaNjPjNbxE+OyRsY_jJxDW-pwehTPgyAWzqfzd@mail.gmail.com>
+	<20101214003024.GA3575@hanuman.home.ifup.org>
+	<AANLkTi=ic4i+whV7-gtA7jvWJkPE+bizLdra6OMDf6Cp@mail.gmail.com>
+	<20101214214306.GC5900@hanuman.home.ifup.org>
+Date: Wed, 15 Dec 2010 10:42:50 +0800
+Message-ID: <AANLkTimJrj6TY4BQ1BCd2USjudmLiY9AntWXmRzFWgn_@mail.gmail.com>
+Subject: Re: [PATCH] bttv: fix mutex use before init
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Brandon Philips <brandon@ifup.org>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Clayton <chris2553@googlemail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 07:04:13PM -0500, Len Brown wrote:
-> hmm, my arrandale laptop fails to get into graphics mode w/ this patch 
-> applied -- last thing i see is the kernel freeing memory, then black 
-> screen.
-> 
-> thanks,
-> Len Brown, Intel Open Source Technology Center
+On Wed, Dec 15, 2010 at 5:43 AM, Brandon Philips <brandon@ifup.org> wrote:
+> On 21:56 Tue 14 Dec 2010, Torsten Kaiser wrote:
+>> On Tue, Dec 14, 2010 at 1:30 AM, Brandon Philips <brandon@ifup.org> wrote:
+>> > On 17:13 Sun 12 Dec 2010, Torsten Kaiser wrote:
+>> >>  * change &fh->cap.vb_lock in bttv_open() AND radio_open() to
+>> >> &btv->init.cap.vb_lock
+>> >>  * add a mutex_init(&btv->init.cap.vb_lock) to the setup of init in bttv_probe()
+>> >
+>> > That seems like a reasonable suggestion. An openSUSE user submitted this
+>> > bug to our tracker too. Here is the patch I am having him test.
+>> >
+>> > Would you mind testing it?
+>>
+>> No. :-)
+>>
+>> Without this patch (==vanilla 2.6.37-rc5) I got 2 more OOPSe by
+>> restarting hal around 20 times.
+>> After applying this patch, I did not see a single OOPS after 100 restarts.
+>> So it looks like the fix is correct.
+>
+> Dave, Torsten- Great thanks for testing, can I get both you and Dave's
+> Tested-by then?
 
-Do you know where the ACPI tables actually reside? In RAM
-or in another type of memory.
+Feel free to add my tested-by line for this, Thanks
 
-The original version of this patch made the cacheable mapping
-a platform attribute that was set via a function called thru
-the x86_platform_ops.  This was intended to minimize the potential
-for breaking systems with BIOSes that used non-RAM ACPI tables.
-There are a lot of different BIOSes and I'm not even close to
-understanding them all.
+>
+> Mauro- can you please pick up this patch?
+>
+> Cheers,
+>
+>        Brandon
+>
 
-Wonder if I should resurrect that version of the patch....
+
+
+-- 
+Regards
+dave
