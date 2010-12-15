@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab0LOSzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 13:55:31 -0500
+	id S1755006Ab0LOSz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 13:55:58 -0500
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:15229 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833Ab0LOSyz (ORCPT
+	with ESMTP id S1754682Ab0LOSyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 13:54:55 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66752330"
+	Wed, 15 Dec 2010 13:54:50 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66752273"
 From: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>
-Subject: [PATCH 5/5] msm: rpc: ping modem client driver
-Date: Wed, 15 Dec 2010 10:54:10 -0800
-Message-Id: <1292439250-11985-6-git-send-email-nvishwan@codeaurora.org>
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
+        San Mehat <san@android.com>
+Subject: [PATCH 2/5] msm: rpc: Add userspace rpc support.
+Date: Wed, 15 Dec 2010 10:54:07 -0800
+Message-Id: <1292439250-11985-3-git-send-email-nvishwan@codeaurora.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1292439250-11985-1-git-send-email-nvishwan@codeaurora.org>
 References: <1292439250-11985-1-git-send-email-nvishwan@codeaurora.org>
@@ -22,318 +23,574 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping rpc client driver which talks to remote Ping rpc server.
-This is a test module to ensure working of rpc clients from kernel.
+Allow rpc clients in userspace to communicate with
+rpc server in remote processor.
 
+Cc: San Mehat <san@android.com>
 Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
 ---
- drivers/misc/Kconfig                   |    7 +
- drivers/misc/Makefile                  |    1 +
- drivers/misc/msm_ping_mdm_rpc_client.c |  268 ++++++++++++++++++++++++++++++++
- 3 files changed, 276 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/msm_ping_mdm_rpc_client.c
+ drivers/misc/Makefile                   |    1 +
+ drivers/misc/msm_smd_rpcrouter.c        |   53 ++---
+ drivers/misc/msm_smd_rpcrouter.h        |   18 ++
+ drivers/misc/msm_smd_rpcrouter_device.c |  347 +++++++++++++++++++++++++++++++
+ include/linux/msm_rpcrouter.h           |   36 ++++
+ 5 files changed, 426 insertions(+), 29 deletions(-)
+ create mode 100644 drivers/misc/msm_smd_rpcrouter_device.c
+ create mode 100644 include/linux/msm_rpcrouter.h
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 345e79c..f5c9b25 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -467,6 +467,13 @@ config MSM_RPCSERVER_WATCHDOG
- 	help
- 	  The dog_keepalive server handles watchdog events.
- 
-+config MSM_RPC_PING
-+	depends on MSM_ONCRPCROUTER && DEBUG_FS
-+	default n
-+	bool "MSM rpc ping"
-+	help
-+	  Implements MSM rpc ping test module.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
 diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 432ad7f..2f272f6 100644
+index 3bb65b1..d7a00e4 100644
 --- a/drivers/misc/Makefile
 +++ b/drivers/misc/Makefile
-@@ -46,3 +46,4 @@ obj-$(CONFIG_MSM_ONCRPCROUTER)	+= msm_smd_rpcrouter.o
- obj-$(CONFIG_MSM_ONCRPCROUTER)	+= msm_smd_rpcrouter_device.o
- obj-$(CONFIG_MSM_ONCRPCROUTER)	+= msm_smd_rpcrouter_servers.o
- obj-$(CONFIG_MSM_RPCSERVER_WATCHDOG)	+= msm_rpc_server_dog_keepalive.o
-+obj-$(CONFIG_MSM_RPC_PING)		+= msm_ping_mdm_rpc_client.o
-diff --git a/drivers/misc/msm_ping_mdm_rpc_client.c b/drivers/misc/msm_ping_mdm_rpc_client.c
+@@ -43,3 +43,4 @@ obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
+ obj-y				+= ti-st/
+ obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
+ obj-$(CONFIG_MSM_ONCRPCROUTER)	+= msm_smd_rpcrouter.o
++obj-$(CONFIG_MSM_ONCRPCROUTER)	+= msm_smd_rpcrouter_device.o
+diff --git a/drivers/misc/msm_smd_rpcrouter.c b/drivers/misc/msm_smd_rpcrouter.c
+index c0aed22..eaaf79e 100644
+--- a/drivers/misc/msm_smd_rpcrouter.c
++++ b/drivers/misc/msm_smd_rpcrouter.c
+@@ -106,9 +106,6 @@ static struct platform_device rpcrouter_pdev = {
+ 	.id		= -1,
+ };
+ 
+-static int __msm_rpc_read(struct msm_rpc_endpoint *ept,
+-			  struct rr_fragment **frag,
+-			  unsigned len, long timeout);
+ 
+ static int rpcrouter_send_control_msg(union rr_control_msg *msg)
+ {
+@@ -153,6 +150,7 @@ static struct rr_server *rpcrouter_create_server(uint32_t pid,
+ {
+ 	struct rr_server *server;
+ 	unsigned long flags;
++	int rc;
+ 
+ 	server = kzalloc(sizeof(struct rr_server), GFP_KERNEL);
+ 	if (!server)
+@@ -167,7 +165,18 @@ static struct rr_server *rpcrouter_create_server(uint32_t pid,
+ 	list_add_tail(&server->list, &server_list);
+ 	spin_unlock_irqrestore(&server_list_lock, flags);
+ 
++	if (pid == RPCROUTER_PID_REMOTE) {
++		rc = msm_rpcrouter_create_server_cdev(server);
++		if (rc < 0)
++			goto out_fail;
++	}
+ 	return server;
++out_fail:
++	spin_lock_irqsave(&server_list_lock, flags);
++	list_del(&server->list);
++	spin_unlock_irqrestore(&server_list_lock, flags);
++	kfree(server);
++	return ERR_PTR(rc);
+ }
+ 
+ static void rpcrouter_destroy_server(struct rr_server *server)
+@@ -177,6 +186,7 @@ static void rpcrouter_destroy_server(struct rr_server *server)
+ 	spin_lock_irqsave(&server_list_lock, flags);
+ 	list_del(&server->list);
+ 	spin_unlock_irqrestore(&server_list_lock, flags);
++	device_destroy(msm_rpcrouter_class, server->device_number);
+ 	kfree(server);
+ }
+ 
+@@ -234,7 +244,7 @@ struct msm_rpc_endpoint *msm_rpcrouter_create_local_endpoint(dev_t dev)
+ 	ept->pid = RPCROUTER_PID_LOCAL;
+ 	ept->dev = dev;
+ 
+-	if (dev != MKDEV(0, 0)) {
++	if ((dev != msm_rpcrouter_devno) && (dev != MKDEV(0, 0))) {
+ 		struct rr_server *srv;
+ 		/*
+ 		 * This is a userspace client which opened
+@@ -484,27 +494,6 @@ static void do_create_rpcrouter_pdev(struct work_struct *work)
+ 	platform_device_register(&rpcrouter_pdev);
+ }
+ 
+-/* for backward compatible version type (31st bit cleared)
+- * clearing minor number (lower 16 bits) in device name
+- * is neccessary for driver binding
+- */
+-static int msm_rpcrouter_create_server_pdev(struct rr_server *server)
+-{
+-	sprintf(server->pdev_name, "rs%.8x:%.8x",
+-		server->prog,
+-		(server->vers & RPC_VERSION_MODE_MASK) ? server->vers :
+-		(server->vers & RPC_VERSION_MAJOR_MASK));
+-
+-	server->p_device.base.id = -1;
+-	server->p_device.base.name = server->pdev_name;
+-
+-	server->p_device.prog = server->prog;
+-	server->p_device.vers = server->vers;
+-
+-	platform_device_register(&server->p_device.base);
+-	return 0;
+-}
+-
+ static void do_create_pdevs(struct work_struct *work)
+ {
+ 	unsigned long flags;
+@@ -1042,9 +1031,9 @@ static inline int ept_packet_available(struct msm_rpc_endpoint *ept)
+ 	return ret;
+ }
+ 
+-static int __msm_rpc_read(struct msm_rpc_endpoint *ept,
+-			  struct rr_fragment **frag_ret,
+-			  unsigned len, long timeout)
++int __msm_rpc_read(struct msm_rpc_endpoint *ept,
++		   struct rr_fragment **frag_ret,
++		   unsigned len, long timeout)
+ {
+ 	struct rr_packet *pkt;
+ 	struct rpc_request_hdr *rq;
+@@ -1222,15 +1211,21 @@ static int msm_rpcrouter_probe(struct platform_device *pdev)
+ 	if (!rpcrouter_workqueue)
+ 		return -ENOMEM;
+ 
++	rc = msm_rpcrouter_init_devices();
++	if (rc < 0)
++		goto fail_destroy_workqueue;
++
+ 	/* Open up SMD channel 2 */
+ 	initialized = 0;
+ 	rc = smd_open("SMD_RPCCALL", &smd_channel, NULL, rpcrouter_smdnotify);
+ 	if (rc < 0)
+-		goto fail_destroy_workqueue;
++		goto fail_remove_devices;
+ 
+ 	queue_work(rpcrouter_workqueue, &work_read_data);
+ 	return 0;
+ 
++fail_remove_devices:
++	msm_rpcrouter_exit_devices();
+ fail_destroy_workqueue:
+ 	destroy_workqueue(rpcrouter_workqueue);
+ 	return rc;
+diff --git a/drivers/misc/msm_smd_rpcrouter.h b/drivers/misc/msm_smd_rpcrouter.h
+index 4d3adeb..dd915f5 100644
+--- a/drivers/misc/msm_smd_rpcrouter.h
++++ b/drivers/misc/msm_smd_rpcrouter.h
+@@ -181,4 +181,22 @@ struct msm_rpc_endpoint {
+ 	dev_t dev;
+ };
+ 
++/* shared between smd_rpcrouter*.c */
++
++int __msm_rpc_read(struct msm_rpc_endpoint *ept,
++		   struct rr_fragment **frag,
++		   unsigned len, long timeout);
++
++struct msm_rpc_endpoint *msm_rpcrouter_create_local_endpoint(dev_t dev);
++int msm_rpcrouter_destroy_local_endpoint(struct msm_rpc_endpoint *ept);
++
++int msm_rpcrouter_create_server_cdev(struct rr_server *server);
++int msm_rpcrouter_create_server_pdev(struct rr_server *server);
++
++int msm_rpcrouter_init_devices(void);
++void msm_rpcrouter_exit_devices(void);
++
++extern dev_t msm_rpcrouter_devno;
++extern struct class *msm_rpcrouter_class;
++
+ #endif /* _MSM_SMD_RPCROUTER_H */
+diff --git a/drivers/misc/msm_smd_rpcrouter_device.c b/drivers/misc/msm_smd_rpcrouter_device.c
 new file mode 100644
-index 0000000..cc21b4c
+index 0000000..840f20d
 --- /dev/null
-+++ b/drivers/misc/msm_ping_mdm_rpc_client.c
-@@ -0,0 +1,268 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++++ b/drivers/misc/msm_smd_rpcrouter_device.c
+@@ -0,0 +1,347 @@
++/* drivers/misc/msm_smd_rpcrouter_device.c
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ * Author: San Mehat <san@android.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/errno.h>
++#include <linux/cdev.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/fs.h>
++#include <linux/err.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/poll.h>
++#include <linux/platform_device.h>
++#include <linux/uaccess.h>
++#include <linux/msm_rpcrouter.h>
++
++#include <asm/byteorder.h>
++
++#include "msm_smd_rpcrouter.h"
++
++#define SAFETY_MEM_SIZE 65536
++
++/* Next minor # available for a remote server */
++static int next_minor = 1;
++
++struct class *msm_rpcrouter_class;
++dev_t msm_rpcrouter_devno;
++
++static struct cdev rpcrouter_cdev;
++static struct device *rpcrouter_device;
++
++static int rpcrouter_open(struct inode *inode, struct file *filp)
++{
++	int rc;
++	struct msm_rpc_endpoint *ept;
++
++	rc = nonseekable_open(inode, filp);
++	if (rc < 0)
++		return rc;
++
++	ept = msm_rpcrouter_create_local_endpoint(inode->i_rdev);
++	if (!ept)
++		return -ENOMEM;
++
++	filp->private_data = ept;
++	return 0;
++}
++
++static int rpcrouter_release(struct inode *inode, struct file *filp)
++{
++	struct msm_rpc_endpoint *ept;
++	ept = (struct msm_rpc_endpoint *) filp->private_data;
++
++	return msm_rpcrouter_destroy_local_endpoint(ept);
++}
++
++static ssize_t rpcrouter_read(struct file *filp, char __user *buf,
++			      size_t count, loff_t *ppos)
++{
++	struct msm_rpc_endpoint *ept;
++	struct rr_fragment *frag, *next;
++	int rc;
++
++	ept = (struct msm_rpc_endpoint *) filp->private_data;
++
++	rc = __msm_rpc_read(ept, &frag, count, -1);
++	if (rc < 0)
++		return rc;
++
++	count = rc;
++
++	while (frag != NULL) {
++		if (copy_to_user(buf, frag->data, frag->length)) {
++			printk(KERN_ERR "rpcrouter: "
++			       "could not copy all read data to user!\n");
++			rc = -EFAULT;
++		}
++		buf += frag->length;
++		next = frag->next;
++		kfree(frag);
++		frag = next;
++	}
++
++	return rc;
++}
++
++static ssize_t rpcrouter_write(struct file *filp, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	struct msm_rpc_endpoint	*ept;
++	int rc = 0;
++	void *k_buffer;
++
++	ept = (struct msm_rpc_endpoint *) filp->private_data;
++
++	/* A check for safety, this seems non-standard */
++	if (count > SAFETY_MEM_SIZE)
++		return -EINVAL;
++
++	k_buffer = kmalloc(count, GFP_KERNEL);
++	if (!k_buffer)
++		return -ENOMEM;
++
++	if (copy_from_user(k_buffer, buf, count)) {
++		rc = -EFAULT;
++		goto write_out_free;
++	}
++
++	rc = msm_rpc_write(ept, k_buffer, count);
++	if (rc < 0)
++		goto write_out_free;
++
++	rc = count;
++write_out_free:
++	kfree(k_buffer);
++	return rc;
++}
++
++static unsigned int rpcrouter_poll(struct file *filp,
++				   struct poll_table_struct *wait)
++{
++	struct msm_rpc_endpoint *ept;
++	unsigned mask = 0;
++	ept = (struct msm_rpc_endpoint *) filp->private_data;
++
++	/* If there's data already in the read queue, return POLLIN.
++	 * Else, wait for the requested amount of time, and check again.
++	 */
++
++	if (!list_empty(&ept->read_q))
++		mask |= POLLIN;
++
++	if (!mask) {
++		poll_wait(filp, &ept->wait_q, wait);
++		if (!list_empty(&ept->read_q))
++			mask |= POLLIN;
++	}
++
++	return mask;
++}
++
++static long rpcrouter_ioctl(struct file *filp, unsigned int cmd,
++			    unsigned long arg)
++{
++	struct msm_rpc_endpoint *ept;
++	int rc = 0;
++	uint32_t n;
++
++	ept = (struct msm_rpc_endpoint *) filp->private_data;
++	switch (cmd) {
++
++	case RPC_ROUTER_IOCTL_GET_VERSION:
++		n = RPC_ROUTER_VERSION_V1;
++		rc = put_user(n, (unsigned int *) arg);
++		break;
++
++	case RPC_ROUTER_IOCTL_GET_MTU:
++		/* the pacmark word reduces the actual payload
++		 * possible per message
++		 */
++		n = RPCROUTER_MSGSIZE_MAX - sizeof(uint32_t);
++		rc = put_user(n, (unsigned int *) arg);
++		break;
++
++	case RPC_ROUTER_IOCTL_GET_MINOR_VERSION:
++		n = MSM_RPC_GET_MINOR(msm_rpc_get_vers(ept));
++		rc = put_user(n, (unsigned int *)arg);
++		break;
++
++	default:
++		rc = -EINVAL;
++		break;
++	}
++
++	return rc;
++}
++
++static const struct file_operations rpcrouter_server_fops = {
++	.owner	 = THIS_MODULE,
++	.open	 = rpcrouter_open,
++	.release = rpcrouter_release,
++	.read	 = rpcrouter_read,
++	.write	 = rpcrouter_write,
++	.poll    = rpcrouter_poll,
++	.unlocked_ioctl	 = rpcrouter_ioctl,
++};
++
++static const struct file_operations rpcrouter_router_fops = {
++	.owner	 = THIS_MODULE,
++	.open	 = rpcrouter_open,
++	.release = rpcrouter_release,
++	.read	 = rpcrouter_read,
++	.write	 = rpcrouter_write,
++	.poll    = rpcrouter_poll,
++	.unlocked_ioctl = rpcrouter_ioctl,
++};
++
++int msm_rpcrouter_create_server_cdev(struct rr_server *server)
++{
++	int rc;
++	uint32_t dev_vers;
++
++	if (next_minor == RPCROUTER_MAX_REMOTE_SERVERS) {
++		printk(KERN_ERR
++		       "rpcrouter: Minor numbers exhausted - Increase "
++		       "RPCROUTER_MAX_REMOTE_SERVERS\n");
++		return -ENOBUFS;
++	}
++
++	/* Servers with bit 31 set are remote msm servers with hashkey version.
++	 * Servers with bit 31 not set are remote msm servers with
++	 * backwards compatible version type in which case the minor number
++	 * (lower 16 bits) is set to zero.
++	 *
++	 */
++	if ((server->vers & RPC_VERSION_MODE_MASK))
++		dev_vers = server->vers;
++	else
++		dev_vers = server->vers & RPC_VERSION_MAJOR_MASK;
++
++	server->device_number =
++		MKDEV(MAJOR(msm_rpcrouter_devno), next_minor++);
++
++	server->device =
++		device_create(msm_rpcrouter_class, rpcrouter_device,
++			      server->device_number, NULL, "%.8x:%.8x",
++			      server->prog, dev_vers);
++	if (IS_ERR(server->device)) {
++		printk(KERN_ERR
++		       "rpcrouter: Unable to create device (%ld)\n",
++		       PTR_ERR(server->device));
++		return PTR_ERR(server->device);;
++	}
++
++	cdev_init(&server->cdev, &rpcrouter_server_fops);
++	server->cdev.owner = THIS_MODULE;
++
++	rc = cdev_add(&server->cdev, server->device_number, 1);
++	if (rc < 0) {
++		printk(KERN_ERR
++		       "rpcrouter: Unable to add chrdev (%d)\n", rc);
++		device_destroy(msm_rpcrouter_class, server->device_number);
++		return rc;
++	}
++	return 0;
++}
++
++/* for backward compatible version type (31st bit cleared)
++ * clearing minor number (lower 16 bits) in device name
++ * is neccessary for driver binding
++ */
++int msm_rpcrouter_create_server_pdev(struct rr_server *server)
++{
++	sprintf(server->pdev_name, "rs%.8x:%.8x",
++		server->prog,
++		(server->vers & RPC_VERSION_MODE_MASK) ? server->vers :
++		(server->vers & RPC_VERSION_MAJOR_MASK));
++
++	server->p_device.base.id = -1;
++	server->p_device.base.name = server->pdev_name;
++
++	server->p_device.prog = server->prog;
++	server->p_device.vers = server->vers;
++
++	platform_device_register(&server->p_device.base);
++	return 0;
++}
++
++int msm_rpcrouter_init_devices(void)
++{
++	int rc;
++	int major;
++
++	/* Create the device nodes */
++	msm_rpcrouter_class = class_create(THIS_MODULE, "oncrpc");
++	if (IS_ERR(msm_rpcrouter_class)) {
++		rc = -ENOMEM;
++		printk(KERN_ERR
++		       "rpcrouter: failed to create oncrpc class\n");
++		goto fail;
++	}
++
++	rc = alloc_chrdev_region(&msm_rpcrouter_devno, 0,
++				 RPCROUTER_MAX_REMOTE_SERVERS + 1,
++				 "oncrpc");
++	if (rc < 0) {
++		printk(KERN_ERR
++		       "rpcrouter: Failed to alloc chardev region (%d)\n", rc);
++		goto fail_destroy_class;
++	}
++
++	major = MAJOR(msm_rpcrouter_devno);
++	rpcrouter_device = device_create(msm_rpcrouter_class, NULL,
++					 msm_rpcrouter_devno, NULL, "%.8x:%d",
++					 0, 0);
++	if (IS_ERR(rpcrouter_device)) {
++		rc = -ENOMEM;
++		goto fail_unregister_cdev_region;
++	}
++
++	cdev_init(&rpcrouter_cdev, &rpcrouter_router_fops);
++	rpcrouter_cdev.owner = THIS_MODULE;
++
++	rc = cdev_add(&rpcrouter_cdev, msm_rpcrouter_devno, 1);
++	if (rc < 0)
++		goto fail_destroy_device;
++
++	return 0;
++
++fail_destroy_device:
++	device_destroy(msm_rpcrouter_class, msm_rpcrouter_devno);
++fail_unregister_cdev_region:
++	unregister_chrdev_region(msm_rpcrouter_devno,
++				 RPCROUTER_MAX_REMOTE_SERVERS + 1);
++fail_destroy_class:
++	class_destroy(msm_rpcrouter_class);
++fail:
++	return rc;
++}
++
++void msm_rpcrouter_exit_devices(void)
++{
++	cdev_del(&rpcrouter_cdev);
++	device_destroy(msm_rpcrouter_class, msm_rpcrouter_devno);
++	unregister_chrdev_region(msm_rpcrouter_devno,
++				 RPCROUTER_MAX_REMOTE_SERVERS + 1);
++	class_destroy(msm_rpcrouter_class);
++}
++
+diff --git a/include/linux/msm_rpcrouter.h b/include/linux/msm_rpcrouter.h
+new file mode 100644
+index 0000000..e6749ac
+--- /dev/null
++++ b/include/linux/msm_rpcrouter.h
+@@ -0,0 +1,36 @@
++/* include/linux/msm_rpcrouter.h
++ *
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ * Author: San Mehat <san@android.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ *
 + */
++#ifndef __LINUX_MSM_RPCROUTER_H
++#define __LINUX_MSM_RPCROUTER_H
 +
-+/*
-+ * SMD RPC PING MODEM Driver
-+ */
++#include <linux/types.h>
++#include <linux/ioctl.h>
 +
-+#define pr_fmt(fmt) "%s: " fmt, __func__
++#define RPC_ROUTER_VERSION_V1 0x00010000
 +
-+#include <linux/kernel.h>
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/uaccess.h>
++#define RPC_ROUTER_IOCTL_MAGIC (0xC1)
 +
-+#include "msm_rpcrouter.h"
++#define RPC_ROUTER_IOCTL_GET_VERSION \
++	_IOR(RPC_ROUTER_IOCTL_MAGIC, 0, unsigned int)
 +
-+#define PING_MDM_PROG  0x30000081
-+#define PING_MDM_VERS  0x00010001
++#define RPC_ROUTER_IOCTL_GET_MTU \
++	_IOR(RPC_ROUTER_IOCTL_MAGIC, 1, unsigned int)
 +
-+#define PING_MDM_NULL_PROC               0
-+#define PING_MDM_REGISTER_DATA_PROC      4
++#define RPC_ROUTER_IOCTL_GET_MINOR_VERSION \
++	_IOW(RPC_ROUTER_IOCTL_MAGIC, 2, unsigned int)
 +
-+#define PING_MDM_DATA_CB_PROC            1
-+#define PING_MDM_CB_PROC                 2
-+
-+static DEFINE_MUTEX(ping_mdm_lock);
-+
-+struct ping_mdm_data_arg {
-+	uint32_t *data;
-+	uint32_t size;
-+};
-+
-+struct ping_mdm_data_ret {
-+	uint32_t result;
-+};
-+
-+static int ping_mdm_data_register(struct msm_rpc_endpoint *ep,
-+				  struct ping_mdm_data_arg *arg,
-+				  struct ping_mdm_data_ret *ret)
-+{
-+	void *req, *reply;
-+	uint32_t *tmp;
-+	uint32_t req_size, reply_size;
-+	int rc, i;
-+
-+	mutex_lock(&ping_mdm_lock);
-+	req_size =  sizeof(struct rpc_request_hdr) +
-+			(arg->size * sizeof(uint32_t)) +
-+			(2 * sizeof(uint32_t));
-+	req = kzalloc(req_size, GFP_KERNEL);
-+	if (!req) {
-+		mutex_unlock(&ping_mdm_lock);
-+		return -ENOMEM;
-+	}
-+
-+	reply_size = sizeof(struct rpc_reply_hdr) + sizeof(uint32_t);
-+	reply = kzalloc(reply_size, GFP_KERNEL);
-+	if (!reply) {
-+		kfree(req);
-+		mutex_unlock(&ping_mdm_lock);
-+		return -ENOMEM;
-+	}
-+
-+	tmp = req + sizeof(struct rpc_request_hdr);
-+	*(tmp++) = cpu_to_be32(arg->size);
-+
-+	for (i = 0; i < arg->size; i++)
-+		*(tmp++) = cpu_to_be32(arg->data[i]);
-+
-+	*(tmp++) = cpu_to_be32(arg->size);
-+
-+	rc = msm_rpc_call_reply(ep, PING_MDM_REGISTER_DATA_PROC,
-+				req, req_size, reply, reply_size, -1);
-+	tmp = reply + sizeof(struct rpc_reply_hdr);
-+	if (rc > 0) {
-+		rc = 0;
-+		ret->result = be32_to_cpu(*tmp);
-+	}
-+
-+	mutex_unlock(&ping_mdm_lock);
-+	kfree(req);
-+	kfree(reply);
-+	return rc;
-+}
-+
-+static int ping_mdm_null(struct msm_rpc_endpoint *ep)
-+{
-+	int rc;
-+	struct rpc_request_hdr req;
-+
-+	mutex_lock(&ping_mdm_lock);
-+	rc = msm_rpc_call(ep, PING_MDM_NULL_PROC, &req, sizeof(req), -1);
-+	mutex_unlock(&ping_mdm_lock);
-+	return rc;
-+}
-+
-+static int ping_mdm_close(struct msm_rpc_endpoint *ep)
-+{
-+	mutex_lock(&ping_mdm_lock);
-+	msm_rpc_close(ep);
-+	mutex_unlock(&ping_mdm_lock);
-+
-+	pr_info("disconnected from remote ping server\n");
-+	return 0;
-+}
-+
-+static struct msm_rpc_endpoint *ping_mdm_init(void)
-+{
-+	struct msm_rpc_endpoint *ep;
-+
-+	mutex_lock(&ping_mdm_lock);
-+	ep = msm_rpc_connect(PING_MDM_PROG, PING_MDM_VERS, 0);
-+	mutex_unlock(&ping_mdm_lock);
-+	return ep;
-+}
-+
-+#define PING_TEST_DATA_REG_BUF_SIZE  64
-+#define PING_TEST_CMD_BUF_SIZE       64
-+
-+static struct dentry *dent;
-+static int32_t test_res;
-+struct msm_rpc_endpoint *endpoint;
-+
-+static int ping_mdm_data_register_test(void)
-+{
-+	int i, rc = 0;
-+	uint32_t my_data[PING_TEST_DATA_REG_BUF_SIZE];
-+	uint32_t my_sum = 0;
-+	struct ping_mdm_data_arg data_arg;
-+	struct ping_mdm_data_ret data_ret;
-+
-+	for (i = 0; i < PING_TEST_DATA_REG_BUF_SIZE; i++) {
-+		my_data[i] = (42 + i);
-+		my_sum ^= (42 + i);
-+	}
-+
-+	data_arg.data = my_data;
-+	data_arg.size = PING_TEST_DATA_REG_BUF_SIZE;
-+	data_ret.result = 0;
-+
-+	rc = ping_mdm_data_register(endpoint, &data_arg, &data_ret);
-+	if (rc)
-+		return rc;
-+
-+	if (my_sum != data_ret.result) {
-+		pr_err("sum mismatch %d %d\n", my_sum, data_ret.result);
-+		rc = -1;
-+	}
-+
-+	return rc;
-+}
-+
-+static int ping_mdm_null_test(void)
-+{
-+	return ping_mdm_null(endpoint);
-+}
-+
-+static int ping_test_release(struct inode *ip, struct file *fp)
-+{
-+	return ping_mdm_close(endpoint);
-+}
-+
-+static int ping_test_open(struct inode *ip, struct file *fp)
-+{
-+	int rc = 0;
-+
-+	endpoint = ping_mdm_init();
-+	if (IS_ERR(endpoint)) {
-+		pr_err("couldn't open ping client\n");
-+		rc = PTR_ERR(endpoint);
-+	} else
-+		pr_info("connected to remote ping server\n");
-+
-+	return rc;
-+}
-+
-+static ssize_t ping_test_read(struct file *fp, char __user *buf,
-+			size_t count, loff_t *pos)
-+{
-+	char _buf[16];
-+
-+	snprintf(_buf, sizeof(_buf), "%i\n", test_res);
-+
-+	return simple_read_from_buffer(buf, count, pos, _buf, strlen(_buf));
-+}
-+
-+static ssize_t ping_test_write(struct file *fp, const char __user *buf,
-+			 size_t count, loff_t *pos)
-+{
-+	unsigned char cmd[PING_TEST_CMD_BUF_SIZE];
-+	int len;
-+
-+	if (count < 1)
-+		return 0;
-+
-+	len = count > (PING_TEST_CMD_BUF_SIZE - 1) ?
-+			(PING_TEST_CMD_BUF_SIZE - 1) : count;
-+
-+	if (copy_from_user(cmd, buf, len))
-+		return -EFAULT;
-+
-+	cmd[len] = 0;
-+
-+	/* lazy */
-+	if (cmd[len-1] == '\n') {
-+		cmd[len-1] = 0;
-+		len--;
-+	}
-+
-+	if (!strncmp(cmd, "null_test", PING_TEST_CMD_BUF_SIZE))
-+		test_res = ping_mdm_null_test();
-+	else if (!strncmp(cmd, "data_reg_test", PING_TEST_CMD_BUF_SIZE))
-+		test_res = ping_mdm_data_register_test();
-+	else
-+		test_res = -EINVAL;
-+
-+	if (test_res >= 0) {
-+		test_res = 0;
-+		pr_info("test %s passed\n", cmd);
-+	} else
-+		pr_info("test %s failed %d\n", cmd, test_res);
-+
-+	return count;
-+}
-+
-+static const struct file_operations debug_ops = {
-+	.owner = THIS_MODULE,
-+	.open = ping_test_open,
-+	.read = ping_test_read,
-+	.write = ping_test_write,
-+	.release = ping_test_release,
-+};
-+
-+static void __exit ping_test_exit(void)
-+{
-+	debugfs_remove(dent);
-+}
-+
-+static int __init ping_test_init(void)
-+{
-+	dent = debugfs_create_file("ping_mdm", 0444, 0, NULL, &debug_ops);
-+	test_res = 0;
-+	return 0;
-+}
-+
-+module_init(ping_test_init);
-+module_exit(ping_test_exit);
-+
-+MODULE_DESCRIPTION("PING TEST Driver");
-+MODULE_LICENSE("GPL v2");
++#endif /* __LINUX_MSM_RPCROUTER_H */
 -- 
 1.5.6.3
 
