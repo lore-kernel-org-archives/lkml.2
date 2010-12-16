@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab0LPGCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 01:02:46 -0500
-Received: from unix.wroclaw.pl ([94.23.28.62]:53096 "EHLO unix.wroclaw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab0LPGCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 01:02:45 -0500
-Date: Thu, 16 Dec 2010 07:02:36 +0100
-From: Mariusz Kozlowski <mk@lab.zgora.pl>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mariusz Kozlowski <mk@lab.zgora.pl>, Dipankar Sarma <dipankar@in.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rculist: fix borked __list_for_each_rcu() macro
-Message-ID: <20101216060236.GB4826@mako-laptop>
-References: <1292451072-5095-1-git-send-email-mk@lab.zgora.pl>
- <20101215232005.GB6595@linux.vnet.ibm.com>
+	id S1752706Ab0LPGCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 01:02:55 -0500
+Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:37891 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab0LPGCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 01:02:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=eoJ
+	iK+AWCzR0oBUcrlJoIweCE9En1gp0qHnS4qw/aEdKF8jeaVt371pzoD2F+qwCKvM
+	52bvL5YFay0gnrp1i2ffmrMXF0jkrd2AEmWkbLxQkSdU2/J4BqjNxc1uIGkMQwi3
+	nSOtPQoSE7PPrFCOiAXiFcLiWQOpJEBEni4cll6w=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.3.4, 1.6.6.3 and others
+From: Junio C Hamano <gitster@pobox.com>
+Date: Wed, 15 Dec 2010 22:02:35 -0800
+Message-ID: <7v8vzqntl0.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101215232005.GB6595@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on unix.wroclaw.pl
-	Spam=No score=-1.4 bayes=0.5 autolearn=disabled
-	Spam Tests:
-	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
+X-Pobox-Relay-ID: 27699A1A-08DA-11E0-8124-C4BE9B774584-77302942!a-pb-sasl-sd.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 03:20:05PM -0800, Paul E. McKenney wrote:
-> On Wed, Dec 15, 2010 at 11:11:12PM +0100, Mariusz Kozlowski wrote:
-> > This restores parentheses blance.
-> 
-> Good catch, queued!!!
-> 
-> This does not actually appear to be in use anywhere in the kernel any
-> more, so I queued this for 2.6.38 rather than in the 2.6.37 urgent queue.
-> So, just out of curiosity, how did you find this one?
+The latest maintenance release Git 1.7.3.4 is available at the
+usual places:
 
-Some years ago I wrote a dumb script that walks trees of () and {}.
-It catches unbalanced trees. It's dumb enough to fail with #ifdef etc,
-but most of the time it does its job. It reaches unreachable code
-and unused one too.
+  http://www.kernel.org/pub/software/scm/git/
 
-> Hmmm...  Maybe we should just delete __list_for_each_rcu.  ;-)
-> 
-> 							Thanx, Paul
-> 
-> > Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
-> > ---
-> >  include/linux/rculist.h |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-> > index f31ef61..70d3ba5 100644
-> > --- a/include/linux/rculist.h
-> > +++ b/include/linux/rculist.h
-> > @@ -244,7 +244,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
-> >  #define __list_for_each_rcu(pos, head) \
-> >  	for (pos = rcu_dereference_raw(list_next_rcu(head)); \
-> >  		pos != (head); \
-> > -		pos = rcu_dereference_raw(list_next_rcu((pos)))
-> > +		pos = rcu_dereference_raw(list_next_rcu(pos)))
-> > 
-> >  /**
-> >   * list_for_each_entry_rcu	-	iterate over rcu list of given type
-> > -- 
-> > 1.7.0.4
-> > 
+  git-1.7.3.4.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.3.4.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.3.4.tar.{gz,bz2}		(preformatted docs)
 
--- 
-Mariusz Kozlowski
+The RPM binary packages for a few architectures are found in:
+
+  RPMS/$arch/git-*-1.7.3.4-1.fc13.$arch.rpm	(RPM)
+
+Among many fixes since v1.7.3.3, it contains a fix to a recently
+discovered XSS vulnerability in Gitweb (CVE 2010-3906).  A backport
+to an earlier maintenance track 1.6.6.3 is available (replace 1.7.3.4 with
+1.6.6.3 above).
+
+The Gitweb fix has also been backported to maintenance tracks of other
+earlier releases (1.7.2.5, 1.7.1.4, 1.7.0.9, 1.6.5.9, and 1.6.4.5) and are
+available from the main repository and shortly will be available from its
+mirrors:
+
+  git://git.kernel.org/pub/scm/git/git.git/
+  git://repo.or.cz/alt-git.git/
+  git://git-core.git.sourceforge.net/gitroot/git-core/git-core/
+  git://github.com/git/git.git/
+
+----------------------------------------------------------------
+
+Git v1.7.3.4 Release Notes
+==========================
+
+Fixes since v1.7.3.3
+--------------------
+
+ * Smart HTTP transport used to incorrectly retry redirected POST
+   request with GET request.
+
+ * "git apply" did not correctly handle patches that only change modes
+   if told to apply while stripping leading paths with -p option.
+
+ * "git apply" can deal with patches with timezone formatted with a
+   colon between the hours and minutes part (e.g. "-08:00" instead of
+   "-0800").
+
+ * "git checkout" removed an untracked file "foo" from the working
+   tree when switching to a branch that contains a tracked path
+   "foo/bar".  Prevent this, just like the case where the conflicting
+   path were "foo" (c752e7f..7980872d).
+
+ * "git cherry-pick" or "git revert" refused to work when a path that
+   would be modified by the operation was stat-dirty without a real
+   difference in the contents of the file.
+
+ * "git diff --check" reported an incorrect line number for added
+   blank lines at the end of file.
+
+ * "git imap-send" failed to build under NO_OPENSSL.
+
+ * Setting log.decorate configuration variable to "0" or "1" to mean
+   "false" or "true" did not work.
+
+ * "git push" over dumb HTTP protocol did not work against WebDAV
+   servers that did not terminate a collection name with a slash.
+
+ * "git tag -v" did not work with GPG signatures in rfc1991 mode.
+
+ * The post-receive-email sample hook was accidentally broken in 1.7.3.3
+   update.
+
+ * "gitweb" can sometimes be tricked into parrotting a filename argument
+   given in a request without properly quoting.
+
+Other minor fixes and documentation updates are also included.
