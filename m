@@ -1,322 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab0LPKAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:00:16 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52065 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989Ab0LPKAK (ORCPT
+	id S1754201Ab0LPKAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:00:23 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37357 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab0LPKAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:00:10 -0500
+	Thu, 16 Dec 2010 05:00:15 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-mm <linux-mm@vger.kernel.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         SystemTap <systemtap@sources.redhat.com>,
-        Linux-mm <linux-mm@vger.kernel.org>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 16 Dec 2010 15:27:24 +0530
-Message-Id: <20101216095724.23751.75992.sendpatchset@localhost6.localdomain6>
+Date: Thu, 16 Dec 2010 15:27:35 +0530
+Message-Id: <20101216095735.23751.20379.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
 References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-Subject: [RFC] [PATCH 2.6.37-rc5-tip 1/20]  1: mm: Move replace_page() / write_protect_page() to mm/memory.c
+Subject: [RFC] [PATCH 2.6.37-rc5-tip 2/20]  2: X86 specific breakpoint definitions.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-User bkpt will use background page replacement approach to insert/delete
-breakpoints. Background page replacement approach will be based on
-replace_page and write_protect_page.  Now replace_page() and
-write_protect_page loses their static attribute.
+Provides definitions for the breakpoint instruction and x86 specific
+uprobe info structure.
 
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- include/linux/mm.h |    4 ++
- mm/ksm.c           |  114 -------------------------------------------------
- mm/memory.c        |  122 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 126 insertions(+), 114 deletions(-)
+ arch/x86/Kconfig               |    3 +++
+ arch/x86/include/asm/uprobes.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/uprobes.h
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 721f451..24f8bb0 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -874,6 +874,10 @@ void account_page_writeback(struct page *page);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
-+int replace_page(struct vm_area_struct *vma, struct page *page,
-+					struct page *kpage, pte_t orig_pte);
-+int write_protect_page(struct vm_area_struct *vma, struct page *page,
-+						      pte_t *orig_pte);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b6fccb0..bcbbc52 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -239,6 +239,9 @@ config ARCH_CPU_PROBE_RELEASE
+ 	def_bool y
+ 	depends on HOTPLUG_CPU
  
- /* Is the vma a continuation of the stack vma above it? */
- static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 43bc893..0169c6b 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -694,120 +694,6 @@ static inline int pages_identical(struct page *page1, struct page *page2)
- 	return !memcmp_pages(page1, page2);
- }
++config ARCH_SUPPORTS_UPROBES
++	def_bool y
++
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
  
--static int write_protect_page(struct vm_area_struct *vma, struct page *page,
--			      pte_t *orig_pte)
--{
--	struct mm_struct *mm = vma->vm_mm;
--	unsigned long addr;
--	pte_t *ptep;
--	spinlock_t *ptl;
--	int swapped;
--	int err = -EFAULT;
--
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		goto out;
--
--	ptep = page_check_address(page, mm, addr, &ptl, 0);
--	if (!ptep)
--		goto out;
--
--	if (pte_write(*ptep) || pte_dirty(*ptep)) {
--		pte_t entry;
--
--		swapped = PageSwapCache(page);
--		flush_cache_page(vma, addr, page_to_pfn(page));
--		/*
--		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
--		 * take any lock, therefore the check that we are going to make
--		 * with the pagecount against the mapcount is racey and
--		 * O_DIRECT can happen right after the check.
--		 * So we clear the pte and flush the tlb before the check
--		 * this assure us that no O_DIRECT can happen after the check
--		 * or in the middle of the check.
--		 */
--		entry = ptep_clear_flush(vma, addr, ptep);
--		/*
--		 * Check that no O_DIRECT or similar I/O is in progress on the
--		 * page
--		 */
--		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
--			set_pte_at(mm, addr, ptep, entry);
--			goto out_unlock;
--		}
--		if (pte_dirty(entry))
--			set_page_dirty(page);
--		entry = pte_mkclean(pte_wrprotect(entry));
--		set_pte_at_notify(mm, addr, ptep, entry);
--	}
--	*orig_pte = *ptep;
--	err = 0;
--
--out_unlock:
--	pte_unmap_unlock(ptep, ptl);
--out:
--	return err;
--}
--
--/**
-- * replace_page - replace page in vma by new ksm page
-- * @vma:      vma that holds the pte pointing to page
-- * @page:     the page we are replacing by kpage
-- * @kpage:    the ksm page we replace page by
-- * @orig_pte: the original value of the pte
-- *
-- * Returns 0 on success, -EFAULT on failure.
-- */
--static int replace_page(struct vm_area_struct *vma, struct page *page,
--			struct page *kpage, pte_t orig_pte)
--{
--	struct mm_struct *mm = vma->vm_mm;
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *ptep;
--	spinlock_t *ptl;
--	unsigned long addr;
--	int err = -EFAULT;
--
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		goto out;
--
--	pgd = pgd_offset(mm, addr);
--	if (!pgd_present(*pgd))
--		goto out;
--
--	pud = pud_offset(pgd, addr);
--	if (!pud_present(*pud))
--		goto out;
--
--	pmd = pmd_offset(pud, addr);
--	if (!pmd_present(*pmd))
--		goto out;
--
--	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
--	if (!pte_same(*ptep, orig_pte)) {
--		pte_unmap_unlock(ptep, ptl);
--		goto out;
--	}
--
--	get_page(kpage);
--	page_add_anon_rmap(kpage, vma, addr);
--
--	flush_cache_page(vma, addr, pte_pfn(*ptep));
--	ptep_clear_flush(vma, addr, ptep);
--	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
--
--	page_remove_rmap(page);
--	put_page(page);
--
--	pte_unmap_unlock(ptep, ptl);
--	err = 0;
--out:
--	return err;
--}
--
- /*
-  * try_to_merge_one_page - take two pages and merge them into one
-  * @vma: the vma that holds the pte pointing to page
-diff --git a/mm/memory.c b/mm/memory.c
-index 02e48aa..28f79bb 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2591,6 +2591,128 @@ void unmap_mapping_range(struct address_space *mapping,
- }
- EXPORT_SYMBOL(unmap_mapping_range);
- 
-+/**
-+ * replace_page - replace page in vma by new ksm page
-+ * @vma:      vma that holds the pte pointing to page
-+ * @page:     the page we are replacing by kpage
-+ * @kpage:    the ksm page we replace page by
-+ * @orig_pte: the original value of the pte
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+new file mode 100644
+index 0000000..0e8ad5d
+--- /dev/null
++++ b/arch/x86/include/asm/uprobes.h
+@@ -0,0 +1,40 @@
++#ifndef _ASM_UPROBES_H
++#define _ASM_UPROBES_H
++/*
++ * Userspace Probes (UProbes) for x86
 + *
-+ * Returns 0 on success, -EFAULT on failure.
-+ */
-+int replace_page(struct vm_area_struct *vma, struct page *page,
-+			struct page *kpage, pte_t orig_pte)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *ptep;
-+	spinlock_t *ptl;
-+	unsigned long addr;
-+	int err = -EFAULT;
-+
-+	addr = page_address_in_vma(page, vma);
-+	if (addr == -EFAULT)
-+		goto out;
-+
-+	pgd = pgd_offset(mm, addr);
-+	if (!pgd_present(*pgd))
-+		goto out;
-+
-+	pud = pud_offset(pgd, addr);
-+	if (!pud_present(*pud))
-+		goto out;
-+
-+	pmd = pmd_offset(pud, addr);
-+	if (!pmd_present(*pmd))
-+		goto out;
-+
-+	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	if (!pte_same(*ptep, orig_pte)) {
-+		pte_unmap_unlock(ptep, ptl);
-+		goto out;
-+	}
-+
-+	get_page(kpage);
-+	page_add_anon_rmap(kpage, vma, addr);
-+
-+	flush_cache_page(vma, addr, pte_pfn(*ptep));
-+	ptep_clear_flush(vma, addr, ptep);
-+	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
-+
-+	page_remove_rmap(page);
-+	put_page(page);
-+
-+	pte_unmap_unlock(ptep, ptl);
-+	err = 0;
-+out:
-+	return err;
-+}
-+
-+/**
-+ * write_protect_page - mark the page readonly
-+ * @vma:      vma that holds the page we want to mark
-+ * @page:     page that needs to be marked readonly
-+ * @orig_pte: pte for the protected page.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * Returns 0 on success, -EFAULT on failure.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2008-2010
++ * Authors:
++ *	Srikar Dronamraju
++ *	Jim Keniston
 + */
-+int write_protect_page(struct vm_area_struct *vma, struct page *page,
-+						      pte_t *orig_pte)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	unsigned long addr;
-+	pte_t *ptep;
-+	spinlock_t *ptl;
-+	int swapped;
-+	int err = -EFAULT;
 +
-+	addr = page_address_in_vma(page, vma);
-+	if (addr == -EFAULT)
-+		goto out;
++typedef u8 uprobe_opcode_t;
++#define MAX_UINSN_BYTES 16
++#define UPROBES_XOL_SLOT_BYTES (MAX_UINSN_BYTES)
 +
-+	ptep = page_check_address(page, mm, addr, &ptl, 0);
-+	if (!ptep)
-+		goto out;
++#define UPROBES_BKPT_INSN 0xcc
++#define UPROBES_BKPT_INSN_SIZE 1
 +
-+	if (pte_write(*ptep) || pte_dirty(*ptep)) {
-+		pte_t entry;
-+
-+		swapped = PageSwapCache(page);
-+		flush_cache_page(vma, addr, page_to_pfn(page));
-+		/*
-+		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
-+		 * take any lock, therefore the check that we are going to make
-+		 * with the pagecount against the mapcount is racey and
-+		 * O_DIRECT can happen right after the check.
-+		 * So we clear the pte and flush the tlb before the check
-+		 * this assure us that no O_DIRECT can happen after the check
-+		 * or in the middle of the check.
-+		 */
-+		entry = ptep_clear_flush(vma, addr, ptep);
-+		/*
-+		 * Check that no O_DIRECT or similar I/O is in progress on the
-+		 * page
-+		 */
-+		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
-+			set_pte_at(mm, addr, ptep, entry);
-+			goto out_unlock;
-+		}
-+		if (pte_dirty(entry))
-+			set_page_dirty(page);
-+		entry = pte_mkclean(pte_wrprotect(entry));
-+		set_pte_at_notify(mm, addr, ptep, entry);
-+	}
-+	*orig_pte = *ptep;
-+	err = 0;
-+
-+out_unlock:
-+	pte_unmap_unlock(ptep, ptl);
-+out:
-+	return err;
-+}
-+
- int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
- {
- 	struct address_space *mapping = inode->i_mapping;
++#ifdef CONFIG_X86_64
++struct uprobe_arch_info {
++	unsigned long rip_rela_target_address;
++};
++#else
++struct uprobe_arch_info {};
++#endif
++#endif	/* _ASM_UPROBES_H */
