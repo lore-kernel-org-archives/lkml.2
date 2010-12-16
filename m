@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab0LPP3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 10:29:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35186 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756458Ab0LPP3Q convert rfc822-to-8bit (ORCPT
+	id S1756509Ab0LPP3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 10:29:51 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:52581 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756469Ab0LPP3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 10:29:16 -0500
-Subject: Re: [RFC][PATCH 3/5] sched: Change the ttwu success details
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-In-Reply-To: <20101216152351.GB1687@nowhere>
-References: <20101216145602.899838254@chello.nl>
-	 <20101216150920.866959114@chello.nl>  <20101216152351.GB1687@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Dec 2010 16:27:55 +0100
-Message-ID: <1292513275.6803.4603.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 16 Dec 2010 10:29:49 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] fs/9p: Fix the return error on default acl removal
+Date: Thu, 16 Dec 2010 20:59:43 +0530
+Message-Id: <1292513383-18629-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 16:23 +0100, Frederic Weisbecker wrote:
+If we don't have default ACL, then trying to remove
+default acl on a file should return 0.
 
-> > -	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-> > +	TP_printk("comm=%s pid=%d prio=%d target_cpu=%03d",
-> >  		  __entry->comm, __entry->pid, __entry->prio,
-> > -		  __entry->success, __entry->target_cpu)
-> > +		  __entry->target_cpu)
-> 
-> Note we'll need to fix some perf scripts after that. And also perf sched,
-> probably perf timechart and so on...
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/acl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Do any of those actually use the success parameter? If not, then me
-removing it shouldn't break those tools since they're supposed to parse
-the format stuff and not notice it missing ;-)
+diff --git a/fs/9p/acl.c b/fs/9p/acl.c
+index 12d6023..c9c3376 100644
+--- a/fs/9p/acl.c
++++ b/fs/9p/acl.c
+@@ -362,7 +362,7 @@ static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
+ 	case ACL_TYPE_DEFAULT:
+ 		name = POSIX_ACL_XATTR_DEFAULT;
+ 		if (!S_ISDIR(inode->i_mode)) {
+-			retval = -EINVAL;
++			retval = acl ? -EINVAL : 0;
+ 			goto err_out;
+ 		}
+ 		break;
+-- 
+1.7.1
+
