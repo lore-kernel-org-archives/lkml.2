@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378Ab0LPATr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 19:19:47 -0500
-Received: from leo.clearchain.com ([199.73.29.74]:33962 "EHLO
-	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab0LPATq (ORCPT
+	id S1751576Ab0LPA01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 19:26:27 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:35407 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab0LPA0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 19:19:46 -0500
-Date: Thu, 16 Dec 2010 10:19:32 +1000
-From: Peter Hutterer <peter.hutterer@who-t.net>
-To: Henrik Rydberg <rydberg@bitmath.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] Alternative approach to MT_TOOL_ENVELOPE
-Message-ID: <20101216001931.GB4952@salty.local>
-References: <4D0897F3.7040500@bitmath.org>
+	Wed, 15 Dec 2010 19:26:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Uc8oaJfDZkT0fK1i4EwJdPaKBxU5RQXsWr1LybRDjsz3PDJLPCk3zW6Ab1PTszSEIg
+         Oqjt65DkWskaHeFMxL6Q==
+Date: Wed, 15 Dec 2010 16:26:11 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Miklos Szeredi <miklos@szeredi.hu>
+cc: akpm@linux-foundation.org, robert@swiecki.net,
+        lkml20101129@newton.leun.net, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: kernel BUG at mm/truncate.c:475!
+In-Reply-To: <E1PSpQw-0005s5-QW@pomaz-ex.szeredi.hu>
+Message-ID: <alpine.LSU.2.00.1012151542480.7987@tigran.mtv.corp.google.com>
+References: <20101130194945.58962c44@xenia.leun.net> <alpine.LSU.2.00.1011301453090.12516@tigran.mtv.corp.google.com> <E1PNjsI-0005Bk-NB@pomaz-ex.szeredi.hu> <20101201124528.6809c539@xenia.leun.net> <E1PNqO1-0005px-9h@pomaz-ex.szeredi.hu>
+ <20101202084159.6bff7355@xenia.leun.net> <20101202091552.4a63f717@xenia.leun.net> <E1PO5gh-00079U-Ma@pomaz-ex.szeredi.hu> <20101202115722.1c00afd5@xenia.leun.net> <20101203085350.55f94057@xenia.leun.net> <E1PPaIw-0004pW-Mk@pomaz-ex.szeredi.hu>
+ <20101206204303.1de6277b@xenia.leun.net> <E1PRQDn-0007jZ-5S@pomaz-ex.szeredi.hu> <20101213142059.643f8080.akpm@linux-foundation.org> <E1PSSO8-0003sy-Vr@pomaz-ex.szeredi.hu> <alpine.LSU.2.00.1012142020030.12693@tigran.mtv.corp.google.com>
+ <E1PSpQw-0005s5-QW@pomaz-ex.szeredi.hu>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0897F3.7040500@bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Thu, 16 Dec 2010 10:49:37 +1030 (CST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 11:26:59AM +0100, Henrik Rydberg wrote:
-> >> Ping has touched upon this subject as well, from the pen & touch perspective.
-> >> Generally, some ABS axes are actually enumerations, for which we have no
-> >> direct abstraction. If we had a way to declare the used values for such
-> >> enumerations, it would resolve these and possibly other issues.
+On Wed, 15 Dec 2010, Miklos Szeredi wrote:
+> On Tue, 14 Dec 2010, Hugh Dickins wrote:
+> > I'd feel rather happier about it if I thought it would also fix
+> > Robert's kernel BUG at /build/buildd/linux-2.6.35/mm/filemap.c:128!
+> > but I've still not found time to explain that one.
 > 
-> > I think that presence of pen/touch can be detected by having
-> > BTN_TOOL_PEN and BTN_TOOL_FINGER. However in this case the tool is
-> > finger, so I do not think we should introduce BTN_TOOL_ENVELOPE. Maybe
-> > this is another case where we should employ the proposed device flags?
-> 
-> Yes. Having something like INPUT_QUIRK_SEMI_MT might be enough, and we could
-> drop the whole MT_TOOL_ENVELOPE circus. Chase, Peter, Chris, would you be
-> comfortable with such a solution?
+> Me neither, all unmap_mapping_range() calls from shmfs are either with
+> i_mutex or from evict_inode.
 
-sounds good to me, thanks.
+And the page returned by shmem_fault is already locked.
 
-Cheers,
-  Peter
+> 
+> Hmm, is there anything preventing remap_file_pages() installing a pte
+> at an address that unmap_mapping_range() has already processed?
 
-> > Anyway, it looks like we have a few concerns with current
-> > MT_TOOL_ENVELOPE so I want to rewind my 'next' branch.
-> 
-> Yep. Should I also take the opportunity to sync from -rc1 instead, and fold the
-> cleanup patches into the appropriate places?
-> 
-> Thanks,
-> Henrik
-> 
+Interesting line of thought: nothing I think, but isn't that okay?
+
+Though its zap_pte can take out present ptes pointing to actual pages,
+all populate_range ever installs is non-present pte_file entries: and a
+fault on one of those goes through the same checks as in a linear mapping.
+
+(I thought I was going to find an inconsistency with zap_pte_range there,
+but no: truncation does not remove pte_file entries beyond end of file,
+I remember now thinking that we need to keep SIGBUS-beyond-EOF on them,
+instead of letting truncation silently revert those offsets to linear.)
+
+Or am I missing something?
+(Well, we know I am, because I've not explained Robert's BUG.)
+
+Hugh
