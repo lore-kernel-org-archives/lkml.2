@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0LPKnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:43:21 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36123 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755068Ab0LPKnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:43:17 -0500
-Date: Thu, 16 Dec 2010 10:42:45 GMT
-From: tip-bot for Dan Carpenter <error27@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, error27@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        error27@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20101024195041.GT5985@bicker>
-References: <20101024195041.GT5985@bicker>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix off by one in perf_swevent_init()
-Message-ID: <tip-ce677831a4abd0f9f957c90ac6f6a0d0472bafb4@git.kernel.org>
-Git-Commit-ID: ce677831a4abd0f9f957c90ac6f6a0d0472bafb4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755384Ab0LPKqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:46:31 -0500
+Received: from mail-yw0-f56.google.com ([209.85.213.56]:54326 "EHLO
+	mail-yw0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab0LPKq3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 05:46:29 -0500
+X-Greylist: delayed 10127 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2010 05:46:29 EST
 MIME-Version: 1.0
+Date: Wed, 15 Dec 2010 23:57:41 -0800 (PST)
+In-Reply-To: <g09gC-5Db-9@gated-at.bofh.it>
+X-IP: 60.251.136.127
+References: <g06LM-1y8-17@gated-at.bofh.it> <g096W-5pB-17@gated-at.bofh.it> <g09gC-5Db-9@gated-at.bofh.it>
+User-Agent: G2/1.0
+X-HTTP-Via: 1.1 RD-PROXY2
+X-HTTP-UserAgent: Mozilla/5.0 (X11; U; Linux i686; zh-TW; rv:1.9.2.13)
+ Gecko/20101206 Ubuntu/8.04 (hardy) Firefox/3.6.13,gzip(gfe)
+Message-ID: <0d7b441c-a702-4bce-8711-8c0cedfb5d8a@c17g2000prm.googlegroups.com>
+Subject: Re: include/linux: Add missing include / fix build failure
+From: Axel <axel.lin@gmail.com>
+To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 10:42:47 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce677831a4abd0f9f957c90ac6f6a0d0472bafb4
-Gitweb:     http://git.kernel.org/tip/ce677831a4abd0f9f957c90ac6f6a0d0472bafb4
-Author:     Dan Carpenter <error27@gmail.com>
-AuthorDate: Sun, 24 Oct 2010 21:50:42 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 16 Dec 2010 11:14:31 +0100
+On 12月16日, 上午7時50分, Peter Hüwe <PeterHu...@gmx.de> wrote:
+> From: Peter Huewe <peterhu...@gmx.de>
+>
+> This patch fixes a build failure[1-2] by adding the missing asm/memory.h
+> include needed for arch_is_coherent().
+>
+> Error message:
+> In file included from include/linux/list_bl.h:5,
+>                  from include/linux/rculist_bl.h:7,
+>                  from include/linux/dcache.h:7,
+>                  from include/linux/fs.h:381,
+>                  from arch/arm/mm/mmap.c:4:
+> include/linux/bit_spinlock.h: In function 'bit_spin_unlock':
+> include/linux/bit_spinlock.h:61: error: implicit declaration of function
+> 'arch_is_coherent'
+>
+> KernelVersion: linux-next-20101215
+> Used configs: hackkit_defconfig (arm), ep93xx_defconfig (arm)
+>
+> References:
+> [1]http://kisskb.ellerman.id.au/kisskb/buildresult/3651495/
+> [2]http://kisskb.ellerman.id.au/kisskb/buildresult/3651425/
+>
+> Signed-off-by: Peter Huewe <peterhu...@gmx.de>
+> ---
+> v2:
+> moved additional information in the commit message.
+>
+>  include/linux/bit_spinlock.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
+> index e612575..053fad7 100644
+> --- a/include/linux/bit_spinlock.h
+> +++ b/include/linux/bit_spinlock.h
+> @@ -4,6 +4,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/preempt.h>
+>  #include <asm/atomic.h>
+> +#include <asm/memory.h>
+>
+>  /*
+>   *  bit-based spin_lock()
+> --
+> 1.7.2.2
+>
+> --
 
-perf: Fix off by one in perf_swevent_init()
+hi Peter,
+After apply the patch,
+I got below error message while
+# make i386_defconfig;make
 
-The perf_swevent_enabled[] array has PERF_COUNT_SW_MAX elements.
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CC      init/main.o
+In file included from include/linux/list_bl.h:5,
+                 from include/linux/rculist_bl.h:7,
+                 from include/linux/dcache.h:7,
+                 from include/linux/fs.h:381,
+                 from include/linux/proc_fs.h:5,
+                 from init/main.c:14:
+include/linux/bit_spinlock.h:7:24: error: asm/memory.h: No such file
+or directory
+make[1]: *** [init/main.o] Error 1
+make: *** [init] Error 2
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20101024195041.GT5985@bicker>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I personally fix it by below patch now, but I'm not so sure if this is
+a good way to fix it.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 7b87017..2870fee 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4719,7 +4719,7 @@ static int perf_swevent_init(struct perf_event *event)
- 		break;
- 	}
- 
--	if (event_id > PERF_COUNT_SW_MAX)
-+	if (event_id >= PERF_COUNT_SW_MAX)
- 		return -ENOENT;
- 
- 	if (!event->parent) {
+git diff arch/arm/include/asm/system.h
+diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/
+system.h
+index ec4327a..3222ab8 100644
+--- a/arch/arm/include/asm/system.h
++++ b/arch/arm/include/asm/system.h
+@@ -155,6 +155,7 @@ extern unsigned int user_debug;
+ #define rmb()          dmb()
+ #define wmb()          mb()
+ #else
++#include <asm/memory.h>
+ #define mb()   do { if (arch_is_coherent()) dmb(); else barrier(); }
+while (0)
+ #define rmb()  do { if (arch_is_coherent()) dmb(); else barrier(); }
+while (0)
+ #define wmb()  do { if (arch_is_coherent()) dmb(); else barrier(); }
+while (0)
+
