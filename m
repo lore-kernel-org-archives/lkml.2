@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab0LPN4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 08:56:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35639 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab0LPN4g (ORCPT
+	id S1756095Ab0LPN6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 08:58:04 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:54999 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756061Ab0LPN6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 08:56:36 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=MUIVesnmWfVD_5JfckYA:9 a=9ReAfj7O9ntN0-1n4xEA:7 a=oyZPAtjUZ1C5L7qT9RWGuX0vWlMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
- task can take the lock and reduce unrelated boosting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <4D096806.7000807@cn.fujitsu.com>
-References: <4D07330A.7020600@cn.fujitsu.com>
-	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
-	 <4D083900.1050801@cn.fujitsu.com>
-	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
-	 <4D0877D2.10000@cn.fujitsu.com>
-	 <1292450002.5015.1903.camel@gandalf.stny.rr.com>
-	 <4D096806.7000807@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 16 Dec 2010 08:56:32 -0500
-Message-ID: <1292507792.5015.1908.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 16 Dec 2010 08:58:01 -0500
+Message-ID: <4D0A1AD5.1070200@euromail.se>
+Date: Thu, 16 Dec 2010 14:57:41 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Peter Hutterer <peter.hutterer@who-t.net>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2] input: Introduce device information ioctl
+References: <1292440807-18502-1-git-send-email-rydberg@euromail.se> <20101216002941.GC4952@salty.local> <20101216004358.GA22066@core.coreip.homeip.net>
+In-Reply-To: <20101216004358.GA22066@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PTEL1-0005pY-6B.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PTEL1-0005pY-6B 977865f0199c511be905dec494c0d2a7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 09:14 +0800, Lai Jiangshan wrote:
+>>>  /*
 
-> It has called try_to_take_rt_mutex() in __rt_mutex_slowlock(),
-> when timeout or got signal, it returns from __rt_mutex_slowlock()
-> with lock->wait_lock still held, and then calls remove_waiter(),
+>>> + * Device properties and quirks
+>>> + */
+>>> +
+>>> +#define INPUT_PROP_POINTER		0x00	/* needs a pointer */
+>>> +#define INPUT_PROP_DIRECT		0x01	/* direct object manipulation */
+>>
+>> fwiw, I think the common term for these is "direct input devices", at least
+>> that's how a lot of the research literature refers to them. Might be good to
+>> use the same term.
+>>
+>> either way, not sure about this one.  I've worked with devices that were
+>> indirect by nature but used directly. e.g. the magic touchpad could quite
+>> easily be used as direct input device with an top-down projector. the
+>> decision to use it as an indirect device is a UI decision.
+>> Likewise, some mountable direct-touch touchscreens can be used indirectly if
+>> the touchscreen isn't mounted straight on the display. This is very much a
+>> setup-specific property and I'm not sure about the value of this
+>> information.
 > 
-> so we don't need to call try_to_take_rt_mutex() in remove_waiter().
-> It is strange that remove_waiter() do some "require lock" work.
-
-Hmm yeah, I need to remember all the details here. There were so many
-corner cases that had to be dealt with, but we have also
-modified/simplified the code over time (hopefully your patch will add to
-the simplification) that my worries may no longer exist, and the code in
--rt (needed for spinlock -> mutex) may have legacy code there too.
-
-I'll spend more time analyzing this and make sure we in deed do not need
-to worry about races between wakeups and lock releasing.
-
-Thanks,
-
--- Steve
+> All of these "props" would have no reflection on the event stream
+> generated by the device, and exist solely for the benefits of userspace
+> consumers to help them set up the device automatically and interpret the
+> data appropriately. As such, if someone uses touchscreen as a tablet, I
+> believe userspace should allow it, but at the price of manual setup.
+> 
+> If we start seeing cuch devices we could consider EVIOCSPROPS so
+> infrastructure (udev) could adjust the properties so that upper levels
+> (X) can still use the data to set up devices properly.
+> 
+> What do you think?
+> 
 
 
+I am not 100% convinced. If other things like touchscreen orientation would fit
+into that flow as well, then I'd say yes. But if there will always be a
+difference between a default device setting and a system-wide device setting,
+then it seems reasonable to handle this in userspace.
+
+Henrik
