@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab0LPF4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 00:56:44 -0500
-Received: from unix.wroclaw.pl ([94.23.28.62]:52512 "EHLO unix.wroclaw.pl"
+	id S1752482Ab0LPF4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 00:56:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27590 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751238Ab0LPF4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 00:56:43 -0500
-Date: Thu, 16 Dec 2010 06:56:37 +0100
-From: Mariusz Kozlowski <mk@lab.zgora.pl>
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-Cc: Mariusz Kozlowski <mk@lab.zgora.pl>, Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] btrfs: fix memory leak on error path in btrfs_get_acl()
-Message-ID: <20101216055637.GA4826@mako-laptop>
-References: <1292450256-4544-1-git-send-email-mk@lab.zgora.pl>
- <AANLkTi=Zz8eQTS+ja59eB9-F1aE2QP5DEVCwqBP50j8K@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=Zz8eQTS+ja59eB9-F1aE2QP5DEVCwqBP50j8K@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on unix.wroclaw.pl
-	Spam=No score=-1.4 bayes=0.5 autolearn=disabled
-	Spam Tests:
-	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	id S1752299Ab0LPF4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 00:56:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,353,1288594800"; 
+   d="scan'208";a="584209560"
+Subject: Re: [patch 2/3] add new macros to make percpu readmostly section
+ correctly align
+From: Shaohua Li <shaohua.li@intel.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Tejun Heo <htejun@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+In-Reply-To: <20101216054620.GA3241@merkur.ravnborg.org>
+References: <1291255347.12777.116.camel@sli10-conroe>
+	 <4D0243DD.3090507@gmail.com> <1292200886.2323.15.camel@sli10-conroe>
+	 <4D05EBA4.60202@gmail.com> <1292288924.2323.458.camel@sli10-conroe>
+	 <4D073FA9.9020801@gmail.com> <1292378268.2323.464.camel@sli10-conroe>
+	 <4D08CBF4.6040102@gmail.com> <1292460817.2323.465.camel@sli10-conroe>
+	 <20101216054620.GA3241@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Dec 2010 13:56:40 +0800
+Message-ID: <1292479000.2323.468.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 11:49:39PM +0100, Miguel Ojeda wrote:
-> On Wed, Dec 15, 2010 at 10:57 PM, Mariusz Kozlowski <mk@lab.zgora.pl> wrote:
-> > If posix_acl_from_xattr() fails we leak memory stored in 'value'.
-> >
-> > Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
-> > ---
-> >  fs/btrfs/acl.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/fs/btrfs/acl.c b/fs/btrfs/acl.c
-> > index 2222d16..11c9561 100644
-> > --- a/fs/btrfs/acl.c
-> > +++ b/fs/btrfs/acl.c
-> > @@ -61,6 +61,7 @@ static struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
-> >                if (size > 0) {
-> >                        acl = posix_acl_from_xattr(value, size);
-> >                        if (IS_ERR(acl))
-> > +                               kfree(value);
+On Thu, 2010-12-16 at 13:46 +0800, Sam Ravnborg wrote:
+> On Thu, Dec 16, 2010 at 08:53:37AM +0800, Shaohua Li wrote:
+> > On Wed, 2010-12-15 at 22:08 +0800, Tejun Heo wrote:
+> > > Hello,
+> > > 
+> > > On 12/15/2010 02:57 AM, Shaohua Li wrote:
+> > > > How about this one?
+> > > 
+> > > Much better.  :-)
+> > > 
+> > > > +#ifdef INTERNODE_CACHE_BYTES
+> > > > +#define INTERNODE_CACHEALIGNED						\
+> > > > +	. = ALIGN(INTERNODE_CACHE_BYTES);
+> > > > +#else
+> > > > +#define INTERNODE_CACHEALIGNED
+> > > > +#endif
+> > > 
+> > > Yeah, this looks good.
+> > > 
+> > > > Index: linux/arch/x86/kernel/vmlinux.lds.S
+> > > > ===================================================================
+> > > > --- linux.orig/arch/x86/kernel/vmlinux.lds.S	2010-12-15 09:37:01.000000000 +0800
+> > > > +++ linux/arch/x86/kernel/vmlinux.lds.S	2010-12-15 09:37:06.000000000 +0800
+> > > > @@ -20,11 +20,11 @@
+> > > >  #define LOAD_OFFSET __START_KERNEL_map
+> > > >  #endif
+> > > >  
+> > > > -#include <asm-generic/vmlinux.lds.h>
+> > > >  #include <asm/asm-offsets.h>
+> > > >  #include <asm/thread_info.h>
+> > > >  #include <asm/page_types.h>
+> > > >  #include <asm/cache.h>
+> > > > +#include <asm-generic/vmlinux.lds.h>
+> > > >  #include <asm/boot.h>
+> > > 
+> > > Why do we need this chunk?
+> > the cache size is defined in cache.h, so I need move vmlinux.lds.h after
+> > cache.h
 > 
-> Be careful with the evil { }
+> The right fix is to move the inclusion of cache.h to asm-generic/vmlinux.lds.h.
+> A quick audit only found sparc that failed to guard non assembler stuff.
+with this, we need check every arch, at least doing a compile. I'm
+afraid I can't, sorry.
 
-Dang. Too much python recently i guess. Will send v2 shortly.
-
-Thanks.
-
-> >                                return acl;
-> >                        set_cached_acl(inode, type, acl);
-> >                }
-> > --
-> > 1.7.0.4
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-
--- 
-Mariusz Kozlowski
