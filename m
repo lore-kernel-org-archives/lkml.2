@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab0LPS0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 13:26:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab0LPS0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 13:26:01 -0500
-Date: Thu, 16 Dec 2010 13:25:11 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: peterz@infradead.org, hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu
-Cc: mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Message-Id: <cover.1292522251.git.jbaron@redhat.com>
-Subject: [PATCH/RFC 0/2] jump label: simplify API
+	id S1757276Ab0LPS03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 13:26:29 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33533 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757263Ab0LPS0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 13:26:25 -0500
+Date: Thu, 16 Dec 2010 19:26:20 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] of: platform: introduce of_probe_platform_driver()
+Message-ID: <20101216182620.GA28712@pengutronix.de>
+References: <1292519639-21859-1-git-send-email-w.sang@pengutronix.de> <1292519639-21859-2-git-send-email-w.sang@pengutronix.de> <AANLkTimxAGVkQF24YgDt+TxjbXvW+iCNJhqVLwXO6FXD@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <AANLkTimxAGVkQF24YgDt+TxjbXvW+iCNJhqVLwXO6FXD@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-The first patch uses the storage space of the jump label key address
-as a pointer into the update table. In this way, we can find all
-the addresses that need to be updated without hashing.
-
-The second patch introduces:
-
-static __always_inline bool unlikely_switch(struct jump_label_key *key);
-
-instead of the old JUMP_LABEL(key, label) macro.
-
-In this way, jump labels become really easy to use:
-
-Define:
-
-	struct jump_label_key jump_key;
-
-Can be used as:
-
-	if (unlikely_switch(&jump_key))
-		do unlikely code
-
-enable/disale via:
-
-	jump_label_enable(&jump_key);
-	jump_label_disable(&jump_key);
-
-that's it!
-
-Thanks to H. Peter Anvin for suggesting the simpler 'unlikely_switch()'
-function.
-
-thanks,
-
--Jason
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
-Jason Baron (2):
-  jump label: make enable/disable o(1)
-  jump label: introduce unlikely_switch()
+> 2- of_platform_driver is deprecated.  Drivers should be converted to
+> use platform_driver directly.
 
- arch/x86/include/asm/jump_label.h |   22 +++--
- arch/x86/kernel/jump_label.c      |    2 +-
- include/linux/dynamic_debug.h     |   24 ++----
- include/linux/jump_label.h        |   72 ++++++++++-------
- include/linux/jump_label_ref.h    |   41 ++++++----
- include/linux/perf_event.h        |   25 +++---
- include/linux/tracepoint.h        |    8 +-
- kernel/jump_label.c               |  159 ++++++++++++++++++++++++++++++-------
- kernel/perf_event.c               |    4 +-
- kernel/tracepoint.c               |   22 ++---
- 10 files changed, 243 insertions(+), 136 deletions(-)
+Ouch, I really should have remembered that. /me grabs a brown paper bag. So=
+rry
+for the noise, dunno what carried me away.
 
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk0KWcwACgkQD27XaX1/VRuRqACeIKQaLjKS2jbJo6e2Ysknb3G0
+G5oAoI2I/2nK+mzxbFWzcLm1fyIOolh4
+=3Lo0
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
