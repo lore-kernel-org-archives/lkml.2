@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab0LPDMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 22:12:45 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:57677 "EHLO
+	id S1756004Ab0LPDMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 22:12:55 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:34052 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab0LPDMn (ORCPT
+	with ESMTP id S1755987Ab0LPDMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 22:12:43 -0500
+	Wed, 15 Dec 2010 22:12:51 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:
 	content-disposition:x-system-of-record;
-	b=dSY3gFJ/OZMNlrD4bVgYtFU0swnQGyX175ou71KJE/gq27UmjaCmZupzMCrBr3iPA
-	10rflNm/bk9bZ6eD0mNnA==
-Message-Id: <20101216031038.159704378@google.com>
+	b=YmZOP2vST30l26jr4a4Qi3U8B8ACLHZd1AeYMgA7PEfOulM+bjsIqfdrg/QBCX0W9
+	5+YS4Ld1+ONfOpM6tyd4g==
+Message-Id: <20101216031038.067028969@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 15 Dec 2010 19:10:18 -0800
+Date: Wed, 15 Dec 2010 19:10:17 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [patch 2/2] sched: charge unaccounted run-time on entity re-weight
+Subject: [patch 1/2] sched: move periodic share updates to entity_tick()
 References: <20101216031016.186364650@google.com>
-Content-Disposition: inline; filename=update_on_reweight.patch
+Content-Disposition: inline; filename=shares_on_tick.patch
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Galbraith reported poor interactivity[*] when the new shares distribution 
-code was combined with autogroups.
+Long running entities that do not block (dequeue) require periodic updates to
+maintain accurate share values.  (Note: group entities with several threads are
+quite likely to be non-blocking in many circumstances).
 
-The root cause turns out to be a mis-ordering of accounting accrued execution
-time and shares updates.  Since update_curr() is issued hierarchically,
-updating the parent entity weights to reflect child enqueue/dequeue results in
-the parent's unaccounted execution time then being accrued (vs vruntime) at the
-new weight as opposed to the weight present at accumulation.
+By virtue of being long-running however, we will see entity ticks (otherwise 
+the required update occurs in dequeue/put and we are done).  Thus we can move 
+the detection (and associated work) for these updates into the periodic path.
 
-While this doesn't have much effect on processes with timeslices that cross a
-tick, it is particularly problematic for an interactive process (e.g. Xorg)
-which incurs many (tiny) timeslices.  In this scenario almost all updates are
-at dequeue which can result in significant fairness perturbation (especially if
-it is the only thread, resulting in potential {tg->shares, MIN_SHARES}
-transitions).
-
-Correct this by ensuring unaccounted time is accumulated prior to manipulating
-an entity's weight.
-
-[*] http://xkcd.com/619/ is perversely Nostradamian here.
+This restores the 'atomicity' of update_curr() with respect to accounting.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 
 ---
- kernel/sched_fair.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ kernel/sched_fair.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
 Index: tip3/kernel/sched_fair.c
 ===================================================================
 --- tip3.orig/kernel/sched_fair.c
 +++ tip3/kernel/sched_fair.c
-@@ -767,8 +767,12 @@ static void update_cfs_load(struct cfs_r
- static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
- 			    unsigned long weight)
- {
--	if (se->on_rq)
-+	if (se->on_rq) {
-+		/* commit outstanding execution time */
-+		if (cfs_rq->curr == se)
-+			update_curr(cfs_rq);
- 		account_entity_dequeue(cfs_rq, se);
+@@ -563,12 +563,10 @@ __update_curr(struct cfs_rq *cfs_rq, str
+ 	update_min_vruntime(cfs_rq);
+ 
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+-	cfs_rq->load_unacc_exec_time += delta_exec;
+-	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
+-		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq, 0);
+-	}
++	if (!entity_is_task(curr))
++		group_cfs_rq(curr)->load_unacc_exec_time += delta_exec;
+ #endif
++
+ }
+ 
+ static void update_curr(struct cfs_rq *cfs_rq)
+@@ -809,6 +807,20 @@ static void update_cfs_shares(struct cfs
+ 
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
++
++static void update_entity_shares_tick(struct sched_entity *se)
++{
++	struct cfs_rq *cfs_rq;
++
++	if (entity_is_task(se))
++		return;
++
++	cfs_rq = group_cfs_rq(se);
++	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
++		update_cfs_load(cfs_rq, 0);
++		update_cfs_shares(cfs_rq, 0);
 +	}
++}
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ {
+@@ -1133,6 +1145,13 @@ entity_tick(struct cfs_rq *cfs_rq, struc
+ 	 */
+ 	update_curr(cfs_rq);
  
- 	update_load_set(&se->load, weight);
- 
++#if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
++	/*
++	 * Update share accounting for long-running entities.
++	 */
++	update_entity_shares_tick(curr);
++#endif
++
+ #ifdef CONFIG_SCHED_HRTICK
+ 	/*
+ 	 * queued ticks are scheduled to match the slice, so don't bother
 
 
