@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab0LPBNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 20:13:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56168 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab0LPBNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 20:13:50 -0500
-Message-ID: <4D096806.7000807@cn.fujitsu.com>
-Date: Thu, 16 Dec 2010 09:14:46 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
- task can take the lock and reduce unrelated boosting
-References: <4D07330A.7020600@cn.fujitsu.com>	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>	 <4D083900.1050801@cn.fujitsu.com>	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>	 <4D0877D2.10000@cn.fujitsu.com> <1292450002.5015.1903.camel@gandalf.stny.rr.com>
-In-Reply-To: <1292450002.5015.1903.camel@gandalf.stny.rr.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-16 09:13:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-16 09:13:48,
-	Serialize complete at 2010-12-16 09:13:48
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754579Ab0LPBO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 20:14:29 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36708 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641Ab0LPBO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 20:14:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,351,1288594800"; 
+   d="scan'208";a="584156488"
+Date: Wed, 15 Dec 2010 17:14:25 -0800
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "Tang, Xinan" <xinan.tang@intel.com>,
+        Junchang Wang <junchangwang@gmail.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
+Message-ID: <20101216011425.GA17446@linux-os.sc.intel.com>
+References: <cover.1292405004.git.fenghua.yu@intel.com> <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com> <1292446118.2603.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1292446118.2603.11.camel@edumazet-laptop>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 05:53 AM, Steven Rostedt wrote:
-> On Wed, 2010-12-15 at 16:09 +0800, Lai Jiangshan wrote:
+On Wed, Dec 15, 2010 at 12:48:38PM -0800, Eric Dumazet wrote:
+> Le mercredi 15 décembre 2010 à 12:02 -0800, Fenghua Yu a écrit :
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> > 
+> > Multiqueue and multicore provide packet parallel processing methodology.
+> > Current kernel and network drivers place one queue on one core. But the higher
+> > level socket doesn't know multiqueue. Current socket only can receive or send
+> > packets through one network interfaces. In some cases e.g. multi bpf filter
+> > tcpdump and snort, a lot of contentions come from socket operations like ring
+> > buffer. Even if the application itself has been fully parallelized and run on
+> > multi-core systems and NIC handlex tx/rx in multiqueue in parallel, network layer
+> > and NIC device driver assemble packets to a single, serialized queue. Thus the
+> > application cannot actually run in parallel in high speed.
+> > 
+> > To break the serialized packets assembling bottleneck in kernel, one way is to
+> > allow socket to know multiqueue associated with a NIC interface. So each socket
+> > can handle tx/rx in one queue in parallel.
+> > 
+> > Kernel provides several interfaces by which sockets can be bound to rx/tx queues.
+> > User applications can configure socket by providing several sockets that each
+> > bound to a single queue, applications can get data from kernel in parallel. After
+> > that, competitions mentioned above can be removed.
+> > 
+> > With this patch, the user-space receiving speed on a Intel SR1690 server with
+> > a single L5640 6-core processor and a single ixgbe-based NIC goes from 0.73Mpps
+> > to 4.20Mpps, nearly a linear speedup. A Intel SR1625 server two E5530 4-core
+> > processors and a single ixgbe-based NIC goes from 0.80Mpps to 4.6Mpps. We noticed
+> > the performance penalty comes from NUMA memory allocation.
+> > 
 > 
+> ??? please elaborate on these NUMA memory allocations. This should be OK
+> after commit 564824b0c52c34692d (net: allocate skbs on local node)
 > 
->>  /*
->> @@ -543,11 +491,13 @@ static void remove_waiter(struct rt_mutex *lock,
->>  
->>  	raw_spin_lock_irqsave(&current->pi_lock, flags);
->>  	plist_del(&waiter->list_entry, &lock->wait_list);
->> -	waiter->task = NULL;
->>  	current->pi_blocked_on = NULL;
->>  	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
->>  
->> -	if (first && owner != current) {
->> +	if (!owner)
->> +		return;
->> +
->> +	if (first) {
+> > This patch set provides kernel ioctl interfaces for user space. User space can
+> > either directly call the interfaces or libpcap interfaces can be further provided
+> > on the top of the kernel ioctl interfaces.
 > 
-> This is a bug. There's a small chance that the mutex timed out, and at
-> that same time, the owner gave up the lock and woke this task up. Which
-> means this task is the new owner of the lock iff it was the
-> rt_mutex_top_waiter().
-> 
-> The fix is to do this:
-> 
-> 
-> 	if (!owner) {
-> 		if (first) {
-> 			ret = try_to_take_rt_mutex();
-> 			BUG_ON(!ret);
-> 		}
-> 		return first;
-> 	}
-> 
-> 	if (first) {
-> 
-> We need to make remove_waiter return 1 if it took the lock and 0 if it
-> did not, so it can pass this information back to the caller.
-> 
-> 	if (unlikely(ret)) {
-> 		if (remove_waiter(...))
-> 			ret = 0;
-> 	}
-> 
+> So, say we have 8 queues, you want libpcap opens 8 sockets, and bind
+> them to each queue. Add a bpf filter to each one of them. This seems not
+> generic way, because it wont work for an UDP socket for example.
 
-It has called try_to_take_rt_mutex() in __rt_mutex_slowlock(),
-when timeout or got signal, it returns from __rt_mutex_slowlock()
-with lock->wait_lock still held, and then calls remove_waiter(),
+This only works for AF_PACKET like this patch set shows.
 
-so we don't need to call try_to_take_rt_mutex() in remove_waiter().
-It is strange that remove_waiter() do some "require lock" work.
+> And you already can do this using SKF_AD_QUEUE (added in commit
+> d19742fb)
 
-Thanks,
-Lai
+SKF_AD_QUEUE doesn't know number of rx queues. Thus user application can't
+specify right SKF_AD_QUEUE.
+
+SKF_AD_QUEUE only works for rx. There is no queue bound interfaces for tx.
+
+I can change the patch set to use SKF_AD_QUEUE by removing the set rx queue
+interface and still keep interfaces of
+#define SIOGNUMRXQUEUE 0x8939  /* Get number of rx queues. */
+#define SIOGNUMTXQUEUE 0x893A  /* Get number of tx queues. */
+#define SIOSTXQUEUEMAPPING     0x893C  /* Set tx queue mapping. */
+#define SIOGRXQUEUEMAPPING     0x893D  /* Get rx queue mapping. */
+#define SIOGTXQUEUEMAPPING     0x893E  /* Get tx queue mapping. */
+
+> 
+> Also your AF_PACKET patch only address mmaped sockets.
+> 
+The new patch set will use SKF_AD_QUEUE for rx. So it won't be limited to mmaped
+sockets.
 
