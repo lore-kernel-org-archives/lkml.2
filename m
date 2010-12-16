@@ -1,197 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab0LPKBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:01:54 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39356 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab0LPKBv (ORCPT
+	id S1754503Ab0LPKCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:02:05 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44831 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab0LPKCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:01:51 -0500
+	Thu, 16 Dec 2010 05:02:01 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-mm <linux-mm@vger.kernel.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         SystemTap <systemtap@sources.redhat.com>,
-        Linux-mm <linux-mm@vger.kernel.org>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 16 Dec 2010 15:29:12 +0530
-Message-Id: <20101216095912.23751.63180.sendpatchset@localhost6.localdomain6>
+Date: Thu, 16 Dec 2010 15:29:26 +0530
+Message-Id: <20101216095926.23751.9405.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
 References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-Subject: [RFC] [PATCH 2.6.37-rc5-tip 10/20] 10: uprobes: task specific information.
+Subject: [RFC] [PATCH 2.6.37-rc5-tip 11/20] 11: uprobes: slot allocation for uprobes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Uprobes needs to maintain some task specific information include if a
-task is currently uprobed, the currently handing uprobe, any arch
-specific information (for example to handle rip relative instructions),
-the per-task slot where the original instruction is copied to before
-single-stepping.
+Every task is allocated a fixed slot. When a probe is hit, the original
+instruction corresponding to the probe hit is copied to per-task fixed
+slot. Currently we allocate one page of slots for each mm. Bitmaps are
+used to know which slots are free. Each slot is made of 128 bytes so
+that its cache aligned.
 
-Provides routines to create/manage and free the task specific
-information.
+TODO: On massively threaded processes (or if a huge number of processes
+share the same mm), there is a possiblilty of running out of slots.
+One alternative could be to extend the slots as when slots are required.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- include/linux/sched.h   |    3 +++
- include/linux/uprobes.h |   25 +++++++++++++++++++++++++
- kernel/fork.c           |    4 ++++
- kernel/uprobes.c        |   37 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 69 insertions(+), 0 deletions(-)
+ include/linux/mm_types.h |    4 +
+ include/linux/uprobes.h  |   21 ++++
+ kernel/fork.c            |    4 +
+ kernel/uprobes.c         |  233 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 262 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f4e90b6..5a3ebea 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1523,6 +1523,9 @@ struct task_struct {
- 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
- 	} memcg_batch;
- #endif
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index af2b55d..2bc97cc 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -12,6 +12,9 @@
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+ #include <linux/page-debug-flags.h>
 +#ifdef CONFIG_UPROBES
-+	struct uprobe_task *utask;
++#include <linux/uprobes.h>
 +#endif
+ #include <asm/page.h>
+ #include <asm/mmu.h>
+ 
+@@ -316,6 +319,7 @@ struct mm_struct {
+ 	unsigned long uprobes_vaddr;
+ 	struct list_head uprobes_list;
+ 	atomic_t uprobes_count;
++	struct uprobes_xol_area *uprobes_xol_area;
+ #endif
  };
  
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
 diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 0d4f5e3..14a4fce 100644
+index 14a4fce..a631c42 100644
 --- a/include/linux/uprobes.h
 +++ b/include/linux/uprobes.h
-@@ -26,12 +26,14 @@
- #include <linux/rbtree.h>
- #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
- #include <asm/uprobes.h>
-+struct uprobe_task_arch_info;	/* arch specific task info */
- #else
- /*
-  * ARCH_SUPPORTS_UPROBES has not be defined.
-  */
- typedef u8 uprobe_opcode_t;
- struct uprobe_arch_info	{};		/* arch specific info*/
-+struct uprobe_task_arch_info {};	/* arch specific task info */
- 
- /* Post-execution fixups.  Some architectures may define others. */
- #endif /* CONFIG_ARCH_SUPPORTS_UPROBES */
-@@ -85,6 +87,27 @@ struct uprobe {
- 	u8			insn[MAX_UINSN_BYTES];	/* orig instruction */
+@@ -109,6 +109,25 @@ struct uprobe_task {
  };
  
-+enum uprobe_task_state {
-+	UTASK_RUNNING,
-+	UTASK_BP_HIT,
-+	UTASK_SSTEP
+ /*
++ * Every thread gets its own slot.  Once it's assigned a slot, it
++ * keeps that slot until the thread exits. Only definite number
++ * of slots are allocated.
++ */
++
++struct uprobes_xol_area {
++	spinlock_t slot_lock;	/* protects bitmap and slot (de)allocation*/
++	unsigned long *bitmap;	/* 0 = free slot */
++	struct page *page;
++
++	/*
++	 * We keep the vma's vm_start rather than a pointer to the vma
++	 * itself.  The probed process or a naughty kernel module could make
++	 * the vma go away, and we must handle that reasonably gracefully.
++	 */
++	unsigned long vaddr;		/* Page(s) of instruction slots */
 +};
 +
 +/*
-+ * uprobe_utask -- not a user-visible struct.
-+ * Corresponds to a thread in a probed process.
-+ * Guarded by uproc->mutex.
-+ */
-+struct uprobe_task {
-+	unsigned long xol_vaddr;
-+	unsigned long vaddr;
-+
-+	enum uprobe_task_state state;
-+	struct uprobe_task_arch_info tskinfo;
-+
-+	struct uprobe *active_uprobe;
-+};
-+
- /*
   * Most architectures can use the default versions of @read_opcode(),
   * @set_bkpt(), @set_orig_insn(), and @is_bkpt_insn();
-@@ -108,6 +131,7 @@ extern int register_uprobe(struct inode *inode, unsigned long offset,
- 				struct uprobe_consumer *consumer);
- extern void unregister_uprobe(struct inode *inode, unsigned long offset,
- 				struct uprobe_consumer *consumer);
-+extern void uprobe_free_utask(struct task_struct *tsk);
- 
+  *
+@@ -136,6 +155,7 @@ extern void uprobe_free_utask(struct task_struct *tsk);
  struct vm_area_struct;
  extern void uprobe_mmap(struct vm_area_struct *vma);
-@@ -126,6 +150,7 @@ static inline void uprobe_dup_mmap(struct mm_struct *old_mm,
- 		struct mm_struct *mm)
- {
+ extern void uprobe_dup_mmap(struct mm_struct *old_mm, struct mm_struct *mm);
++extern void uprobes_free_xol_area(struct mm_struct *mm);
+ #else /* CONFIG_UPROBES is not defined */
+ static inline int register_uprobe(struct inode *inode, unsigned long offset,
+ 				struct uprobe_consumer *consumer)
+@@ -152,5 +172,6 @@ static inline void uprobe_dup_mmap(struct mm_struct *old_mm,
  }
-+static inline void uprobe_free_utask(struct task_struct *tsk) {}
+ static inline void uprobe_free_utask(struct task_struct *tsk) {}
  static inline void uprobe_mmap(struct vm_area_struct *vma) { }
++static inline void uprobes_free_xol_area(struct mm_struct *mm) {}
  #endif /* CONFIG_UPROBES */
  #endif	/* _LINUX_UPROBES_H */
 diff --git a/kernel/fork.c b/kernel/fork.c
-index b135d1b..ae99239 100644
+index ae99239..76538fd 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
-@@ -191,6 +191,7 @@ void __put_task_struct(struct task_struct *tsk)
- 	delayacct_tsk_free(tsk);
- 	put_signal_struct(tsk->signal);
+@@ -545,6 +545,7 @@ void mmput(struct mm_struct *mm)
+ 	might_sleep();
  
-+	uprobe_free_utask(tsk);
- 	if (!profile_handoff_task(tsk))
- 		free_task(tsk);
- }
-@@ -1202,6 +1203,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	INIT_LIST_HEAD(&p->pi_state_list);
- 	p->pi_state_cache = NULL;
- #endif
+ 	if (atomic_dec_and_test(&mm->mm_users)) {
++		uprobes_free_xol_area(mm);
+ 		exit_aio(mm);
+ 		ksm_exit(mm);
+ 		exit_mmap(mm);
+@@ -670,6 +671,9 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ 	memcpy(mm, oldmm, sizeof(*mm));
+ 
+ 	/* Initializing for Swap token stuff */
 +#ifdef CONFIG_UPROBES
-+	p->utask = NULL;
++	mm->uprobes_xol_area = NULL;
 +#endif
- 	/*
- 	 * sigaltstack should be cleared when sharing the same VM
- 	 */
+ 	mm->token_priority = 0;
+ 	mm->last_interval = 0;
+ 
 diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 31867a6..f182fe6 100644
+index f182fe6..09e36f6 100644
 --- a/kernel/uprobes.c
 +++ b/kernel/uprobes.c
-@@ -745,3 +745,40 @@ void uprobe_mmap(struct vm_area_struct *vma)
+@@ -32,6 +32,11 @@
+ #include <linux/slab.h>
+ #include <linux/uprobes.h>
+ #include <linux/rmap.h> /* needed for anon_vma_prepare */
++#include <linux/mman.h>	/* needed for PROT_EXEC, MAP_PRIVATE */
++#include <linux/file.h> /* needed for fput() */
++
++#define UINSNS_PER_PAGE	(PAGE_SIZE/UPROBES_XOL_SLOT_BYTES)
++#define MAX_UPROBES_XOL_SLOTS UINSNS_PER_PAGE
+ 
+ /**
+  * uprobes_read_vm - Read @nbytes at @vaddr from @tsk into @kbuf.
+@@ -353,11 +358,22 @@ static void put_uprobe(struct uprobe *uprobe)
+ 		kfree(uprobe);
+ }
+ 
++/*
++ * valid_vma: Verify if the specified vma is an executable vma,
++ * but not an XOL vma.
++ *	- Return 1 if the specified virtual address is in an
++ *	  executable vma, but not in an XOL vma.
++ */
+ static int valid_vma(struct vm_area_struct *vma)
+ {
++	struct uprobes_xol_area *area = current->mm->uprobes_xol_area;
++
+ 	if (!vma->vm_file)
+ 		return 0;
+ 
++	if (area && (area->vaddr == vma->vm_start))
++			return 0;
++
+ 	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
+ 						(VM_READ|VM_EXEC))
+ 		return 1;
+@@ -745,6 +761,221 @@ void uprobe_mmap(struct vm_area_struct *vma)
  	down_write(&mm->mmap_sem);
  }
  
-+/*
-+ * Called with no locks held.
-+ * Called in context of a exiting or a exec-ing thread.
-+ */
-+void uprobe_free_utask(struct task_struct *tsk)
-+{
-+	struct uprobe_task *utask = tsk->utask;
++/* Slot allocation for XOL */
 +
-+	if (!utask)
++static int xol_add_vma(struct uprobes_xol_area *area)
++{
++	struct vm_area_struct *vma;
++	struct mm_struct *mm;
++	struct file *file;
++	unsigned long addr;
++	int ret = -ENOMEM;
++
++	mm = get_task_mm(current);
++	if (!mm)
++		return -ESRCH;
++
++	down_write(&mm->mmap_sem);
++	if (mm->uprobes_xol_area) {
++		ret = -EALREADY;
++		goto fail;
++	}
++
++	/*
++	 * Find the end of the top mapping and skip a page.
++	 * If there is no space for PAGE_SIZE above
++	 * that, mmap will ignore our address hint.
++	 *
++	 * We allocate a "fake" unlinked shmem file because
++	 * anonymous memory might not be granted execute
++	 * permission when the selinux security hooks have
++	 * their way.
++	 */
++	vma = rb_entry(rb_last(&mm->mm_rb), struct vm_area_struct, vm_rb);
++	addr = vma->vm_end + PAGE_SIZE;
++	file = shmem_file_setup("uprobes/xol", PAGE_SIZE, VM_NORESERVE);
++	if (!file) {
++		printk(KERN_ERR "uprobes_xol failed to setup shmem_file "
++			"while allocating vma for pid/tgid %d/%d for "
++			"single-stepping out of line.\n",
++			current->pid, current->tgid);
++		goto fail;
++	}
++	addr = do_mmap_pgoff(file, addr, PAGE_SIZE, PROT_EXEC, MAP_PRIVATE, 0);
++	fput(file);
++
++	if (addr & ~PAGE_MASK) {
++		printk(KERN_ERR "uprobes_xol failed to allocate a vma for "
++				"pid/tgid %d/%d for single-stepping out of "
++				"line.\n", current->pid, current->tgid);
++		goto fail;
++	}
++	vma = find_vma(mm, addr);
++
++	/* Don't expand vma on mremap(). */
++	vma->vm_flags |= VM_DONTEXPAND | VM_DONTCOPY;
++	area->vaddr = vma->vm_start;
++	if (get_user_pages(current, mm, area->vaddr, 1, 1, 1, &area->page,
++				&vma) > 0)
++		ret = 0;
++
++fail:
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	return ret;
++}
++
++/*
++ * xol_alloc_area - Allocate process's uprobes_xol_area.
++ * This area will be used for storing instructions for execution out of
++ * line.
++ *
++ * Returns the allocated area or NULL.
++ */
++static struct uprobes_xol_area *xol_alloc_area(void)
++{
++	struct uprobes_xol_area *area = NULL;
++
++	area = kzalloc(sizeof(*area), GFP_USER);
++	if (unlikely(!area))
++		return NULL;
++
++	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
++								GFP_USER);
++
++	if (!area->bitmap)
++		goto fail;
++
++	spin_lock_init(&area->slot_lock);
++	if (!xol_add_vma(area))
++		return area;
++
++fail:
++	if (area) {
++		if (area->bitmap)
++			kfree(area->bitmap);
++		kfree(area);
++	}
++	return current->mm->uprobes_xol_area;
++}
++
++/*
++ * uprobes_free_xol_area - Free the area allocated for slots.
++ */
++void uprobes_free_xol_area(struct mm_struct *mm)
++{
++	struct uprobes_xol_area *area = mm->uprobes_xol_area;
++
++	if (!area)
 +		return;
 +
-+	if (utask->active_uprobe)
-+		put_uprobe(utask->active_uprobe);
-+	kfree(utask);
-+	tsk->utask = NULL;
++	put_page(area->page);
++	kfree(area->bitmap);
++	kfree(area);
 +}
 +
 +/*
-+ * Allocate a uprobe_task object for the task.
-+ * Called when the thread hits a breakpoint for the first time.
++ * Find a slot
++ *  - searching in existing vmas for a free slot.
++ *  - If no free slot in existing vmas, return 0;
 + *
-+ * Returns:
-+ * - pointer to new uprobe_task on success
-+ * - negative errno otherwise
++ * Called when holding uprobes_xol_area->slot_lock
 + */
-+static struct uprobe_task *add_utask(void)
++static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
 +{
-+	struct uprobe_task *utask;
++	unsigned long slot_addr;
++	int slot_nr;
 +
-+	utask = kzalloc(sizeof *utask, GFP_KERNEL);
-+	if (unlikely(utask == NULL))
-+		return ERR_PTR(-ENOMEM);
++	slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
++	if (slot_nr < UINSNS_PER_PAGE) {
++		__set_bit(slot_nr, area->bitmap);
++		slot_addr = area->vaddr +
++				(slot_nr * UPROBES_XOL_SLOT_BYTES);
++		return slot_addr;
++	}
 +
-+	utask->active_uprobe = NULL;
-+	current->utask = utask;
-+	return utask;
++	return 0;
 +}
++
++/*
++ * xol_get_insn_slot - If was not allocated a slot, then
++ * allocate a slot.
++ * Returns the allocated slot address or 0.
++ */
++static unsigned long xol_get_insn_slot(struct uprobe *uprobe,
++					unsigned long slot_addr)
++{
++	struct uprobes_xol_area *area = current->mm->uprobes_xol_area;
++	unsigned long flags, xol_vaddr = 0;
++	int len = 0;
++
++	if (!current->utask->xol_vaddr) {
++		if (!area)
++			area = xol_alloc_area();
++
++		if (!area)
++			return 0;
++
++		spin_lock_irqsave(&area->slot_lock, flags);
++		xol_vaddr = xol_take_insn_slot(area);
++		spin_unlock_irqrestore(&area->slot_lock, flags);
++	}
++
++	/*
++	 * Initialize the slot if xol_vaddr points to valid
++	 * instruction slot.
++	 */
++	if (likely(xol_vaddr)) {
++		void *vaddr;
++
++		current->utask->xol_vaddr = xol_vaddr;
++		current->utask->vaddr = slot_addr;
++		vaddr = kmap_atomic(area->page, KM_USER0);
++		xol_vaddr &= ~PAGE_MASK;
++		memcpy(vaddr + xol_vaddr, uprobe->insn, MAX_UINSN_BYTES);
++		kunmap_atomic(vaddr, KM_USER0);
++	}
++	return current->utask->xol_vaddr;
++}
++
++/*
++ * xol_free_insn_slot - If slot was earlier allocated by
++ * @xol_get_insn_slot(), make the slot available for
++ * subsequent requests.
++ */
++static void xol_free_insn_slot(struct task_struct *tsk, unsigned long slot_addr)
++{
++	struct uprobes_xol_area *area;
++	unsigned long vma_end;
++
++	if (!tsk->mm || tsk->mm->uprobes_xol_area)
++		return;
++
++	area = tsk->mm->uprobes_xol_area;
++
++	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
++		return;
++
++	vma_end = area->vaddr + PAGE_SIZE;
++	if (area->vaddr <= slot_addr && slot_addr < vma_end) {
++		int slot_nr;
++		unsigned long offset = slot_addr - area->vaddr;
++		unsigned long flags;
++
++		BUG_ON(offset % UPROBES_XOL_SLOT_BYTES);
++
++		slot_nr = offset / UPROBES_XOL_SLOT_BYTES;
++		BUG_ON(slot_nr >= UINSNS_PER_PAGE);
++
++		spin_lock_irqsave(&area->slot_lock, flags);
++		__clear_bit(slot_nr, area->bitmap);
++		spin_unlock_irqrestore(&area->slot_lock, flags);
++		return;
++	}
++	printk(KERN_ERR "%s: no XOL vma for slot address %#lx\n",
++						__func__, slot_addr);
++}
++
+ /*
+  * Called with no locks held.
+  * Called in context of a exiting or a exec-ing thread.
+@@ -758,6 +989,8 @@ void uprobe_free_utask(struct task_struct *tsk)
+ 
+ 	if (utask->active_uprobe)
+ 		put_uprobe(utask->active_uprobe);
++
++	xol_free_insn_slot(tsk, utask->xol_vaddr);
+ 	kfree(utask);
+ 	tsk->utask = NULL;
+ }
