@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab0LPF0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 00:26:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63734 "EHLO mx1.redhat.com"
+	id S1751772Ab0LPFiG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 00:38:06 -0500
+Received: from mga02.intel.com ([134.134.136.20]:24740 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab0LPF0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 00:26:02 -0500
-Date: Thu, 16 Dec 2010 00:25:31 -0500
-From: Dave Jones <davej@redhat.com>
+	id S1751047Ab0LPFiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 00:38:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,353,1288594800"; 
+   d="scan'208";a="687653308"
+Date: Thu, 16 Dec 2010 13:37:57 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org
-Subject: remove long deprecated CLONE_STOPPED flag.
-Message-ID: <20101216052530.GA24168@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 18/35] writeback: start background writeback earlier
+Message-ID: <20101216053757.GA14681@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150328.526742344@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101213150328.526742344@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we remove this completely ? (like the untested patch below)
+On Mon, Dec 13, 2010 at 10:47:04PM +0800, Wu, Fengguang wrote:
+> It's possible for some one to suddenly eat lots of memory,
+> leading to sudden drop of global dirty limit. So a dirtier
+> task may get hard throttled immediately without some previous
+> balance_dirty_pages() call to invoke background writeback.
+> 
+> In this case we need to check for background writeback earlier in the
+> loop to avoid stucking the application for very long time. This was not
+> a problem before the IO-less balance_dirty_pages() because it will try
+> to write something and then break out of the loop regardless of the
+> global limit.
+> 
+> Another scheme this check will help is, the dirty limit is too close to
+> the background threshold, so that someone manages to jump directly into
+> the pause threshold (background+dirty)/2.
+> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/page-writeback.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2010-12-13 21:46:16.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2010-12-13 21:46:17.000000000 +0800
+> @@ -748,6 +748,9 @@ static void balance_dirty_pages(struct a
+>  				    bdi_stat(bdi, BDI_WRITEBACK);
+>  		}
+>  
+> +		if (unlikely(!writeback_in_progress(bdi)))
+> +			bdi_start_background_writeback(bdi);
+> +
+>  		bdi_update_bandwidth(bdi, start_time, bdi_dirty, bdi_thresh);
+>  
+>  		/*
+> 
 
-	Dave
-
+The above patch allows this simplification.
 ---
-This warning was added in commit bdff746a3915f109bd13730b6847e33e17e91ed3
-three years ago. 2.6.26 came and went. As far as I know, no-one is
-actually using CLONE_STOPPED.
+Subject: writeback: start background writeback earlier - handle laptop mode
+Date: Wed Dec 15 20:15:54 CST 2010
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+The laptop mode handling can be simplified since we've kick background
+writeback inside the balance_dirty_pages() loop on dirty_exceeded.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2c79e92..ec07afe 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -21,7 +21,8 @@
- #define CLONE_DETACHED		0x00400000	/* Unused, ignored */
- #define CLONE_UNTRACED		0x00800000	/* set if the tracing process can't force CLONE_PTRACE on this clone */
- #define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
--#define CLONE_STOPPED		0x02000000	/* Start in stopped state */
-+/* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
-+   and is now available for re-use. */
- #define CLONE_NEWUTS		0x04000000	/* New utsname group? */
- #define CLONE_NEWIPC		0x08000000	/* New ipcs */
- #define CLONE_NEWUSER		0x10000000	/* New user namespace */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3b159c5..5270bea 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1407,23 +1407,6 @@ long do_fork(unsigned long clone_flags,
- 	}
- 
- 	/*
--	 * We hope to recycle these flags after 2.6.26
--	 */
--	if (unlikely(clone_flags & CLONE_STOPPED)) {
--		static int __read_mostly count = 100;
--
--		if (count > 0 && printk_ratelimit()) {
--			char comm[TASK_COMM_LEN];
--
--			count--;
--			printk(KERN_INFO "fork(): process `%s' used deprecated "
--					"clone flags 0x%lx\n",
--				get_task_comm(comm, current),
--				clone_flags & CLONE_STOPPED);
--		}
--	}
--
--	/*
- 	 * When called from kernel_thread, don't do user tracing stuff.
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-12-15 20:14:33.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-15 20:15:39.000000000 +0800
+@@ -891,8 +891,10 @@ pause:
+ 	 * In normal mode, we start background writeout at the lower
+ 	 * background_thresh, to keep the amount of dirty memory low.
  	 */
- 	if (likely(user_mode(regs)))
-@@ -1461,16 +1444,7 @@ long do_fork(unsigned long clone_flags,
- 		 */
- 		p->flags &= ~PF_STARTING;
+-	if ((laptop_mode && dirty_exceeded) ||
+-	    (!laptop_mode && (nr_reclaimable > background_thresh)))
++	if (laptop_mode)
++		return;
++
++	if (nr_reclaimable > background_thresh)
+ 		bdi_start_background_writeback(bdi);
+ }
  
--		if (unlikely(clone_flags & CLONE_STOPPED)) {
--			/*
--			 * We'll start up with an immediate SIGSTOP.
--			 */
--			sigaddset(&p->pending.signal, SIGSTOP);
--			set_tsk_thread_flag(p, TIF_SIGPENDING);
--			__set_task_state(p, TASK_STOPPED);
--		} else {
--			wake_up_new_task(p, clone_flags);
--		}
-+		wake_up_new_task(p, clone_flags);
- 
- 		tracehook_report_clone_complete(trace, regs,
- 						clone_flags, nr, p);
