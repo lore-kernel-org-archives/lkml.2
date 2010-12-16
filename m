@@ -1,103 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab0LPLQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 06:16:23 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62782 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab0LPLQW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 06:16:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=IPCLK8hWPeIPVsTwITtZgEie0hD2yRbElfuxNLkQ3c0B4eoedWdwHRUaoMnE0Y/vJs
-         y5Q7LT2xc9EOI5LaY4hMS01zFAyBjuS56AK1KdiSRfSue04YCZNkB6f/ewlB2BmaygTm
-         wPVchOTtIQeR6mhFT4Eb3ysJT/Wwg2Ak/phnk=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTi=t0VqSiZ=k9rBxPBVnHxy6v3JvTwW-n6ngM1f0@mail.gmail.com>
-References: <AANLkTinbhb-_v+8tJBPeoLcDo0mFzwo2EZAy3bnvErFT@mail.gmail.com>
-	<AANLkTi=t0VqSiZ=k9rBxPBVnHxy6v3JvTwW-n6ngM1f0@mail.gmail.com>
-Date: Thu, 16 Dec 2010 12:16:21 +0100
-Message-ID: <AANLkTimRmJBF+6EcJHyf7pSgj49C5D0WWmOS1fp1Ag0v@mail.gmail.com>
-Subject: Re: linux-next: Tree for December 16 (broken iwlwifi)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        John Linville <linville@tuxdriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755429Ab0LPLVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 06:21:55 -0500
+Received: from lo.gmane.org ([80.91.229.12]:32985 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754428Ab0LPLVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 06:21:52 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: Bcache version 9
+Date: Thu, 16 Dec 2010 03:21:33 -0800
+Message-ID: <4D09F63D.8040406@gmail.com>
+References: <20101121140808.GA6429@moria> <20101122010914.GB7688@kroah.com> <4CEB7648.8030000@gmail.com> <20101201041610.GA5891@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org
+X-Gmane-NNTP-Posting-Host: c-76-105-220-120.hsd1.or.comcast.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9pre) Gecko/20100821 Lanikai/3.1.3pre
+In-Reply-To: <20101201041610.GA5891@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 12:05 PM, Sedat Dilek
-<sedat.dilek@googlemail.com> wrote:
-> On Thu, Dec 16, 2010 at 11:54 AM, Sedat Dilek
-> <sedat.dilek@googlemail.com> wrote:
->> Hi,
->>
->> Just FYI (didn't look at the code right now, sorry for German output):
->>
->> [ build.log ]
->> ...
->> /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none/drivers/net/wireless/iwlwifi/iwl-agn-rs.c:
->> In function ‘iwl_rs_rate_init’:
->> /home/sd/src/linux-2.6/linux-2.6.37-rc5/debian/build/source_i386_none/drivers/net/wireless/iwlwifi/iwl-agn-rs.c:2876:8:
->> error: ‘struct iwl_lq_sta’ has no member named ‘dbg_fixed_rate’
->> make[8]: *** [drivers/net/wireless/iwlwifi/iwl-agn-rs.o] Fehler 1
->> make[7]: *** [drivers/net/wireless/iwlwifi] Fehler 2
->> make[6]: *** [drivers/net/wireless] Fehler 2
->> make[6]: *** Warte auf noch nicht beendete Prozesse...
->> ...
->>
->> Regards,
->> - Sedat -
->>
->
-> Looks like dbg_fixed_rate is only set when CONFIG_MAC80211_DEBUGFS is set:
->
-> [ drivers/net/wireless/iwlwifi/iwl-agn-rs.h ]
-> ...
-> #ifdef CONFIG_MAC80211_DEBUGFS
->        struct dentry *rs_sta_dbgfs_scale_table_file;
->        struct dentry *rs_sta_dbgfs_stats_table_file;
->        struct dentry *rs_sta_dbgfs_rate_scale_data_file;
->        struct dentry *rs_sta_dbgfs_tx_agg_tid_en_file;
->        u32 dbg_fixed_rate;
-> #endif
-> ...
->
-> So I have no CONFIG_MAC80211_DEBUGFS... :-).
-> Can someone fix that, please?
->
-> - Sedat -
->
+On 11/30/2010 08:16 PM, Greg KH wrote:
+> True, but I thought configfs could handle "bare" config items, you might
+> want to look a bit closer as to how people are using it.  But I could be
+> totally wrong however.
 
-Untested !
+Just in case I wasn't the only one confused, I stared at the 
+documentation and examples some more... still wasn't completely sure, so 
+I wrote the code, and bare attributes without a configfs item do work. I 
+just switched to configfs for the stuff that was in /sys/kernel/bcache, 
+it'll be in the next version.
 
------ SNIP -----
+Almost got everything done on my todo list before it's ready to be 
+submitted...
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-index 5083dba..75fcd30 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -2873,7 +2873,9 @@ void iwl_rs_rate_init(struct iwl_priv *priv,
-struct ieee80211_sta *sta, u8 sta_i
-                lq_sta->last_txrate_idx += IWL_FIRST_OFDM_RATE;
-        lq_sta->is_agg = 0;
-
-+#ifdef CONFIG_MAC80211_DEBUGFS
-        lq_sta->dbg_fixed_rate = 0;
-+#endif
-
-        rs_initialize_lq(priv, conf, sta, lq_sta);
- }
-
------ SNAP -----
