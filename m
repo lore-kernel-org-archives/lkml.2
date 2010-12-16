@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab0LPCO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 21:14:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35806 "EHLO mx1.redhat.com"
+	id S1755138Ab0LPCPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 21:15:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab0LPCO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 21:14:26 -0500
-Message-ID: <4D0975ED.7010803@redhat.com>
-Date: Thu, 16 Dec 2010 10:14:05 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Christoph Hellwig <hch@lst.de>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Roland McGrath <roland@redhat.com>,
+	id S1754712Ab0LPCPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 21:15:30 -0500
+Date: Thu, 16 Dec 2010 03:13:53 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch 18/21] Generate the data sections for ELF Core
-References: <20101214152259.67896960@suzukikp>	<20101214155200.06b56e57@suzukikp>	<4D086C1A.5000907@redhat.com> <20101215181643.2c82c70f@suzukikp>
-In-Reply-To: <20101215181643.2c82c70f@suzukikp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: Re: Transparent Hugepage Support #33
+Message-ID: <20101216021353.GD5638@random.random>
+References: <20101215051540.GP5638@random.random>
+ <20101216095408.3a60cbad.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101216101053.05cb1516.nishimura@mxp.nes.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101216101053.05cb1516.nishimura@mxp.nes.nec.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2010年12月15日 20:46, Suzuki K. Poulose 写道:
-> On Wed, 15 Dec 2010 15:19:54 +0800
-> Cong Wang<amwang@redhat.com>  wrote:
->
->> 于 2010年12月14日 18:22, Suzuki K. Poulose 写道:
-...
->>> +
->>> +		off_t offset = *fpos - elf_hdr->e_shoff;
->>
->> Are you sure it is 'off_t' not 'loff_t'?
->>
->
-> You are right. I will change it
->>> +		size_t shdrsz = sizeof(struct elf_shdr) - offset;
->>> +
+Hi Daisuke and Kame,
 
-If you use loff_t, then this line needs to be changed too.
-size_t could be shorter than loff_t.
+On Thu, Dec 16, 2010 at 10:10:53AM +0900, Daisuke Nishimura wrote:
+> Hi,
+> 
+> On Thu, 16 Dec 2010 09:54:08 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Wed, 15 Dec 2010 06:15:40 +0100
+> > Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > 
+> > > Some of some relevant user of the project:
+> > > 
+> > > KVM Virtualization
+> > > GCC (kernel build included, requires a few liner patch to enable)
+> > > JVM
+> > > VMware Workstation
+> > > HPC
+> > > 
+> > > It would be great if it could go in -mm.
+> > 
+> > Things should be done in memory cgroup is
+> >  
+> >  - make accounting correct (RSS count will be broken)
+> >  - make move_charge() to work
+> >    (at rmdir(), this is now broken. It seems move-charge-at-task-move to work)
+> > 
+> Yes.
+> I think we should add mem_cgroup_split_hugepage_commit() and add PageTransHuge()
+> check in mem_cgroup_move_parent() as done in RHEL6 kernel.
 
-Thanks.
+Yes, unfortunately porting all the RHEL6 THP cgroups bits wasn't
+trivial because of the difference in the cgroup code.
+
+> As for move-charge-at-task-move, it will work because walk_pmd_range() splits
+> THP pages(it would be better to change move-charge not to split THP pages, but
+> it's not so urgent IMHO).
+> 
+> > Do you have known other viewpoints ?
+> Not yet, but I'll test and check.
+
+Same here.
+
+One detail I'd ask you to check is the compound_trans_order I added in
+#33 for memory-failure and cgroups. It's not really necessary in memcg
+if we stop reading the order and we do page_size = HPAGE_PMD_SIZE
+instead. I thought having the cgroup code handling compound pages
+without hardwiring the size was better but maybe it's not. Maybe the
+compound_lock locking should also be extended there? It's up to you to
+what you prefer there but I'll try to help as much as I can.
+
+BTW, now that it's in -mm I'll keep any further change incremental at
+the end and I'll stop rebasing to avoid confusion.
+
+> > I'll look into when -mm is shipped.
+> > 
+> me too :)
+
+Thanks a lot!
