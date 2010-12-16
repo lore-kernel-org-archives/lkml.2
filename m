@@ -1,307 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab0LPAsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 19:48:10 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:54932 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab0LPAsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 19:48:06 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Jamie Lokier <jamie@shareable.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>
-Subject: =?UTF-8?q?=5BPATCH=202/2=5D=5BRFC=5D=20hrtimers=3A=20Add=20CLOCK=5FBOOTTIME=20clockid=2C=20hrtimerbase=20and=20posix=20interface?=
-Date: Wed, 15 Dec 2010 16:47:56 -0800
-Message-Id: <1292460476-32187-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1292460048-28035-3-git-send-email-john.stultz@linaro.org>
-References: <1292460048-28035-3-git-send-email-john.stultz@linaro.org>
+	id S1753982Ab0LPAtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 19:49:47 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:42291 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab0LPAtp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 19:49:45 -0500
+Date: Thu, 16 Dec 2010 08:49:38 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 2.6.37
+Message-ID: <20101216004938.GA32662@gondor.apana.org.au>
+References: <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <AANLkTikM4vQe7dsN8JJ1QSLeeTbRpSnuoJU=e4H2YFoz@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikM4vQe7dsN8JJ1QSLeeTbRpSnuoJU=e4H2YFoz@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending with proper CC's]
+On Wed, Dec 15, 2010 at 12:40:48PM -0800, Linus Torvalds wrote:
+>
+> There's a few other objects like that too. How do you push to your
+> repo, and what changed?
 
-CLOCK_MONOTONIC stops while the system is in suspend. This is because
-to applications system suspend is invisible. However, there is a
-growing set of applications that are wanting to be suspend-aware,
-but do not want to deal with the complicatoins of CLOCK_REALTIME
-(which might jump around if settimeofday is called).
-
-For these applications, I propose a new clockid: CLOCK_BOOTTIME.
-CLOCK_BOOTTIME is idential to CLOCK_MONOTONIC, except it also
-includes any time spent in suspend.
-
-This patch adds the new CLOCK_BOOTTIME clockid, as well as the
-infrastructure needed to support hrtimers against it, and the
-wiring to expose it out via the posix interface.
-
-CC: Jamie Lokier <jamie@shareable.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Alexander Shishkin <virtuoso@slind.org>
-CC: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/hrtimer.h   |    4 ++
- include/linux/time.h      |    4 ++
- kernel/hrtimer.c          |   14 +++++++-
- kernel/posix-timers.c     |   16 ++++++++-
- kernel/time/timekeeping.c |   79 ++++++++++++++++++++++++++++++++++++++++++++-
- 5 files changed, 113 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index e41b64b..40ccebf 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -152,6 +152,7 @@ struct hrtimer_clock_base {
- enum  hrtimer_base_type {
- 	HRTIMER_BASE_REALTIME,
- 	HRTIMER_BASE_MONOTONIC,
-+	HRTIMER_BASE_BOOTTIME,
- 	HRTIMER_MAX_CLOCK_BASES,
- };
- 
-@@ -162,6 +163,8 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
- 			return HRTIMER_BASE_REALTIME;
- 		case CLOCK_MONOTONIC:
- 			return HRTIMER_BASE_MONOTONIC;
-+		case CLOCK_BOOTTIME:
-+			return HRTIMER_BASE_BOOTTIME;
- 	}
- 	WARN_ON(1); /* Unknown clock_id */
- 	return 0;
-@@ -325,6 +328,7 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
- 
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
-+extern ktime_t ktime_get_boottime(void);
- 
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 9f15ac7..4ed031a 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -126,6 +126,8 @@ unsigned long get_seconds(void);
- struct timespec current_kernel_time(void);
- struct timespec __current_kernel_time(void); /* does not take xtime_lock */
- struct timespec __get_wall_to_monotonic(void); /* does not take xtime_lock */
-+extern struct timespec __get_sleep_time(void); /* does not take xtime_lock */
-+
- struct timespec get_monotonic_coarse(void);
- 
- #define CURRENT_TIME		(current_kernel_time())
-@@ -160,6 +162,7 @@ extern void getnstimeofday(struct timespec *tv);
- extern void getrawmonotonic(struct timespec *ts);
- extern void getboottime(struct timespec *ts);
- extern void monotonic_to_bootbased(struct timespec *ts);
-+extern void get_monotonic_boottime(struct timespec *ts);
- 
- extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
- extern int timekeeping_valid_for_hres(void);
-@@ -290,6 +293,7 @@ struct itimerval {
- #define CLOCK_MONOTONIC_RAW		4
- #define CLOCK_REALTIME_COARSE		5
- #define CLOCK_MONOTONIC_COARSE		6
-+#define CLOCK_BOOTTIME			7
- 
- /*
-  * The IDs of various hardware clocks:
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a6642c7..6724cf1 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -73,6 +73,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- 			.get_time = &ktime_get,
- 			.resolution = KTIME_LOW_RES,
- 		},
-+		{
-+			.index = CLOCK_BOOTTIME,
-+			.get_time = &ktime_get_boottime,
-+			.resolution = KTIME_LOW_RES,
-+		},
- 	}
- };
- 
-@@ -82,21 +87,26 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
-  */
- static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
- {
--	ktime_t xtim, tomono;
--	struct timespec xts, tom;
-+	ktime_t xtim, tomono, sleep;
-+	struct timespec xts, tom, slp;
- 	unsigned long seq;
- 
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
- 		xts = __current_kernel_time();
- 		tom = __get_wall_to_monotonic();
-+		slp = __get_sleep_time();
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	xtim = timespec_to_ktime(xts);
- 	tomono = timespec_to_ktime(tom);
-+	sleep = timespec_to_ktime(slp);
- 	base->clock_base[HRTIMER_BASE_REALTIME].softirq_time = xtim;
- 	base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time =
- 		ktime_add(xtim, tomono);
-+	base->clock_base[HRTIMER_BASE_BOOTTIME].softirq_time =
-+		ktime_add(base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time,
-+				sleep);
- }
- 
- /*
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 93bd2eb..389d5d5 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -240,7 +240,7 @@ static int posix_ktime_get_ts(clockid_t which_clock, struct timespec *tp)
- }
- 
- /*
-- * Get monotonic time for posix timers
-+ * Get monotonic-raw time for posix timers
-  */
- static int posix_get_monotonic_raw(clockid_t which_clock, struct timespec *tp)
- {
-@@ -267,6 +267,14 @@ static int posix_get_coarse_res(const clockid_t which_clock, struct timespec *tp
- 	*tp = ktime_to_timespec(KTIME_LOW_RES);
- 	return 0;
- }
-+
-+static int posix_get_boottime(const clockid_t which_clock, struct timespec *tp)
-+{
-+	get_monotonic_boottime(tp);
-+	return 0;
-+}
-+
-+
- /*
-  * Initialize everything, well, just everything in Posix clocks/timers ;)
-  */
-@@ -301,12 +309,18 @@ static __init int init_posix_timers(void)
- 		.timer_create = no_timer_create,
- 		.nsleep = no_nsleep,
- 	};
-+	struct k_clock clock_boottime = {
-+		.clock_getres = hrtimer_get_res,
-+		.clock_get = posix_get_boottime,
-+		.clock_set = do_posix_clock_nosettime,
-+	};
- 
- 	register_posix_clock(CLOCK_REALTIME, &clock_realtime);
- 	register_posix_clock(CLOCK_MONOTONIC, &clock_monotonic);
- 	register_posix_clock(CLOCK_MONOTONIC_RAW, &clock_monotonic_raw);
- 	register_posix_clock(CLOCK_REALTIME_COARSE, &clock_realtime_coarse);
- 	register_posix_clock(CLOCK_MONOTONIC_COARSE, &clock_monotonic_coarse);
-+	register_posix_clock(CLOCK_BOOTTIME, &clock_boottime);
- 
- 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
- 					sizeof (struct k_itimer), 0, SLAB_PANIC,
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5bb86da..e12ec9f 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -828,7 +828,7 @@ void update_wall_time(void)
-  * getboottime - Return the real time of system boot.
-  * @ts:		pointer to the timespec to be set
-  *
-- * Returns the time of day in a timespec.
-+ * Returns the wall-time of boot in a timespec.
-  *
-  * This is based on the wall_to_monotonic offset and the total suspend
-  * time. Calls to settimeofday will affect the value returned (which
-@@ -846,6 +846,83 @@ void getboottime(struct timespec *ts)
- }
- EXPORT_SYMBOL_GPL(getboottime);
- 
-+
-+/**
-+ * get_monotonic_boottime - Returns monotonic time since boot
-+ * @ts:		pointer to the timespec to be set
-+ *
-+ * Returns the monotonic time since boot in a timespec.
-+ *
-+ * This is similar to CLOCK_MONTONIC/ktime_get_ts, but also
-+ * includes the time spent in suspend.
-+ */
-+void get_monotonic_boottime(struct timespec *ts)
-+{
-+	struct timespec tomono, sleep;
-+	unsigned int seq;
-+	s64 nsecs;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+		*ts = xtime;
-+		tomono = wall_to_monotonic;
-+		sleep = total_sleep_time;
-+		nsecs = timekeeping_get_ns();
-+
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
-+			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
-+}
-+EXPORT_SYMBOL_GPL(get_monotonic_boottime);
-+
-+/**
-+ * ktime_get_boottime - Returns monotonic time since boot in a ktime
-+ *
-+ * Returns the monotonic time since boot in a ktime
-+ *
-+ * This is similar to CLOCK_MONTONIC/ktime_get, but also
-+ * includes the time spent in suspend.
-+ */
-+ktime_t ktime_get_boottime(void)
-+{
-+	unsigned int seq;
-+	s64 secs, nsecs;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+		secs = xtime.tv_sec;
-+		secs += wall_to_monotonic.tv_sec;
-+		secs += total_sleep_time.tv_sec;
-+		nsecs = xtime.tv_nsec;
-+		nsecs += wall_to_monotonic.tv_nsec;
-+		nsecs += total_sleep_time.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+
-+	} while (read_seqretry(&xtime_lock, seq));
-+	/*
-+	 * Use ktime_set/ktime_add_ns to create a proper ktime on
-+	 * 32-bit architectures without CONFIG_KTIME_SCALAR.
-+	 */
-+	return ktime_add_ns(ktime_set(secs, 0), nsecs);
-+}
-+EXPORT_SYMBOL_GPL(ktime_get_boottime);
-+
-+/**
-+ * __get_sleep_time - returns total_sleep_time
-+ *
-+ * Returns total time spent in suspend.
-+ * Requires the xtime lock be held
-+ */
-+struct timespec __get_sleep_time(void)
-+{
-+	return total_sleep_time;
-+}
-+
- /**
-  * monotonic_to_bootbased - Convert the monotonic time to boot based.
-  * @ts:		pointer to the timespec to be converted
+Oops, I've fixed that now.  I use rsync to copy files across so
+it's my end that has changed.  And indeed I've just done an upgrade.
+Sorry.
 -- 
-1.7.3.2.146.gca209
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
