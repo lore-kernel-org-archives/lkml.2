@@ -1,177 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab0LPAnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 19:43:22 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48987 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab0LPAnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 19:43:21 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Jamie Lokier <jamie@shareable.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>
-Subject: =?UTF-8?q?=5BPATCH=201/2=5D=5BRFC=5D=20hrtimers=3A=20extend=20hrtimer=20base=20code=20to=20handle=20more=20then=202=20clockids?=
-Date: Wed, 15 Dec 2010 16:43:15 -0800
-Message-Id: <1292460195-30536-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1292460048-28035-1-git-send-email-john.stultz@linaro.org>
-References: <1292460048-28035-1-git-send-email-john.stultz@linaro.org>
+	id S1753132Ab0LPAoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 19:44:14 -0500
+Received: from mail-iw0-f180.google.com ([209.85.214.180]:60958 "EHLO
+	mail-iw0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab0LPAoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 19:44:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qHWIX6yL+D4p1OZQqB8sBZmnxHT0a6hLXlvhSc3oPLTHVBbsYTEvY50bNWkXqXZpFW
+         7CHtWpCToM2OxofxCCm3NmybeDF+ffcRFvrB55BcPWHjxVm4FxS6MJr2GVEdicyUUVSm
+         I5xbQTXMb/ksy3e78E+sai661BFUSstVgj/js=
+Date: Wed, 15 Dec 2010 16:43:58 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Hutterer <peter.hutterer@who-t.net>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2] input: Introduce device information ioctl
+Message-ID: <20101216004358.GA22066@core.coreip.homeip.net>
+References: <1292440807-18502-1-git-send-email-rydberg@euromail.se>
+ <20101216002941.GC4952@salty.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101216002941.GC4952@salty.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending, as I left off CCs before sending]
+On Thu, Dec 16, 2010 at 10:29:42AM +1000, Peter Hutterer wrote:
+> On Wed, Dec 15, 2010 at 08:20:07PM +0100, Henrik Rydberg wrote:
+> > Today, userspace sets up an input device based on the data it emits.
+> > This is not always enough; a tablet and a touchscreen may emit exactly
+> > the same data, for instance, but the former should be set up with a
+> > pointer whereas the latter does not need to. Recently, a new type of
+> > touchpad has emerged where the buttons are under the pad, which
+> > changes handling logic without changing the emitted data. This patch
+> > introduces a new ioctl, EVIOCGPROP, which enables user access to a set
+> > of device properties useful during setup. The properties are given as
+> > a bitmap in the same fashion as the event types.
+> > 
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> > Hi all,
+> > 
+> > Here is version two of the device information proposal. In addition to
+> > implementing the feedback, this version only defines a single combined
+> > type/capabilities field. Since we want to support a device being of
+> > multiple types, it suggests that we are really after the properties
+> > that make up a type, rather than the types themselves. And since
+> > quirks are also properties, we end up with a single bitmap of
+> > properties instead.
+> > 
+> > As an example of how this would work for the
+> > touchpad/tablet/touchscreen triplet, there are two properties defined,
+> > INPUT_PROP_POINTER and INPUT_PROP_DIRECT. A touchpad is an indirect
+> > pointer device, a tablet is a direct pointer device, and the
+> > touchscreen is simply a direct device.
+> > 
+> > What do you think?
+> > 
+> > Thanks,
+> > Henrik
+> > 
+> > PS. As before, the patch compiles, but is not further tested.
+> > 
+> >  drivers/input/evdev.c |    4 ++++
+> >  drivers/input/input.c |    2 ++
+> >  include/linux/input.h |   16 ++++++++++++++++
+> >  3 files changed, 22 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> > index e3f7fc6..0cd97e8 100644
+> > --- a/drivers/input/evdev.c
+> > +++ b/drivers/input/evdev.c
+> > @@ -677,6 +677,10 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+> >  #define EVIOC_MASK_SIZE(nr)	((nr) & ~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
+> >  	switch (EVIOC_MASK_SIZE(cmd)) {
+> >  
+> > +	case EVIOCGPROP(0):
+> > +		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
+> > +				    size, p, compat_mode);
+> > +
+> >  	case EVIOCGKEY(0):
+> >  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
+> >  
+> > diff --git a/drivers/input/input.c b/drivers/input/input.c
+> > index 37708d1..ac751ce 100644
+> > --- a/drivers/input/input.c
+> > +++ b/drivers/input/input.c
+> > @@ -1409,6 +1409,7 @@ INPUT_DEV_CAP_ATTR(LED, led);
+> >  INPUT_DEV_CAP_ATTR(SND, snd);
+> >  INPUT_DEV_CAP_ATTR(FF, ff);
+> >  INPUT_DEV_CAP_ATTR(SW, sw);
+> > +INPUT_DEV_CAP_ATTR(INPUT_PROP, prop);
+> >  
+> >  static struct attribute *input_dev_caps_attrs[] = {
+> >  	&dev_attr_ev.attr,
+> > @@ -1420,6 +1421,7 @@ static struct attribute *input_dev_caps_attrs[] = {
+> >  	&dev_attr_snd.attr,
+> >  	&dev_attr_ff.attr,
+> >  	&dev_attr_sw.attr,
+> > +	&dev_attr_prop.attr,
+> >  	NULL
+> >  };
+> >  
+> > diff --git a/include/linux/input.h b/include/linux/input.h
+> > index b3a1e02..53d6364 100644
+> > --- a/include/linux/input.h
+> > +++ b/include/linux/input.h
+> > @@ -91,6 +91,7 @@ struct input_keymap_entry {
+> >  #define EVIOCGNAME(len)		_IOC(_IOC_READ, 'E', 0x06, len)		/* get device name */
+> >  #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
+> >  #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
+> > +#define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
+> >  
+> >  #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
+> >  #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
+> > @@ -108,6 +109,18 @@ struct input_keymap_entry {
+> >  #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
+> >  
+> >  /*
+> > + * Device properties and quirks
+> > + */
+> > +
+> > +#define INPUT_PROP_POINTER		0x00	/* needs a pointer */
+> > +#define INPUT_PROP_DIRECT		0x01	/* direct object manipulation */
+> 
+> fwiw, I think the common term for these is "direct input devices", at least
+> that's how a lot of the research literature refers to them. Might be good to
+> use the same term.
+> 
+> either way, not sure about this one.  I've worked with devices that were
+> indirect by nature but used directly. e.g. the magic touchpad could quite
+> easily be used as direct input device with an top-down projector. the
+> decision to use it as an indirect device is a UI decision.
+> Likewise, some mountable direct-touch touchscreens can be used indirectly if
+> the touchscreen isn't mounted straight on the display. This is very much a
+> setup-specific property and I'm not sure about the value of this
+> information.
 
-The hrtimer code is written mainly with CLOCK_REALTIME and CLOCK_MONOTONIC
-in mind. These are clockids 0 and 1 resepctively. However, if we are
-to introduce any new hrtimer bases, using new clockids, we have to skip
-the cputimers (clockids 2,3) as well as other clockids that may not impelement
-timers.
+All of these "props" would have no reflection on the event stream
+generated by the device, and exist solely for the benefits of userspace
+consumers to help them set up the device automatically and interpret the
+data appropriately. As such, if someone uses touchscreen as a tablet, I
+believe userspace should allow it, but at the price of manual setup.
 
-This patch adds a little bit of indirection between the clockid and
-the base, so that we can extend the base by one when we add
-a new clockid at number 7 or so.
+If we start seeing cuch devices we could consider EVIOCSPROPS so
+infrastructure (udev) could adjust the properties so that upper levels
+(X) can still use the data to set up devices properly.
 
-CC: Jamie Lokier <jamie@shareable.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Alexander Shishkin <virtuoso@slind.org>
-CC: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/hrtimer.h |   18 +++++++++++++++++-
- kernel/hrtimer.c        |   30 ++++++++++++++++--------------
- 2 files changed, 33 insertions(+), 15 deletions(-)
+What do you think?
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 330586f..e41b64b 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -149,7 +149,23 @@ struct hrtimer_clock_base {
- #endif
- };
- 
--#define HRTIMER_MAX_CLOCK_BASES 2
-+enum  hrtimer_base_type {
-+	HRTIMER_BASE_REALTIME,
-+	HRTIMER_BASE_MONOTONIC,
-+	HRTIMER_MAX_CLOCK_BASES,
-+};
-+
-+static inline int hrtimer_clockid_to_base(clockid_t clock_id)
-+{
-+	switch(clock_id) {
-+		case CLOCK_REALTIME:
-+			return HRTIMER_BASE_REALTIME;
-+		case CLOCK_MONOTONIC:
-+			return HRTIMER_BASE_MONOTONIC;
-+	}
-+	WARN_ON(1); /* Unknown clock_id */
-+	return 0;
-+}
- 
- /*
-  * struct hrtimer_cpu_base - the per cpu clock bases
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 7a7a206..a6642c7 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -53,11 +53,10 @@
- /*
-  * The timer bases:
-  *
-- * Note: If we want to add new timer bases, we have to skip the two
-- * clock ids captured by the cpu-timers. We do this by holding empty
-- * entries rather than doing math adjustment of the clock ids.
-- * This ensures that we capture erroneous accesses to these clock ids
-- * rather than moving them into the range of valid clock id's.
-+ * There are more clockids then hrtimer bases. Thus, we index
-+ * into the timer bases by the hrtimer_base_type enum. When trying
-+ * to reach a base using a clockid, hrtimer_clockid_to_base() 
-+ * is used to convert from clockid to the proper hrtimer_base_type.
-  */
- DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- {
-@@ -95,8 +94,8 @@ static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
- 
- 	xtim = timespec_to_ktime(xts);
- 	tomono = timespec_to_ktime(tom);
--	base->clock_base[CLOCK_REALTIME].softirq_time = xtim;
--	base->clock_base[CLOCK_MONOTONIC].softirq_time =
-+	base->clock_base[HRTIMER_BASE_REALTIME].softirq_time = xtim;
-+	base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time =
- 		ktime_add(xtim, tomono);
- }
- 
-@@ -184,10 +183,11 @@ switch_hrtimer_base(struct hrtimer *timer, struct hrtimer_clock_base *base,
- 	struct hrtimer_cpu_base *new_cpu_base;
- 	int this_cpu = smp_processor_id();
- 	int cpu = hrtimer_get_target(this_cpu, pinned);
-+	int basenum = hrtimer_clockid_to_base(base->index);
- 
- again:
- 	new_cpu_base = &per_cpu(hrtimer_bases, cpu);
--	new_base = &new_cpu_base->clock_base[base->index];
-+	new_base = &new_cpu_base->clock_base[basenum];
- 
- 	if (base != new_base) {
- 		/*
-@@ -627,7 +627,7 @@ static void retrigger_next_event(void *arg)
- 
- 	/* Adjust CLOCK_REALTIME offset */
- 	raw_spin_lock(&base->lock);
--	base->clock_base[CLOCK_REALTIME].offset =
-+	base->clock_base[HRTIMER_BASE_REALTIME].offset =
- 		timespec_to_ktime(realtime_offset);
- 
- 	hrtimer_force_reprogram(base, 0);
-@@ -725,8 +725,8 @@ static int hrtimer_switch_to_hres(void)
- 		return 0;
- 	}
- 	base->hres_active = 1;
--	base->clock_base[CLOCK_REALTIME].resolution = KTIME_HIGH_RES;
--	base->clock_base[CLOCK_MONOTONIC].resolution = KTIME_HIGH_RES;
-+	base->clock_base[HRTIMER_BASE_REALTIME].resolution = KTIME_HIGH_RES;
-+	base->clock_base[HRTIMER_BASE_MONOTONIC].resolution = KTIME_HIGH_RES;
- 
- 	tick_setup_sched_timer();
- 
-@@ -1116,7 +1116,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
- 			   enum hrtimer_mode mode)
- {
- 	struct hrtimer_cpu_base *cpu_base;
--
-+	int base;
- 	memset(timer, 0, sizeof(struct hrtimer));
- 
- 	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
-@@ -1124,7 +1124,8 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
- 	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
- 		clock_id = CLOCK_MONOTONIC;
- 
--	timer->base = &cpu_base->clock_base[clock_id];
-+	base = hrtimer_clockid_to_base(clock_id);
-+	timer->base = &cpu_base->clock_base[base];
- 	hrtimer_init_timer_hres(timer);
- 	timerqueue_init(&timer->node);
- 
-@@ -1160,9 +1161,10 @@ EXPORT_SYMBOL_GPL(hrtimer_init);
- int hrtimer_get_res(const clockid_t which_clock, struct timespec *tp)
- {
- 	struct hrtimer_cpu_base *cpu_base;
-+	int base = hrtimer_clockid_to_base(which_clock);
- 
- 	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
--	*tp = ktime_to_timespec(cpu_base->clock_base[which_clock].resolution);
-+	*tp = ktime_to_timespec(cpu_base->clock_base[base].resolution);
- 
- 	return 0;
- }
 -- 
-1.7.3.2.146.gca209
-
+Dmitry
