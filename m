@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab0LPK1B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:27:01 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:55733 "EHLO gir.skynet.ie"
+	id S1755130Ab0LPKfz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:35:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40311 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795Ab0LPK1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:27:00 -0500
-Date: Thu, 16 Dec 2010 10:26:41 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Ingo Korb <ingo@akana.de>, linux-mm@kvack.org, akpm@linux-foundation.org,
-        cl@linux-foundation.org, yinghai@kernel.org, andi.kleen@intel.com,
+	id S1754871Ab0LPKfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 05:35:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,354,1288594800"; 
+   d="scan'208";a="868852105"
+Date: Thu, 16 Dec 2010 11:35:50 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Paul Fox <pgf@laptop.org>, Andres Salomon <dilinger@queued.net>,
         linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: __offline_isolated_pages may offline too many pages
-Message-ID: <20101216102641.GK13914@csn.ul.ie>
-References: <4D0786D3.7070007@akana.de> <20101215092134.e2c8849f.kamezawa.hiroyu@jp.fujitsu.com> <4D08899F.4050502@akana.de> <20101216090657.9d3aaa4c.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: MFD cell structure and sharing of resources
+Message-ID: <20101216103550.GA5946@sortiz-mobl>
+References: <AANLkTinrF-dxiw7OQ=dMhQPgKSqS6yYfDzdcnHfhMtyf@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101216090657.9d3aaa4c.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTinrF-dxiw7OQ=dMhQPgKSqS6yYfDzdcnHfhMtyf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 09:06:57AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 15 Dec 2010 10:25:51 +0100
-> Ingo Korb <ingo@akana.de> wrote:
-> 
-> > On 15.12.2010 01:21, KAMEZAWA Hiroyuki wrote:
-> > 
-> > > It's designed for offline memory section>  MAX_ORDER. pageblock_nr_pages
-> > > is tend to be smaller than that.
-> > >
-> > > Do you see the problem with _exsisting_ user interface of memory hotplug ?
-> > > I think we have no control other than memory section.
-> > 
-> > The existing, exported interface (remove_memory() - the check itself is 
-> > in offline_pages()) only checks if both start and end of the 
-> > to-be-removed block are aligned to pageblock_nr_pages. As you noted the 
-> > actual size and alignment requirements in __offline_isolated_pages can 
-> > be larger that that, so I think the checks in offline_pages() should be 
-> > changed (if 1<<MAX_ORDER is always >= pageblock_nr_pages) or extended 
-> > (if there can be any relation between the two).
-> > 
-> 
-> Ok, maybe my mistake. This is a fix. Thank you for reporting.
-> ==
-> 
-> offline_pages()'s sanity check of given range is wrong. It should
-> be aligned to MAX_ORDER. Current exsiting caller uses SECTION_SIZE
-> alignment, so this change has no influence to exsisting callers.
-> 
-> Reported-by: Ingo Korb <ingo@akana.de>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hi Daniel,
 
-Other than the spelling mistakes in the changelog and the lack of a
-subject;
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
-> ---
->  mm/memory_hotplug.c |   10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
+On Fri, Dec 10, 2010 at 03:37:30PM +0000, Daniel Drake wrote:
+> A few options that spring to mind:
 > 
-> Index: linux-2.6.37-rc5/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-2.6.37-rc5.orig/mm/memory_hotplug.c
-> +++ linux-2.6.37-rc5/mm/memory_hotplug.c
-> @@ -798,10 +798,14 @@ static int offline_pages(unsigned long s
->  	struct memory_notify arg;
->  
->  	BUG_ON(start_pfn >= end_pfn);
-> -	/* at least, alignment against pageblock is necessary */
-> -	if (!IS_ALIGNED(start_pfn, pageblock_nr_pages))
-> +	/*
-> +	 * Considering buddy allocator which joins nearby pages, the range
-> +	 * in offline should be aligned to MAX_ORDER. If not, isolated
-> +	 * page will be joined to other (not isolated) pages.
-> +	 */
-> +	if (!IS_ALIGNED(start_pfn, MAX_ORDER_NR_PAGES))
->  		return -EINVAL;
-> -	if (!IS_ALIGNED(end_pfn, pageblock_nr_pages))
-> +	if (!IS_ALIGNED(end_pfn, MAX_ORDER_NR_PAGES))
->  		return -EINVAL;
->  	/* This makes hotplug much easier...and readable.
->  	   we assume this for now. .*/
+> 1. Adjust the list of mfd cells in drivers/mfd/cs5535-mfd so that
+> rather than being a list of resources, it is a list of drivers that
+> rely on the mfd driver. The entries would be: gpio, mfgpt,
+> olpc-xo1-pm, olpc-xo1-sci. olpc-xo1-pm would have the 2 resources it
+> needs (pms & acpi), and the acpi resource would be duplicated into
+> olpc-xo1-sci  too.
 > 
+> We'd then add a machine_is_olpc()  check inside cs5535-mfd so that the
+> OLPC-specific cells are only passed to mfd_add_devices on OLPC
+> laptops.
+> 
+> 2. Continue with Andres' olpc-xo1-pm patch that makes that driver act
+> as a driver for both acpi & pms. When both resources are available, it
+> could probe an olpc-xo1-sci platform device as a child of itself,
+> having the ACPI resource shared on the platform_device level (similar
+> to how MFD shares resources via cells).
+This sounds like an acceptable solution to me.
+
+> 3. For olpc-xo1-pm and olpc-xo1-sci, forget about hooking into MFD and
+> go back to the route of looking for the appropriate device on the PCI
+> bus and accessing the regions that way.
+
+I see a 4th solution though:
+
+Define and export a set of I/O routines from the MFD driver, for the shared
+resources. The routines would take as arguments one of the shared module
+(ACPI, PMS, etc..) and a register (and obviously a value for the writing
+parts...), and do the I/O operation for your driver. This is similar to what
+the twl driver does, although over i2c.
+That means requesting and releasing the shared regions from the MFD driver,
+before knowing if there is a user for it or not. I realize this could lead to
+some resource conflicts, although this is very unlikely. Potentially, we could
+have a callback into the MFD driver from the subdevice to let it know that the
+resource is requested. But then your #2 solution would look better to me.
+
+Cheers,
+Samuel.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Intel Open Source Technology Centre
+http://oss.intel.com/
