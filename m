@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab0LPQ2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 11:28:37 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34974 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0LPQ2g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 11:28:36 -0500
+	id S1752973Ab0LPQ25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 11:28:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47025 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153Ab0LPQ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 11:28:56 -0500
+Message-ID: <4D0A3E31.4000109@zytor.com>
+Date: Thu, 16 Dec 2010 08:28:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-Message-ID: <62b1cf2f-17ec-45c9-a980-308d9b75cdc5@default>
-Date: Thu, 16 Dec 2010 08:27:41 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: dan.magenheimer@oracle.com
-Subject: [RFC] radix_tree_destroy?
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6539.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com>
+In-Reply-To: <20101216143925.GA13870@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am in need of a radix-tree routine that will efficiently
-"destroy" an entire radix tree, but make callbacks to free the
-slots.  Is it possible to do that (efficiently) with existing
-radix-tree code?  If so, I'd appreciate some guidance.
+On 12/16/2010 06:39 AM, Vivek Goyal wrote:
+> On Wed, Dec 15, 2010 at 08:29:01PM -0800, Yinghai Lu wrote:
+>> please check
+>>
+>> [PATCH] x86, crashkernel, 32bit: only try to get range under 512M
+>>
+>> Steanishlaw report kdump is 32bit is broken.
+>>
+>> in misc.c for decompresser, it will do sanity checking to make sure heap
+>> heap under 512M.
+> 
+> Thanks Yinghai. I am wondering why on 32bit heap has to be with-in 512MB.
+> I think you are referring to following check in
+> arch/x86/boot/compressed/misc.c.
+> 
+> 	if (end > ((-__PAGE_OFFSET-(512 <<20)-1) & 0x7fffffff))
+> 		error("Destination address too large");
+> 
+> It was introduced here.
+> 
+> commit 968de4f02621db35b8ae5239c8cfc6664fb872d8
+> Author: Eric W. Biederman <ebiederm@xmission.com>
+> Date:   Thu Dec 7 02:14:04 2006 +0100
+> 
+>     [PATCH] i386: Relocatable kernel support
+> 
+> Eric,
+> 
+> It has been long. By any chance would you remember where does above
+> constraint come from?
+> 
 
-If not, I'm thinking about submitting a patch (as part of a
-larger patchset) that would look something like the patch below.
-I'm uncertain of the rcu implications however... because
-of the mass destruction, perhaps there could just be a
-requirement that the caller must lock the entire tree
-prior to the call?
+It might, in fact, be bogus; specifically a proxy for the fact that we
+need the kernel memory including bss and brk below the lowmem boundary,
+which isn't well-defined.
 
-Another option would be for me to do this outside of
-radix-tree.c, but then I would need to move some defines and
-the definition of the struct radix_tree_node from
-radix-tree.c to radix-tree.h
+	-hpa
 
-Thanks for any advice!
-Dan
 
-P.S. I will be offline for an extended period over the holidays,
-so apologies in advance if I am unable to respond quickly.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
---- radix-tree.c	2010-10-20 14:30:22.000000000 -0600
-+++ radix-tree.patch.c	2010-12-16 16:13:32.672039108 -0700
-@@ -1318,6 +1318,42 @@ out:
- }
- EXPORT_SYMBOL(radix_tree_delete);
- 
-+static void
-+radix_tree_node_destroy(struct radix_tree_node *node, unsigned int height,
-+			void (*slot_free)(void *))
-+{
-+	int i;
-+
-+	if (height == 0)
-+		return;
-+	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
-+		if (node->slots[i]) {
-+			if (height > 1) {
-+				radix_tree_node_destroy(node->slots[i],
-+					height-1, slot_free);
-+				radix_tree_node_free(node->slots[i]);
-+				node->slots[i] = NULL;
-+			} else
-+				slot_free(node->slots[i]);
-+		}
-+	}
-+}
-+
-+void radix_tree_destroy(struct radix_tree_root *root, void (*slot_free)(void *))
-+{
-+	if (root->rnode == NULL)
-+		return;
-+	if (root->height == 0)
-+		slot_free(root->rnode);
-+	else {
-+		radix_tree_node_destroy(root->rnode, root->height, slot_free);
-+		radix_tree_node_free(root->rnode);
-+		root->height = 0;
-+	}
-+	root->rnode = NULL;
-+}
-+EXPORT_SYMBOL(radix_tree_destroy);
-+
- /**
-  *	radix_tree_tagged - test whether any items in the tree are tagged
-  *	@root:		radix tree root
