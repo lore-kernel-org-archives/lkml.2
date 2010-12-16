@@ -1,128 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab0LPMPq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:15:46 -0500
-Received: from mail-zbox20.bo3.lycos.com ([209.202.250.20]:51277 "EHLO
-	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab0LPMPp (ORCPT
+	id S1752289Ab0LPMbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:31:05 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19828 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab0LPMbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:15:45 -0500
-Date: Thu, 16 Dec 2010 07:15:41 -0500 (EST)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <27937184.26071292501741640.JavaMail.root@mail-zbox20.bo3.lycos.com>
-In-Reply-To: <4768501.26021292501675575.JavaMail.root@mail-zbox20.bo3.lycos.com>
-Subject: 2.6.37-rc6: a few "unmet direct dependencies" warnings while doing
- `make oldconfig` II
-MIME-Version: 1.0
-Content-Type: multipart/mixed; 
-	boundary="----=_Part_371_33450861.1292501741638"
-X-Originating-IP: [94.50.178.1]
-X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
+	Thu, 16 Dec 2010 07:31:02 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt barrier support is effective)
+In-reply-to: <20101216033718.GM9925@dastard>
+References: <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com> <1291747731-sup-3099@think> <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com> <1291751698-sup-9297@think> <AANLkTin79GzUbfuZNKyTtqcyoUSO9AJimO77_ZOvqggH@mail.gmail.com> <1291754340-sup-1631@think> <AANLkTim8uCmFK=LjkMmq_1O0KE3AiN_7g41AO0woxMv7@mail.gmail.com> <1291755258-sup-8760@think> <AANLkTi=OC9Z68U-j8s6vfU-_-6tkg5W7aUz9HEupidX9@mail.gmail.com> <1291810586-sup-8211@think> <20101216033718.GM9925@dastard>
+Date: Thu, 16 Dec 2010 07:29:58 -0500
+Message-Id: <1292502095-sup-3835@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_Part_371_33450861.1292501741638
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-
-Hello again,
-
-> While I was answering the questions of "make oldconfig" I discovered
-> a few errors/warnings in Kconfig.
+Excerpts from Dave Chinner's message of 2010-12-15 22:37:18 -0500:
+> On Wed, Dec 08, 2010 at 07:20:24AM -0500, Chris Mason wrote:
+> > 
+> > Usually the trick to reproducing filesystem corruptions is adding memory
+> > pressure.  The corruption is probably a bad interaction between reads
+> > and writes, and we need to make sure the reads actually happen.
+> > 
+> > http://oss.oracle.com/~mason/pin_ram.c
+> > 
+> > gcc -Wall -o pin_ram pin_ram.c
+> > 
+> > pin_ram -m 80%-of-your-ram-in-mb
 > 
-> Please, see the attached text file for details.
+> Implemented in xfstests about 10 years ago:
+> 
+> http://git.kernel.org/?p=fs/xfs/xfstests-dev.git;a=blob;f=src/usemem.c;h=b8794a6b209cebf8dbf312a8ef131e2e54b18d29;hb=HEAD
 
-There are some more, so I'm sending the whole list now.
+But mine can use shm! I don't remember adding it, so it must have grown
+there while it sat on the oracle servers.  Our own special Christmas
+magic.
 
-Best wishes,
-
-Artem
-
-
-------=_Part_371_33450861.1292501741638
-Content-Type: application/octet-stream; name=unmet.deps
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename=unmet.deps
-
-warning: (STUB_POULSBO && HAS_IOMEM && PCI && ACPI || FB_BACKLIGHT && HAS_I=
-OMEM && FB || DRM_I915 && <choice> && AGP_INTEL && ACPI || PANEL_SHARP_LS03=
-7V7DW01 && HAS_IOMEM && OMAP2_DSS || PANEL_ACX565AKM && HAS_IOMEM && OMAP2_=
-DSS && OMAP2_DSS_SDI && SPI || USB_APPLEDISPLAY && USB_SUPPORT && USB || AS=
-US_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && !ACPI_ASUS && INPUT && =
-(RFKILL || RFKILL=3Dn) || SONY_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACP=
-I && INPUT && RFKILL || THINKPAD_ACPI && X86 && X86_PLATFORM_DEVICES && ACP=
-I && INPUT && (RFKILL || RFKILL=3Dn) || EEEPC_LAPTOP && X86 && X86_PLATFORM=
-_DEVICES && ACPI && INPUT && EXPERIMENTAL && (RFKILL || RFKILL=3Dn) && HOTP=
-LUG_PCI || ACPI_ASUS && X86 && X86_PLATFORM_DEVICES && ACPI || ACPI_CMPC &&=
- X86_PLATFORM_DEVICES && X86 && ACPI && (RFKILL || RFKILL=3Dn)) selects BAC=
-KLIGHT_CLASS_DEVICE which has unmet direct dependencies (HAS_IOMEM && BACKL=
-IGHT_LCD_SUPPORT)
-warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI) selects LPC=
-_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI)
-warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI || GPIO_VX85=
-5 && GPIOLIB || GPIO_RDC321X && PCI && GPIOLIB || MFD_88PM860X && MFD_SUPPO=
-RT && I2C=3Dy && GENERIC_HARDIRQS || MFD_ASIC3 && MFD_SUPPORT && GENERIC_HA=
-RDIRQS && GPIOLIB && ARM || MFD_SH_MOBILE_SDHI && MFD_SUPPORT && (SUPERH ||=
- ARCH_SHMOBILE) || MFD_DAVINCI_VOICECODEC && MFD_SUPPORT || HTC_PASIC3 && M=
-FD_SUPPORT || TPS6507X && MFD_SUPPORT && I2C || TWL4030_CODEC && MFD_SUPPOR=
-T && TWL4030_CORE || MFD_STMPE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQ=
-S || MFD_TC35892 && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_T7L66=
-XB && MFD_SUPPORT && ARM && HAVE_CLK || MFD_TC6387XB && MFD_SUPPORT && ARM =
-&& HAVE_CLK || MFD_TC6393XB && MFD_SUPPORT && GPIOLIB && ARM || MFD_MAX8925=
- && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MAX8998 && MFD_SUPPOR=
-T && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM8400 && MFD_SUPPORT && I2C || MFD=
-_WM831X_I2C && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM831X_SPI=
- && MFD_SUPPORT && SPI_MASTER && GENERIC_HARDIRQS || MFD_WM8994 && MFD_SUPP=
-ORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MC13XXX && MFD_SUPPORT && SPI_MAS=
-TER || AB3100_CORE && MFD_SUPPORT && I2C=3Dy && ABX500_CORE || AB8500_CORE =
-&& MFD_SUPPORT && GENERIC_HARDIRQS && ABX500_CORE && SPI_MASTER && ARCH_U85=
-00 || AB3550_CORE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS && ABX500_C=
-ORE || MFD_TIMBERDALE && MFD_SUPPORT && PCI && GPIOLIB || LPC_SCH && MFD_SU=
-PPORT && PCI || MFD_RDC321X && MFD_SUPPORT && PCI || MFD_JANZ_CMODIO && MFD=
-_SUPPORT && PCI || MFD_JZ4740_ADC && MFD_SUPPORT && MACH_JZ4740 || MFD_TPS6=
-586X && MFD_SUPPORT && I2C=3Dy && GPIOLIB && GENERIC_HARDIRQS || MFD_VX855 =
-&& MFD_SUPPORT && PCI) selects MFD_CORE which has unmet direct dependencies=
- (MFD_SUPPORT)
-warning: (STUB_POULSBO && HAS_IOMEM && PCI && ACPI || FB_BACKLIGHT && HAS_I=
-OMEM && FB || DRM_I915 && <choice> && AGP_INTEL && ACPI || PANEL_SHARP_LS03=
-7V7DW01 && HAS_IOMEM && OMAP2_DSS || PANEL_ACX565AKM && HAS_IOMEM && OMAP2_=
-DSS && OMAP2_DSS_SDI && SPI || USB_APPLEDISPLAY && USB_SUPPORT && USB || AS=
-US_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && !ACPI_ASUS && INPUT && =
-(RFKILL || RFKILL=3Dn) || SONY_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACP=
-I && INPUT && RFKILL || THINKPAD_ACPI && X86 && X86_PLATFORM_DEVICES && ACP=
-I && INPUT && (RFKILL || RFKILL=3Dn) || EEEPC_LAPTOP && X86 && X86_PLATFORM=
-_DEVICES && ACPI && INPUT && EXPERIMENTAL && (RFKILL || RFKILL=3Dn) && HOTP=
-LUG_PCI || ACPI_ASUS && X86 && X86_PLATFORM_DEVICES && ACPI || ACPI_CMPC &&=
- X86_PLATFORM_DEVICES && X86 && ACPI && (RFKILL || RFKILL=3Dn)) selects BAC=
-KLIGHT_CLASS_DEVICE which has unmet direct dependencies (HAS_IOMEM && BACKL=
-IGHT_LCD_SUPPORT)
-warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI) selects LPC=
-_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI)
-warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI || GPIO_VX85=
-5 && GPIOLIB || GPIO_RDC321X && PCI && GPIOLIB || MFD_88PM860X && MFD_SUPPO=
-RT && I2C=3Dy && GENERIC_HARDIRQS || MFD_ASIC3 && MFD_SUPPORT && GENERIC_HA=
-RDIRQS && GPIOLIB && ARM || MFD_SH_MOBILE_SDHI && MFD_SUPPORT && (SUPERH ||=
- ARCH_SHMOBILE) || MFD_DAVINCI_VOICECODEC && MFD_SUPPORT || HTC_PASIC3 && M=
-FD_SUPPORT || TPS6507X && MFD_SUPPORT && I2C || TWL4030_CODEC && MFD_SUPPOR=
-T && TWL4030_CORE || MFD_STMPE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQ=
-S || MFD_TC35892 && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_T7L66=
-XB && MFD_SUPPORT && ARM && HAVE_CLK || MFD_TC6387XB && MFD_SUPPORT && ARM =
-&& HAVE_CLK || MFD_TC6393XB && MFD_SUPPORT && GPIOLIB && ARM || MFD_MAX8925=
- && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MAX8998 && MFD_SUPPOR=
-T && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM8400 && MFD_SUPPORT && I2C || MFD=
-_WM831X_I2C && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM831X_SPI=
- && MFD_SUPPORT && SPI_MASTER && GENERIC_HARDIRQS || MFD_WM8994 && MFD_SUPP=
-ORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MC13XXX && MFD_SUPPORT && SPI_MAS=
-TER || AB3100_CORE && MFD_SUPPORT && I2C=3Dy && ABX500_CORE || AB8500_CORE =
-&& MFD_SUPPORT && GENERIC_HARDIRQS && ABX500_CORE && SPI_MASTER && ARCH_U85=
-00 || AB3550_CORE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS && ABX500_C=
-ORE || MFD_TIMBERDALE && MFD_SUPPORT && PCI && GPIOLIB || LPC_SCH && MFD_SU=
-PPORT && PCI || MFD_RDC321X && MFD_SUPPORT && PCI || MFD_JANZ_CMODIO && MFD=
-_SUPPORT && PCI || MFD_JZ4740_ADC && MFD_SUPPORT && MACH_JZ4740 || MFD_TPS6=
-586X && MFD_SUPPORT && I2C=3Dy && GPIOLIB && GENERIC_HARDIRQS || MFD_VX855 =
-&& MFD_SUPPORT && PCI) selects MFD_CORE which has unmet direct dependencies=
- (MFD_SUPPORT)
-
-------=_Part_371_33450861.1292501741638--
+-chris
