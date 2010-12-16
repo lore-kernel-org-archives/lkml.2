@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0LPKKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:10:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11374 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582Ab0LPKKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:10:41 -0500
-Message-Id: <b9dded$hd6gpd@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,354,1288594800"; 
-   d="scan'208";a="584270637"
-Date: Thu, 16 Dec 2010 10:10:36 +0000
-To: Hui Zhu <teawater@gmail.com>
-Subject: Re: [BUG] i915 boot got black screen with 2.6.37-rc5+
-Cc: linux-kernel@vger.kernel.org, keithp@keithp.com, ak@linux.intel.com,
-        gregkh@suse.de, stable@kernel.org, Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <AANLkTi=6HOsAg1mvoZ4GBy-vw2cH-bGUsQVGtCseWvy4@mail.gmail.com>
-References: <AANLkTimOOmFqxU=r+-RphdfPJ54Qr+6LHU60Grzpnerr@mail.gmail.com> <b9dded$hcr3k7@orsmga002.jf.intel.com> <AANLkTim=k601vg+sJJH3bvdfAmrCbCEouL78XoVxuDwy@mail.gmail.com> <5b55a1$iv0t6h@fmsmga002.fm.intel.com> <AANLkTi=6HOsAg1mvoZ4GBy-vw2cH-bGUsQVGtCseWvy4@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1754770Ab0LPKR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:17:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64101 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab0LPKR0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 05:17:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gS/mh+fcF/jJevTECNIuTyjnNBFs6qerZipZN/35ijH1u9/GfcNxGDT+8DyS4j4Ou8
+         DpiohXrmJwf91U09V0kFLynjC4C4eFw4YUf0JxylsiOJE/Rr519OwBrnhn6upi3Y46oD
+         e457Pe4EqAKvYNwS7wOV1Yy6VH5Yw+uaiTbB4=
+MIME-Version: 1.0
+In-Reply-To: <buowrnakze2.fsf@dhlpc061.dev.necel.com>
+References: <alpine.DEB.2.00.1012151404070.21102@router.home>
+	<20101215125626.25f7d648.akpm@linux-foundation.org>
+	<4D092D15.7030700@zytor.com>
+	<AANLkTimhdmWGhxW9qnFWYxiVDManH4XG4RqTLJb_Fdbk@mail.gmail.com>
+	<4D093580.9000303@zytor.com>
+	<buowrnakze2.fsf@dhlpc061.dev.necel.com>
+Date: Thu, 16 Dec 2010 11:17:25 +0100
+Message-ID: <AANLkTim+cbxPxgS+13anHQRdN42uLci6z48hbiyWFdaV@mail.gmail.com>
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Miles Bader <miles@gnu.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010 10:20:57 +0800, Hui Zhu <teawater@gmail.com> wrote:
-> On Wed, Dec 15, 2010 at 18:20, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Wed, 15 Dec 2010 17:28:45 +0800, Hui Zhu <teawater@gmail.com> wrote:
-> >> lspci | grep Display
-> >> 00:02.1 Display controller: Intel Corporation 82Q35 Express Integrated
-> >> Graphics Controller (rev 02)
-> >
-> > Q35. I wasn't expecting that. Can you please add drm.debug=0xe to your
-> > boot line and attach the dmesg from rc3 and rc5? Thanks.
-> > -Chris
-> >
-> > --
-> > Chris Wilson, Intel Open Source Technology Centre
-> >
-> 
-> Thanks Chris.
-> 
-> I post the logs of rc3+, rc4+ and rc5+ in attchement.  Wish they can
-> be more helpful.
+On Thu, Dec 16, 2010 at 7:25 AM, Miles Bader <miles@gnu.org> wrote:
+> "H. Peter Anvin" <hpa@zytor.com> writes:
+>>> In this case it this_cpu_*_test_bit() return an int, but they act as a
+>>> bool and are used in if()s; where is the catch?
+>>
+>> If they aren't, and are stored in a variable for whatever reason, then
+>> the || form will generate additional instructions to booleanize the
+>> value for no good reason.
+>
+> It doesn't actually have to "booleanize" the value if it's used in a
+> boolean context though (and, AFAICT, usually won't).
+>
+> My vague impression is that when used in a boolean context, gcc will
+> often generate the same or "equivalent" code for both variants -- but
+> sometimes a||b seems to generate better code; e.g.:
+>
+>   static inline int test1a (int a, int b) { return a ? 1 : b; }
+>   int test1b (int a, int b) { if (test1a (a,b)) return a+b; else return 37; }
+>
+>   static inline int test2a (int a, int b) { return a || b; }
+>   int test2b (int a, int b) { if (test2a (a,b)) return a+b; else return 37; }
+>
 
-The hotplug probe was failing. The only change along that path I could see
-was to setting some hotplug flags in the analag adapter register. Can you
-try this patch to see if it fixes things for you? Meanwhile I'll check the
-docs for the validity of those flags for the various gen.
+I think hpa was talking about some code where gcc can not optimize out
+the assignment (e.g. volatile, complex code, using the int outside
+conditional expressions, etc.).
 
-diff --git a/drivers/gpu/drm/i915/intel_crt.c
-b/drivers/gpu/drm/i915/intel_crt.c
-index 8df5743..14c276e 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -148,7 +148,9 @@ static void intel_crt_mode_set(struct drm_encoder *encoder,
-                           dpll_md & ~DPLL_MD_UDI_MULTIPLIER_MASK);
-        }
- 
--       adpa = ADPA_HOTPLUG_BITS;
-+       adpa = 0;
-+       if (INTEL_INFO(dev)->gen >= 4)
-+               adpa |= ADPA_HOTPLUG_BITS;
-        if (adjusted_mode->flags & DRM_MODE_FLAG_PHSYNC)
-                adpa |= ADPA_HSYNC_ACTIVE_HIGH;
-        if (adjusted_mode->flags & DRM_MODE_FLAG_PVSYNC)
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+>=>
+>
+> test1b:
+>        testl   %edi, %edi
+>        jne     .L2
+>        movl    $37, %eax
+>        testl   %esi, %esi
+>        jne     .L2
+>        rep
+>        ret
+> .L2:
+>        leal    (%rsi,%rdi), %eax
+>        ret
+>
+> test2b:
+>        leal    (%rsi,%rdi), %edx
+>        movl    $37, %eax
+>        orl     %edi, %esi
+>        cmovne  %edx, %eax
+>        ret
+>
+>        .ident  "GCC: (Debian 4.5.1-8) 4.5.1"
+>
+>
+> -Miles
+>
+> --
+> Is it true that nothing can be known?  If so how do we know this?  -Woody Allen
+>
