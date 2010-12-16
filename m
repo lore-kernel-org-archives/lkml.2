@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab0LPMAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:00:46 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55726 "EHLO
+	id S1753912Ab0LPMAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:00:32 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55708 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349Ab0LPMAl (ORCPT
+	with ESMTP id S1753215Ab0LPMA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:00:41 -0500
+	Thu, 16 Dec 2010 07:00:29 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
         2nddept-manager@sdl.hitachi.co.jp,
         Francis Moreau <francis.moro@gmail.com>,
-        Franck Bui-Huu <fbuihuu@gmail.com>,
         Franck Bui-Huu <vagabon.xyz@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Pingtian <phan@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/4] perf/urgent fixes
-Date: Thu, 16 Dec 2010 10:00:13 -0200
-Message-Id: <1292500817-1348-1-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/4] perf symbols: Stop using vmlinux files with no symbols
+Date: Thu, 16 Dec 2010 10:00:15 -0200
+Message-Id: <1292500817-1348-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1292500817-1348-1-git-send-email-acme@infradead.org>
+References: <1292500817-1348-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-        Please consider pulling from:
+Fail if the kernel image contains no symbol, allowing using other images
+in the vmlinux search path that may have a usable symtab.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Francis Moreau <francis.moro@gmail.com>
+Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+LPU-Reference: <m3d3p9ydx9.fsf_-_@gmail.com>
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/probe-event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (1):
-  perf buildid-list: Fix error return for success
-
-Franck Bui-Huu (3):
-  perf probe: Fix use of kernel image path given by 'k' option
-  perf symbols: Stop using vmlinux files with no symbols
-  perf buildid-cache: Fix symbolic link handling
-
- tools/perf/builtin-buildid-list.c |    3 +--
- tools/perf/builtin-probe.c        |    5 +++++
- tools/perf/util/header.c          |   10 ++++++----
- tools/perf/util/probe-event.c     |   15 ++++++++++++---
- tools/perf/util/symbol.c          |    4 ++--
- tools/perf/util/symbol.h          |    2 ++
- 6 files changed, 28 insertions(+), 11 deletions(-)
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index b71acd6..61191c6 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -135,7 +135,7 @@ const char *kernel_get_module_path(const char *module)
+ 		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
+ 			return NULL;
+ 	} else {
+-		if (dso__load_vmlinux_path(dso, map, NULL) < 0) {
++		if (dso__load_vmlinux_path(dso, map, NULL) <= 0) {
+ 			pr_debug("Failed to load kernel map.\n");
+ 			return NULL;
+ 		}
+-- 
+1.6.2.5
 
