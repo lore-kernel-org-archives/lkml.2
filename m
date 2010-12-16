@@ -1,183 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab0LPBNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 20:13:31 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40569 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab0LPBN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 20:13:28 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Dec 2010 10:07:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: add replace_page_cache_page() function
-Message-Id: <20101216100744.e3a417cf.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
-References: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754562Ab0LPBNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 20:13:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56168 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641Ab0LPBNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 20:13:50 -0500
+Message-ID: <4D096806.7000807@cn.fujitsu.com>
+Date: Thu, 16 Dec 2010 09:14:46 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+References: <4D07330A.7020600@cn.fujitsu.com>	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>	 <4D083900.1050801@cn.fujitsu.com>	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>	 <4D0877D2.10000@cn.fujitsu.com> <1292450002.5015.1903.camel@gandalf.stny.rr.com>
+In-Reply-To: <1292450002.5015.1903.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-16 09:13:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-12-16 09:13:48,
+	Serialize complete at 2010-12-16 09:13:48
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010 16:49:58 +0100
-Miklos Szeredi <miklos@szeredi.hu> wrote:
-
-> From: Miklos Szeredi <mszeredi@suse.cz>
+On 12/16/2010 05:53 AM, Steven Rostedt wrote:
+> On Wed, 2010-12-15 at 16:09 +0800, Lai Jiangshan wrote:
 > 
-> This function basically does:
 > 
->      remove_from_page_cache(old);
->      page_cache_release(old);
->      add_to_page_cache_locked(new);
+>>  /*
+>> @@ -543,11 +491,13 @@ static void remove_waiter(struct rt_mutex *lock,
+>>  
+>>  	raw_spin_lock_irqsave(&current->pi_lock, flags);
+>>  	plist_del(&waiter->list_entry, &lock->wait_list);
+>> -	waiter->task = NULL;
+>>  	current->pi_blocked_on = NULL;
+>>  	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+>>  
+>> -	if (first && owner != current) {
+>> +	if (!owner)
+>> +		return;
+>> +
+>> +	if (first) {
 > 
-> Except it does this atomically, so there's no possibility for the
-> "add" to fail because of a race.
+> This is a bug. There's a small chance that the mutex timed out, and at
+> that same time, the owner gave up the lock and woke this task up. Which
+> means this task is the new owner of the lock iff it was the
+> rt_mutex_top_waiter().
 > 
-> This is used by fuse to move pages into the page cache.
+> The fix is to do this:
 > 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/fuse/dev.c           |   10 ++++------
->  include/linux/pagemap.h |    1 +
->  mm/filemap.c            |   41 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 46 insertions(+), 6 deletions(-)
 > 
-> Index: linux-2.6/mm/filemap.c
-> ===================================================================
-> --- linux-2.6.orig/mm/filemap.c	2010-12-15 16:39:55.000000000 +0100
-> +++ linux-2.6/mm/filemap.c	2010-12-15 16:41:24.000000000 +0100
-> @@ -389,6 +389,47 @@ int filemap_write_and_wait_range(struct
->  }
->  EXPORT_SYMBOL(filemap_write_and_wait_range);
->  
-> +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
-> +{
-> +	int error;
-> +
-> +	VM_BUG_ON(!PageLocked(old));
-> +	VM_BUG_ON(!PageLocked(new));
-> +	VM_BUG_ON(new->mapping);
-> +
-> +	error = mem_cgroup_cache_charge(new, current->mm,
-> +					gfp_mask & GFP_RECLAIM_MASK);
+> 	if (!owner) {
+> 		if (first) {
+> 			ret = try_to_take_rt_mutex();
+> 			BUG_ON(!ret);
+> 		}
+> 		return first;
+> 	}
+> 
+> 	if (first) {
+> 
+> We need to make remove_waiter return 1 if it took the lock and 0 if it
+> did not, so it can pass this information back to the caller.
+> 
+> 	if (unlikely(ret)) {
+> 		if (remove_waiter(...))
+> 			ret = 0;
+> 	}
+> 
 
-Hmm, then, the page will be recharged to "current" instead of the memcg
-where "old" was under control. Is this design ? If so, why ?
+It has called try_to_take_rt_mutex() in __rt_mutex_slowlock(),
+when timeout or got signal, it returns from __rt_mutex_slowlock()
+with lock->wait_lock still held, and then calls remove_waiter(),
 
-In mm/migrate.c, following is called.
-
-	 charge = mem_cgroup_prepare_migration(page, newpage, &mem);
-	....do migration....
-        if (!charge)
-                mem_cgroup_end_migration(mem, page, newpage);
-
-BTW, off topic, in fuse/dev.c
-
-add_to_page_cache_locked(page)
-
-is called and this page is "charged" to memory cgroup. But, IIUC, this page
-will be never be on LRU and cannot be reclaimed by memory cgroup.
-I think this looks like a memory leak at rmdir() of memory cgroup and
-rmdir will fail wish -EBUSY always.
-
-So, I'd like to change this call something like as
-
-add_to_page_cache_locked_and_no_memory_cgroup_control().
-
-So, I think just dropping this memory cgroup related code is okay for us
-because this is a replacement for add_to_page_cache_locked() which seems
-problematic.
-This will put pages on fuse's private radix-tree out of control.
-
-Or, is it possible to drain these radix-tree pages at rmdir() of memory
-cgroup by some call ?
+so we don't need to call try_to_take_rt_mutex() in remove_waiter().
+It is strange that remove_waiter() do some "require lock" work.
 
 Thanks,
--Kame
-
-
-> +	if (error)
-> +		goto out;
-> +
-> +	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
-> +	if (error == 0) {
-> +		struct address_space *mapping = old->mapping;
-> +		pgoff_t offset = old->index;
-> +
-> +		page_cache_get(new);
-> +		new->mapping = mapping;
-> +		new->index = offset;
-> +
-> +		spin_lock_irq(&mapping->tree_lock);
-> +		__remove_from_page_cache(old);
-> +		error = radix_tree_insert(&mapping->page_tree, offset, new);
-> +		BUG_ON(error);
-> +		mapping->nrpages++;
-> +		__inc_zone_page_state(new, NR_FILE_PAGES);
-> +		if (PageSwapBacked(new))
-> +			__inc_zone_page_state(new, NR_SHMEM);
-> +		spin_unlock_irq(&mapping->tree_lock);
-> +		radix_tree_preload_end();
-> +		mem_cgroup_uncharge_cache_page(old);
-> +		page_cache_release(old);
-> +	} else
-> +		mem_cgroup_uncharge_cache_page(new);
-> +out:
-> +	return error;
-> +}
-> +EXPORT_SYMBOL_GPL(replace_page_cache_page);
-> +
->  /**
->   * add_to_page_cache_locked - add a locked page to the pagecache
->   * @page:	page to add
-> Index: linux-2.6/include/linux/pagemap.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/pagemap.h	2010-12-15 16:39:39.000000000 +0100
-> +++ linux-2.6/include/linux/pagemap.h	2010-12-15 16:41:24.000000000 +0100
-> @@ -457,6 +457,7 @@ int add_to_page_cache_lru(struct page *p
->  				pgoff_t index, gfp_t gfp_mask);
->  extern void remove_from_page_cache(struct page *page);
->  extern void __remove_from_page_cache(struct page *page);
-> +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
->  
->  /*
->   * Like add_to_page_cache_locked, but used to add newly allocated pages:
-> Index: linux-2.6/fs/fuse/dev.c
-> ===================================================================
-> --- linux-2.6.orig/fs/fuse/dev.c	2010-12-15 16:39:39.000000000 +0100
-> +++ linux-2.6/fs/fuse/dev.c	2010-12-15 16:41:24.000000000 +0100
-> @@ -729,14 +729,12 @@ static int fuse_try_move_page(struct fus
->  	if (WARN_ON(PageMlocked(oldpage)))
->  		goto out_fallback_unlock;
->  
-> -	remove_from_page_cache(oldpage);
-> -	page_cache_release(oldpage);
-> -
-> -	err = add_to_page_cache_locked(newpage, mapping, index, GFP_KERNEL);
-> +	err = replace_page_cache_page(oldpage, newpage, GFP_KERNEL);
->  	if (err) {
-> -		printk(KERN_WARNING "fuse_try_move_page: failed to add page");
-> -		goto out_fallback_unlock;
-> +		unlock_page(newpage);
-> +		return err;
->  	}
-> +
->  	page_cache_get(newpage);
->  
->  	if (!(buf->flags & PIPE_BUF_FLAG_LRU))
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Lai
 
