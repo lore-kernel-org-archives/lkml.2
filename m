@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab0LPJG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 04:06:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19445 "EHLO mx1.redhat.com"
+	id S1752647Ab0LPJJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 04:09:13 -0500
+Received: from sh.osrg.net ([192.16.179.4]:49080 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab0LPJGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 04:06:18 -0500
-Message-ID: <4D09D680.1070106@redhat.com>
-Date: Thu, 16 Dec 2010 11:06:08 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kvm,x86: return true when user space query KVM_CAP_USER_NMI
- extension
-References: <4D073F9B.7060002@cn.fujitsu.com>
-In-Reply-To: <4D073F9B.7060002@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751265Ab0LPJJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 04:09:11 -0500
+Date: Thu, 16 Dec 2010 18:09:00 +0900 (JST)
+Message-Id: <20101216.180900.160063227.ryusuke@osrg.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [GIT PULL] nilfs2 fix for 2.6.37
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 16 Dec 2010 18:09:01 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 11:57 AM, Lai Jiangshan wrote:
-> userspace may check this extension in runtime.
->
+Hi Linus,
 
-Applied, thanks.
+please pull from:
 
--- 
-error compiling committee.c: too many arguments to function
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
 
+to receive a regression fix, which resolves a filesystem corruption
+issue related to garbage collection.
+
+Thanks!
+
+Ryusuke Konishi
+--
+The following changes since commit b0c3844d8af6b9f3f18f31e1b0502fbefa2166be:
+
+  Linux 2.6.37-rc6 (2010-12-15 17:24:48 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+
+Ryusuke Konishi (1):
+      nilfs2: fix regression of garbage collection ioctl
+
+ fs/nilfs2/gcinode.c |    9 ---------
+ fs/nilfs2/ioctl.c   |   12 ++++++++++++
+ 2 files changed, 12 insertions(+), 9 deletions(-)
