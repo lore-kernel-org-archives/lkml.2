@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab0LPS4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 13:56:05 -0500
-Received: from mail-bw0-f45.google.com ([209.85.214.45]:48563 "EHLO
-	mail-bw0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887Ab0LPS4B (ORCPT
+	id S1757312Ab0LPS62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 13:58:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44414 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab0LPS61 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 13:56:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=RcfNPIlWUfUzW5BeYJPcIFO1VYCUpohJb+xfDQ8rblBo59XC1SS9YZvvEhpIssDua0
-         vO6mn3kAGgn6idrXl+2a6OgEE8g8k+zVgXRkaGTE0lb/aKSqCIqw4VJoNNfNWoR4KUv0
-         VKGF9v+PDXRUyq0kLbrIEEUYtFWUu6wmonIHE=
-Message-ID: <4D0A60BB.4020400@gmail.com>
-Date: Thu, 16 Dec 2010 19:55:55 +0100
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
- lock semantics
-References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com> <4D0A5823.7090200@zytor.com>
-In-Reply-To: <4D0A5823.7090200@zytor.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Dec 2010 13:58:27 -0500
+Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101216184229.GA15889@redhat.com>
+References: <20101216145602.899838254@chello.nl>
+	 <20101216150920.968046926@chello.nl>  <20101216184229.GA15889@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 16 Dec 2010 19:58:13 +0100
+Message-ID: <1292525893.2708.50.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 12/16/2010 07:19 PM, H. Peter Anvin wrote:
-> On 12/16/2010 08:14 AM, Tejun Heo wrote:
->>
->> Are you okay with the patches currently in percpu#for-next?  If so,
->> I'll regenerate patches with your acked-by and pop the two previously
->> mentioned commits and proceed with the rest of the series.
+On Thu, 2010-12-16 at 19:42 +0100, Oleg Nesterov wrote:
+> On 12/16, Peter Zijlstra wrote:
+> >
+> > +static int ttwu_force(struct task_struct *p, int wake_flags)
+> > +{
+> > +	struct rq *rq;
+> > +	int ret = 0;
+> > +
+> > +	/*
+> > +	 * Since we've already set TASK_WAKING this task's CPU cannot
+> > +	 * change from under us.
 > 
-> Still looking through them (sorry.)  I note that we probably do need to
-> get Christoph's followup patches into -tip, so we need to get it all
-> into tip; as such, even if it goes through your tree I'll need to pull
-> it into a tip branch.
+> I think it can. Yes, we've set TASK_WAKING. But, at least the task
+> itself can change its state back to TASK_RUNNING without calling
+> schedule. Say, __wait_event()-like code.
 
-Yeah, no problem.  Pekka also wants to pull the essential part into
-the memory allocator part, so I think it would be best to keep at
-least the proper percpu part and x86 specific ops in percpu tree tho.
+Oh crud, you're right, that's going to make all this cmpxchg stuff lots
+more interesting :/
 
-Thanks.
+> > +static int
+> > +try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+> >  {
+> > -	int cpu, orig_cpu, this_cpu, success = 0;
+> > +	int cpu = task_cpu(p);
+> >  	unsigned long flags;
+> > -	unsigned long en_flags = ENQUEUE_WAKEUP;
+> > -	struct rq *rq;
+> > +	int success = 0;
+> > +	int load;
+> >  
+> > -	this_cpu = get_cpu();
+> > -
+> > -	smp_wmb();
+> > -	rq = task_rq_lock(p, &flags);
+> > -	if (!(p->state & state))
+> > -		goto out;
+> > +	local_irq_save(flags);
+> > +	for (;;) {
+> > +		unsigned int task_state = p->state;
+> >  
+> > -	cpu = task_cpu(p);
+> > +		if (!(task_state & state))
+> > +			goto out;
+> 
+> Well, this surely breaks the code like
+> 
+> 	CONDITION = true;
+> 	wake_up_process(p);
+> 
+> At least we need mb() before we check task_state the first time.
 
--- 
-tejun
+You're right (wmb, at least), I left that out because I had the cmpxchg
+in there that provides a mb, but didn't notice I read the state before
+that.. /me goes put the smp_wmb() back.
