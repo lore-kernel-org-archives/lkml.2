@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab0LPVkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 16:40:53 -0500
-Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:55549 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757495Ab0LPVks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 16:40:48 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACERCk1GNBQZ/2dsb2JhbACkPXTCLYVKBIRl
-Date: Thu, 16 Dec 2010 15:50:43 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 1/2] jump label: make enable/disable o(1)
-Message-ID: <20101216205043.GB18095@Krystal>
-References: <cover.1292522251.git.jbaron@redhat.com> <a35b9310aafa31a9e97f5c9bad9b09e0b6cbbf79.1292522252.git.jbaron@redhat.com> <1292526602.2708.57.camel@laptop> <20101216192303.GB2856@redhat.com> <1292528031.2708.77.camel@laptop> <20101216193635.GC2856@redhat.com> <1292528501.2708.80.camel@laptop> <20101216194852.GD2856@redhat.com> <20101216203603.GA15610@Krystal> <1292532221.2708.93.camel@laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757548Ab0LPVn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 16:43:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56214 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756001Ab0LPVn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 16:43:56 -0500
+Message-ID: <4D0A8813.7060909@suse.cz>
+Date: Thu, 16 Dec 2010 22:43:47 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        brueckner@linux.vnet.ibm.com, mchehab@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: visibility changes (was: Re: [GIT] kbuild and kconfig fixes for
+ 2.6.37-rc5)
+References: <AANLkTikVM=zakYF7uhX1mYHy9QUVL6dmEPNsmV7=oyuh@mail.gmail.com>	<AANLkTi=iH6QOAph0iW6MR2khD5KCe8mRLPe8Y3QnTTTW@mail.gmail.com>	<AANLkTik2SWrmVJ1o98-e2CwJP9SAo6oMmnuLc4K+rT1R@mail.gmail.com>	<AANLkTikdNXdDoixEzGbirH+U_v62vDeEMGaRRpvTsJpu@mail.gmail.com> <AANLkTin8Xf9SPcHrBPRPg+cnbWO94CwB4u6KQ2it1+Y9@mail.gmail.com>
+In-Reply-To: <AANLkTin8Xf9SPcHrBPRPg+cnbWO94CwB4u6KQ2it1+Y9@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1292532221.2708.93.camel@laptop>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 15:46:03 up 253 days,  6:36,  6 users,  load average: 0.04, 0.11,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2010-12-16 at 15:36 -0500, Mathieu Desnoyers wrote:
-> > Tracepoints keep their own reference counts for enable/disable, so a
-> > simple "enable/disable" is fine as far as tracepoints are concerned. Why
-> > does perf need that refcounting done by the static jumps ?
-> 
-> Because the refcount is all we have... Why not replace that tracepoint
-> refcount with the jumplabel thing?
+On 7.12.2010 21:45, Geert Uytterhoeven wrote:
+> On Tue, Dec 7, 2010 at 21:40, Arnaud Lacombe<lacombar@gmail.com>  wrote:
+>> On Tue, Dec 7, 2010 at 3:31 PM, Geert Uytterhoeven<geert@linux-m68k.org>  wrote:
+>>> On Tue, Dec 7, 2010 at 20:51, Arnaud Lacombe<lacombar@gmail.com>  wrote:
+>>>> On Tue, Dec 7, 2010 at 2:07 PM, Geert Uytterhoeven<geert@linux-m68k.org>  wrote:
+>>>>> BTW, I got confused:
+>>>>>   - make allmodconfig causes e.g.:
+>>>>>         CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>>>>>         CONFIG_VIDEO_TVAUDIO=m
+>>>>>     =>  good
+>>>>>   - make oldconfig for my config with almost everything selected,
+>>>>> except for stuff I know that breaks:
+>>>>>         CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+>>>>>         # CONFIG_VIDEO_TVAUDIO is not set
+>>>>>     and no way to manually set CONFIG_VIDEO_TVAUDIO=y?
+>>>>>     =>  bad!
+>>>> that's difficult to judge without your old configuration.
+>>>> VIDEO_TVAUDIO is only selected by VIDEO_BT848 which you don't give
+>>>> information about.
+>>>
+>>> I don't have PCI, so I cannot enable VIDEO_BT848.
+>>>
+>> so why do you expect VIDEO_TVAUDIO to be enabled ?
+>
+> I don't expect it to be enabled, I expected to be able to enable it.
+> Allmodconfig
+> does enable it.
 
-The reason why tracepoints need to keep their own refcount is because
-they support dynamically loadable modules, and hence the refcount must
-be kept outside of the modules, in a table internal to tracepoints,
-so we can attach a probe to a yet unloaded module. Therefore, relying on
-this lower level jump label to keep the refcount is not appropriate for
-tracepoints, because the refcount only exists when the module is live.
+Actually allmodconfig should not enable it, as it did not so before the 
+patch. See Jan's fix at https://patchwork.kernel.org/patch/393302/
 
-I know that your point of view is "let users of modules suffer", but
-this represents a very large portion of Linux users I am not willing to
-let suffer knowingly.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Michal
