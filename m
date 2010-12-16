@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab0LPBO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 20:14:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36708 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab0LPBO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 20:14:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,351,1288594800"; 
-   d="scan'208";a="584156488"
-Date: Wed, 15 Dec 2010 17:14:25 -0800
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "Tang, Xinan" <xinan.tang@intel.com>,
-        Junchang Wang <junchangwang@gmail.com>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
-Message-ID: <20101216011425.GA17446@linux-os.sc.intel.com>
-References: <cover.1292405004.git.fenghua.yu@intel.com> <46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com> <1292446118.2603.11.camel@edumazet-laptop>
+	id S1754753Ab0LPBSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 20:18:22 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:36552 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365Ab0LPBST (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 20:18:19 -0500
+Date: Thu, 16 Dec 2010 10:10:53 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: Transparent Hugepage Support #33
+Message-Id: <20101216101053.05cb1516.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101216095408.3a60cbad.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101215051540.GP5638@random.random>
+	<20101216095408.3a60cbad.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1292446118.2603.11.camel@edumazet-laptop>
-User-Agent: Mutt/1.4.1i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 12:48:38PM -0800, Eric Dumazet wrote:
-> Le mercredi 15 décembre 2010 à 12:02 -0800, Fenghua Yu a écrit :
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> > 
-> > Multiqueue and multicore provide packet parallel processing methodology.
-> > Current kernel and network drivers place one queue on one core. But the higher
-> > level socket doesn't know multiqueue. Current socket only can receive or send
-> > packets through one network interfaces. In some cases e.g. multi bpf filter
-> > tcpdump and snort, a lot of contentions come from socket operations like ring
-> > buffer. Even if the application itself has been fully parallelized and run on
-> > multi-core systems and NIC handlex tx/rx in multiqueue in parallel, network layer
-> > and NIC device driver assemble packets to a single, serialized queue. Thus the
-> > application cannot actually run in parallel in high speed.
-> > 
-> > To break the serialized packets assembling bottleneck in kernel, one way is to
-> > allow socket to know multiqueue associated with a NIC interface. So each socket
-> > can handle tx/rx in one queue in parallel.
-> > 
-> > Kernel provides several interfaces by which sockets can be bound to rx/tx queues.
-> > User applications can configure socket by providing several sockets that each
-> > bound to a single queue, applications can get data from kernel in parallel. After
-> > that, competitions mentioned above can be removed.
-> > 
-> > With this patch, the user-space receiving speed on a Intel SR1690 server with
-> > a single L5640 6-core processor and a single ixgbe-based NIC goes from 0.73Mpps
-> > to 4.20Mpps, nearly a linear speedup. A Intel SR1625 server two E5530 4-core
-> > processors and a single ixgbe-based NIC goes from 0.80Mpps to 4.6Mpps. We noticed
-> > the performance penalty comes from NUMA memory allocation.
-> > 
+Hi,
+
+On Thu, 16 Dec 2010 09:54:08 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Wed, 15 Dec 2010 06:15:40 +0100
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
 > 
-> ??? please elaborate on these NUMA memory allocations. This should be OK
-> after commit 564824b0c52c34692d (net: allocate skbs on local node)
+> > Some of some relevant user of the project:
+> > 
+> > KVM Virtualization
+> > GCC (kernel build included, requires a few liner patch to enable)
+> > JVM
+> > VMware Workstation
+> > HPC
+> > 
+> > It would be great if it could go in -mm.
 > 
-> > This patch set provides kernel ioctl interfaces for user space. User space can
-> > either directly call the interfaces or libpcap interfaces can be further provided
-> > on the top of the kernel ioctl interfaces.
+> Things should be done in memory cgroup is
+>  
+>  - make accounting correct (RSS count will be broken)
+>  - make move_charge() to work
+>    (at rmdir(), this is now broken. It seems move-charge-at-task-move to work)
 > 
-> So, say we have 8 queues, you want libpcap opens 8 sockets, and bind
-> them to each queue. Add a bpf filter to each one of them. This seems not
-> generic way, because it wont work for an UDP socket for example.
+Yes.
+I think we should add mem_cgroup_split_hugepage_commit() and add PageTransHuge()
+check in mem_cgroup_move_parent() as done in RHEL6 kernel.
+As for move-charge-at-task-move, it will work because walk_pmd_range() splits
+THP pages(it would be better to change move-charge not to split THP pages, but
+it's not so urgent IMHO).
 
-This only works for AF_PACKET like this patch set shows.
+> Do you have known other viewpoints ?
+Not yet, but I'll test and check.
 
-> And you already can do this using SKF_AD_QUEUE (added in commit
-> d19742fb)
-
-SKF_AD_QUEUE doesn't know number of rx queues. Thus user application can't
-specify right SKF_AD_QUEUE.
-
-SKF_AD_QUEUE only works for rx. There is no queue bound interfaces for tx.
-
-I can change the patch set to use SKF_AD_QUEUE by removing the set rx queue
-interface and still keep interfaces of
-#define SIOGNUMRXQUEUE 0x8939  /* Get number of rx queues. */
-#define SIOGNUMTXQUEUE 0x893A  /* Get number of tx queues. */
-#define SIOSTXQUEUEMAPPING     0x893C  /* Set tx queue mapping. */
-#define SIOGRXQUEUEMAPPING     0x893D  /* Get rx queue mapping. */
-#define SIOGTXQUEUEMAPPING     0x893E  /* Get tx queue mapping. */
-
+> I'll look into when -mm is shipped.
 > 
-> Also your AF_PACKET patch only address mmaped sockets.
-> 
-The new patch set will use SKF_AD_QUEUE for rx. So it won't be limited to mmaped
-sockets.
+me too :)
 
+
+Thanks,
+Daisuke Nihimura.
