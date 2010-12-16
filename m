@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab0LPJJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 04:09:13 -0500
-Received: from sh.osrg.net ([192.16.179.4]:49080 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab0LPJJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 04:09:11 -0500
-Date: Thu, 16 Dec 2010 18:09:00 +0900 (JST)
-Message-Id: <20101216.180900.160063227.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [GIT PULL] nilfs2 fix for 2.6.37
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 16 Dec 2010 18:09:01 +0900 (JST)
+	id S1753331Ab0LPJJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 04:09:35 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61132 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab0LPJJc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 04:09:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=GFjcdueTGMlBJRudqx8/6rjYQXIH7GrZ4l59dq0dTFIKFaiHAP68D4fKWAZcsV2DyM
+         zVNcnTlVm7ztw89NWY/gO+Bf7PFrn29A3KOx8LhyvbbL57cKQktn/ZbvpwrwTpijjijD
+         OR+mVd+9m9AQCAQDBTwmzXet4NXIp8zT1ideU=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] aio: remove unnecessary check
+Date: Thu, 16 Dec 2010 18:09:05 +0900
+Message-Id: <1292490545-6071-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.3.400.g93cef
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+'nr >= min_nr >= 0' always satisfies 'nr >= 0' so the check is unnecesary.
 
-please pull from:
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/aio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+diff --git a/fs/aio.c b/fs/aio.c
+index c56153f5f73e..45766460fa57 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1839,7 +1839,7 @@ SYSCALL_DEFINE5(io_getevents, aio_context_t, ctx_id,
+ 	long ret = -EINVAL;
+ 
+ 	if (likely(ioctx)) {
+-		if (likely(min_nr <= nr && min_nr >= 0 && nr >= 0))
++		if (likely(min_nr <= nr && min_nr >= 0))
+ 			ret = read_events(ioctx, min_nr, nr, events, timeout);
+ 		put_ioctx(ioctx);
+ 	}
+-- 
+1.7.3.3.400.g93cef
 
-to receive a regression fix, which resolves a filesystem corruption
-issue related to garbage collection.
-
-Thanks!
-
-Ryusuke Konishi
---
-The following changes since commit b0c3844d8af6b9f3f18f31e1b0502fbefa2166be:
-
-  Linux 2.6.37-rc6 (2010-12-15 17:24:48 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Ryusuke Konishi (1):
-      nilfs2: fix regression of garbage collection ioctl
-
- fs/nilfs2/gcinode.c |    9 ---------
- fs/nilfs2/ioctl.c   |   12 ++++++++++++
- 2 files changed, 12 insertions(+), 9 deletions(-)
