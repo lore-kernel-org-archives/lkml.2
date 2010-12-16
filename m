@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab0LPRiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 12:38:21 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:15685 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756243Ab0LPRiT (ORCPT
+	id S1756870Ab0LPRi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 12:38:29 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:14083 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756854Ab0LPRiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 12:38:19 -0500
-Subject: [PATCH 0/9] PCI: revert to allocating bottom-up, avoid E820 areas
+	Thu, 16 Dec 2010 12:38:24 -0500
+Subject: [PATCH 1/9] Revert "PCI: fix pci_bus_alloc_resource() hang,
+	prefer positive decode"
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,8 +16,10 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-Date: Thu, 16 Dec 2010 10:38:15 -0700
-Message-ID: <20101216173614.8185.19462.stgit@bob.kio>
+Date: Thu, 16 Dec 2010 10:38:20 -0700
+Message-ID: <20101216173820.8185.8804.stgit@bob.kio>
+In-Reply-To: <20101216173614.8185.19462.stgit@bob.kio>
+References: <20101216173614.8185.19462.stgit@bob.kio>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,72 +28,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[This is 2.6.37 material]
 
-In 2.6.34 and later, we automatically use "pci=use_crs" on recent (2008 or
-newer) machines, which means we assign PCI resources from the host bridge
-windows described by ACPI _CRS.
+This reverts commit 82e3e767c21fef2b1b38868e20eb4e470a1e38e3.
 
-In many cases, _CRS claims the windows are bigger than they really are, e.g.,
-they may overlap system memory, ROM, or other ACPI devices.  
+We're going back to considering bus resources in the order we found
+them (in _CRS order, when we're using _CRS), so we don't need to
+define any ordering.
 
-Linux allocates PCI memory bottom-up, ignores most ACPI devices, and does an
-incomplete job of avoiding E820 reserved areas, which caused problems like
-https://bugzilla.kernel.org/show_bug.cgi?id=16228 .
-
-As far as I can tell, Windows deals with this situation by removing all ACPI
-resources and allocating the remaining space top-down.
-
-I tried to make Linux allocate top-down as well, but since we don't have a good
-mechanism for avoiding the ACPI devices that clutter the top of memory, we
-tripped over several of those, which resulted in these regressions:
-
-    https://bugzilla.kernel.org/show_bug.cgi?id=23132 (Dell 1545)
-    https://bugzilla.kernel.org/show_bug.cgi?id=23332 (HP nx6325)
-    https://bugzilla.kernel.org/show_bug.cgi?id=23542 (HP 2530p)
-    https://bugzilla.kernel.org/show_bug.cgi?id=23802 (PCI / TPM conflict)
-
-So I think the best band-aid for now is to revert to bottom-up allocation
-and do a better job of avoiding E820 reserved areas.  Obviously, it's not
-complete because we could still trip over ACPI devices (as in 23802), but
-that's a problem we've always had and it's not as likely if we go bottom-up.
-
-Patches 1-5 of this series are straight reverts ("git revert -n") of these
-patches which were merged in 2.6.37-rc1:
-
-  82e3e76 PCI: fix pci_bus_alloc_resource() hang, prefer positive decode
-  1af3c2e x86: allocate space within a region top-down
-  dc9887d x86/PCI: allocate space from the end of a region, not the beginning
-  b126b47 PCI: allocate bus resources from the top down
-  e7f8567 resources: support allocating space within a region from the top down
-
-Patches 6-9 add the ability to avoid E820 regions and the top 2MB below 4GB.
-The last patch (avoid top 2MB) is not strictly necessary in that it doesn't
-fix any current issues I'm aware of.
-
-Bjorn
+Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
-Bjorn Helgaas (9):
-      Revert "PCI: fix pci_bus_alloc_resource() hang, prefer positive decode"
-      Revert "x86: allocate space within a region top-down"
-      Revert "x86/PCI: allocate space from the end of a region, not the beginning"
-      Revert "PCI: allocate bus resources from the top down"
-      Revert "resources: support allocating space within a region from the top down"
-      resources: add arch hook for preventing allocation in reserved areas
-      x86: avoid low BIOS area when allocating address space
-      x86: avoid E820 regions when allocating address space
-      x86: avoid high BIOS area when allocating address space
+ drivers/pci/bus.c |   70 ++++++++++++++++-------------------------------------
+ 1 files changed, 21 insertions(+), 49 deletions(-)
 
 
- Documentation/kernel-parameters.txt |    5 --
- arch/x86/include/asm/e820.h         |    3 +
- arch/x86/kernel/Makefile            |    1 
- arch/x86/kernel/resource.c          |   48 ++++++++++++++++
- arch/x86/kernel/setup.c             |    1 
- arch/x86/pci/i386.c                 |   18 ++----
- drivers/pci/bus.c                   |   81 ++-------------------------
- include/linux/ioport.h              |    2 -
- kernel/resource.c                   |  104 +++--------------------------------
- 9 files changed, 73 insertions(+), 190 deletions(-)
- create mode 100644 arch/x86/kernel/resource.c
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 003170e..5624db8 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -64,57 +64,17 @@ void pci_bus_remove_resources(struct pci_bus *bus)
+ 	}
+ }
+ 
+-static bool pci_bus_resource_better(struct resource *res1, bool pos1,
+-				    struct resource *res2, bool pos2)
+-{
+-	/* If exactly one is positive decode, always prefer that one */
+-	if (pos1 != pos2)
+-		return pos1 ? true : false;
+-
+-	/* Prefer the one that contains the highest address */
+-	if (res1->end != res2->end)
+-		return (res1->end > res2->end) ? true : false;
+-
+-	/* Otherwise, prefer the one with highest "center of gravity" */
+-	if (res1->start != res2->start)
+-		return (res1->start > res2->start) ? true : false;
+-
+-	/* Otherwise, choose one arbitrarily (but consistently) */
+-	return (res1 > res2) ? true : false;
+-}
+-
+-static bool pci_bus_resource_positive(struct pci_bus *bus, struct resource *res)
+-{
+-	struct pci_bus_resource *bus_res;
+-
+-	/*
+-	 * This relies on the fact that pci_bus.resource[] refers to P2P or
+-	 * CardBus bridge base/limit registers, which are always positively
+-	 * decoded.  The pci_bus.resources list contains host bridge or
+-	 * subtractively decoded resources.
+-	 */
+-	list_for_each_entry(bus_res, &bus->resources, list) {
+-		if (bus_res->res == res)
+-			return (bus_res->flags & PCI_SUBTRACTIVE_DECODE) ?
+-				false : true;
+-	}
+-	return true;
+-}
+-
+ /*
+- * Find the next-best bus resource after the cursor "res".  If the cursor is
+- * NULL, return the best resource.  "Best" means that we prefer positive
+- * decode regions over subtractive decode, then those at higher addresses.
++ * Find the highest-address bus resource below the cursor "res".  If the
++ * cursor is NULL, return the highest resource.
+  */
+ static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
+ 						   unsigned int type,
+ 						   struct resource *res)
+ {
+-	bool res_pos, r_pos, prev_pos = false;
+ 	struct resource *r, *prev = NULL;
+ 	int i;
+ 
+-	res_pos = pci_bus_resource_positive(bus, res);
+ 	pci_bus_for_each_resource(bus, r, i) {
+ 		if (!r)
+ 			continue;
+@@ -122,14 +82,26 @@ static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
+ 		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
+ 			continue;
+ 
+-		r_pos = pci_bus_resource_positive(bus, r);
+-		if (!res || pci_bus_resource_better(res, res_pos, r, r_pos)) {
+-			if (!prev || pci_bus_resource_better(r, r_pos,
+-							     prev, prev_pos)) {
+-				prev = r;
+-				prev_pos = r_pos;
+-			}
++		/* If this resource is at or past the cursor, skip it */
++		if (res) {
++			if (r == res)
++				continue;
++			if (r->end > res->end)
++				continue;
++			if (r->end == res->end && r->start > res->start)
++				continue;
+ 		}
++
++		if (!prev)
++			prev = r;
++
++		/*
++		 * A small resource is higher than a large one that ends at
++		 * the same address.
++		 */
++		if (r->end > prev->end ||
++		    (r->end == prev->end && r->start > prev->start))
++			prev = r;
+ 	}
+ 
+ 	return prev;
+
