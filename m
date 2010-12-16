@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab0LPKBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:01:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255Ab0LPKBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:01:13 -0500
-Date: Thu, 16 Dec 2010 11:00:50 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Maxim Uvarov <muvarov@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101216100050.GA2261@redhat.com>
-References: <20101208141942.GA2335@redhat.com>
- <4D00823A.9050808@kernel.org>
- <20101209124117.GA6032@redhat.com>
- <4D01377B.5070809@kernel.org>
- <20101213100848.GA2237@redhat.com>
- <4D0663F0.2060103@kernel.org>
- <4D06783C.6040009@zytor.com>
- <20101214224135.GB19693@redhat.com>
- <20101215103954.GA2243@redhat.com>
- <4D09958D.2040907@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D09958D.2040907@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754453Ab0LPKBl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:01:41 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37707 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425Ab0LPKBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 05:01:36 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-mm <linux-mm@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        SystemTap <systemtap@sources.redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 16 Dec 2010 15:28:58 +0530
+Message-Id: <20101216095858.23751.59998.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+Subject: [RFC] [PATCH 2.6.37-rc5-tip 9/20]  9: x86: architecture specific task information.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 08:29:01PM -0800, Yinghai Lu wrote:
-> please check
-> 
-> [PATCH] x86, crashkernel, 32bit: only try to get range under 512M
-> 
-> Steanishlaw report kdump is 32bit is broken.
-LOL
 
-> in misc.c for decompresser, it will do sanity checking to make sure heap
-> heap under 512M.
-> 
-> So limit it in first kernel under 512M for 32bit system.
-> 
-> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On X86_64, we need to support rip relative instructions.
+Rip relative instructions are handled by saving the scratch register
+on probe hit and then retrieving the previously saved scratch register
+after single-step. This value stored at probe hit is specific to each
+task. Hence this is implemented as part of uprobe_task_arch_info.
 
-Patch fix problem on my T-60 laptop.
+Since x86_32 has no support for rip relative instructions, we dont need to
+bother for x86_32.
 
-As expected patch does not help on my other T-500 x86_64 system,
-kdump not work there, but perhaps this is a different problem,
-I'm going to check it.
+Signed-off-by: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ arch/x86/include/asm/uprobes.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Stanislaw
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 0063207..e38950f 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -34,8 +34,13 @@ typedef u8 uprobe_opcode_t;
+ struct uprobe_arch_info {
+ 	unsigned long rip_rela_target_address;
+ };
++
++struct uprobe_task_arch_info {
++	unsigned long saved_scratch_register;
++};
+ #else
+ struct uprobe_arch_info {};
++struct uprobe_task_arch_info {};
+ #endif
+ struct uprobe;
+ extern int analyze_insn(struct task_struct *tsk, struct uprobe *uprobe);
