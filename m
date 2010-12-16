@@ -1,95 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab0LPUcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 15:32:21 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:60974 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756186Ab0LPUcU (ORCPT
+	id S1756873Ab0LPUc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 15:32:56 -0500
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:57428 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756484Ab0LPUcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 15:32:20 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Thu, 16 Dec 2010 12:32:42 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx1
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch] make pipes use event aware wakeups
-Message-ID: <alpine.DEB.2.00.1012161228530.25094@davide-lnx1>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Thu, 16 Dec 2010 15:32:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Z4UHsuLVINPmWFObXLGugZ4cf0g8ItUdRlKJLzDuraWlPMzqFgn6v6+IddJaVHs0m2
+         wnixBKs5C+eC5WmqH2ZKT/p6CzxoywY+mFM2OGtZ/ZnbzbPKxZZZUKdwebbYrkGE8GJO
+         D1A5w4T5clOUzX2h33dLPtPQjygkPKbxJW4aA=
+Date: Thu, 16 Dec 2010 22:32:17 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, davej@redhat.com
+Subject: [PATCH] proc: warn if registering world writeable files
+Message-ID: <20101216203217.GA3581@p183.telecom.by>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I thought this was alreay merged, but this thread brought to my attention 
-it wasn't:
-
-https://lkml.org/lkml/2010/12/15/234
-
-This patch sends the events the wakeup refers to, so that epoll, and even 
-the new poll code in fs/select.c can avoid wakeups in events are not 
-matching the requested set.
-
-
-Signed-off-by: Davide Libenzi <davidel@xmailserver.org>
-
-
-- Davide
-
-
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- fs/pipe.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Index: linux-2.6.mod/fs/pipe.c
-===================================================================
---- linux-2.6.mod.orig/fs/pipe.c	2010-12-15 20:49:48.000000000 -0800
-+++ linux-2.6.mod/fs/pipe.c	2010-12-15 20:51:42.000000000 -0800
-@@ -441,7 +441,7 @@
- 			break;
- 		}
- 		if (do_wakeup) {
--			wake_up_interruptible_sync(&pipe->wait);
-+			wake_up_interruptible_sync_poll(&pipe->wait, POLLOUT);
-  			kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 		}
- 		pipe_wait(pipe);
-@@ -450,7 +450,7 @@
- 
- 	/* Signal writers asynchronously that there is more room. */
- 	if (do_wakeup) {
--		wake_up_interruptible_sync(&pipe->wait);
-+		wake_up_interruptible_sync_poll(&pipe->wait, POLLOUT);
- 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 	}
- 	if (ret > 0)
-@@ -612,7 +612,7 @@
- 			break;
- 		}
- 		if (do_wakeup) {
--			wake_up_interruptible_sync(&pipe->wait);
-+			wake_up_interruptible_sync_poll(&pipe->wait, POLLIN);
- 			kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 			do_wakeup = 0;
- 		}
-@@ -623,7 +623,7 @@
- out:
- 	mutex_unlock(&inode->i_mutex);
- 	if (do_wakeup) {
--		wake_up_interruptible_sync(&pipe->wait);
-+		wake_up_interruptible_sync_poll(&pipe->wait, POLLIN);
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 	}
- 	if (ret > 0)
-@@ -715,7 +715,7 @@
- 	if (!pipe->readers && !pipe->writers) {
- 		free_pipe_info(inode);
- 	} else {
--		wake_up_interruptible_sync(&pipe->wait);
-+		wake_up_interruptible_sync_poll(&pipe->wait, POLLIN | POLLOUT);
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 	}
+ fs/proc/generic.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -623,6 +623,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+ 	memcpy(((char *) ent) + sizeof(struct proc_dir_entry), fn, len + 1);
+ 	ent->name = ((char *) ent) + sizeof(*ent);
+ 	ent->namelen = len;
++	WARN_ON(S_ISREG(mode) && (mode & S_IWOTH));
+ 	ent->mode = mode;
+ 	ent->nlink = nlink;
+ 	atomic_set(&ent->count, 1);
