@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0LPV0h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 16:26:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754040Ab0LPV0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 16:26:36 -0500
-Date: Thu, 16 Dec 2010 16:26:10 -0500
-From: Dave Jones <davej@redhat.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] proc: warn if registering world writeable files
-Message-ID: <20101216212609.GA9352@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-	linux-kernel@vger.kernel.org
-References: <20101216203217.GA3581@p183.telecom.by>
+	id S1757462Ab0LPV2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 16:28:49 -0500
+Received: from sj-iport-1.cisco.com ([171.71.176.70]:39105 "EHLO
+	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756136Ab0LPV2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 16:28:46 -0500
+Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlwFAGsTCk2rRN+K/2dsb2JhbACWEI4uc6Z0mz+FSgSEZYYY
+X-IronPort-AV: E=Sophos;i="4.59,357,1288569600"; 
+   d="scan'208";a="391840146"
+From: Tom Lyon <pugs@cisco.com>
+Organization: Cisco Systems, Inc.
+To: linux-kernel@vger.kernel.org
+Subject: change of email address: pugs@cisco.com -> pugs@ieee.org
+Date: Thu, 16 Dec 2010 13:28:55 -0800
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm <kvm@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+References: <cover.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012161410440.12146@localhost6.localdomain6> <4D0A75E3.3090900@web.de>
+In-Reply-To: <4D0A75E3.3090900@web.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101216203217.GA3581@p183.telecom.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012161328.56193.pugs@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 10:32:17PM +0200, Alexey Dobriyan wrote:
- > Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
- > ---
- > 
- >  fs/proc/generic.c |    1 +
- >  1 file changed, 1 insertion(+)
- > 
- > --- a/fs/proc/generic.c
- > +++ b/fs/proc/generic.c
- > @@ -623,6 +623,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
- >  	memcpy(((char *) ent) + sizeof(struct proc_dir_entry), fn, len + 1);
- >  	ent->name = ((char *) ent) + sizeof(*ent);
- >  	ent->namelen = len;
- > +	WARN_ON(S_ISREG(mode) && (mode & S_IWOTH));
- >  	ent->mode = mode;
- >  	ent->nlink = nlink;
- >  	atomic_set(&ent->count, 1);
-
-Not sure about this. For the reason I mentioned in the checkpatch diff
-that this is "usually" a problem.  There may be some use cases where
-it may actually be ok.
-
-(I'm having a hard time thinking up a justification though tbh)
-
-	Dave
-
+eom
