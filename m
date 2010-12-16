@@ -1,42 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab0LPLVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 06:21:55 -0500
-Received: from lo.gmane.org ([80.91.229.12]:32985 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754428Ab0LPLVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 06:21:52 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: Bcache version 9
-Date: Thu, 16 Dec 2010 03:21:33 -0800
-Message-ID: <4D09F63D.8040406@gmail.com>
-References: <20101121140808.GA6429@moria> <20101122010914.GB7688@kroah.com> <4CEB7648.8030000@gmail.com> <20101201041610.GA5891@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755615Ab0LPLiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 06:38:09 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:40476 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754691Ab0LPLiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 06:38:07 -0500
+Message-ID: <4D09F9E2.6060900@euromail.se>
+Date: Thu, 16 Dec 2010 12:37:06 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] input: mt updates for 2.6.38
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: c-76-105-220-120.hsd1.or.comcast.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9pre) Gecko/20100821 Lanikai/3.1.3pre
-In-Reply-To: <20101201041610.GA5891@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PTC8y-0000ur-7q.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PTC8y-0000ur-7q 08d17220ad4edeeb52cf5b3381fcb9f9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2010 08:16 PM, Greg KH wrote:
-> True, but I thought configfs could handle "bare" config items, you might
-> want to look a bit closer as to how people are using it.  But I could be
-> totally wrong however.
+Dmitry,
 
-Just in case I wasn't the only one confused, I stared at the 
-documentation and examples some more... still wasn't completely sure, so 
-I wrote the code, and bare attributes without a configfs item do work. I 
-just switched to configfs for the stuff that was in /sys/kernel/bcache, 
-it'll be in the next version.
+Please pull from
 
-Almost got everything done on my todo list before it's ready to be 
-submitted...
+  git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
 
+to re-receive input-mt updates for 2.6.38.
+
+As a one-time measure, the tree has been rewound all the way to 2.6.37-rc1, to
+keep our trees at a common checkpoint. Hereafter, the branch will be kept stable
+and synchronized at a common checkpoint.
+
+Content-wise, the filename change has been folded into the first commit. The
+finger-count report and the trkid documentation have been folded into the commit
+where they are introduced. Furthermore, MT_TOOL_ENVELOPE has been dropped
+completely, and is going to be replaced by an input device quirk. The overall
+documentation changes have been held back for another respin. Lastly, another
+device patch has been added to hid-egalax.
+
+Thanks,
+Henrik
+
+Dmitry Torokhov (1):
+      Input: include MT library as source for kerneldoc
+
+Henrik Rydberg (12):
+      input: mt: Break out slots handling
+      input: mt: Collect slots initialization code
+      input: mt: Move tracking and pointer emulation to input-mt
+      input: mt: Add hovering distance axis
+      hid: egalax: Setup input device manually
+      hid: egalax: Correct for device resolution report error
+      hid: egalax: Report zero as minimum pressure
+      hid: egalax: Add event filtering
+      hid: egalax: Convert to MT slots
+      hid: egalax: Add support for Wetab
+      hid: egalax: Document the new devices in Kconfig
+      MAINTAINERS: Update input-mt entry
+
+Richard Nauber (1):
+      hid: egalax: Add support for Samsung NB30 netbook
+
+ Documentation/DocBook/device-drivers.tmpl    |    4 +
+ Documentation/input/multi-touch-protocol.txt |    9 ++-
+ MAINTAINERS                                  |    2 +
+ drivers/hid/Kconfig                          |    3 +-
+ drivers/hid/hid-3m-pct.c                     |   36 +-----
+ drivers/hid/hid-core.c                       |    2 +
+ drivers/hid/hid-egalax.c                     |  129 ++++++++-----------
+ drivers/hid/hid-ids.h                        |    2 +
+ drivers/input/Makefile                       |    2 +-
+ drivers/input/input-mt.c                     |  170 ++++++++++++++++++++++++++
+ drivers/input/input.c                        |   48 +-------
+ drivers/input/misc/uinput.c                  |    4 +-
+ drivers/input/tablet/wacom_wac.c             |   26 +---
+ drivers/input/tablet/wacom_wac.h             |    4 -
+ drivers/input/touchscreen/wacom_w8001.c      |   25 +---
+ include/linux/input.h                        |   22 +---
+ include/linux/input/mt.h                     |   57 +++++++++
+ 17 files changed, 329 insertions(+), 216 deletions(-)
+ create mode 100644 drivers/input/input-mt.c
+ create mode 100644 include/linux/input/mt.h
