@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab0LPDts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 22:49:48 -0500
-Received: from fieldses.org ([174.143.236.118]:43233 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755922Ab0LPDtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 22:49:47 -0500
-Date: Wed, 15 Dec 2010 22:49:46 -0500
-To: Takuma Umeya <tumeya@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chuck.lever@oracle.com
-Subject: Re: [PATCH] nfs4: set source address when callback is generated
-Message-ID: <20101216034945.GH9646@fieldses.org>
-References: <20101215050901.GB13532@redhat.com>
+	id S1751717Ab0LPE3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 23:29:37 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33200 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab0LPE3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 23:29:35 -0500
+Message-ID: <4D09958D.2040907@kernel.org>
+Date: Wed, 15 Dec 2010 20:29:01 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101215050901.GB13532@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+CC: Vivek Goyal <vgoyal@redhat.com>, Maxim Uvarov <muvarov@gmail.com>,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101207105053.GA2803@redhat.com> <4CFE89FE.1090901@kernel.org> <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com>
+In-Reply-To: <20101215103954.GA2243@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 02:09:01PM +0900, Takuma Umeya wrote:
-> when callback is generated in NFSv4 server, it doesn't set the source
-> address. When an alias IP is utilized on NFSv4 server and suppose the 
-> client is accessing via that alias IP (e.g. eth0:0), the client invokes 
-> the callback to the IP address that is set on the original device (e.g.
-> eth0). This behavior results in timeout of xprt. 
-> The patch sets the IP address that the client should invoke callback to. 
-> 
-> Signed-off-by: Takuma Umeya <tumeya@redhat.com>
-> 
-> 
-> diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-> index 143da2e..bb5de7f 100644
-> --- a/fs/nfsd/nfs4callback.c
-> +++ b/fs/nfsd/nfs4callback.c
-> @@ -483,6 +483,7 @@ int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn)
->                 .net            = &init_net,
->                 .address        = (struct sockaddr *) &conn->cb_addr,
->                 .addrsize       = conn->cb_addrlen,
-> +               .saddress       = (struct sockaddr *) &conn->cb_saddr,
->                 .timeout        = &timeparms,
->                 .program        = &cb_program,
->                 .version        = 0,
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 116cab9..c7d3171 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -1177,9 +1177,11 @@ find_unconfirmed_client_by_str(const char *dname, unsigned int hashval,
->  }
->  
->  static void
-> -gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
-> +gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, 
-> +                                       u32 scopeid, struct svc_rqst *rqstp)
->  {
->         struct nfs4_cb_conn *conn = &clp->cl_cb_conn;
-> +       struct sockaddr s_sa;
->         unsigned short expected_family;
->  
->         /* Currently, we only support tcp and tcp6 for the callback channel */
-> @@ -1205,6 +1207,19 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, u32 scopeid)
->  
->         conn->cb_prog = se->se_callback_prog;
->         conn->cb_ident = se->se_callback_ident;
-> +       switch(expected_family){
-> +               case AF_INET:
-> +                       ((struct sockaddr_in *)&s_sa)->sin_family = AF_INET;
-> +                       ((struct sockaddr_in *)&s_sa)->sin_addr = rqstp->
-> +                                                               rq_daddr.addr;
-> +                        break;
-> +               case AF_INET6:
-> +                       ((struct sockaddr_in6 *)&s_sa)->sin6_family = AF_INET6;
-> +                       ((struct sockaddr_in6 *)&s_sa)->sin6_addr = rqstp->
-> +                                                               rq_daddr.addr6;
-> +                       break;
-> +       }
-> +       rpc_copy_addr((struct sockaddr *)&conn->cb_saddr, &s_sa);
+please check
 
-Chuck, is there any reason we use this special svc_addr_u union and not
-a struct sockaddr_storage?  This seems more verbose than necessary....
+[PATCH] x86, crashkernel, 32bit: only try to get range under 512M
 
---b.
+Steanishlaw report kdump is 32bit is broken.
 
->         return;
->  out_err:
->         conn->cb_addr.ss_family = AF_UNSPEC;
-> @@ -1876,7 +1891,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
->          * for consistent minorversion use throughout:
->          */
->         new->cl_minorversion = 0;
-> -       gen_callback(new, setclid, rpc_get_scope_id(sa));
-> +       gen_callback(new, setclid, rpc_get_scope_id(sa), rqstp);
->         add_to_unconfirmed(new, strhashval);
->         setclid->se_clientid.cl_boot = new->cl_clientid.cl_boot;
->         setclid->se_clientid.cl_id = new->cl_clientid.cl_id;
-> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> index 39adc27..0cee03d 100644
-> --- a/fs/nfsd/state.h
-> +++ b/fs/nfsd/state.h
-> @@ -95,6 +95,7 @@ struct nfs4_delegation {
->  struct nfs4_cb_conn {
->         /* SETCLIENTID info */
->         struct sockaddr_storage cb_addr;
-> +       struct sockaddr_storage cb_saddr;
->         size_t                  cb_addrlen;
->         u32                     cb_prog; /* used only in 4.0 case;
->                                             per-session otherwise */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+in misc.c for decompresser, it will do sanity checking to make sure heap
+heap under 512M.
+
+So limit it in first kernel under 512M for 32bit system.
+
+Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/kernel/setup.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -499,7 +499,19 @@ static inline unsigned long long get_tot
+ 	return total << PAGE_SHIFT;
+ }
+ 
++/*
++ * arch/x86/boot/compressed/misc.c will check heap size for decompresser
++ *  32bit will have more strict limitation
++ */
+ #define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
++#define HEAP_LIMIT_32BIT 0x20000000
++
++#ifdef CONFIG_X86_64
++#define CRASH_KERNEL_LIMIT DEFAULT_BZIMAGE_ADDR_MAX
++#else
++#define CRASH_KERNEL_LIMIT HEAP_LIMIT_32BIT
++#endif
++
+ static void __init reserve_crashkernel(void)
+ {
+ 	unsigned long long total_mem;
+@@ -521,7 +533,7 @@ static void __init reserve_crashkernel(v
+ 		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
+ 		 */
+ 		crash_base = memblock_find_in_range(alignment,
+-			       DEFAULT_BZIMAGE_ADDR_MAX, crash_size, alignment);
++			       CRASH_KERNEL_LIMIT, crash_size, alignment);
+ 
+ 		if (crash_base == MEMBLOCK_ERROR) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
