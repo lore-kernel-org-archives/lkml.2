@@ -1,101 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab0LPT7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 14:59:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35458 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab0LPT7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 14:59:05 -0500
-Message-ID: <4D0A6F66.1010006@zytor.com>
-Date: Thu, 16 Dec 2010 11:58:30 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org>
-In-Reply-To: <4D0A4C51.3070008@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755987Ab0LPUHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 15:07:50 -0500
+Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:52150 "EHLO
+	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753933Ab0LPUHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 15:07:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPv7CU1GNBQZ/2dsb2JhbACkPHTCEYVKBIRl
+Date: Thu, 16 Dec 2010 14:22:41 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Jason Baron <jbaron@redhat.com>
+Cc: peterz@infradead.org, hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 0/2] jump label: simplify API
+Message-ID: <20101216192241.GA8239@Krystal>
+References: <cover.1292522251.git.jbaron@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <cover.1292522251.git.jbaron@redhat.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 13:57:16 up 253 days,  4:47,  5 users,  load average: 0.14, 0.11,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 09:28 AM, Yinghai Lu wrote:
+* Jason Baron (jbaron@redhat.com) wrote:
+> Hi,
 > 
-> the brk is complaining if i change that to 
+> The first patch uses the storage space of the jump label key address
+> as a pointer into the update table. In this way, we can find all
+> the addresses that need to be updated without hashing.
 > 
->  	if (end > ((-__PAGE_OFFSET-(128 <<20)-1) & 0x7fffffff))
->  		error("Destination address too large");
+> The second patch introduces:
 > 
-> brk is complaining when try to get more for dmi ...
-> ...
-> I'm in purgatory
-> bootconsole [uart0] enabled
-> Kernel Layout:
->   .text: [0x2e000000-0x2e3f08ca]
-> .rodata: [0x2e3f2000-0x2e5a2fff]
->   .data: [0x2e5a3000-0x2e5f6467]
->   .init: [0x2e5f7000-0x2e670fff]
->    .bss: [0x2e675000-0x2e76ffff]
->    .brk: [0x2e770000-0x2e894fff]
->     memblock_x86_reserve_range: [0x00001000-0x00001fff]    EX TRAMPOLINE
->     memblock_x86_reserve_range: [0x2e000000-0x2e76ffff]    TEXT DATA BSS
->     memblock_x86_reserve_range: [0x35bdd000-0x35f49fff]          RAMDISK
->     memblock_x86_reserve_range: [0x0009c800-0x000fffff]  * BIOS reserved
-> Initializing cgroup subsys cpuset
-> Initializing cgroup subsys cpu
-> Linux version 2.6.37-rc5-tip+ (root@mpk12-3214-189-181) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #4 SMP Wed Dec 15 11:04:32 PST 2010
-> KERNEL supported cpus:
->   Intel GenuineIntel
->   AMD AuthenticAMD
->   NSC Geode by NSC
->   Cyrix CyrixInstead
->   Centaur CentaurHauls
->   Transmeta GenuineTMx86
->   Transmeta TransmetaCPU
->   UMC UMC UMC UMC
-> BIOS-provided physical RAM map:
->  BIOS-e820: [0x00000000000100-0x0000000009c7ff] (usable)
->  BIOS-e820: [0x0000000009c800-0x0000000009ffff] (reserved)
->  BIOS-e820: [0x000000000e0000-0x000000000fffff] (reserved)
->  BIOS-e820: [0x00000000100000-0x0000007ff9ffff] (usable)
->  BIOS-e820: [0x0000007ffae000-0x0000007ffaffff] (usable)
->  BIOS-e820: [0x0000007ffb0000-0x0000007ffbdfff] (ACPI data)
->  BIOS-e820: [0x0000007ffbe000-0x0000007ffeffff] (ACPI NVS)
->  BIOS-e820: [0x0000007fff0000-0x0000007fffffff] (reserved)
->  BIOS-e820: [0x000000e0000000-0x000000efffffff] (reserved)
->  BIOS-e820: [0x000000fec00000-0x000000fec00fff] (reserved)
->  BIOS-e820: [0x000000fee00000-0x000000feefffff] (reserved)
->  BIOS-e820: [0x000000ff700000-0x000000ffffffff] (reserved)
-> last_pfn = 0x7ffb0 max_arch_pfn = 0x1000000
-> NX (Execute Disable) protection: active
-> user-defined physical RAM map:
->  user: [0x00000000000000-0x0000000009ffff] (usable)
->  user: [0x0000002e000000-0x00000035f59fff] (usable)
->  user: [0x0000007ffb0000-0x0000007ffeffff] (ACPI data)
-> DMI present.
-> BUG: Int 6: CR2   (null)
->      EDI 00000019  ESI ff940c18  EBP   (null)  ESP ee5a5e84
->      EBX ee5cfb68  EDX 00000006  ECX 00000019  EAX ee8e6019
->      err   (null)  EIP ee5fb4dd   CS 00000060  flg 00010002
-> Stack: 00000019 ee62bf45 ff942000 00000563 00000001 ff940c00 000018c7 ee62bf83
->        ff940c00 ee62c063 80000000 ee3e6f2f ee50a3c0 ee5a5ed4 ff940c00 ff940c43
->        000018c7   (null) ee3173d4 000018c8 0000007f ff940c00 ff90b1bf ee5a5f18
-> Pid: 0, comm: swapper Not tainted 2.6.37-rc5-tip+ #4
-> Call Trace:
->  [<ee3dd1d5>] ? hlt_loop+0x0/0x3
->  [<ee5fb4dd>] ? extend_brk+0x31/0x44
+> static __always_inline bool unlikely_switch(struct jump_label_key *key);
+> 
+> instead of the old JUMP_LABEL(key, label) macro.
+> 
+> In this way, jump labels become really easy to use:
+> 
+> Define:
+> 
+> 	struct jump_label_key jump_key;
+> 
+> Can be used as:
+> 
+> 	if (unlikely_switch(&jump_key))
+> 		do unlikely code
 
-I'm assuming it bails due to:
+Ah, yes, that's an improvement!
 
-	BUG_ON((char *)(_brk_end + size) > __brk_limit);
+I'm just wondering about the terminology here. Isn't that more a
+"branch" than a "switch" ?
 
-... could you find out what _brk_end and __brk_limit are?
+I'm concerned about the fact that if we ever want to use the asm goto
+ability to jump to multiple targets (which is closer to a statically
+computed switch than a branch), we might want to reserve "switch" name
+for that rather than the branch.
 
-	-hpa
+I wonder if the "if (unlikely_switch(&jump_key))" you propose above is
+the right thing to do. Why does the unlikely_ have to be included in the
+name ? Maybe there is a good reason for it, but it would be nice to have
+it spelled out. We might consider:
+
+if (unlikely(static_branch(&jump_key)))
+  ...
+
+instead.
+
+For the switch statement, from the top of my head the idea would be to
+get something close to the following:
+
+static __always_inline
+int static_switch_{3,4,5,6...}(struct jump_label_key *key);
+
+e.g.:
+
+static __always_inline
+int static_switch_3(struct jump_label_key *key)
+{
+	asm goto("1:"
+		JUMP_LABEL_INITIAL_NOP
+		".pushsection __switch_table_3,  \"a\" \n\t"
+		_ASM_PTR "%c0, 1b, %l[l_1], %l[l_2] \n\t"
+		".popsection \n\t"
+		: :  "i" (key) : : l_1, l_2 );
+	return 0;
+l_1:
+	return 1;
+l_2:
+	return 2;
+}
+
+switch(static_switch_3(&switch_key)) {
+	case 0: .....
+		break;
+	case 1: .....
+		break;
+	case 2: .....
+		break;
+}
+
+(I have not tried to give that to gcc 4.5.x to see how the resulting
+assembly looks like. It would be interesting to see if it handles this
+case well)
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+> 
+> enable/disale via:
+> 
+> 	jump_label_enable(&jump_key);
+> 	jump_label_disable(&jump_key);
+> 
+> that's it!
+> 
+> Thanks to H. Peter Anvin for suggesting the simpler 'unlikely_switch()'
+> function.
+> 
+> thanks,
+> 
+> -Jason
+> 
+> 
+> Jason Baron (2):
+>   jump label: make enable/disable o(1)
+>   jump label: introduce unlikely_switch()
+> 
+>  arch/x86/include/asm/jump_label.h |   22 +++--
+>  arch/x86/kernel/jump_label.c      |    2 +-
+>  include/linux/dynamic_debug.h     |   24 ++----
+>  include/linux/jump_label.h        |   72 ++++++++++-------
+>  include/linux/jump_label_ref.h    |   41 ++++++----
+>  include/linux/perf_event.h        |   25 +++---
+>  include/linux/tracepoint.h        |    8 +-
+>  kernel/jump_label.c               |  159 ++++++++++++++++++++++++++++++-------
+>  kernel/perf_event.c               |    4 +-
+>  kernel/tracepoint.c               |   22 ++---
+>  10 files changed, 243 insertions(+), 136 deletions(-)
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
