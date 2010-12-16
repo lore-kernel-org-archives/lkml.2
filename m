@@ -1,172 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451Ab0LPVTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 16:19:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:4310 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757428Ab0LPVTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 16:19:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,356,1288594800"; 
-   d="scan'208";a="687925617"
-Message-ID: <4D0A825F.1010408@linux.intel.com>
-Date: Thu, 16 Dec 2010 13:19:27 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Peter Zijlstra <peterz@infradead.org>, John Kacur <jkacur@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] plist: pass the real plist_head to plist_del()
-References: <4D09E897.7090406@cn.fujitsu.com>
-In-Reply-To: <4D09E897.7090406@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1757457Ab0LPVVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 16:21:12 -0500
+Received: from tomts36-srv.bellnexxia.net ([209.226.175.93]:34668 "EHLO
+	tomts36-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756903Ab0LPVVJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 16:21:09 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACERCk1GNBQZ/2dsb2JhbACkPXTCLYVKBIRl
+Date: Thu, 16 Dec 2010 15:36:03 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, athieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 1/2] jump label: make enable/disable o(1)
+Message-ID: <20101216203603.GA15610@Krystal>
+References: <cover.1292522251.git.jbaron@redhat.com> <a35b9310aafa31a9e97f5c9bad9b09e0b6cbbf79.1292522252.git.jbaron@redhat.com> <1292526602.2708.57.camel@laptop> <20101216192303.GB2856@redhat.com> <1292528031.2708.77.camel@laptop> <20101216193635.GC2856@redhat.com> <1292528501.2708.80.camel@laptop> <20101216194852.GD2856@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20101216194852.GD2856@redhat.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 15:25:56 up 253 days,  6:16,  5 users,  load average: 0.06, 0.15,
+	0.08
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 02:23 AM, Lai Jiangshan wrote:
-> These patches shrink the struct plist_head. After it is shrinked
-> plist_del() required a real plist_head passed into.
->
-> My tests did not cover all paths.
->
-> Subject: plist: pass the real plist_head to plist_del()
->
->
-> Some plist_del()s in kernel/futex.c are passed a faked plist_head.
+* Jason Baron (jbaron@redhat.com) wrote:
+> On Thu, Dec 16, 2010 at 08:41:41PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2010-12-16 at 14:36 -0500, Jason Baron wrote:
+> > > On Thu, Dec 16, 2010 at 08:33:51PM +0100, Peter Zijlstra wrote:
+> > > > On Thu, 2010-12-16 at 14:23 -0500, Jason Baron wrote:
+> > > > > 
+> > > > > For the jump label disabled case, perf is using atomic_inc/dec and atomic_read
+> > > > > to check if enabled. While other consumers (tracepoints) are just using an
+> > > > > 'int'. I didn't want hurt the jump label disabled case for tracepoints.
+> > > > > If we can agree to use atomic ops for tracepoints, or drop atomics from
+> > > > > perf, that would simplify things. 
+> > > > 
+> > > > I had a quick look at the tracepoint stuff but got lost, but surely it
+> > > > has a reference count somewhere as well, it needs to know when the last
+> > > > probe goes away.. or does it check if the list is empty?
+> > > > 
+> > > > Anyway, tracepoint enable/disable isn't a real fast-path, surely it
+> > > > could suffer an atomic op?
+> > > 
+> > > It is the atomic_read() at the tracepoint site that I am concerned
+> > > about.
+> > 
+> > Look at the implementation :-), its just wrapper foo, its a regular read
+> 
+> i did.
+> 
+> > for everything except some really weird archs (you really shouldn't care
+> > about).
+> 
+> right, I wasn't sure how much those mattered.
+> 
+> > 
+> > static inline int atomic_read(const atomic_t *v)
+> > {
+> >         return (*(volatile int *)&(v)->counter);
+> > }
+> > 
+> > The volatile simply forces a load to be emitted.
+> 
+> Mathieu, what do you think? Are you ok with an atomic_read() for
+> checking if a tracepoint is enabled, when jump labels are disabled?
 
-Can you explain what you mean by a "faked plist_head"? I'm looking at 
-the existing source and q.list.plist is a "struct plist_head". Is it the 
-required knowledge of the implementation of a plist_node that the 
-current implementation depends on that you object to? Effectively a lack 
-of encapsulation?
+volatiles are also ordered one with respect to another by the compiler,
+so I'd like to avoid doing the volatile read on the fast path unless
+utterly necessary for architectures not supporting static jump patching
+yet.
 
->
-> It can work because current code does not require real plist_head
-> in plist_del(). But it is an undocumented usage, it is not good.
+Tracepoints keep their own reference counts for enable/disable, so a
+simple "enable/disable" is fine as far as tracepoints are concerned. Why
+does perf need that refcounting done by the static jumps ?
 
+I'd be tempted to use a "char" instead of a int/atomic_t for the key,
+and keep the reference counter out of the picture (and leave that to the
+caller). A single byte can be updated and read atomically. This should
+save memory for the jump label tables.
 
-Please compare the results of the futextest performance tests before and 
-after your applied patch and report the results with the patch:
+Thoughts ?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/dvhart/futextest.git
+Thanks,
 
+Mathieu
 
->
-> Signed-off-by:  Lai Jiangshan<laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 6c683b3..6c4f67a 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -158,6 +158,15 @@ static inline int match_futex(union futex_key *key1, union futex_key *key2)
->   }
->
->   /*
-> + * find the bucket of a futex entry.
-> + * the same as hash_futex(&q->key) but a little more effcient
-
-efficient.
-
-Please capitalize the first word in each sentence.
-
-> + */
-
-
-Please use proper kernel doc formatting for any new functions added to 
-futex.c.
-
-
-> +static struct futex_hash_bucket *futex_bucket(struct futex_q *q)
-> +{
-> +	return container_of(q->lock_ptr, struct futex_hash_bucket, lock);
-> +}
-
-
-Have you found the jhash2 to be a bottleneck in a particular path? Or 
-was it an optimization to reduce the impact of the changes below (I'm 
-assuming the latter).
-
-
-> +
-> +/*
->    * Take a reference to the resource addressed by a key.
->    * Can be called while holding spinlocks.
->    *
-> @@ -744,7 +753,7 @@ static void wake_futex(struct futex_q *q)
->   	 */
->   	get_task_struct(p);
->
-> -	plist_del(&q->list,&q->list.plist);
-> +	plist_del(&q->list,&futex_bucket(q)->chain);
-
-
-Space after the comma while you're at it.
-
-
->   	/*
->   	 * The waiting task can free the futex_q as soon as
->   	 * q->lock_ptr = NULL is written, without taking any locks. A
-> @@ -1053,7 +1062,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
->   	q->key = *key;
->
->   	WARN_ON(plist_node_empty(&q->list));
-> -	plist_del(&q->list,&q->list.plist);
-> +	plist_del(&q->list,&futex_bucket(q)->chain);
-
-
-Space after the comma while you're at it.
-
-
->
->   	WARN_ON(!q->rt_waiter);
->   	q->rt_waiter = NULL;
-> @@ -1457,7 +1466,7 @@ retry:
->   			goto retry;
->   		}
->   		WARN_ON(plist_node_empty(&q->list));
-> -		plist_del(&q->list,&q->list.plist);
-> +		plist_del(&q->list,&futex_bucket(q)->chain);
-
-
-Space after the comma while you're at it.
-
-
->   		BUG_ON(q->pi_state);
->
-> @@ -1478,7 +1487,7 @@ static void unqueue_me_pi(struct futex_q *q)
->   	__releases(q->lock_ptr)
->   {
->   	WARN_ON(plist_node_empty(&q->list));
-> -	plist_del(&q->list,&q->list.plist);
-> +	plist_del(&q->list,&futex_bucket(q)->chain);
-
-
-Space after the comma while you're at it.
-
-
->   	BUG_ON(!q->pi_state);
->   	free_pi_state(q->pi_state);
-> @@ -2145,7 +2154,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
->   		 * We were woken prior to requeue by a timeout or a signal.
->   		 * Unqueue the futex_q and determine which it was.
->   		 */
-> -		plist_del(&q->list,&q->list.plist);
-> +		plist_del(&q->list,&hb->chain);
-
-
-Space after the comma while you're at it.
-
-
->   		/* Handle spurious wakeups gracefully */
->   		ret = -EWOULDBLOCK;
-
+> 
+> thanks,
+> 
+> -Jason
 
 -- 
-Darren Hart
-Yocto Linux Kernel
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
