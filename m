@@ -1,235 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab0LPQjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 11:39:24 -0500
-Received: from www84.your-server.de ([213.133.104.84]:55649 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab0LPQjW (ORCPT
+	id S1753790Ab0LPQkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 11:40:11 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33133 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753446Ab0LPQkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 11:39:22 -0500
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Cc: stefani@seibold.net
-Subject: [PATCH] cramfs: generate unique inode number for better inode cache usage
-Date: Thu, 16 Dec 2010 17:40:07 +0100
-Message-Id: <1292517607-6421-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.3.3
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 16 Dec 2010 11:40:09 -0500
+Subject: Re: [PATCHSET] block/SCSI: implement in-kernel disk event
+ handling, take#2
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, jeff@garzik.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz
+In-Reply-To: <4D0A400F.5090608@kernel.dk>
+References: <1291838262-21274-1-git-send-email-tj@kernel.org>
+	 <4D0A3EE1.4050404@kernel.org>  <4D0A400F.5090608@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Dec 2010 11:38:38 -0500
+Message-ID: <1292517519.3024.19.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Thu, 2010-12-16 at 17:36 +0100, Jens Axboe wrote:
+> On 2010-12-16 17:31, Tejun Heo wrote:
+> > On 12/08/2010 08:57 PM, Tejun Heo wrote:
+> >> This is the second take of in-kernel-disk-event patchset which
+> >> implements in-kernel disk event handling framework and adds support
+> >> for it to sr and sd.  This is largely to move media presence polling
+> >> into kernel as userspace implementation turned out to be quite
+> >> problematic over the years.
+> > 
+> > Kay, Jens, James, how does this look to you guys?
+> 
+> I like the concept, this is probably what we should have done all along.
+> The user space method has been tried and failed. So I was mostly laying
+> it low waiting for feedback before integrating this.
 
-This is fourth version. Changelog
- - 12.12.2010 first version
- - 15.12.2010 code cleanup suggest by Linus
- - 16.12.2010 code cleanup suggset by Pekka Enberg
- - 16.12.2010 fix comment, move setup_inode() code into get_cramfs_inode()
+Me too pretty much ... event driven is nice, but it only really works if
+the userspace stuff will stop polling ...
 
-This patch generates a unique inode numbers for any entries in the cram file
-system. For files which did not contain data's (device nodes, fifos and
-sockets) the offset of the directory entry inside the cramfs plus 1 will be
-used as inode number.
+James
 
-The + 1 for the inode will it make possible to distinguish between
-a file which contains no data and files which has data, the later one has
-a inode value where the lower two bits are always 0.
+> Kay?
 
-It also reimplement the behavoir to set the size and the number of block
-to 0 for special file, which is the right value for empty files,
-devices, fifos and sockets
 
-As a little benefit it will be also more compatible which older
-mkcramfs, because it will never use the cramfs_inode->offset for
-creating a inode number for special files.
-
-The patch is aginst 2.6.37-rc5
-
-Please apply it.
-
-Thanks,
-Stefani
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- fs/cramfs/inode.c |  110 +++++++++++++++++++++++++++++++++--------------------
- 1 files changed, 69 insertions(+), 41 deletions(-)
-
-diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
-index 32fd5fe..dfb0029 100644
---- a/fs/cramfs/inode.c
-+++ b/fs/cramfs/inode.c
-@@ -34,57 +34,81 @@ static const struct address_space_operations cramfs_aops;
- static DEFINE_MUTEX(read_mutex);
- 
- 
--/* These two macros may change in future, to provide better st_ino
--   semantics. */
--#define CRAMINO(x)	(((x)->offset && (x)->size)?(x)->offset<<2:1)
-+/* These macros may change in future, to provide better st_ino semantics. */
- #define OFFSET(x)	((x)->i_ino)
- 
--static void setup_inode(struct inode *inode, struct cramfs_inode * cramfs_inode)
-+static unsigned long cramino(struct cramfs_inode * cino, unsigned int offset)
- {
-+	if (!cino->offset)
-+		return offset + 1;
-+	if (!cino->size)
-+		return offset + 1;
-+
-+	/*
-+	 * The file mode test fix buggy mkcramfs implementations where
-+	 * cramfs_inode->offset is set to a non zero value for entries
-+	 * which did not contain data, like devices node and fifos.
-+	 */
-+	switch (cino->mode & S_IFMT) {
-+	case S_IFREG:
-+	case S_IFDIR:
-+	case S_IFLNK:
-+		return cino->offset << 2;
-+	default:
-+		break;
-+	}
-+	return offset + 1;
-+}
-+
-+static struct inode *get_cramfs_inode(struct super_block *sb,
-+	struct cramfs_inode * cramfs_inode, unsigned int offset)
-+{
-+	struct inode *inode;
- 	static struct timespec zerotime;
-+
-+	inode = iget_locked(sb, cramino(cramfs_inode, offset));
-+	if (!inode)
-+		return ERR_PTR(-ENOMEM);
-+	if (!(inode->i_state & I_NEW))
-+		return inode;
-+
-+	switch (cramfs_inode->mode & S_IFMT) {
-+	case S_IFREG:
-+		inode->i_fop = &generic_ro_fops;
-+		inode->i_data.a_ops = &cramfs_aops;
-+		break;
-+	case S_IFDIR:
-+		inode->i_op = &cramfs_dir_inode_operations;
-+		inode->i_fop = &cramfs_directory_operations;
-+		break;
-+	case S_IFLNK:
-+		inode->i_op = &page_symlink_inode_operations;
-+		inode->i_data.a_ops = &cramfs_aops;
-+		break;
-+	default:
-+		init_special_inode(inode, cramfs_inode->mode,
-+				old_decode_dev(cramfs_inode->size));
-+	}
-+
- 	inode->i_mode = cramfs_inode->mode;
- 	inode->i_uid = cramfs_inode->uid;
--	inode->i_size = cramfs_inode->size;
--	inode->i_blocks = (cramfs_inode->size - 1) / 512 + 1;
- 	inode->i_gid = cramfs_inode->gid;
-+
-+	/* if the lower 2 bits are zero, the inode contains data */
-+	if (!(inode->i_ino & 3)) {
-+		inode->i_size = cramfs_inode->size;
-+		inode->i_blocks = (cramfs_inode->size - 1) / 512 + 1;
-+	}
-+
- 	/* Struct copy intentional */
- 	inode->i_mtime = inode->i_atime = inode->i_ctime = zerotime;
- 	/* inode->i_nlink is left 1 - arguably wrong for directories,
- 	   but it's the best we can do without reading the directory
- 	   contents.  1 yields the right result in GNU find, even
- 	   without -noleaf option. */
--	if (S_ISREG(inode->i_mode)) {
--		inode->i_fop = &generic_ro_fops;
--		inode->i_data.a_ops = &cramfs_aops;
--	} else if (S_ISDIR(inode->i_mode)) {
--		inode->i_op = &cramfs_dir_inode_operations;
--		inode->i_fop = &cramfs_directory_operations;
--	} else if (S_ISLNK(inode->i_mode)) {
--		inode->i_op = &page_symlink_inode_operations;
--		inode->i_data.a_ops = &cramfs_aops;
--	} else {
--		init_special_inode(inode, inode->i_mode,
--			old_decode_dev(cramfs_inode->size));
--	}
--}
- 
--static struct inode *get_cramfs_inode(struct super_block *sb,
--				struct cramfs_inode * cramfs_inode)
--{
--	struct inode *inode;
--	if (CRAMINO(cramfs_inode) == 1) {
--		inode = new_inode(sb);
--		if (inode) {
--			inode->i_ino = 1;
--			setup_inode(inode, cramfs_inode);
--		}
--	} else {
--		inode = iget_locked(sb, CRAMINO(cramfs_inode));
--		if (inode && (inode->i_state & I_NEW)) {
--			setup_inode(inode, cramfs_inode);
--			unlock_new_inode(inode);
--		}
--	}
-+	unlock_new_inode(inode);
-+
- 	return inode;
- }
- 
-@@ -265,6 +289,9 @@ static int cramfs_fill_super(struct super_block *sb, void *data, int silent)
- 		printk(KERN_ERR "cramfs: root is not a directory\n");
- 		goto out;
- 	}
-+	/* correct strange, hard-coded permissions of mkcramfs */
-+	super.root.mode |= (S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-+
- 	root_offset = super.root.offset << 2;
- 	if (super.flags & CRAMFS_FLAG_FSID_VERSION_2) {
- 		sbi->size=super.size;
-@@ -289,7 +316,7 @@ static int cramfs_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	/* Set it all up.. */
- 	sb->s_op = &cramfs_ops;
--	root = get_cramfs_inode(sb, &super.root);
-+	root = get_cramfs_inode(sb, &super.root, 0);
- 	if (!root)
- 		goto out;
- 	sb->s_root = d_alloc_root(root);
-@@ -365,7 +392,7 @@ static int cramfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 		 */
- 		namelen = de->namelen << 2;
- 		memcpy(buf, name, namelen);
--		ino = CRAMINO(de);
-+		ino = cramino(de, OFFSET(inode) + offset);
- 		mode = de->mode;
- 		mutex_unlock(&read_mutex);
- 		nextoffset = offset + sizeof(*de) + namelen;
-@@ -404,8 +431,9 @@ static struct dentry * cramfs_lookup(struct inode *dir, struct dentry *dentry, s
- 		struct cramfs_inode *de;
- 		char *name;
- 		int namelen, retval;
-+		int dir_off = OFFSET(dir) + offset;
- 
--		de = cramfs_read(dir->i_sb, OFFSET(dir) + offset, sizeof(*de)+CRAMFS_MAXPATHLEN);
-+		de = cramfs_read(dir->i_sb, dir_off, sizeof(*de)+CRAMFS_MAXPATHLEN);
- 		name = (char *)(de+1);
- 
- 		/* Try to take advantage of sorted directories */
-@@ -436,7 +464,7 @@ static struct dentry * cramfs_lookup(struct inode *dir, struct dentry *dentry, s
- 		if (!retval) {
- 			struct cramfs_inode entry = *de;
- 			mutex_unlock(&read_mutex);
--			d_add(dentry, get_cramfs_inode(dir->i_sb, &entry));
-+			d_add(dentry, get_cramfs_inode(dir->i_sb, &entry, dir_off));
- 			return NULL;
- 		}
- 		/* else (retval < 0) */
--- 
-1.7.3.3
 
