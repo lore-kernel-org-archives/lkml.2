@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab0LPNub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 08:50:31 -0500
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:44464 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753606Ab0LPNu3 (ORCPT
+	id S1756080Ab0LPN4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 08:56:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35639 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab0LPN4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 08:50:29 -0500
-Subject: Re: [BUG?] memory hotplug: include/linux/radix-tree.h:145 invoked
- rcu_dereference_check() without protection!
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Reply-To: gerald.schaefer@de.ibm.com
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, Milton Miller <miltonm@bga.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org, linux-ext4@vger.kernel.org,
-        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-In-Reply-To: <20101208101947.b0646226.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101121112611.GB4267@deepthought.bhanu.net>
-	 <20101121133024.GF23423@thunk.org>	<20101121133024.GF23423@thunk.org>
-	 <20101121153949.GD20947@barrios-desktop>	<20101121173726.GG23423@thunk.org>
-	 <AANLkTimeSWWo-TAJPPH81OO_h1zFzWAT1Gg=XSLyFftH@mail.gmail.com>
-	 <rcu-radix-tree@mdm.bga.com>	<20101122061619.GA2764@linux.vnet.ibm.com>
-	 <1291748509.19276.62.camel@thinkpad>
-	 <20101208101947.b0646226.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Dec 2010 14:50:21 +0100
-Message-ID: <1292507421.4885.19.camel@thinkpad>
+	Thu, 16 Dec 2010 08:56:36 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=MUIVesnmWfVD_5JfckYA:9 a=9ReAfj7O9ntN0-1n4xEA:7 a=oyZPAtjUZ1C5L7qT9RWGuX0vWlMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4D096806.7000807@cn.fujitsu.com>
+References: <4D07330A.7020600@cn.fujitsu.com>
+	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
+	 <4D083900.1050801@cn.fujitsu.com>
+	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
+	 <4D0877D2.10000@cn.fujitsu.com>
+	 <1292450002.5015.1903.camel@gandalf.stny.rr.com>
+	 <4D096806.7000807@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 16 Dec 2010 08:56:32 -0500
+Message-ID: <1292507792.5015.1908.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got the same warning now after increasing /proc/sys/vm/nr_hugepages, see
-below. Both cases are easily reproducible: memory unplug with big page cache,
-or adding large pages during run-time.
+On Thu, 2010-12-16 at 09:14 +0800, Lai Jiangshan wrote:
 
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
+> It has called try_to_take_rt_mutex() in __rt_mutex_slowlock(),
+> when timeout or got signal, it returns from __rt_mutex_slowlock()
+> with lock->wait_lock still held, and then calls remove_waiter(),
+> 
+> so we don't need to call try_to_take_rt_mutex() in remove_waiter().
+> It is strange that remove_waiter() do some "require lock" work.
 
-other info that might help us debug this:
+Hmm yeah, I need to remember all the details here. There were so many
+corner cases that had to be dealt with, but we have also
+modified/simplified the code over time (hopefully your patch will add to
+the simplification) that my worries may no longer exist, and the code in
+-rt (needed for spinlock -> mutex) may have legacy code there too.
 
+I'll spend more time analyzing this and make sure we in deed do not need
+to worry about races between wakeups and lock releasing.
 
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by bash/761:
- #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<00000000002263ae>] migrate_page_move_mapping+0x4a/0x2d8
+Thanks,
 
-stack backtrace:
-CPU: 1 Not tainted 2.6.37-rc6 #4
-Process bash (pid: 761, task: 00000000181b5540, ksp: 00000000181bb7f8)
-00000000181bb818 00000000181bb798 0000000000000002 0000000000000000 
-       00000000181bb838 00000000181bb7b0 00000000181bb7b0 000000000056bafa 
-       0000000000000000 000000003f42bdf0 0000000000000002 000000001c43be30 
-       000003e00000000d 000003e00000000c 00000000181bb800 0000000000000000 
-       0000000000000000 0000000000100bfa 00000000181bb798 00000000181bb7d8 
-Call Trace:
-([<0000000000100b02>] show_trace+0xee/0x144)
- [<000000000022654e>] migrate_page_move_mapping+0x1ea/0x2d8
- [<0000000000226c80>] migrate_page+0x38/0x68
- [<0000000000226d9a>] move_to_new_page+0xea/0x2bc
- [<000000000022785a>] migrate_pages+0x496/0x568
- [<000000000021e24e>] compact_zone+0x432/0x7d8
- [<000000000021e772>] compact_zone_order+0x9e/0xbc
- [<000000000021ed52>] try_to_compact_pages+0x1ba/0x24c
- [<00000000001e1afa>] __alloc_pages_nodemask+0x86a/0xa64
- [<000000000021c80c>] alloc_fresh_huge_page.clone.2+0x68/0x18c
- [<000000000021cc4c>] set_max_huge_pages.clone.0+0xa4/0x1ac
- [<000000000021ce06>] hugetlb_sysctl_handler+0xb2/0xcc
- [<00000000002a6572>] proc_sys_call_handler+0xe6/0x10c
- [<00000000002a65be>] proc_sys_write+0x26/0x34
- [<00000000002336e0>] vfs_write+0xac/0x18c
- [<00000000002338bc>] SyS_write+0x58/0xa8
- [<0000000000113976>] sysc_noemu+0x16/0x1c
- [<0000020000162edc>] 0x20000162edc
-INFO: lockdep is turned off.
-
-I honestly do not understand 100% why this is a false positive, seeing that
-e.g. find_get_page() will also use radix_tree_deref_slot(), holding only the
-rcu_read_lock, while migrate_page_move_mapping() has no rcu_read_lock() but
-the &mapping->tree_lock instead. So I'm not quite sure how to fix this
-properly, but simply adding rcu_read_lock/unlock() to the affected code paths,
-even if it is not necessary for synchronization, would get rid of the warning,
-like in the following patch. Any ideas?
-
----
- fs/hugetlbfs/inode.c |    2 ++
- mm/migrate.c         |    4 ++++
- 2 files changed, 6 insertions(+)
-
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -580,7 +580,9 @@ static int hugetlbfs_migrate_page(struct
- {
- 	int rc;
- 
-+	rcu_read_lock();
- 	rc = migrate_huge_page_move_mapping(mapping, newpage, page);
-+	rcu_read_unlock();
- 	if (rc)
- 		return rc;
- 	migrate_page_copy(newpage, page);
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -417,7 +417,9 @@ int migrate_page(struct address_space *m
- 
- 	BUG_ON(PageWriteback(page));	/* Writeback must be complete */
- 
-+	rcu_read_lock();
- 	rc = migrate_page_move_mapping(mapping, newpage, page);
-+	rcu_read_unlock();
- 
- 	if (rc)
- 		return rc;
-@@ -444,7 +446,9 @@ int buffer_migrate_page(struct address_s
- 
- 	head = page_buffers(page);
- 
-+	rcu_read_lock();
- 	rc = migrate_page_move_mapping(mapping, newpage, page);
-+	rcu_read_unlock();
- 
- 	if (rc)
- 		return rc;
+-- Steve
 
 
