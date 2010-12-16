@@ -1,76 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab0LPPvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 10:51:22 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:60418 "EHLO e2.ny.us.ibm.com"
+	id S1756310Ab0LPPvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 10:51:31 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56168 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683Ab0LPPvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 10:51:20 -0500
-Date: Thu, 16 Dec 2010 07:51:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mariusz Kozlowski <mk@lab.zgora.pl>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rculist: fix borked __list_for_each_rcu() macro
-Message-ID: <20101216155111.GC2203@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1292451072-5095-1-git-send-email-mk@lab.zgora.pl>
- <20101215232005.GB6595@linux.vnet.ibm.com>
- <20101216060236.GB4826@mako-laptop>
+	id S1754265Ab0LPPv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 10:51:28 -0500
+Message-ID: <4D0A3576.7040908@kernel.org>
+Date: Thu, 16 Dec 2010 16:51:18 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101216060236.GB4826@mako-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org>	 <1292440246.4688.416.camel@mulgrave.site>  <4D0914B5.20208@kernel.org>	 <1292441610.4688.457.camel@mulgrave.site>  <4D091A20.3060202@kernel.org> <1292510372.3024.12.camel@mulgrave.site>
+In-Reply-To: <1292510372.3024.12.camel@mulgrave.site>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 15:51:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 07:02:36AM +0100, Mariusz Kozlowski wrote:
-> On Wed, Dec 15, 2010 at 03:20:05PM -0800, Paul E. McKenney wrote:
-> > On Wed, Dec 15, 2010 at 11:11:12PM +0100, Mariusz Kozlowski wrote:
-> > > This restores parentheses blance.
-> > 
-> > Good catch, queued!!!
-> > 
-> > This does not actually appear to be in use anywhere in the kernel any
-> > more, so I queued this for 2.6.38 rather than in the 2.6.37 urgent queue.
-> > So, just out of curiosity, how did you find this one?
+Hello, James.
+
+On 12/16/2010 03:39 PM, James Bottomley wrote:
+>> But, anyways, I don't think that's gonna happen here.  If the last put
+>> hasn't been executed the module reference wouldn't be zero, so module
+>> unload can't initiate, right?
 > 
-> Some years ago I wrote a dumb script that walks trees of () and {}.
-> It catches unbalanced trees. It's dumb enough to fail with #ifdef etc,
-> but most of the time it does its job. It reaches unreachable code
-> and unused one too.
+> Wrong I'm afraid.  There's a nasty two level complexity in module
+> references:  Anything which takes an external reference (like open or
+> mount) does indeed take the module reference and prevent removal.
+> Anything that takes an internal reference doesn't ... we wait for all of
+> them to come back in the final removal of the bus type.  The is to
+> prevent a module removal deadlock.  The callbacks are internal
+> references, so we wait for them in module_exit() but don't block
+> module_exit() from being called ... meaning the double callback scenario
+> could be outstanding.
 
-Very cool, and thank you!
+Okay, so something like the following should solve the problem.  Once
+destroy_workqueue() is called, queueing is allowed from only the same
+workqueue and flush is repeated until the queue is drained, which
+seems to be the right thing to do on destruction regardless of the
+SCSI changes.
 
-							Thanx, Paul
+With the following change, the previous patch should do fine for SCSI
+and the ew can be removed.  Please note that the following patch is
+still only compile tested.
 
-> > Hmmm...  Maybe we should just delete __list_for_each_rcu.  ;-)
-> > 
-> > 							Thanx, Paul
-> > 
-> > > Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
-> > > ---
-> > >  include/linux/rculist.h |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-> > > index f31ef61..70d3ba5 100644
-> > > --- a/include/linux/rculist.h
-> > > +++ b/include/linux/rculist.h
-> > > @@ -244,7 +244,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
-> > >  #define __list_for_each_rcu(pos, head) \
-> > >  	for (pos = rcu_dereference_raw(list_next_rcu(head)); \
-> > >  		pos != (head); \
-> > > -		pos = rcu_dereference_raw(list_next_rcu((pos)))
-> > > +		pos = rcu_dereference_raw(list_next_rcu(pos)))
-> > > 
-> > >  /**
-> > >   * list_for_each_entry_rcu	-	iterate over rcu list of given type
-> > > -- 
-> > > 1.7.0.4
-> > > 
-> 
-> -- 
-> Mariusz Kozlowski
+Are we in agreement now?
+
+Thanks.
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 90db1bd..8dd0b80 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -932,6 +932,32 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
+ 		wake_up_worker(gcwq);
+ }
+
++/*
++ * Test whether @work is being queued from another work executing on the
++ * same workqueue.
++ */
++static bool is_chained_work(struct work_struct *work)
++{
++	struct workqueue_struct *wq = get_work_cwq(work)->wq;
++	unsigned long flags;
++	unsigned int cpu;
++
++	for_each_gcwq_cpu(cpu) {
++		struct global_cwq *gcwq = get_gcwq(cpu);
++		struct worker *worker;
++
++		spin_lock_irqsave(&gcwq->lock, flags);
++		worker = find_worker_executing_work(gcwq, work);
++		if (worker && worker->task == current &&
++		    worker->current_cwq->wq == wq) {
++			spin_unlock_irqrestore(&gcwq->lock, flags);
++			return true;
++		}
++		spin_unlock_irqrestore(&gcwq->lock, flags);
++	}
++	return false;
++}
++
+ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 			 struct work_struct *work)
+ {
+@@ -943,7 +969,8 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+
+ 	debug_work_activate(work);
+
+-	if (WARN_ON_ONCE(wq->flags & WQ_DYING))
++	/* if dying, only works from the same workqueue are allowed */
++	if (WARN_ON_ONCE((wq->flags & WQ_DYING) && !is_chained_work(work)))
+ 		return;
+
+ 	/* determine gcwq to use */
+@@ -2936,11 +2963,34 @@ EXPORT_SYMBOL_GPL(__alloc_workqueue_key);
+  */
+ void destroy_workqueue(struct workqueue_struct *wq)
+ {
++	unsigned int flush_cnt = 0;
+ 	unsigned int cpu;
+
++	/*
++	 * Mark @wq dying and drain all pending works.  Once WQ_DYING is
++	 * set, only chain queueing is allowed.  IOW, only currently
++	 * pending or running works on @wq can queue further works on it.
++	 * @wq is flushed repeatedly until it becomes empty.  The number of
++	 * flushing is detemined by the depth of chaining and should be
++	 * relatively short.  Whine if it takes too long.
++	 */
+ 	wq->flags |= WQ_DYING;
++reflush:
+ 	flush_workqueue(wq);
+
++	for_each_cwq_cpu(cpu, wq) {
++		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
++
++		if (!cwq->nr_active && list_empty(&cwq->delayed_works))
++			continue;
++
++		if (flush_cnt++ == 10 || flush_cnt % 100 == 0)
++			printk(KERN_WARNING "workqueue %s: flush on "
++			       "destruction isn't complete after %u tries\n",
++			       wq->name, flush_cnt);
++		goto reflush;
++	}
++
+ 	/*
+ 	 * wq list is used to freeze wq, remove from list after
+ 	 * flushing is complete in case freeze races us.
