@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab0LPOjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 09:39:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29363 "EHLO mx1.redhat.com"
+	id S1756214Ab0LPOjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 09:39:40 -0500
+Received: from cantor.suse.de ([195.135.220.2]:49427 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755765Ab0LPOji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755523Ab0LPOji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Dec 2010 09:39:38 -0500
-Date: Thu, 16 Dec 2010 09:39:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101216143925.GA13870@redhat.com>
-References: <20101208141942.GA2335@redhat.com>
- <4D00823A.9050808@kernel.org>
- <20101209124117.GA6032@redhat.com>
- <4D01377B.5070809@kernel.org>
- <20101213100848.GA2237@redhat.com>
- <4D0663F0.2060103@kernel.org>
- <4D06783C.6040009@zytor.com>
- <20101214224135.GB19693@redhat.com>
- <20101215103954.GA2243@redhat.com>
- <4D09958D.2040907@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D09958D.2040907@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D091A20.3060202@kernel.org>
+References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>
+	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>
+	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>
+	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>
+	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>
+	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>
+	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org>
+	 <1292440246.4688.416.camel@mulgrave.site>  <4D0914B5.20208@kernel.org>
+	 <1292441610.4688.457.camel@mulgrave.site>  <4D091A20.3060202@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Dec 2010 09:39:32 -0500
+Message-ID: <1292510372.3024.12.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 08:29:01PM -0800, Yinghai Lu wrote:
-> please check
+On Wed, 2010-12-15 at 20:42 +0100, Tejun Heo wrote:
+> On 12/15/2010 08:33 PM, James Bottomley wrote:
+> > A single flush won't quite work.  The target is a parent of the device,
+> > both of which release methods have execute_in_process_context()
+> > requirements.  What can happen here is that the last put of the device
+> > will release the target (from the function).  If both are moved to
+> > workqueues, a single flush could cause the execution of the device work,
+> > which then queues up target work (and makes it still pending).  A double
+> > flush will solve this (because I think our nesting level doesn't go
+> > beyond 2) but it's a bit ugly ...
 > 
-> [PATCH] x86, crashkernel, 32bit: only try to get range under 512M
+> Yeap, that's an interesting point actually.  I just sent the patch
+> butn there is no explicit flush.  It's implied by destroy_work() and
+> it has been a bit bothering that destroy_work() could exit with
+> pending works if execution of the current one produces more.  I was
+> pondering making destroy_workqueue() actually drain all the scheduled
+> works and maybe trigger a warning if it seems to loop for too long.
 > 
-> Steanishlaw report kdump is 32bit is broken.
-> 
-> in misc.c for decompresser, it will do sanity checking to make sure heap
-> heap under 512M.
+> But, anyways, I don't think that's gonna happen here.  If the last put
+> hasn't been executed the module reference wouldn't be zero, so module
+> unload can't initiate, right?
 
-Thanks Yinghai. I am wondering why on 32bit heap has to be with-in 512MB.
-I think you are referring to following check in
-arch/x86/boot/compressed/misc.c.
+Wrong I'm afraid.  There's a nasty two level complexity in module
+references:  Anything which takes an external reference (like open or
+mount) does indeed take the module reference and prevent removal.
+Anything that takes an internal reference doesn't ... we wait for all of
+them to come back in the final removal of the bus type.  The is to
+prevent a module removal deadlock.  The callbacks are internal
+references, so we wait for them in module_exit() but don't block
+module_exit() from being called ... meaning the double callback scenario
+could be outstanding.
 
-	if (end > ((-__PAGE_OFFSET-(512 <<20)-1) & 0x7fffffff))
-		error("Destination address too large");
+James
 
-It was introduced here.
 
-commit 968de4f02621db35b8ae5239c8cfc6664fb872d8
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Thu Dec 7 02:14:04 2006 +0100
-
-    [PATCH] i386: Relocatable kernel support
-
-Eric,
-
-It has been long. By any chance would you remember where does above
-constraint come from?
-
-Thanks
-Vivek
-
-> 
-> So limit it in first kernel under 512M for 32bit system.
-> 
-> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/kernel/setup.c |   14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/setup.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/setup.c
-> +++ linux-2.6/arch/x86/kernel/setup.c
-> @@ -499,7 +499,19 @@ static inline unsigned long long get_tot
->  	return total << PAGE_SHIFT;
->  }
->  
-> +/*
-> + * arch/x86/boot/compressed/misc.c will check heap size for decompresser
-> + *  32bit will have more strict limitation
-> + */
->  #define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
-> +#define HEAP_LIMIT_32BIT 0x20000000
-> +
-> +#ifdef CONFIG_X86_64
-> +#define CRASH_KERNEL_LIMIT DEFAULT_BZIMAGE_ADDR_MAX
-> +#else
-> +#define CRASH_KERNEL_LIMIT HEAP_LIMIT_32BIT
-> +#endif
-> +
->  static void __init reserve_crashkernel(void)
->  {
->  	unsigned long long total_mem;
-> @@ -521,7 +533,7 @@ static void __init reserve_crashkernel(v
->  		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
->  		 */
->  		crash_base = memblock_find_in_range(alignment,
-> -			       DEFAULT_BZIMAGE_ADDR_MAX, crash_size, alignment);
-> +			       CRASH_KERNEL_LIMIT, crash_size, alignment);
->  
->  		if (crash_base == MEMBLOCK_ERROR) {
->  			pr_info("crashkernel reservation failed - No suitable area found.\n");
