@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab0LPJxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 04:53:16 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:13096 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931Ab0LPJxN (ORCPT
+	id S1753994Ab0LPJxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 04:53:48 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:60410 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753931Ab0LPJxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 04:53:13 -0500
-Message-ID: <4D09E185.2040600@panasas.com>
-Date: Thu, 16 Dec 2010 11:53:09 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: npiggin@gmail.com, hooanon05@yahoo.co.jp, npiggin@kernel.dk,
-        torvalds@linux-foundation.org, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-References: <12853.1292353313@jrobl>	<AANLkTinjkcciZhJM5FmUkh_YCJ6bc9aTq8zV=SACDb1O@mail.gmail.com>	<4D08BF5D.1060509@panasas.com> <20101215.100055.226772943.davem@davemloft.net>
-In-Reply-To: <20101215.100055.226772943.davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Dec 2010 09:53:12.0630 (UTC) FILETIME=[0D751560:01CB9D07]
+	Thu, 16 Dec 2010 04:53:45 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Richard Nauber <richard.nauber@googlemail.com>,
+        Richard Nauber <Richard.Nauber@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] hid: egalax: Add support for Samsung NB30 netbook
+Date: Thu, 16 Dec 2010 10:52:55 +0100
+Message-Id: <1292493175-21630-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.2.3
+X-Originating-IP: 83.248.200.95
+X-Scan-Result: No virus found in message 1PTAWE-0007dL-3U.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PTAWE-0007dL-3U f7c0d1a2181a77d44df192f2be518ff1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 08:00 PM, David Miller wrote:
-> From: Boaz Harrosh <bharrosh@panasas.com>
-> Date: Wed, 15 Dec 2010 15:15:09 +0200
-> 
->> I agree that the byte-compare or long-compare should give you very close
->> results in modern pipeline CPUs. But surly 12 increments-and-test should
->> show up against 3 (or even 2). I would say it must be a better plan.
-> 
-> For strings of these lengths the setup code necessary to initialize
-> the inner loop and the tail code to handle the sub-word ending cases
-> eliminate whatever gains there are.
-> 
+From: Richard Nauber <richard.nauber@googlemail.com>
 
-You miss understood me. I'm saying that we know the beggining of the
-string is aligned and Nick offered to pad the last long, so surly
-a shift by 2 (or 3) + the reduction of the 12 dec-and-test to 3
-should give you an optimization?
+The Samsung NB30 touch has a DWAV dual-touch device. This patch adds
+the NB30 to the list of supported devices, and grabs it accordingly in
+hid-core.
 
-> I know this as I've been hacking on assembler optimized strcmp() and
-> memcmp() in my spare time over the past year or so.
+[rydberg@euromail.se: rename and log message changes]
+Signed-off-by: Richard Nauber <Richard.Nauber@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Jiri,
 
-Boaz
+do I have your ACK on this one?
+
+Thanks,
+Henrik
+
+ drivers/hid/hid-core.c   |    1 +
+ drivers/hid/hid-egalax.c |    2 ++
+ drivers/hid/hid-ids.h    |    1 +
+ 3 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 9762de5..f4a37f8 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1301,6 +1301,7 @@ static const struct hid_device_id hid_blacklist[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
+diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
+index e367cb2..8787850 100644
+--- a/drivers/hid/hid-egalax.c
++++ b/drivers/hid/hid-egalax.c
+@@ -240,6 +240,8 @@ static const struct hid_device_id egalax_devices[] = {
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, egalax_devices);
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index b76166a..a95719b 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -197,6 +197,7 @@
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH	0x480d
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1	0x720c
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3	0x480e
+ 
+ #define USB_VENDOR_ID_ELECOM		0x056e
+ #define USB_DEVICE_ID_ELECOM_BM084	0x0061
+-- 
+1.7.2.3
+
