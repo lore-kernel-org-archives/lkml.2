@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab0LPWBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 17:01:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab0LPWBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 17:01:37 -0500
-Date: Thu, 16 Dec 2010 17:01:17 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-Message-ID: <20101216220117.GA2485@redhat.com>
-References: <4D01377B.5070809@kernel.org>
- <20101213100848.GA2237@redhat.com>
- <4D0663F0.2060103@kernel.org>
- <4D06783C.6040009@zytor.com>
- <20101214224135.GB19693@redhat.com>
- <20101215103954.GA2243@redhat.com>
- <4D09958D.2040907@kernel.org>
- <20101216143925.GA13870@redhat.com>
- <4D0A3E31.4000109@zytor.com>
- <4D0A4C51.3070008@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0A4C51.3070008@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757490Ab0LPWBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 17:01:15 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:54198 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756076Ab0LPWBK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 17:01:10 -0500
+X-Auth-Info: a7lSu+P0ss6gUqlr8V0uCDDAS2p9ipJsSrF/eT6ZuKI=
+Date: Thu, 16 Dec 2010 23:01:10 +0100
+From: Anatolij Gustschin <agust@denx.de>
+To: Jason Lunz <lunz@acm.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        atom ota <atomota@sleepyhammer.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Jeff Dike <jdike@addtoit.com>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+        Rob Landley <rob@landley.net>, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
+Message-ID: <20101216230110.65156c55@wker>
+In-Reply-To: <20101214195124.GA6010@falooley.org>
+References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
+	<20071024011712.GA3762@falooley.org>
+	<1193208689.26096.48.camel@pmac.infradead.org>
+	<20071227181524.GA19051@falooley.org>
+	<20071228174853.GA4252@uranus.ravnborg.org>
+	<20101207072919.GA8511@falooley.org>
+	<AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
+	<20101207182012.GA10546@falooley.org>
+	<1292343878.2538.80.camel@localhost>
+	<20101214195124.GA6010@falooley.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 09:28:49AM -0800, Yinghai Lu wrote:
-> On 12/16/2010 08:28 AM, H. Peter Anvin wrote:
-> > On 12/16/2010 06:39 AM, Vivek Goyal wrote:
-> >> On Wed, Dec 15, 2010 at 08:29:01PM -0800, Yinghai Lu wrote:
-> >>> please check
-> >>>
-> >>> [PATCH] x86, crashkernel, 32bit: only try to get range under 512M
-> >>>
-> >>> Steanishlaw report kdump is 32bit is broken.
-> >>>
-> >>> in misc.c for decompresser, it will do sanity checking to make sure heap
-> >>> heap under 512M.
-> >>
-> >> Thanks Yinghai. I am wondering why on 32bit heap has to be with-in 512MB.
-> >> I think you are referring to following check in
-> >> arch/x86/boot/compressed/misc.c.
-> >>
-> >> 	if (end > ((-__PAGE_OFFSET-(512 <<20)-1) & 0x7fffffff))
-> >> 		error("Destination address too large");
-> >>
-> >> It was introduced here.
-> >>
-> >> commit 968de4f02621db35b8ae5239c8cfc6664fb872d8
-> >> Author: Eric W. Biederman <ebiederm@xmission.com>
-> >> Date:   Thu Dec 7 02:14:04 2006 +0100
-> >>
-> >>     [PATCH] i386: Relocatable kernel support
-> >>
-> >> Eric,
-> >>
-> >> It has been long. By any chance would you remember where does above
-> >> constraint come from?
-> >>
-> > 
-> > It might, in fact, be bogus; specifically a proxy for the fact that we
-> > need the kernel memory including bss and brk below the lowmem boundary,
-> > which isn't well-defined.
-> 
-> the brk is complaining if i change that to 
-> 
->  	if (end > ((-__PAGE_OFFSET-(128 <<20)-1) & 0x7fffffff))
->  		error("Destination address too large");
-> 
+On Tue, 14 Dec 2010 11:51:24 -0800
+Jason Lunz <lunz@acm.org> wrote:
+...
+> diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
+> index a9e6ba4..3d9f7e0 100644
+> --- a/include/linux/mtd/map.h
+> +++ b/include/linux/mtd/map.h
+> @@ -388,6 +388,15 @@ static inline map_word map_word_ff(struct map_info *map)
+>  	return r;
+>  }
+>  
+> +#ifdef CONFIG_MTD_COMPLEX_MAPPINGS
+> +#define map_read(map, ofs) (map)->read(map, ofs)
+> +#define map_copy_from(map, to, from, len) (map)->copy_from(map, to, from, len)
+> +#define map_write(map, datum, ofs) (map)->write(map, datum, ofs)
+> +#define map_copy_to(map, to, from, len) (map)->copy_to(map, to, from, len)
+> +
+> +extern void simple_map_init(struct map_info *);
+> +#define map_is_linear(map) (map->phys != NO_XIP)
+> +
+>  static inline map_word inline_map_read(struct map_info *map, unsigned long ofs)
+>  {
+>  	map_word r;
+> @@ -440,15 +449,6 @@ static inline void inline_map_copy_to(struct map_info *map, unsigned long to, co
+>  	memcpy_toio(map->virt + to, from, len);
+>  }
+>  
+> -#ifdef CONFIG_MTD_COMPLEX_MAPPINGS
+> -#define map_read(map, ofs) (map)->read(map, ofs)
+> -#define map_copy_from(map, to, from, len) (map)->copy_from(map, to, from, len)
+> -#define map_write(map, datum, ofs) (map)->write(map, datum, ofs)
+> -#define map_copy_to(map, to, from, len) (map)->copy_to(map, to, from, len)
+> -
+> -extern void simple_map_init(struct map_info *);
+> -#define map_is_linear(map) (map->phys != NO_XIP)
+> -
+>  #else
+>  #define map_read(map, ofs) inline_map_read(map, ofs)
+>  #define map_copy_from(map, to, from, len) inline_map_copy_from(map, to, from, len)
 
-Yinghai, 
+This change breaks compiling when CONFIG_MTD_COMPLEX_MAPPINGS is not
+defined in the kernel configuration. Please fix!
 
-On my system above change works fine and I can boot into second kernel. So
-it will boil down to knowing what are the exact constraints on heap for
-decompression and for 32bit can we allow heap upto 896MB or not.
+Thanks,
+Anatolij
 
-Thanks
-Vivek
