@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab0LPGyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 01:54:44 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:32246 "EHLO
+	id S1753266Ab0LPGyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 01:54:46 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50971 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835Ab0LPGye (ORCPT
+	with ESMTP id S1752876Ab0LPGyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 01:54:34 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66835758"
+	Thu, 16 Dec 2010 01:54:35 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66835760"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>
@@ -18,13 +18,10 @@ Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: [PATCH v5 3/5] msm: timer: SMP timer support for msm
-Date: Wed, 15 Dec 2010 22:54:14 -0800
-Message-Id: <1292482456-22690-4-git-send-email-johlstei@codeaurora.org>
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v5 5/5] msm: add SMP support for msm
+Date: Wed, 15 Dec 2010 22:54:16 -0800
+Message-Id: <1292482456-22690-6-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1292482456-22690-1-git-send-email-johlstei@codeaurora.org>
 References: <1292482456-22690-1-git-send-email-johlstei@codeaurora.org>
@@ -32,279 +29,258 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The msm provides timer hardware that is private to each core. Each
-timer has separate counter and match registers, so we create separate
-clock_event_devices for each core. For the global clocksource, use
-cpu 0's counter.
-
 Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    6 +-
- arch/arm/mach-msm/io.c                          |    1 +
- arch/arm/mach-msm/timer.c                       |  137 +++++++++++++++++++----
- 3 files changed, 120 insertions(+), 24 deletions(-)
+ arch/arm/mach-msm/Kconfig   |    1 +
+ arch/arm/mach-msm/Makefile  |    1 +
+ arch/arm/mach-msm/headsmp.S |   40 ++++++++++
+ arch/arm/mach-msm/platsmp.c |  166 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 208 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/headsmp.S
+ create mode 100644 arch/arm/mach-msm/platsmp.c
 
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 45bab50..873e0b7 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -60,7 +60,11 @@
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index ab5338f..8c57425 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -40,6 +40,7 @@ config ARCH_MSM8X60
+ 	bool "MSM8X60"
+ 	select MACH_MSM8X60_SURF if (!MACH_MSM8X60_RUMI3 && !MACH_MSM8X60_SIM \
+ 				  && !MACH_MSM8X60_FFA)
++	select ARCH_MSM_SCORPIONMP
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select MSM_V2_TLMM
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 7a11b4a..1945f9c 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -21,6 +21,7 @@ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
+ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
  
- #define MSM_TMR_BASE		IOMEM(0xF0200000)
- #define MSM_TMR_PHYS		0x02000000
--#define MSM_TMR_SIZE		(SZ_1M)
-+#define MSM_TMR_SIZE		SZ_4K
+ obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
++obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+ 
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+diff --git a/arch/arm/mach-msm/headsmp.S b/arch/arm/mach-msm/headsmp.S
+new file mode 100644
+index 0000000..d0c2143
+--- /dev/null
++++ b/arch/arm/mach-msm/headsmp.S
+@@ -0,0 +1,40 @@
++/*
++ *  linux/arch/arm/mach-realview/headsmp.S
++ *
++ *  Copyright (c) 2003 ARM Limited
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/linkage.h>
++#include <linux/init.h>
 +
-+#define MSM_TMR0_BASE		IOMEM(0xF0201000)
-+#define MSM_TMR0_PHYS		0x02040000
-+#define MSM_TMR0_SIZE		SZ_4K
- 
- #define MSM_GPT_BASE		(MSM_TMR_BASE + 0x4)
- #define MSM_DGT_BASE		(MSM_TMR_BASE + 0x24)
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index d36b610..b826b6b 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -105,6 +105,7 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
- 	MSM_DEVICE(QGIC_DIST),
- 	MSM_DEVICE(QGIC_CPU),
- 	MSM_DEVICE(TMR),
-+	MSM_DEVICE(TMR0),
- 	MSM_DEVICE(ACC),
- 	MSM_DEVICE(GCC),
- };
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 950100f..65d8da0 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -47,6 +47,19 @@ enum {
- 
- #define GPT_HZ 32768
- 
-+enum timer_location {
-+	LOCAL_TIMER = 0,
-+	GLOBAL_TIMER = 1,
-+};
++	__INIT
 +
-+#ifdef MSM_TMR0_BASE
-+#define MSM_TMR_GLOBAL		(MSM_TMR0_BASE - MSM_TMR_BASE)
-+#else
-+#define MSM_TMR_GLOBAL		0
-+#endif
++/*
++ * MSM specific entry point for secondary CPUs.  This provides
++ * a "holding pen" into which all secondary cores are held until we're
++ * ready for them to initialise.
++ */
++ENTRY(msm_secondary_startup)
++	mrc	p15, 0, r0, c0, c0, 5
++	and	r0, r0, #15
++	adr	r4, 1f
++	ldmia	r4, {r5, r6}
++	sub	r4, r4, r5
++	add	r6, r6, r4
++pen:	ldr	r7, [r6]
++	cmp	r7, r0
++	bne	pen
 +
-+#define MSM_GLOBAL_TIMER MSM_CLOCK_DGT
++	/*
++	 * we've been released from the holding pen: secondary_stack
++	 * should now contain the SVC stack for this core
++	 */
++	b	secondary_startup
 +
- #if defined(CONFIG_ARCH_QSD8X50)
- #define DGT_HZ (19200000 / 4) /* 19.2 MHz / 4 by default */
- #define MSM_DGT_SHIFT (0)
-@@ -65,49 +78,67 @@ struct msm_clock {
- 	void __iomem                *regbase;
- 	uint32_t                    freq;
- 	uint32_t                    shift;
-+	void __iomem                *global_counter;
-+	void __iomem                *local_counter;
- };
- 
-+enum {
-+	MSM_CLOCK_GPT,
-+	MSM_CLOCK_DGT,
-+	NR_TIMERS,
-+};
++	.align
++1:	.long	.
++	.long	pen_release
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+new file mode 100644
+index 0000000..83a1f3f
+--- /dev/null
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -0,0 +1,166 @@
++/*
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
++ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/jiffies.h>
++#include <linux/smp.h>
++#include <linux/io.h>
 +
-+static struct msm_clock msm_clocks[];
-+static struct clock_event_device *local_clock_event;
++#include <asm/hardware/gic.h>
++#include <asm/cacheflush.h>
++#include <asm/mach-types.h>
 +
- static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
- {
- 	struct clock_event_device *evt = dev_id;
-+	if (smp_processor_id() != 0)
-+		evt = local_clock_event;
-+	if (evt->event_handler == NULL)
-+		return IRQ_HANDLED;
- 	evt->event_handler(evt);
- 	return IRQ_HANDLED;
- }
- 
--static cycle_t msm_gpt_read(struct clocksource *cs)
-+static cycle_t msm_read_timer_count(struct clocksource *cs)
- {
--	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
-+	struct msm_clock *clk = container_of(cs, struct msm_clock, clocksource);
++#include <mach/msm_iomap.h>
 +
-+	return readl(clk->global_counter);
- }
- 
--static cycle_t msm_dgt_read(struct clocksource *cs)
-+static struct msm_clock *clockevent_to_clock(struct clock_event_device *evt)
- {
--	return readl(MSM_DGT_BASE + TIMER_COUNT_VAL) >> MSM_DGT_SHIFT;
-+#ifdef CONFIG_SMP
-+	int i;
-+	for (i = 0; i < NR_TIMERS; i++)
-+		if (evt == &(msm_clocks[i].clockevent))
-+			return &msm_clocks[i];
-+	return &msm_clocks[MSM_GLOBAL_TIMER];
-+#else
-+	return container_of(evt, struct msm_clock, clockevent);
-+#endif
- }
- 
- static int msm_timer_set_next_event(unsigned long cycles,
- 				    struct clock_event_device *evt)
- {
--	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
--	uint32_t now = readl(clock->regbase + TIMER_COUNT_VAL);
-+	struct msm_clock *clock = clockevent_to_clock(evt);
-+	uint32_t now = readl(clock->local_counter);
- 	uint32_t alarm = now + (cycles << clock->shift);
--	int late;
- 
- 	writel(alarm, clock->regbase + TIMER_MATCH_VAL);
--	now = readl(clock->regbase + TIMER_COUNT_VAL);
--	late = now - alarm;
--	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
--		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
--		       "alarm already expired, now %x, alarm %x, late %d\n",
--		       cycles, clock->clockevent.name, now, alarm, late);
--		return -ETIME;
--	}
- 	return 0;
- }
- 
- static void msm_timer_set_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *evt)
- {
--	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
-+	struct msm_clock *clock = clockevent_to_clock(evt);
++#include "scm-boot.h"
 +
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_RESUME:
- 	case CLOCK_EVT_MODE_PERIODIC:
-@@ -123,7 +154,7 @@ static void msm_timer_set_mode(enum clock_event_mode mode,
- }
- 
- static struct msm_clock msm_clocks[] = {
--	{
-+	[MSM_CLOCK_GPT] = {
- 		.clockevent = {
- 			.name           = "gp_timer",
- 			.features       = CLOCK_EVT_FEAT_ONESHOT,
-@@ -135,7 +166,7 @@ static struct msm_clock msm_clocks[] = {
- 		.clocksource = {
- 			.name           = "gp_timer",
- 			.rating         = 200,
--			.read           = msm_gpt_read,
-+			.read           = msm_read_timer_count,
- 			.mask           = CLOCKSOURCE_MASK(32),
- 			.shift          = 17,
- 			.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -148,9 +179,12 @@ static struct msm_clock msm_clocks[] = {
- 			.irq     = INT_GP_TIMER_EXP
- 		},
- 		.regbase = MSM_GPT_BASE,
--		.freq = GPT_HZ
-+		.freq = GPT_HZ,
-+		.local_counter = MSM_GPT_BASE + TIMER_COUNT_VAL,
-+		.global_counter = MSM_GPT_BASE + TIMER_COUNT_VAL +
-+			MSM_TMR_GLOBAL,
- 	},
--	{
-+	[MSM_CLOCK_DGT] = {
- 		.clockevent = {
- 			.name           = "dg_timer",
- 			.features       = CLOCK_EVT_FEAT_ONESHOT,
-@@ -162,7 +196,7 @@ static struct msm_clock msm_clocks[] = {
- 		.clocksource = {
- 			.name           = "dg_timer",
- 			.rating         = 300,
--			.read           = msm_dgt_read,
-+			.read           = msm_read_timer_count,
- 			.mask           = CLOCKSOURCE_MASK((32 - MSM_DGT_SHIFT)),
- 			.shift          = 24 - MSM_DGT_SHIFT,
- 			.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -176,7 +210,10 @@ static struct msm_clock msm_clocks[] = {
- 		},
- 		.regbase = MSM_DGT_BASE,
- 		.freq = DGT_HZ >> MSM_DGT_SHIFT,
--		.shift = MSM_DGT_SHIFT
-+		.shift = MSM_DGT_SHIFT,
-+		.local_counter = MSM_DGT_BASE + TIMER_COUNT_VAL,
-+		.global_counter = MSM_DGT_BASE + TIMER_COUNT_VAL +
-+			MSM_TMR_GLOBAL,
- 	}
- };
- 
-@@ -185,7 +222,7 @@ static void __init msm_timer_init(void)
- 	int i;
- 	int res;
- 
--#ifdef CONFIG_ARCH_MSM8X60
-+#ifdef CONFIG_ARCH_MSM_SCORPIONMP
- 	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
- #endif
- 
-@@ -220,6 +257,60 @@ static void __init msm_timer_init(void)
- 	}
- }
- 
-+#ifdef CONFIG_SMP
-+void local_timer_setup(struct clock_event_device *evt)
++#define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
++#define SCSS_CPU1CORE_RESET 0xD80
++#define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
++
++/* Mask for edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
++#define GIC_PPI_EDGE_MASK 0xFFFFD7FF
++
++extern void msm_secondary_startup(void);
++/*
++ * control for which core is the next to come out of the secondary
++ * boot "holding pen".
++ */
++volatile int pen_release = -1;
++
++static DEFINE_SPINLOCK(boot_lock);
++
++void __cpuinit platform_secondary_init(unsigned int cpu)
 +{
-+	unsigned long flags;
-+	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
++	/* Configure edge-triggered PPIs */
++	writel(GIC_PPI_EDGE_MASK, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
++	/*
++	 * if any interrupts are already enabled for the primary
++	 * core (e.g. timer irq), then they will not have been enabled
++	 * for us: do so
++	 */
++	gic_secondary_init(0);
 +
-+	/* Use existing clock_event for cpu 0 */
-+	if (!smp_processor_id())
-+		return;
++	/*
++	 * let the primary processor know we're out of the
++	 * pen, then head off into the C entry point
++	 */
++	pen_release = -1;
++	smp_wmb();
 +
-+	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
++	/*
++	 * Synchronise with the boot thread.
++	 */
++	spin_lock(&boot_lock);
++	spin_unlock(&boot_lock);
++}
 +
-+	if (!local_clock_event) {
-+		writel(0, clock->regbase  + TIMER_ENABLE);
-+		writel(0, clock->regbase + TIMER_CLEAR);
-+		writel(~0, clock->regbase + TIMER_MATCH_VAL);
++static __init void prepare_cold_cpu(unsigned int cpu)
++{
++	int ret;
++	ret = scm_set_boot_addr((void *)
++				virt_to_phys(msm_secondary_startup),
++				SCM_FLAG_COLDBOOT_CPU1);
++	if (ret == 0) {
++		void *sc1_base_ptr;
++		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
++		if (sc1_base_ptr) {
++			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
++			writel(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
++			writel(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
++			iounmap(sc1_base_ptr);
++		}
++	} else
++		printk(KERN_DEBUG "Failed to set secondary core boot "
++				  "address\n");
++}
++
++int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	unsigned long timeout;
++	static int cold_boot_done;
++
++	/* Only need to bring cpu out of reset this way once */
++	if (cold_boot_done == false) {
++		prepare_cold_cpu(cpu);
++		cold_boot_done = true;
 +	}
-+	evt->irq = clock->irq.irq;
-+	evt->name = "local_timer";
-+	evt->features = CLOCK_EVT_FEAT_ONESHOT;
-+	evt->rating = clock->clockevent.rating;
-+	evt->set_mode = msm_timer_set_mode;
-+	evt->set_next_event = msm_timer_set_next_event;
-+	evt->shift = clock->clockevent.shift;
-+	evt->mult = div_sc(clock->freq, NSEC_PER_SEC, evt->shift);
-+	evt->max_delta_ns =
-+		clockevent_delta2ns(0xf0000000 >> clock->shift, evt);
-+	evt->min_delta_ns = clockevent_delta2ns(4, evt);
 +
-+	local_clock_event = evt;
++	/*
++	 * set synchronisation state between this boot processor
++	 * and the secondary one
++	 */
++	spin_lock(&boot_lock);
 +
-+	local_irq_save(flags);
-+	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
-+	local_irq_restore(flags);
++	/*
++	 * The secondary processor is waiting to be released from
++	 * the holding pen - release it, then wait for it to flag
++	 * that it has been released by resetting pen_release.
++	 *
++	 * Note that "pen_release" is the hardware CPU ID, whereas
++	 * "cpu" is Linux's internal ID.
++	 */
++	pen_release = cpu;
++	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
++	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
 +
-+	clockevents_register_device(evt);
++	/*
++	 * Send the secondary CPU a soft interrupt, thereby causing
++	 * the boot monitor to read the system wide flags register,
++	 * and branch to the address found there.
++	 */
++	smp_cross_call(cpumask_of(cpu), 1);
++
++	timeout = jiffies + (1 * HZ);
++	while (time_before(jiffies, timeout)) {
++		smp_rmb();
++		if (pen_release == -1)
++			break;
++
++		udelay(10);
++	}
++
++	/*
++	 * now the secondary core is starting up let it run its
++	 * calibrations, then wait for it to finish
++	 */
++	spin_unlock(&boot_lock);
++
++	return pen_release != -1 ? -ENOSYS : 0;
 +}
 +
-+inline int local_timer_ack(void)
++/*
++ * Initialise the CPU possible map early - this describes the CPUs
++ * which may be present or become present in the system. The msm8x60
++ * does not support the ARM SCU, so just set the possible cpu mask to
++ * NR_CPUS.
++ */
++void __init smp_init_cpus(void)
 +{
-+	return 1;
++	unsigned int i;
++
++	for (i = 0; i < NR_CPUS; i++)
++		set_cpu_possible(i, true);
 +}
 +
-+#ifdef CONFIG_HOTPLUG_CPU
-+void __cpuexit local_timer_stop(void)
++void __init platform_smp_prepare_cpus(unsigned int max_cpus)
 +{
-+	struct msm_clock *clock = clockevent_to_clock(local_clock_event);
-+	writel(0, clock->regbase + TIMER_MATCH_VAL);
-+	writel(0, clock->regbase + TIMER_ENABLE);
-+	get_irq_chip(local_clock_event->irq)->mask(local_clock_event->irq);
-+}
-+#endif
-+#endif
++	int i;
 +
- struct sys_timer msm_timer = {
- 	.init = msm_timer_init
- };
++	/*
++	 * Initialise the present map, which describes the set of CPUs
++	 * actually populated at the present time.
++	 */
++	for (i = 0; i < max_cpus; i++)
++		set_cpu_present(i, true);
++}
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
