@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab0LPJZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 04:25:21 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:47716 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab0LPJZS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 04:25:18 -0500
-Subject: Re: [PATCH -mm -v8 0/3] Lockless memory allocator and list
-From: Peter Zijlstra <peterz@infradead.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1292482744-12953-1-git-send-email-ying.huang@intel.com>
-References: <1292482744-12953-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Dec 2010 10:24:27 +0100
-Message-ID: <1292491467.6803.4327.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753877Ab0LPJhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 04:37:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752136Ab0LPJhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 04:37:09 -0500
+Message-ID: <4D09DDBC.4090507@redhat.com>
+Date: Thu, 16 Dec 2010 11:37:00 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Zachary Amsden <zamsden@redhat.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, Glauber Costa <glommer@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, kvm@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 22 (kvm)
+References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>	<20101122132627.bd4e88ef.randy.dunlap@oracle.com>	<20101129083324.6870d7da.randy.dunlap@oracle.com>	<4CF3D637.6060204@redhat.com>	<4CF3E733.8090809@redhat.com>	<4CF3E870.4040308@oracle.com>	<4CF3EC1E.7050707@redhat.com> <20101210091859.63a6a43e.randy.dunlap@oracle.com> <4D049488.5020105@redhat.com>
+In-Reply-To: <4D049488.5020105@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 14:59 +0800, Huang Ying wrote:
-> This patchset adds a lockless memory allocator and a lock-less
-> list.
+On 12/12/2010 11:23 AM, Avi Kivity wrote:
+> On 12/10/2010 07:18 PM, Randy Dunlap wrote:
+>> >  Looks like this is the appropriate fix:
+>> >
+>> >  #ifdef CONFIG_SMP
+>> >  static void __init kvm_smp_prepare_boot_cpu(void)
+>> >  {
+>> >  #ifdef CONFIG_KVM_CLOCK
+>> >      WARN_ON(kvm_register_clock("primary cpu clock"));
+>> >  #endif
+>> >      kvm_guest_cpu_init();
+>> >      native_smp_prepare_boot_cpu();
+>> >  }
+>>
+>>
+>> Can we get this fix merged, please?
+>>
+>> Build error is still happening in linux-next 20101210.
+>>
+>
+> Zach, a proper patch please.
+>
 
-Still no users the allocator, and no attempt to unify the existing
-lockless list implementations.
+Should be fixed for the next spin.
 
-I'm getting very tired of this Huang.
+-- 
+error compiling committee.c: too many arguments to function
+
