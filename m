@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab0LPWFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 17:05:08 -0500
-Received: from mail-ew0-f45.google.com ([209.85.215.45]:33763 "EHLO
-	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab0LPWFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 17:05:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VVWHQ0Jniaa78O/eVkyeFl+nHwZ1hdUm0lMBe09Q4+YDTM7FL8AV2YPK4e4W/msKXF
-         catUZBg9lnAzZGRujeWt08U3oH44ghyuJl88CjisEYM2QCY8K3P0qaskUZxexT4cQW5J
-         81yfRFruk+NjD8bLpbKO7ROeqWOSjM8mvjs9g=
-Date: Fri, 17 Dec 2010 00:04:58 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Dave Jones <davej@redhat.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] proc: warn if registering world writeable files
-Message-ID: <20101216220458.GA8103@core2.telecom.by>
-References: <20101216203217.GA3581@p183.telecom.by>
- <20101216212609.GA9352@redhat.com>
+	id S1757293Ab0LPWIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 17:08:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56748 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238Ab0LPWIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 17:08:15 -0500
+Message-ID: <4D0A8DCC.9040701@suse.cz>
+Date: Thu, 16 Dec 2010 23:08:12 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101216212609.GA9352@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: PATCH: Put .zdebug* section on white list
+References: <AANLkTik90p-L+4_GnwXzoekCK0E2uemZD6tOK_kEFd2n@mail.gmail.com>	<4D0A866E.40708@suse.cz> <AANLkTi=Nd76X3dKAi_A3M=8tHbmgqO3DH11eo0stAQWO@mail.gmail.com>
+In-Reply-To: <AANLkTi=Nd76X3dKAi_A3M=8tHbmgqO3DH11eo0stAQWO@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 04:26:10PM -0500, Dave Jones wrote:
-> On Thu, Dec 16, 2010 at 10:32:17PM +0200, Alexey Dobriyan wrote:
->  > +	WARN_ON(S_ISREG(mode) && (mode & S_IWOTH));
->  >  	ent->mode = mode;
->  >  	ent->nlink = nlink;
->  >  	atomic_set(&ent->count, 1);
-> 
-> Not sure about this. For the reason I mentioned in the checkpatch diff
-> that this is "usually" a problem.  There may be some use cases where
-> it may actually be ok.
-> 
-> (I'm having a hard time thinking up a justification though tbh)
+On 16.12.2010 22:37, H.J. Lu wrote:
+> On Thu, Dec 16, 2010 at 1:36 PM, Michal Marek<mmarek@suse.cz>  wrote:
+>> On -10.1.-28163 20:59, H.J. Lu wrote:
+>>>
+>>> Hi,
+>>>
+>>> "as --compress-debug-sections" will generate compressed debug sections
+>>> with section names ".zdebug*".  This patch puts .zdebug* section on
+>>> white list.
+>>
+>> Hi,
+>>
+>> can I assume that the patch is
+>> Signed-off-by: H.J. Lu<hjl.tools@gmail.com>
+>> ?
+>>
+>
+> Yes.
 
-Me too.
+OK, applied to kbuild-2.6.git#kbuild.
 
-If it's for quick debugging, one can reassign ->mode after registering and
-escape the warning.
+Thanks,
+Michal
