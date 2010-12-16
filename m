@@ -1,300 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab0LPG7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 01:59:41 -0500
-Received: from mga14.intel.com ([143.182.124.37]:11860 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315Ab0LPG7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 01:59:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,354,1288594800"; 
-   d="scan'208";a="362445583"
-From: Huang Ying <ying.huang@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        ying.huang@intel.com, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -mm -v8 3/3] lib, Add lock-less NULL terminated single list
-Date: Thu, 16 Dec 2010 14:59:04 +0800
-Message-Id: <1292482744-12953-4-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1292482744-12953-1-git-send-email-ying.huang@intel.com>
-References: <1292482744-12953-1-git-send-email-ying.huang@intel.com>
+	id S1753233Ab0LPHLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 02:11:11 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3924 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752825Ab0LPHLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 02:11:06 -0500
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH linux-next] pch_uart : fix warnings for 64bit compile
+Date: Thu, 16 Dec 2010 16:13:29 +0900
+Message-Id: <1292483609-18492-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.6.0.6
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cmpxchg is used to implement adding new entry to the list, deleting
-all entries from the list, deleting first entry of the list and some
-other operations.
+Fix the following warnings
+drivers/serial/pch_uart.c: In function ‘dma_handle_rx’:
+drivers/serial/pch_uart.c:685:24: warning: cast from pointer to integer of different size
+drivers/serial/pch_uart.c: In function ‘dma_handle_tx’:
+drivers/serial/pch_uart.c:778:23: warning: cast from pointer to integer of different size
+drivers/serial/pch_uart.c: In function ‘pch_uart_init_port’:
+drivers/serial/pch_uart.c:1289:20: warning: cast to pointer from integer of different size
+drivers/serial/pch_uart.c: In function ‘pch_uart_exit_port’:
+drivers/serial/pch_uart.c:1328:2: warning: cast from pointer to integer of different size
 
-Because this is a single list, so the tail can not be accessed in O(1).
-
-If there are multiple producers and multiple consumers, llist_add can
-be used in producers and llist_del_all can be used in consumers.  They
-can work simultaneously without lock.  But llist_del_first can not be
-used here.  Because llist_del_first depends on list->first->next does
-not changed if list->first is not changed during its operation, but
-llist_del_first, llist_add, llist_add sequence in another consumer may
-violate that.
-
-If there are multiple producers and one consumer, llist_add can be
-used in producers and llist_del_all or llist_del_first can be used in
-the consumer.
-
-The list entries deleted via llist_del_all can be traversed with
-traversing function such as llist_for_each etc.  But the list entries
-can not be traversed safely before deleted from the list without
-proper synchronization with the list consumers.
-
-The basic atomic operation of this list is cmpxchg on long.  On
-architectures that don't have NMI-safe cmpxchg implementation, the
-list can NOT be used in NMI handler.  So code uses the list in NMI
-handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Reported-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/llist.h |   97 +++++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig           |    3 ++
- lib/Makefile          |    2 +
- lib/llist.c           |   97 +++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 199 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/llist.h
- create mode 100644 lib/llist.c
+ drivers/serial/pch_uart.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-new file mode 100644
-index 0000000..ab4b673
---- /dev/null
-+++ b/include/linux/llist.h
-@@ -0,0 +1,97 @@
-+#ifndef LLIST_H
-+#define LLIST_H
-+/*
-+ * Lock-less NULL terminated single linked list
-+ *
-+ * If there are multiple producers and multiple consumers, llist_add
-+ * can be used in producers and llist_del_all can be used in
-+ * consumers.  They can work simultaneously without lock.  But
-+ * llist_del_first can not be used here.  Because llist_del_first
-+ * depends on list->first->next does not changed if list->first is not
-+ * changed during its operation, but llist_del_first, llist_add,
-+ * llist_add sequence in another consumer may violate that.
-+ *
-+ * If there are multiple producers and one consumer, llist_add can be
-+ * used in producers and llist_del_all or llist_del_first can be used
-+ * in the consumer.
-+ *
-+ * The list entries deleted via llist_del_all can be traversed with
-+ * traversing function such as llist_for_each etc.  But the list
-+ * entries can not be traversed safely before deleted from the list
-+ * without proper synchronization with the list consumers.
-+ *
-+ * The basic atomic operation of this list is cmpxchg on long.  On
-+ * architectures that don't have NMI-safe cmpxchg implementation, the
-+ * list can NOT be used in NMI handler.  So code uses the list in NMI
-+ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-+ */
-+
-+struct llist_head {
-+	struct llist_node *first;
-+};
-+
-+struct llist_node {
-+	struct llist_node *next;
-+};
-+
-+#define LLIST_HEAD_INIT(name)	{ NULL }
-+#define LLIST_HEAD(name)	struct llist_head name = LLIST_HEAD_INIT(name)
-+
-+/**
-+ * init_llist_head - initialize lock-less list head
-+ * @head:	the head for your lock-less list
-+ */
-+static inline void init_llist_head(struct llist_head *list)
-+{
-+	list->first = NULL;
-+}
-+
-+/**
-+ * llist_entry - get the struct of this entry
-+ * @ptr:	the &struct llist_node pointer.
-+ * @type:	the type of the struct this is embedded in.
-+ * @member:	the name of the llist_node within the struct.
-+ */
-+#define llist_entry(ptr, type, member)		\
-+	container_of(ptr, type, member)
-+
-+/**
-+ * llist_for_each - iterate over some entries of a lock-less list
-+ * @pos:	the &struct llist_node to use as a loop cursor
-+ * @node:	the first entry of deleted list entries
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being deleted from list, so start with an entry
-+ * instead of list head.
-+ */
-+#define llist_for_each(pos, node)			\
-+	for (pos = (node); pos; pos = pos->next)
-+
-+/**
-+ * llist_for_each_entry - iterate over some entries of lock-less list of given type
-+ * @pos:	the type * to use as a loop cursor.
-+ * @node:	the fist entry of deleted list entries.
-+ * @member:	the name of the llist_node with the struct.
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being removed from list, so start with an entry
-+ * instead of list head.
-+ */
-+#define llist_for_each_entry(pos, node, member)				\
-+	for (pos = llist_entry((node), typeof(*pos), member);		\
-+	     &pos->member != NULL;					\
-+	     pos = llist_entry(pos->member.next, typeof(*pos), member))
-+
-+/**
-+ * llist_empty - tests whether a lock-less list is empty
-+ * @head:	the list to test
-+ */
-+static inline int llist_empty(const struct llist_head *head)
-+{
-+	return head->first == NULL;
-+}
-+
-+void llist_add(struct llist_node *new, struct llist_head *head);
-+struct llist_node *llist_del_first(struct llist_head *head);
-+struct llist_node *llist_del_all(struct llist_head *head);
-+#endif /* LLIST_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index ff13cd7..4e8dd2d 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -237,4 +237,7 @@ config IOQ
+diff --git a/drivers/serial/pch_uart.c b/drivers/serial/pch_uart.c
+index b94d1fa..70a6145 100644
+--- a/drivers/serial/pch_uart.c
++++ b/drivers/serial/pch_uart.c
+@@ -682,7 +682,8 @@ static int dma_handle_rx(struct eg20t_port *priv)
+ 	sg_dma_len(sg) = priv->fifo_size;
  
- 	 If unsure, say N
+ 	sg_set_page(&priv->sg_rx, virt_to_page(priv->rx_buf_virt),
+-		     sg_dma_len(sg), (int)priv->rx_buf_virt & ~PAGE_MASK);
++		     sg_dma_len(sg), (unsigned long)priv->rx_buf_virt &
++		     ~PAGE_MASK);
  
-+config LLIST
-+	bool
-+
- endmenu
-diff --git a/lib/Makefile b/lib/Makefile
-index 92212ff..d8648ad6 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -111,6 +111,8 @@ obj-$(CONFIG_ATOMIC64_SELFTEST) += atomic64_test.o
+ 	sg_dma_address(sg) = priv->rx_buf_dma;
  
- obj-$(CONFIG_AVERAGE) += average.o
+@@ -1254,7 +1255,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	int ret;
+ 	unsigned int iobase;
+ 	unsigned int mapbase;
+-	unsigned int rxbuf;
++	unsigned char *rxbuf;
+ 	int fifosize, base_baud;
+ 	static int num;
  
-+obj-$(CONFIG_LLIST) += llist.o
-+
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
+@@ -1262,7 +1263,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	if (priv == NULL)
+ 		goto init_port_alloc_err;
  
-diff --git a/lib/llist.c b/lib/llist.c
-new file mode 100644
-index 0000000..f016011
---- /dev/null
-+++ b/lib/llist.c
-@@ -0,0 +1,97 @@
-+/*
-+ * Lock-less NULL terminated single linked list
-+ *
-+ * The basic atomic operation of this list is cmpxchg on long.  On
-+ * architectures that don't have NMI-safe cmpxchg implementation, the
-+ * list can NOT be used in NMI handler.  So code uses the list in NMI
-+ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation;
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/llist.h>
-+
-+#include <asm/system.h>
-+
-+/**
-+ * llist_add - add a new entry
-+ * @new:	new entry to be added
-+ * @head:	the head for your lock-less list
-+ */
-+void llist_add(struct llist_node *new, struct llist_head *head)
-+{
-+	struct llist_node *entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	do {
-+		entry = head->first;
-+		new->next = entry;
-+	} while (cmpxchg(&head->first, entry, new) != entry);
-+}
-+EXPORT_SYMBOL_GPL(llist_add);
-+
-+/**
-+ * llist_del_first - delete the first entry of lock-less list
-+ * @head:	the head for your lock-less list
-+ *
-+ * If list is empty, return NULL, otherwise, return the first entry deleted.
-+ *
-+ * Only one llist_del_first user can be used simultaneously with
-+ * multiple llist_add users without lock. Because otherwise
-+ * llist_del_first, llist_add, llist_add sequence in another user may
-+ * change @head->first->next, but keep @head->first. If multiple
-+ * consumers are needed, please use llist_del_all.
-+ */
-+struct llist_node *llist_del_first(struct llist_head *head)
-+{
-+	struct llist_node *entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	do {
-+		entry = head->first;
-+		if (entry == NULL)
-+			return NULL;
-+	} while (cmpxchg(&head->first, entry, entry->next) != entry);
-+
-+	return entry;
-+}
-+EXPORT_SYMBOL_GPL(llist_del_first);
-+
-+/**
-+ * llist_del_all - delete all entries from lock-less list
-+ * @head:	the head of lock-less list to delete all entries
-+ *
-+ * If list is empty, return NULL, otherwise, delete all entries and
-+ * return the pointer to the first entry.
-+ */
-+struct llist_node *llist_del_all(struct llist_head *head)
-+{
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	return xchg(&head->first, NULL);
-+}
-+EXPORT_SYMBOL_GPL(llist_del_all);
+-	rxbuf = __get_free_page(GFP_KERNEL);
++	rxbuf = (unsigned char *)__get_free_page(GFP_KERNEL);
+ 	if (!rxbuf)
+ 		goto init_port_free_txbuf;
+ 
+@@ -1286,7 +1287,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	priv->iobase = iobase;
+ 	priv->pdev = pdev;
+ 	priv->tx_empty = 1;
+-	priv->rxbuf.buf = (unsigned char *)rxbuf;
++	priv->rxbuf.buf = rxbuf;
+ 	priv->rxbuf.size = PAGE_SIZE;
+ 
+ 	priv->fifo_size = fifosize;
+@@ -1313,7 +1314,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	return priv;
+ 
+ init_port_hal_free:
+-	free_page(rxbuf);
++	free_page((unsigned long)rxbuf);
+ init_port_free_txbuf:
+ 	kfree(priv);
+ init_port_alloc_err:
+@@ -1325,7 +1326,7 @@ static void pch_uart_exit_port(struct eg20t_port *priv)
+ {
+ 	uart_remove_one_port(&pch_uart_driver, &priv->port);
+ 	pci_set_drvdata(priv->pdev, NULL);
+-	free_page((unsigned int)priv->rxbuf.buf);
++	free_page((unsigned long)priv->rxbuf.buf);
+ }
+ 
+ static void pch_uart_pci_remove(struct pci_dev *pdev)
 -- 
-1.7.2.3
+1.6.0.6
 
