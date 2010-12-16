@@ -1,141 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab0LPPvb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 10:51:31 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56168 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab0LPPv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 10:51:28 -0500
-Message-ID: <4D0A3576.7040908@kernel.org>
-Date: Thu, 16 Dec 2010 16:51:18 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1756438Ab0LPPwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 10:52:16 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:61931 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab0LPPwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 10:52:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH V7 2/8] posix clocks: introduce a syscall for clock tuning.
+Date: Thu, 16 Dec 2010 16:51:31 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <cover.1292512461.git.richard.cochran@omicron.at> <a93ce18c2987f7e102bc2ff5b12130211c222ea7.1292512461.git.richard.cochran@omicron.at>
+In-Reply-To: <a93ce18c2987f7e102bc2ff5b12130211c222ea7.1292512461.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-References: <4CBD95C0.6060302@kernel.org>  <4CBD95DC.8000001@kernel.org>	 <1292194113.2989.9.camel@mulgrave.site>  <4D073E9A.3000608@kernel.org>	 <1292335754.3058.2.camel@mulgrave.site>  <4D077CD9.6050907@kernel.org>	 <1292336798.3058.5.camel@mulgrave.site>  <4D078052.3040800@kernel.org>	 <1292382245.19511.56.camel@mulgrave.site>  <4D08E2FF.5090605@kernel.org>	 <1292428486.4688.180.camel@mulgrave.site>  <4D08E624.3020808@kernel.org>	 <1292433773.4688.278.camel@mulgrave.site>  <4D09116C.6010508@kernel.org>	 <1292440246.4688.416.camel@mulgrave.site>  <4D0914B5.20208@kernel.org>	 <1292441610.4688.457.camel@mulgrave.site>  <4D091A20.3060202@kernel.org> <1292510372.3024.12.camel@mulgrave.site>
-In-Reply-To: <1292510372.3024.12.camel@mulgrave.site>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 15:51:20 +0000 (UTC)
+Message-Id: <201012161651.31748.arnd@arndb.de>
+X-Provags-ID: V02:K0:vScenfOQRtgD6nusQFZcn/9eiHR/dv5n4oQuZw35z+U
+ 5u2Yzme4+ksmQC3MMLX80vMga8pig2Ss4nxxE/Vgsp5Q64zhMf
+ AT4jBqh/+IZIXCpSKwuV7sCd3k3ztrDMXcCxchMbyuBgcZDaKq
+ ywLRUQGjetY+eGzzKhN2tph3UWOEPCbU4t9+flsxY7q6Df63pn
+ K1q9xeWm3VzJxIF1Nx60Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, James.
-
-On 12/16/2010 03:39 PM, James Bottomley wrote:
->> But, anyways, I don't think that's gonna happen here.  If the last put
->> hasn't been executed the module reference wouldn't be zero, so module
->> unload can't initiate, right?
+On Thursday 16 December 2010, Richard Cochran wrote:
+> A new syscall is introduced that allows tuning of a POSIX clock. The
+> syscall is implemented for four architectures: arm, blackfin, powerpc,
+> and x86.
 > 
-> Wrong I'm afraid.  There's a nasty two level complexity in module
-> references:  Anything which takes an external reference (like open or
-> mount) does indeed take the module reference and prevent removal.
-> Anything that takes an internal reference doesn't ... we wait for all of
-> them to come back in the final removal of the bus type.  The is to
-> prevent a module removal deadlock.  The callbacks are internal
-> references, so we wait for them in module_exit() but don't block
-> module_exit() from being called ... meaning the double callback scenario
-> could be outstanding.
+> The new syscall, clock_adjtime, takes two parameters, the clock ID,
+> and a pointer to a struct timex. Any ADJTIMEX(2) operation may be
+> requested via this system call, but various POSIX clocks may or may
+> not support tuning.
+> 
+> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
 
-Okay, so something like the following should solve the problem.  Once
-destroy_workqueue() is called, queueing is allowed from only the same
-workqueue and flush is repeated until the queue is drained, which
-seems to be the right thing to do on destruction regardless of the
-SCSI changes.
+The syscall implementation looks good to me.
 
-With the following change, the previous patch should do fine for SCSI
-and the ew can be removed.  Please note that the following patch is
-still only compile tested.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Are we in agreement now?
-
-Thanks.
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 90db1bd..8dd0b80 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -932,6 +932,32 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
- 		wake_up_worker(gcwq);
- }
-
-+/*
-+ * Test whether @work is being queued from another work executing on the
-+ * same workqueue.
-+ */
-+static bool is_chained_work(struct work_struct *work)
-+{
-+	struct workqueue_struct *wq = get_work_cwq(work)->wq;
-+	unsigned long flags;
-+	unsigned int cpu;
-+
-+	for_each_gcwq_cpu(cpu) {
-+		struct global_cwq *gcwq = get_gcwq(cpu);
-+		struct worker *worker;
-+
-+		spin_lock_irqsave(&gcwq->lock, flags);
-+		worker = find_worker_executing_work(gcwq, work);
-+		if (worker && worker->task == current &&
-+		    worker->current_cwq->wq == wq) {
-+			spin_unlock_irqrestore(&gcwq->lock, flags);
-+			return true;
-+		}
-+		spin_unlock_irqrestore(&gcwq->lock, flags);
-+	}
-+	return false;
-+}
-+
- static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 			 struct work_struct *work)
- {
-@@ -943,7 +969,8 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
-
- 	debug_work_activate(work);
-
--	if (WARN_ON_ONCE(wq->flags & WQ_DYING))
-+	/* if dying, only works from the same workqueue are allowed */
-+	if (WARN_ON_ONCE((wq->flags & WQ_DYING) && !is_chained_work(work)))
- 		return;
-
- 	/* determine gcwq to use */
-@@ -2936,11 +2963,34 @@ EXPORT_SYMBOL_GPL(__alloc_workqueue_key);
-  */
- void destroy_workqueue(struct workqueue_struct *wq)
- {
-+	unsigned int flush_cnt = 0;
- 	unsigned int cpu;
-
-+	/*
-+	 * Mark @wq dying and drain all pending works.  Once WQ_DYING is
-+	 * set, only chain queueing is allowed.  IOW, only currently
-+	 * pending or running works on @wq can queue further works on it.
-+	 * @wq is flushed repeatedly until it becomes empty.  The number of
-+	 * flushing is detemined by the depth of chaining and should be
-+	 * relatively short.  Whine if it takes too long.
-+	 */
- 	wq->flags |= WQ_DYING;
-+reflush:
- 	flush_workqueue(wq);
-
-+	for_each_cwq_cpu(cpu, wq) {
-+		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
-+
-+		if (!cwq->nr_active && list_empty(&cwq->delayed_works))
-+			continue;
-+
-+		if (flush_cnt++ == 10 || flush_cnt % 100 == 0)
-+			printk(KERN_WARNING "workqueue %s: flush on "
-+			       "destruction isn't complete after %u tries\n",
-+			       wq->name, flush_cnt);
-+		goto reflush;
-+	}
-+
- 	/*
- 	 * wq list is used to freeze wq, remove from list after
- 	 * flushing is complete in case freeze races us.
+It would be good to add it to include/asm-generic/unistd.h
+as well, so that tile and future architectures get it, too.
