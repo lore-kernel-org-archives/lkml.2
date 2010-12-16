@@ -1,72 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab0LPSEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 13:04:37 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52269 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083Ab0LPSEd (ORCPT
+	id S932082Ab0LPSEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 13:04:42 -0500
+Received: from mail-ew0-f45.google.com ([209.85.215.45]:59662 "EHLO
+	mail-ew0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757106Ab0LPSEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 13:04:33 -0500
-Date: Thu, 16 Dec 2010 10:03:55 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-media@vger.kernel.org
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next v2] media: fix em28xx build, needs hardirq.h
-Message-Id: <20101216100355.cd76fc70.randy.dunlap@oracle.com>
-In-Reply-To: <20101207105009.7d634c7b.randy.dunlap@oracle.com>
-References: <20101206140055.34289498.sfr@canb.auug.org.au>
-	<AANLkTi=XkxnHZGTEsrrRmPGQePitzb=akyS99_Qd6ROy@mail.gmail.com>
-	<20101207103815.26054c38.randy.dunlap@oracle.com>
-	<20101207184453.GA30998@core2.telecom.by>
-	<20101207105009.7d634c7b.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 16 Dec 2010 13:04:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=MsPL+hthGi6SMB6DzVXdqQPTOjqaib4PYhWO+53I5IrQ7Ixxe96T6HXYcQZHuVZqHy
+         bvEoU756o2Eg3ojdjVK5i5g6rnjmEznlNbc8+l3vsuYhCej02xym3lknoA9O92y6gNDP
+         LgQZDm+ujlDuEwWK/b+RB2IQB6ceQjJdnPMwg=
+Message-ID: <4D0A53E5.4010900@gmail.com>
+Date: Thu, 16 Dec 2010 19:01:09 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 09/16 v5] pramfs: dir operations
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Dec 2010 10:50:09 -0800 Randy Dunlap wrote:
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-ping.
+File operations for directories.
 
-
-> ---
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix em28xx build by adding hardirq.h header file:
-> 
-> drivers/media/video/em28xx/em28xx-vbi.c:49: error: implicit declaration of function 'in_interrupt'
-> 
-> Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  drivers/media/video/em28xx/em28xx-vbi.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20101207.orig/drivers/media/video/em28xx/em28xx-vbi.c
-> +++ linux-next-20101207/drivers/media/video/em28xx/em28xx-vbi.c
-> @@ -23,6 +23,7 @@
->  
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/hardirq.h>
->  #include <linux/init.h>
->  
->  #include "em28xx.h"
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff -Nurp linux-2.6.36-orig/fs/pramfs/dir.c linux-2.6.36/fs/pramfs/dir.c
+--- linux-2.6.36-orig/fs/pramfs/dir.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-2.6.36/fs/pramfs/dir.c	2010-11-28 10:31:01.000000000 +0100
+@@ -0,0 +1,204 @@
++/*
++ * BRIEF DESCRIPTION
++ *
++ * File operations for directories.
++ *
++ * Copyright 2009-2010 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright 2003 Sony Corporation
++ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
++ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/fs.h>
++#include <linux/pagemap.h>
++#include "pram.h"
++
++/*
++ *	Parent is locked.
++ */
++int pram_add_link(struct dentry *dentry, struct inode *inode)
++{
++	struct inode *dir = dentry->d_parent->d_inode;
++	struct pram_inode *pidir, *pi, *pitail = NULL;
++	u64 tail_ino, prev_ino;
++
++	const char *name = dentry->d_name.name;
++
++	int namelen = min_t(unsigned int, dentry->d_name.len, PRAM_NAME_LEN);
++
++	pidir = pram_get_inode(dir->i_sb, dir->i_ino);
++	pi = pram_get_inode(dir->i_sb, inode->i_ino);
++
++	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
++
++	tail_ino = be64_to_cpu(pidir->i_type.dir.tail);
++	if (tail_ino != 0) {
++		pitail = pram_get_inode(dir->i_sb, tail_ino);
++		pram_memunlock_inode(dir->i_sb, pitail);
++		pitail->i_d.d_next = cpu_to_be64(inode->i_ino);
++		pram_memlock_inode(dir->i_sb, pitail);
++
++		prev_ino = tail_ino;
++
++		pram_memunlock_inode(dir->i_sb, pidir);
++		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
++		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
++		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
++		pram_memlock_inode(dir->i_sb, pidir);
++	} else {
++		/* the directory is empty */
++		prev_ino = 0;
++
++		pram_memunlock_inode(dir->i_sb, pidir);
++		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
++		pidir->i_type.dir.head = cpu_to_be64(inode->i_ino);
++		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
++		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
++		pram_memlock_inode(dir->i_sb, pidir);
++	}
++
++
++	pram_memunlock_inode(dir->i_sb, pi);
++	pi->i_d.d_prev = cpu_to_be64(prev_ino);
++	pi->i_d.d_parent = cpu_to_be64(dir->i_ino);
++	memcpy(pi->i_d.d_name, name, namelen);
++	pi->i_d.d_name[namelen] = '\0';
++	pram_memlock_inode(dir->i_sb, pi);
++	return 0;
++}
++
++int pram_remove_link(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++	struct pram_inode *prev = NULL;
++	struct pram_inode *next = NULL;
++	struct pram_inode *pidir, *pi;
++
++	pi = pram_get_inode(sb, inode->i_ino);
++	pidir = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_parent));
++	if (!pidir)
++		return -EACCES;
++
++	if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.head)) {
++		/* first inode in directory */
++		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
++
++		if (next) {
++			pram_memunlock_inode(sb, next);
++			next->i_d.d_prev = 0;
++			pram_memlock_inode(sb, next);
++
++			pram_memunlock_inode(sb, pidir);
++			pidir->i_type.dir.head = pi->i_d.d_next;
++		} else {
++			pram_memunlock_inode(sb, pidir);
++			pidir->i_type.dir.head = 0;
++			pidir->i_type.dir.tail = 0;
++		}
++		pram_memlock_inode(sb, pidir);
++	} else if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.tail)) {
++		/* last inode in directory */
++		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
++
++		pram_memunlock_inode(sb, prev);
++		prev->i_d.d_next = 0;
++		pram_memlock_inode(sb, prev);
++
++		pram_memunlock_inode(sb, pidir);
++		pidir->i_type.dir.tail = pi->i_d.d_prev;
++		pram_memlock_inode(sb, pidir);
++	} else {
++		/* somewhere in the middle */
++		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
++		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
++
++		if (prev && next) {
++			pram_memunlock_inode(sb, prev);
++			prev->i_d.d_next = pi->i_d.d_next;
++			pram_memlock_inode(sb, prev);
++
++			pram_memunlock_inode(sb, next);
++			next->i_d.d_prev = pi->i_d.d_prev;
++			pram_memlock_inode(sb, next);
++		}
++	}
++
++	pram_memunlock_inode(sb, pi);
++	pi->i_d.d_next = 0;
++	pi->i_d.d_prev = 0;
++	pi->i_d.d_parent = 0;
++	pram_memlock_inode(sb, pi);
++
++	return 0;
++}
++
++#define DT2IF(dt) (((dt) << 12) & S_IFMT)
++#define IF2DT(sif) (((sif) & S_IFMT) >> 12)
++
++static int pram_readdir(struct file *filp, void *dirent, filldir_t filldir)
++{
++	struct inode *inode = filp->f_dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
++	struct pram_inode *pi;
++	int namelen, ret = 0;
++	char *name;
++	ino_t ino;
++
++	pi = pram_get_inode(sb, inode->i_ino);
++
++	switch ((unsigned long)filp->f_pos) {
++	case 0:
++		ret = filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR);
++		filp->f_pos++;
++		return ret;
++	case 1:
++		ret = filldir(dirent, "..", 2, 1, be64_to_cpu(pi->i_d.d_parent), DT_DIR);
++		ino = be64_to_cpu(pi->i_type.dir.head);
++		filp->f_pos = ino ? ino : 2;
++		return ret;
++	case 2:
++		ino = be64_to_cpu(pi->i_type.dir.head);
++		if (ino) {
++			filp->f_pos = ino;
++			pi = pram_get_inode(sb, ino);
++			break;
++		} else {
++			/* the directory is empty */
++			filp->f_pos = 2;
++			return 0;
++		}
++	case 3:
++		return 0;
++	default:
++		ino = filp->f_pos;
++		pi = pram_get_inode(sb, ino);
++		break;
++	}
++
++	while (pi && !be16_to_cpu(pi->i_links_count)) {
++		ino = filp->f_pos = be64_to_cpu(pi->i_d.d_next);
++		pi = pram_get_inode(sb, ino);
++	}
++
++	if (pi) {
++		name = pi->i_d.d_name;
++		namelen = strlen(name);
++
++		ret = filldir(dirent, name, namelen,
++			      filp->f_pos, ino,
++			      IF2DT(be16_to_cpu(pi->i_mode)));
++		filp->f_pos = pi->i_d.d_next ? be64_to_cpu(pi->i_d.d_next) : 3;
++	} else
++		filp->f_pos = 3;
++
++	return ret;
++}
++
++struct file_operations pram_dir_operations = {
++	.read		= generic_read_dir,
++	.readdir	= pram_readdir,
++	.fsync		= noop_fsync,
++};
