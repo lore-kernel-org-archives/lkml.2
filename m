@@ -1,413 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab0LPXaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 18:30:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34782 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752859Ab0LPXaM (ORCPT
+	id S1753234Ab0LPXbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 18:31:13 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48212 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab0LPXbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 18:30:12 -0500
-Message-Id: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
-Subject: mmotm 2010-12-16-14-56 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Thu, 16 Dec 2010 14:56:39 -0800
+	Thu, 16 Dec 2010 18:31:11 -0500
+Message-ID: <4D0AA116.4050707@kernel.org>
+Date: Thu, 16 Dec 2010 15:30:30 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org> <4D0A6F66.1010006@zytor.com>
+In-Reply-To: <4D0A6F66.1010006@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2010-12-16-14-56 has been uploaded to
+On 12/16/2010 11:58 AM, H. Peter Anvin wrote:
+> On 12/16/2010 09:28 AM, Yinghai Lu wrote:
+>>
+>> the brk is complaining if i change that to 
+>>
+>>  	if (end > ((-__PAGE_OFFSET-(128 <<20)-1) & 0x7fffffff))
+>>  		error("Destination address too large");
+>>
+>> brk is complaining when try to get more for dmi ...
+>> ...
+>> I'm in purgatory
+>> bootconsole [uart0] enabled
+>> Kernel Layout:
+>>   .text: [0x2e000000-0x2e3f08ca]
+>> .rodata: [0x2e3f2000-0x2e5a2fff]
+>>   .data: [0x2e5a3000-0x2e5f6467]
+>>   .init: [0x2e5f7000-0x2e670fff]
+>>    .bss: [0x2e675000-0x2e76ffff]
+>>    .brk: [0x2e770000-0x2e894fff]
+>>     memblock_x86_reserve_range: [0x00001000-0x00001fff]    EX TRAMPOLINE
+>>     memblock_x86_reserve_range: [0x2e000000-0x2e76ffff]    TEXT DATA BSS
+>>     memblock_x86_reserve_range: [0x35bdd000-0x35f49fff]          RAMDISK
+>>     memblock_x86_reserve_range: [0x0009c800-0x000fffff]  * BIOS reserved
+>> Initializing cgroup subsys cpuset
+>> Initializing cgroup subsys cpu
+>> Linux version 2.6.37-rc5-tip+ (root@mpk12-3214-189-181) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #4 SMP Wed Dec 15 11:04:32 PST 2010
+>> KERNEL supported cpus:
+>>   Intel GenuineIntel
+>>   AMD AuthenticAMD
+>>   NSC Geode by NSC
+>>   Cyrix CyrixInstead
+>>   Centaur CentaurHauls
+>>   Transmeta GenuineTMx86
+>>   Transmeta TransmetaCPU
+>>   UMC UMC UMC UMC
+>> BIOS-provided physical RAM map:
+>>  BIOS-e820: [0x00000000000100-0x0000000009c7ff] (usable)
+>>  BIOS-e820: [0x0000000009c800-0x0000000009ffff] (reserved)
+>>  BIOS-e820: [0x000000000e0000-0x000000000fffff] (reserved)
+>>  BIOS-e820: [0x00000000100000-0x0000007ff9ffff] (usable)
+>>  BIOS-e820: [0x0000007ffae000-0x0000007ffaffff] (usable)
+>>  BIOS-e820: [0x0000007ffb0000-0x0000007ffbdfff] (ACPI data)
+>>  BIOS-e820: [0x0000007ffbe000-0x0000007ffeffff] (ACPI NVS)
+>>  BIOS-e820: [0x0000007fff0000-0x0000007fffffff] (reserved)
+>>  BIOS-e820: [0x000000e0000000-0x000000efffffff] (reserved)
+>>  BIOS-e820: [0x000000fec00000-0x000000fec00fff] (reserved)
+>>  BIOS-e820: [0x000000fee00000-0x000000feefffff] (reserved)
+>>  BIOS-e820: [0x000000ff700000-0x000000ffffffff] (reserved)
+>> last_pfn = 0x7ffb0 max_arch_pfn = 0x1000000
+>> NX (Execute Disable) protection: active
+>> user-defined physical RAM map:
+>>  user: [0x00000000000000-0x0000000009ffff] (usable)
+>>  user: [0x0000002e000000-0x00000035f59fff] (usable)
+>>  user: [0x0000007ffb0000-0x0000007ffeffff] (ACPI data)
+>> DMI present.
+>> BUG: Int 6: CR2   (null)
+>>      EDI 00000019  ESI ff940c18  EBP   (null)  ESP ee5a5e84
+>>      EBX ee5cfb68  EDX 00000006  ECX 00000019  EAX ee8e6019
+>>      err   (null)  EIP ee5fb4dd   CS 00000060  flg 00010002
+>> Stack: 00000019 ee62bf45 ff942000 00000563 00000001 ff940c00 000018c7 ee62bf83
+>>        ff940c00 ee62c063 80000000 ee3e6f2f ee50a3c0 ee5a5ed4 ff940c00 ff940c43
+>>        000018c7   (null) ee3173d4 000018c8 0000007f ff940c00 ff90b1bf ee5a5f18
+>> Pid: 0, comm: swapper Not tainted 2.6.37-rc5-tip+ #4
+>> Call Trace:
+>>  [<ee3dd1d5>] ? hlt_loop+0x0/0x3
+>>  [<ee5fb4dd>] ? extend_brk+0x31/0x44
+> 
+> I'm assuming it bails due to:
+> 
+> 	BUG_ON((char *)(_brk_end + size) > __brk_limit);
+> 
+> ... could you find out what _brk_end and __brk_limit are?
 
-   http://userweb.kernel.org/~akpm/mmotm/
+void __init print_kernel_layout(void)
+{
+        printk("Kernel Layout:\n");
+        printk("  .text: [%#010lx-%#010lx]\n", __pa_symbol(&_text), __pa_symbol(&_etext) - 1);
+        printk(".rodata: [%#010lx-%#010lx]\n", __pa_symbol(&__start_rodata), __pa_symbol(&__end_rodata) - 1);
+        printk("  .data: [%#010lx-%#010lx]\n", __pa_symbol(&_sdata), __pa_symbol(&_edata) - 1);
+        printk("  .init: [%#010lx-%#010lx]\n", __pa_symbol(&__init_begin), __pa_symbol(&__init_end) - 1);
+        printk("   .bss: [%#010lx-%#010lx]\n", __pa_symbol(&__bss_start), __pa_symbol(&__bss_stop) - 1);
+        printk("   .brk: [%#010lx-%#010lx]\n", __pa_symbol(&__brk_base), __pa_symbol(&__brk_limit) - 1);
+}
 
-and will soon be available at
+>> Kernel Layout:
+>>   .text: [0x2e000000-0x2e3f08ca]
+>> .rodata: [0x2e3f2000-0x2e5a2fff]
+>>   .data: [0x2e5a3000-0x2e5f6467]
+>>   .init: [0x2e5f7000-0x2e670fff]
+>>    .bss: [0x2e675000-0x2e76ffff]
+>>    .brk: [0x2e770000-0x2e894fff]
 
-   git://zen-kernel.org/kernel/mmotm.git
+DMI present.
+_brk_end: ee8e6000, __brk_limit: ee895000 
 
-It contains the following patches against 2.6.37-rc6:
-
-origin.patch
-linux-next.patch
-next-remove-localversion.patch
-i-need-old-gcc.patch
-fix-lockup-detector-compile-fixes-from-removing-the-old-x86-nmi-watchdog.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-mm-compactionc-avoid-double-mem_cgroup_del_lru.patch
-mm-vmscan-tracepoint-account-for-scanned-pages-similarly-for-both-ftrace-and-vmstat.patch
-logfs-fix-deadlock-in-logfs_get_wblocks-hold-and-wait-on-super-s_write_mutex.patch
-logfs-fix-kernel-bug-at-readwritec-1193.patch
-writeback-do-uninterruptible-sleep-in-balance_dirty_pages.patch
-gpiolib-gpio_request_one-add-missing-gpio_free.patch
-maintainers-update-geode-entry.patch
-rtc-rs5c372-fix-buffer-size.patch
-mm-migratec-fix-compilation-error.patch
-backlight-cr_bllcdc-fix-a-memory-leak.patch
-delayacct-fix-iotop-on-x86_64.patch
-delayacct-fix-iotop-on-x86_64-fix.patch
-memblock-fix-memblock_is_region_memory.patch
-mm-vmap-area-cache.patch
-arch-arm-plat-omap-iovmmc-fix-end-address-of-vm-area-comparation-in-alloc_iovm_area.patch
-backlight-fix-88pm860x_bl-macro-collision.patch
-cciss-fix-botched-tag-masking-for-scsi-tape-commands.patch
-acerhdf-add-support-for-aspire-1410-bios-v13314.patch
-arch-x86-kernel-apic-io_apicc-fix-warning.patch
-fs-btrfs-inodec-eliminate-memory-leak.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-cpufreq-fix-ondemand-governor-powersave_bias-execution-time-misuse.patch
-debugfs-remove-module_exit.patch
-drivers-gpu-drm-radeon-atomc-fix-warning.patch
-irq-use-per_cpu-kstat_irqs.patch
-timers-use-this_cpu_read.patch
-drivers-leds-leds-lp5521c-fix-potential-buffer-overflow.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-mips-enable-arch_dma_addr_t_64bit-with-highmem-64bit_phys_addr-64bit.patch
-isdn-capi-unregister-capictr-notifier-after-init-failure.patch
-isdn-capi-make-kcapi-use-a-separate-workqueue.patch
-drivers-video-backlight-l4f00242t03c-make-1-bit-signed-field-unsigned.patch
-drivers-video-backlight-l4f00242t03c-full-implement-fb-power-states-for-this-lcd.patch
-drivers-video-backlight-l4f00242t03c-prevent-unbalanced-calls-to-regulator-enable-disable.patch
-btusb-patch-add_apple_macbookpro62.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode-fix.patch
-drivers-message-fusion-mptsasc-fix-warning.patch
-scsi-fix-a-header-to-include-linux-typesh.patch
-drivers-block-makefile-replace-the-use-of-module-objs-with-module-y.patch
-drivers-block-aoe-makefile-replace-the-use-of-module-objs-with-module-y.patch
-vfs-remove-a-warning-on-open_fmode.patch
-vfs-add-__fmode_exec.patch
-fs-make-block-fiemap-mapping-length-at-least-blocksize-long.patch
-n_hdlc-fix-read-and-write-locking.patch
-n_hdlc-fix-read-and-write-locking-update.patch
-mm.patch
-mm-page-allocator-adjust-the-per-cpu-counter-threshold-when-memory-is-low.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-update.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix-set_pgdat_percpu_threshold-dont-use-for_each_online_cpu.patch
-writeback-integrated-background-writeback-work.patch
-writeback-trace-wakeup-event-for-background-writeback.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works-update.patch
-writeback-avoid-livelocking-wb_sync_all-writeback.patch
-writeback-avoid-livelocking-wb_sync_all-writeback-update.patch
-writeback-check-skipped-pages-on-wb_sync_all.patch
-writeback-check-skipped-pages-on-wb_sync_all-update.patch
-writeback-check-skipped-pages-on-wb_sync_all-update-fix.patch
-writeback-io-less-balance_dirty_pages.patch
-writeback-consolidate-variable-names-in-balance_dirty_pages.patch
-writeback-per-task-rate-limit-on-balance_dirty_pages.patch
-writeback-per-task-rate-limit-on-balance_dirty_pages-fix.patch
-writeback-prevent-duplicate-balance_dirty_pages_ratelimited-calls.patch
-writeback-account-per-bdi-accumulated-written-pages.patch
-writeback-bdi-write-bandwidth-estimation.patch
-writeback-bdi-write-bandwidth-estimation-fix.patch
-writeback-show-bdi-write-bandwidth-in-debugfs.patch
-writeback-quit-throttling-when-bdi-dirty-pages-dropped-low.patch
-writeback-reduce-per-bdi-dirty-threshold-ramp-up-time.patch
-writeback-make-reasonable-gap-between-the-dirty-background-thresholds.patch
-writeback-scale-down-max-throttle-bandwidth-on-concurrent-dirtiers.patch
-writeback-add-trace-event-for-balance_dirty_pages.patch
-writeback-make-nr_to_write-a-per-file-limit.patch
-writeback-make-nr_to_write-a-per-file-limit-fix.patch
-sync_inode_metadata-fix-comment.patch
-mm-page-writebackc-fix-__set_page_dirty_no_writeback-return-value.patch
-vmscan-factor-out-kswapd-sleeping-logic-from-kswapd.patch
-mm-find_get_pages_contig-fixlet.patch
-fs-mpagec-consolidate-code.patch
-fs-mpagec-consolidate-code-checkpatch-fixes.patch
-mm-convert-sprintf_symbol-to-%ps.patch
-mm-smaps-export-mlock-information.patch
-mm-compaction-add-trace-events-for-memory-compaction-activity.patch
-mm-vmscan-convert-lumpy_mode-into-a-bitmask.patch
-mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim.patch
-mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-fix.patch
-mm-migration-allow-migration-to-operate-asynchronously-and-avoid-synchronous-compaction-in-the-faster-path.patch
-mm-migration-allow-migration-to-operate-asynchronously-and-avoid-synchronous-compaction-in-the-faster-path-fix.patch
-mm-migration-cleanup-migrate_pages-api-by-matching-types-for-offlining-and-sync.patch
-mm-compaction-perform-a-faster-migration-scan-when-migrating-asynchronously.patch
-mm-vmscan-rename-lumpy_mode-to-reclaim_mode.patch
-mm-vmscan-rename-lumpy_mode-to-reclaim_mode-fix.patch
-mm-deactivate-invalidated-pages.patch
-mm-deactivate-invalidated-pages-fix.patch
-mm-remove-unused-get_vm_area_node.patch
-mm-remove-gfp-mask-from-pcpu_get_vm_areas.patch
-mm-unify-module_alloc-code-for-vmalloc.patch
-oom-allow-a-non-cap_sys_resource-proces-to-oom_score_adj-down.patch
-mm-clear-pageerror-bit-in-msync-fsync.patch
-do_wp_page-remove-the-reuse-flag.patch
-do_wp_page-clarify-dirty_page-handling.patch
-mlock-avoid-dirtying-pages-and-triggering-writeback.patch
-mlock-only-hold-mmap_sem-in-shared-mode-when-faulting-in-pages.patch
-mm-add-foll_mlock-follow_page-flag.patch
-mm-move-vm_locked-check-to-__mlock_vma_pages_range.patch
-mlock-do-not-hold-mmap_sem-for-extended-periods-of-time.patch
-mlock-do-not-hold-mmap_sem-for-extended-periods-of-time-fix.patch
-mlock-do-not-hold-mmap_sem-for-extended-periods-of-time-fix2.patch
-mempolicy-remove-tasklist_lock-from-migrate_pages.patch
-vmalloc-remove-redundant-unlikely.patch
-mm-remove-likely-from-mapping_unevictable.patch
-mm-remove-unlikely-from-page_mapping.patch
-mm-remove-likely-from-grab_cache_page_write_begin.patch
-mm-kswapd-stop-high-order-balancing-when-any-suitable-zone-is-balanced.patch
-mm-kswapd-keep-kswapd-awake-for-high-order-allocations-until-a-percentage-of-the-node-is-balanced.patch
-mm-kswapd-use-the-order-that-kswapd-was-reclaiming-at-for-sleeping_prematurely.patch
-mm-kswapd-reset-kswapd_max_order-and-classzone_idx-after-reading.patch
-mm-kswapd-treat-zone-all_unreclaimable-in-sleeping_prematurely-similar-to-balance_pgdat.patch
-mm-kswapd-use-the-classzone-idx-that-kswapd-was-using-for-sleeping_prematurely.patch
-mm-set-correct-numa_zonelist_order-string-when-configured-on-the-kernel-command-line.patch
-thp-ksm-free-swap-when-swapcache-page-is-replaced.patch
-thp-fix-bad_page-to-show-the-real-reason-the-page-is-bad.patch
-thp-transparent-hugepage-support-documentation.patch
-thp-mm-define-madv_hugepage.patch
-thp-compound_lock.patch
-thp-alter-compound-get_page-put_page.patch
-thp-put_page-recheck-pagehead-after-releasing-the-compound_lock.patch
-thp-update-futex-compound-knowledge.patch
-thp-clear-compound-mapping.patch
-thp-add-native_set_pmd_at.patch
-thp-add-pmd-paravirt-ops.patch
-thp-no-paravirt-version-of-pmd-ops.patch
-thp-export-maybe_mkwrite.patch
-thp-comment-reminder-in-destroy_compound_page.patch
-thp-config_transparent_hugepage.patch
-thp-special-pmd_trans_-functions.patch
-thp-add-pmd-mangling-generic-functions.patch
-thp-add-pmd-mangling-functions-to-x86.patch
-thp-bail-out-gup_fast-on-splitting-pmd.patch
-thp-pte-alloc-trans-splitting.patch
-thp-add-pmd-mmu_notifier-helpers.patch
-thp-clear-page-compound.patch
-thp-add-pmd_huge_pte-to-mm_struct.patch
-thp-split_huge_page_mm-vma.patch
-thp-split_huge_page-paging.patch
-thp-clear_copy_huge_page.patch
-thp-kvm-mmu-transparent-hugepage-support.patch
-thp-_gfp_no_kswapd.patch
-thp-dont-alloc-harder-for-gfp-nomemalloc-even-if-nowait.patch
-thp-transparent-hugepage-core.patch
-thp-split_huge_page-anon_vma-ordering-dependency.patch
-thp-verify-pmd_trans_huge-isnt-leaking.patch
-thp-madvisemadv_hugepage.patch
-thp-add-pagetranscompound.patch
-thp-pmd_trans_huge-migrate-bugcheck.patch
-thp-memcg-compound.patch
-thp-transhuge-memcg-commit-tail-pages-at-charge.patch
-thp-memcg-huge-memory.patch
-thp-transparent-hugepage-vmstat.patch
-thp-khugepaged.patch
-thp-khugepaged-vma-merge.patch
-thp-skip-transhuge-pages-in-ksm-for-now.patch
-thp-remove-pg_buddy.patch
-thp-add-x86-32bit-support.patch
-thp-mincore-transparent-hugepage-support.patch
-thp-add-pmd_modify.patch
-thp-mprotect-pass-vma-down-to-page-table-walkers.patch
-thp-mprotect-transparent-huge-page-support.patch
-thp-set-recommended-min-free-kbytes.patch
-thp-enable-direct-defrag.patch
-thp-add-numa-awareness-to-hugepage-allocations.patch
-thp-allocate-memory-in-khugepaged-outside-of-mmap_sem-write-mode.patch
-thp-allocate-memory-in-khugepaged-outside-of-mmap_sem-write-mode-fix.patch
-thp-transparent-hugepage-config-choice.patch
-thp-select-config_compaction-if-transparent_hugepage-enabled.patch
-thp-transhuge-isolate_migratepages.patch
-thp-avoid-breaking-huge-pmd-invariants-in-case-of-vma_adjust-failures.patch
-thp-dont-allow-transparent-hugepage-support-without-pse.patch
-thp-mmu_notifier_test_young.patch
-thp-freeze-khugepaged-and-ksmd.patch
-thp-use-compaction-in-kswapd-for-gfp_atomic-order-0.patch
-thp-use-compaction-for-all-allocation-orders.patch
-thp-disable-transparent-hugepages-by-default-on-small-systems.patch
-thp-fix-anon-memory-statistics-with-transparent-hugepages.patch
-thp-scale-nr_rotated-to-balance-memory-pressure.patch
-thp-transparent-hugepage-sysfs-meminfo.patch
-thp-add-debug-checks-for-mapcount-related-invariants.patch
-thp-fix-memory-failure-hugetlbfs-vs-thp-collision.patch
-thp-compound_trans_order.patch
-thp-mm-define-madv_nohugepage.patch
-thp-madvisemadv_nohugepage.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-hpet-factor-timer-allocate-from-open.patch
-um-mark-config_highmem-as-broken.patch
-arch-um-drivers-linec-safely-iterate-over-list-of-winch-handlers.patch
-uml-mmapper_kern-needs-module_license.patch
-kmsg_dump-constrain-mtdoops-and-ramoops-to-perform-their-actions-only-for-kmsg_dump_panic.patch
-kmsg_dump-add-kmsg_dump-calls-to-the-reboot-halt-poweroff-and-emergency_restart-paths.patch
-set_rtc_mmss-show-warning-message-only-once.patch
-include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit.patch
-include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix.patch
-add-the-common-dma_addr_t-typedef-to-include-linux-typesh.patch
-toshibah-hide-a-function-prototypes-behind-__kernel__-macro.patch
-kernel-clean-up-use_generic_smp_helpers.patch
-mm-numa-aware-alloc_task_struct_node.patch
-mm-numa-aware-alloc_thread_info_node.patch
-kthread-numa-aware-kthread_create_on_cpu.patch
-kthread-use-kthread_create_on_cpu.patch
-dca-remove-unneeded-null-check.patch
-include-asm-generic-vmlinuxldsh-make-readmostly-section-correctly-align.patch
-percpu-add-new-macros-to-make-percpu-readmostly-section-correctly-align.patch
-printk-use-rcu-to-prevent-potential-lock-contention-in-kmsg_dump.patch
-include-linux-printkh-move-console-functions-and-variables-together.patch
-include-linux-printkh-use-space-after-define.patch
-include-linux-printkh-use-and-neaten-no_printk.patch
-include-linux-printkh-add-pr_level_once-macros.patch
-include-linux-printkh-lib-hexdumpc-neatening-and-add-config_printk-guard.patch
-include-linux-printkh-organize-printk_ratelimited-macros.patch
-include-linux-printkh-use-tab-not-spaces-for-indent.patch
-vfs-remove-unlikely-from-fput_light.patch
-vfs-remove-unlikely-from-fget_light.patch
-scripts-get_maintainerpl-make-rolestats-the-default.patch
-scripts-get_maintainerpl-use-git-fallback-more-often.patch
-maintainers-openwrt-devel-is-subscribers-only.patch
-flex_array-export-symbols-to-modules.patch
-drivers-mmc-host-omapc-use-resource_size.patch
-drivers-mmc-host-omap_hsmmcc-use-resource_size.patch
-scripts-checkpatchpl-add-check-for-multiple-terminating-semicolons-and-casts-of-vmalloc.patch
-checkpatchpl-fix-cast-detection.patch
-checkpatch-check-for-world-writeable-sysfs-debugfs-files.patch
-fs-select-fix-information-leak-to-userspace.patch
-fs-select-fix-information-leak-to-userspace-fix.patch
-epoll-convert-max_user_watches-to-long.patch
-binfmt_elf-cleanups.patch
-drivers-rtc-rtc-omapc-fix-a-memory-leak.patch
-rtc-add-real-time-clock-driver-for-nvidia-tegra.patch
-drivers-gpio-cs5535-gpioc-add-some-additional-cs5535-specific-gpio-functionality.patch
-drivers-staging-olpc_dcon-convert-to-new-cs5535-gpio-api.patch
-cs5535-deprecate-older-cs5535_gpio-driver.patch
-gpio-adp5588-gpio-irq_data-conversion.patch
-gpio-langwell_gpio-irq_data-conversion.patch
-gpio-max732x-irq_data-conversion.patch
-gpio-pca953x-irq_data-conversion.patch
-gpio-pl061-irq_data-conversion.patch
-gpio-stmpe-gpio-irq_data-conversion.patch
-gpio-sx150x-irq_data-conversion.patch
-gpio-tc35892-gpio-irq_data-conversion.patch
-gpio-timbgpio-irq_data-conversion.patch
-gpio-vr41xx_giu-irq_data-conversion.patch
-gpio_rdc321x-select-mfd_support-to-squelch-kconfig-warning.patch
-gpio_vx855-eliminate-kconfig-dependency-warning.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-drivers-telephony-ixjc-fix-warning.patch
-ext2-speed-up-file-creates-by-optimizing-rec_len-functions.patch
-ext3-speed-up-file-creates-by-optimizing-rec_len-functions.patch
-ext3-remove-redundant-unlikely.patch
-jbd-remove-dependency-on-__gfp_nofail.patch
-cgroups-remove-deprecated-subsystem-from-examples.patch
-memcg-add-page_cgroup-flags-for-dirty-page-tracking.patch
-memcg-document-cgroup-dirty-memory-interfaces.patch
-memcg-document-cgroup-dirty-memory-interfaces-fix.patch
-memcg-create-extensible-page-stat-update-routines.patch
-memcg-add-lock-to-synchronize-page-accounting-and-migration.patch
-memcg-fix-unit-mismatch-in-memcg-oom-limit-calculation.patch
-memcg-remove-unnecessary-return-from-void-returning-mem_cgroup_del_lru_list.patch
-memcg-use-zalloc-rather-than-mallocmemset.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps-checkpatch-fixes.patch
-proc-use-unsigned-long-inside-proc-statm.patch
-proc-use-seq_puts-seq_putc-where-possible.patch
-proc-low_ino-cleanup.patch
-proc-use-single_open-correctly.patch
-exec_domain-establish-a-linux32-domain-on-config_compat-systems.patch
-rapidio-use-common-destid-storage-for-endpoints-and-switches.patch
-rapidio-integrate-rio_switch-into-rio_dev.patch
-rapidio-add-definitions-of-component-tag-fields.patch
-rapidio-add-device-object-linking-into-discovery.patch
-rapidio-use-component-tag-for-unified-switch-identification.patch
-rapidio-add-new-idt-srio-switches.patch
-rapidio-add-new-sysfs-attributes.patch
-sysctl-fix-ifdef-guard-comment.patch
-sysctl-remove-obsolete-comments.patch
-sysctl-remove-obsolete-comments-fix.patch
-user_ns-improve-the-user_ns-on-the-slab-packaging.patch
-user_ns-improve-the-user_ns-on-the-slab-packaging-fix.patch
-fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip-update.patch
-remove-dma64_addr_t.patch
-pps-trivial-fixes.patch
-pps-declare-variables-where-they-are-used-in-switch.patch
-pps-fix-race-in-pps_fetch-handler.patch
-pps-unify-timestamp-gathering.patch
-pps-access-pps-device-by-direct-pointer.patch
-pps-convert-printk-pr_-to-dev_.patch
-pps-move-idr-stuff-to-ppsc.patch
-pps-add-async-pps-event-handler.patch
-pps-add-async-pps-event-handler-fix.patch
-pps-dont-disable-interrupts-when-using-spin-locks.patch
-pps-use-bug_on-for-kernel-api-safety-checks.patch
-pps-simplify-conditions-a-bit.patch
-ntp-add-hardpps-implementation.patch
-pps-capture-monotonic_raw-timestamps-as-well.patch
-pps-add-kernel-consumer-support.patch
-pps-add-parallel-port-pps-client.patch
-pps-add-parallel-port-pps-signal-generator.patch
-memstick-core-fix-device_register-error-handling.patch
-memstick-fix-setup-for-jmicron-38x-controllers.patch
-memstick-set-pmos-values-propery-for-jmicron-38x-controllers.patch
-memstick-add-support-for-jmicron-jmb-385-and-390-controllers.patch
-memstick-avert-possible-race-condition-between-idr_pre_get-and-idr_get_new.patch
-memstick-remove-mspro_block_mutex.patch
-memstick-factor-out-transfer-initiating-functionality-in-mspro_blockc.patch
-memstick-add-support-for-mspro-specific-data-transfer-method.patch
-w1-ds2423-counter-driver-and-documentation.patch
-w1-ds2423-counter-driver-and-documentation-fix.patch
-vmware-balloon-stop-locking-pages-when-hypervisor-tells-us-enough.patch
-cramfs-hide-function-prototypes-behind-__kernel__-macro.patch
-romfs-have-romfs_fsh-pull-in-necessary-headers.patch
-decompressors-add-missing-init-ie-__init.patch
-decompressors-get-rid-of-set_error_fn-macro.patch
-decompressors-include-linux-slabh-in-linux-decompress-mmh.patch
-decompressors-remove-unused-function-from-lib-decompress_unlzmac.patch
-decompressors-fix-header-validation-in-decompress_unlzmac.patch
-decompressors-check-for-read-errors-in-decompress_unlzmac.patch
-decompressors-check-for-write-errors-in-decompress_unlzmac.patch
-decompressors-validate-match-distance-in-decompress_unlzmac.patch
-decompressors-check-for-write-errors-in-decompress_unlzoc.patch
-decompressors-check-input-size-in-decompress_unlzoc.patch
-decompressors-fix-callback-to-callback-mode-in-decompress_unlzoc.patch
-decompressors-add-xz-decompressor-module.patch
-decompressors-add-boot-time-xz-support.patch
-decompressors-add-boot-time-xz-support-update.patch
-x86-support-xz-compressed-kernel.patch
-bitops-merge-little-and-big-endian-definisions-in-asm-generic-bitops-leh.patch
-bitops-rename-generic-little-endian-bitops-functions.patch
-s390-introduce-little-endian-bitops.patch
-arm-introduce-little-endian-bitops.patch
-m68k-introduce-little-endian-bitops.patch
-bitops-introduce-config_generic_find_le_bit.patch
-m68knommu-introduce-little-endian-bitops.patch
-m68knommu-introduce-little-endian-bitops-build-fix.patch
-bitops-introduce-little-endian-bitops-for-most-architectures.patch
-rds-stop-including-asm-generic-bitops-leh.patch
-kvm-stop-including-asm-generic-bitops-leh.patch
-asm-generic-use-little-endian-bitops.patch
-ext3-use-little-endian-bitops.patch
-ext4-use-little-endian-bitops.patch
-ocfs2-use-little-endian-bitops.patch
-nilfs2-use-little-endian-bitops.patch
-reiserfs-use-little-endian-bitops.patch
-udf-use-little-endian-bitops.patch
-ufs-use-little-endian-bitops.patch
-md-use-little-endian-bit-operations.patch
-dm-use-little-endian-bit-operations.patch
-bitops-remove-ext2-non-atomic-bitops-from-asm-bitopsh.patch
-m68k-remove-inline-asm-from-minix_find_first_zero_bit.patch
-bitops-remove-minix-bitops-from-asm-bitopsh.patch
-bitops-use-find_first_zero_bit-instead-of-find_next_zero_bitaddr-size-0.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-add-missing-header-file.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
