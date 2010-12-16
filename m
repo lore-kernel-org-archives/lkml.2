@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab0LPPwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 10:52:16 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:61931 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab0LPPwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 10:52:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH V7 2/8] posix clocks: introduce a syscall for clock tuning.
-Date: Thu, 16 Dec 2010 16:51:31 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <cover.1292512461.git.richard.cochran@omicron.at> <a93ce18c2987f7e102bc2ff5b12130211c222ea7.1292512461.git.richard.cochran@omicron.at>
-In-Reply-To: <a93ce18c2987f7e102bc2ff5b12130211c222ea7.1292512461.git.richard.cochran@omicron.at>
+	id S1756567Ab0LPPwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 10:52:37 -0500
+Received: from kroah.org ([198.145.64.141]:39593 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755485Ab0LPPwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 10:52:35 -0500
+Date: Thu, 16 Dec 2010 07:52:25 -0800
+From: Greg KH <greg@kroah.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with Linus' tree
+Message-ID: <20101216155225.GA31363@kroah.com>
+References: <20101216140122.ca745f1f.sfr@canb.auug.org.au>
+ <20101216030857.GA12785@kroah.com>
+ <20101216080527.GA2601@legolas.emea.dhcp.ti.com>
+ <20101216084552.GD2601@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012161651.31748.arnd@arndb.de>
-X-Provags-ID: V02:K0:vScenfOQRtgD6nusQFZcn/9eiHR/dv5n4oQuZw35z+U
- 5u2Yzme4+ksmQC3MMLX80vMga8pig2Ss4nxxE/Vgsp5Q64zhMf
- AT4jBqh/+IZIXCpSKwuV7sCd3k3ztrDMXcCxchMbyuBgcZDaKq
- ywLRUQGjetY+eGzzKhN2tph3UWOEPCbU4t9+flsxY7q6Df63pn
- K1q9xeWm3VzJxIF1Nx60Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101216084552.GD2601@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 December 2010, Richard Cochran wrote:
-> A new syscall is introduced that allows tuning of a POSIX clock. The
-> syscall is implemented for four architectures: arm, blackfin, powerpc,
-> and x86.
+On Thu, Dec 16, 2010 at 10:45:52AM +0200, Felipe Balbi wrote:
+> Hi,
 > 
-> The new syscall, clock_adjtime, takes two parameters, the clock ID,
-> and a pointer to a struct timex. Any ADJTIMEX(2) operation may be
-> requested via this system call, but various POSIX clocks may or may
-> not support tuning.
+> On Thu, Dec 16, 2010 at 10:05:27AM +0200, Felipe Balbi wrote:
+> >On Wed, Dec 15, 2010 at 07:08:57PM -0800, Greg KH wrote:
+> >>On Thu, Dec 16, 2010 at 02:01:22PM +1100, Stephen Rothwell wrote:
+> >>>Hi Greg,
+> >>>
+> >>>Today's linux-next merge of the usb tree got a conflict in
+> >>>drivers/usb/musb/blackfin.c drivers/usb/musb/musb_core.c
+> >>>drivers/usb/musb/musb_core.h between commit
+> >>>1e393c6eece048052d4131ec4dad3b98e35a98e2 ("USB: musb: blackfin: pm: make
+> >>>it work") from Linus' tree (v2.6.37-rc2) and various commits from the usb
+> >>>tree.
+> >>>
+> >>>It was not immediately obvious how to fix these up, so I just used the
+> >>>versions from the usb tree.  This may not be correct and it would be good
+> >>>if this was fixed properly in the usb tree.
+> >>
+> >>Hm.  Felipe, I'll merge in the -rc4 tree into usb-next if it makes sense
+> >>to do so now, can you send me the patch that ends up being the correct
+> >>merge?
+> >
+> >Sure, I'll check it now and send in a patch in a few minutes.
 > 
-> Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+> There are two commits you didn't have in your usb-next branch which are
+> in mainline. Reverting them will make greg/usb-next apply cleanly on top
+> of v2.6.47-rc4. The commits are:
+> 
+> 32d5dc9520f0c6f60f691dd478741c774e292406 : USB: musb: pm: don't rely fully on clock support
+> 1e393c6eece048052d4131ec4dad3b98e35a98e2 : USB: musb: blackfin: pm: make it work
+> 
+> Do you want me to rebase on top of -rc4 or is reverting those two enough
+> for you ? As a sidenote, the series I sent you already fixes those two
+> cases as we moved PM and clock handling entirely to glue layer, so those
+> two cases are taken care of on the series, reverting those patches won't
+> pose any regressions.
 
-The syscall implementation looks good to me.
+So, I should do the following things:
+	take -rc6
+	revert the above commits
+	merge with usb-next
+	push out
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+and all should be good, right?  If so, that's fine with me, I'll do it
+today.  If not, please let me know.
 
-It would be good to add it to include/asm-generic/unistd.h
-as well, so that tile and future architectures get it, too.
+thanks,
+
+greg k-h
