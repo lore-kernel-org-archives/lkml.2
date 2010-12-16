@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755738Ab0LPSto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 13:49:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24716 "EHLO mx1.redhat.com"
+	id S1757297Ab0LPStz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 13:49:55 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47115 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795Ab0LPStn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 13:49:43 -0500
-Date: Thu, 16 Dec 2010 19:42:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
-Message-ID: <20101216184229.GA15889@redhat.com>
-References: <20101216145602.899838254@chello.nl> <20101216150920.968046926@chello.nl>
+	id S1757203Ab0LPStu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 13:49:50 -0500
+Date: Thu, 16 Dec 2010 13:02:08 -0600
+From: David Sin <davidsin@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 0/9] TI DMM-TILER driver
+Message-ID: <20101216190207.GC6767@lba0869738>
+References: <1291674446-10766-1-git-send-email-davidsin@ti.com>
+ <20101216172531.GG29435@lba0869738>
+ <20101216173737.GA6767@lba0869738>
+ <201012161843.48262.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101216150920.968046926@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201012161843.48262.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16, Peter Zijlstra wrote:
->
-> +static int ttwu_force(struct task_struct *p, int wake_flags)
-> +{
-> +	struct rq *rq;
-> +	int ret = 0;
-> +
-> +	/*
-> +	 * Since we've already set TASK_WAKING this task's CPU cannot
-> +	 * change from under us.
+On Thu, Dec 16, 2010 at 06:43:48PM +0100, Arnd Bergmann wrote:
+> As far as I can tell, both DMM and GEM at a high level manage objects
+> in video memory. The IOMMU that you have on the Omap hardware seems
+> to resemble the GART that sits between PC-style video cards and main
+> memory.
+> 
+> I don't know any details, but google quickly finds
+> http://lwn.net/Articles/283798/ with a description of the
+> initial GEM design. My main thought when looking over the
+> DMM code was that this should not be tied too closely to a
+> specific hardware, and GEM seems to be an existing abstraction
+> that may fit what you need.
+> 
+> 	Arnd
+Thanks for the pointer, Arnd.  I also found a nice readme file in 
+the gpu/drm directory, which points to a wiki and source code.  
+I'll read into this and get back to you.
 
-I think it can. Yes, we've set TASK_WAKING. But, at least the task
-itself can change its state back to TASK_RUNNING without calling
-schedule. Say, __wait_event()-like code.
-
-> +static int
-> +try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
->  {
-> -	int cpu, orig_cpu, this_cpu, success = 0;
-> +	int cpu = task_cpu(p);
->  	unsigned long flags;
-> -	unsigned long en_flags = ENQUEUE_WAKEUP;
-> -	struct rq *rq;
-> +	int success = 0;
-> +	int load;
->  
-> -	this_cpu = get_cpu();
-> -
-> -	smp_wmb();
-> -	rq = task_rq_lock(p, &flags);
-> -	if (!(p->state & state))
-> -		goto out;
-> +	local_irq_save(flags);
-> +	for (;;) {
-> +		unsigned int task_state = p->state;
->  
-> -	cpu = task_cpu(p);
-> +		if (!(task_state & state))
-> +			goto out;
-
-Well, this surely breaks the code like
-
-	CONDITION = true;
-	wake_up_process(p);
-
-At least we need mb() before we check task_state the first time.
-
-Oleg.
-
+BR,
+-- 
+David Sin
