@@ -1,162 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab0LPMcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:32:13 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36332 "EHLO hera.kernel.org"
+	id S1753352Ab0LPMcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:32:45 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36363 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab0LPMcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:32:10 -0500
-Date: Thu, 16 Dec 2010 12:31:35 GMT
+	id S1751831Ab0LPMcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 07:32:43 -0500
+Date: Thu, 16 Dec 2010 12:32:13 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, mikpe@it.uu.se, tglx@linutronix.de,
-        venki@google.com, mingo@elte.hu
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, mikpe@it.uu.se, tglx@linutronix.de,
-        venki@google.com, mingo@elte.hu
-In-Reply-To: <1292242434.6803.200.camel@twins>
-References: <1292242434.6803.200.camel@twins>
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20101117222056.093629821@chello.nl>
+References: <20101117222056.093629821@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix the irqtime code for 32bit
-Message-ID: <tip-8e92c20183ed0579d94501311b81c42b65cb2129@git.kernel.org>
-Git-Commit-ID: 8e92c20183ed0579d94501311b81c42b65cb2129
+Subject: [tip:perf/core] perf: Move perf_event_init() into main.c
+Message-ID: <tip-24a24bb6ff3dc3a09bb131241be920ecc3f0e519@git.kernel.org>
+Git-Commit-ID: 24a24bb6ff3dc3a09bb131241be920ecc3f0e519
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 12:31:35 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 12:32:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e92c20183ed0579d94501311b81c42b65cb2129
-Gitweb:     http://git.kernel.org/tip/8e92c20183ed0579d94501311b81c42b65cb2129
+Commit-ID:  24a24bb6ff3dc3a09bb131241be920ecc3f0e519
+Gitweb:     http://git.kernel.org/tip/24a24bb6ff3dc3a09bb131241be920ecc3f0e519
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 9 Dec 2010 14:15:34 +0100
+AuthorDate: Wed, 17 Nov 2010 23:17:33 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 16 Dec 2010 11:17:47 +0100
+CommitDate: Thu, 16 Dec 2010 11:36:42 +0100
 
-sched: Fix the irqtime code for 32bit
+perf: Move perf_event_init() into main.c
 
-Since the irqtime accounting is using non-atomic u64 and can be read
-from remote cpus (writes are strictly cpu local, reads are not) we
-have to deal with observing partial updates.
+Currently we call perf_event_init() from sched_init(). In order to
+make it more obvious move it to the cannnonical location.
 
-When we do observe partial updates the clock movement (in particular,
-->clock_task movement) will go funny (in either direction), a
-subsequent clock update (observing the full update) will make it go
-funny in the oposite direction.
-
-Since we rely on these clocks to be strictly monotonic we cannot
-suffer backwards motion. One possible solution would be to simply
-ignore all backwards deltas, but that will lead to accounting
-artefacts, most notable: clock_task + irq_time != clock, this
-inaccuracy would end up in user visible stats.
-
-Therefore serialize the reads using a seqcount.
-
-Reviewed-by: Venkatesh Pallipadi <venki@google.com>
-Reported-by: Mikael Pettersson <mikpe@it.uu.se>
-Tested-by: Mikael Pettersson <mikpe@it.uu.se>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1292242434.6803.200.camel@twins>
+LKML-Reference: <20101117222056.093629821@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c |   51 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 45 insertions(+), 6 deletions(-)
+ init/main.c    |    2 ++
+ kernel/sched.c |    2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/init/main.c b/init/main.c
+index 261ad7b..559e862 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -67,6 +67,7 @@
+ #include <linux/sfi.h>
+ #include <linux/shmem_fs.h>
+ #include <linux/slab.h>
++#include <linux/perf_event.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -603,6 +604,7 @@ asmlinkage void __init start_kernel(void)
+ 				"enabled *very* early, fixing it\n");
+ 		local_irq_disable();
+ 	}
++	perf_event_init();
+ 	rcu_init();
+ 	radix_tree_init();
+ 	/* init some links before init_ISA_irqs() */
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 79b557c..456c990 100644
+index dc91a4d..605ab1b 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -1920,10 +1920,9 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
-  * They are read and saved off onto struct rq in update_rq_clock().
-  * This may result in other CPU reading this CPU's irq time and can
-  * race with irq/account_system_vtime on this CPU. We would either get old
-- * or new value (or semi updated value on 32 bit) with a side effect of
-- * accounting a slice of irq time to wrong task when irq is in progress
-- * while we read rq->clock. That is a worthy compromise in place of having
-- * locks on each irq in account_system_time.
-+ * or new value with a side effect of accounting a slice of irq time to wrong
-+ * task when irq is in progress while we read rq->clock. That is a worthy
-+ * compromise in place of having locks on each irq in account_system_time.
-  */
- static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
-@@ -1941,10 +1940,48 @@ void disable_sched_clock_irqtime(void)
- 	sched_clock_irqtime = 0;
+@@ -8108,8 +8108,6 @@ void __init sched_init(void)
+ 		zalloc_cpumask_var(&cpu_isolated_map, GFP_NOWAIT);
+ #endif /* SMP */
+ 
+-	perf_event_init();
+-
+ 	scheduler_running = 1;
  }
  
--static inline u64 irq_time_cpu(int cpu)
-+#ifndef CONFIG_64BIT
-+static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-+
-+static inline void irq_time_write_begin(void)
-+{
-+	__this_cpu_inc(irq_time_seq.sequence);
-+	smp_wmb();
-+}
-+
-+static inline void irq_time_write_end(void)
-+{
-+	smp_wmb();
-+	__this_cpu_inc(irq_time_seq.sequence);
-+}
-+
-+static inline u64 irq_time_read(int cpu)
-+{
-+	u64 irq_time;
-+	unsigned seq;
-+
-+	do {
-+		seq = read_seqcount_begin(&per_cpu(irq_time_seq, cpu));
-+		irq_time = per_cpu(cpu_softirq_time, cpu) +
-+			   per_cpu(cpu_hardirq_time, cpu);
-+	} while (read_seqcount_retry(&per_cpu(irq_time_seq, cpu), seq));
-+
-+	return irq_time;
-+}
-+#else /* CONFIG_64BIT */
-+static inline void irq_time_write_begin(void)
-+{
-+}
-+
-+static inline void irq_time_write_end(void)
-+{
-+}
-+
-+static inline u64 irq_time_read(int cpu)
- {
- 	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
- }
-+#endif /* CONFIG_64BIT */
- 
- /*
-  * Called before incrementing preempt_count on {soft,}irq_enter
-@@ -1965,6 +2002,7 @@ void account_system_vtime(struct task_struct *curr)
- 	delta = sched_clock_cpu(cpu) - __this_cpu_read(irq_start_time);
- 	__this_cpu_add(irq_start_time, delta);
- 
-+	irq_time_write_begin();
- 	/*
- 	 * We do not account for softirq time from ksoftirqd here.
- 	 * We want to continue accounting softirq time to ksoftirqd thread
-@@ -1976,6 +2014,7 @@ void account_system_vtime(struct task_struct *curr)
- 	else if (in_serving_softirq() && !(curr->flags & PF_KSOFTIRQD))
- 		__this_cpu_add(cpu_softirq_time, delta);
- 
-+	irq_time_write_end();
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL_GPL(account_system_vtime);
-@@ -1984,7 +2023,7 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
- {
- 	s64 irq_delta;
- 
--	irq_delta = irq_time_cpu(cpu_of(rq)) - rq->prev_irq_time;
-+	irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
- 
- 	/*
- 	 * Since irq_time is only updated on {soft,}irq_exit, we might run into
