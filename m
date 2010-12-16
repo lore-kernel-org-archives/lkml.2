@@ -1,153 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab0LPGzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 01:55:21 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50971 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab0LPGyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 01:54:33 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6198"; a="66835757"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v5 2/5] msm: scm-boot: Support for setting cold/warm boot addresses
-Date: Wed, 15 Dec 2010 22:54:13 -0800
-Message-Id: <1292482456-22690-3-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1292482456-22690-1-git-send-email-johlstei@codeaurora.org>
-References: <1292482456-22690-1-git-send-email-johlstei@codeaurora.org>
+	id S1753059Ab0LPG6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 01:58:16 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23562 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752284Ab0LPG6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 01:58:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,354,1288594800"; 
+   d="scan'208";a="868795699"
+Date: Thu, 16 Dec 2010 14:33:22 +0800
+From: Yong Wang <yong.y.wang@linux.intel.com>
+To: Ai Li <aili@codeaurora.org>
+Cc: akpm@linux-foundation.org, dwalker@codeaurora.org, arjan@linux.intel.com,
+        mingo@elte.hu, shemminger@vyatta.com, czoccolo@gmail.com,
+        len.brown@intel.com, h.peter.anvin@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH v3] cpuidle: extend cpuidle and menu governor to handle
+	dynamic states
+Message-ID: <20101216063322.GA18025@ywang-moblin2.bj.intel.com>
+References: <1280504951-27812-1-git-send-email-aili@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280504951-27812-1-git-send-email-aili@codeaurora.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
+On Fri, Jul 30, 2010 at 09:49:11AM -0600, Ai Li wrote:
+> On some SoC chips, HW resources may be in use during any particular idle
+> period.  As a consequence, the cpuidle states that the SoC is safe to
+> enter can change from idle period to idle period.  In addition, the
+> latency and threshold of each cpuidle state can vary, depending on the
+> operating condition when the CPU becomes idle, e.g. the current cpu
+> frequency, the current state of the HW blocks, etc.
+> 
+> cpuidle core and the menu governor, in the current form, are geared
+> towards cpuidle states that are static, i.e. the availabiltiy of the
+> states, their latencies, their thresholds are non-changing during run
+> time.  cpuidle does not provide any hook that cpuidle drivers can use
+> to adjust those values on the fly for the current idle period before the
+> menu governor selects the target cpuidle state.
+> 
+> This patch extends cpuidle core and the menu governor to handle states
+> that are dynamic.  There are three additions in the patch and the patch
+> maintains backwards-compatibility with existing cpuidle drivers.
+> 
+> 1) add prepare() to struct cpuidle_device.  A cpuidle driver can hook
+> into the callback and cpuidle will call prepare() before calling the
+> governor's select function.  The callback gives the cpuidle driver a
+> chance to update the dynamic information of the cpuidle states for the
+> current idle period, e.g. state availability, latencies, thresholds,
+> power values, etc.
+> 
 
-Add support for setting the cold boot address of core 1 and
-the warm boot addresses of cores 0 and 1 using a secure
-domain call.
+Could you please point me to some sample code regarding how to use this
+'prepare' callback?
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
- arch/arm/mach-msm/Makefile   |    2 +-
- arch/arm/mach-msm/scm-boot.c |   39 +++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/scm-boot.h |   38 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 78 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-msm/scm-boot.c
- create mode 100644 arch/arm/mach-msm/scm-boot.h
+> +
+> +	/*
+> +	 * Call the device's prepare function before calling the
+> +	 * governor's select function.  ->prepare gives the device's
+> +	 * cpuidle driver a chance to update any dynamic information
+> +	 * of its cpuidle states for the current idle period, e.g.
+> +	 * state availability, latencies, residencies, etc.
+> +	 */
+> +	if (dev->prepare)
+> +		dev->prepare(dev);
+> +
+>  	/* ask the governor for the next state */
+>  	next_state = cpuidle_curr_governor->select(dev);
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index eed503b..34cd0a8 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -18,7 +18,7 @@ obj-$(CONFIG_MSM_PROC_COMM) += clock.o
- obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
--obj-$(CONFIG_MSM_SCM) += scm.o
-+obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
- 
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/scm-boot.c b/arch/arm/mach-msm/scm-boot.c
-new file mode 100644
-index 0000000..5671d58
---- /dev/null
-+++ b/arch/arm/mach-msm/scm-boot.c
-@@ -0,0 +1,39 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+
-+#include "scm.h"
-+#include "scm-boot.h"
-+
-+/*
-+ * Set the cold/warm boot address for one of the CPU cores.
-+ */
-+int scm_set_boot_addr(void *addr, int flags)
-+{
-+	struct {
-+		unsigned int flags;
-+		void *addr;
-+	} cmd;
-+
-+	cmd.addr = addr;
-+	cmd.flags = flags;
-+	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
-+			&cmd, sizeof(cmd), NULL, 0);
-+}
-+EXPORT_SYMBOL(scm_set_boot_addr);
-diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
-new file mode 100644
-index 0000000..fdc1374
---- /dev/null
-+++ b/arch/arm/mach-msm/scm-boot.h
-@@ -0,0 +1,38 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are
-+ * met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above
-+ *       copyright notice, this list of conditions and the following
-+ *       disclaimer in the documentation and/or other materials provided
-+ *       with the distribution.
-+ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
-+ *       contributors may be used to endorse or promote products derived
-+ *       from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
-+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
-+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
-+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+#ifndef __MACH_SCM_BOOT_H
-+#define __MACH_SCM_BOOT_H
-+
-+#define SCM_BOOT_ADDR			0x1
-+#define SCM_FLAG_COLDBOOT_CPU1		0x1
-+#define SCM_FLAG_WARMBOOT_CPU1		0x2
-+#define SCM_FLAG_WARMBOOT_CPU0		0x4
-+
-+int scm_set_boot_addr(void *addr, int flags);
-+
-+#endif
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+In terms of dynamic states, what if situation changes between the
+'prepare' callback and the selected state is actually entered? Like a
+particular state makes sense when 'prepare' is called but does not make
+sense any more when cpuidle actually tries to enter that state?
+
+Thanks
+-Yong
 
