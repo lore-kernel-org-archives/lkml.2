@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab0LPUzQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 15:55:16 -0500
-Received: from mga02.intel.com ([134.134.136.20]:38854 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab0LPUzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 15:55:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,356,1288594800"; 
-   d="scan'208";a="584447188"
-Message-ID: <4D0A7CB5.1030406@linux.intel.com>
-Date: Thu, 16 Dec 2010 12:55:17 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] rtmutex: multiple candidate owners without unrelated
- boosting
-References: <4D07330A.7020600@cn.fujitsu.com> <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757425Ab0LPU4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 15:56:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:50131 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab0LPU4s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 15:56:48 -0500
+Subject: Re: [PATCH/RFC 1/2] jump label: make enable/disable o(1)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101216205043.GB18095@Krystal>
+References: <cover.1292522251.git.jbaron@redhat.com>
+	 <a35b9310aafa31a9e97f5c9bad9b09e0b6cbbf79.1292522252.git.jbaron@redhat.com>
+	 <1292526602.2708.57.camel@laptop> <20101216192303.GB2856@redhat.com>
+	 <1292528031.2708.77.camel@laptop> <20101216193635.GC2856@redhat.com>
+	 <1292528501.2708.80.camel@laptop> <20101216194852.GD2856@redhat.com>
+	 <20101216203603.GA15610@Krystal> <1292532221.2708.93.camel@laptop>
+	 <20101216205043.GB18095@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 16 Dec 2010 21:56:25 +0100
+Message-ID: <1292532985.2708.97.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2010 12:07 PM, Thomas Gleixner wrote:
-> B1;2401;0cOn Tue, 14 Dec 2010, Lai Jiangshan wrote:
->> Not advantage nor disadvantage
->> 1) Even we support multiple candidate owners, we hardly cause "thundering herd"
->>     the number of candidate owners is likely 1.
+On Thu, 2010-12-16 at 15:50 -0500, Mathieu Desnoyers wrote:
+> * Peter Zijlstra (peterz@infradead.org) wrote:
+> > On Thu, 2010-12-16 at 15:36 -0500, Mathieu Desnoyers wrote:
+> > > Tracepoints keep their own reference counts for enable/disable, so a
+> > > simple "enable/disable" is fine as far as tracepoints are concerned. Why
+> > > does perf need that refcounting done by the static jumps ?
+> > 
+> > Because the refcount is all we have... Why not replace that tracepoint
+> > refcount with the jumplabel thing?
 > 
-> I'm not convinced about that function, see comments below
-> 
->> 2) two APIs are changed.
->>     rt_mutex_owner() will not return pending owner
->>     rt_mutex_next_owner() always return the top owner, it is a candidate owner.
->> 	will not return NULL if we only have a pending owner.
->>     I have fixed the code that use these APIs.
-> 
-> I think we want a separate function which can be used by futex code,
-> but that's a detail.
+> The reason why tracepoints need to keep their own refcount is because
+> they support dynamically loadable modules, and hence the refcount must
+> be kept outside of the modules, in a table internal to tracepoints,
+> so we can attach a probe to a yet unloaded module. Therefore, relying on
+> this lower level jump label to keep the refcount is not appropriate for
+> tracepoints, because the refcount only exists when the module is live.
+
+That's not a logical conclusion, you can keep these jump_label keys
+outside of the module just fine.
+
+> I know that your point of view is "let users of modules suffer", but
+> this represents a very large portion of Linux users I am not willing to
+> let suffer knowingly.
+
+Feh, I'd argue to remove this special tracepoint crap, the only
+in-kernel user (ftrace) doesn't even make use of it. This weird ass
+tracepoint semantic being different from the ftrace trace_event
+semantics has caused trouble before.
 
 
-We do use both functions in the futex code.
-
-
-> @@ -778,15 +778,6 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
->  	new_owner = rt_mutex_next_owner(&pi_state->pi_mutex);
->  
->  	/*
-> -	 * This happens when we have stolen the lock and the original
-> -	 * pending owner did not enqueue itself back on the rt_mutex.
-> -	 * Thats not a tragedy. We know that way, that a lock waiter
-> -	 * is on the fly. We make the futex_q waiter the pending owner.
-> -	 */
-> -	if (!new_owner)
-> -		new_owner = this->task;
-> -
-
-
-If I'm reading Lai's statement above correctly, the change actually just
-eliminates the need for the !new_owner check, as in that case it will
-return current. Is this correct? And indeed, Lai's patch removes it.
-This looks correct to me.
-
-
-> @@ -1647,18 +1638,20 @@ static int fixup_owner(u32 __user *uaddr, int fshared, struct futex_q *q,
->  		/*
->  		 * pi_state is incorrect, some other task did a lock steal and
->  		 * we returned due to timeout or signal without taking the
-> -		 * rt_mutex. Too late. We can access the rt_mutex_owner without
-> -		 * locking, as the other task is now blocked on the hash bucket
-> -		 * lock. Fix the state up.
-
-
-How does this patch change this behavior? Removing the comment and
-adding the lock says that "the other task is now able to contend for the
-pi_mutex".
-
-
-> +		 * rt_mutex. Too late.
->  		 */
-> +		raw_spin_lock(&q->pi_state->pi_mutex.wait_lock);
->  		owner = rt_mutex_owner(&q->pi_state->pi_mutex);
-> +		if (!owner)
-> +			owner = rt_mutex_next_owner(&q->pi_state->pi_mutex);
-> +		raw_spin_unlock(&q->pi_state->pi_mutex.wait_lock);
->  		ret = fixup_pi_state_owner(uaddr, q, owner, fshared);
->  		goto out;
->  	}
->  
->  	/*
->  	 * Paranoia check. If we did not take the lock, then we should not be
-> -	 * the owner, nor the pending owner, of the rt_mutex.
-> +	 * the owner of the rt_mutex.
-
-
-Is this changed because we could now be a "candidate owner" ?
-
-
->  	 */
->  	if (rt_mutex_owner(&q->pi_state->pi_mutex) == current)
->  		printk(KERN_ERR "fixup_owner: ret = %d pi-mutex: %p "
-
-
-The other uses of rt_mutex_owner in futex.c don't appear to be impacted
-by the change in API described above as they just compare the result to
-current (futex_lock_pi and futex_wait_requeue_pi).
-
-
--- 
-Darren Hart
-Yocto Linux Kernel
