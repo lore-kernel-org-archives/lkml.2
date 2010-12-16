@@ -1,47 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094Ab0LPMA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:00:26 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59064 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab0LPMAV (ORCPT
+	id S1754099Ab0LPMAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:00:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55707 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab0LPMA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:00:21 -0500
-Subject: Re: [PATCH 1/2] regulator: Factor out voltage set operation into a
- separate function
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Graeme Gregory <dp@xora.org.uk>
-In-Reply-To: <1292254707-776-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1292254707-776-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Dec 2010 12:00:16 +0000
-Message-ID: <1292500816.3285.2.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Dec 2010 07:00:29 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Francis Moreau <francis.moro@gmail.com>,
+        Franck Bui-Huu <vagabon.xyz@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/4] perf probe: Fix use of kernel image path given by 'k' option
+Date: Thu, 16 Dec 2010 10:00:14 -0200
+Message-Id: <1292500817-1348-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1292500817-1348-1-git-send-email-acme@infradead.org>
+References: <1292500817-1348-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-12-13 at 15:38 +0000, Mark Brown wrote:
-> Push all the callers of the chip set_voltage() operation out into a single
-> function to facilitiate future refactoring.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/regulator/core.c |   63 ++++++++++++++++++++++++++++-----------------
->  1 files changed, 39 insertions(+), 24 deletions(-)
-> 
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-Applied.
+Users were not being able to have the explicitely specified vmlinux
+pathname used, instead a search on the vmlinux path was always being
+made.
 
-Thanks
+Reported-by: Francis Moreau <francis.moro@gmail.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Francis Moreau <francis.moro@gmail.com>
+Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+LPU-Reference: <m3hbelydz8.fsf_-_@gmail.com>
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-probe.c    |    5 +++++
+ tools/perf/util/probe-event.c |   15 ++++++++++++---
+ tools/perf/util/symbol.c      |    4 ++--
+ tools/perf/util/symbol.h      |    2 ++
+ 4 files changed, 21 insertions(+), 5 deletions(-)
 
-Liam
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 2e000c0..add163c 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -249,6 +249,11 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 	     !params.show_lines))
+ 		usage_with_options(probe_usage, options);
+ 
++	/*
++	 * Only consider the user's kernel image path if given.
++	 */
++	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
++
+ 	if (params.list_events) {
+ 		if (params.mod_events) {
+ 			pr_err("  Error: Don't use --list with --add/--del.\n");
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 3b6a529..b71acd6 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -114,6 +114,8 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
+ const char *kernel_get_module_path(const char *module)
+ {
+ 	struct dso *dso;
++	struct map *map;
++	const char *vmlinux_name;
+ 
+ 	if (module) {
+ 		list_for_each_entry(dso, &machine.kernel_dsos, node) {
+@@ -123,10 +125,17 @@ const char *kernel_get_module_path(const char *module)
+ 		}
+ 		pr_debug("Failed to find module %s.\n", module);
+ 		return NULL;
++	}
++
++	map = machine.vmlinux_maps[MAP__FUNCTION];
++	dso = map->dso;
++
++	vmlinux_name = symbol_conf.vmlinux_name;
++	if (vmlinux_name) {
++		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
++			return NULL;
+ 	} else {
+-		dso = machine.vmlinux_maps[MAP__FUNCTION]->dso;
+-		if (dso__load_vmlinux_path(dso,
+-			 machine.vmlinux_maps[MAP__FUNCTION], NULL) < 0) {
++		if (dso__load_vmlinux_path(dso, map, NULL) < 0) {
+ 			pr_debug("Failed to load kernel map.\n");
+ 			return NULL;
+ 		}
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index d628c8d..439ab94 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1780,8 +1780,8 @@ out_failure:
+ 	return -1;
+ }
+ 
+-static int dso__load_vmlinux(struct dso *self, struct map *map,
+-			     const char *vmlinux, symbol_filter_t filter)
++int dso__load_vmlinux(struct dso *self, struct map *map,
++		      const char *vmlinux, symbol_filter_t filter)
+ {
+ 	int err = -1, fd;
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 038f220..6c6eafd 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -166,6 +166,8 @@ void dso__sort_by_name(struct dso *self, enum map_type type);
+ struct dso *__dsos__findnew(struct list_head *head, const char *name);
+ 
+ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter);
++int dso__load_vmlinux(struct dso *self, struct map *map,
++		      const char *vmlinux, symbol_filter_t filter);
+ int dso__load_vmlinux_path(struct dso *self, struct map *map,
+ 			   symbol_filter_t filter);
+ int dso__load_kallsyms(struct dso *self, const char *filename, struct map *map,
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+1.6.2.5
 
