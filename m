@@ -1,295 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab0LPAlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 19:41:13 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53574 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab0LPAlD (ORCPT
+	id S1752208Ab0LPAmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 19:42:45 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:17886 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0LPAmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 19:41:03 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 2/2][RFC] hrtimers: Add CLOCK_BOOTTIME clockid, hrtimerbase and posix interface
-Date: Wed, 15 Dec 2010 16:40:48 -0800
-Message-Id: <1292460048-28035-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1292460048-28035-1-git-send-email-john.stultz@linaro.org>
-References: <1292460048-28035-1-git-send-email-john.stultz@linaro.org>
+	Wed, 15 Dec 2010 19:42:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=ETLOksuvkqRgwDwDd7NgwnfMMg0R/VlSn4MxuRq6KlMAQYFvOcB+bX6cnioTgNv0L8
+         Gifws+h4HM09XB8PYDPQ==
+Date: Wed, 15 Dec 2010 16:42:33 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+cc: Ric Wheeler <ricwheeler@gmail.com>, Christian Brandt <brandtc@psi5.com>,
+        linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>
+Subject: Re: swap storage alignment and stride size
+In-Reply-To: <yq18vzq6dgb.fsf@sermon.lab.mkp.net>
+Message-ID: <alpine.LSU.2.00.1012151627400.8734@tigran.mtv.corp.google.com>
+References: <4CFFBA7D.6060802@psi5.com> <4CFFE2EA.9040909@gmail.com> <yq1d3p486qe.fsf@sermon.lab.mkp.net> <alpine.LSU.2.00.1012142038430.13004@tigran.mtv.corp.google.com> <yq18vzq6dgb.fsf@sermon.lab.mkp.net>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CLOCK_MONOTONIC stops while the system is in suspend. This is because
-to applications system suspend is invisible. However, there is a
-growing set of applications that are wanting to be suspend-aware,
-but do not want to deal with the complicatoins of CLOCK_REALTIME
-(which might jump around if settimeofday is called).
+On Wed, 15 Dec 2010, Martin K. Petersen wrote:
+> >>>>> "Hugh" == Hugh Dickins <hughd@google.com> writes:
+> 
+> Hugh> (scan_swap_map does try to allocate in 1MB clusters, but they're
+> Hugh> not written out that way, and there's no attempt to align: if it
+> Hugh> worked out better for the lower level to require that these 1MB
+> Hugh> clusters are aligned, we could probably go for that - though the
+> Hugh> swap header page might then be a nuisance.)
+> 
+> You called it a "header page". Does that imply that it is page sized?
 
-For these applications, I propose a new clockid: CLOCK_BOOTTIME.
-CLOCK_BOOTTIME is idential to CLOCK_MONOTONIC, except it also
-includes any time spent in suspend.
+Yes.  (Rather a nuisance on a PowerPC system which sometimes uses
+a kernel with 4k pages and sometimes a kernel with 64k pages.)
 
-This patch adds the new CLOCK_BOOTTIME clockid, as well as the
-infrastructure needed to support hrtimers against it, and the
-wiring to expose it out via the posix interface.
+> Or will it cause pages written to a 4k-aligned swap device to be
+> misaligned?
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/hrtimer.h   |    4 ++
- include/linux/time.h      |    4 ++
- kernel/hrtimer.c          |   14 +++++++-
- kernel/posix-timers.c     |   16 ++++++++-
- kernel/time/timekeeping.c |   79 ++++++++++++++++++++++++++++++++++++++++++++-
- 5 files changed, 113 insertions(+), 4 deletions(-)
+No, the 4k-aligned remains 4k-aligned, of course.  But if you aligned
+your swap partition on, say, a 1MB boundary, and are thinking of
+working in aligned 1MB blocks, then it may be awkward that there's
+always this special 4k at the start (it could be written back each
+time even though it hasn't changed, but it's still an odd case).
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index e41b64b..40ccebf 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -152,6 +152,7 @@ struct hrtimer_clock_base {
- enum  hrtimer_base_type {
- 	HRTIMER_BASE_REALTIME,
- 	HRTIMER_BASE_MONOTONIC,
-+	HRTIMER_BASE_BOOTTIME,
- 	HRTIMER_MAX_CLOCK_BASES,
- };
- 
-@@ -162,6 +163,8 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
- 			return HRTIMER_BASE_REALTIME;
- 		case CLOCK_MONOTONIC:
- 			return HRTIMER_BASE_MONOTONIC;
-+		case CLOCK_BOOTTIME:
-+			return HRTIMER_BASE_BOOTTIME;
- 	}
- 	WARN_ON(1); /* Unknown clock_id */
- 	return 0;
-@@ -325,6 +328,7 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
- 
- extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
-+extern ktime_t ktime_get_boottime(void);
- 
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 9f15ac7..4ed031a 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -126,6 +126,8 @@ unsigned long get_seconds(void);
- struct timespec current_kernel_time(void);
- struct timespec __current_kernel_time(void); /* does not take xtime_lock */
- struct timespec __get_wall_to_monotonic(void); /* does not take xtime_lock */
-+extern struct timespec __get_sleep_time(void); /* does not take xtime_lock */
-+
- struct timespec get_monotonic_coarse(void);
- 
- #define CURRENT_TIME		(current_kernel_time())
-@@ -160,6 +162,7 @@ extern void getnstimeofday(struct timespec *tv);
- extern void getrawmonotonic(struct timespec *ts);
- extern void getboottime(struct timespec *ts);
- extern void monotonic_to_bootbased(struct timespec *ts);
-+extern void get_monotonic_boottime(struct timespec *ts);
- 
- extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
- extern int timekeeping_valid_for_hres(void);
-@@ -290,6 +293,7 @@ struct itimerval {
- #define CLOCK_MONOTONIC_RAW		4
- #define CLOCK_REALTIME_COARSE		5
- #define CLOCK_MONOTONIC_COARSE		6
-+#define CLOCK_BOOTTIME			7
- 
- /*
-  * The IDs of various hardware clocks:
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a6642c7..6724cf1 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -73,6 +73,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
- 			.get_time = &ktime_get,
- 			.resolution = KTIME_LOW_RES,
- 		},
-+		{
-+			.index = CLOCK_BOOTTIME,
-+			.get_time = &ktime_get_boottime,
-+			.resolution = KTIME_LOW_RES,
-+		},
- 	}
- };
- 
-@@ -82,21 +87,26 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
-  */
- static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
- {
--	ktime_t xtim, tomono;
--	struct timespec xts, tom;
-+	ktime_t xtim, tomono, sleep;
-+	struct timespec xts, tom, slp;
- 	unsigned long seq;
- 
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
- 		xts = __current_kernel_time();
- 		tom = __get_wall_to_monotonic();
-+		slp = __get_sleep_time();
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	xtim = timespec_to_ktime(xts);
- 	tomono = timespec_to_ktime(tom);
-+	sleep = timespec_to_ktime(slp);
- 	base->clock_base[HRTIMER_BASE_REALTIME].softirq_time = xtim;
- 	base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time =
- 		ktime_add(xtim, tomono);
-+	base->clock_base[HRTIMER_BASE_BOOTTIME].softirq_time =
-+		ktime_add(base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time,
-+				sleep);
- }
- 
- /*
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 93bd2eb..389d5d5 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -240,7 +240,7 @@ static int posix_ktime_get_ts(clockid_t which_clock, struct timespec *tp)
- }
- 
- /*
-- * Get monotonic time for posix timers
-+ * Get monotonic-raw time for posix timers
-  */
- static int posix_get_monotonic_raw(clockid_t which_clock, struct timespec *tp)
- {
-@@ -267,6 +267,14 @@ static int posix_get_coarse_res(const clockid_t which_clock, struct timespec *tp
- 	*tp = ktime_to_timespec(KTIME_LOW_RES);
- 	return 0;
- }
-+
-+static int posix_get_boottime(const clockid_t which_clock, struct timespec *tp)
-+{
-+	get_monotonic_boottime(tp);
-+	return 0;
-+}
-+
-+
- /*
-  * Initialize everything, well, just everything in Posix clocks/timers ;)
-  */
-@@ -301,12 +309,18 @@ static __init int init_posix_timers(void)
- 		.timer_create = no_timer_create,
- 		.nsleep = no_nsleep,
- 	};
-+	struct k_clock clock_boottime = {
-+		.clock_getres = hrtimer_get_res,
-+		.clock_get = posix_get_boottime,
-+		.clock_set = do_posix_clock_nosettime,
-+	};
- 
- 	register_posix_clock(CLOCK_REALTIME, &clock_realtime);
- 	register_posix_clock(CLOCK_MONOTONIC, &clock_monotonic);
- 	register_posix_clock(CLOCK_MONOTONIC_RAW, &clock_monotonic_raw);
- 	register_posix_clock(CLOCK_REALTIME_COARSE, &clock_realtime_coarse);
- 	register_posix_clock(CLOCK_MONOTONIC_COARSE, &clock_monotonic_coarse);
-+	register_posix_clock(CLOCK_BOOTTIME, &clock_boottime);
- 
- 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
- 					sizeof (struct k_itimer), 0, SLAB_PANIC,
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5bb86da..e12ec9f 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -828,7 +828,7 @@ void update_wall_time(void)
-  * getboottime - Return the real time of system boot.
-  * @ts:		pointer to the timespec to be set
-  *
-- * Returns the time of day in a timespec.
-+ * Returns the wall-time of boot in a timespec.
-  *
-  * This is based on the wall_to_monotonic offset and the total suspend
-  * time. Calls to settimeofday will affect the value returned (which
-@@ -846,6 +846,83 @@ void getboottime(struct timespec *ts)
- }
- EXPORT_SYMBOL_GPL(getboottime);
- 
-+
-+/**
-+ * get_monotonic_boottime - Returns monotonic time since boot
-+ * @ts:		pointer to the timespec to be set
-+ *
-+ * Returns the monotonic time since boot in a timespec.
-+ *
-+ * This is similar to CLOCK_MONTONIC/ktime_get_ts, but also
-+ * includes the time spent in suspend.
-+ */
-+void get_monotonic_boottime(struct timespec *ts)
-+{
-+	struct timespec tomono, sleep;
-+	unsigned int seq;
-+	s64 nsecs;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+		*ts = xtime;
-+		tomono = wall_to_monotonic;
-+		sleep = total_sleep_time;
-+		nsecs = timekeeping_get_ns();
-+
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	set_normalized_timespec(ts, ts->tv_sec + tomono.tv_sec + sleep.tv_sec,
-+			ts->tv_nsec + tomono.tv_nsec + sleep.tv_nsec + nsecs);
-+}
-+EXPORT_SYMBOL_GPL(get_monotonic_boottime);
-+
-+/**
-+ * ktime_get_boottime - Returns monotonic time since boot in a ktime
-+ *
-+ * Returns the monotonic time since boot in a ktime
-+ *
-+ * This is similar to CLOCK_MONTONIC/ktime_get, but also
-+ * includes the time spent in suspend.
-+ */
-+ktime_t ktime_get_boottime(void)
-+{
-+	unsigned int seq;
-+	s64 secs, nsecs;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+		secs = xtime.tv_sec;
-+		secs += wall_to_monotonic.tv_sec;
-+		secs += total_sleep_time.tv_sec;
-+		nsecs = xtime.tv_nsec;
-+		nsecs += wall_to_monotonic.tv_nsec;
-+		nsecs += total_sleep_time.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+
-+	} while (read_seqretry(&xtime_lock, seq));
-+	/*
-+	 * Use ktime_set/ktime_add_ns to create a proper ktime on
-+	 * 32-bit architectures without CONFIG_KTIME_SCALAR.
-+	 */
-+	return ktime_add_ns(ktime_set(secs, 0), nsecs);
-+}
-+EXPORT_SYMBOL_GPL(ktime_get_boottime);
-+
-+/**
-+ * __get_sleep_time - returns total_sleep_time
-+ *
-+ * Returns total time spent in suspend.
-+ * Requires the xtime lock be held
-+ */
-+struct timespec __get_sleep_time(void)
-+{
-+	return total_sleep_time;
-+}
-+
- /**
-  * monotonic_to_bootbased - Convert the monotonic time to boot based.
-  * @ts:		pointer to the timespec to be converted
--- 
-1.7.3.2.146.gca209
-
+Hugh
