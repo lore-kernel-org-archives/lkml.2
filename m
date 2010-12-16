@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0LPMIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:08:11 -0500
-Received: from mail-zbox20.bo3.lycos.com ([209.202.250.20]:53933 "EHLO
-	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab0LPMII (ORCPT
+	id S1753966Ab0LPMLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:11:18 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:56051 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab0LPMLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:08:08 -0500
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2010 07:08:07 EST
-Date: Thu, 16 Dec 2010 07:01:00 -0500 (EST)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <24521908.25611292500860563.JavaMail.root@mail-zbox20.bo3.lycos.com>
-In-Reply-To: <24924451.25361292500548699.JavaMail.root@mail-zbox20.bo3.lycos.com>
-Subject: 2.6.37-rc6: a few "unmet direct dependencies" errors/warnings while
- doing `make oldconfig`
+	Thu, 16 Dec 2010 07:11:17 -0500
+Date: Thu, 16 Dec 2010 13:11:15 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: Ben Gamari <bgamari@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Matthew Dharm <mdharm-kernel@one-eyed-alien.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] [USB] UASP: USB Attached SCSI (UAS) protocol driver
+Message-ID: <20101216121115.GA9212@rhlx01.hs-esslingen.de>
+References: <20101216062953.GA7427@rhlx01.hs-esslingen.de>
+ <566988.16939.qm@web31803.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; 
-	boundary="----=_Part_356_7339598.1292500860561"
-X-Originating-IP: [94.50.178.1]
-X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <566988.16939.qm@web31803.mail.mud.yahoo.com>
+X-Priority: none
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_Part_356_7339598.1292500860561
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+On Thu, Dec 16, 2010 at 01:46:50AM -0800, Luben Tuikov wrote:
+> Andreas, the way you've cut out the quote above, it seems that you're replying to something I've written, when in fact you're replying to Ben Gamari.
 
-Hello,
+Indeed, I had already realized that; that was a victim of me
+_manually_ replying to external archive content in the case of LKML
+(while preserving proper In-Reply-To ID).
 
-While I was answering the questions of "make oldconfig" I discovered
-a few errors/warnings in Kconfig.
+> Hmm... Interesting and insightful stuff. So who are those people that can rewrite whole drivers and get theirs in and the old ones out?
 
-Please, see the attached text file for details.
+<rhetorical question> :-P
 
-Best wishes,
+I....
+would like to say that I'm not really certain about this ;)
 
-Artem
+> Within the last two months, I've submitted more patches to uasp.c (4-5) than the original author to uas.c (none). As well as I've submitted patches to uas.c itself (three, first two accepted, third rejected since it changed 86% of the uas.c code), lsusb, sd.c, block/blk-tag.c, etc.
 
+"two months". So it's probably a longer time than what I thought ("weeks"),
+which probably is a large part of the reason why it got rejected
+outright without its fair share of chance of review,
+within the current kernel release interval.
 
-------=_Part_356_7339598.1292500860561
-Content-Type: application/octet-stream; name=make.oldconfig
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename=make.oldconfig
+Still, it's then not entirely PC if some people - admittedly people
+other than the ones whose actual business it is/was to reject drivers :)) -
+then claim that the reason the driver got rejected is firm "policy"
+to always reject conflicting drivers.
 
-choice[1]: 1
-warning: (STUB_POULSBO && HAS_IOMEM && PCI && ACPI || FB_BACKLIGHT && HAS_I=
-OMEM && FB || DRM_I915 && <choice> && AGP_INTEL && ACPI || PANEL_SHARP_LS03=
-7V7DW01 && HAS_IOMEM && OMAP2_DSS || PANEL_ACX565AKM && HAS_IOMEM && OMAP2_=
-DSS && OMAP2_DSS_SDI && SPI || USB_APPLEDISPLAY && USB_SUPPORT && USB || AS=
-US_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && !ACPI_ASUS && INPUT && =
-(RFKILL || RFKILL=3Dn) || SONY_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACP=
-I && INPUT && RFKILL || THINKPAD_ACPI && X86 && X86_PLATFORM_DEVICES && ACP=
-I && INPUT && (RFKILL || RFKILL=3Dn) || EEEPC_LAPTOP && X86 && X86_PLATFORM=
-_DEVICES && ACPI && INPUT && EXPERIMENTAL && (RFKILL || RFKILL=3Dn) && HOTP=
-LUG_PCI || ACPI_ASUS && X86 && X86_PLATFORM_DEVICES && ACPI || ACPI_CMPC &&=
- X86_PLATFORM_DEVICES && X86 && ACPI && (RFKILL || RFKILL=3Dn)) selects BAC=
-KLIGHT_CLASS_DEVICE which has unmet direct dependencies (HAS_IOMEM && BACKL=
-IGHT_LCD_SUPPORT)
-warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI) selects LPC=
-_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI)
-warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI || GPIO_VX85=
-5 && GPIOLIB || GPIO_RDC321X && PCI && GPIOLIB || MFD_88PM860X && MFD_SUPPO=
-RT && I2C=3Dy && GENERIC_HARDIRQS || MFD_ASIC3 && MFD_SUPPORT && GENERIC_HA=
-RDIRQS && GPIOLIB && ARM || MFD_SH_MOBILE_SDHI && MFD_SUPPORT && (SUPERH ||=
- ARCH_SHMOBILE) || MFD_DAVINCI_VOICECODEC && MFD_SUPPORT || HTC_PASIC3 && M=
-FD_SUPPORT || TPS6507X && MFD_SUPPORT && I2C || TWL4030_CODEC && MFD_SUPPOR=
-T && TWL4030_CORE || MFD_STMPE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQ=
-S || MFD_TC35892 && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_T7L66=
-XB && MFD_SUPPORT && ARM && HAVE_CLK || MFD_TC6387XB && MFD_SUPPORT && ARM =
-&& HAVE_CLK || MFD_TC6393XB && MFD_SUPPORT && GPIOLIB && ARM || MFD_MAX8925=
- && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MAX8998 && MFD_SUPPOR=
-T && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM8400 && MFD_SUPPORT && I2C || MFD=
-_WM831X_I2C && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM831X_SPI=
- && MFD_SUPPORT && SPI_MASTER && GENERIC_HARDIRQS || MFD_WM8994 && MFD_SUPP=
-ORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MC13XXX && MFD_SUPPORT && SPI_MAS=
-TER || AB3100_CORE && MFD_SUPPORT && I2C=3Dy && ABX500_CORE || AB8500_CORE =
-&& MFD_SUPPORT && GENERIC_HARDIRQS && ABX500_CORE && SPI_MASTER && ARCH_U85=
-00 || AB3550_CORE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS && ABX500_C=
-ORE || MFD_TIMBERDALE && MFD_SUPPORT && PCI && GPIOLIB || LPC_SCH && MFD_SU=
-PPORT && PCI || MFD_RDC321X && MFD_SUPPORT && PCI || MFD_JANZ_CMODIO && MFD=
-_SUPPORT && PCI || MFD_JZ4740_ADC && MFD_SUPPORT && MACH_JZ4740 || MFD_TPS6=
-586X && MFD_SUPPORT && I2C=3Dy && GPIOLIB && GENERIC_HARDIRQS || MFD_VX855 =
-&& MFD_SUPPORT && PCI) selects MFD_CORE which has unmet direct dependencies=
- (MFD_SUPPORT)
-#
-# configuration written to .config
-#
+> Also, uasp.c is a protocol driver.  The protocol will change a bit but not by that much.  When this happens I'll submit new patches to update it, unless someone submits them before that. Even if no patches are submitted to support latter version of the protocol, UAS devices will be backward compatible.
+> 
+> In effect, this driver doesn't warrant much maintenance by virtue of its nature, but support is there if need be.
+
+*noted*
+
+> > . for some certain reason, it's had "more testing", its
+> > situation is "better", ...
+> 
+> "more testing" -- do you mean uasp.c or uas.c?  If you have a UAS device, try both drivers (do I/O) and see for yourself. uas.c also doesn't support the UAS protocol by definition as it doesn't support TMF and other features present in uasp.c.
+
+Since I indicated this compiled list to be about the "original" submission, it's hopefully obvious.
+
+> uasp.c wouldn't even make it in the kernel alongside uas.c, to give people a choice at least. (and we've heard the excuse for that one before, while there had been two drivers for the same device in the kernel before)
+
+The situation of two drivers in direct conflict can get messy indeed
+(especially if people don't know which they are using),
+thus I can easily understand that.
 
 
-------=_Part_356_7339598.1292500860561--
+> In the immediate future distros may include uasp.c since it provides UAS support. Independent Linux vendors may do the same for the same reason. HDD/ASIC manufacturers may use uasp.c to test their UAS devices (an alternative to the Windows tools).
+
+And that's one thing that I'm worrying about.
+
+Let's say one does the "proper", "good" way to achieve driver
+improvements:
+have the earlier submission get into released kernels
+and then submit patches to it in (let's say) third-steps
+to have it get to what a driver with combined
+features/functionality/stability would provide.
+
+This would mean to have an original driver implementation in kernels,
+which would not last long, get updated significantly ("third-steps" above),
+then re-released until we ultimately hit the full combined and
+full-featured driver in further kernel releases.
+
+Depending on how important API / user space stability/architecture
+effects may become, we could IMNSUTVHO see a situation where it can get
+moderately problematic on which distribution / version is using which
+driver development version.
+
+All this as opposed to doing a (admittedly not really painless) emergency-yank now
+and cleanly releasing with UASP as the _first_ driver version (which probably
+is much less likely to change drastically) to ever hit a kernel release.
+
+> If you have a UAS device and would like to play with it, uasp.c is available on github: http://marc.info/?t=129227496000002&r=1&w=2
+
+Given current mass-market unavailability of hardware (as indicated in
+the discussion): sorry, nope.
+
+Andreas Mohr
