@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab0LPPgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 10:36:00 -0500
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:34133 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab0LPPf6 (ORCPT
+	id S1755202Ab0LPPgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 10:36:39 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:53927 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab0LPPgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 10:35:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hZr+SYctlgvD/A1NkGNa3nxOps3lFtcl0hZG76RYgCdJvsXEhb9emxT1HYmVgdjcWl
-         oqBYCk6lg+schOJfyIgJAl78MQ6HP6PRl6VJbLbIp25HEiGpvaJvWzL7aMgm2lGPa73w
-         69d1kpX0EMX3T7NXzLg71g6KjsoPSugFwsBog=
-Date: Thu, 16 Dec 2010 16:35:53 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 3/5] sched: Change the ttwu success details
-Message-ID: <20101216153550.GD1687@nowhere>
-References: <20101216145602.899838254@chello.nl>
- <20101216150920.866959114@chello.nl>
- <20101216152351.GB1687@nowhere>
- <1292513275.6803.4603.camel@twins>
+	Thu, 16 Dec 2010 10:36:38 -0500
+Date: Thu, 16 Dec 2010 10:36:34 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 2/3] xfs: use generic per-cpu counter infrastructure
+Message-ID: <20101216153634.GA24185@infradead.org>
+References: <1292203313-15570-1-git-send-email-david@fromorbit.com>
+ <1292203313-15570-3-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1292513275.6803.4603.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1292203313-15570-3-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 04:27:55PM +0100, Peter Zijlstra wrote:
-> On Thu, 2010-12-16 at 16:23 +0100, Frederic Weisbecker wrote:
+On Mon, Dec 13, 2010 at 12:21:52PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> > > -	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-> > > +	TP_printk("comm=%s pid=%d prio=%d target_cpu=%03d",
-> > >  		  __entry->comm, __entry->pid, __entry->prio,
-> > > -		  __entry->success, __entry->target_cpu)
-> > > +		  __entry->target_cpu)
-> > 
-> > Note we'll need to fix some perf scripts after that. And also perf sched,
-> > probably perf timechart and so on...
+> XFS has a per-cpu counter implementation for in-core superblock
+> counters that pre-dated the generic implementation. It is complex
+> and baroque as it is tailored directly to the needs of ENOSPC
+> detection.
 > 
-> Do any of those actually use the success parameter? If not, then me
-> removing it shouldn't break those tools since they're supposed to parse
-> the format stuff and not notice it missing ;-)
+> Now that the generic percpu counter infrastructure has the
+> percpu_counter_add_unless_lt() function that implements the
+> necessary threshold checks for us, switch the XFS per-cpu
+> superblock counters to use the generic percpu counter
+> infrastructure.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
 
+Looks good to me,
 
-Yep, builtin-sched.c and sched-migration.py do.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+
+A little nipick:
+
+> -#ifdef HAVE_PERCPU_SB
+>  	ASSERT(field < XFS_SBS_ICOUNT || field > XFS_SBS_FDBLOCKS);
+> -#endif
+
+No need to keep this assert - xfs_mod_incore_sb_unlocked already
+has one for unknown fields.
+
