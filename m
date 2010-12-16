@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab0LPUhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 15:37:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52475 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756267Ab0LPUhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 15:37:07 -0500
-Message-Id: <5b55a1$ivkrie@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,356,1288594800"; 
-   d="scan'208";a="637169230"
-Date: Thu, 16 Dec 2010 20:37:03 +0000
-To: Domenico Andreoli <cavokz@gmail.com>, torvalds@linux-foundation.org
-Subject: Re: Linux 2.6.37-rc6
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        alexdeucher@gmail.com, airlied@linux.ie
-In-Reply-To: <20101216173011.GA2689@vixen>
-References: <AANLkTikWYd1UOJgMHiBb-cZwEHVOFWPBupcf8unfEKxo@mail.gmail.com> <20101216173011.GA2689@vixen>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1757221Ab0LPUm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 15:42:59 -0500
+Received: from mail-iw0-f194.google.com ([209.85.214.194]:41906 "EHLO
+	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259Ab0LPUm6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 15:42:58 -0500
+MIME-Version: 1.0
+X-Originating-IP: [46.116.87.10]
+In-Reply-To: <AANLkTi=q=QMQ_Abxb8eUWT_qGG8K=pc892ZB-mqgt_mh@mail.gmail.com>
+References: <1291420247-18171-1-git-send-email-ohad@wizery.com>
+ <AANLkTin1fd=Kei7Fo6G+uR+270HdTkc71fvsA6qjBjcA@mail.gmail.com>
+ <20101214170656.GA3832@kroah.com> <AANLkTi=q=QMQ_Abxb8eUWT_qGG8K=pc892ZB-mqgt_mh@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 16 Dec 2010 22:42:37 +0200
+Message-ID: <AANLkTi=JUxc+eOTAkFFjEXoqQEaXgyT7n6qtxW-7MzRv@mail.gmail.com>
+Subject: Re: [PATCH v3 0/4] Introduce hardware spinlock framework
+To: Greg KH <greg@kroah.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010 18:30:11 +0100, Domenico Andreoli <cavokz@gmail.com> wrote:
-> Hi,
-> 
-> On Wed, Dec 15, 2010 at 07:10:28PM -0800, ext Linus Torvalds wrote:
-> > 
-> > Go forth and test. And please do remember to ping bugzilla (or
-> > developers) about any regressions you find, whether new or old.
-> 
-> I have some problem with i945, display remains blank. I also tried
-> adding i915.modeset=0 but nothing changed. Machine is well alive and
-> responds to basic commands like Ctrl+Alt+F1 and Ctrl+Alt+Del but I have
-> not other machine to enter via network.
+On Tue, Dec 14, 2010 at 8:40 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Tue, Dec 14, 2010 at 7:06 PM, Greg KH <greg@kroah.com> wrote:
+>>  Like the most important one, why is this generic code if
+>>  it's only for one specific platform?
+>
+> We started out with an omap-specific driver, but Tony preferred that we
+> make this a platform-agnostic framework, in order to keep the IPC drivers that
+> will use it generic, and assuming that more users will show up for
+> such framework.
 
-If i915.modeset=0 doesn't restore the display then something is extremely
-fishy. Do you see any console output before the i915.ko is loaded?
+I was just told about additional users for this (thanks Mugdha):
 
-> [    1.284262] [drm] Initialized drm 1.1.0 20060810
-> [    1.284334] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-> [    1.485212] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-> [    1.485642] [drm] initialized overlay support
-> [    2.526011] No connectors reported connected with modes
-> [    2.526053] [drm] Cannot find any crtc or sizes - going 1024x768
+1) There are several platforms (such as omap3530 and omapl1xx) that
+have no such hardware support, but would still need to use the same
+IPC drivers (to communicate with their DSP).
 
-The issue appears to be that no outputs are being detected. I presume that
-you have instead a VGA connected to the box and that the regression is in
-fact e7dbb2f2. If I'm guessing rightly:
+The only way to achieve mutual exclusion on those platforms is by
+using a shared-memory synchronization algorithm called Peterson's
+Algorithm [1]. We would still need the same hwspinlock framework for
+that - the busy looping, the timeout, the various locking schemes, the
+resource allocation - are all still valid. The only difference is the
+actual lock implementation.
 
-diff --git a/drivers/gpu/drm/i915/intel_crt.c
-b/drivers/gpu/drm/i915/intel_crt.c
-index 8df5743..14c276e 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -148,7 +148,9 @@ static void intel_crt_mode_set(struct drm_encoder *encoder,
-                           dpll_md & ~DPLL_MD_UDI_MULTIPLIER_MASK);
-        }
- 
--       adpa = ADPA_HOTPLUG_BITS;
-+       adpa = 0;
-+       if (INTEL_INFO(dev)->gen >= 4)
-+               adpa |= ADPA_HOTPLUG_BITS;
-        if (adjusted_mode->flags & DRM_MODE_FLAG_PHSYNC)
-                adpa |= ADPA_HSYNC_ACTIVE_HIGH;
-        if (adjusted_mode->flags & DRM_MODE_FLAG_PVSYNC)
+2) The C6474, which is a multi-core DSP device [2], have Linux running
+on one of its cores, and would be using the same IPC drivers, too.
+C6474 has hardware support for synchronization, which would also
+benefit from such hwspinlock module (btw the C6474 has a richer
+hardware module that would need more than the hwspinlock framework
+offer today - it also supports queuing, owner semantics and interrupt
+notification to let a processor know when it acquires a lock, so it
+wouldn't have to spin..)
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Thanks,
+Ohad.
+
+[1] http://en.wikipedia.org/wiki/Peterson's_algorithm
+[2] http://focus.ti.com/docs/prod/folders/print/tms320c6474.html
+
+> To me it sounds reasonable, but both ways (framework / omap-specific
+> driver) will work for us just fine, and I can switch back to a misc
+> driver if this is preferred.
+>
+> The complete discussion of v1 is at:
+> http://comments.gmane.org/gmane.linux.kernel/1049802
+>
+> We also discussed this at v2 of the patches with David, see the
+> complete discussion at:
+> http://comments.gmane.org/gmane.linux.kernel/1067016
+>
+> Thanks,
+> Ohad.
+>
+>>
+>> thanks,
+>>
+>> greg k-h
+>>
+>
