@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab0LPRMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 12:12:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42619 "EHLO mx1.redhat.com"
+	id S1756628Ab0LPRNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 12:13:19 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41960 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755129Ab0LPRMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 12:12:38 -0500
-Subject: [GIT PULL] notification bug fixes
-From: Eric Paris <eparis@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, LinoSanfilippo@gmx.de,
-        alexey.zaytsev@gmail.com, agruen@linbit.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Dec 2010 14:17:27 -0500
-Message-ID: <1292440647.3042.8.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755100Ab0LPRNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 12:13:16 -0500
+Date: Thu, 16 Dec 2010 11:25:36 -0600
+From: David Sin <davidsin@ti.com>
+To: kgunn@ti.com
+Cc: linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 0/9] TI DMM-TILER driver
+Message-ID: <20101216172531.GG29435@lba0869738>
+References: <1291674446-10766-1-git-send-email-davidsin@ti.com>
+ <201012161434.05768.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012161434.05768.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The notable fixes in this pull request include a potential deadlock when
-fanotify listeners exit, an unpriv user kernel memory DoS in inotify,
-and an API (although not ABI) change in fanotify's userspace message to
-support expansion in the next release.
+On Thu, Dec 16, 2010 at 02:34:05PM +0100, Arnd Bergmann wrote:
+> On Monday 06 December 2010, David Sin wrote:
+> > Tiling and Isometric Lightweight Engine for Rotation (TILER) driver
+> > =====
+> > 
+> > Dynamic Memory Manager (DMM) is a hardware block made by Texas Instruments.
+> > Within the DMM exists at least one TILER hardware component.  Its purpose is to
+> > organize video/image memory in a 2-dimensional fashion to limit memory
+> > bandwidth and facilitate 0 effort rotation and mirroring.  The TILER driver
+> > facilitates allocating, freeing, as well as mapping 2D blocks (areas) in the
+> > TILER container(s).  It also facilitates rotating and mirroring the allocated
+> > blocks or its rectangular subsections.
+> 
+> How does this relate to DRM/GEM? I don't understand too much about graphics
+> drivers, but it does sound like there is some overlap in functionality.
+> 
+> I guess at the very least the DMM should live in drivers/gpu/ instead of
+> drivers/misc, but perhaps it could be integrated more closely with the
+> existing code there.
+> 
+> 	Arnd
+Do you know if anyone on your team is familiar with DRM/GEM (grap ext mgr) 
+for x86?  I'm trying to understand the differences and make a case that 
+ it's not the same as DMM/TILER.  
 
--Eric
-
---------
-The following changes since commit e8a7e48bb248a1196484d3f8afa53bded2b24e71:
-
-  Linux 2.6.37-rc4 (2010-11-29 20:42:04 -0800)
-
-are available in the git repository at:
-  git://git.infradead.org/users/eparis/notify.git for-linus
-
-Alexey Zaytsev (1):
-      fanotify: split version into version and metadata_len
-
-Eric Paris (5):
-      fanotify: deny permissions when no event was sent
-      fanotify: remove packed from access response message
-      inotify: stop kernel memory leak on file creation failure
-      fanotify: do not leak user reference on allocation failure
-      fanotify: fill in the metadata_len field on struct fanotify_event_metadata
-
-Lino Sanfilippo (6):
-      fanotify: if set by user unset FMODE_NONOTIFY before fsnotify_perm() is called
-      fanotify: correct broken ref counting in case adding a mark failed
-      fanotify: Dont allow a mask of 0 if setting or removing a mark
-      fanotify: on group destroy allow all waiters to bypass permission check
-      fanotify: Introduce FAN_NOFD
-      fanotify: Dont try to open a file descriptor for the overflow event
-
- fs/namei.c                         |    3 +
- fs/notify/fanotify/fanotify.c      |    6 ++-
- fs/notify/fanotify/fanotify_user.c |   81 ++++++++++++++++++++++-------------
- fs/notify/inotify/inotify_user.c   |    1 +
- include/linux/fanotify.h           |   10 +++-
- include/linux/fsnotify.h           |    3 -
- include/linux/fsnotify_backend.h   |    2 +-
- 7 files changed, 68 insertions(+), 38 deletions(-)
-
+thanks,
+-- 
+David Sin
