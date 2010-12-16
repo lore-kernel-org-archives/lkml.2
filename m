@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab0LPTK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 14:10:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49038 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab0LPTKZ convert rfc822-to-8bit (ORCPT
+	id S1757400Ab0LPTMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 14:12:31 -0500
+Received: from mail-px0-f179.google.com ([209.85.212.179]:45664 "EHLO
+	mail-px0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab0LPTMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 14:10:25 -0500
-Subject: Re: [PATCH/RFC 1/2] jump label: make enable/disable o(1)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu,
-        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <a35b9310aafa31a9e97f5c9bad9b09e0b6cbbf79.1292522252.git.jbaron@redhat.com>
-References: <cover.1292522251.git.jbaron@redhat.com>
-	 <a35b9310aafa31a9e97f5c9bad9b09e0b6cbbf79.1292522252.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Dec 2010 20:10:02 +0100
-Message-ID: <1292526602.2708.57.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 16 Dec 2010 14:12:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=RqIsUZD8WorIBAFvX6ORhVo0Mdbg8ONE4jtnSOwwaJJvh4pGSXrRkFE4JYB5hx3waZ
+         xIyLyXPWuRSTxjKUO+IImne2e68lGsz7F6gVSTKbmRbDctarw66UR8cSRCDy/2DIXylX
+         maajnIojJkhueG0zW1M+0S5LnIDT4NFecypUA=
+Message-ID: <4D0A649B.9080505@am.sony.com>
+Date: Thu, 16 Dec 2010 11:12:27 -0800
+From: Frank Rowand <frank.rowand@gmail.com>
+Reply-To: frank.rowand@am.sony.com, frank.rowand@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/5] Reduce runqueue lock contention -v2
+References: <20101216145602.899838254@chello.nl>
+In-Reply-To: <20101216145602.899838254@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 13:25 -0500, Jason Baron wrote:
-> Previously, I allowed any variable type to be used as the 'key' for
-> the jump label. However, by enforcing a type, we can make use of the
-> contents of the 'key'. This patch thus introduces:
+On 12/16/10 06:56, Peter Zijlstra wrote:
+> Hi, here a new posting of my scary patch(es) ;-)
 > 
-> struct jump_label_key {
->        void *ptr;
-> };
+> These actually survive a sembench run (and everything else I threw at it).
+> The discussion between Mike and Frank over the task_running() check made me
+> realize what was wrong with the previous one.
 > 
-> The 'ptr' is used a pointer into the jump label table of the
-> corresponding addresses that need to be updated. Thus, when jump labels
-> are enabled/disabled we have a constant time algorithm. There is no
-> longer any hashing.
+> As it turns out, what was needed (p->oncpu) was something Thomas wanted me
+> to do for an entirely different reason (see patch #2).
 > 
-> When jump lables are disabled we simply have:
-> 
-> struct jump_label_key {
->         int state;
-> };
-> 
-> I've also defined an analogous structure for ref counted jump labels as
-> per a request from Peter.
-> 
-> struct jump_label_keyref {
->        void *ptr;
-> };
-> 
-> And for the jump labels disabled case:
-> 
-> 
-> struct jump_label_keyref {
->         atomic_t refcount;
-> };
-> 
-> The reason I've introduced an additional structure for the reference counted
-> jump labels is twofold:
-> 
-> 1) For the jump labels disabled case, reference counted jump labels use an
-> atomic_read(). I didn't want to impact the jump labels disabled case for
-> tracepoints which simply accesses an 'int'.
-> 
-> 2) By introducing a second type, we have two parallel APIs:
-> 
-> extern void jump_label_enable(struct jump_label_key *key);
-> extern void jump_label_disable(struct jump_label_key *key);
-> 
-> static inline void jump_label_inc(struct jump_label_keyref *key)
-> static inline void jump_label_dec(struct jump_label_keyref *key)
-> 
-> In this way, we can't mix up the reference counted API, with the straight
-> enable/disable API since they accept different types.
+> Frank's patch, while encouraging me to poke at it again, has a number of
+> very fundamental problems with it, the most serious one being that it
+> completely wrecks the wake-up load-balancing.
 
-But why do we want to have two APIs?
+And also as Peter pointed out when I posted the patch (thank you Peter),
+I did not properly handle the return value for try_to_wake_up() - a rather
+fatal flaw.
+
+By coincidence, I was about to post a new version of my scary patch when
+this email arrived.  I'll post my patches as a reply to this email, then
+read through Peter's.
+
+
+Frank's patch, Version 2
+
+Changes from Version 1:
+  - Ensure return value of try_to_wake_up() is correct, even when queueing
+    wake up on a different cpu.
+  - rq->lock contention reduction not as good as first version
+
+patch 1
+
+  The core changes.  All the scary lock related stuff.
+
+  select_task_rq() uses the smp_processor_id() of the old task_cpu(p) instead
+  of the waking smp_processor_id().
+
+patch 2
+
+  select_task_rq() uses the smp_processor_id() of the waking smp_processor_id()
+  
+Limitations
+  x86 only
+
+Tests
+  - tested on 2 cpu x86_64
+  - very simplistic workload
+  - results:
+     rq->lock contention count reduced by ~ 75%
+     rq->lock contention wait time reduced by ~ 70%
+     test duration reduction is in the noise
+     rq->lock contention improvement is slightly better with just patch 1
+       applied, but the difference is in the noise
+
+Todo
+  - handle cpu being offlined
+
+
+-Frank
