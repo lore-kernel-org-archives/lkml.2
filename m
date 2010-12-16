@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab0LPN0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 08:26:10 -0500
-Received: from shutemov.name ([188.40.19.243]:46270 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043Ab0LPN0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 08:26:07 -0500
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH] nfsd: declare several functions of nfs4callback as static
-Date: Thu, 16 Dec 2010 15:25:54 +0200
-Message-Id: <1292505954-26290-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
+	id S1755927Ab0LPN2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 08:28:45 -0500
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:52028 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab0LPN2n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 08:28:43 -0500
+Message-ID: <4D0A12EA.6040605@snapgear.com>
+Date: Thu, 16 Dec 2010 23:23:54 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
+        <linux-kernel@vger.kernel.org>, <linux-m68k@vger.kernel.org>
+Subject: Re: Signal patchset
+References: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com> <20101215101027.GA31097@ZenIV.linux.org.uk>
+In-Reply-To: <20101215101027.GA31097@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Dec 2010 13:24:15.0108 (UTC) FILETIME=[88E1E440:01CB9D24]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On 15/12/10 20:10, Al Viro wrote:
+> On Sun, Dec 05, 2010 at 12:15:10PM +0100, Geert Uytterhoeven wrote:
+>
+>> Unless someone objects, I'm inclined to apply Al's patchset, as it improves the
+>> situation anyway.
+>>
+>> OK?
+>
+> FWIW, there's an m68knommu counterpart (ACKed by gerg a while ago).  The
+> entire bunch is on ftp.linux.org.uk/pub/people/viro/m68k-signals - both m68k
+> and m68knommu sets.  I don't know how you guys would prefer it done, since
+> there's a trivial dependency between m68k and m68knommu parts of series -
+> the former has
+> +#ifndef __uClinux__
+> +#define __ARCH_WANT_SYS_RT_SIGSUSPEND
+> +#endif
+> in unistd.h and the latter does
+> -#ifndef __uClinux__
+>   #define __ARCH_WANT_SYS_RT_SIGSUSPEND
+> -#endif
+> Both parts switch to generic sys_rt_sigsuspend(), for mmu and nommu resp.,
+> so they need __ARCH_WANT_SYS_RT_SIGSUSPEND defined as soon as conversion
+> is done.  Other than that they are independent.
 
-setup_callback_client(), nfsd4_release_cb() and nfsd4_process_cb_update()
-do not have users outside the translation unit. Let's declare it as
-static.
+I can make sure to send to Linus after Geert. Unless Geert you
+want to take and send both the m68k and m68knommu changes?
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- fs/nfsd/nfs4callback.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Regards
+Greg
 
-diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-index a95150d..515a9b1 100644
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -474,7 +474,8 @@ static int max_cb_time(void)
- /* Reference counting, callback cleanup, etc., all look racy as heck.
-  * And why is cl_cb_set an atomic? */
- 
--int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn)
-+static int setup_callback_client(struct nfs4_client *clp,
-+		struct nfs4_cb_conn *conn)
- {
- 	struct rpc_timeout	timeparms = {
- 		.to_initval	= max_cb_time(),
-@@ -750,13 +751,13 @@ void nfsd4_shutdown_callback(struct nfs4_client *clp)
- 	flush_workqueue(callback_wq);
- }
- 
--void nfsd4_release_cb(struct nfsd4_callback *cb)
-+static void nfsd4_release_cb(struct nfsd4_callback *cb)
- {
- 	if (cb->cb_ops->rpc_release)
- 		cb->cb_ops->rpc_release(cb);
- }
- 
--void nfsd4_process_cb_update(struct nfsd4_callback *cb)
-+static void nfsd4_process_cb_update(struct nfsd4_callback *cb)
- {
- 	struct nfs4_cb_conn conn;
- 	struct nfs4_client *clp = cb->cb_clp;
--- 
-1.7.3.3
 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close,                            FAX:         +61 7 3891 3630
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
