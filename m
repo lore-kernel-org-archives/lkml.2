@@ -1,60 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab0LPKAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 05:00:05 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:52214 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753912Ab0LPKAB (ORCPT
+	id S1754158Ab0LPKAQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 05:00:16 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52065 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab0LPKAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 05:00:01 -0500
-Message-ID: <4D09E319.5000603@euromail.se>
-Date: Thu, 16 Dec 2010 10:59:53 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Richard Nauber <richard.nauber@googlemail.com>,
-        Richard Nauber <Richard.Nauber@gmail.com>
-Subject: Re: [PATCH] hid: egalax: Add support for Samsung NB30 netbook
-References: <1292493175-21630-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1012161055060.16569@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1012161055060.16569@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PTAcu-0001NT-7V.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PTAcu-0001NT-7V 56afe4f93f0e4f75bf607e075ccd4e47
+	Thu, 16 Dec 2010 05:00:10 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Linux-mm <linux-mm@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 16 Dec 2010 15:27:24 +0530
+Message-Id: <20101216095724.23751.75992.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+Subject: [RFC] [PATCH 2.6.37-rc5-tip 1/20]  1: mm: Move replace_page() / write_protect_page() to mm/memory.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 10:55 AM, Jiri Kosina wrote:
 
-> On Thu, 16 Dec 2010, Henrik Rydberg wrote:
-> 
->> From: Richard Nauber <richard.nauber@googlemail.com>
->>
->> The Samsung NB30 touch has a DWAV dual-touch device. This patch adds
->> the NB30 to the list of supported devices, and grabs it accordingly in
->> hid-core.
->>
->> [rydberg@euromail.se: rename and log message changes]
->> Signed-off-by: Richard Nauber <Richard.Nauber@gmail.com>
->> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->> ---
->> Hi Jiri,
->>
->> do I have your ACK on this one?
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> 
-> I will happily apply the patch to my queue. Or are you planning to put it 
-> together with some larger bundle?
+User bkpt will use background page replacement approach to insert/delete
+breakpoints. Background page replacement approach will be based on
+replace_page and write_protect_page.  Now replace_page() and
+write_protect_page loses their static attribute.
 
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+ include/linux/mm.h |    4 ++
+ mm/ksm.c           |  114 -------------------------------------------------
+ mm/memory.c        |  122 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 126 insertions(+), 114 deletions(-)
 
-Thanks! Yep, it depends on a number of other patches coming in from my tree, so
-we had better put in on top of that pile.
-
-Thanks,
-Henrik
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 721f451..24f8bb0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -874,6 +874,10 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int replace_page(struct vm_area_struct *vma, struct page *page,
++					struct page *kpage, pte_t orig_pte);
++int write_protect_page(struct vm_area_struct *vma, struct page *page,
++						      pte_t *orig_pte);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 43bc893..0169c6b 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -694,120 +694,6 @@ static inline int pages_identical(struct page *page1, struct page *page2)
+ 	return !memcmp_pages(page1, page2);
+ }
+ 
+-static int write_protect_page(struct vm_area_struct *vma, struct page *page,
+-			      pte_t *orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	unsigned long addr;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	int swapped;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	ptep = page_check_address(page, mm, addr, &ptl, 0);
+-	if (!ptep)
+-		goto out;
+-
+-	if (pte_write(*ptep) || pte_dirty(*ptep)) {
+-		pte_t entry;
+-
+-		swapped = PageSwapCache(page);
+-		flush_cache_page(vma, addr, page_to_pfn(page));
+-		/*
+-		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
+-		 * take any lock, therefore the check that we are going to make
+-		 * with the pagecount against the mapcount is racey and
+-		 * O_DIRECT can happen right after the check.
+-		 * So we clear the pte and flush the tlb before the check
+-		 * this assure us that no O_DIRECT can happen after the check
+-		 * or in the middle of the check.
+-		 */
+-		entry = ptep_clear_flush(vma, addr, ptep);
+-		/*
+-		 * Check that no O_DIRECT or similar I/O is in progress on the
+-		 * page
+-		 */
+-		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
+-			set_pte_at(mm, addr, ptep, entry);
+-			goto out_unlock;
+-		}
+-		if (pte_dirty(entry))
+-			set_page_dirty(page);
+-		entry = pte_mkclean(pte_wrprotect(entry));
+-		set_pte_at_notify(mm, addr, ptep, entry);
+-	}
+-	*orig_pte = *ptep;
+-	err = 0;
+-
+-out_unlock:
+-	pte_unmap_unlock(ptep, ptl);
+-out:
+-	return err;
+-}
+-
+-/**
+- * replace_page - replace page in vma by new ksm page
+- * @vma:      vma that holds the pte pointing to page
+- * @page:     the page we are replacing by kpage
+- * @kpage:    the ksm page we replace page by
+- * @orig_pte: the original value of the pte
+- *
+- * Returns 0 on success, -EFAULT on failure.
+- */
+-static int replace_page(struct vm_area_struct *vma, struct page *page,
+-			struct page *kpage, pte_t orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	unsigned long addr;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	pgd = pgd_offset(mm, addr);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, addr);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, addr);
+-	if (!pmd_present(*pmd))
+-		goto out;
+-
+-	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-	if (!pte_same(*ptep, orig_pte)) {
+-		pte_unmap_unlock(ptep, ptl);
+-		goto out;
+-	}
+-
+-	get_page(kpage);
+-	page_add_anon_rmap(kpage, vma, addr);
+-
+-	flush_cache_page(vma, addr, pte_pfn(*ptep));
+-	ptep_clear_flush(vma, addr, ptep);
+-	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+-
+-	page_remove_rmap(page);
+-	put_page(page);
+-
+-	pte_unmap_unlock(ptep, ptl);
+-	err = 0;
+-out:
+-	return err;
+-}
+-
+ /*
+  * try_to_merge_one_page - take two pages and merge them into one
+  * @vma: the vma that holds the pte pointing to page
+diff --git a/mm/memory.c b/mm/memory.c
+index 02e48aa..28f79bb 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2591,6 +2591,128 @@ void unmap_mapping_range(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
++/**
++ * replace_page - replace page in vma by new ksm page
++ * @vma:      vma that holds the pte pointing to page
++ * @page:     the page we are replacing by kpage
++ * @kpage:    the ksm page we replace page by
++ * @orig_pte: the original value of the pte
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int replace_page(struct vm_area_struct *vma, struct page *page,
++			struct page *kpage, pte_t orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	unsigned long addr;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	pgd = pgd_offset(mm, addr);
++	if (!pgd_present(*pgd))
++		goto out;
++
++	pud = pud_offset(pgd, addr);
++	if (!pud_present(*pud))
++		goto out;
++
++	pmd = pmd_offset(pud, addr);
++	if (!pmd_present(*pmd))
++		goto out;
++
++	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
++	if (!pte_same(*ptep, orig_pte)) {
++		pte_unmap_unlock(ptep, ptl);
++		goto out;
++	}
++
++	get_page(kpage);
++	page_add_anon_rmap(kpage, vma, addr);
++
++	flush_cache_page(vma, addr, pte_pfn(*ptep));
++	ptep_clear_flush(vma, addr, ptep);
++	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
++
++	page_remove_rmap(page);
++	put_page(page);
++
++	pte_unmap_unlock(ptep, ptl);
++	err = 0;
++out:
++	return err;
++}
++
++/**
++ * write_protect_page - mark the page readonly
++ * @vma:      vma that holds the page we want to mark
++ * @page:     page that needs to be marked readonly
++ * @orig_pte: pte for the protected page.
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int write_protect_page(struct vm_area_struct *vma, struct page *page,
++						      pte_t *orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	unsigned long addr;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	int swapped;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	ptep = page_check_address(page, mm, addr, &ptl, 0);
++	if (!ptep)
++		goto out;
++
++	if (pte_write(*ptep) || pte_dirty(*ptep)) {
++		pte_t entry;
++
++		swapped = PageSwapCache(page);
++		flush_cache_page(vma, addr, page_to_pfn(page));
++		/*
++		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
++		 * take any lock, therefore the check that we are going to make
++		 * with the pagecount against the mapcount is racey and
++		 * O_DIRECT can happen right after the check.
++		 * So we clear the pte and flush the tlb before the check
++		 * this assure us that no O_DIRECT can happen after the check
++		 * or in the middle of the check.
++		 */
++		entry = ptep_clear_flush(vma, addr, ptep);
++		/*
++		 * Check that no O_DIRECT or similar I/O is in progress on the
++		 * page
++		 */
++		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
++			set_pte_at(mm, addr, ptep, entry);
++			goto out_unlock;
++		}
++		if (pte_dirty(entry))
++			set_page_dirty(page);
++		entry = pte_mkclean(pte_wrprotect(entry));
++		set_pte_at_notify(mm, addr, ptep, entry);
++	}
++	*orig_pte = *ptep;
++	err = 0;
++
++out_unlock:
++	pte_unmap_unlock(ptep, ptl);
++out:
++	return err;
++}
++
+ int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
