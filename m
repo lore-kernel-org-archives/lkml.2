@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab0LPQ25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 11:28:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47025 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab0LPQ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 11:28:56 -0500
-Message-ID: <4D0A3E31.4000109@zytor.com>
-Date: Thu, 16 Dec 2010 08:28:33 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1753025Ab0LPQat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 11:30:49 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37279 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab0LPQap (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 11:30:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=UQh2tOfLfIqRNC633umsOkRnBoYV3GcgDMyMBCOsAUnxdfKkZaZkoeZmi/+WmTNaNr
+         qvOGGDedAGAnuy66io6hFqX0QcTGyE88p1umO3OXY6/ebvzQhHi5q0TehbFR41WzZtZb
+         1/mhYZhbv9zpYszpKZqQDqhkyOQF4I7yGZ7Dw=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com>
-In-Reply-To: <20101216143925.GA13870@redhat.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1292516015.27593.26.camel@wwguy-ubuntu>
+References: <AANLkTink67RM4mp537UxFcx4g-9Dx+ymbW0A=cCu3C4g@mail.gmail.com>
+	<1292516015.27593.26.camel@wwguy-ubuntu>
+Date: Thu, 16 Dec 2010 17:30:44 +0100
+Message-ID: <AANLkTi=vNpEKRDLcrudQhax=3HG=gqsMoCdU2RmOGMSj@mail.gmail.com>
+Subject: Re: [PATCH] iwlwifi: Fix error: struct iwl_lq_sta has no member named dbg_fixed_rate
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        John Linville <linville@tuxdriver.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 06:39 AM, Vivek Goyal wrote:
-> On Wed, Dec 15, 2010 at 08:29:01PM -0800, Yinghai Lu wrote:
->> please check
+On Thu, Dec 16, 2010 at 5:13 PM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> wrote:
+> Hi Sedat,
+>
+> On Thu, 2010-12-16 at 03:46 -0800, Sedat Dilek wrote:
+>> Attached patch fixes an issue with linux-next (20101216) and iwlwifi (see [1]).
 >>
->> [PATCH] x86, crashkernel, 32bit: only try to get range under 512M
+>> - Sedat -
 >>
->> Steanishlaw report kdump is 32bit is broken.
->>
->> in misc.c for decompresser, it will do sanity checking to make sure heap
->> heap under 512M.
-> 
-> Thanks Yinghai. I am wondering why on 32bit heap has to be with-in 512MB.
-> I think you are referring to following check in
-> arch/x86/boot/compressed/misc.c.
-> 
-> 	if (end > ((-__PAGE_OFFSET-(512 <<20)-1) & 0x7fffffff))
-> 		error("Destination address too large");
-> 
-> It was introduced here.
-> 
-> commit 968de4f02621db35b8ae5239c8cfc6664fb872d8
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Thu Dec 7 02:14:04 2006 +0100
-> 
->     [PATCH] i386: Relocatable kernel support
-> 
-> Eric,
-> 
-> It has been long. By any chance would you remember where does above
-> constraint come from?
-> 
+>> [1] http://lkml.org/lkml/2010/12/16/101
+>
+> ACKed-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+>
+> Thank you very much for catch this mistake and fix it so quickly.
+>
+> Wey
+>
+>
 
-It might, in fact, be bogus; specifically a proxy for the fact that we
-need the kernel memory including bss and brk below the lowmem boundary,
-which isn't well-defined.
+N.p., the patch is now in wireless-next-2.6 GIT master (so we will
+have it in next-20101217).
+Thanks John.
 
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+- Sedat -
