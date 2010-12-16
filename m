@@ -1,140 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab0LPODv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 09:03:51 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:18264 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab0LPODt (ORCPT
+	id S1756120Ab0LPOGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 09:06:48 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:33589 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab0LPOGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 09:03:49 -0500
-Message-ID: <4D0A1C40.7060502@panasas.com>
-Date: Thu, 16 Dec 2010 16:03:44 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Nick Piggin <npiggin@gmail.com>
-CC: David Miller <davem@davemloft.net>, hooanon05@yahoo.co.jp,
-        npiggin@kernel.dk, torvalds@linux-foundation.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
-References: <12853.1292353313@jrobl>	<AANLkTinjkcciZhJM5FmUkh_YCJ6bc9aTq8zV=SACDb1O@mail.gmail.com>	<4D08BF5D.1060509@panasas.com>	<20101215.100055.226772943.davem@davemloft.net>	<4D09E185.2040600@panasas.com> <AANLkTin3v0BLYAuuqTgEzKgSOpVg4GJaJCEds=2ePrBH@mail.gmail.com>
-In-Reply-To: <AANLkTin3v0BLYAuuqTgEzKgSOpVg4GJaJCEds=2ePrBH@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 16 Dec 2010 09:06:47 -0500
+Date: Thu, 16 Dec 2010 15:06:38 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Matthias Zacharias <Matthias.Zacharias@bmk-solutions.de>
+Subject: [RFC] i2c-algo-bit: Disable interrupts while SCL is high
+Message-ID: <20101216150638.7d3850b5@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Dec 2010 14:03:47.0979 (UTC) FILETIME=[0F3945B0:01CB9D2A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 03:13 PM, Nick Piggin wrote:
-> On Thu, Dec 16, 2010 at 8:53 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
->> On 12/15/2010 08:00 PM, David Miller wrote:
->>> From: Boaz Harrosh <bharrosh@panasas.com>
->>> Date: Wed, 15 Dec 2010 15:15:09 +0200
->>>
->>>> I agree that the byte-compare or long-compare should give you very close
->>>> results in modern pipeline CPUs. But surly 12 increments-and-test should
->>>> show up against 3 (or even 2). I would say it must be a better plan.
->>>
->>> For strings of these lengths the setup code necessary to initialize
->>> the inner loop and the tail code to handle the sub-word ending cases
->>> eliminate whatever gains there are.
->>>
->>
->> You miss understood me. I'm saying that we know the beggining of the
->> string is aligned and Nick offered to pad the last long, so surly
->> a shift by 2 (or 3) + the reduction of the 12 dec-and-test to 3
->> should give you an optimization?
-> 
-> Masking is still going to take a bit more code, but perhaps. We're talking
-> a handful of cycles here, so if you add a branch mispredict, or icache
-> miss, you'll kill your savings.
-> 
-> This is what I've got at the moment, which adds only 8 bytes over the
-> rep cmp variant, in the __d_lookup_rcu function.
-> 
-> static inline int dentry_memcmp(const unsigned char *cs,
->                                const unsigned char *ct, size_t count)
-> {
->        int ret;
->        do {
->                ret = (*cs != *ct);
->                if (ret)
->                        break;
->                cs++;
->                ct++;
->                count--;
->        } while (count);
->        return ret;
-> }
-> 
-> Now if we pad and zero fill the dentry name, then we can compare with
-> the path string, but we still have to mask that guy (unfortunately, I
-> didn't consider that earlier) so it's not trivial and adds quite a bit of code
-> size and branches:
-> 
-> static inline int dentry_memcmp_long(const unsigned char *cs,
->                                const unsigned char *ct, ssize_t count)
-> {
->         const unsigned long *ls = (const unsigned long *)cs;
->         const unsigned long *lt = (const unsigned long *)ct;
-> 
->        int ret;
->        do {
->                 unsigned long t = *lt;
->                 unsigned long s = *ls;
->                 int shift = 0;
-> 
->                 if (count < 8)
->                         shift = (8 - count) * 8;
->                 t = t & (0xffffffffffffffff >> shift);
->                ret = (s != t);
->                if (ret)
->                        break;
->                ls++;
->                lt++;
->                count-=8;
->        } while (count > 0);
->        return ret;
-> }
-> 
-> Something like this should work on little endian. You'd have to coax gcc to
-> generate a cmov to get rid of that branch I think, because it won't be
-> predictable for small string lengths. But then you have to think about
-> icache...
+Add a spinlock to every user of i2c-algo-bit, which is taken before
+raising SCL and released after lowering SCL. We don't really need
+the exclusion functionality, but we have to disable local interrupts.
+This is needed to comply with SMBus requirements that SCL shouldn't
+be high for longer than 50 us.
 
-static inline int dentry_memcmp_long(const unsigned char *cs,
-                                const unsigned char *ct, ssize_t count)
-{
-        int ret;
-	const unsigned long *ls = (const unsigned long *)cs;
-	const unsigned long *lt = (const unsigned long *)ct;
+SMBus slaves can consider SCL being high for 50 us as a timeout
+condition. This has been observed to happen reproducibly with the
+Melexis MLX90614.
 
-        while (count > 8) {
-                ret = (*cs != *ct);
-                if (ret)
-                        break;
-                cs++;
-                ct++;
-                count-=8;
-        }
-	if (count) {
-		unsigned long t = *ct & ((0xffffffffffffffff >> ((8 - count) * 8))
-		ret = (*cs != t)
-	}
+The drawback of this approach is that spin_lock_irqsave() and
+spin_unlock_irqrestore() will be called once for each bit going on the
+I2C bus in either direction. This can mean up to 100 kHz for standard
+I2C and SMBus and up to 250 kHz for fast I2C. The good thing is that
+this limits the latency to reasonable values (2us at 250 kHz, 5 us at
+100 kHz and 50 us at 10 kHz).
 
-        return ret;
-}
+An alternative would be to keep the lock held for the whole transfer
+of every single byte. This would divide the number of calls to
+spin_lock_irqsave() and spin_unlock_irqrestore() by 9 (i.e. up to 11
+kHz for standard I2C and up to 28 kHz for fast I2C) at the price of
+multiplying the latency by 18 (i.e. 36 us at 250 kHz, 90 us at 100 kHz
+and 900 us at 10 kHz).
 
-Same as yours but just to avoid the branch inside the loop
-and slightly smaller code.
+I would welcome comments on this. I sincerely have no idea what is
+considered a reasonable duration during which local interrupts can be
+disabled, and I have also no idea above what frequency taking and
+releasing a (never busy) spinlock is considered unreasonable.
 
-BTW: On some ARCHs ++foo is faster than foo++
-     and Also, is there a reason not to write the above loop as:
+i2c-algo-bit is used by many popular I2C and SMBus controller drivers,
+so this change will have an effect on virtually every Linux system out
+there. So I don't want to get it wrong.
 
-     while(c-- && (ret = (*cs++ != *ct++)))
-		;
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Tested-by: Matthias Zacharias <Matthias.Zacharias@bmk-solutions.de>
+---
+ drivers/i2c/algos/i2c-algo-bit.c |   38 ++++++++++++++++++++++++++++++++++----
+ include/linux/i2c-algo-bit.h     |    4 ++++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
 
-Thanks
-Boaz
+--- linux-2.6.37-rc6.orig/drivers/i2c/algos/i2c-algo-bit.c	2010-12-16 11:01:39.000000000 +0100
++++ linux-2.6.37-rc6/drivers/i2c/algos/i2c-algo-bit.c	2010-12-16 13:11:12.000000000 +0100
+@@ -29,6 +29,7 @@
+ #include <linux/sched.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
++#include <linux/spinlock.h>
+ 
+ 
+ /* ----- global defines ----------------------------------------------- */
+@@ -130,12 +131,17 @@ static void i2c_start(struct i2c_algo_bi
+ 
+ static void i2c_repstart(struct i2c_algo_bit_data *adap)
+ {
++	unsigned long flags;
++
+ 	/* assert: scl is low */
+ 	sdahi(adap);
++	spin_lock_irqsave(&adap->lock, flags);
+ 	sclhi(adap);
+ 	setsda(adap, 0);
+ 	udelay(adap->udelay);
+-	scllo(adap);
++	setscl(adap, 0);
++	spin_unlock_irqrestore(&adap->lock, flags);
++	udelay(adap->udelay / 2);
+ }
+ 
+ 
+@@ -163,13 +169,16 @@ static int i2c_outb(struct i2c_adapter *
+ 	int sb;
+ 	int ack;
+ 	struct i2c_algo_bit_data *adap = i2c_adap->algo_data;
++	unsigned long flags;
+ 
+ 	/* assert: scl is low */
+ 	for (i = 7; i >= 0; i--) {
+ 		sb = (c >> i) & 1;
+ 		setsda(adap, sb);
+ 		udelay((adap->udelay + 1) / 2);
++		spin_lock_irqsave(&adap->lock, flags);
+ 		if (sclhi(adap) < 0) { /* timed out */
++			spin_unlock_irqrestore(&adap->lock, flags);
+ 			bit_dbg(1, &i2c_adap->dev, "i2c_outb: 0x%02x, "
+ 				"timeout at bit #%d\n", (int)c, i);
+ 			return -ETIMEDOUT;
+@@ -180,10 +189,14 @@ static int i2c_outb(struct i2c_adapter *
+ 		 * Report a unique code, so higher level code can retry
+ 		 * the whole (combined) message and *NOT* issue STOP.
+ 		 */
+-		scllo(adap);
++		setscl(adap, 0);
++		spin_unlock_irqrestore(&adap->lock, flags);
++		udelay(adap->udelay / 2);
+ 	}
+ 	sdahi(adap);
++	spin_lock_irqsave(&adap->lock, flags);
+ 	if (sclhi(adap) < 0) { /* timeout */
++		spin_unlock_irqrestore(&adap->lock, flags);
+ 		bit_dbg(1, &i2c_adap->dev, "i2c_outb: 0x%02x, "
+ 			"timeout at ack\n", (int)c);
+ 		return -ETIMEDOUT;
+@@ -193,10 +206,13 @@ static int i2c_outb(struct i2c_adapter *
+ 	 * NAK (usually to report problems with the data we wrote).
+ 	 */
+ 	ack = !getsda(adap);    /* ack: sda is pulled low -> success */
++	setscl(adap, 0);
++	spin_unlock_irqrestore(&adap->lock, flags);
++	udelay(adap->udelay / 2);
++
+ 	bit_dbg(2, &i2c_adap->dev, "i2c_outb: 0x%02x %s\n", (int)c,
+ 		ack ? "A" : "NA");
+ 
+-	scllo(adap);
+ 	return ack;
+ 	/* assert: scl is low (sda undef) */
+ }
+@@ -209,11 +225,14 @@ static int i2c_inb(struct i2c_adapter *i
+ 	int i;
+ 	unsigned char indata = 0;
+ 	struct i2c_algo_bit_data *adap = i2c_adap->algo_data;
++	unsigned long flags;
+ 
+ 	/* assert: scl is low */
+ 	sdahi(adap);
+ 	for (i = 0; i < 8; i++) {
++		spin_lock_irqsave(&adap->lock, flags);
+ 		if (sclhi(adap) < 0) { /* timeout */
++			spin_unlock_irqrestore(&adap->lock, flags);
+ 			bit_dbg(1, &i2c_adap->dev, "i2c_inb: timeout at bit "
+ 				"#%d\n", 7 - i);
+ 			return -ETIMEDOUT;
+@@ -222,6 +241,7 @@ static int i2c_inb(struct i2c_adapter *i
+ 		if (getsda(adap))
+ 			indata |= 0x01;
+ 		setscl(adap, 0);
++		spin_unlock_irqrestore(&adap->lock, flags);
+ 		udelay(i == 7 ? adap->udelay / 2 : adap->udelay);
+ 	}
+ 	/* assert: scl is low */
+@@ -384,16 +404,21 @@ static int sendbytes(struct i2c_adapter
+ static int acknak(struct i2c_adapter *i2c_adap, int is_ack)
+ {
+ 	struct i2c_algo_bit_data *adap = i2c_adap->algo_data;
++	unsigned long flags;
+ 
+ 	/* assert: sda is high */
+ 	if (is_ack)		/* send ack */
+ 		setsda(adap, 0);
+ 	udelay((adap->udelay + 1) / 2);
++	spin_lock_irqsave(&adap->lock, flags);
+ 	if (sclhi(adap) < 0) {	/* timeout */
++		spin_unlock_irqrestore(&adap->lock, flags);
+ 		dev_err(&i2c_adap->dev, "readbytes: ack/nak timeout\n");
+ 		return -ETIMEDOUT;
+ 	}
+-	scllo(adap);
++	setscl(adap, 0);
++	spin_unlock_irqrestore(&adap->lock, flags);
++	udelay(adap->udelay / 2);
+ 	return 0;
+ }
+ 
+@@ -616,6 +641,11 @@ static int __i2c_bit_add_bus(struct i2c_
+ 	adap->algo = &i2c_bit_algo;
+ 	adap->retries = 3;
+ 
++	/* We use a spinlock to block interrupts while SCL is high.
++	 * Otherwise the very short SMBus SCL high timeout (50 us)
++	 * can be reached, causing SMBus slaves to stop responding. */
++	spin_lock_init(&bit_adap->lock);
++
+ 	ret = add_adapter(adap);
+ 	if (ret < 0)
+ 		return ret;
+--- linux-2.6.37-rc6.orig/include/linux/i2c-algo-bit.h	2010-12-16 11:00:59.000000000 +0100
++++ linux-2.6.37-rc6/include/linux/i2c-algo-bit.h	2010-12-16 13:11:41.000000000 +0100
+@@ -24,6 +24,8 @@
+ #ifndef _LINUX_I2C_ALGO_BIT_H
+ #define _LINUX_I2C_ALGO_BIT_H
+ 
++#include <linux/spinlock.h>
++
+ /* --- Defines for bit-adapters ---------------------------------------	*/
+ /*
+  * This struct contains the hw-dependent functions of bit-style adapters to
+@@ -39,6 +41,8 @@ struct i2c_algo_bit_data {
+ 	int  (*pre_xfer)  (struct i2c_adapter *);
+ 	void (*post_xfer) (struct i2c_adapter *);
+ 
++	spinlock_t lock;	/* Disable interrupts when SCL is high */
++
+ 	/* local settings */
+ 	int udelay;		/* half clock cycle time in us,
+ 				   minimum 2 us for fast-mode I2C,
+
+
+-- 
+Jean Delvare
