@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757493Ab0LPVh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 16:37:59 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54363 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab0LPVh6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 16:37:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RnW1VL4fyvvWUumH33B9HcEf709xpWyilBpFEjksM9zifYTXZA8O3Oh+qc7Ew7txdN
-         OklHEVsW5SE6wLSDsO9wzg2KCGpA2trI1QEfO63BAC4z/um8XSWW2nzagzDt+y1j2vYK
-         kZ/Xbdkup/JdkExrWwqB3nRxmQaWM48ksnS6A=
+	id S1757505Ab0LPVka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 16:40:30 -0500
+Received: from kroah.org ([198.145.64.141]:46151 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793Ab0LPVk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 16:40:29 -0500
+Date: Thu, 16 Dec 2010 13:30:05 -0800
+From: Greg KH <greg@kroah.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Duncan Sands <duncan.sands@free.fr>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 5/6] speedtch: don't abuse struct delayed_work
+Message-ID: <20101216213005.GA5781@kroah.com>
+References: <1292172499-21633-1-git-send-email-tj@kernel.org>
+ <1292172499-21633-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <4D0A866E.40708@suse.cz>
-References: <AANLkTik90p-L+4_GnwXzoekCK0E2uemZD6tOK_kEFd2n@mail.gmail.com>
-	<4D0A866E.40708@suse.cz>
-Date: Thu, 16 Dec 2010 13:37:57 -0800
-Message-ID: <AANLkTi=Nd76X3dKAi_A3M=8tHbmgqO3DH11eo0stAQWO@mail.gmail.com>
-Subject: Re: PATCH: Put .zdebug* section on white list
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292172499-21633-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 1:36 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On -10.1.-28163 20:59, H.J. Lu wrote:
->>
->> Hi,
->>
->> "as --compress-debug-sections" will generate compressed debug sections
->> with section names ".zdebug*".  This patch puts .zdebug* section on
->> white list.
->
-> Hi,
->
-> can I assume that the patch is
-> Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
-> ?
->
+On Sun, Dec 12, 2010 at 05:48:18PM +0100, Tejun Heo wrote:
+> speedtch directly uses the internal timer and work members of a struct
+> delayed_work.  Use a separate work item and timer instead.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Duncan Sands <duncan.sands@free.fr>
+> Cc: linux-usb@vger.kernel.org
+> ---
+> This is part of a series to remove flush_scheduled_work() usage to
+> prepare for deprecation of flush_scheduled_work().  Patches in this
+> series are self contained and mostly straight-forward.
+> 
+> Please feel free to take it into the appropriate tree, or just ack it.
+> In the latter case, I'll merge the patch through the workqueue tree
+> during the next merge window.
 
-Yes.
+You forgot to add a "Signed-off-by:" on these patches, so I can't take
+them in my tree :(
 
+But feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
--- 
-H.J.
+to both 5/6 and 6/6 of this series and take them through your tree.
+
+thanks,
+
+greg k-h
