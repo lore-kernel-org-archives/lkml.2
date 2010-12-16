@@ -1,200 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab0LPU50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 15:57:26 -0500
-Received: from www.tglx.de ([62.245.132.106]:35307 "EHLO www.tglx.de"
+	id S1757172Ab0LPVG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 16:06:29 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:33841 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756591Ab0LPU5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 15:57:23 -0500
-Date: Thu, 16 Dec 2010 21:56:38 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH V7 3/8] posix clocks: introduce dynamic clocks
-In-Reply-To: <8debe4d48d9a6484b7fbd35d8888524155fed977.1292512461.git.richard.cochran@omicron.at>
-Message-ID: <alpine.LFD.2.00.1012161939340.12146@localhost6.localdomain6>
-References: <cover.1292512461.git.richard.cochran@omicron.at> <8debe4d48d9a6484b7fbd35d8888524155fed977.1292512461.git.richard.cochran@omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756591Ab0LPVG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 16:06:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Drake <dsd@laptop.org>
+Subject: Re: [PATCH] rtc-cmos: fix suspend/resume
+Date: Thu, 16 Dec 2010 22:05:39 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, pgf@laptop.org
+References: <20101216180829.A8E5A9D401B@zog.reactivated.net>
+In-Reply-To: <20101216180829.A8E5A9D401B@zog.reactivated.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012162205.39435.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010, Richard Cochran wrote:
-
-> --- /dev/null
-> +++ b/include/linux/posix-clock.h
-> +/**
-> + * struct posix_clock_fops - character device operations
-> + *
-> + * Every posix clock is represented by a character device. Drivers may
-> + * optionally offer extended capabilities by implementing these
-> + * functions. The character device file operations are first handled
-> + * by the clock device layer, then passed on to the driver by calling
-> + * these functions.
-> + *
-> + * The clock device layer already uses fp->private_data, so drivers
-> + * are provided their private data via the 'priv' paramenter.
-> + */
-> +void *posix_clock_private(struct file *fp);
-
-Leftover ? There is neither a caller nor an implementation
-
-> +struct posix_clock_fops {
-> +	int (*fasync)  (void *priv, int fd, struct file *file, int on);
-> +	int (*mmap)    (void *priv, struct vm_area_struct *vma);
-> +	int (*open)    (void *priv, fmode_t f_mode);
-> +	int (*release) (void *priv);
-> +	long (*ioctl)  (void *priv, unsigned int cmd, unsigned long arg);
-> +	long (*compat_ioctl) (void *priv, unsigned int cmd, unsigned long arg);
-
-Do we really need a compat_ioctl ?
-
-> +	ssize_t (*read) (void *priv, uint flags, char __user *buf, size_t cnt);
-> +	unsigned int (*poll) (void *priv, struct file *file, poll_table *wait);
-
-> --- a/kernel/time/Makefile
-> +++ b/kernel/time/Makefile
-> @@ -1,4 +1,5 @@
-> -obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o timecompare.o timeconv.o
-> +obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o \
-> +timecompare.o timeconv.o posix-clock.o
-
-Please start a new obj-y += line instead
-  
-> --- /dev/null
-> +++ b/kernel/time/posix-clock.c
-> +
-> +#define MAX_CLKDEV BITS_PER_LONG
-
-Please put some more space between the MAX_CLKDEV and BITS_PER_LONG. I
-had to look three times to not read it as a single word.
-
-> +static DECLARE_BITMAP(clocks_map, MAX_CLKDEV);
-> +static DEFINE_MUTEX(clocks_mutex); /* protects 'clocks_map' */
-
-Please avoid tail comments
-
-> +struct posix_clock {
-> +	struct posix_clock_operations *ops;
-> +	struct cdev cdev;
-> +	struct kref kref;
-> +	struct mutex mux;
-> +	void *priv;
-
-You can get away with that private pointer and all the void *
-arguments to the various posix_clock_operations, if you mandate that
-the posix_clock_operations are embedded into a clock specific data
-structure.
-
-So void *priv would become struct posix_clock_operations *clkops and
-you can get your private data in the clock implementation with
-container_of().
-
-> +	int index;
-> +	bool zombie;
-
-Ths field is only set, but nowhere else used. What's the purpose ?
-Leftover ?
-
+On Thursday, December 16, 2010, Daniel Drake wrote:
+> From: Paul Fox <pgf@laptop.org>
+> 
+> rtc-cmos was setting suspend/resume hooks at the device_driver level.
+> However, the platform bus code (drivers/base/platform.c) only looks
+> for resume hooks at the dev_pm_ops level, or within the platform_driver.
+> 
+> Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is
+> executed again.
+> 
+> Signed-off-by: Paul Fox <pgf@laptop.org>
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  drivers/rtc/rtc-cmos.c |   14 +++++++++-----
+>  1 files changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+> index 5856167..dfa5547 100644
+> --- a/drivers/rtc/rtc-cmos.c
+> +++ b/drivers/rtc/rtc-cmos.c
+> @@ -850,7 +850,7 @@ static void __exit cmos_do_remove(struct device *dev)
+>  
+>  #ifdef	CONFIG_PM
+>  
+> -static int cmos_suspend(struct device *dev, pm_message_t mesg)
+> +static int cmos_suspend(struct device *dev)
+>  {
+>  	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+>  	unsigned char	tmp;
+> @@ -898,7 +898,7 @@ static int cmos_suspend(struct device *dev, pm_message_t mesg)
+>   */
+>  static inline int cmos_poweroff(struct device *dev)
+>  {
+> -	return cmos_suspend(dev, PMSG_HIBERNATE);
+> +	return cmos_suspend(dev);
+>  }
+>  
+>  static int cmos_resume(struct device *dev)
+> @@ -1077,7 +1077,7 @@ static void __exit cmos_pnp_remove(struct pnp_dev *pnp)
+>  
+>  static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
+>  {
+> -	return cmos_suspend(&pnp->dev, mesg);
+> +	return cmos_suspend(&pnp->dev);
+>  }
+>  
+>  static int cmos_pnp_resume(struct pnp_dev *pnp)
+> @@ -1152,13 +1152,17 @@ static void cmos_platform_shutdown(struct platform_device *pdev)
+>  /* work with hotplug and coldplug */
+>  MODULE_ALIAS("platform:rtc_cmos");
+>  
+> +static struct dev_pm_ops cmos_pm_ops = {
+> +	.suspend = cmos_suspend,
+> +	.resume = cmos_resume,
 > +};
-> +
 
-> +static void delete_clock(struct kref *kref);
-> +
-> +
-> +static int posix_clock_open(struct inode *inode, struct file *fp)
-> +{
-> +	struct posix_clock *clk =
-> +		container_of(inode->i_cdev, struct posix_clock, cdev);
-> +
-> +	kref_get(&clk->kref);
-> +	fp->private_data = clk;
-
-fp->private_data should only be set on success. And this will leak a
-ref count when the clock open function fails.
-
-What's that kref protecting here ?
-
-> +
-> +	if (clk->ops->fops.open)
-> +		return clk->ops->fops.open(clk->priv, fp->f_mode);
-> +	else
-> +		return 0;
-> +}
-> +
-> +static int posix_clock_release(struct inode *inode, struct file *fp)
-> +{
-> +	struct posix_clock *clk = fp->private_data;
-> +	int err = 0;
-
-fp->private_data should be set to NULL in the release function.
-
-> +	if (clk->ops->fops.release)
-> +		err = clk->ops->fops.release(clk->priv);
-> +
-> +	kref_put(&clk->kref, delete_clock);
-
-> +struct posix_clock *posix_clock_create(struct posix_clock_operations *cops,
-> +				       dev_t devid, void *priv)
-> +{
-> +	struct posix_clock *clk;
-> +	int err;
-> +
-> +	mutex_lock(&clocks_mutex);
-> +
-> +	err = -ENOMEM;
-> +	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-> +	if (!clk)
-> +		goto no_memory;
-> +
-> +	err = -EBUSY;
-> +	clk->index = find_first_zero_bit(clocks_map, MAX_CLKDEV);
-> +	if (clk->index < MAX_CLKDEV)
-> +		set_bit(clk->index, clocks_map);
-> +	else
-> +		goto no_index;
-
-	if (clk->index >= MAX_CLKDEV)
-		goto no_index;
-
-	set_bit(clk->index, clocks_map);
-
-Makes it better readable.
-
-> +static void delete_clock(struct kref *kref)
-> +{
-> +	struct posix_clock *clk =
-> +		container_of(kref, struct posix_clock, kref);
-> +
-> +	mutex_lock(&clocks_mutex);
-> +	clear_bit(clk->index, clocks_map);
-> +	mutex_unlock(&clocks_mutex);
-> +
-> +	mutex_destroy(&clk->mux);
-> +	kfree(clk);
-> +}
-> +
-> +void posix_clock_destroy(struct posix_clock *clk)
-> +{
-> +	cdev_del(&clk->cdev);
-> +
-> +	mutex_lock(&clk->mux);
-> +	clk->zombie = true;
-> +	mutex_unlock(&clk->mux);
-> +
-> +	kref_put(&clk->kref, delete_clock);
-
-I still have some headache to understand that kref / delete_clock
-magic here.
+That's not enough.  Please also specify hibernation callbacks as documented
+in Documentation/power/devices.txt (they can point to the same routines as the
+suspend/resume ones).
 
 Thanks,
+Rafael
 
-	tglx
+
+> +
+>  static struct platform_driver cmos_platform_driver = {
+>  	.remove		= __exit_p(cmos_platform_remove),
+>  	.shutdown	= cmos_platform_shutdown,
+>  	.driver = {
+>  		.name		= (char *) driver_name,
+> -		.suspend	= cmos_suspend,
+> -		.resume		= cmos_resume,
+> +		.pm = &cmos_pm_ops,
+>  	}
+>  };
+>  
+> 
+
