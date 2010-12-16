@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0LPDfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 22:35:20 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:8943 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0LPDfR (ORCPT
+	id S1756016Ab0LPDhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 22:37:39 -0500
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:43847 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751401Ab0LPDhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 22:35:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:newsgroups:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=aAb6ZOWw/X0A9hTVv2jeARjdu1U/B9IO4gwwqSZ9b8PUf48PqdevEWF5faMc9yj+Dp
-         2Sli6EcIttio++osD/KA==
-Message-ID: <4D0988E9.2000808@google.com>
-Date: Wed, 15 Dec 2010 19:35:05 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 15 Dec 2010 22:37:36 -0500
+Date: Thu, 16 Dec 2010 14:37:18 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Jon Nelson <jnelson@jamponi.net>, Mike Snitzer <snitzer@redhat.com>,
+        Matt <jackdachef@gmail.com>, Milan Broz <mbroz@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, htejun <htejun@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: hunt for 2.6.37 dm-crypt+ext4 corruption? (was: Re: dm-crypt
+ barrier support is effective)
+Message-ID: <20101216033718.GM9925@dastard>
+References: <AANLkTikOXjh+D25=7Mzwn7bFN+a9xQSimPHs22q4o2TK@mail.gmail.com>
+ <1291747731-sup-3099@think>
+ <AANLkTin-Bvq9bNgarZGZhbK_2EONdu8x-qaLCLFcc1F_@mail.gmail.com>
+ <1291751698-sup-9297@think>
+ <AANLkTin79GzUbfuZNKyTtqcyoUSO9AJimO77_ZOvqggH@mail.gmail.com>
+ <1291754340-sup-1631@think>
+ <AANLkTim8uCmFK=LjkMmq_1O0KE3AiN_7g41AO0woxMv7@mail.gmail.com>
+ <1291755258-sup-8760@think>
+ <AANLkTi=OC9Z68U-j8s6vfU-_-6tkg5W7aUz9HEupidX9@mail.gmail.com>
+ <1291810586-sup-8211@think>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 2/2] sched: charge unaccounted run-time on entity re-weight
-References: <20101216031016.186364650@google.com> <20101216031038.159704378@google.com>
-In-Reply-To: <20101216031038.159704378@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1291810586-sup-8211@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hum -- forgot to refresh mbx file, slightly cleaner version (we can 
-still charge unaccounted time against our queuing cfs_rq).
+On Wed, Dec 08, 2010 at 07:20:24AM -0500, Chris Mason wrote:
+> Excerpts from Jon Nelson's message of 2010-12-07 22:29:26 -0500:
+> > On Tue, Dec 7, 2010 at 3:02 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> > > Excerpts from Jon Nelson's message of 2010-12-07 15:48:58 -0500:
+> > >> On Tue, Dec 7, 2010 at 2:41 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> > >> > Excerpts from Jon Nelson's message of 2010-12-07 15:25:47 -0500:
+> > >> >> On Tue, Dec 7, 2010 at 2:02 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> > >> >> > Excerpts from Jon Nelson's message of 2010-12-07 14:34:40 -0500:
+> > >> >> >> On Tue, Dec 7, 2010 at 12:52 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> > >> >> >> >> postgresql errors. Typically, header corruption but from the limited
+> > >> >> >> >> visibility I've had into this via strace, what I see is zeroed pages
+> > >> >> >> >> where there shouldn't be.
+> > >> >> >> >
+> > >> >> >> > This sounds a lot like a bug higher up than dm-crypt.  Zeros tend to
+> > >> >> >> > come from some piece of code explicitly filling a page with zeros, and
+> > >> >> >> > that often happens in the corner cases for O_DIRECT and a few other
+> > >> >> >> > places in the filesystem.
+> > >> >> >> >
+> > >> >> >> > Have you tried triggering this with a regular block device?
+> > >> >> >>
+> > >> >> >> I just tried the whole set of tests, but with /dev/sdb directly (as
+> > >> >> >> ext4) without any crypt-y bits.
+> > >> >> >> It takes more iterations but out of 6 tests I had one failure: same
+> > >> >> >> type of thing, 'invalid page header in block ....'.
+> > >> >> >>
+> > >> >> >> I can't guarantee that it is a full-page of zeroes, just what I saw
+> > >> >> >> from the (limited) stracing I did.
+> > >> >> >
+> > >> >> > Fantastic. Now for our usual suspects:
+> > 
+> > Maybe not so fantastic. I kept testing and had no more failures. At
+> > all. After 40+ iterations I gave up.
+> > I went back to trying ext4 on a LUKS volume. The 'hit' ratio went to
+> > something like 1 in 3, or better.
+> > 
+> > I will continue to do testing with and without LUKS. I did /not/
+> > reboot between tests, but I do start with a fresh postgres database.
+> > 
+> 
+> Once we trigger once without dm-crypt, dm-crypt is off the hook.  Just
+> to verify, when you say without luks, you mean without any crypto bits
+> in use at all on the filesystems postgres uses?
+> 
+> Usually the trick to reproducing filesystem corruptions is adding memory
+> pressure.  The corruption is probably a bad interaction between reads
+> and writes, and we need to make sure the reads actually happen.
+> 
+> http://oss.oracle.com/~mason/pin_ram.c
+> 
+> gcc -Wall -o pin_ram pin_ram.c
+> 
+> pin_ram -m 80%-of-your-ram-in-mb
 
-- Paul
+Implemented in xfstests about 10 years ago:
 
------
+http://git.kernel.org/?p=fs/xfs/xfstests-dev.git;a=blob;f=src/usemem.c;h=b8794a6b209cebf8dbf312a8ef131e2e54b18d29;hb=HEAD
 
-sched: move periodic share updates to entity_tick()
+:P
 
-Long running entities that do not block (dequeue) require periodic 
-updates to
-maintain accurate share values.  (Note: group entities with several 
-threads are
-quite likely to be non-blocking in many circumstances).
+Cheers,
 
-By virtue of being long-running however, we will see entity ticks 
-(otherwise
-the required update occurs in dequeue/put and we are done).  Thus we can 
-move
-the detection (and associated work) for these updates into the periodic 
-path.
-
-This restores the 'atomicity' of update_curr() with respect to accounting.
-
-Signed-off-by: Paul Turner <pjt@google.com>
-
----
-  kernel/sched_fair.c |   21 +++++++++++++++++----
-  1 file changed, 17 insertions(+), 4 deletions(-)
-
-Index: tip3/kernel/sched_fair.c
-===================================================================
---- tip3.orig/kernel/sched_fair.c
-+++ tip3/kernel/sched_fair.c
-@@ -564,11 +564,8 @@ __update_curr(struct cfs_rq *cfs_rq, str
-
-  #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
-  	cfs_rq->load_unacc_exec_time += delta_exec;
--	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
--		update_cfs_load(cfs_rq, 0);
--		update_cfs_shares(cfs_rq, 0);
--	}
-  #endif
-  }
-
-  static void update_curr(struct cfs_rq *cfs_rq)
-@@ -809,6 +806,15 @@ static void update_cfs_shares(struct cfs
-
-  	reweight_entity(cfs_rq_of(se), se, shares);
-  }
-+
-+static void update_cfs_rq_shares_tick(struct cfs_rq *cfs_rq)
-+{
-+	/* rate limit updates by the averaging window */
-+	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
-+		update_cfs_load(cfs_rq, 0);
-+		update_cfs_shares(cfs_rq, 0);
-+	}
-+}
-  #else /* CONFIG_FAIR_GROUP_SCHED */
-  static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
-  {
-@@ -1133,6 +1139,13 @@ entity_tick(struct cfs_rq *cfs_rq, struc
-  	 */
-  	update_curr(cfs_rq);
-
-+#if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
-+	/*
-+	 * Update share accounting for long-running entities.
-+	 */
-+	update_cfs_rq_shares_tick(cfs_rq);
-+#endif
-+
-  #ifdef CONFIG_SCHED_HRTICK
-  	/*
-  	 * queued ticks are scheduled to match the slice, so don't bother
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
