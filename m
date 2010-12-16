@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab0LPNfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 08:35:10 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:60549 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab0LPNfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 08:35:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 0/9] TI DMM-TILER driver
-Date: Thu, 16 Dec 2010 14:34:05 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Sin <davidsin@ti.com>, Greg KH <greg@kroah.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-References: <1291674446-10766-1-git-send-email-davidsin@ti.com>
-In-Reply-To: <1291674446-10766-1-git-send-email-davidsin@ti.com>
+	id S1756039Ab0LPNq3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 08:46:29 -0500
+Received: from mx04.teleca.com ([212.92.145.6]:37844 "EHLO mx04.teleca.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857Ab0LPNq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 08:46:26 -0500
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2010 08:46:26 EST
+Message-ID: <4D0A16F9.9000503@nokia.com>
+Date: Thu, 16 Dec 2010 16:41:13 +0300
+From: Roman Borisov <ext-roman.borisov@nokia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: ext Eric Sandeen <sandeen@redhat.com>, jack@suse.cz
+CC: Aaro Koskinen <aaro.koskinen@nokia.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ext-phil.2.carmody@nokia.com
+Subject: Re: [PATCH] ext4: fix typo in ext4_find_entry()
+References: <1291826002-24989-1-git-send-email-aaro.koskinen@nokia.com> <4CFFC609.1090506@redhat.com>
+In-Reply-To: <4CFFC609.1090506@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012161434.05768.arnd@arndb.de>
-X-Provags-ID: V02:K0:uI4KS6nsLxD0Rh2bgHCOjVxVf2oQ8qufvltO72BIJQ8
- ++L7QME2UsrArlps09tCL5KY8Cg9pRKOW9tkiLEbJ5iVcRCKnM
- Jo2kaEY4Evop6Ooyp4BXc+8uX18PMZ8uwumyhV0WeinDQW4kF1
- DA41Y30iLZ9yoHwM+QR2+0d4HgKe2sDv2rQ7Ov6fDA58LWjeIA
- 5YMdb6BKuCBoFdaWNTSjQ==
+X-OriginalArrivalTime: 16 Dec 2010 13:38:03.0063 (UTC) FILETIME=[7661CC70:01CB9D26]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 06 December 2010, David Sin wrote:
-> Tiling and Isometric Lightweight Engine for Rotation (TILER) driver
-> =====
-> 
-> Dynamic Memory Manager (DMM) is a hardware block made by Texas Instruments.
-> Within the DMM exists at least one TILER hardware component.  Its purpose is to
-> organize video/image memory in a 2-dimensional fashion to limit memory
-> bandwidth and facilitate 0 effort rotation and mirroring.  The TILER driver
-> facilitates allocating, freeing, as well as mapping 2D blocks (areas) in the
-> TILER container(s).  It also facilitates rotating and mirroring the allocated
-> blocks or its rectangular subsections.
+On 12/08/2010 08:53 PM, ext Eric Sandeen wrote:
+> On 12/08/2010 10:33 AM, Aaro Koskinen wrote:
+>> There should be a check for NUL character instead of '0'.
+>>
+>> Reported-by: Phil Carmody<ext-phil.2.carmody@nokia.com>
+>> Signed-off-by: Aaro Koskinen<aaro.koskinen@nokia.com>
+>> ---
+>>   fs/ext4/namei.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+>> index 92203b8..dc40e75 100644
+>> --- a/fs/ext4/namei.c
+>> +++ b/fs/ext4/namei.c
+>> @@ -872,7 +872,7 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
+>>   	if (namelen>  EXT4_NAME_LEN)
+>>   		return NULL;
+>>   	if ((namelen<= 2)&&  (name[0] == '.')&&
+>> -	    (name[1] == '.' || name[1] == '0')) {
+>> +	    (name[1] == '.' || name[1] == '\0')) {
+>>   		/*
+>>   		 * "." or ".." will only be in the first block
+>>   		 * NFS may look up ".."; "." should be handled by the VFS
+>
+> Yep, as it was reviewed on the list when originally sent, oops! ;)
+>
+> -Eric
 
-How does this relate to DRM/GEM? I don't understand too much about graphics
-drivers, but it does sound like there is some overlap in functionality.
+Hi,
 
-I guess at the very least the DMM should live in drivers/gpu/ instead of
-drivers/misc, but perhaps it could be integrated more closely with the
-existing code there.
+the same fix should be done for ext3 patch which is planned to be in 
+mainline: http://www.spinics.net/lists/linux-ext4/msg21215.html
 
-	Arnd
+Roman
