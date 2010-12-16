@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0LPGCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 01:02:55 -0500
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:37891 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab0LPGCr (ORCPT
+	id S1752561Ab0LPGJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 01:09:48 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41393 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0LPGJo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 01:02:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=eoJ
-	iK+AWCzR0oBUcrlJoIweCE9En1gp0qHnS4qw/aEdKF8jeaVt371pzoD2F+qwCKvM
-	52bvL5YFay0gnrp1i2ffmrMXF0jkrd2AEmWkbLxQkSdU2/J4BqjNxc1uIGkMQwi3
-	nSOtPQoSE7PPrFCOiAXiFcLiWQOpJEBEni4cll6w=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.3.4, 1.6.6.3 and others
-From: Junio C Hamano <gitster@pobox.com>
-Date: Wed, 15 Dec 2010 22:02:35 -0800
-Message-ID: <7v8vzqntl0.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 16 Dec 2010 01:09:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 27699A1A-08DA-11E0-8124-C4BE9B774584-77302942!a-pb-sasl-sd.pobox.com
+X-Originating-IP: [192.163.20.231]
+In-Reply-To: <AANLkTimewUbJMax-pv+-JSdnbNZvOU8yTVGV-T+BJBo1@mail.gmail.com>
+References: <1290763257-12382-1-git-send-email-pavan_savoy@ti.com>
+	<20101130154654.GE5919@vigoh>
+	<AANLkTiktDkjFH=aGbu3f+mkVUgmFDwB6xLW3e1VNXKtz@mail.gmail.com>
+	<20101206212326.GI883@vigoh>
+	<AANLkTimJiHhkwb-0PQqc6n3wJwx2WPterQqMCXqzce8z@mail.gmail.com>
+	<AANLkTimewUbJMax-pv+-JSdnbNZvOU8yTVGV-T+BJBo1@mail.gmail.com>
+Date: Thu, 16 Dec 2010 11:39:43 +0530
+Message-ID: <AANLkTi=o8JSViqwa=95EOQONZhnTxY9R9zizoLK14ADD@mail.gmail.com>
+Subject: Re: [PATCH v7] Bluetooth: btwilink driver
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>, marcel@holtmann.org
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.3.4 is available at the
-usual places:
+On Thu, Dec 9, 2010 at 1:17 PM, Pavan Savoy <pavan_savoy@sify.com> wrote:
+> Gustavo,
+>
+> On Tue, Dec 7, 2010 at 3:05 AM, Vitaly Wool <vitalywool@gmail.com> wrote:
+>> Hi Gustavo,
+>>
+>> On Mon, Dec 6, 2010 at 10:23 PM, Gustavo F. Padovan
+>> <padovan@profusion.mobi> wrote:
+>>
+>>> Can't you differentiate Bluetooth data in a generic way, withou looking if it
+>>> is ACL, SCO or HCI EVENT? That done, you can just accumulate in a buffer all
+>>> the Bluetooth data you received in that stream then send it to Bluetooth
+>>> driver after finish that stream processing.
+>>
+>> I'm afraid he can't do this because he needs to route events to the
+>> appropriate entity (BT/FM/GPS). I'm not sure how it can be done
+>> without analyzing the incoming packet.
+>
+> Think of TI-ST driver as a extension to the HCI-H4 driver or HCI-LL
+> with FM and GPS being the additional protocols, and more protocols
+> coming in future...
+> So some driver has to have a knowledge of the protocols which are on chip.
+> the basic arch can be found @ http://omappedia.org/wiki/Wilink_ST
 
-  http://www.kernel.org/pub/software/scm/git/
+Gustavo, Marcel,
 
-  git-1.7.3.4.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.3.4.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.3.4.tar.{gz,bz2}		(preformatted docs)
+Any suggestion to this?
+Is including net/bluetooth headers a problem?
+and is this a big blocking factor to try and push it to mainline?
 
-The RPM binary packages for a few architectures are found in:
+I know it would be a dumb question, but do you want me to redeclare
+the ACL, SCO and Event headers structures?
+All I need is the off-set of the structure where the payload length resides....
 
-  RPMS/$arch/git-*-1.7.3.4-1.fc13.$arch.rpm	(RPM)
+Please suggest ...
 
-Among many fixes since v1.7.3.3, it contains a fix to a recently
-discovered XSS vulnerability in Gitweb (CVE 2010-3906).  A backport
-to an earlier maintenance track 1.6.6.3 is available (replace 1.7.3.4 with
-1.6.6.3 above).
+regards,
+Pavan
 
-The Gitweb fix has also been backported to maintenance tracks of other
-earlier releases (1.7.2.5, 1.7.1.4, 1.7.0.9, 1.6.5.9, and 1.6.4.5) and are
-available from the main repository and shortly will be available from its
-mirrors:
-
-  git://git.kernel.org/pub/scm/git/git.git/
-  git://repo.or.cz/alt-git.git/
-  git://git-core.git.sourceforge.net/gitroot/git-core/git-core/
-  git://github.com/git/git.git/
-
-----------------------------------------------------------------
-
-Git v1.7.3.4 Release Notes
-==========================
-
-Fixes since v1.7.3.3
---------------------
-
- * Smart HTTP transport used to incorrectly retry redirected POST
-   request with GET request.
-
- * "git apply" did not correctly handle patches that only change modes
-   if told to apply while stripping leading paths with -p option.
-
- * "git apply" can deal with patches with timezone formatted with a
-   colon between the hours and minutes part (e.g. "-08:00" instead of
-   "-0800").
-
- * "git checkout" removed an untracked file "foo" from the working
-   tree when switching to a branch that contains a tracked path
-   "foo/bar".  Prevent this, just like the case where the conflicting
-   path were "foo" (c752e7f..7980872d).
-
- * "git cherry-pick" or "git revert" refused to work when a path that
-   would be modified by the operation was stat-dirty without a real
-   difference in the contents of the file.
-
- * "git diff --check" reported an incorrect line number for added
-   blank lines at the end of file.
-
- * "git imap-send" failed to build under NO_OPENSSL.
-
- * Setting log.decorate configuration variable to "0" or "1" to mean
-   "false" or "true" did not work.
-
- * "git push" over dumb HTTP protocol did not work against WebDAV
-   servers that did not terminate a collection name with a slash.
-
- * "git tag -v" did not work with GPG signatures in rfc1991 mode.
-
- * The post-receive-email sample hook was accidentally broken in 1.7.3.3
-   update.
-
- * "gitweb" can sometimes be tricked into parrotting a filename argument
-   given in a request without properly quoting.
-
-Other minor fixes and documentation updates are also included.
+> As Vitaly rightly pointed out, the TI-ST driver needs to peek into all
+> the protocol's data be it BT, FM or GPS to assemble fragmented data
+> (say ACL data coming out of TTY in 2 fragments) or fragment multiple
+> protocol data (say HCI-Event + FM Channel 8 event data)....
+> Note: we include even the FM and GPS headers to understand protocol
+> frames, but they lack a standard unlike Bluetooth...
+>
+> Since there lacks a generic way to differentiate BT, FM or GPS data at
+> TI-ST driver layer,  please suggest what can be done ...
+>
+>
+>> Thanks,
+>>   Vitaly
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
