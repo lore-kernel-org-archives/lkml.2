@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab0LPVor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 16:44:47 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59828 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab0LPVop (ORCPT
+	id S1757535Ab0LPVu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 16:50:27 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43295 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab0LPVu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 16:44:45 -0500
-Date: Thu, 16 Dec 2010 21:44:20 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jeff Ohlstein <johlstei@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        Arve =?utf-8?B?SGrvv71ubmV277+9Zw==?= <arve@android.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Subject: Re: [PATCH v5 5/5] msm: add SMP support for msm
-Message-ID: <20101216214420.GX9937@n2100.arm.linux.org.uk>
-References: <1292482456-22690-1-git-send-email-johlstei@codeaurora.org> <1292482456-22690-6-git-send-email-johlstei@codeaurora.org>
+	Thu, 16 Dec 2010 16:50:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:user-agent:mime-version
+         :content-type;
+        b=JkuiBYxqDnLniRGOoykZusVvtOkLLBOneEmA+wm10c6eIZjdvJ1zLhsph4V6AQb8hV
+         sckIdkXTeXN02gWpfpHp8274a0D/KigP6wzsrmR5IcC3TwP1vK+NUi4XgT6K3ccUAf6t
+         XUHiQ3haKGN6zMor7n8N+rFAusW6b75MddRNQ=
+From: Francis Moreau <francis.moro@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Why not making tools/* git submodules ?
+Date: Thu, 16 Dec 2010 22:50:21 +0100
+Message-ID: <m27hf9crqa.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292482456-22690-6-git-send-email-johlstei@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 10:54:16PM -0800, Jeff Ohlstein wrote:
-> +void __cpuinit platform_secondary_init(unsigned int cpu)
-> +{
-> +	/* Configure edge-triggered PPIs */
-> +	writel(GIC_PPI_EDGE_MASK, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
+Hello,
 
-At some point we should really clean this up so we don't have code
-writing directly to the GIC registers like this.
+I'm just wondering if all tools could be tracked using git submodule.
 
-> +static __init void prepare_cold_cpu(unsigned int cpu)
-> +{
-> +	int ret;
-> +	ret = scm_set_boot_addr((void *)
-> +				virt_to_phys(msm_secondary_startup),
+That would allow the tools to have their own tags at least.
 
-It seems wrong to cast a physical address to a pointer - physical
-addresses should not be pointer-like.  Can it stay as an integer?
-
+Thanks
+-- 
+Francis
