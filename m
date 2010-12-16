@@ -1,84 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0LPMdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:33:55 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36508 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab0LPMdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:33:53 -0500
-Date: Thu, 16 Dec 2010 12:33:33 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Provide a PEBS capable cycle event
-Message-ID: <tip-7639dae0ca11038286bbbcda05f2bef601c1eb8d@git.kernel.org>
-Git-Commit-ID: 7639dae0ca11038286bbbcda05f2bef601c1eb8d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755698Ab0LPMxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:53:17 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50352 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753875Ab0LPMxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 07:53:13 -0500
+Date: Thu, 16 Dec 2010 12:24:28 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Brandon Leong <bleong@codeaurora.org>
+Cc: lrg@slimlogic.co.uk, dwalker@codeaurora.org, davidb@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] regulator: debugfs: Adding debugfs functions into
+ regulator framework
+Message-ID: <20101216122428.GA19211@rakim.wolfsonmicro.main>
+References: <1292464145-14204-1-git-send-email-bleong@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 12:33:33 +0000 (UTC)
+In-Reply-To: <1292464145-14204-1-git-send-email-bleong@codeaurora.org>
+X-Cookie: VMS must die!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7639dae0ca11038286bbbcda05f2bef601c1eb8d
-Gitweb:     http://git.kernel.org/tip/7639dae0ca11038286bbbcda05f2bef601c1eb8d
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 14 Dec 2010 21:26:40 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 16 Dec 2010 11:36:44 +0100
+On Wed, Dec 15, 2010 at 05:49:05PM -0800, Brandon Leong wrote:
 
-perf, x86: Provide a PEBS capable cycle event
+I just noticed that you only posted this to the MSM kernel list -
+please always post generic patches to the relevant generic list, lkml in
+this case.  I've CCed lkml.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event_intel.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+> Allow the user to read and edit regulator information in user space
+> through the debugfs file system.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c8f5c08..24e390e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -816,6 +816,32 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
- 
-+	if (event->attr.precise_ip &&
-+	    (event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
-+		/*
-+		 * Use an alternative encoding for CPU_CLK_UNHALTED.THREAD_P
-+		 * (0x003c) so that we can use it with PEBS.
-+		 *
-+		 * The regular CPU_CLK_UNHALTED.THREAD_P event (0x003c) isn't
-+		 * PEBS capable. However we can use INST_RETIRED.ANY_P
-+		 * (0x00c0), which is a PEBS capable event, to get the same
-+		 * count.
-+		 *
-+		 * INST_RETIRED.ANY_P counts the number of cycles that retires
-+		 * CNTMASK instructions. By setting CNTMASK to a value (16)
-+		 * larger than the maximum number of instructions that can be
-+		 * retired per cycle (4) and then inverting the condition, we
-+		 * count all cycles that retire 16 or less instructions, which
-+		 * is every cycle.
-+		 *
-+		 * Thereby we gain a PEBS capable cycle counter.
-+		 */
-+		u64 alt_config = 0x108000c0; /* INST_RETIRED.TOTAL_CYCLES */
-+
-+		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
-+		event->hw.config = alt_config;
-+	}
-+
- 	if (event->attr.type != PERF_TYPE_RAW)
- 		return 0;
- 
+> Signed-off-by: Brandon Leong <bleong@codeaurora.org>
+> ---
+> Dynamic allocation of buffer added for debugfs.
+> Cleaned up error messages and stylistic errors.
+> Clean-up function created.
+
+Quoting my reply to your previous version:
+
+| Basically what you're doing here is providing a default consumer via
+| debugfs along with the consumers that have been defined by the board.
+| On the one hand it's good that this means that we won't let the user
+| change anything unless it has been explicitly enabled, on the other hand
+| it means that we've not really added anything that you can't do already
+| with the virtual consumer except made it slightly more convenient to set
+| up and give it a different interface.
+
+| This makes me a bit nervous, especially given that the regulator API is
+| mostly used in embedded systems where things like debugfs not being a
+| production API don't entirely count for much.  It feels like it
+| encourages people to write random userspace code which prods and pokes
+| at the regulators directly without any form of mediation and without
+| suggesting that perhaps they ought to be doing something a bit nicer.
+
+| I can see some useful debug facilities we could add using debugfs.  For
+| example, it'd be good to expose more of the dynamic structures the API
+| has like the consumers, their reference counts and the voltages they
+| have requested.  Showing the voltage lists could also be nice.  This is
+| all peering inside the API to provide additional insight to the user,
+| though, rather than something layered on top of the API as this is.
+
+| If we do want to go this way it'd be good to have more discussion in the
+| changelog about what we're adding here, what it gives us, how it should
+| be used and how it compares with the existing approaches.  Given the
+| similarities with the virtual consumer I am inclined to wonder why we'd
+| want to reimplement the actual user visible API bit.
+
+Please engage with the above - it feels rather like you've ignoring it.
+I'm not completely against a debugfs interface but we do need to
+consider how this fits in with both the existing debug facilities and
+the need to avoid having random userspace code just going in and
+fiddling with stuff directly.
+
+Some more specific comments on the code, but please don't post any
+updated patches without discussing the above:
+
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) "%s: " fmt, __func__
+> +
+
+Hrm?  If this is needed we shouldn't be adding it in the regulator API
+with a name like that, and we probably ought to be doing something with
+the rdev_ variants.
+
+> +#ifdef CONFIG_DEBUG_FS
+> +
+> +#define INIT_DEBUG_BUF_SIZE 20
+> +
+> +/* debug_buf_resize: dynamically resizes debug_buffer as needed */
+> +static char *debug_buf_resize(struct regulator_debug *reg_debug, int bufsize)
+> +{
+> +	if (bufsize <= reg_debug->debug_buffer_len)
+> +		return reg_debug->debug_buffer;
+> +
+> +	kfree(reg_debug->debug_buffer);
+> +
+> +	reg_debug->debug_buffer = kmalloc(bufsize, GFP_KERNEL);
+> +	reg_debug->debug_buffer_len = bufsize;
+> +
+> +	return reg_debug->debug_buffer;
+> +}
+
+This seems more trouble than it's worth - why not just allocate and free
+the buffer as needed?  If we're doing enough of this for it to be worth
+avoding the allocations it seems we're doing something wrong.
+
+> +static int reg_debug_enable_set(void *data, u64 val)
+> +{
+> +	int err_info = 0;
+> +	struct regulator_debug *reg_debug = data;
+> +
+> +	BUG_ON(data == NULL);
+> +
+> +	if (val && !(reg_debug->enabled))
+> +		err_info = regulator_enable(reg_debug->reg);
+> +	else if (!val && (reg_debug->enabled))
+> +		err_info = regulator_disable(reg_debug->reg);
+> +	else if (val && (reg_debug->enabled))
+> +		pr_err("regulator_enable has already been called for this regulator\n");
+> +	else
+> +		pr_err("regulator_disable has already been called for this regulator\n");
+
+This feels like an awkward halfway house between a debug facility and a
+proper consumer - it interacts with the refcounting real consumers do
+but tries to work directly with the actual hardware state.  You end up
+not being able to do multiple enables if you want to but with disable
+only decremeting the refcount so possibly needing to be iterated
+multiple times.
+
+Either this should be a real consumer and make sure it balances its own
+enables and disables or it should be a diagnostic facility for the
+reference counts and the hardware state should be reported separately.
+This all ties in with the overall comments at the top...
+
+> +	/* check that user entered two integers */
+> +	if (filled < 2 || min < 0 || max < min) {
+> +		pr_info("Error, correct format: 'echo \"min max\" > voltage\n");
+> +		return -ENOMEM;
+> +	} else
+> +		err_info = regulator_set_voltage(reg_debug->reg, min, max);
+
+It'd be more friendly to accept a single voltage and DTRT with it as
+well.
+
+> +static int reg_debug_mode_set(void *data, u64 val)
+> +{
+> +	int err_info;
+> +	struct regulator_debug *reg_debug = data;
+> +
+> +	BUG_ON(data == NULL);
+> +
+> +	err_info = regulator_set_mode(reg_debug->reg, (unsigned int)val);
+> +
+> +	if (err_info < 0)
+> +		pr_err("regulator_set_mode returned error: %d\n", err_info);
+
+Taking strings would be much nicer here, and...
+
+> +static int reg_debug_mode_get(void *data, u64 *val)
+> +{
+> +	int err_info;
+> +	struct regulator_debug *reg_debug = data;
+> +
+> +	BUG_ON(data == NULL);
+> +
+> +	err_info = regulator_get_mode(reg_debug->reg);
+> +
+> +	if (err_info < 0) {
+> +		pr_err("Regulator_get_mode returned error: %d\n", err_info);
+> +	} else {
+> +		*val = err_info;
+
+...displaying them here also.  Even more friendly would be showing the
+set of available modes.
+
+> +/**
+> + * regulator_debug_create_directory - Creates debugfs directories and files
+> + *					for each regulator
+
+This doesn't need kerneldoc, it's not an exported API so shouldn't end
+up in the generated documentation (so no /** only /* at the start of the
+comment).
+
+> +       if (reg_ops->get_voltage)
+> +               mode |= S_IRUGO;
+> +       if (reg_ops->set_voltage)
+> +               mode |= S_IWUSR;
+
+This needs refreshing against -next at a minimum.
