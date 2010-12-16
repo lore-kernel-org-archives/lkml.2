@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0LPU22 (ORCPT <rfc822;w@1wt.eu>);
+	id S1756409Ab0LPU2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 15:28:32 -0500
+Received: from kroah.org ([198.145.64.141]:47293 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756318Ab0LPU22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Dec 2010 15:28:28 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55807
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756100Ab0LPU21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 15:28:27 -0500
-Date: Thu, 16 Dec 2010 12:28:55 -0800 (PST)
-Message-Id: <20101216.122855.48497491.davem@davemloft.net>
-To: avagin@openvz.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: delete expired route in ip6_pmtu_deliver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1292116811-22216-1-git-send-email-avagin@openvz.org>
-References: <1292116811-22216-1-git-send-email-avagin@openvz.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Date: Thu, 16 Dec 2010 12:24:33 -0800
+From: Greg KH <greg@kroah.com>
+To: pavan_savoy@ti.com
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, padovan@profusion.mobi,
+        marcel@holtmann.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers:staging: ti-st: remove bt_drv
+Message-ID: <20101216202433.GA25948@kroah.com>
+References: <1292328400-7649-1-git-send-email-pavan_savoy@ti.com>
+ <1292328400-7649-2-git-send-email-pavan_savoy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292328400-7649-2-git-send-email-pavan_savoy@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Vagin <avagin@openvz.org>
-Date: Sun, 12 Dec 2010 04:20:11 +0300
+On Tue, Dec 14, 2010 at 06:06:39AM -0600, pavan_savoy@ti.com wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> 
+> Remove the BT driver from the staging folder.
+> This is to update the staging folder with the
+> latest BT driver.
+> 
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> ---
+>  drivers/staging/ti-st/Kconfig   |   14 -
 
-> The first big packets sent to a "low-MTU" client correctly
-> triggers the creation of a temporary route containing the reduced MTU.
-> 
-> But after the temporary route has expired, new ICMP6 "packet too big"
-> will be sent, rt6_pmtu_discovery will find the previous EXPIRED route
-> check that its mtu isn't bigger then in icmp packet and do nothing
-> before the temporary route will not deleted by gc.
-> 
-> I make the simple experiment:
-> while :; do
->     time ( dd if=/dev/zero bs=10K count=1 | ssh hostname dd of=/dev/null ) || break;
-> done
-> 
-> The "time" reports real 0m0.197s if a temporary route isn't expired, but
-> it reports real 0m52.837s (!!!!) immediately after a temporare route has
-> expired.
-> 
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Deleting this file will break the build at this patch, right?  Care to
+just make it empty instead and then add the needed data to it in the
+next patch?
 
-Applied and queued up for -stable, thanks.
+thanks,
+
+greg k-h
