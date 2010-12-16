@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab0LPR4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 12:56:12 -0500
-Received: from www.tglx.de ([62.245.132.106]:56794 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752284Ab0LPR4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 12:56:09 -0500
-Date: Thu, 16 Dec 2010 18:55:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH V7 2/8] posix clocks: introduce a syscall for clock
- tuning.
-In-Reply-To: <a93ce18c2987f7e102bc2ff5b12130211c222ea7.1292512461.git.richard.cochran@omicron.at>
-Message-ID: <alpine.LFD.2.00.1012161848190.12146@localhost6.localdomain6>
-References: <cover.1292512461.git.richard.cochran@omicron.at> <a93ce18c2987f7e102bc2ff5b12130211c222ea7.1292512461.git.richard.cochran@omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756172Ab0LPR4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 12:56:49 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36386
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752284Ab0LPR4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 12:56:47 -0500
+Date: Thu, 16 Dec 2010 09:57:16 -0800 (PST)
+Message-Id: <20101216.095716.71123831.davem@davemloft.net>
+To: bharrosh@panasas.com
+Cc: npiggin@gmail.com, hooanon05@yahoo.co.jp, npiggin@kernel.dk,
+        torvalds@linux-foundation.org, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D09E185.2040600@panasas.com>
+References: <4D08BF5D.1060509@panasas.com>
+	<20101215.100055.226772943.davem@davemloft.net>
+	<4D09E185.2040600@panasas.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010, Richard Cochran wrote:
+From: Boaz Harrosh <bharrosh@panasas.com>
+Date: Thu, 16 Dec 2010 11:53:09 +0200
 
-> A new syscall is introduced that allows tuning of a POSIX clock. The
-> syscall is implemented for four architectures: arm, blackfin, powerpc,
-> and x86.
+> You miss understood me. I'm saying that we know the beggining of the
+> string is aligned and Nick offered to pad the last long, so surly
+> a shift by 2 (or 3) + the reduction of the 12 dec-and-test to 3
+> should give you an optimization?
 
-Can you please split that patch into one providing the syscall itself
-and for each architecture a separate one ?
-
-Looks good otherwise.
-
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Indeed, we could do something interesting in the case where both
+strings are tail padded like that.
