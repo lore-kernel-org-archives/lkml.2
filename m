@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0LPRif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 12:38:35 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:47020 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756854Ab0LPRic (ORCPT
+	id S1756934Ab0LPRiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 12:38:46 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:4745 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756907Ab0LPRim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 12:38:32 -0500
-Subject: [PATCH 3/9] Revert "x86/PCI: allocate space from the end of a region,
-	not the beginning"
+	Thu, 16 Dec 2010 12:38:42 -0500
+Subject: [PATCH 5/9] Revert "resources: support allocating space within a
+	region from the top down"
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -16,8 +16,8 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-Date: Thu, 16 Dec 2010 10:38:31 -0700
-Message-ID: <20101216173830.8185.85826.stgit@bob.kio>
+Date: Thu, 16 Dec 2010 10:38:41 -0700
+Message-ID: <20101216173841.8185.20660.stgit@bob.kio>
 In-Reply-To: <20101216173614.8185.19462.stgit@bob.kio>
 References: <20101216173614.8185.19462.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -29,45 +29,188 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This reverts commit dc9887dc02e37bcf83f4e792aa14b07782ef54cf.
+This reverts commit e7f8567db9a7f6b3151b0b275e245c1cef0d9c70.
 
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- arch/x86/pci/i386.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+ Documentation/kernel-parameters.txt |    5 --
+ include/linux/ioport.h              |    1 
+ kernel/resource.c                   |   98 +----------------------------------
+ 3 files changed, 4 insertions(+), 100 deletions(-)
 
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index c4bb261..8379c2c 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -65,21 +65,16 @@ pcibios_align_resource(void *data, const struct resource *res,
- 			resource_size_t size, resource_size_t align)
- {
- 	struct pci_dev *dev = data;
--	resource_size_t start = round_down(res->end - size + 1, align);
-+	resource_size_t start = res->start;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index cdd2a6e..8b61c93 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2175,11 +2175,6 @@ and is between 256 and 4096 characters. It is defined in the file
+ 	reset_devices	[KNL] Force drivers to reset the underlying device
+ 			during initialization.
  
- 	if (res->flags & IORESOURCE_IO) {
+-	resource_alloc_from_bottom
+-			Allocate new resources from the beginning of available
+-			space, not the end.  If you need to use this, please
+-			report a bug.
 -
--		/*
--		 * If we're avoiding ISA aliases, the largest contiguous I/O
--		 * port space is 256 bytes.  Clearing bits 9 and 10 preserves
--		 * all 256-byte and smaller alignments, so the result will
--		 * still be correctly aligned.
--		 */
--		if (!skip_isa_ioresource_align(dev))
--			start &= ~0x300;
-+		if (skip_isa_ioresource_align(dev))
-+			return start;
-+		if (start & 0x300)
-+			start = (start + 0x3ff) & ~0x3ff;
- 	} else if (res->flags & IORESOURCE_MEM) {
- 		if (start < BIOS_END)
--			start = res->end;	/* fail; no space */
-+			start = BIOS_END;
- 	}
- 	return start;
+ 	resume=		[SWSUSP]
+ 			Specify the partition device for software suspend
+ 
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index d377ea8..b227902 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -112,7 +112,6 @@ struct resource_list {
+ /* PC/ISA/whatever - the normal PC address spaces: IO and memory */
+ extern struct resource ioport_resource;
+ extern struct resource iomem_resource;
+-extern int resource_alloc_from_bottom;
+ 
+ extern struct resource *request_resource_conflict(struct resource *root, struct resource *new);
+ extern int request_resource(struct resource *root, struct resource *new);
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 9fad33e..560659f 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -40,23 +40,6 @@ EXPORT_SYMBOL(iomem_resource);
+ 
+ static DEFINE_RWLOCK(resource_lock);
+ 
+-/*
+- * By default, we allocate free space bottom-up.  The architecture can request
+- * top-down by clearing this flag.  The user can override the architecture's
+- * choice with the "resource_alloc_from_bottom" kernel boot option, but that
+- * should only be a debugging tool.
+- */
+-int resource_alloc_from_bottom = 1;
+-
+-static __init int setup_alloc_from_bottom(char *s)
+-{
+-	printk(KERN_INFO
+-	       "resource: allocating from bottom-up; please report a bug\n");
+-	resource_alloc_from_bottom = 1;
+-	return 0;
+-}
+-early_param("resource_alloc_from_bottom", setup_alloc_from_bottom);
+-
+ static void *r_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+ 	struct resource *p = v;
+@@ -397,74 +380,7 @@ static bool resource_contains(struct resource *res1, struct resource *res2)
  }
+ 
+ /*
+- * Find the resource before "child" in the sibling list of "root" children.
+- */
+-static struct resource *find_sibling_prev(struct resource *root, struct resource *child)
+-{
+-	struct resource *this;
+-
+-	for (this = root->child; this; this = this->sibling)
+-		if (this->sibling == child)
+-			return this;
+-
+-	return NULL;
+-}
+-
+-/*
+- * Find empty slot in the resource tree given range and alignment.
+- * This version allocates from the end of the root resource first.
+- */
+-static int find_resource_from_top(struct resource *root, struct resource *new,
+-				  resource_size_t size, resource_size_t min,
+-				  resource_size_t max, resource_size_t align,
+-				  resource_size_t (*alignf)(void *,
+-						   const struct resource *,
+-						   resource_size_t,
+-						   resource_size_t),
+-				  void *alignf_data)
+-{
+-	struct resource *this;
+-	struct resource tmp, avail, alloc;
+-
+-	tmp.start = root->end;
+-	tmp.end = root->end;
+-
+-	this = find_sibling_prev(root, NULL);
+-	for (;;) {
+-		if (this) {
+-			if (this->end < root->end)
+-				tmp.start = this->end + 1;
+-		} else
+-			tmp.start = root->start;
+-
+-		resource_clip(&tmp, min, max);
+-
+-		/* Check for overflow after ALIGN() */
+-		avail = *new;
+-		avail.start = ALIGN(tmp.start, align);
+-		avail.end = tmp.end;
+-		if (avail.start >= tmp.start) {
+-			alloc.start = alignf(alignf_data, &avail, size, align);
+-			alloc.end = alloc.start + size - 1;
+-			if (resource_contains(&avail, &alloc)) {
+-				new->start = alloc.start;
+-				new->end = alloc.end;
+-				return 0;
+-			}
+-		}
+-
+-		if (!this || this->start == root->start)
+-			break;
+-
+-		tmp.end = this->start - 1;
+-		this = find_sibling_prev(root, this);
+-	}
+-	return -EBUSY;
+-}
+-
+-/*
+  * Find empty slot in the resource tree given range and alignment.
+- * This version allocates from the beginning of the root resource first.
+  */
+ static int find_resource(struct resource *root, struct resource *new,
+ 			 resource_size_t size, resource_size_t min,
+@@ -480,15 +396,14 @@ static int find_resource(struct resource *root, struct resource *new,
+ 
+ 	tmp.start = root->start;
+ 	/*
+-	 * Skip past an allocated resource that starts at 0, since the
+-	 * assignment of this->start - 1 to tmp->end below would cause an
+-	 * underflow.
++	 * Skip past an allocated resource that starts at 0, since the assignment
++	 * of this->start - 1 to tmp->end below would cause an underflow.
+ 	 */
+ 	if (this && this->start == 0) {
+ 		tmp.start = this->end + 1;
+ 		this = this->sibling;
+ 	}
+-	for (;;) {
++	for(;;) {
+ 		if (this)
+ 			tmp.end = this->start - 1;
+ 		else
+@@ -509,10 +424,8 @@ static int find_resource(struct resource *root, struct resource *new,
+ 				return 0;
+ 			}
+ 		}
+-
+ 		if (!this)
+ 			break;
+-
+ 		tmp.start = this->end + 1;
+ 		this = this->sibling;
+ 	}
+@@ -545,10 +458,7 @@ int allocate_resource(struct resource *root, struct resource *new,
+ 		alignf = simple_align_resource;
+ 
+ 	write_lock(&resource_lock);
+-	if (resource_alloc_from_bottom)
+-		err = find_resource(root, new, size, min, max, align, alignf, alignf_data);
+-	else
+-		err = find_resource_from_top(root, new, size, min, max, align, alignf, alignf_data);
++	err = find_resource(root, new, size, min, max, align, alignf, alignf_data);
+ 	if (err >= 0 && __request_resource(root, new))
+ 		err = -EBUSY;
+ 	write_unlock(&resource_lock);
 
