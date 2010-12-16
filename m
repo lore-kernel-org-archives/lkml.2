@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab0LPRZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 12:25:33 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:48116 "EHLO e4.ny.us.ibm.com"
+	id S1756802Ab0LPR0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 12:26:03 -0500
+Received: from mail.perches.com ([173.55.12.10]:2709 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756764Ab0LPRZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 12:25:28 -0500
-Date: Thu, 16 Dec 2010 07:50:54 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Mariusz Kozlowski <mk@lab.zgora.pl>, Dipankar Sarma <dipankar@in.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rculist: fix borked __list_for_each_rcu() macro
-Message-ID: <20101216155054.GB2203@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1292451072-5095-1-git-send-email-mk@lab.zgora.pl>
- <20101215232005.GB6595@linux.vnet.ibm.com>
- <20101216060236.GB4826@mako-laptop>
- <20101216073840.GA5313@cr0.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101216073840.GA5313@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1756575Ab0LPR0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 12:26:00 -0500
+Subject: [PATCH] checkpatch.pl: Add "prefer __packed" check
+From: Joe Perches <joe@perches.com>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-wireless@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101216152121.GB2413@tuxdriver.com>
+References: <1292510088-7449-1-git-send-email-linville@tuxdriver.com>
+	 <4D0A2AA8.5060808@lwfinger.net>  <20101216152121.GB2413@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 Dec 2010 09:25:58 -0800
+Message-ID: <1292520358.29894.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 03:38:40PM +0800, Américo Wang wrote:
-> On Thu, Dec 16, 2010 at 07:02:36AM +0100, Mariusz Kozlowski wrote:
-> >On Wed, Dec 15, 2010 at 03:20:05PM -0800, Paul E. McKenney wrote:
-> >> On Wed, Dec 15, 2010 at 11:11:12PM +0100, Mariusz Kozlowski wrote:
-> >> > This restores parentheses blance.
-> >> 
-> >> Good catch, queued!!!
-> >> 
-> >> This does not actually appear to be in use anywhere in the kernel any
-> >> more, so I queued this for 2.6.38 rather than in the 2.6.37 urgent queue.
-> >> So, just out of curiosity, how did you find this one?
-> >
-> >Some years ago I wrote a dumb script that walks trees of () and {}.
-> >It catches unbalanced trees. It's dumb enough to fail with #ifdef etc,
-> >but most of the time it does its job. It reaches unreachable code
-> >and unused one too.
+There's a __packed #define for this __attribute__((packed)).
+Might as well get checkpatch to tell people about it.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+
+---
+
+On Thu, 2010-12-16 at 10:21 -0500, John W. Linville wrote:
+> On Thu, Dec 16, 2010 at 09:05:12AM -0600, Larry Finger wrote:
+> > On 12/16/2010 08:34 AM, John W. Linville wrote:
+> > > Use "__packed" instead of "__attribute__ ((packed))"...
+> > As a point of interest, is this the "new" recommended way? The reason I ask is
+> > that the Linux headers are mostly in the attribute form.
+> AIUI, "__packed" is the one true way.  I think this facilitates
+> compiling the kernel with compilers other than GCC.
 > 
-> gcc will complain about this, however, in this case, it is used.
+> At any rate, Dave Miller threatened to injure me if I kept sending him stuff using 
+> "__attribute__ ((packed))"... :-)
 
-Hello, Américo!
+ scripts/checkpatch.pl |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-I did a "git grep -l __list_for_each_rcu" and its output was only:
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e3c7fc0..6fc24af 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2743,6 +2743,11 @@ sub process {
+ 			WARN("plain inline is preferred over $1\n" . $herecurr);
+ 		}
+ 
++# Check for __attribute__ packed, prefer __packed
++		if ($line =~ /\b__attribute__\s*\(\s*\(.*\bpacked\b/) {
++			WARN("__packed is preferred over __attribute__((packed))\n" . $herecurr);
++		}
++
+ # check for sizeof(&)
+ 		if ($line =~ /\bsizeof\s*\(\s*\&/) {
+ 			WARN("sizeof(& should be avoided\n" . $herecurr);
 
-	include/linux/rculist.h:#define __list_for_each_rcu(pos, head) \
 
-This was in Linus's tree.  And gcc certainly would have failed if
-this macro had been used in any recent build.
 
-It really was used some time back, but it appears to me that those
-uses no longer exist.
-
-Or are you saying that you have a patch on its way in that needs
-this macro?  If so, please point me at it.
-
-							Thanx, Paul
