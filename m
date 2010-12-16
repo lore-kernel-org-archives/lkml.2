@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab0LPC67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 21:58:59 -0500
-Received: from hera.kernel.org ([140.211.167.34]:52700 "EHLO hera.kernel.org"
+	id S1755946Ab0LPDBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 22:01:31 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:49863 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755148Ab0LPC65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 21:58:57 -0500
-Date: Thu, 16 Dec 2010 02:58:41 GMT
-From: tip-bot for Andres Salomon <dilinger@queued.net>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20101129153951.74202a84@queued.net>
-References: <20101129153951.74202a84@queued.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/olpc] x86, olpc: Speed up device tree creation during boot
-Message-ID: <tip-b5318d302f8a20eacbbfc01b0ee35b108085a363@git.kernel.org>
-Git-Commit-ID: b5318d302f8a20eacbbfc01b0ee35b108085a363
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 16 Dec 2010 02:58:41 +0000 (UTC)
+	id S1755284Ab0LPDBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 22:01:30 -0500
+Date: Thu, 16 Dec 2010 14:01:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bob Liu <lliubbo@gmail.com>, Mike Frysinger <vapier.adi@gmail.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: linux-next: manual merge of the usb tree with Linus' tree
+Message-Id: <20101216140122.ca745f1f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__16_Dec_2010_14_01_22_+1100_WH_lfQTTF8NR3q1/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b5318d302f8a20eacbbfc01b0ee35b108085a363
-Gitweb:     http://git.kernel.org/tip/b5318d302f8a20eacbbfc01b0ee35b108085a363
-Author:     Andres Salomon <dilinger@queued.net>
-AuthorDate: Mon, 29 Nov 2010 23:39:51 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 15 Dec 2010 17:11:40 -0800
+--Signature=_Thu__16_Dec_2010_14_01_22_+1100_WH_lfQTTF8NR3q1/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86, olpc: Speed up device tree creation during boot
+Hi Greg,
 
-Calling alloc_bootmem() for tiny chunks of memory over and over is really
-slow; on an XO-1, it caused the time between when the kernel started
-booting and when the display came alive (post-lxfb probe) to increase
-to 44s.  This patch optimizes the prom_early_alloc function by
-calling alloc_bootmem for 4k-sized blocks of memory, and handing out
-chunks of that to callers.  With this patch, the time between kernel load
-and display initialization decreased to 23s.  If there's a better way to
-do this early in the boot process, please let me know.
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/musb/blackfin.c drivers/usb/musb/musb_core.c
+drivers/usb/musb/musb_core.h between commit
+1e393c6eece048052d4131ec4dad3b98e35a98e2 ("USB: musb: blackfin: pm: make
+it work") from Linus' tree (v2.6.37-rc2) and various commits from the usb
+tree.
 
-(Note: increasing the chunk size to 16k didn't noticably affect boot time,
-and wasted 9k.)
+It was not immediately obvious how to fix these up, so I just used the
+versions from the usb tree.  This may not be correct and it would be good
+if this was fixed properly in the usb tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-v4: clarify comment, requested by hpa
-v3: fix wasted memory buglet found by Milton Miller, and style fix.
-v2: reorder prom_early_alloc as suggested by Grant.
+--Signature=_Thu__16_Dec_2010_14_01_22_+1100_WH_lfQTTF8NR3q1/
+Content-Type: application/pgp-signature
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-LKML-Reference: <20101129153951.74202a84@queued.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/olpc/olpc_dt.c |   28 +++++++++++++++++++++++-----
- 1 files changed, 23 insertions(+), 5 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
-index 7054697..dab8746 100644
---- a/arch/x86/platform/olpc/olpc_dt.c
-+++ b/arch/x86/platform/olpc/olpc_dt.c
-@@ -126,14 +126,32 @@ static unsigned int prom_early_allocated __initdata;
- 
- void * __init prom_early_alloc(unsigned long size)
- {
-+	static u8 *mem;
-+	static size_t free_mem;
- 	void *res;
- 
--	res = alloc_bootmem(size);
--	if (res)
--		memset(res, 0, size);
--
--	prom_early_allocated += size;
-+	if (free_mem < size) {
-+		const size_t chunk_size = max(PAGE_SIZE, size);
-+
-+		/*
-+		 * To mimimize the number of allocations, grab at least
-+		 * PAGE_SIZE of memory (that's an arbitrary choice that's
-+		 * fast enough on the platforms we care about while minimizing
-+		 * wasted bootmem) and hand off chunks of it to callers.
-+		 */
-+		res = alloc_bootmem(chunk_size);
-+		if (!res)
-+			return NULL;
-+		prom_early_allocated += chunk_size;
-+		memset(res, 0, chunk_size);
-+		free_mem = chunk_size;
-+		mem = res;
-+	}
- 
-+	/* allocate from the local cache */
-+	free_mem -= size;
-+	res = mem;
-+	mem += size;
- 	return res;
- }
- 
+iQEcBAEBAgAGBQJNCYECAAoJEDMEi1NhKgbscIYH/jscsxlLjzhjvND+qOAOJACS
++KJfR4GEGn9UqMSTOAjTP/qsU+jcM5cdqplgizfDRYjTvWhn2ZmCyNlCLyQ4sX5l
+6t9D1hpLthPBBWBga4sI+UfKYaO02xHCsjoUv1mWsGGvGycwITWAjrldF3tN5avH
+IdDWjBXsGyvHDGn+F/H7PXFsCG3usk+ID3zp/dB62+7P7TWEDmpf8nUCCAiGSh3x
+9opuKRRKN8yOyI7SCaJW4TVFMp4zV5h/BdzCwe4gqo+HUt2jpw9s+Biu8X1W+RH0
+CCv2otZyNRnOUemOeVjujzVdSXXBwGw5AoEQII6w0Mi5u48weN5hV9JNwA+Is7c=
+=C0xv
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_Dec_2010_14_01_22_+1100_WH_lfQTTF8NR3q1/--
