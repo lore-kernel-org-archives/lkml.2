@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab0LPUm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 15:42:59 -0500
-Received: from mail-iw0-f194.google.com ([209.85.214.194]:41906 "EHLO
-	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab0LPUm6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 15:42:58 -0500
+	id S1757337Ab0LPUnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 15:43:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53689 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757256Ab0LPUnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 15:43:06 -0500
+Message-ID: <4D0A799F.4060408@zytor.com>
+Date: Thu, 16 Dec 2010 12:42:07 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-X-Originating-IP: [46.116.87.10]
-In-Reply-To: <AANLkTi=q=QMQ_Abxb8eUWT_qGG8K=pc892ZB-mqgt_mh@mail.gmail.com>
-References: <1291420247-18171-1-git-send-email-ohad@wizery.com>
- <AANLkTin1fd=Kei7Fo6G+uR+270HdTkc71fvsA6qjBjcA@mail.gmail.com>
- <20101214170656.GA3832@kroah.com> <AANLkTi=q=QMQ_Abxb8eUWT_qGG8K=pc892ZB-mqgt_mh@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 16 Dec 2010 22:42:37 +0200
-Message-ID: <AANLkTi=JUxc+eOTAkFFjEXoqQEaXgyT7n6qtxW-7MzRv@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] Introduce hardware spinlock framework
-To: Greg KH <greg@kroah.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <htejun@gmail.com>
+CC: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 5/5] cpuops: Use cmpxchg for xchg to avoid
+ lock semantics
+References: <20101214162842.542421046@linux.com>  <20101214162855.392020353@linux.com> <1292345072.5934.32.camel@edumazet-laptop> <alpine.DEB.2.00.1012141055220.17229@router.home> <4D07A2B7.8080405@zytor.com> <alpine.DEB.2.00.1012141109470.17229@router.home> <4D07A7CB.7010205@zytor.com> <4D07A95C.7030703@kernel.org> <4D0814AF.7080209@zytor.com> <4D08ECEF.3040909@kernel.org> <4D08EE57.8010602@zytor.com> <4D08EF4E.8070403@kernel.org> <4D0A3AF2.50508@gmail.com>
+In-Reply-To: <4D0A3AF2.50508@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 8:40 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Tue, Dec 14, 2010 at 7:06 PM, Greg KH <greg@kroah.com> wrote:
->>  Like the most important one, why is this generic code if
->>  it's only for one specific platform?
->
-> We started out with an omap-specific driver, but Tony preferred that we
-> make this a platform-agnostic framework, in order to keep the IPC drivers that
-> will use it generic, and assuming that more users will show up for
-> such framework.
+On 12/16/2010 08:14 AM, Tejun Heo wrote:
+> Hey, again.
+> 
+> On 12/15/2010 05:39 PM, Tejun Heo wrote:
+>> I'd prefer percpu things going through percpu tree, if for nothing
+>> else for git history's sake, but I don't think it really matters.  The
+>> series is spread all over the place anyway.  As long as each
+>> maintainer is properly alerted about the changes, it should be okay.
+>> Please let me know whether you agree with the changes currently queued
+>> in percpu#for-next.  I'll update the tree with your Acked-by's and
+>> freeze it.
+> 
+> Are you okay with the patches currently in percpu#for-next?  If so,
+> I'll regenerate patches with your acked-by and pop the two previously
+> mentioned commits and proceed with the rest of the series.
+> 
 
-I was just told about additional users for this (thanks Mugdha):
+Just finished reviewing the patches in percpu#for-next.
 
-1) There are several platforms (such as omap3530 and omapl1xx) that
-have no such hardware support, but would still need to use the same
-IPC drivers (to communicate with their DSP).
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-The only way to achieve mutual exclusion on those platforms is by
-using a shared-memory synchronization algorithm called Peterson's
-Algorithm [1]. We would still need the same hwspinlock framework for
-that - the busy looping, the timeout, the various locking schemes, the
-resource allocation - are all still valid. The only difference is the
-actual lock implementation.
+Look good.  Let me know when you have a baseline I can pull into a tip
+branch so we can build the rest of the patches on top.
 
-2) The C6474, which is a multi-core DSP device [2], have Linux running
-on one of its cores, and would be using the same IPC drivers, too.
-C6474 has hardware support for synchronization, which would also
-benefit from such hwspinlock module (btw the C6474 has a richer
-hardware module that would need more than the hwspinlock framework
-offer today - it also supports queuing, owner semantics and interrupt
-notification to let a processor know when it acquires a lock, so it
-wouldn't have to spin..)
-
-Thanks,
-Ohad.
-
-[1] http://en.wikipedia.org/wiki/Peterson's_algorithm
-[2] http://focus.ti.com/docs/prod/folders/print/tms320c6474.html
-
-> To me it sounds reasonable, but both ways (framework / omap-specific
-> driver) will work for us just fine, and I can switch back to a misc
-> driver if this is preferred.
->
-> The complete discussion of v1 is at:
-> http://comments.gmane.org/gmane.linux.kernel/1049802
->
-> We also discussed this at v2 of the patches with David, see the
-> complete discussion at:
-> http://comments.gmane.org/gmane.linux.kernel/1067016
->
-> Thanks,
-> Ohad.
->
->>
->> thanks,
->>
->> greg k-h
->>
->
+	-hpa
