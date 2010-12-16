@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab0LPMFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 07:05:55 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:45987 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab0LPMFy (ORCPT
+	id S1753200Ab0LPMIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 07:08:11 -0500
+Received: from mail-zbox20.bo3.lycos.com ([209.202.250.20]:53933 "EHLO
+	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab0LPMII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 07:05:54 -0500
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: miklos@szeredi.hu, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-reply-to: <20101216100744.e3a417cf.kamezawa.hiroyu@jp.fujitsu.com> (message
-	from KAMEZAWA Hiroyuki on Thu, 16 Dec 2010 10:07:44 +0900)
-Subject: Re: [PATCH] mm: add replace_page_cache_page() function
-References: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu> <20101216100744.e3a417cf.kamezawa.hiroyu@jp.fujitsu.com>
-Message-Id: <E1PTCae-0007tw-Un@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 16 Dec 2010 13:05:44 +0100
+	Thu, 16 Dec 2010 07:08:08 -0500
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2010 07:08:07 EST
+Date: Thu, 16 Dec 2010 07:01:00 -0500 (EST)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <24521908.25611292500860563.JavaMail.root@mail-zbox20.bo3.lycos.com>
+In-Reply-To: <24924451.25361292500548699.JavaMail.root@mail-zbox20.bo3.lycos.com>
+Subject: 2.6.37-rc6: a few "unmet direct dependencies" errors/warnings while
+ doing `make oldconfig`
+MIME-Version: 1.0
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_356_7339598.1292500860561"
+X-Originating-IP: [94.50.178.1]
+X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010, KAMEZAWA Hiroyuki wrote:
-> On Wed, 15 Dec 2010 16:49:58 +0100
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > From: Miklos Szeredi <mszeredi@suse.cz>
-> > 
-> > This function basically does:
-> > 
-> >      remove_from_page_cache(old);
-> >      page_cache_release(old);
-> >      add_to_page_cache_locked(new);
-> > 
-> > Except it does this atomically, so there's no possibility for the
-> > "add" to fail because of a race.
-> > 
-> > This is used by fuse to move pages into the page cache.
-> > 
-> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> > ---
-> >  fs/fuse/dev.c           |   10 ++++------
-> >  include/linux/pagemap.h |    1 +
-> >  mm/filemap.c            |   41 +++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 46 insertions(+), 6 deletions(-)
-> > 
-> > Index: linux-2.6/mm/filemap.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/filemap.c	2010-12-15 16:39:55.000000000 +0100
-> > +++ linux-2.6/mm/filemap.c	2010-12-15 16:41:24.000000000 +0100
-> > @@ -389,6 +389,47 @@ int filemap_write_and_wait_range(struct
-> >  }
-> >  EXPORT_SYMBOL(filemap_write_and_wait_range);
-> >  
-> > +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
-> > +{
-> > +	int error;
-> > +
-> > +	VM_BUG_ON(!PageLocked(old));
-> > +	VM_BUG_ON(!PageLocked(new));
-> > +	VM_BUG_ON(new->mapping);
-> > +
-> > +	error = mem_cgroup_cache_charge(new, current->mm,
-> > +					gfp_mask & GFP_RECLAIM_MASK);
-> 
-> Hmm, then, the page will be recharged to "current" instead of the memcg
-> where "old" was under control. Is this design ? If so, why ?
+------=_Part_356_7339598.1292500860561
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 
-No, I just haven't thought about it.
+Hello,
 
-Porbably charging "new" to where "old" was charged is the logical
-thing to do here.
+While I was answering the questions of "make oldconfig" I discovered
+a few errors/warnings in Kconfig.
 
-> 
-> In mm/migrate.c, following is called.
-> 
-> 	 charge = mem_cgroup_prepare_migration(page, newpage, &mem);
-> 	....do migration....
->         if (!charge)
->                 mem_cgroup_end_migration(mem, page, newpage);
-> 
-> BTW, off topic, in fuse/dev.c
-> 
-> add_to_page_cache_locked(page)
+Please, see the attached text file for details.
 
-This is the call which the above patch replaces with
-replace_page_cache_page().  So if I fix replace_page_cache_page() to
-charge "newpage" to the correct memory cgroup, that should solve all
-problems, no?
+Best wishes,
 
-Thanks for the review.
+Artem
 
-Miklos
+
+------=_Part_356_7339598.1292500860561
+Content-Type: application/octet-stream; name=make.oldconfig
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename=make.oldconfig
+
+choice[1]: 1
+warning: (STUB_POULSBO && HAS_IOMEM && PCI && ACPI || FB_BACKLIGHT && HAS_I=
+OMEM && FB || DRM_I915 && <choice> && AGP_INTEL && ACPI || PANEL_SHARP_LS03=
+7V7DW01 && HAS_IOMEM && OMAP2_DSS || PANEL_ACX565AKM && HAS_IOMEM && OMAP2_=
+DSS && OMAP2_DSS_SDI && SPI || USB_APPLEDISPLAY && USB_SUPPORT && USB || AS=
+US_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACPI && !ACPI_ASUS && INPUT && =
+(RFKILL || RFKILL=3Dn) || SONY_LAPTOP && X86 && X86_PLATFORM_DEVICES && ACP=
+I && INPUT && RFKILL || THINKPAD_ACPI && X86 && X86_PLATFORM_DEVICES && ACP=
+I && INPUT && (RFKILL || RFKILL=3Dn) || EEEPC_LAPTOP && X86 && X86_PLATFORM=
+_DEVICES && ACPI && INPUT && EXPERIMENTAL && (RFKILL || RFKILL=3Dn) && HOTP=
+LUG_PCI || ACPI_ASUS && X86 && X86_PLATFORM_DEVICES && ACPI || ACPI_CMPC &&=
+ X86_PLATFORM_DEVICES && X86 && ACPI && (RFKILL || RFKILL=3Dn)) selects BAC=
+KLIGHT_CLASS_DEVICE which has unmet direct dependencies (HAS_IOMEM && BACKL=
+IGHT_LCD_SUPPORT)
+warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI) selects LPC=
+_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI)
+warning: (I2C_ISCH && I2C && PCI || GPIO_SCH && GPIOLIB && PCI || GPIO_VX85=
+5 && GPIOLIB || GPIO_RDC321X && PCI && GPIOLIB || MFD_88PM860X && MFD_SUPPO=
+RT && I2C=3Dy && GENERIC_HARDIRQS || MFD_ASIC3 && MFD_SUPPORT && GENERIC_HA=
+RDIRQS && GPIOLIB && ARM || MFD_SH_MOBILE_SDHI && MFD_SUPPORT && (SUPERH ||=
+ ARCH_SHMOBILE) || MFD_DAVINCI_VOICECODEC && MFD_SUPPORT || HTC_PASIC3 && M=
+FD_SUPPORT || TPS6507X && MFD_SUPPORT && I2C || TWL4030_CODEC && MFD_SUPPOR=
+T && TWL4030_CORE || MFD_STMPE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQ=
+S || MFD_TC35892 && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_T7L66=
+XB && MFD_SUPPORT && ARM && HAVE_CLK || MFD_TC6387XB && MFD_SUPPORT && ARM =
+&& HAVE_CLK || MFD_TC6393XB && MFD_SUPPORT && GPIOLIB && ARM || MFD_MAX8925=
+ && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MAX8998 && MFD_SUPPOR=
+T && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM8400 && MFD_SUPPORT && I2C || MFD=
+_WM831X_I2C && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_WM831X_SPI=
+ && MFD_SUPPORT && SPI_MASTER && GENERIC_HARDIRQS || MFD_WM8994 && MFD_SUPP=
+ORT && I2C=3Dy && GENERIC_HARDIRQS || MFD_MC13XXX && MFD_SUPPORT && SPI_MAS=
+TER || AB3100_CORE && MFD_SUPPORT && I2C=3Dy && ABX500_CORE || AB8500_CORE =
+&& MFD_SUPPORT && GENERIC_HARDIRQS && ABX500_CORE && SPI_MASTER && ARCH_U85=
+00 || AB3550_CORE && MFD_SUPPORT && I2C=3Dy && GENERIC_HARDIRQS && ABX500_C=
+ORE || MFD_TIMBERDALE && MFD_SUPPORT && PCI && GPIOLIB || LPC_SCH && MFD_SU=
+PPORT && PCI || MFD_RDC321X && MFD_SUPPORT && PCI || MFD_JANZ_CMODIO && MFD=
+_SUPPORT && PCI || MFD_JZ4740_ADC && MFD_SUPPORT && MACH_JZ4740 || MFD_TPS6=
+586X && MFD_SUPPORT && I2C=3Dy && GPIOLIB && GENERIC_HARDIRQS || MFD_VX855 =
+&& MFD_SUPPORT && PCI) selects MFD_CORE which has unmet direct dependencies=
+ (MFD_SUPPORT)
+#
+# configuration written to .config
+#
+
+
+------=_Part_356_7339598.1292500860561--
