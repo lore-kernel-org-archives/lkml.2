@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab0LPW4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 17:56:18 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:28226 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab0LPW4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 17:56:16 -0500
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 6/9] resources: add arch hook for preventing allocation in reserved areas
-Date: Thu, 16 Dec 2010 15:56:06 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Adam Belay <abelay@mit.edu>
-References: <20101216173614.8185.19462.stgit@bob.kio> <20101216173846.8185.82045.stgit@bob.kio> <AANLkTindCiEeHDhDJhc9o-iZHvts2d1QnH2CxmDtgb6=@mail.gmail.com>
-In-Reply-To: <AANLkTindCiEeHDhDJhc9o-iZHvts2d1QnH2CxmDtgb6=@mail.gmail.com>
+	id S1752578Ab0LPW5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 17:57:18 -0500
+Received: from [80.69.43.34] ([80.69.43.34]:40158 "EHLO imap.vp5.hinterhof.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751608Ab0LPW5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 17:57:17 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2010 17:57:17 EST
+Message-ID: <4D0A97B3.2090701@vozeler.com>
+Date: Thu, 16 Dec 2010 23:50:27 +0100
+From: Max Vozeler <max@vozeler.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101110 Icedove/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012161556.07868.bjorn.helgaas@hp.com>
+To: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+CC: gregkh <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>, usbip-devel@lists.sourceforge.net
+Subject: Re: usbip: somtimes stalls at kernel_recvmsg()
+References: <4D06A004.8070502@freemail.hu> <4D09C056.5020305@freemail.hu>
+In-Reply-To: <4D09C056.5020305@freemail.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 16, 2010 03:03:21 pm Linus Torvalds wrote:
-> On Thu, Dec 16, 2010 at 9:38 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> >
-> > This adds arch_remove_reservations(), which an arch can implement if it
-> > needs to protect part of the address space from allocation.
+Hi Németh,
+
+On 16.12.2010 08:31, Németh Márton wrote:
+> Németh Márton wrote:
+>> I'm working with usbip and I sometimes see a stall when I run
+>> the "lsusb" command from the userspace. 
+
+Does it eventually recover?
+
+>> I added some debug messages
+>> and it seems that the kernel_recvmsg() in
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/staging/usbip/usbip_common.c;h=210ef16bab8d271a52e5d36cd1994aad57ad99e1;hb=HEAD
+>>
+>> This is the only place I could find where the TCP messages are arriving in
+>> the usbip code.
+>>
+>> What happens if a message does not arrive? Does it stall forever? 
+
+Yes, it will block until detached or until a TCP
+timeout or error closes the connection.
+
+The TCP timeout can take several minutes.
+
+>> yes, how can the kernel_recvmsg() call changed to handle some timeout?
 > 
-> Oh, I just realized - we've had gcc (or maybe "as") bugs when the weak
-> symbol is in the same compilation unit as the caller, and some part of
-> the toolchain just ends up short-circuiting it (either gcc inlines it,
-> or maybe it was that as resolves it early). Making the "weak" part not
-> work, because it binds strongly.
-> 
-> It may be that we don't support those gcc versions any more, but I
-> thought I'd bring the issue up. It's safer to put the weak functions
-> in some other file if possible.
+> I found that the userspace manpage of recvmsg(2) ("man recvmsg") contains description
+> of the "flags" parameter. I suppose the parameters and behaviour of the userspace
+> recvmsg() is the same as the kernelspace kernel_recvmsg().
 
-I'd be glad to repost and do that if necessary.  Does anybody
-know for sure if it is?
+I recently faced this problem, too.
 
-I did find these cases where we have a weak symbol definition in
-the same file as the caller, as well as another version elsewhere,
-so maybe those toolchains are indeed no longer supported?
+The solution I arrived at was to set SO_RCVTIMEO
+and SO_SNDTIMEO socket opts in the tools together
+with the patch below.
 
-  arch_disable_smp_support()
-    defined and called in init/main.c (used for "nosmp" arg)
-    also defined in arch/x86/kernel/apic/io_apic.c
+The patch works around a lack of heart-beat in 
+the usbip protocol which would otherwise make idle
+connections time out.
 
-  smp_setup_processor_id()
-    defined and called in init/main.c
-    also defined in arch/s390/kernel/smp.c
-    also defined in arch/sparc/kernel/smp_64.c
+(It wont apply cleanly but hopefully conveys the idea.).
 
-  arch_enable_nonboot_cpus_begin()
-    defined and called in kernel/cpu.c
-    also defined in arch/x86/kernel/smpboot.c
+Extending the protocol for a heart-beat message
+doesn't seem to be possible without breaking the
+compatibility at the same time.
 
-  arch_irq_work_raise()
-    defined and called in kernel/irq_work.c
-    also defined in arch/sparc/kernel/pcr.c
-    also defined in arch/x86/kernel/irq_work.c
+I was planning to submit it on the weekend along 
+with the tool changes to set the timeouts. 
 
-  arch_jump_label_text_poke_early()
-    defined and called in kernel/jump_label.c
-    also defined in arch/sparc/kernel/jump_label.c
-    also defined in arch/x86/kernel/jump_label.c
+	Max
 
-  arch_deref_entry_point()
-    defined and called in kernel/kprobes.c
-    also defined in arch/ia64/kernel/kprobes.c
-    also defined in arch/powerpc/kernel/kprobes.c
+---
+From: Max Vozeler <max@vozeler.com>
+Date: Mon, 13 Dec 2010 00:39:14 +0100
+Subject: [PATCH 1/3] vhci: allow SO_RCVTIMEO on the socket
 
-  arch_scale_smt_power()
-    defined and called in kernel/sched_fair.c
-    also defined in arch/x86/kernel/cpu/sched.c
+In case of unanswered replies, a receive timeout is
+considered a connection error and the device will be
+shut down and removed.
 
-  memblock_nid_range()
-    defined and called in mm/memblock.c
-    also defined in arch/sparc/mm/init_64.c
+This is a workaround for the lack of heart-beat
+messages in the USBIP protocol. It allows userspace
+to set a maximum latency for the connection.
+---
+ vhci_rx.c |   21 ++++++++++++++++++++-
+ 1 files changed, 20 insertions(+), 1 deletions(-)
 
-If this toolchain bug is still a problem, I would think all of the
-above would be defects, so my guess is that we don't have to worry
-about it any more.
+diff --git a/vhci_rx.c b/vhci_rx.c
+index bc16dc4..9a1fe80 100644
+--- a/vhci_rx.c
++++ b/vhci_rx.c
+@@ -197,6 +197,19 @@ static void vhci_recv_ret_unlink(struct vhci_device *vdev,
+ 	return;
+ }
+ 
++static int vhci_priv_tx_empty(struct vhci_device *vdev)
++{
++	int empty = 0;
++
++	spin_lock(&vdev->priv_lock);
++
++	empty = list_empty(&vdev->priv_rx);
++
++	spin_unlock(&vdev->priv_lock);
++
++	return empty;
++}
++
+ /* recv a pdu */
+ static void vhci_rx_pdu(struct usbip_device *ud)
+ {
+@@ -216,8 +229,14 @@ static void vhci_rx_pdu(struct usbip_device *ud)
+ 			usbip_uinfo("connection reset by peer\n");
+ 		else if (ret == -ETIMEDOUT)
+ 			usbip_uinfo("connection timed out\n");
+-		else if (ret != -ERESTARTSYS)
++		else if (ret == -EAGAIN) {
++			/* connection was idle? */
++			if (vhci_priv_tx_empty(vdev))
++				return;
++			usbip_uinfo("connection timed out with pending urbs\n");
++		} else if (ret != -ERESTARTSYS)
+ 			usbip_uinfo("xmit failed %d\n", ret);
++
+ 		usbip_event_add(ud, VDEV_EVENT_ERROR_TCP);
+ 		return;
+ 	}
+-- 
+1.7.2.3
 
-Bjorn
