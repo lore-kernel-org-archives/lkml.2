@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0LPNq3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 08:46:29 -0500
-Received: from mx04.teleca.com ([212.92.145.6]:37844 "EHLO mx04.teleca.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab0LPNq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 08:46:26 -0500
-X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2010 08:46:26 EST
-Message-ID: <4D0A16F9.9000503@nokia.com>
-Date: Thu, 16 Dec 2010 16:41:13 +0300
-From: Roman Borisov <ext-roman.borisov@nokia.com>
+	id S1756028Ab0LPNtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 08:49:15 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51792 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab0LPNtO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 08:49:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:references:in-reply-to:cc
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ilTJ1ay+0yOCLvo7HKhtE0YmKfjGr8Dd35FrXRqsGPgYuylrDXYehY45y/ST6Z44lJ
+         kKjNapaGkVl+Zv4sxCycCiPa6GF+QHQmsE/FdEE6T3TWBZpaBhT5vIPt7vlyiWd/hszz
+         MNkQAgWQcQ2sHpyCruV53jbRdCCFUW190EGP4=
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Reiserfs deadlock in  2.6.36
+Date: Thu, 16 Dec 2010 14:49:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.4.5; x86_64; ; )
+References: <201011181650.00152.roucaries.bastien@gmail.com> <201011261757.08303.roucaries.bastien@gmail.com> <20101202174328.GA1750@nowhere>
+In-Reply-To: <20101202174328.GA1750@nowhere>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: ext Eric Sandeen <sandeen@redhat.com>, jack@suse.cz
-CC: Aaro Koskinen <aaro.koskinen@nokia.com>, tytso@mit.edu,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ext-phil.2.carmody@nokia.com
-Subject: Re: [PATCH] ext4: fix typo in ext4_find_entry()
-References: <1291826002-24989-1-git-send-email-aaro.koskinen@nokia.com> <4CFFC609.1090506@redhat.com>
-In-Reply-To: <4CFFC609.1090506@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Dec 2010 13:38:03.0063 (UTC) FILETIME=[7661CC70:01CB9D26]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201012161449.52318.roucaries.bastien@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2010 08:53 PM, ext Eric Sandeen wrote:
-> On 12/08/2010 10:33 AM, Aaro Koskinen wrote:
->> There should be a check for NUL character instead of '0'.
->>
->> Reported-by: Phil Carmody<ext-phil.2.carmody@nokia.com>
->> Signed-off-by: Aaro Koskinen<aaro.koskinen@nokia.com>
->> ---
->>   fs/ext4/namei.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
->> index 92203b8..dc40e75 100644
->> --- a/fs/ext4/namei.c
->> +++ b/fs/ext4/namei.c
->> @@ -872,7 +872,7 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
->>   	if (namelen>  EXT4_NAME_LEN)
->>   		return NULL;
->>   	if ((namelen<= 2)&&  (name[0] == '.')&&
->> -	    (name[1] == '.' || name[1] == '0')) {
->> +	    (name[1] == '.' || name[1] == '\0')) {
->>   		/*
->>   		 * "." or ".." will only be in the first block
->>   		 * NFS may look up ".."; "." should be handled by the VFS
->
-> Yep, as it was reviewed on the list when originally sent, oops! ;)
->
-> -Eric
+Le jeudi 2 décembre 2010 18:43:32, vous avez écrit :
+> On Fri, Nov 26, 2010 at 05:57:05PM +0100, Bastien ROUCARIES wrote:
+> > Dear frederic,
 
-Hi,
+Sorry for the delay was away internet during my hollidays
+ 
+> > > Hi Bastien,
+> > Nov 26 16:27:56 portablebastien kernel: [27960.811646] 
+> > [<ffffffff8110142b>] sys_open+0x1b/0x1d Nov 26 16:27:56 portablebastien
+> > kernel: [27960.813506]  [<ffffffff81009ac2>]
+> > system_call_fastpath+0x16/0x1b
+> 
+> Ok, this time I don't have the feeling that a deadlock between reiserfs
+> lock and another lock is involved.
+> 
+> We entered queue_log_writer() and then waited for someone to call
+> do_journal_end() to testify he finished his job with the journal.
+> 
+> But somehow that didn't happen. Or may be we called queue_log_writer() but
+> we shouldn't, thinking there was a writer already but there wasn't. Or
+> there is a crazy race somewhere.
+> 
+> On which kernel do you see this? 
+2.6.36
+> Do you know a kernel on which you've never
+> seen it. 
+2.6.34 
 
-the same fix should be done for ext3 patch which is planned to be in 
-mainline: http://www.spinics.net/lists/linux-ext4/msg21215.html
+> Were you running something specific to trigger this deadlock?
+> 
 
-Roman
+Nothing specific but it is trigger by kmail reading my mail each time...
+
+Bastien
+> Thanks!
