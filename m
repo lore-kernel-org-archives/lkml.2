@@ -1,243 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab0LPON0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 09:13:26 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:53605 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753857Ab0LPONX (ORCPT
+	id S1756154Ab0LPOPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 09:15:48 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49978 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab0LPOPq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 09:13:23 -0500
-Message-ID: <4D0A1E49.2070604@euromail.se>
-Date: Thu, 16 Dec 2010 15:12:25 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+	Thu, 16 Dec 2010 09:15:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=k6qchOOtBjitHVkDEPiBUBZv74AmXli6Aus4CPQ86hT45yvP7SCVwKtqnTvjUUgbv4
+         3rcy7iSo/KqtfuAqLCQI0mQiaXmDLyzIVJKhYNw98LqbQuMlJFIjJ1EkxWrKyKA2CKcI
+         SnKAhG5I+IVi4AOm7TzRASpU4/Chx+mRRRkzM=
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] Documentation: Add evdev type and code definitions
-References: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com> <1292361672-2581-3-git-send-email-chase.douglas@canonical.com>
-In-Reply-To: <1292361672-2581-3-git-send-email-chase.douglas@canonical.com>
+In-Reply-To: <4D0A1C40.7060502@panasas.com>
+References: <12853.1292353313@jrobl>
+	<AANLkTinjkcciZhJM5FmUkh_YCJ6bc9aTq8zV=SACDb1O@mail.gmail.com>
+	<4D08BF5D.1060509@panasas.com>
+	<20101215.100055.226772943.davem@davemloft.net>
+	<4D09E185.2040600@panasas.com>
+	<AANLkTin3v0BLYAuuqTgEzKgSOpVg4GJaJCEds=2ePrBH@mail.gmail.com>
+	<4D0A1C40.7060502@panasas.com>
+Date: Fri, 17 Dec 2010 01:15:44 +1100
+Message-ID: <AANLkTiksAkqrMtVDgxhm5s+jqMaKoUhbTaWsXfKJ9QOy@mail.gmail.com>
+Subject: Re: Big git diff speedup by avoiding x86 "fast string" memcmp
+From: Nick Piggin <npiggin@gmail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: David Miller <davem@davemloft.net>, hooanon05@yahoo.co.jp,
+        npiggin@kernel.dk, torvalds@linux-foundation.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PTEZH-00024c-8a.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PTEZH-00024c-8a f93f4d361de72e970816961161975e14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chase,
+On Fri, Dec 17, 2010 at 1:03 AM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+> On 12/16/2010 03:13 PM, Nick Piggin wrote:
+> static inline int dentry_memcmp_long(const unsigned char *cs,
+>                                const unsigned char *ct, ssize_t count)
+> {
+>        int ret;
+>        const unsigned long *ls = (const unsigned long *)cs;
+>        const unsigned long *lt = (const unsigned long *)ct;
+>
+>        while (count > 8) {
+>                ret = (*cs != *ct);
+>                if (ret)
+>                        break;
+>                cs++;
+>                ct++;
+>                count-=8;
+>        }
+>        if (count) {
+>                unsigned long t = *ct & ((0xffffffffffffffff >> ((8 - count) * 8))
+>                ret = (*cs != t)
+>        }
+>
+>        return ret;
+> }
+>
+> Same as yours but just to avoid the branch inside the loop
+> and slightly smaller code.
 
-this is very nice, thanks for doing this! Comments inline.
-
-On 12/14/2010 10:21 PM, Chase Douglas wrote:
-
-> This commit adds the file Documentation/input/evdev-codes.txt.
-> 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
->  Documentation/input/evdev-codes.txt |  160 +++++++++++++++++++++++++++++++++++
->  1 files changed, 160 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/input/evdev-codes.txt
-> 
-> diff --git a/Documentation/input/evdev-codes.txt b/Documentation/input/evdev-codes.txt
-> new file mode 100644
-> index 0000000..69c810f
-> --- /dev/null
-> +++ b/Documentation/input/evdev-codes.txt
-> @@ -0,0 +1,160 @@
-> +The evdev protocol uses a map of types and codes to express input device values
-> +to userspace. This document describes the types and codes and how and when they
-> +may be used.
-
-
-On a general note, the transfer is stateful. It is assumed that the receiver
-knows that prior state of an axes when the new value comes in. Only changed
-values are emitted.
-
-Most of the input state can be retrieved via ioctl/sysfs calls.
-
-> +Types:
-> +==========
-> +Types are groupings of codes under a logical input construct. Each type has a
-> +set of applicable codes to be used in generating events. See the Codes section
-> +for details on valid codes for each type.
-> +
-> +* EV_SYN:
-> +  - Used as markers to separate events. Events may be separated in time or in
-> +    space, such as with the multitouch protocol.
-> +* EV_KEY:
-> +  - Used to describe keyboard and other key-like input events.
-> +* EV_REL:
-> +  - Used to describe relative input events, e.g. moving the mouse 5 units to the
-> +    left.
-> +* EV_ABS:
-> +  - Used to describe absolute input events, e.g. describing the coordinates of a
-> +    touch on a touchscreen.
-> +* EV_MSC:
-> +  - Used to describe miscellaneous input events that do not fit into other
-> +    types.
-> +* EV_SW:
-> +  - Used to describe binary state input switches.
-> +* EV_LED:
-> +  - Used to turn LEDs on devices on and off.
-> +* EV_SND:
-> +  - Used to output sound to devices.
-> +* EV_REP:
-> +  - Used for autorepeating devices.
-> +* EV_FF:
-> +  - Used to send force feedback commands to an input device.
-> +* EV_PWR:
-> +  - A special type for power button and switch input.
-> +* EV_FF_STATUS:
-> +  - Used to receive force feedback device status.
-> +
-> +Codes:
-> +==========
-> +Codes define the precise type of event.
-> +
-> +EV_SYN Codes:
-> +----------
-> +EV_SYN event values are undefined. Their usage is
-> +defined only by when they are sent in the evdev event stream.
-> +
-> +* SYN_REPORT:
-> +  - Used to synchronize and separate events in time. For example, motion of a
-> +    mouse may set the REL_X and REL_Y values for one motion, then emit a
-> +    SYN_REPORT. The next motion will emit more REL_X and REL_Y values and send
-> +    another SYN_REPORT.
+That's true, it should make the branch more predictable too. Well,
+maybe. I'm going to leave it as-is for now, but I would welcome any
+test results or ideas for improvements.
 
 
-We have not using the name @frame@ much so far, but i think it is a good name
-for it.
+> BTW: On some ARCHs ++foo is faster than foo++
+>     and Also, is there a reason not to write the above loop as:
+>
+>     while(c-- && (ret = (*cs++ != *ct++)))
+>                ;
 
-> +* SYN_CONFIG:
-> +  - TBD
-> +* SYN_MT_REPORT:
-> +  - Used to synchronize and separate touch events. See the
-> +    multi-touch-protocol.txt document for more information.
-> +
-> +EV_KEY:
-> +----------
-> +EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
-> +to represent the 'A' key on a keyboard. When a key is depressed, an event with
-> +the key's code is emitted with value 1. When the key is depressed, an event is
-> +emitted with value 0. In general, KEY_<name> is used for keyboard keys, and
-> +BTN_<name> is used for other types of momentary switch events.
-> +
-> +A few EV_KEY codes have special meanings:
-> +
-> +* BTN_TOOL_<name>, BTN_TOUCH:
-> +  - These codes are used in conjunction with input trackpads, tablets, and
-> +    touchscreens. These devices may be used with fingers, pens, or other tools.
-> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
-> +    code should be set to a value of 1. When the tool is no longer interacting
-> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
-> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
-> +    code when events are generated. For non-tablet devices, the tool is usually
-> +    BTN_TOUCH.
-
-
-BTN_TOUCH is always required, and on top of that, one or several other BTN_TOOL
-can be used. There is also a quirk in that BTN_TOUCH should come first in the
-event stream, for the benefit of the mousedev emulation driver.
-
-> +
-> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
-> +  - These codes denote one, two, three, and four finger interaction on a
-> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
-> +    them on the touchpad in an effort to scroll content on screen,
-> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
-> +    Note that these codes and the BTN_TOOL_<name> and BTN_TOUCH codes are
-> +    orthogonal in purpose. A trackpad event generated by finger touches should
-> +    generate events for one code from each group.
-
-
-In the input-mt interface, there is a function to report these,
-input_mt_report_finger_count().
-
-> +
-> +* KEY_SUSPEND, KEY_POWER:
-> +  - These codes are reserved for the EV_PWR type.
-> +
-> +EV_REL:
-> +----------
-> +EV_REL events describe relative changes in a property. For example, a mouse may
-> +move to the left by a certain number of units, but its absolute position in
-> +space is unknown. If the absolute position is known, EV_ABS codes should be used
-> +instead of EV_REL codes.
-> +
-> +A few EV_REL codes have special meanings:
-> +
-> +* REL_WHEEL, REL_HWHEEL:
-> +  - These codes are used for vertical and horizontal scroll wheels,
-> +    respectively.
-> +
-> +EV_ABS:
-> +----------
-> +EV_ABS events describe absolute changes in a property. For example, a touchpad
-> +may emit coordinates for a touch location.
-> +
-> +A few EV_ABS codes have special meanings:
-> +
-> +* ABS_PRESSURE:
-> +  - Used to describe the pressure of a touch interaction on an input device.
-> +* ABS_DISTANCE:
-> +  - Used to describe the distance of a tool from an interaction surface. This
-> +    should only be used while the tool is in close proximity of the device. If
-> +    the input device may be used freely in three dimensions, consider ABS_Z
-> +    instead.
-
-
-The word "hovering" is commonly used to describe this usage. Many pen tablets
-use it, and touch versions are emerging.
-
-> +* ABS_MT_<name>:
-> +  - Used to describe multitouch input events. Please see
-> +    multi-touch-protocol.txt for details.
-> +
-> +EV_SW:
-> +----------
-> +EV_SW events describe stateful binary switches. For example, the SW_LID code is
-> +used to denote when a laptop lid is closed.
-> +
-> +EV_MSC:
-> +----------
-> +EV_MSC events are used for input and output events that do not fall under other
-> +categories.
-> +
-> +EV_LED:
-> +----------
-> +EV_LED events are used for input and output to set and query the state of
-> +various LEDs on devices.
-> +
-> +EV_REP:
-> +----------
-> +EV_REP events are used for specifying autorepeating events.
-> +
-> +EV_SND:
-> +----------
-> +EV_SND events are used for sending sound commands to simple sound output
-> +devices.
-> +
-> +EV_FF:
-> +----------
-> +EV_FF events are used to initialize a force feedback capable device and to cause
-> +such device to feedback.
-> +
-> +EV_PWR:
-> +----------
-> +EV_PWR events are a special type of key event used specifically for monitoring
-> +power buttons and switches. The two codes in use are:
-> +
-> +* KEY_POWER:
-> +  - Used to denote a power button event.
-> +* KEY_SUSPEND:
-> +  - Used to denote a suspend button event.
-
+gcc should turn it into the same thing these days. I prefer avoiding
+expressions with side effects in control statements (other than a
+simple counter).
 
 Thanks,
-Henrik
+Nick
