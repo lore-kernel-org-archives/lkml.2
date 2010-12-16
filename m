@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab0LPBAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 20:00:20 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55734 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab0LPBAS (ORCPT
+	id S1753540Ab0LPBLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 20:11:25 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46271 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab0LPBLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 20:00:18 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Dec 2010 09:54:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: Transparent Hugepage Support #33
-Message-Id: <20101216095408.3a60cbad.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101215051540.GP5638@random.random>
-References: <20101215051540.GP5638@random.random>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Dec 2010 20:11:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=tyoHtNMnW8HHExmpMpKu5xMIVKqxRN+Ktu/kFAQiv5uybk8dIKj70FMWdrXWA+JXWu
+         N6JNckj00PUUYGML3jhYPQ4RijIMrfbXa98K8cbyB6yvAXVCnmEI0wxqPb7y2f3ysvo3
+         zE8mMR4cmnTIebFVkDY+/mFNK3q4drDWp/bmo=
+MIME-Version: 1.0
+Date: Wed, 15 Dec 2010 17:11:22 -0800
+Message-ID: <AANLkTik90p-L+4_GnwXzoekCK0E2uemZD6tOK_kEFd2n@mail.gmail.com>
+Subject: PATCH: Put .zdebug* section on white list
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: multipart/mixed; boundary=90e6ba53aa4e6db3d204977cbb7e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Dec 2010 06:15:40 +0100
-Andrea Arcangeli <aarcange@redhat.com> wrote:
+--90e6ba53aa4e6db3d204977cbb7e
+Content-Type: text/plain; charset=ISO-8859-1
 
-> Some of some relevant user of the project:
-> 
-> KVM Virtualization
-> GCC (kernel build included, requires a few liner patch to enable)
-> JVM
-> VMware Workstation
-> HPC
-> 
-> It would be great if it could go in -mm.
+Hi,
 
-Things should be done in memory cgroup is
- 
- - make accounting correct (RSS count will be broken)
- - make move_charge() to work
-   (at rmdir(), this is now broken. It seems move-charge-at-task-move to work)
-
-Do you have known other viewpoints ? I'll look into when -mm is shipped.
+"as --compress-debug-sections" will generate compressed debug sections
+with section names ".zdebug*".  This patch puts .zdebug* section on
+white list.
 
 
-Thanks,
--Kame
+-- 
+H.J.
 
+--90e6ba53aa4e6db3d204977cbb7e
+Content-Type: text/plain; charset=US-ASCII; name="zdebug.patch"
+Content-Disposition: attachment; filename="zdebug.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ghqyem580
+
+ZGlmZiAtLWdpdCBhL3NjcmlwdHMvbW9kL21vZHBvc3QuYyBiL3NjcmlwdHMvbW9kL21vZHBvc3Qu
+YwppbmRleCA2YTA4N2ZmLi4yYmFiNjIyIDEwMDY0NAotLS0gYS9zY3JpcHRzL21vZC9tb2Rwb3N0
+LmMKKysrIGIvc2NyaXB0cy9tb2QvbW9kcG9zdC5jCkBAIC03OTAsNiArNzkwLDcgQEAgc3RhdGlj
+IGNvbnN0IGNoYXIgKnNlY3Rpb25fd2hpdGVfbGlzdFtdID0KIHsKIAkiLmNvbW1lbnQqIiwKIAki
+LmRlYnVnKiIsCisJIi56ZGVidWcqIiwJCS8qIENvbXByZXNzZWQgZGVidWcgc2VjdGlvbnMuICov
+CiAJIi5HQ0MtY29tbWFuZC1saW5lIiwJLyogbW4xMDMwMCAqLwogCSIubWRlYnVnKiIsICAgICAg
+ICAvKiBhbHBoYSwgc2NvcmUsIG1pcHMgZXRjLiAqLwogCSIucGRyIiwgICAgICAgICAgICAvKiBh
+bHBoYSwgc2NvcmUsIG1pcHMgZXRjLiAqLwo=
+--90e6ba53aa4e6db3d204977cbb7e--
