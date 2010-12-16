@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab0LPXs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 18:48:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26989 "EHLO mx1.redhat.com"
+	id S1753555Ab0LPXsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 18:48:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34051 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751277Ab0LPXs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 18:48:27 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aio: remove unnecessary check
-References: <1292490545-6071-1-git-send-email-namhyung@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 16 Dec 2010 18:48:22 -0500
-In-Reply-To: <1292490545-6071-1-git-send-email-namhyung@gmail.com> (Namhyung
-	Kim's message of "Thu, 16 Dec 2010 18:09:05 +0900")
-Message-ID: <x4962ut6zzt.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753488Ab0LPXsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 18:48:36 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [Regression] firewire_ohci causes system resume to fail
+Date: Fri, 17 Dec 2010 00:47:56 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+References: <201012051542.31826.rjw@sisk.pl> <20101205161758.2d75c65d@stein> <20101205170947.6b4e2d09@stein>
+In-Reply-To: <20101205170947.6b4e2d09@stein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201012170047.56309.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim <namhyung@gmail.com> writes:
+On Sunday, December 05, 2010, Stefan Richter wrote:
+> On Dec 05 Stefan Richter wrote:
+> > On Dec 05 Rafael J. Wysocki wrote:
+> > > There is a regression I can reproduce 100% of the time on a AMD-based desktop
+> > > box that resume from hibernation (or suspend) fails because of the firewire_ohci
+> > > module.  The box just hangs when firewire_ohci resume runs, apparently, and it
+> > > is sufficient to do:
+> > > 
+> > > # echo devices > /sys/power/pm_test
+> > > # echo disk > /sys/power/state
+> > > 
+> > > to reproduce the issue.
+> > 
+> > Do you have anything attached to the FireWire bus?  What controller do
+> > you have?
+> 
+> I just now tested the above on an Intel Mac mini, running
+> unmodified 2.6.37-rc4 x86-32, without and with a camera on the FireWire
+> port, and could not reproduce the problem.  I also got an AMD based PC
+> here with an array of different FireWire controllers which I shall make
+> available to the same test...
 
-> 'nr >= min_nr >= 0' always satisfies 'nr >= 0' so the check is unnecesary.
+I'm unable to reproduce the problem with 2.6.37-rc6, so presumably this was
+a temporary glitch with the particular kernel build.
 
-Yeah, I don't see how the extra check helps.
-
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Thanks,
+Rafael
