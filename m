@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab0LPJxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 04:53:48 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:60410 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753931Ab0LPJxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 04:53:45 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Richard Nauber <richard.nauber@googlemail.com>,
-        Richard Nauber <Richard.Nauber@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] hid: egalax: Add support for Samsung NB30 netbook
-Date: Thu, 16 Dec 2010 10:52:55 +0100
-Message-Id: <1292493175-21630-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.2.3
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PTAWE-0007dL-3U.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PTAWE-0007dL-3U f7c0d1a2181a77d44df192f2be518ff1
+	id S1754087Ab0LPJz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 04:55:28 -0500
+Received: from www.tglx.de ([62.245.132.106]:33471 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753964Ab0LPJz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 04:55:26 -0500
+Message-ID: <4D09E207.8080001@linutronix.de>
+Date: Thu, 16 Dec 2010 10:55:19 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [PATCH 01/11] x86/kernel: remove conditional early remap in parse_e820_ext
+References: <1290706801-7323-1-git-send-email-bigeasy@linutronix.de> <1290706801-7323-2-git-send-email-bigeasy@linutronix.de> <4D094F1A.3020906@zytor.com>
+In-Reply-To: <4D094F1A.3020906@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Nauber <richard.nauber@googlemail.com>
+H. Peter Anvin wrote:
+> 
+> I like the fact that this puts all the mapping in the same layer, but I
+> also think it's unfortunate to discard the optimization of always
+> mapping the minimum of <header length, rest of page>; your code will
+> *always* map-unmap-map the code, even in the (presumably very common)
+> case of the data fitting on a single page.
 
-The Samsung NB30 touch has a DWAV dual-touch device. This patch adds
-the NB30 to the list of supported devices, and grabs it accordingly in
-hid-core.
+Okay, I will take this into account.
 
-[rydberg@euromail.se: rename and log message changes]
-Signed-off-by: Richard Nauber <Richard.Nauber@gmail.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Jiri,
+> Furthermore, your code retains a minor bug from the original code, which
+> is that if the header is not page-aligned, it may be needlessly map more
+> than one page with unknown content.
 
-do I have your ACK on this one?
+I just checked that early_memremap() maps the memory if it is not on a
+page boundary. I take care of this.
 
-Thanks,
-Henrik
+> I also found your patch description to be needlessly hard to follow.
+> The key point is that it puts all the map manipulation into
+> parse_setup_data() where it belongs.  Since you're changing an
+> interface, however, also do note that you have checked that there are no
+> other callers to parse_e820_ext().
 
- drivers/hid/hid-core.c   |    1 +
- drivers/hid/hid-egalax.c |    2 ++
- drivers/hid/hid-ids.h    |    1 +
- 3 files changed, 4 insertions(+), 0 deletions(-)
+okay.
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 9762de5..f4a37f8 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1301,6 +1301,7 @@ static const struct hid_device_id hid_blacklist[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ELECOM, USB_DEVICE_ID_ELECOM_BM084) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
-diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
-index e367cb2..8787850 100644
---- a/drivers/hid/hid-egalax.c
-+++ b/drivers/hid/hid-egalax.c
-@@ -240,6 +240,8 @@ static const struct hid_device_id egalax_devices[] = {
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
- 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-+			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, egalax_devices);
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index b76166a..a95719b 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -197,6 +197,7 @@
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH	0x480d
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH1	0x720c
- #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH2	0x72a1
-+#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH3	0x480e
- 
- #define USB_VENDOR_ID_ELECOM		0x056e
- #define USB_DEVICE_ID_ELECOM_BM084	0x0061
--- 
-1.7.2.3
+> 	-hpa
 
+
+Sebastian
