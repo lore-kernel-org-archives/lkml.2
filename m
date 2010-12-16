@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab0LPRoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 12:44:16 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59841 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902Ab0LPRoO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 12:44:14 -0500
-Date: Thu, 16 Dec 2010 09:42:18 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] [0/223] 2.6.35.10 longterm review
-Message-Id: <20101216094218.85f8fb69.randy.dunlap@oracle.com>
-In-Reply-To: <201012131244.547034648@firstfloor.org>
-References: <201012131244.547034648@firstfloor.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932068Ab0LPRsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 12:48:33 -0500
+Received: from kroah.org ([198.145.64.141]:33690 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756862Ab0LPRsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 12:48:30 -0500
+Date: Thu, 16 Dec 2010 09:44:18 -0800
+From: Greg KH <greg@kroah.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with Linus' tree
+Message-ID: <20101216174418.GA3849@kroah.com>
+References: <20101216140122.ca745f1f.sfr@canb.auug.org.au>
+ <20101216030857.GA12785@kroah.com>
+ <20101216080527.GA2601@legolas.emea.dhcp.ti.com>
+ <20101216084552.GD2601@legolas.emea.dhcp.ti.com>
+ <20101216155225.GA31363@kroah.com>
+ <20101216155554.GA9552@legolas.emea.dhcp.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101216155554.GA9552@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Dec 2010 00:44:54 +0100 (CET) Andi Kleen wrote:
-
+On Thu, Dec 16, 2010 at 05:55:54PM +0200, Felipe Balbi wrote:
+> Hi,
 > 
-> This is the start of the longterm review cycle for the 2.6.35.10 release.
-> There are a large number of patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let us know.  If anyone is a maintainer of the proper subsystem, and
-> wants to add a Signed-off-by: line to the patch, please respond with it.
+> On Thu, Dec 16, 2010 at 07:52:25AM -0800, Greg KH wrote:
+> >On Thu, Dec 16, 2010 at 10:45:52AM +0200, Felipe Balbi wrote:
+> >>Hi,
+> >>
+> >>On Thu, Dec 16, 2010 at 10:05:27AM +0200, Felipe Balbi wrote:
+> >>>On Wed, Dec 15, 2010 at 07:08:57PM -0800, Greg KH wrote:
+> >>>>On Thu, Dec 16, 2010 at 02:01:22PM +1100, Stephen Rothwell wrote:
+> >>>>>Hi Greg,
+> >>>>>
+> >>>>>Today's linux-next merge of the usb tree got a conflict in
+> >>>>>drivers/usb/musb/blackfin.c drivers/usb/musb/musb_core.c
+> >>>>>drivers/usb/musb/musb_core.h between commit
+> >>>>>1e393c6eece048052d4131ec4dad3b98e35a98e2 ("USB: musb: blackfin: pm: make
+> >>>>>it work") from Linus' tree (v2.6.37-rc2) and various commits from the usb
+> >>>>>tree.
+> >>>>>
+> >>>>>It was not immediately obvious how to fix these up, so I just used the
+> >>>>>versions from the usb tree.  This may not be correct and it would be good
+> >>>>>if this was fixed properly in the usb tree.
+> >>>>
+> >>>>Hm.  Felipe, I'll merge in the -rc4 tree into usb-next if it makes sense
+> >>>>to do so now, can you send me the patch that ends up being the correct
+> >>>>merge?
+> >>>
+> >>>Sure, I'll check it now and send in a patch in a few minutes.
+> >>
+> >>There are two commits you didn't have in your usb-next branch which are
+> >>in mainline. Reverting them will make greg/usb-next apply cleanly on top
+> >>of v2.6.47-rc4. The commits are:
+> >>
+> >>32d5dc9520f0c6f60f691dd478741c774e292406 : USB: musb: pm: don't rely fully on clock support
+> >>1e393c6eece048052d4131ec4dad3b98e35a98e2 : USB: musb: blackfin: pm: make it work
+> >>
+> >>Do you want me to rebase on top of -rc4 or is reverting those two enough
+> >>for you ? As a sidenote, the series I sent you already fixes those two
+> >>cases as we moved PM and clock handling entirely to glue layer, so those
+> >>two cases are taken care of on the series, reverting those patches won't
+> >>pose any regressions.
+> >
+> >So, I should do the following things:
+> >	take -rc6
+> >	revert the above commits
+> >	merge with usb-next
+> >	push out
+> >
+> >and all should be good, right?  If so, that's fine with me, I'll do it
 > 
-> Reponses should be made within 48 hours.
+> Perfect, I just tried again just to be sure Merges cleanly:
+> 
+> commit 6033eb6e16e602f97ac5b6424ef71c8e464ececc
+> Merge: fa05820 0b83ae9
+> Author: Felipe Balbi <balbi@ti.com>
+> Date:   Thu Dec 16 17:55:14 2010 +0200
+> 
+>     Merge remote-tracking branch 'greg/usb-next' into linus
 
-(oh well)
+Great, will go do this now...
 
-
-Future 2.6.35.* longterm could use this commit to fix a build error:
-
-commit f35843ed8d17562f7c5da4b34a4a81b0cc450e9e
-Author: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Date:   Wed May 26 12:00:10 2010 -0300
-    classmate-laptop: depends on RFKILL or RFKILL=n
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
