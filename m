@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0LPDil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Dec 2010 22:38:41 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:10801 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0LPDij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Dec 2010 22:38:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:newsgroups:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=JlSa/oaKLALzqij2n4OtPGsgb9a4zIQasuHZdXjdTjNdhMwKzQqW1Anl4S4IqDdUQ5
-         vufZeKCk/kjw9mnATGoA==
-Message-ID: <4D0989B6.6040900@google.com>
-Date: Wed, 15 Dec 2010 19:38:30 -0800
+	id S1756046Ab0LPDpJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Dec 2010 22:45:09 -0500
+Received: from lo.gmane.org ([80.91.229.12]:45871 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755922Ab0LPDpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Dec 2010 22:45:06 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
 From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
 Subject: Re: [patch 2/2] sched: charge unaccounted run-time on entity re-weight
+Date: Wed, 15 Dec 2010 19:36:52 -0800
+Message-ID: <4D098954.8000109@google.com>
 References: <20101216031016.186364650@google.com> <20101216031038.159704378@google.com> <4D0988E9.2000808@google.com>
-In-Reply-To: <4D0988E9.2000808@google.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
-To: unlisted-recipients:; (no To-header on input)
+X-Complaints-To: usenet@dough.gmane.org
+Cc: unlisted-recipients:;;;linux-kernel@vger.kernel.org;,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Illegal-Object: Syntax error in Cc: address found on vger.kernel.org:
+	Cc:	unlisted-recipients:;linux-kernel@vger.kernel.org
+					     ^-missing end of address
+X-Gmane-NNTP-Posting-Host: 216-239-45-4.google.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+In-Reply-To: <4D0988E9.2000808@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,13 +35,13 @@ On 12/15/10 19:35, Paul Turner wrote:
 > Hum -- forgot to refresh mbx file, slightly cleaner version (we can
 > still charge unaccounted time against our queuing cfs_rq).
 >
-
-... Obviously this is supposed to be in lieu of the first patch.
-
-I'm tired  :(
-
 > - Paul
 >
+
+.... Obviously this is in lieu of the first patch and not this one.
+
+I'm tired :(
+
 > -----
 >
 > sched: move periodic share updates to entity_tick()
@@ -115,4 +113,5 @@ I'm tired  :(
 > #ifdef CONFIG_SCHED_HRTICK
 > /*
 > * queued ticks are scheduled to match the slice, so don't bother
+
 
