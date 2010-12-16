@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab0LPWBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 17:01:15 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:54198 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076Ab0LPWBK (ORCPT
+	id S1757350Ab0LPWD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 17:03:29 -0500
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:46815 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753948Ab0LPWD0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 17:01:10 -0500
-X-Auth-Info: a7lSu+P0ss6gUqlr8V0uCDDAS2p9ipJsSrF/eT6ZuKI=
-Date: Thu, 16 Dec 2010 23:01:10 +0100
-From: Anatolij Gustschin <agust@denx.de>
-To: Jason Lunz <lunz@acm.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        atom ota <atomota@sleepyhammer.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Jeff Dike <jdike@addtoit.com>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        Rob Landley <rob@landley.net>, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] mtd: allow mtd and jffs2 when ARCH=um
-Message-ID: <20101216230110.65156c55@wker>
-In-Reply-To: <20101214195124.GA6010@falooley.org>
-References: <22c797d00709272118i33d32b9dy93d5f5ec8f8edd30@mail.gmail.com>
-	<20071024011712.GA3762@falooley.org>
-	<1193208689.26096.48.camel@pmac.infradead.org>
-	<20071227181524.GA19051@falooley.org>
-	<20071228174853.GA4252@uranus.ravnborg.org>
-	<20101207072919.GA8511@falooley.org>
-	<AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
-	<20101207182012.GA10546@falooley.org>
-	<1292343878.2538.80.camel@localhost>
-	<20101214195124.GA6010@falooley.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Thu, 16 Dec 2010 17:03:26 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=ZzYG/RgR7dAG+8T9XcrAQ9gN8vnuK8okIv96edhtKMqpX7LmyxTvj7+xas/xZq7OQL+j65JEbk/McOUfqT8+RWIf2i5fOB6igAeAHY2J+l0f5Xn1uqm+zU+uEQJknjig;
+Date: Thu, 16 Dec 2010 14:03:21 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Adam Belay <abelay@mit.edu>
+Subject: Re: [PATCH 0/9] PCI: revert to allocating bottom-up, avoid E820
+ areas
+Message-ID: <20101216140321.1a75ccef@jbarnes-desktop>
+In-Reply-To: <AANLkTikqmfWhLuTiP8tPqcCGMZUe=iDOJVUZGy8pnRL0@mail.gmail.com>
+References: <20101216173614.8185.19462.stgit@bob.kio>
+	<AANLkTikqmfWhLuTiP8tPqcCGMZUe=iDOJVUZGy8pnRL0@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Dec 2010 11:51:24 -0800
-Jason Lunz <lunz@acm.org> wrote:
-...
-> diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
-> index a9e6ba4..3d9f7e0 100644
-> --- a/include/linux/mtd/map.h
-> +++ b/include/linux/mtd/map.h
-> @@ -388,6 +388,15 @@ static inline map_word map_word_ff(struct map_info *map)
->  	return r;
->  }
->  
-> +#ifdef CONFIG_MTD_COMPLEX_MAPPINGS
-> +#define map_read(map, ofs) (map)->read(map, ofs)
-> +#define map_copy_from(map, to, from, len) (map)->copy_from(map, to, from, len)
-> +#define map_write(map, datum, ofs) (map)->write(map, datum, ofs)
-> +#define map_copy_to(map, to, from, len) (map)->copy_to(map, to, from, len)
-> +
-> +extern void simple_map_init(struct map_info *);
-> +#define map_is_linear(map) (map->phys != NO_XIP)
-> +
->  static inline map_word inline_map_read(struct map_info *map, unsigned long ofs)
->  {
->  	map_word r;
-> @@ -440,15 +449,6 @@ static inline void inline_map_copy_to(struct map_info *map, unsigned long to, co
->  	memcpy_toio(map->virt + to, from, len);
->  }
->  
-> -#ifdef CONFIG_MTD_COMPLEX_MAPPINGS
-> -#define map_read(map, ofs) (map)->read(map, ofs)
-> -#define map_copy_from(map, to, from, len) (map)->copy_from(map, to, from, len)
-> -#define map_write(map, datum, ofs) (map)->write(map, datum, ofs)
-> -#define map_copy_to(map, to, from, len) (map)->copy_to(map, to, from, len)
-> -
-> -extern void simple_map_init(struct map_info *);
-> -#define map_is_linear(map) (map->phys != NO_XIP)
-> -
->  #else
->  #define map_read(map, ofs) inline_map_read(map, ofs)
->  #define map_copy_from(map, to, from, len) inline_map_copy_from(map, to, from, len)
+On Thu, 16 Dec 2010 13:59:33 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-This change breaks compiling when CONFIG_MTD_COMPLEX_MAPPINGS is not
-defined in the kernel configuration. Please fix!
+> On Thu, Dec 16, 2010 at 9:38 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> >
+> > So I think the best band-aid for now is to revert to bottom-up allocation
+> > and do a better job of avoiding E820 reserved areas.  Obviously, it's not
+> > complete because we could still trip over ACPI devices (as in 23802), but
+> > that's a problem we've always had and it's not as likely if we go bottom-up.
+> 
+> Ok, ack for this series. Have we got testers for it? In particular,
+> have the people who have seen regressions been notified of this new
+> series?
+> 
+> That said, let's just try to merge it quickly so that we get maximal
+> coverage before the holiday season starts. Jesse, it makes sense
+> through your tree, but if you'd rather me take it directly, I can do
+> that.
+
+I'll pull it into my tree and send you a pull req tomorrow if that's
+ok.  I have a couple of fixes besides this, but I have to drop Bjorn's
+earlier series...
 
 Thanks,
-Anatolij
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
