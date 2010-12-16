@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab0LPPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 10:31:09 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:33076 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab0LPPbF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 10:31:05 -0500
-Subject: Re: [RFC][PATCH 3/5] sched: Change the ttwu success details
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-In-Reply-To: <1292513275.6803.4603.camel@twins>
-References: <20101216145602.899838254@chello.nl>
-	 <20101216150920.866959114@chello.nl>  <20101216152351.GB1687@nowhere>
-	 <1292513275.6803.4603.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 16 Dec 2010 16:30:15 +0100
-Message-ID: <1292513415.6803.4604.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756506Ab0LPPeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 10:34:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756167Ab0LPPeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 10:34:00 -0500
+From: Matthew Garrett <mjg@redhat.com>
+To: rydberg@euromail.se
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 2/2] applesmc: Perform some more sanity checking on temperatures
+Date: Thu, 16 Dec 2010 10:33:09 -0500
+Message-Id: <1292513589-14651-2-git-send-email-mjg@redhat.com>
+In-Reply-To: <1292513589-14651-1-git-send-email-mjg@redhat.com>
+References: <1292513589-14651-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 16:27 +0100, Peter Zijlstra wrote:
-> On Thu, 2010-12-16 at 16:23 +0100, Frederic Weisbecker wrote:
-> 
-> > > -	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-> > > +	TP_printk("comm=%s pid=%d prio=%d target_cpu=%03d",
-> > >  		  __entry->comm, __entry->pid, __entry->prio,
-> > > -		  __entry->success, __entry->target_cpu)
-> > > +		  __entry->target_cpu)
-> > 
-> > Note we'll need to fix some perf scripts after that. And also perf sched,
-> > probably perf timechart and so on...
-> 
-> Do any of those actually use the success parameter? If not, then me
-> removing it shouldn't break those tools since they're supposed to parse
-> the format stuff and not notice it missing ;-)
+It seems that the two-byte temperature format is intended to be signed
+("sp78" appears to mean "signed, decimal point, 7 bits before, 8 bits
+after") and it doesn't seem terribly plausible that we'll get any of these
+machines below freezing. It's probably more reasonable to assume that
+negative values indicate errors and drop them.
 
-Alternatively we could always call trace_sched_wakeup() and make success
-reflect actual wakeup success.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/hwmon/applesmc.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index dbe3fa6..d7ec678 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -739,6 +739,10 @@ static ssize_t applesmc_show_temperature(struct device *dev,
+ 		return ret;
+ 
+ 	if (entry->len == 2) {
++		if (buffer[0] >= 0x80) {
++			/* The two byte format is signed - ignore negative */
++			return -EINVAL;
++		}
+ 		temp = buffer[0] * 1000;
+ 		temp += (buffer[1] >> 6) * 250;
+ 	} else {
+-- 
+1.7.3.3
+
