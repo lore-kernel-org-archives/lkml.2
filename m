@@ -1,351 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab0LPS0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 13:26:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab0LPS0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 13:26:01 -0500
-Date: Thu, 16 Dec 2010 13:25:19 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: peterz@infradead.org, hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu
-Cc: mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-Message-Id: <2d65cd877a42fa8821c2fde752a9133245229752.1292522252.git.jbaron@redhat.com>
-In-Reply-To: <cover.1292522251.git.jbaron@redhat.com>
-References: <cover.1292522251.git.jbaron@redhat.com>
-Subject: [PATCH/RFC 2/2] jump label: introduce unlikely_switch()
+	id S1757281Ab0LPS1E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 13:27:04 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:53835 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab0LPS07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 13:26:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=i6i2XyQNvz+pOjdWpFmi5s8I/sMaRtAitmZnyFcGRGPeCGO2msm2jtscxgW4xwobYS
+         pz+Ds3mI1x9VyS/gcdDtZPrl0PCCgpJZBPr8fbodvZ/UAJcsOjbaSgdHnTzs7A/OhpHh
+         bVZnO1WLHQzvYtIvAOdd9xa3BmtpuZUjnVa0M=
+MIME-Version: 1.0
+Date: Thu, 16 Dec 2010 23:56:57 +0530
+X-Google-Sender-Auth: GNbfq7wAeAZrNFdTNrTTFhDxCN4
+Message-ID: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+Subject: platform/i2c busses: pm runtime and system sleep
+From: Rabin Vincent <rabin@rab.in>
+To: rjw@sisk.pl, stern@rowland.harvard.edu
+Cc: linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce:
+Hello,
 
-static __always_inline bool unlikely_switch(struct jump_label_key *key);
+There seem to be some differences between the generic ops and the i2c
+and platform busses' implementations of the interaction between runtime
+PM and system sleep:
 
-to replace the old JUMP_LABEL(key, label) macro.
+  (1) The platform bus does not implement the
+      don't-call-pm->suspend()-if pm_runtime_suspended()-returns-true
+      functionality implemented by the generic ops and i2c.
 
-The new unlikely_switch(), simplifies the usage of jump labels. Since
-unlikely_switch() returns a boolean, it can be used as part of an if()
-construct. It also, allows us to drop the 'label' argument from the
-prototype. Its probably best understood with an example, here is the part
-of the patch that converts the tracepoints to use unlikely_switch():
+  (2) Both I2C and platform do not set the device as active when a
+      pm->resume callback exists and it succeeds.
 
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -146,9 +146,7 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
- 	extern struct tracepoint __tracepoint_##name;			\
- 	static inline void trace_##name(proto)				\
- 	{								\
--		JUMP_LABEL(&__tracepoint_##name.key, do_trace);		\
--		return;							\
--do_trace:								\
-+		if (unlikely_switch(&__tracepoint_##name.key))		\
- 			__DO_TRACE(&__tracepoint_##name,		\
- 				TP_PROTO(data_proto),			\
- 				TP_ARGS(data_args));			\
+      This seems to have been done in i2c until recently, but has been
+      removed by 753419f59e ("i2c: Fix for suspend/resume issue").  It
+      seems to me that this removal is incorrect, and instead the real
+      problem with the implementation was that it set the device as
+      active even if no resume callback existed, whereas it should only
+      do so when it exists and returns zero, like the generic ops.
 
+Are these divergences from the generic ops to be considered as bugs?
+Atleast (2) will cause devices which use UNIVERSAL_DEV_PM_OPS to have
+incorrect runtime pm state after a resume from system sleep.
 
-The name 'unlikely_switch' is meant to invoke the notion of 'unlikely', in that
-we expect this code path to be disabled most of the time. The 'switch' notion is
-that we really have a switch here that can be flipped, by patching either a
-'nop' or a 'jmp' at the switchpoint.
+If so, before I send patches to fix them: can it be assumed that only
+drivers using dev_pm_ops (and not the legacy ops of these busses) will
+need the interactions between runtime PM and system sleep as done in the
+generic ops?  This would mean that simple busses could simply use the
+generic ops like below instead of duplicating their behaviour:
 
-I analyzed the code produced by unlikely_switch(), and it seems to be
-at least as good as the code generated by the JUMP_LABEL(). As a reminder,
-we get a single nop in the fastpath for -02. But will often times get
-a 'double jmp' in the -Os case. That is, 'jmp 0', followed by a jmp around
-the disabled code. We believe that future gcc tweaks to allow block
-re-ordering in the -Os, will solve the -Os case in the future.
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 6b4cc56..46117e0 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -212,7 +212,7 @@ static int i2c_device_pm_resume(struct device *dev)
+ 	int ret;
 
-I also saw a 1-2% tbench throughput improvement when compiling with
-jump labels in the -02 case.
+ 	if (pm)
+-		ret = pm->resume ? pm->resume(dev) : 0;
++		ret = pm_generic_resume(dev);
+ 	else
+ 		ret = i2c_legacy_resume(dev);
 
-Thanks to H. Peter Anvin for suggesting this improved syntax as well as
-the name 'switchpoint'.
-
-Suggested-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- arch/x86/include/asm/jump_label.h |   22 +++++++++++++---------
- arch/x86/kernel/jump_label.c      |    2 +-
- include/linux/dynamic_debug.h     |   18 ++++--------------
- include/linux/jump_label.h        |   26 +++++++++++---------------
- include/linux/jump_label_ref.h    |   19 +++++++++++--------
- include/linux/perf_event.h        |   21 ++++++++++-----------
- include/linux/tracepoint.h        |    4 +---
- kernel/jump_label.c               |    2 +-
- 8 files changed, 52 insertions(+), 62 deletions(-)
-
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-index f52d42e..172af9b 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -5,20 +5,24 @@
- 
- #include <linux/types.h>
- #include <asm/nops.h>
-+#include <asm/asm.h>
- 
- #define JUMP_LABEL_NOP_SIZE 5
- 
- # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
- 
--# define JUMP_LABEL(key, label)					\
--	do {							\
--		asm goto("1:"					\
--			JUMP_LABEL_INITIAL_NOP			\
--			".pushsection __jump_table,  \"a\" \n\t"\
--			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
--			".popsection \n\t"			\
--			: :  "i" (key) :  : label);		\
--	} while (0)
-+static __always_inline bool __unlikely_switch(struct jump_label_key *key)
-+{
-+	asm goto("1:"
-+		JUMP_LABEL_INITIAL_NOP
-+		".pushsection __jump_table,  \"a\" \n\t"
-+		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
-+		".popsection \n\t"
-+		: :  "i" (key) : : l_yes );
-+	return false;
-+l_yes:
-+	return true;
-+}
- 
- #endif /* __KERNEL__ */
- 
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-index 961b6b3..dfa4c3c 100644
---- a/arch/x86/kernel/jump_label.c
-+++ b/arch/x86/kernel/jump_label.c
-@@ -4,13 +4,13 @@
-  * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
-  *
-  */
--#include <linux/jump_label.h>
- #include <linux/memory.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
- #include <linux/list.h>
- #include <linux/jhash.h>
- #include <linux/cpu.h>
-+#include <linux/jump_label.h>
- #include <asm/kprobes.h>
- #include <asm/alternative.h>
- 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index ddf7bae..71d18a8 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -44,34 +44,24 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
- extern int ddebug_remove_module(const char *mod_name);
- 
- #define dynamic_pr_debug(fmt, ...) do {					\
--	__label__ do_printk;						\
--	__label__ out;							\
- 	static struct _ddebug descriptor				\
- 	__used								\
- 	__attribute__((section("__verbose"), aligned(8))) =		\
- 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
- 		_DPRINTK_FLAGS_DEFAULT, JUMP_LABEL_INIT };		\
--	JUMP_LABEL(&descriptor.enabled, do_printk);			\
--	goto out;							\
--do_printk:								\
--	printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);			\
--out:	;								\
-+	if (unlikely_switch(&descriptor.enabled))			\
-+		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
- 	} while (0)
- 
- 
- #define dynamic_dev_dbg(dev, fmt, ...) do {				\
--	__label__ do_printk;						\
--	__label__ out;							\
- 	static struct _ddebug descriptor				\
- 	__used								\
- 	__attribute__((section("__verbose"), aligned(8))) =		\
- 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
- 		_DPRINTK_FLAGS_DEFAULT, JUMP_LABEL_INIT };		\
--	JUMP_LABEL(&descriptor.enabled, do_printk);			\
--	goto out;							\
--do_printk:								\
--	dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);		\
--out:	;								\
-+	if (unlikely_switch(&descriptor.enabled))			\
-+		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
- #else
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 3e56668..5da64b7 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -26,6 +26,11 @@ struct module;
- 
- #ifdef HAVE_JUMP_LABEL
- 
-+static __always_inline bool unlikely_switch(struct jump_label_key *key)
-+{
-+	return __unlikely_switch(key);
-+}
-+
- extern struct jump_entry __start___jump_table[];
- extern struct jump_entry __stop___jump_table[];
- 
-@@ -48,11 +53,12 @@ struct jump_label_key {
- 	int state;
- };
- 
--#define JUMP_LABEL(key, label)			\
--do {						\
--	if (unlikely(((struct jump_label_key *)key)->state))		\
--		goto label;			\
--} while (0)
-+static __always_inline bool unlikely_switch(struct jump_label_key *key)
-+{
-+	if (unlikely(key->state))
-+		return true;
-+	return false;
-+}
- 
- static inline int jump_label_enabled(struct jump_label_key *key)
- {
-@@ -84,14 +90,4 @@ static inline void jump_label_unlock(void) {}
- 
- #endif
- 
--#define COND_STMT(key, stmt)					\
--do {								\
--	__label__ jl_enabled;					\
--	JUMP_LABEL(key, jl_enabled);				\
--	if (0) {						\
--jl_enabled:							\
--		stmt;						\
--	}							\
--} while (0)
--
- #endif
-diff --git a/include/linux/jump_label_ref.h b/include/linux/jump_label_ref.h
-index 2dc9ddc..c1ae838 100644
---- a/include/linux/jump_label_ref.h
-+++ b/include/linux/jump_label_ref.h
-@@ -16,6 +16,11 @@ static inline void jump_label_dec(struct jump_label_keyref *key)
- 	__jump_label_dec((struct jump_label_key *)key);
- }
- 
-+static __always_inline bool unlikely_switch_refcount(struct jump_label_keyref *key)
-+{
-+	return __unlikely_switch((struct jump_label_key *)key);
-+}
-+
- #else /* !HAVE_JUMP_LABEL */
- 
- struct jump_label_keyref {
-@@ -32,14 +37,12 @@ static inline void jump_label_dec(struct jump_label_keyref *key)
- 	atomic_dec(&key->refcount);
- }
- 
--#undef JUMP_LABEL
--#define JUMP_LABEL(key, label)						\
--do {									\
--	if (unlikely(__builtin_choose_expr(				\
--	      __builtin_types_compatible_p(typeof(key), struct jump_label_keyref *),\
--	      atomic_read(&(((struct jump_label_keyref *)key)->refcount)), (((struct jump_label_key *)key)->state))))			\
--		goto label;						\
--} while (0)
-+static __always_inline bool unlikely_switch_refcount(struct jump_label_keyref *key)
-+{
-+	if (unlikely(atomic_read(&key->refcount)))
-+		return true;
-+	return false;
-+}
- 
- #endif /* HAVE_JUMP_LABEL */
- 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 77c4645..142e9b2 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1029,30 +1029,29 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
- {
- 	struct pt_regs hot_regs;
- 
--	JUMP_LABEL(&perf_swevent_enabled[event_id], have_event);
--	return;
--
--have_event:
--	if (!regs) {
--		perf_fetch_caller_regs(&hot_regs);
--		regs = &hot_regs;
-+	if (unlikely_switch_refcount(&perf_swevent_enabled[event_id])) {
-+		if (!regs) {
-+			perf_fetch_caller_regs(&hot_regs);
-+			regs = &hot_regs;
-+		}
-+		__perf_sw_event(event_id, nr, nmi, regs, addr);
- 	}
--	__perf_sw_event(event_id, nr, nmi, regs, addr);
- }
- 
- extern struct jump_label_keyref perf_task_events;
- 
- static inline void perf_event_task_sched_in(struct task_struct *task)
- {
--	COND_STMT(&perf_task_events, __perf_event_task_sched_in(task));
-+	if (unlikely_switch_refcount(&perf_task_events))
-+		__perf_event_task_sched_in(task);
- }
- 
- static inline
- void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
- {
- 	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
--
--	COND_STMT(&perf_task_events, __perf_event_task_sched_out(task, next));
-+	if (unlikely_switch_refcount(&perf_task_events))
-+		__perf_event_task_sched_out(task, next);
- }
- 
- extern void perf_event_mmap(struct vm_area_struct *vma);
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index e6f9793..f1bcc5e 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -146,9 +146,7 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
- 	extern struct tracepoint __tracepoint_##name;			\
- 	static inline void trace_##name(proto)				\
- 	{								\
--		JUMP_LABEL(&__tracepoint_##name.key, do_trace);		\
--		return;							\
--do_trace:								\
-+		if (unlikely_switch(&__tracepoint_##name.key))		\
- 			__DO_TRACE(&__tracepoint_##name,		\
- 				TP_PROTO(data_proto),			\
- 				TP_ARGS(data_args));			\
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index f8869d6..0c9f4d5 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -4,7 +4,6 @@
-  * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
-  *
-  */
--#include <linux/jump_label.h>
- #include <linux/memory.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
-@@ -13,6 +12,7 @@
- #include <linux/slab.h>
- #include <linux/sort.h>
- #include <linux/err.h>
-+#include <linux/jump_label.h>
- 
- #ifdef HAVE_JUMP_LABEL
- 
--- 
-1.7.1
-
+ thanks,
+ Rabin
