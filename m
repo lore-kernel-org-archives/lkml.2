@@ -1,119 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab0LQMq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 07:46:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7886 "EHLO mx1.redhat.com"
+	id S1754410Ab0LQMq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 07:46:27 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:64449 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319Ab0LQMqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 07:46:19 -0500
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Benjamin Marzinski <bmarzins@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 10/15] GFS2: reread rindex when necessary to grow rindex
-Date: Fri, 17 Dec 2010 12:24:16 +0000
-Message-Id: <1292588661-14350-11-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1292588661-14350-1-git-send-email-swhiteho@redhat.com>
-References: <1292588661-14350-1-git-send-email-swhiteho@redhat.com>
+	id S1754324Ab0LQMqU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 07:46:20 -0500
+From: <ilkka.koskinen@nokia.com>
+To: <samu.p.onkalo@nokia.com>, <rpurdie@rpsys.net>,
+        <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <arun.murthy@stericsson.com>,
+        <ankur.vaish@stericsson.com>
+Subject: RE: [PATCH 2/3] leds: lp5523: Fix circular locking
+Thread-Topic: [PATCH 2/3] leds: lp5523: Fix circular locking
+Thread-Index: AQHLndPsjpwMSDNgGEKcJj6uyRNHLZOkkMBw
+Date: Fri, 17 Dec 2010 12:45:44 +0000
+Message-ID: <B152A2ECB7F1E847B5E0A8CFDF6F369002E1F8@008-AM1MPN1-022.mgdnok.nokia.com>
+References: <1292581161-1177-1-git-send-email-samu.p.onkalo@nokia.com>
+ <1292581161-1177-3-git-send-email-samu.p.onkalo@nokia.com>
+In-Reply-To: <1292581161-1177-3-git-send-email-samu.p.onkalo@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 17 Dec 2010 12:45:47.0698 (UTC) FILETIME=[53F8D120:01CB9DE8]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Marzinski <bmarzins@redhat.com>
+Hi,
 
-When GFS2 grew the filesystem, it was never rereading the rindex file during
-the grow. This is necessary for large grows when the filesystem is almost full,
-and GFS2 needs to use some of the space allocated earlier in the grow to
-complete it.  Now, if GFS2 fails to reserve the necessary space and the rindex
-file is not uptodate, it rereads it.  Also, the only difference between
-gfs2_ri_update() and gfs2_ri_update_special() was that gfs2_ri_update_special()
-didn't clear out the existing resource groups, since you knew that it was only
-called when there were no resource groups.  Attempting to clear out the
-resource groups when there are none takes almost no time, and rarely happens,
-so I simply removed gfs2_ri_update_special().
+>From: Onkalo Samu.P (Nokia-MS/Tampere)
+>Sent: 17 December, 2010 12:19
+>Subject: [PATCH 2/3] leds: lp5523: Fix circular locking
+>
+>Driver contained possibility for circular locking.
+>One lock is held by sysfs-core and another one by the driver itself.
+>This happened when the driver created or removed sysfs entries
+>dynamically.
+>There is no real need to do those operations. Now all the sysfs entries
+>are created at probe and removed at removal. Engine load and mux
+>configuration
+>sysfs entries are now visible all the time. However, access to the
+>entries
+>fails if the engine is disabled or running.
+>
+>Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+>---
+> drivers/leds/leds-lp5523.c |   56 ++++++++++++-------------------------
+>------
+> 1 files changed, 16 insertions(+), 40 deletions(-)
+>
+>diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+>index 6cb4160..d0c4068 100644
+>--- a/drivers/leds/leds-lp5523.c
+>+++ b/drivers/leds/leds-lp5523.c
+>@@ -105,7 +105,6 @@
+> #define SHIFT_MASK(id)			(((id) - 1) * 2)
+>
+> struct lp5523_engine {
+>-	const struct attribute_group *attributes;
+> 	int		id;
+> 	u8		mode;
+> 	u8		prog_page;
+>@@ -403,14 +402,23 @@ static ssize_t store_engine_leds(struct device
+>*dev,
+> 	struct i2c_client *client = to_i2c_client(dev);
+> 	struct lp5523_chip *chip = i2c_get_clientdata(client);
+> 	u16 mux = 0;
+>+	ssize_t ret;
+>
+> 	if (lp5523_mux_parse(buf, &mux, len))
+> 		return -EINVAL;
+>
+>+	mutex_lock(&chip->lock);
+>+	ret = -EINVAL;
 
-Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+You could move this assignment to declaration. But otherwise
+looks good to me. So,
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 33c8407..6375b38 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -614,46 +614,6 @@ static int gfs2_ri_update(struct gfs2_inode *ip)
- }
- 
- /**
-- * gfs2_ri_update_special - Pull in a new resource index from the disk
-- *
-- * This is a special version that's safe to call from gfs2_inplace_reserve_i.
-- * In this case we know that we don't have any resource groups in memory yet.
-- *
-- * @ip: pointer to the rindex inode
-- *
-- * Returns: 0 on successful update, error code otherwise
-- */
--static int gfs2_ri_update_special(struct gfs2_inode *ip)
--{
--	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
--	struct inode *inode = &ip->i_inode;
--	struct file_ra_state ra_state;
--	struct gfs2_rgrpd *rgd;
--	unsigned int max_data = 0;
--	int error;
--
--	file_ra_state_init(&ra_state, inode->i_mapping);
--	for (sdp->sd_rgrps = 0;; sdp->sd_rgrps++) {
--		/* Ignore partials */
--		if ((sdp->sd_rgrps + 1) * sizeof(struct gfs2_rindex) >
--		    i_size_read(inode))
--			break;
--		error = read_rindex_entry(ip, &ra_state);
--		if (error) {
--			clear_rgrpdi(sdp);
--			return error;
--		}
--	}
--	list_for_each_entry(rgd, &sdp->sd_rindex_list, rd_list)
--		if (rgd->rd_data > max_data)
--			max_data = rgd->rd_data;
--	sdp->sd_max_rg_data = max_data;
--
--	sdp->sd_rindex_uptodate = 1;
--	return 0;
--}
--
--/**
-  * gfs2_rindex_hold - Grab a lock on the rindex
-  * @sdp: The GFS2 superblock
-  * @ri_gh: the glock holder
-@@ -1226,16 +1186,25 @@ int gfs2_inplace_reserve_i(struct gfs2_inode *ip, int hold_rindex,
- 			error = gfs2_rindex_hold(sdp, &al->al_ri_gh);
- 		else if (!sdp->sd_rgrps) /* We may not have the rindex read
- 					    in, so: */
--			error = gfs2_ri_update_special(ip);
-+			error = gfs2_ri_update(ip);
- 		if (error)
- 			return error;
- 	}
- 
-+try_again:
- 	do {
- 		error = get_local_rgrp(ip, &last_unlinked);
- 		/* If there is no space, flushing the log may release some */
--		if (error)
-+		if (error) {
-+			if (ip == GFS2_I(sdp->sd_rindex) &&
-+			    !sdp->sd_rindex_uptodate) {
-+				error = gfs2_ri_update(ip);
-+				if (error)
-+					return error;
-+				goto try_again;
-+			}
- 			gfs2_log_flush(sdp, NULL);
-+		}
- 	} while (error && tries++ < 3);
- 
- 	if (error) {
--- 
-1.7.3.3
+Reviewed-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+
+
+Cheers, 
+
+
+>+	if (chip->engines[nr - 1].mode != LP5523_CMD_LOAD)
+>+		goto leave;
+>+
+> 	if (lp5523_load_mux(&chip->engines[nr - 1], mux))
+>-		return -EINVAL;
+>+		goto leave;
+>
+>-	return len;
+>+	ret = len;
+>+leave:
+>+	mutex_unlock(&chip->lock);
+>+	return ret;
+> }
+>
+> #define store_leds(nr)						\
+>@@ -556,7 +564,11 @@ static int lp5523_do_store_load(struct
+>lp5523_engine *engine,
+>
+> 	mutex_lock(&chip->lock);
+>
+>-	ret = lp5523_load_program(engine, pattern);
+>+	if (engine->mode == LP5523_CMD_LOAD)
+>+		ret = lp5523_load_program(engine, pattern);
+>+	else
+>+		ret = -EINVAL;
+>+
+> 	mutex_unlock(&chip->lock);
+>
+> 	if (ret) {
+>@@ -737,37 +749,18 @@ static struct attribute *lp5523_attributes[] = {
+> 	&dev_attr_engine2_mode.attr,
+> 	&dev_attr_engine3_mode.attr,
+> 	&dev_attr_selftest.attr,
+>-	NULL
+>-};
+>-
+>-static struct attribute *lp5523_engine1_attributes[] = {
+> 	&dev_attr_engine1_load.attr,
+> 	&dev_attr_engine1_leds.attr,
+>-	NULL
+>-};
+>-
+>-static struct attribute *lp5523_engine2_attributes[] = {
+> 	&dev_attr_engine2_load.attr,
+> 	&dev_attr_engine2_leds.attr,
+>-	NULL
+>-};
+>-
+>-static struct attribute *lp5523_engine3_attributes[] = {
+> 	&dev_attr_engine3_load.attr,
+> 	&dev_attr_engine3_leds.attr,
+>-	NULL
+> };
+>
+> static const struct attribute_group lp5523_group = {
+> 	.attrs = lp5523_attributes,
+> };
+>
+>-static const struct attribute_group lp5523_engine_group[] = {
+>-	{.attrs = lp5523_engine1_attributes },
+>-	{.attrs = lp5523_engine2_attributes },
+>-	{.attrs = lp5523_engine3_attributes },
+>-};
+>-
+> static int lp5523_register_sysfs(struct i2c_client *client)
+> {
+> 	struct device *dev = &client->dev;
+>@@ -788,10 +781,6 @@ static void lp5523_unregister_sysfs(struct
+>i2c_client *client)
+>
+> 	sysfs_remove_group(&dev->kobj, &lp5523_group);
+>
+>-	for (i = 0; i < ARRAY_SIZE(chip->engines); i++)
+>-		if (chip->engines[i].mode == LP5523_CMD_LOAD)
+>-			sysfs_remove_group(&dev->kobj,
+>&lp5523_engine_group[i]);
+>-
+> 	for (i = 0; i < chip->num_leds; i++)
+> 		sysfs_remove_group(&chip->leds[i].cdev.dev->kobj,
+> 				&lp5523_led_attribute_group);
+>@@ -802,10 +791,6 @@ static void lp5523_unregister_sysfs(struct
+>i2c_client *client)
+> /*--------------------------------------------------------------*/
+> static int lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
+> {
+>-	/*  engine to chip */
+>-	struct lp5523_chip *chip = engine_to_lp5523(engine);
+>-	struct i2c_client *client = chip->client;
+>-	struct device *dev = &client->dev;
+> 	int ret = 0;
+>
+> 	/* if in that mode already do nothing, except for run */
+>@@ -817,18 +802,10 @@ static int lp5523_set_mode(struct lp5523_engine
+>*engine, u8 mode)
+> 	} else if (mode == LP5523_CMD_LOAD) {
+> 		lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
+> 		lp5523_set_engine_mode(engine, LP5523_CMD_LOAD);
+>-
+>-		ret = sysfs_create_group(&dev->kobj, engine->attributes);
+>-		if (ret)
+>-			return ret;
+> 	} else if (mode == LP5523_CMD_DISABLED) {
+> 		lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
+> 	}
+>
+>-	/* remove load attribute from sysfs if not in load mode */
+>-	if (engine->mode == LP5523_CMD_LOAD && mode != LP5523_CMD_LOAD)
+>-		sysfs_remove_group(&dev->kobj, engine->attributes);
+>-
+> 	engine->mode = mode;
+>
+> 	return ret;
+>@@ -845,7 +822,6 @@ static int __init lp5523_init_engine(struct
+>lp5523_engine *engine, int id)
+> 	engine->engine_mask = LP5523_ENG_MASK_BASE >> SHIFT_MASK(id);
+> 	engine->prog_page = id - 1;
+> 	engine->mux_page = id + 2;
+>-	engine->attributes = &lp5523_engine_group[id - 1];
+>
+> 	return 0;
+> }
+>--
+>1.7.0.4
 
