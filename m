@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab0LQTrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:47:24 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38732 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab0LQTrX (ORCPT
+	id S1753561Ab0LQTrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:47:33 -0500
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:46763 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751919Ab0LQTra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:47:23 -0500
-Message-ID: <4D0BBE00.3010602@kernel.org>
-Date: Fri, 17 Dec 2010 11:46:08 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Maxim Uvarov <muvarov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <4D0AD976.3020504@zytor.com> <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org> <20101217170146.GC9568@redhat.com> <4D0BA45A.7020402@zytor.com> <20101217180242.GB12425@redhat.com> <4D0BAA24.3080801@kernel.org> <4D0BBC55.4010207@zytor.com>
-In-Reply-To: <4D0BBC55.4010207@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 17 Dec 2010 14:47:30 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=AO+TlRNi3ZtK57kA9Hjs49XIe/z0bqE26IIp/1CG646qj34fgkH/sfi6OnJ1QT0enQCwOmYhw5il8jRZKqsTu0GHauBAo0xlqgZrFfIzVz3ytsxrZmfzStvf5H5TtUUb;
+Date: Fri, 17 Dec 2010 11:47:21 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Jon Mason <jon.mason@exar.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Ramkrishna Vepa <ramkrishna.vepa@exar.com>
+Subject: Re: "x86: allocate space within a region top-down" causes bar0
+ access issue
+Message-ID: <20101217114721.04eafeca@jbarnes-desktop>
+In-Reply-To: <20101217194457.GA4470@exar.com>
+References: <20101217194457.GA4470@exar.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2010 11:39 AM, H. Peter Anvin wrote:
-> On 12/17/2010 10:21 AM, Yinghai Lu wrote:
->>>>
->>>> Do we have actual testing for how high the 64-bit kernel will load?
->>>
->>> I will do some experiments on my box today and let you know.
->>
->> if bzImage is used, it is 896M.
->>
-> 
-> Why?  896 MiB is a 32-bit kernel limitation which doesn't have anything
-> to do with the bzImage format.
-> 
-> So unless there is something going on here, I suspect you're just plain
-> flat wrong.
+On Fri, 17 Dec 2010 13:44:58 -0600
+Jon Mason <jon.mason@exar.com> wrote:
 
-kexec-tools have some checking when it loads bzImage.
+> The following patch is causing problem with the vxge driver/adapter on
+> HP x86-64 systems. Reads to bar0 to return 0xffffffffffffffff instead
+> of their intended value.  This prevents the vxge module from loading
+> by failing sanity checks in the driver for certain values in bar0.  We
+> are not seeing any issues with this patch on non-HP systems in our
+> lab.
+> 
+> Can this patch be removed from 2.6.37 until a better solution can be
+> found?
 
-	Yinghai
+Can you try my for-linus branch and see if the problem still exists
+there?  It's at
+git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6.git.
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
