@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab0LQD3E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 22:29:04 -0500
-Received: from [120.35.11.139] ([120.35.11.139]:55943 "EHLO fzex.ruijie.com.cn"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752573Ab0LQD3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 22:29:02 -0500
-From: =?utf-8?B?5p6X5ZiJKOeglOS4gyDnpo/lt54p?= <linjia@ruijie.com.cn>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: a question about netlink?
-Thread-Topic: a question about netlink?
-Thread-Index: AcudmR8JqQ1E7VARSH++sKvbtz6XdQAAVoZQ
-Date: Fri, 17 Dec 2010 03:29:13 +0000
-Message-ID: <54A83BDB1B497D429FE6D4D3A6E5C5C919150531@fzex.ruijie.com.cn>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: BA6G C2nk DPPI DbzE DgIy EIZc EnDw FVCi Fp84 GnaI Gs/6
- HUMS HU8U Hyrm Kx2A
- MyMm;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{8BCC22F5-7EFE-4856-AFD2-A6771B34B0C0};bABpAG4AagBpAGEAQAByAHUAaQBqAGkAZQAuAGMAbwBtAC4AYwBuAA==;Fri,
- 17 Dec 2010 03:29:13
- GMT;YQAgAHEAdQBlAHMAdABpAG8AbgAgAGEAYgBvAHUAdAAgAG4AZQB0AGwAaQBuAGsAPwA=
-x-cr-puzzleid: {8BCC22F5-7EFE-4856-AFD2-A6771B34B0C0}
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752754Ab0LQDah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 22:30:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42671 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab0LQDag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 22:30:36 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Mb5t5SBxjC68Ouf6Zl8A:9 a=JBVwgXLV793z1M_p7gajqEcqzpIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Darren Hart <dvhart@linux.intel.com>, Lai Jiangshan <eag0628@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1292555862.22905.5.camel@gandalf.stny.rr.com>
+References: <4D07330A.7020600@cn.fujitsu.com>
+	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
+	 <4D083900.1050801@cn.fujitsu.com>
+	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
+	 <4D0877D2.10000@cn.fujitsu.com>
+	 <alpine.LFD.2.00.1012151029090.12146@localhost6.localdomain6>
+	 <AANLkTi=x-_ffBnFL4TMtjGBBpbu9aBvSHKiQ7BgNy7J0@mail.gmail.com>
+	 <4D0A77B5.3040900@linux.intel.com>  <4D0AD4A8.7050206@cn.fujitsu.com>
+	 <1292555862.22905.5.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 16 Dec 2010 22:30:34 -0500
+Message-ID: <1292556634.22905.6.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oBH3THlc023163
 
-in af_netlink.c
+On Thu, 2010-12-16 at 22:17 -0500, Steven Rostedt wrote:
+> On Fri, 2010-12-17 at 11:10 +0800, Lai Jiangshan wrote:
+> > On 12/17/2010 04:33 AM, Darren Hart wrote:
+> 
+> > I also try to port it to -rt. Steven, have you ported it to -rt?
+> 
+> I'm porting it now. -rt does a a bit to the rtmutex.c code, and I spent
+> a bit of time cleaning it up. I finally got your patch to compile, and
+> now I'm debugging it ;-)
+> 
+> I'm hoping to have it ready to post tomorrow.
 
-do_one_broadcast
-{
-Â Â Â Â Â Â Â Â  if (nlk->pid == p->pid || p->group - 1 >= nlk->ngroups ||
-Â Â Â Â Â Â Â Â  Â Â Â  !test_bit(p->group - 1, nlk->groups))
-Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  goto out;
-}
+Update: I just successfully booted a port of your patch. I'll keep it
+running over night and post it tomorrow morning (if it doesn't crash).
 
-why here write:" p->group - 1 >= nlk->ngroups" but not " p->group > nlk->ngroups " , or " (p->group & nlk->ngroups) != 0 "
+/me kicks off a bunch of dbenches
 
-I think the message is only sento nlk whoes groups 'p->group' bit is set.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- Steve
+
+
