@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab0LQQsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 11:48:36 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:56769 "EHLO smtp.infotech.no"
+	id S1754483Ab0LQQu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 11:50:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44003 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab0LQQsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 11:48:35 -0500
-Message-ID: <4D0B945C.2060309@interlog.com>
-Date: Fri, 17 Dec 2010 11:48:28 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: linux-scsi <linux-scsi@vger.kernel.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Penokie, George" <George.Penokie@lsi.com>
-Subject: RFC: short reads on block devices
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753352Ab0LQQuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 11:50:55 -0500
+Date: Fri, 17 Dec 2010 14:50:03 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v2.6.37-rc6] V4L/DVB BKL fixes
+Message-ID: <20101217145003.75852ba3@pedra>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently while testing with the scsi_debug driver
-I was able to trick the block layer into reading
-random data which the block layer thought was
-valid ***.
+Hi Linus,
 
-Best to start with an example, say LBA ** 4660 has
-an unrecoverable error (aka medium error) and
-the block layer fires off a SCSI READ for 8
-blocks (512 byte variety) at LBA 4656. The response
-will be a medium error with the sense buffer info
-field indicating LBA 4660. Now are the 4 blocks
-that precede it (i.e. LBA 4656 to 4659) possibly
-sitting in the data-in buffer and valid??
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git bkl_removal
 
-The block layer thinks they are. This is what my
-term "short read" in the title alludes to. So I put
-this question to the T10 reflector:
-    http://www.t10.org/t10r.htm
-titled "sbc: reading blocks prior to a medium error".
-And the answers were pretty clear. And the one from
-George Penokie of LSI is interesting because Linux's
-block layer assumption breaks some of LSI's equipment.
+For a series of BKL removal fixes that are needed in order to allow making V4L core
+non-dependent of CONFIG_BKL. Several patches on this series are trivial.
 
-On the other hand, big array vendors and database vendors
-want exactly what the block layer is doing at the moment.
-So those guys don't want a change. [Please correct me
-if that is too sweeping.] Also I'm informed some other
-OSes do this as well.
+There's still one bug left with bttv driver. I have a patch for it already. I'll be
+adding it at -next and let it cook there for a couple days before sending you a pull
+request.
 
-I would like to propose a solution, at least in the SCSI
-subsystem context. The 'resid' field was added 11 years
-ago and is used by a HBA driver to indicate how many bytes
-less than requested were placed in the scatter gather
-list (i.e. the data-in buffer). It defaults to zero
-(meaning all requested bytes have been read). Usually
-for a medium error one would not bother setting resid
-(so resid would remain 0). Somewhat surprisingly the
-block layer has always ignored resid. I propose in the
-case of a short read caused by a MEDIUM ERROR the block
-layer checks resid. And if resid equals the requested
-number of bytes then that means no data in the scatter
-gather list is valid. So the block layer should act on
-this information.
+Cheers,
+Mauro.
 
-To this end I propose to change the scsi_debug driver
-to set resid equal to bufflen when it simulates a
-medium error.
+---
 
-Changes in the block layer and drivers from vendors who
-want the strict "T10" handling of medium errors would
-also be required. Maybe the USB mass storage (and UAS)
-folks might also check if this impacts them.
 
-Doug Gilbert
+The following changes since commit e53beacd23d9cb47590da6a7a7f6d417b941a994:
 
-**  LBA is Logical Block Address (origin 0)
+  Linux 2.6.37-rc2 (2010-11-15 18:31:02 -0800)
 
-*** Using 'modprobe scsi_debug opts=2' will set up a
-     pseudo device which the example in the second
-     paragraph is based on. Write a known pattern into the
-     pseudo device (only 8 MB long) and use dd to read
-     that device. Due to the 4 KB blocks used by the block
-     layer, the read ends at LBA 4655. In my tests LBAs
-     4576 through to 4655 are corrupted (i.e. not what is
-     actually on the pseudo device).
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git bkl_removal
+
+Hans Verkuil (15):
+      [media] BKL: trivial BKL removal from V4L2 radio drivers
+      [media] cadet: use unlocked_ioctl
+      [media] tea5764: convert to unlocked_ioctl
+      [media] si4713: convert to unlocked_ioctl
+      [media] typhoon: convert to unlocked_ioctl
+      [media] BKL: trivial ioctl -> unlocked_ioctl video driver conversions
+      [media] sn9c102: convert to unlocked_ioctl
+      [media] et61x251_core: trivial conversion to unlocked_ioctl
+      [media] cafe_ccic: replace ioctl by unlocked_ioctl
+      [media] sh_vou: convert to unlocked_ioctl
+      [media] radio-timb: convert to unlocked_ioctl
+      [media] cx18: convert to unlocked_ioctl
+      [media] v4l2-dev: use mutex_lock_interruptible instead of plain mutex_lock
+      [media] V4L: improve the BKL replacement heuristic
+      [media] v4l2-dev: fix race condition
+
+Laurent Pinchart (5):
+      [media] uvcvideo: Lock controls mutex when querying menus
+      [media] uvcvideo: Move mutex lock/unlock inside uvc_free_buffers
+      [media] uvcvideo: Move mmap() handler to uvc_queue.c
+      [media] uvcvideo: Lock stream mutex when accessing format-related information
+      [media] uvcvideo: Convert to unlocked_ioctl
+
+ drivers/media/radio/radio-aimslab.c          |   16 +-
+ drivers/media/radio/radio-aztech.c           |    6 +-
+ drivers/media/radio/radio-cadet.c            |   12 ++-
+ drivers/media/radio/radio-gemtek-pci.c       |    6 +-
+ drivers/media/radio/radio-gemtek.c           |   14 +-
+ drivers/media/radio/radio-maestro.c          |   14 +-
+ drivers/media/radio/radio-maxiradio.c        |    2 +-
+ drivers/media/radio/radio-miropcm20.c        |    6 +-
+ drivers/media/radio/radio-rtrack2.c          |   10 +-
+ drivers/media/radio/radio-sf16fmi.c          |    7 +-
+ drivers/media/radio/radio-sf16fmr2.c         |   11 +-
+ drivers/media/radio/radio-si4713.c           |    3 +-
+ drivers/media/radio/radio-tea5764.c          |   49 ++------
+ drivers/media/radio/radio-terratec.c         |    8 +-
+ drivers/media/radio/radio-timb.c             |    5 +-
+ drivers/media/radio/radio-trust.c            |   18 ++--
+ drivers/media/radio/radio-typhoon.c          |   16 +-
+ drivers/media/radio/radio-zoltrix.c          |   30 ++--
+ drivers/media/video/arv.c                    |    2 +-
+ drivers/media/video/bw-qcam.c                |    2 +-
+ drivers/media/video/c-qcam.c                 |    2 +-
+ drivers/media/video/cafe_ccic.c              |    2 +-
+ drivers/media/video/cx18/cx18-alsa-pcm.c     |    8 +-
+ drivers/media/video/cx18/cx18-streams.c      |    2 +-
+ drivers/media/video/et61x251/et61x251_core.c |    2 +-
+ drivers/media/video/meye.c                   |   14 +-
+ drivers/media/video/pms.c                    |    2 +-
+ drivers/media/video/sh_vou.c                 |   13 +-
+ drivers/media/video/sn9c102/sn9c102_core.c   |    2 +-
+ drivers/media/video/uvc/uvc_ctrl.c           |   48 +++++++-
+ drivers/media/video/uvc/uvc_queue.c          |  133 +++++++++++++++---
+ drivers/media/video/uvc/uvc_v4l2.c           |  185 ++++++++------------------
+ drivers/media/video/uvc/uvc_video.c          |    3 -
+ drivers/media/video/uvc/uvcvideo.h           |   10 +-
+ drivers/media/video/v4l2-dev.c               |   69 +++++++---
+ drivers/media/video/v4l2-device.c            |    1 +
+ drivers/media/video/w9966.c                  |    2 +-
+ include/media/v4l2-device.h                  |    2 +
+ 38 files changed, 413 insertions(+), 324 deletions(-)
+
