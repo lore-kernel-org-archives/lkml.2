@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab0LQSnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:43:01 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:36160 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752109Ab0LQSnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:43:00 -0500
-Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
-From: Dario Faggioli <raistlin@linux.it>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Michael Trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>
-In-Reply-To: <alpine.LFD.2.00.1012171630330.12146@localhost6.localdomain6>
-References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
-	 <1292596194.2266.283.camel@twins> <1292596369.2266.286.camel@twins>
-	 <AANLkTinGkf3a4_sw32b4UqAmpUU+i6fDmDUT8tXdw14D@mail.gmail.com>
-	 <1292599007.2266.290.camel@twins>
-	 <alpine.LFD.2.00.1012171630330.12146@localhost6.localdomain6>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-7MGPi23zBQhg9JtNzDXe"
-Date: Fri, 17 Dec 2010 19:44:54 +0100
-Message-ID: <1292611494.2697.58.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755844Ab0LQSox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:44:53 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37309 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743Ab0LQSov convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 13:44:51 -0500
+MIME-Version: 1.0
+Message-ID: <7fbf2264-04be-4899-9c1f-5c2e0942b158@default>
+Date: Fri, 17 Dec 2010 10:44:06 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: RE: [RFC] radix_tree_destroy?
+References: <62b1cf2f-17ec-45c9-a980-308d9b75cdc5@default
+ 20101217032721.GD20847@linux-sh.org>
+In-Reply-To: <20101217032721.GD20847@linux-sh.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6539.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > +void radix_tree_destroy(struct radix_tree_root *root, void
+> (*slot_free)(void *))
+> > +{
+> > +	if (root->rnode == NULL)
+> > +		return;
+> > +	if (root->height == 0)
+> > +		slot_free(root->rnode);
+> 
+> Don't you want indirect_to_ptr(root->rnode) here? You probably also
+> don't
+> want the callback in the !radix_tree_is_indirect_ptr() case.
+> 
+> > +	else {
+> > +		radix_tree_node_destroy(root->rnode, root->height,
+> slot_free);
+> > +		radix_tree_node_free(root->rnode);
+> > +		root->height = 0;
+> > +	}
+> > +	root->rnode = NULL;
+> > +}
+> 
+> The above will handle the nodes, but what about the root? It looks like
+> you're at least going to leak tags on the root, so at the very least
+> you'd still want a root_tag_clear_all() here.
 
---=-7MGPi23zBQhg9JtNzDXe
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for your help.  Will do both.  My use model doesn't require
+tags or rcu, so my hacked version of radix_tree_destroy missed those
+subtleties.
 
-On Fri, 2010-12-17 at 16:43 +0100, Thomas Gleixner wrote:=20
-> There's that and I have yet to see a proof that running code with
-> lower frequency and not going idle saves more power than running full
-> speed and going into low power states for longer time.
->=20
-I was expecting a reply like this from right from you! :-P
+So my assumption was correct?  There is no way to efficiently
+destroy an entire radix tree without adding this new routine?
 
-BTW, I mostly agree that race to idle is better. The point here is that
-you might end in a situation where frequency scaling is enabled and/or
-a particular frequency is statically selected for whatever reason. In
-that case, making the scheduler aware of such could be needed to get the
-expected behaviour out of it, independently from the fact it is probably
-going to be worse than race-to-idle for power saving purposes... How
-much am I wrong?
-
-> Also if you want to have your deadline scheduler aware of cpu
-> frequency changes, then simply limit the total bandwith based on the
-> lowest possible frequency and it works always.=20
->
-That could be a solution as well, although you're limiting a lot the
-bandwidth available for deadline task. But something similar could be
-considered...
-
-> This whole dynamic
-> bandwith expansion is more an academic exercise than a practical
-> necessity.
->=20
-Well, despite the fact that Harald is with Ericsson and as not much to
-do with academia. :-D
-
-Regards,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
-
---=-7MGPi23zBQhg9JtNzDXe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk0Lr6YACgkQk4XaBE3IOsROgQCfY5SNuX5trgolEapMJNaXuOt8
-hBMAn2Ao5v9CpWx/zuUoF2oC1hFPMRGZ
-=mxHu
------END PGP SIGNATURE-----
-
---=-7MGPi23zBQhg9JtNzDXe--
-
+Thanks,
+Dan
