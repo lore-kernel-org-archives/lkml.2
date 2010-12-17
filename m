@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab0LQDA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 22:00:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44087 "EHLO mail.zytor.com"
+	id S1752467Ab0LQDBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 22:01:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38962 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab0LQDAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 22:00:25 -0500
-Message-ID: <4D0AD232.8020107@zytor.com>
-Date: Thu, 16 Dec 2010 19:00:02 -0800
+	id S1752219Ab0LQDBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 22:01:12 -0500
+Message-ID: <4D0AD1F9.7030704@zytor.com>
+Date: Thu, 16 Dec 2010 18:59:05 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
-Subject: Re: [PATCH 0/9] PCI: revert to allocating bottom-up, avoid E820 areas
-References: <20101216173614.8185.19462.stgit@bob.kio> <AANLkTikqmfWhLuTiP8tPqcCGMZUe=iDOJVUZGy8pnRL0@mail.gmail.com>
-In-Reply-To: <AANLkTikqmfWhLuTiP8tPqcCGMZUe=iDOJVUZGy8pnRL0@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [BUG]x86: relocatable doesn't work with new binutils
+References: <1292553726.2323.482.camel@sli10-conroe>
+In-Reply-To: <1292553726.2323.482.camel@sli10-conroe>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 01:59 PM, Linus Torvalds wrote:
-> On Thu, Dec 16, 2010 at 9:38 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->>
->> So I think the best band-aid for now is to revert to bottom-up allocation
->> and do a better job of avoiding E820 reserved areas.  Obviously, it's not
->> complete because we could still trip over ACPI devices (as in 23802), but
->> that's a problem we've always had and it's not as likely if we go bottom-up.
-> 
-> Ok, ack for this series. Have we got testers for it? In particular,
-> have the people who have seen regressions been notified of this new
-> series?
-> 
+On 12/16/2010 06:42 PM, Shaohua Li wrote:
+> We can easily workaround this issue by moving jiffies to a section or at
+> least warn people if such binutils are using. what should we do?
 
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-
-... for the series as well.  For what it's worth.
+I think we should do the workaround, but still get distros to update the
+broken binutils.
 
 	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
