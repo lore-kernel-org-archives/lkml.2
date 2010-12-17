@@ -1,216 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab0LQMq1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 07:46:27 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:64449 "EHLO mgw-da02.nokia.com"
+	id S1754452Ab0LQMqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 07:46:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43875 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324Ab0LQMqU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 07:46:20 -0500
-From: <ilkka.koskinen@nokia.com>
-To: <samu.p.onkalo@nokia.com>, <rpurdie@rpsys.net>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <arun.murthy@stericsson.com>,
-        <ankur.vaish@stericsson.com>
-Subject: RE: [PATCH 2/3] leds: lp5523: Fix circular locking
-Thread-Topic: [PATCH 2/3] leds: lp5523: Fix circular locking
-Thread-Index: AQHLndPsjpwMSDNgGEKcJj6uyRNHLZOkkMBw
-Date: Fri, 17 Dec 2010 12:45:44 +0000
-Message-ID: <B152A2ECB7F1E847B5E0A8CFDF6F369002E1F8@008-AM1MPN1-022.mgdnok.nokia.com>
-References: <1292581161-1177-1-git-send-email-samu.p.onkalo@nokia.com>
- <1292581161-1177-3-git-send-email-samu.p.onkalo@nokia.com>
-In-Reply-To: <1292581161-1177-3-git-send-email-samu.p.onkalo@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 17 Dec 2010 12:45:47.0698 (UTC) FILETIME=[53F8D120:01CB9DE8]
-X-Nokia-AV: Clean
+	id S1754338Ab0LQMqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 07:46:21 -0500
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Cc: Benjamin Marzinski <bmarzins@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 11/15] GFS2: fix recursive locking during rindex truncates
+Date: Fri, 17 Dec 2010 12:24:17 +0000
+Message-Id: <1292588661-14350-12-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1292588661-14350-1-git-send-email-swhiteho@redhat.com>
+References: <1292588661-14350-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Benjamin Marzinski <bmarzins@redhat.com>
 
->From: Onkalo Samu.P (Nokia-MS/Tampere)
->Sent: 17 December, 2010 12:19
->Subject: [PATCH 2/3] leds: lp5523: Fix circular locking
->
->Driver contained possibility for circular locking.
->One lock is held by sysfs-core and another one by the driver itself.
->This happened when the driver created or removed sysfs entries
->dynamically.
->There is no real need to do those operations. Now all the sysfs entries
->are created at probe and removed at removal. Engine load and mux
->configuration
->sysfs entries are now visible all the time. However, access to the
->entries
->fails if the engine is disabled or running.
->
->Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
->---
-> drivers/leds/leds-lp5523.c |   56 ++++++++++++-------------------------
->------
-> 1 files changed, 16 insertions(+), 40 deletions(-)
->
->diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
->index 6cb4160..d0c4068 100644
->--- a/drivers/leds/leds-lp5523.c
->+++ b/drivers/leds/leds-lp5523.c
->@@ -105,7 +105,6 @@
-> #define SHIFT_MASK(id)			(((id) - 1) * 2)
->
-> struct lp5523_engine {
->-	const struct attribute_group *attributes;
-> 	int		id;
-> 	u8		mode;
-> 	u8		prog_page;
->@@ -403,14 +402,23 @@ static ssize_t store_engine_leds(struct device
->*dev,
-> 	struct i2c_client *client = to_i2c_client(dev);
-> 	struct lp5523_chip *chip = i2c_get_clientdata(client);
-> 	u16 mux = 0;
->+	ssize_t ret;
->
-> 	if (lp5523_mux_parse(buf, &mux, len))
-> 		return -EINVAL;
->
->+	mutex_lock(&chip->lock);
->+	ret = -EINVAL;
+When you truncate the rindex file, you need to avoid calling gfs2_rindex_hold,
+since you already hold it.  However, if you haven't already read in the
+resource groups, you need to do that.
 
-You could move this assignment to declaration. But otherwise
-looks good to me. So,
+Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-Reviewed-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-
-
-Cheers, 
-
-
->+	if (chip->engines[nr - 1].mode != LP5523_CMD_LOAD)
->+		goto leave;
->+
-> 	if (lp5523_load_mux(&chip->engines[nr - 1], mux))
->-		return -EINVAL;
->+		goto leave;
->
->-	return len;
->+	ret = len;
->+leave:
->+	mutex_unlock(&chip->lock);
->+	return ret;
-> }
->
-> #define store_leds(nr)						\
->@@ -556,7 +564,11 @@ static int lp5523_do_store_load(struct
->lp5523_engine *engine,
->
-> 	mutex_lock(&chip->lock);
->
->-	ret = lp5523_load_program(engine, pattern);
->+	if (engine->mode == LP5523_CMD_LOAD)
->+		ret = lp5523_load_program(engine, pattern);
->+	else
->+		ret = -EINVAL;
->+
-> 	mutex_unlock(&chip->lock);
->
-> 	if (ret) {
->@@ -737,37 +749,18 @@ static struct attribute *lp5523_attributes[] = {
-> 	&dev_attr_engine2_mode.attr,
-> 	&dev_attr_engine3_mode.attr,
-> 	&dev_attr_selftest.attr,
->-	NULL
->-};
->-
->-static struct attribute *lp5523_engine1_attributes[] = {
-> 	&dev_attr_engine1_load.attr,
-> 	&dev_attr_engine1_leds.attr,
->-	NULL
->-};
->-
->-static struct attribute *lp5523_engine2_attributes[] = {
-> 	&dev_attr_engine2_load.attr,
-> 	&dev_attr_engine2_leds.attr,
->-	NULL
->-};
->-
->-static struct attribute *lp5523_engine3_attributes[] = {
-> 	&dev_attr_engine3_load.attr,
-> 	&dev_attr_engine3_leds.attr,
->-	NULL
-> };
->
-> static const struct attribute_group lp5523_group = {
-> 	.attrs = lp5523_attributes,
-> };
->
->-static const struct attribute_group lp5523_engine_group[] = {
->-	{.attrs = lp5523_engine1_attributes },
->-	{.attrs = lp5523_engine2_attributes },
->-	{.attrs = lp5523_engine3_attributes },
->-};
->-
-> static int lp5523_register_sysfs(struct i2c_client *client)
-> {
-> 	struct device *dev = &client->dev;
->@@ -788,10 +781,6 @@ static void lp5523_unregister_sysfs(struct
->i2c_client *client)
->
-> 	sysfs_remove_group(&dev->kobj, &lp5523_group);
->
->-	for (i = 0; i < ARRAY_SIZE(chip->engines); i++)
->-		if (chip->engines[i].mode == LP5523_CMD_LOAD)
->-			sysfs_remove_group(&dev->kobj,
->&lp5523_engine_group[i]);
->-
-> 	for (i = 0; i < chip->num_leds; i++)
-> 		sysfs_remove_group(&chip->leds[i].cdev.dev->kobj,
-> 				&lp5523_led_attribute_group);
->@@ -802,10 +791,6 @@ static void lp5523_unregister_sysfs(struct
->i2c_client *client)
-> /*--------------------------------------------------------------*/
-> static int lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
-> {
->-	/*  engine to chip */
->-	struct lp5523_chip *chip = engine_to_lp5523(engine);
->-	struct i2c_client *client = chip->client;
->-	struct device *dev = &client->dev;
-> 	int ret = 0;
->
-> 	/* if in that mode already do nothing, except for run */
->@@ -817,18 +802,10 @@ static int lp5523_set_mode(struct lp5523_engine
->*engine, u8 mode)
-> 	} else if (mode == LP5523_CMD_LOAD) {
-> 		lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
-> 		lp5523_set_engine_mode(engine, LP5523_CMD_LOAD);
->-
->-		ret = sysfs_create_group(&dev->kobj, engine->attributes);
->-		if (ret)
->-			return ret;
-> 	} else if (mode == LP5523_CMD_DISABLED) {
-> 		lp5523_set_engine_mode(engine, LP5523_CMD_DISABLED);
-> 	}
->
->-	/* remove load attribute from sysfs if not in load mode */
->-	if (engine->mode == LP5523_CMD_LOAD && mode != LP5523_CMD_LOAD)
->-		sysfs_remove_group(&dev->kobj, engine->attributes);
->-
-> 	engine->mode = mode;
->
-> 	return ret;
->@@ -845,7 +822,6 @@ static int __init lp5523_init_engine(struct
->lp5523_engine *engine, int id)
-> 	engine->engine_mask = LP5523_ENG_MASK_BASE >> SHIFT_MASK(id);
-> 	engine->prog_page = id - 1;
-> 	engine->mux_page = id + 2;
->-	engine->attributes = &lp5523_engine_group[id - 1];
->
-> 	return 0;
-> }
->--
->1.7.0.4
+diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
+index 5476c06..ae7d205 100644
+--- a/fs/gfs2/bmap.c
++++ b/fs/gfs2/bmap.c
+@@ -780,7 +780,11 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 	if (metadata)
+ 		revokes = (height) ? sdp->sd_inptrs : sdp->sd_diptrs;
+ 
+-	error = gfs2_rindex_hold(sdp, &ip->i_alloc->al_ri_gh);
++	if (ip != GFS2_I(sdp->sd_rindex))
++		error = gfs2_rindex_hold(sdp, &ip->i_alloc->al_ri_gh);
++	else if (!sdp->sd_rgrps)
++		error = gfs2_ri_update(ip);
++
+ 	if (error)
+ 		return error;
+ 
+@@ -879,7 +883,8 @@ out_rg_gunlock:
+ out_rlist:
+ 	gfs2_rlist_free(&rlist);
+ out:
+-	gfs2_glock_dq_uninit(&ip->i_alloc->al_ri_gh);
++	if (ip != GFS2_I(sdp->sd_rindex))
++		gfs2_glock_dq_uninit(&ip->i_alloc->al_ri_gh);
+ 	return error;
+ }
+ 
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index 6375b38..25dbe5c 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -583,7 +583,7 @@ static int read_rindex_entry(struct gfs2_inode *ip,
+  * Returns: 0 on successful update, error code otherwise
+  */
+ 
+-static int gfs2_ri_update(struct gfs2_inode *ip)
++int gfs2_ri_update(struct gfs2_inode *ip)
+ {
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct inode *inode = &ip->i_inode;
+diff --git a/fs/gfs2/rgrp.h b/fs/gfs2/rgrp.h
+index 0e35c04..50c2bb0 100644
+--- a/fs/gfs2/rgrp.h
++++ b/fs/gfs2/rgrp.h
+@@ -48,6 +48,7 @@ extern int gfs2_inplace_reserve_i(struct gfs2_inode *ip, int hold_rindex,
+ 
+ extern void gfs2_inplace_release(struct gfs2_inode *ip);
+ 
++extern int gfs2_ri_update(struct gfs2_inode *ip);
+ extern int gfs2_alloc_block(struct gfs2_inode *ip, u64 *bn, unsigned int *n);
+ extern int gfs2_alloc_di(struct gfs2_inode *ip, u64 *bn, u64 *generation);
+ 
+-- 
+1.7.3.3
 
