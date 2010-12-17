@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab0LQXOA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 18:14:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40099 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab0LQXN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 18:13:57 -0500
-Message-ID: <4D0BEE1F.7020008@zytor.com>
-Date: Fri, 17 Dec 2010 15:11:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1756053Ab0LQXOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 18:14:51 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:61702 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab0LQXOt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 18:14:49 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6200"; a="67093034"
+Message-ID: <7276921204ba82a2065faa61548f1699.squirrel@www.codeaurora.org>
+In-Reply-To: <AANLkTinsgqLDe3=KX59n1UAp9v0ErXQzxj+A+qQ8TRj_@mail.gmail.com>
+References: <4CF94DDD.8000409@codeaurora.org>
+    <20101203203653.GB10245@n2100.arm.linux.org.uk>
+    <4CFDD297.4020600@codeaurora.org>
+    <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
+    <20101209103835.GA31465@n2100.arm.linux.org.uk>
+    <4D017B45.4000805@codeaurora.org>
+    <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
+    <4D045692.4050607@codeaurora.org>
+    <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
+    <8c67e174d807416f0c6c190cc72d3f5a.squirrel@www.codeaurora.org>
+    <20101217094818.GA9937@n2100.arm.linux.org.uk>
+    <99eb693af85e07b01d81d45f1bc77f64.squirrel@www.codeaurora.org>
+    <AANLkTinsgqLDe3=KX59n1UAp9v0ErXQzxj+A+qQ8TRj_@mail.gmail.com>
+Date: Fri, 17 Dec 2010 15:14:35 -0800 (PST)
+Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to 
+     early_initcall
+From: "Saravana Kannan" <skannan@codeaurora.org>
+To: "Catalin Marinas" <catalin.marinas@arm.com>
+Cc: "Saravana Kannan" <skannan@codeaurora.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        "Nicolas Pitre" <nico@marvell.com>, linux-kernel@vger.kernel.org,
+        "Jeff Ohlstein" <johlstei@codeaurora.org>, "Tejun Heo" <tj@kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
-        akpm@linux-foundation.org, ying.huang@intel.com,
-        Borislav Petkov <bp@alien8.de>, David Miller <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [concept & "good taste" review] persistent store
-References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>	<AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>	<AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com>	<AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>	<AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com> <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
-In-Reply-To: <AANLkTinCG+E6ZzpeRqsJP+-qvNDQXW4VZFgJ1c-sTryL@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2010 03:08 PM, Tony Luck wrote:
-> 
-> Do we have any good models for "journals" ... apart from
-> the console log?  Ying & I did talk about just using printk
-> to drop all the saved information onto the console (with
-> some sort of "previous" prefix on each line to make
-> it easy to find, and to make sure that someone glancing
-> at the messages wouldn't worry that that OOPs scrolling
-> by was happening now).  But this seemed like a really bad
-> idea (especially if someone has enough persistent store to
-> capture all of __logbuf).
-> 
-> So the downside of "everything is a file" is that we don't
-> have much infrastructure for things that don't look like
-> files - and trying to build some results in some special
-> custom tools being needed to access the data, which
-> just makes things harder to use.
-> 
-> People trying to write to /dev/pstore will figure out quickly
-> that you can't do that. There are no "ops" to make new files,
-> directories, symlinks or even to rename existing ones. You
-> can overwrite existing files (because I don't trap "open" to
-> deny them write access - but the 0444 mode is supposed
-> to be a visual clue to not do that).
-> 
+Catalin Marinas wrote:
+>> Russell,
+>>
+>> I agree with your point about using an API for purpose and not property.
+>> But I read Catalin's proposal as, let's treat secure domain as another
+>> DMA
+>> "device". If we make a conscious agreement to do that, then using the
+>> DMA
+>> API for secure domain would be "using it for its purpose" and we will
+>> make
+>> an effort to not break it with future updates. Of course, if we don't
+>> agree on that proposal, then we can't use the DMA API for secure domain
+>> stuff.
+>
+> If there is no better proposal, I'm for such extension to the DMA API.
+> From the kernel perspecitve, the secure side is just another entity
+> that accesses the RAM directly. It's not a physically separate device
+> indeed but from a direct memory access perspective it can be treated
+> as any other device.
+>
+> In the DMA API we can fall back to the non-coherent ops when a NULL
+> struct device is passed. I assume in your code you already pass a NULL
+> device to dma_alloc_coherent().
 
-There are two models I can think of:
+Russell,
 
-1. a file where the head is automatically dropped as space requires.
-2. a filesystem where the oldest files are automatically reclaimed.
+Would the extension of the DMA API as described above be acceptable to
+you? If not, can you please suggest an alternative that's acceptable to
+you?
 
-1 has been implemented in actual systems, 2 is kind of a logical extension.
+-Saravana
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-	-hpa
+
