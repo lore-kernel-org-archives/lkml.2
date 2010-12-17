@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab0LQESH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 23:18:07 -0500
-Received: from ganesha.gnumonks.org ([213.95.27.120]:37658 "EHLO
+	id S1753360Ab0LQESL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 23:18:11 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:37657 "EHLO
 	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab0LQEQi (ORCPT
+	with ESMTP id S1752667Ab0LQEQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Dec 2010 23:16:38 -0500
 From: KyongHo Cho <pullip.cho@samsung.com>
@@ -21,202 +21,251 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Mel Gorman <mel@csn.ul.ie>, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
-        KyongHo Cho <pullip.cho@samsung.com>
-Subject: [RFCv2,2/8] mm: vcm: reference counting on a reservation added
-Date: Fri, 17 Dec 2010 12:56:21 +0900
-Message-Id: <1292558187-17348-3-git-send-email-pullip.cho@samsung.com>
+        KyongHo Cho <pullip.cho@samsung.com>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [RFCv2,8/8] mm: vcm: Sample driver added
+Date: Fri, 17 Dec 2010 12:56:27 +0900
+Message-Id: <1292558187-17348-9-git-send-email-pullip.cho@samsung.com>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1292558187-17348-2-git-send-email-pullip.cho@samsung.com>
+In-Reply-To: <1292558187-17348-8-git-send-email-pullip.cho@samsung.com>
 References: <1292558187-17348-1-git-send-email-pullip.cho@samsung.com>
  <1292558187-17348-2-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-3-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-4-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-5-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-6-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-7-git-send-email-pullip.cho@samsung.com>
+ <1292558187-17348-8-git-send-email-pullip.cho@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commits adds vcm_ref_reserve() and refcnt member into vcm_res
-structure. This feature is enabled by turnning on
-CONFIG_VCM_RES_REFCNT. This enables the users of the vcm framework
-not to care about the sequence of reserving and unreserving
-in complex scenarios.
+This commit adds a sample Virtual Contiguous Memory framework
+driver.  It handles no real hardware and is there only for
+demonstrating purposes.
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+* * * THIS COMMIT IS NOT FOR MERGING * * *
+
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/virtual-contiguous-memory.txt |   47 +++++++++++++++++++++++++++
- include/linux/vcm.h                         |   23 +++++++++++++
- mm/Kconfig                                  |    7 ++++
- mm/vcm.c                                    |   17 ++++++++++
- 4 files changed, 94 insertions(+), 0 deletions(-)
+ Documentation/virtual-contiguous-memory.txt |    3 +
+ include/linux/vcm-sample.h                  |   30 +++++++
+ mm/Kconfig                                  |   13 +++
+ mm/Makefile                                 |    1 +
+ mm/vcm-sample.c                             |  119 +++++++++++++++++++++++++++
+ 5 files changed, 166 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/vcm-sample.h
+ create mode 100644 mm/vcm-sample.c
 
 diff --git a/Documentation/virtual-contiguous-memory.txt b/Documentation/virtual-contiguous-memory.txt
-index 9793a86..2008465 100644
+index 9354c4c..8edd457 100644
 --- a/Documentation/virtual-contiguous-memory.txt
 +++ b/Documentation/virtual-contiguous-memory.txt
-@@ -275,6 +275,34 @@ To deactivate the VCM context vcm_deactivate() function is used:
- Both of those functions can be called several times if all calls to
- vcm_activate() are paired with a later call to vcm_deactivate().
+@@ -781,6 +781,9 @@ already there.
+ Note that to use the VCM MMU wrapper one needs to select the VCM_MMU
+ Kconfig option or otherwise the wrapper won't be available.
  
-+** Aquiring and releasing ownership of a reservation
++There is a sample driver provided which provides a template for real
++drivers.  It can be found in [[file:../mm/vcm-sample.c][mm/vcm-sample.c]] file.
 +
-+Once a device driver reserve a reservation, it may want to pass other device
-+drivers or attach the reservation in a data structre. Since the reservation
-+may be shared among many device drivers, the VCM context is needed to provide
-+a simple way to unreserve a reservation.
-+
-+Below 2 functions gives the ownership of a reservation to the caller:
-+
-+	struct vcm_res *__must_check
-+	vcm_reserve(struct vcm *vcm, resource_size_t size, unsigned flags);
-+
-+	int __must_check vcm_ref_reserve(struct vcm_res *res);
-+
-+vcm_reserve() creates a new reservation, thus the first owner of the
-+reservation is set to the caller of vcm_reservation(). It then passes to a
-+function the reservation. The function that received the reservation calls
-+vcm_ref_reserve() to acquire the ownership of the given reservation. If the
-+function decides that it does not need the reservation any more, it calls
-+vcm_release() to release the ownership of the reservation.
-+
-+	void vcm_unreserve(struct vcm_res *res);
-+
-+It is not required to determine if other functions and drivers still need to
-+access the reservation because this function just release the ownership of the
-+reservation. If vcm_unreserve() finds no one has the ownership of the given
-+reservation, only then does it unreserve (remove) the given reservation.
-+
- ** Device driver example
+ *** Context creation
  
- The following is a simple, untested example of how platform and
-@@ -706,6 +734,25 @@ automatically reflect new mappings on the hardware MMU.
- Neither of the operations are required and if missing, VCM will
- assume they are a no-operation and no warning will be generated.
- 
-+*** Ownership of a reservation
-+
-+When to aquire the ownership of a reservation:
-+  - When creating a new reservation (having the ownership automatically)
-+  - When assigning a reservation to a member of data structure
-+  - When a reservation is passed from the caller function
-+  - When requiring to access a reservation (that is a global variable)
-+    at first in its context.
-+The first one is done with vcm_reserve() and others with vcm_ref_reserve().
-+
-+When to release the ownership of a reservation:
-+  - When a reservation is no longer needed in its context.
-+  - When returning from a function and the function received a reservation
-+    from its caller and acquired the ownership of the reservation.
-+  - When removing a reservation from a data structure that includes a pointer
-+    to the reservation
-+It is not required as well unable to remove the reservation explicitly. The
-+last call to vcm_unreserve() will cause the reservation to be removed.
-+
- * Epilogue
- 
- The initial version of the VCM framework was written by Zach Pfeffer
-diff --git a/include/linux/vcm.h b/include/linux/vcm.h
-index 965dc9b..3d54f18 100644
---- a/include/linux/vcm.h
-+++ b/include/linux/vcm.h
-@@ -52,6 +52,9 @@ struct vcm {
-  * @bound_size:	number of bytes actually bound to the virtual address;
-  *		read only.
-  * @res_size:	size of the reserved address space in bytes; read only.
-+ * @refcnt:	reference count of a reservation to pass ownership of
-+ *		a reservation in a safe way; internal.
-+ *		Implemented only when CONFIG_VCM_RES_REFCNT is enabled.
-  * @vcm:	VCM context; internal, read only for MMU drivers.
-  * @phys:	pointer to physical memory bound to this reservation; NULL
-  *		if no physical memory is bound; read only.
-@@ -65,6 +68,9 @@ struct vcm_res {
- 	dma_addr_t		start;
- 	resource_size_t		bound_size;
- 	resource_size_t		res_size;
-+#ifdef CONFIG_VCM_RES_REFCNT
-+	atomic_t		refcnt;
-+#endif
- 
- 	struct vcm		*vcm;
- 	struct vcm_phys		*phys;
-@@ -180,6 +186,23 @@ struct vcm_res *__must_check
- vcm_reserve(struct vcm *vcm, resource_size_t size, unsigned flags);
- 
- /**
-+ * vcm_ref_reserve() - acquires the ownership of a reservation.
-+ * @res:	a valid reservation to access
+ Similarly to normal drivers, MMU driver needs to provide a context
+diff --git a/include/linux/vcm-sample.h b/include/linux/vcm-sample.h
+new file mode 100644
+index 0000000..86a71ca
+--- /dev/null
++++ b/include/linux/vcm-sample.h
+@@ -0,0 +1,30 @@
++/*
++ * Virtual Contiguous Memory sample driver header file
++ * Copyright (c) 2010 by Samsung Electronics.
++ * Written by Michal Nazarewicz (m.nazarewicz@samsung.com)
 + *
-+ * On success returns 0 and leads the same effect as vcm_reserve() in the
-+ * context of the caller of this function. In other words, once a function
-+ * acquire the ownership of a reservation with vcm_ref_reserve(), it must
-+ * release the ownership with vcm_release() as soon as it does not need
-+ * the reservation.
-+ *
-+ * On error returns -EINVAL. The only reason of the error is passing an invalid
-+ * reservation like NULL or an unreserved reservation.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of the
++ * License or (at your optional) any later version of the license.
 + */
-+#ifdef CONFIG_VCM_RES_REFCNT
-+int __must_check vcm_ref_reserve(struct vcm_res *res);
-+#endif
++
++/*
++ * See Documentation/virtual-contiguous-memory.txt for details.
++ */
++
++#ifndef __LINUX_VCM_SAMP_H
++#define __LINUX_VCM_SAMP_H
++
++#include <linux/types.h>
++
++struct vcm;
 +
 +/**
-  * vcm_unreserve() - destroyers a virtual address space reservation
-  * @res:	reservation to destroy.
-  *
++ * vcm_samp_create() - creates a VCM context
++ *
++ * ... Documentation goes here ...
++ */
++struct vcm *__must_check vcm_samp_create(/* ... */);
++
++#endif
 diff --git a/mm/Kconfig b/mm/Kconfig
-index 7f0e4b1..b937f32 100644
+index 0f4d893..adb90a8 100644
 --- a/mm/Kconfig
 +++ b/mm/Kconfig
-@@ -353,6 +353,13 @@ config VCM
-  	  <Documentation/virtual-contiguous-memory.txt>.  If unsure, say
-  	  "n".
+@@ -430,6 +430,19 @@ config VCM_CMA
+  	  For more information see
+  	  <Documentation/virtual-contiguous-memory.txt>.  If unsure, say "n".
  
-+config VCM_RES_REFCNT
-+	bool "Reference counting on reservations"
-+	depends on VCM
-+	help
-+	  This enables reference counting on a reservation to make sharing
-+	  and migrating the ownership of the reservation easier.
++config VCM_SAMP
++ 	bool "VCM sample driver"
++ 	depends on VCM
++ 	select VCM_MMU
++ 	help
++ 	  This enables a sample driver for the VCM framework.  This driver
++ 	  does not handle any real harwdare.  It's merely an template of
++ 	  how for real drivers.
++
++ 	  For more information see
++ 	  <Documentation/virtual-contiguous-memory.txt>.  If unsure, say
++ 	  "n".
 +
  #
  # UP and nommu archs use km based percpu allocator
  #
-diff --git a/mm/vcm.c b/mm/vcm.c
-index 1389ee6..5819f0f 100644
---- a/mm/vcm.c
-+++ b/mm/vcm.c
-@@ -156,10 +156,23 @@ vcm_reserve(struct vcm *vcm, resource_size_t size, unsigned flags)
- 
- 	__vcm_alloc_and_reserve(vcm, size, NULL, 0, &res, flags);
- 
-+#ifdef CONFIG_VCM_RES_REFCNT
-+	if (!IS_ERR(res))
-+		atomic_inc(&res->refcnt);
-+#endif
+diff --git a/mm/Makefile b/mm/Makefile
+index 78e1bd5..515c433 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -46,3 +46,4 @@ obj-$(CONFIG_CMA) += cma.o
+ obj-$(CONFIG_CMA_BEST_FIT) += cma-best-fit.o
+ obj-$(CONFIG_VCM) += vcm.o
+ obj-$(CONFIG_VCM_CMA) += vcm-cma.o
++obj-$(CONFIG_VCM_SAMPLE) += vcm-sample.o
+diff --git a/mm/vcm-sample.c b/mm/vcm-sample.c
+new file mode 100644
+index 0000000..27a2ae7
+--- /dev/null
++++ b/mm/vcm-sample.c
+@@ -0,0 +1,119 @@
++/*
++ * Virtual Contiguous Memory driver template
++ * Copyright (c) 2010 by Samsung Electronics.
++ * Written by Michal Nazarewicz (m.nazarewicz@samsung.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of the
++ * License or (at your optional) any later version of the license.
++ */
 +
- 	return res;
- }
- EXPORT_SYMBOL_GPL(vcm_reserve);
- 
-+int __must_check vcm_ref_reserve(struct vcm_res *res)
++/*
++ * This is just a sample code.  It does nothing useful other then
++ * presenting a template for VCM driver.
++ */
++
++/*
++ * See Documentation/virtual-contiguous-memory.txt for details.
++ */
++
++#include <linux/vcm-drv.h>
++
++struct vcm_samp {
++	struct vcm_mmu	mmu;
++	/* ... */
++};
++
++static const unsigned vcm_samp_orders[] = {
++	4 + 20 - PAGES_SHIFT,	/* 16MiB pages */
++	0 + 20 - PAGES_SHIFT,	/*  1MiB pages */
++	6 + 10 - PAGES_SHIFT,	/* 64KiB pages */
++	2 + 10 - PAGES_SHIFT,	/*  4KiB pages */
++};
++
++static int vcm_samp_activate_page(dma_addr_t vaddr, dma_addr_t paddr,
++				  unsigned order, void *priv)
 +{
-+	if (WARN_ON(!res) || (atomic_inc_return(&res->refcnt) < 2))
-+		return -EINVAL;
++	struct vcm_samp *samp =
++		container_of((struct vcm *)priv, struct vcm_samp, mmu.vcm);
++
++	/*
++	 * Handle adding a mapping from virtual page at @vaddr to
++	 * physical page ad @paddr.  The page is of order @order which
++	 * means that it's (PAGE_SIZE << @order) bytes.
++	 */
++
++	return -EOPNOTSUPP;
++}
++
++static int vcm_samp_deactivate_page(dma_addr_t vaddr, dma_addr_t paddr,
++				    unsigned order, void *priv)
++{
++	struct vcm_samp *samp =
++		container_of((struct vcm *)priv, struct vcm_samp, mmu.vcm);
++
++	/*
++	 * Handle removing a mapping from virtual page at @vaddr to
++	 * physical page at @paddr.  The page is of order @order which
++	 * means that it's (PAGE_SIZE << @order) bytes.
++	 */
++
++	/* It's best not to fail here */
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(vcm_ref_reserve);
 +
- struct vcm_res *__must_check
- vcm_map(struct vcm *vcm, struct vcm_phys *phys, unsigned flags)
- {
-@@ -196,6 +209,10 @@ EXPORT_SYMBOL_GPL(vcm_map);
- void vcm_unreserve(struct vcm_res *res)
- {
- 	if (!WARN_ON(!res)) {
-+#ifdef CONFIG_VCM_RES_REFCNT
-+		if (!atomic_dec_and_test(&res->refcnt))
-+			return;
-+#endif
- 		if (WARN_ON(res->phys))
- 			vcm_unbind(res);
- 		if (!WARN_ON_ONCE(!res->vcm->driver->unreserve))
++static void vcm_samp_cleanup(struct vcm *vcm)
++{
++	struct vcm_samp *samp =
++		container_of(res->vcm, struct vcm_samp, mmu.vcm);
++
++	/* Clean ups ... */
++
++	kfree(samp);
++}
++
++struct vcm *__must_check vcm_samp_create(/* ... */)
++{
++	static const struct vcm_mmu_driver driver = {
++		.order           = vcm_samp_orders,
++		.cleanup         = vcm_samp_cleanup,
++		.activate_page   = vcm_samp_activate_page,
++		.deactivate_page = vcm_samp_deactivate_page,
++	};
++
++	struct vcm_samp *samp;
++	struct vcm *vcm;
++
++	switch (0) {
++	case 0:
++	case PAGE_SHIFT == 12:
++		/*
++		 * If you have a compilation error here it means you
++		 * are compiling for a very strange platfrom where
++		 * PAGE_SHIFT is not 12 (ie. PAGE_SIZE is not 4KiB).
++		 * This driver assumes PAGE_SHIFT is 12.
++		 */
++	};
++
++	samp = kzalloc(sizeof *samp, GFP_KERNEL);
++	if (!samp)
++		return ERR_PTR(-ENOMEM);
++
++	/* ... Set things up ... */
++
++	samp->mmu.driver    = &driver;
++	/* skip first 64K so that zero address will be a NULL pointer */
++	samp->mmu.vcm.start =  (64 << 10);
++	samp->mmu.vcm.size  = -(64 << 10);
++
++	vcm = vcm_mmu_init(&samp->mmu);
++	if (!IS_ERR(vcm))
++		return vcm;
++
++	/* ... Error recovery ... */
++
++	kfree(samp);
++	return vcm;
++}
++EXPORT_SYMBOL_GPL(vcm_samp_create);
 -- 
 1.6.2.5
 
