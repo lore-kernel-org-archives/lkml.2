@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab0LQLuk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:50:40 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:51927 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751721Ab0LQLuj (ORCPT
+	id S1752839Ab0LQLuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:50:44 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:47217 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751594Ab0LQLuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:50:39 -0500
+	Fri, 17 Dec 2010 06:50:40 -0500
 From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 To: Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
@@ -17,9 +17,9 @@ Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
         Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Subject: [PATCH 07/11] Bluetooth: Add UART API functions to ldisc
-Date: Fri, 17 Dec 2010 12:24:54 +0100
-Message-ID: <1292585094-28544-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH 03/11] mfd: Add support for CG2900 controller
+Date: Fri, 17 Dec 2010 12:24:02 +0100
+Message-ID: <1292585042-28408-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,310 +27,4416 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new functions to control break and flow
-as well as changing UART baud rate directly through the ldisc API
-rather then using the TTY API directly.
-It also adds a boolean parameter so it is optional to register
-to the Bluetooth stack (for drivers where a separate module
-registers to the Bluetooth stack instead).
+This patch adds support for the ST-Ericsson CG2900
+framework. The CG2900 is a chip supporting GPS, Bluetooth,
+and FM radio. The channels are separated by using the first
+byte to identify the channel.
+This patch adds support for allocating H:4 channels for both
+Kernel and User space (using char devs) using MFD framework.
 
 Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 ---
- drivers/bluetooth/hci_ath.c   |    1 +
- drivers/bluetooth/hci_bcsp.c  |    3 +-
- drivers/bluetooth/hci_h4.c    |    1 +
- drivers/bluetooth/hci_ldisc.c |  101 +++++++++++++++++++++++++++++++++++++---
- drivers/bluetooth/hci_ll.c    |    1 +
- drivers/bluetooth/hci_uart.h  |   16 +++++++
- 6 files changed, 114 insertions(+), 9 deletions(-)
+ drivers/mfd/Kconfig              |   16 +-
+ drivers/mfd/cg2900/Makefile      |    6 +-
+ drivers/mfd/cg2900/cg2900_chip.c | 3250 ++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/cg2900/cg2900_chip.h |  602 +++++++
+ drivers/mfd/cg2900/cg2900_lib.c  |  391 +++++
+ drivers/mfd/cg2900/cg2900_lib.h  |   61 +
+ include/net/bluetooth/hci.h      |    5 +
+ 7 files changed, 4327 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/mfd/cg2900/cg2900_chip.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_chip.h
+ create mode 100644 drivers/mfd/cg2900/cg2900_lib.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_lib.h
 
-diff --git a/drivers/bluetooth/hci_ath.c b/drivers/bluetooth/hci_ath.c
-index 6a160c1..a948be6 100644
---- a/drivers/bluetooth/hci_ath.c
-+++ b/drivers/bluetooth/hci_ath.c
-@@ -215,6 +215,7 @@ static struct hci_uart_proto athp = {
- 	.enqueue = ath_enqueue,
- 	.dequeue = ath_dequeue,
- 	.flush = ath_flush,
-+	.register_hci_dev = true,
- };
- 
- int __init ath_init(void)
-diff --git a/drivers/bluetooth/hci_bcsp.c b/drivers/bluetooth/hci_bcsp.c
-index 9c5b2dc..fe66cab 100644
---- a/drivers/bluetooth/hci_bcsp.c
-+++ b/drivers/bluetooth/hci_bcsp.c
-@@ -736,7 +736,8 @@ static struct hci_uart_proto bcsp = {
- 	.enqueue	= bcsp_enqueue,
- 	.dequeue	= bcsp_dequeue,
- 	.recv		= bcsp_recv,
--	.flush		= bcsp_flush
-+	.flush		= bcsp_flush,
-+	.register_hci_dev = true,
- };
- 
- int __init bcsp_init(void)
-diff --git a/drivers/bluetooth/hci_h4.c b/drivers/bluetooth/hci_h4.c
-index 7b8ad93..3fd7e00 100644
---- a/drivers/bluetooth/hci_h4.c
-+++ b/drivers/bluetooth/hci_h4.c
-@@ -171,6 +171,7 @@ static struct hci_uart_proto h4p = {
- 	.enqueue	= h4_enqueue,
- 	.dequeue	= h4_dequeue,
- 	.flush		= h4_flush,
-+	.register_hci_dev = true,
- };
- 
- int __init h4_init(void)
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index 7201482..b00597e 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -46,7 +46,10 @@
- 
- #include "hci_uart.h"
- 
--#define VERSION "2.2"
-+#define VERSION "2.3"
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 7c833f9..1328b5d 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -266,8 +266,20 @@ config MFD_CG2900
+ 	tristate "Support ST-Ericsson CG2900 main structure"
+ 	depends on NET
+ 	help
+-	  Support for ST-Ericsson CG2900 Connectivity Combo controller main structure.
+-	  Supports multiple functionalities muxed over a Bluetooth HCI H:4 interface.
++	  Support for ST-Ericsson CG2900 Connectivity Combo controller main
++	  structure.
++	  Allows chip drivers and transport drivers to register to the
++	  framework and implements functionality to map the correct
++	  chip driver to the connected chip using Bluetooth Read Local
++	  Version HCI command.
 +
-+#define TTY_BREAK_ON		(-1)
-+#define TTY_BREAK_OFF		(0)
++config MFD_CG2900_CHIP
++	tristate "Support CG2900 Connectivity controller"
++	depends on MFD_CG2900
++	help
++	  Support for ST-Ericsson CG2900 Connectivity Controller.
++	  Supports multiple functionalities multiplexed over a Bluetooth HCI
++	  H:4 interface where first byte determines channel used.
+ 	  CG2900 support Bluetooth, FM radio, and GPS.
  
- static int reset = 0;
+ config PMIC_DA903X
+diff --git a/drivers/mfd/cg2900/Makefile b/drivers/mfd/cg2900/Makefile
+index 0ac9bc6..9a5e228 100644
+--- a/drivers/mfd/cg2900/Makefile
++++ b/drivers/mfd/cg2900/Makefile
+@@ -2,8 +2,10 @@
+ # Makefile for ST-Ericsson CG2900 connectivity combo controller
+ #
  
-@@ -90,6 +93,9 @@ static inline void hci_uart_tx_complete(struct hci_uart *hu, int pkt_type)
- {
- 	struct hci_dev *hdev = hu->hdev;
+-obj-$(CONFIG_MFD_CG2900)	+= cg2900_core.o
+-export-objs			:= cg2900_core.o
++obj-$(CONFIG_MFD_CG2900)	+= cg2900_core.o cg2900_lib.o
++export-objs			:= cg2900_core.o cg2900_lib.o
  
-+	if (!hdev)
+ obj-$(CONFIG_MFD_CG2900)	+= cg2900_char_devices.o
+ 
++obj-$(CONFIG_MFD_CG2900_CHIP)	+= cg2900_chip.o
++
+diff --git a/drivers/mfd/cg2900/cg2900_chip.c b/drivers/mfd/cg2900/cg2900_chip.c
+new file mode 100644
+index 0000000..d7589e4
+--- /dev/null
++++ b/drivers/mfd/cg2900/cg2900_chip.c
+@@ -0,0 +1,3250 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Authors:
++ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for ST-Ericsson.
++ * Henrik Possung (henrik.possung@stericsson.com) for ST-Ericsson.
++ * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
++ * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
++ * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ *
++ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson CG2900 GPS/BT/FM controller.
++ */
++#define NAME					"cg2900_chip"
++#define pr_fmt(fmt)				NAME ": " fmt "\n"
++
++#include <asm/byteorder.h>
++#include <linux/device.h>
++#include <linux/firmware.h>
++#include <linux/gfp.h>
++#include <linux/init.h>
++#include <linux/jiffies.h>
++#include <linux/kernel.h>
++#include <linux/limits.h>
++#include <linux/list.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/platform_device.h>
++#include <linux/sched.h>
++#include <linux/skbuff.h>
++#include <linux/stat.h>
++#include <linux/time.h>
++#include <linux/timer.h>
++#include <linux/types.h>
++#include <linux/wait.h>
++#include <linux/workqueue.h>
++#include <linux/mfd/cg2900.h>
++#include <linux/mfd/core.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci.h>
++
++#include "cg2900_chip.h"
++#include "cg2900_core.h"
++#include "cg2900_lib.h"
++
++#define MAIN_DEV				(main_info->dev)
++#define BOOT_DEV				(info->user_in_charge->dev)
++
++#define WQ_NAME					"cg2900_chip_wq"
++#define PATCH_INFO_FILE				"cg2900_patch_info.fw"
++#define FACTORY_SETTINGS_INFO_FILE		"cg2900_settings_info.fw"
++
++#define LINE_TOGGLE_DETECT_TIMEOUT		50	/* ms */
++#define CHIP_READY_TIMEOUT			100	/* ms */
++#define CHIP_STARTUP_TIMEOUT			15000	/* ms */
++#define CHIP_SHUTDOWN_TIMEOUT			15000	/* ms */
++#define POWER_SW_OFF_WAIT			500	/* ms */
++
++/** CHANNEL_BT_CMD - Bluetooth HCI H:4 channel
++ * for Bluetooth commands in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_BT_CMD				0x01
++
++/** CHANNEL_BT_ACL - Bluetooth HCI H:4 channel
++ * for Bluetooth ACL data in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_BT_ACL				0x02
++
++/** CHANNEL_BT_EVT - Bluetooth HCI H:4 channel
++ * for Bluetooth events in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_BT_EVT				0x04
++
++/** CHANNEL_FM_RADIO - Bluetooth HCI H:4 channel
++ * for FM radio in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_FM_RADIO			0x08
++
++/** CHANNEL_GNSS - Bluetooth HCI H:4 channel
++ * for GNSS in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_GNSS				0x09
++
++/** CHANNEL_DEBUG - Bluetooth HCI H:4 channel
++ * for internal debug data in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_DEBUG				0x0B
++
++/** CHANNEL_STE_TOOLS - Bluetooth HCI H:4 channel
++ * for development tools data in the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_STE_TOOLS			0x0D
++
++/** CHANNEL_HCI_LOGGER - Bluetooth HCI H:4 channel
++ * for logging all transmitted H4 packets (on all channels).
++ */
++#define CHANNEL_HCI_LOGGER			0xFA
++
++/** CHANNEL_CORE - Bluetooth HCI H:4 channel
++ * for user space control of the ST-Ericsson connectivity controller.
++ */
++#define CHANNEL_CORE				0xFD
++
++/** CG2900_BT_CMD - Bluetooth HCI H4 channel for Bluetooth commands.
++ */
++#define CG2900_BT_CMD				"cg2900_bt_cmd"
++
++/** CG2900_BT_ACL - Bluetooth HCI H4 channel for Bluetooth ACL data.
++ */
++#define CG2900_BT_ACL				"cg2900_bt_acl"
++
++/** CG2900_BT_EVT - Bluetooth HCI H4 channel for Bluetooth events.
++ */
++#define CG2900_BT_EVT				"cg2900_bt_evt"
++
++/** CG2900_FM_RADIO - Bluetooth HCI H4 channel for FM radio.
++ */
++#define CG2900_FM_RADIO				"cg2900_fm_radio"
++
++/** CG2900_GNSS - Bluetooth HCI H4 channel for GNSS.
++ */
++#define CG2900_GNSS				"cg2900_gnss"
++
++/** CG2900_DEBUG - Bluetooth HCI H4 channel for internal debug data.
++ */
++#define CG2900_DEBUG				"cg2900_debug"
++
++/** CG2900_STE_TOOLS - Bluetooth HCI H4 channel for development tools data.
++ */
++#define CG2900_STE_TOOLS			"cg2900_ste_tools"
++
++/** CG2900_HCI_LOGGER - BT channel for logging all transmitted H4 packets.
++ * Data read is copy of all data transferred on the other channels.
++ * Only write allowed is configuration of the HCI Logger.
++ */
++#define CG2900_HCI_LOGGER			"cg2900_hci_logger"
++
++/** CG2900_BT_AUDIO - HCI Channel for BT audio configuration commands.
++ * Maps to Bluetooth command and event channels.
++ */
++#define CG2900_BT_AUDIO				"cg2900_bt_audio"
++
++/** CG2900_FM_AUDIO - HCI channel for FM audio configuration commands.
++ * Maps to FM Radio channel.
++ */
++#define CG2900_FM_AUDIO				"cg2900_fm_audio"
++
++/** CG2900_CORE- Channel for keeping ST-Ericsson CG2900 enabled.
++ * Opening this channel forces the chip to stay powered.
++ * No data can be written to or read from this channel.
++ */
++#define CG2900_CORE				"cg2900_core"
++
++/**
++ * enum main_state - Main-state for CG2900 driver.
++ * @CG2900_INIT:	CG2900 initializing.
++ * @CG2900_IDLE:	No user registered to CG2900 driver.
++ * @CG2900_BOOTING:	CG2900 booting after first user is registered.
++ * @CG2900_CLOSING:	CG2900 closing after last user has deregistered.
++ * @CG2900_RESETING:	CG2900 reset requested.
++ * @CG2900_ACTIVE:	CG2900 up and running with at least one user.
++ */
++enum main_state {
++	CG2900_INIT,
++	CG2900_IDLE,
++	CG2900_BOOTING,
++	CG2900_CLOSING,
++	CG2900_RESETING,
++	CG2900_ACTIVE
++};
++
++/**
++ * enum boot_state - BOOT-state for CG2900 chip driver.
++ * @BOOT_NOT_STARTED:			Boot has not yet started.
++ * @BOOT_SEND_BD_ADDRESS:		VS Store In FS command with BD address
++ *					has been sent.
++ * @BOOT_GET_FILES_TO_LOAD:		CG2900 chip driver is retrieving file to
++ *					load.
++ * @BOOT_DOWNLOAD_PATCH:		CG2900 chip driver is downloading
++ *					patches.
++ * @BOOT_ACTIVATE_PATCHES_AND_SETTINGS:	CG2900 chip driver is activating patches
++ *					and settings.
++ * @BOOT_DISABLE_BT:			Disable BT Core.
++ * @BOOT_READY:				CG2900 chip driver boot is ready.
++ * @BOOT_FAILED:			CG2900 chip driver boot failed.
++ */
++enum boot_state {
++	BOOT_NOT_STARTED,
++	BOOT_SEND_BD_ADDRESS,
++	BOOT_GET_FILES_TO_LOAD,
++	BOOT_DOWNLOAD_PATCH,
++	BOOT_ACTIVATE_PATCHES_AND_SETTINGS,
++	BOOT_DISABLE_BT,
++	BOOT_READY,
++	BOOT_FAILED
++};
++
++/**
++ * enum closing_state - CLOSING-state for CG2900 chip driver.
++ * @CLOSING_RESET:		HCI RESET_CMD has been sent.
++ * @CLOSING_POWER_SWITCH_OFF:	HCI VS_POWER_SWITCH_OFF command has been sent.
++ * @CLOSING_SHUT_DOWN:		We have now shut down the chip.
++ */
++enum closing_state {
++	CLOSING_RESET,
++	CLOSING_POWER_SWITCH_OFF,
++	CLOSING_SHUT_DOWN
++};
++
++/**
++ * enum file_load_state - BOOT_FILE_LOAD-state for CG2900 chip driver.
++ * @FILE_LOAD_GET_PATCH:		Loading patches.
++ * @FILE_LOAD_GET_STATIC_SETTINGS:	Loading static settings.
++ * @FILE_LOAD_NO_MORE_FILES:		No more files to load.
++ * @FILE_LOAD_FAILED:			File loading failed.
++ */
++enum file_load_state {
++	FILE_LOAD_GET_PATCH,
++	FILE_LOAD_GET_STATIC_SETTINGS,
++	FILE_LOAD_NO_MORE_FILES,
++	FILE_LOAD_FAILED
++};
++
++/**
++ * enum download_state - BOOT_DOWNLOAD state.
++ * @DOWNLOAD_PENDING:	Download in progress.
++ * @DOWNLOAD_SUCCESS:	Download successfully finished.
++ * @DOWNLOAD_FAILED:	Downloading failed.
++ */
++enum download_state {
++	DOWNLOAD_PENDING,
++	DOWNLOAD_SUCCESS,
++	DOWNLOAD_FAILED
++};
++
++/**
++ * enum fm_radio_mode - FM Radio mode.
++ * It's needed because some FM do-commands generate interrupts only when
++ * the FM driver is in specific mode and we need to know if we should expect
++ * the interrupt.
++ * @FM_RADIO_MODE_IDLE:	Radio mode is Idle (default).
++ * @FM_RADIO_MODE_FMT:	Radio mode is set to FMT (transmitter).
++ * @FM_RADIO_MODE_FMR:	Radio mode is set to FMR (receiver).
++ */
++enum fm_radio_mode {
++	FM_RADIO_MODE_IDLE = 0,
++	FM_RADIO_MODE_FMT = 1,
++	FM_RADIO_MODE_FMR = 2
++};
++
++
++/**
++ * struct cg2900_channel_item - List object for channel.
++ * @list:	list_head struct.
++ * @user:	User for this channel.
++ */
++struct cg2900_channel_item {
++	struct list_head	list;
++	struct cg2900_user_data	*user;
++};
++
++/**
++ * struct cg2900_skb_data - Structure for storing private data in an sk_buffer.
++ * @dev:	CG2900 device for this sk_buffer.
++ */
++struct cg2900_skb_data {
++	struct cg2900_user_data *user;
++};
++#define cg2900_skb_data(__skb) ((struct cg2900_skb_data *)((__skb)->cb))
++
++/**
++ * struct cg2900_chip_info - Main info structure for CG2900 chip driver.
++ * @dev:			Current device. Same as @chip_dev->dev.
++ * @patch_file_name:		Stores patch file name.
++ * @settings_file_name:		Stores settings file name.
++ * @file_info:			Firmware file info (patch or settings).
++ * @boot_state:			Current BOOT-state of CG2900 chip driver.
++ * @closing_state:		Current CLOSING-state of CG2900 chip driver.
++ * @file_load_state:		Current BOOT_FILE_LOAD-state of CG2900 chip
++ *				driver.
++ * @download_state:		Current BOOT_DOWNLOAD-state of CG2900 chip
++ *				driver.
++ * @wq:				CG2900 chip driver workqueue.
++ * @chip_dev:			Chip handler info.
++ * @tx_bt_lock:			Spinlock used to protect some global structures
++ *				related to internal BT command flow control.
++ * @tx_fm_lock:			Spinlock used to protect some global structures
++ *				related to internal FM command flow control.
++ * @tx_fm_audio_awaiting_irpt:	Indicates if an FM interrupt event related to
++ *				audio driver command is expected.
++ * @fm_radio_mode:		Current FM radio mode.
++ * @tx_nr_pkts_allowed_bt:	Number of packets allowed to send on BT HCI CMD
++ *				H4 channel.
++ * @audio_bt_cmd_op:		Stores the OpCode of the last sent audio driver
++ *				HCI BT CMD.
++ * @audio_fm_cmd_id:		Stores the command id of the last sent
++ *				HCI FM RADIO command by the fm audio user.
++ * @hci_fm_cmd_func:		Stores the command function of the last sent
++ *				HCI FM RADIO command by the fm radio user.
++ * @tx_queue_bt:		TX queue for HCI BT commands when nr of commands
++ *				allowed is 0 (CG2900 internal flow control).
++ * @tx_queue_fm:		TX queue for HCI FM commands when nr of commands
++ *				allowed is 0 (CG2900 internal flow control).
++ * @user_in_charge:		User currently operating. Normally used at
++ *				channel open and close.
++ * @last_user:			Last user of this chip. To avoid complications
++ *				this will never be set for bt_audio and
++ *				fm_audio.
++ * @logger:			Logger user of this chip.
++ */
++struct cg2900_chip_info {
++	struct device			*dev;
++	char				*patch_file_name;
++	char				*settings_file_name;
++	struct cg2900_file_info		file_info;
++	enum main_state			main_state;
++	enum boot_state			boot_state;
++	enum closing_state		closing_state;
++	enum file_load_state		file_load_state;
++	enum download_state		download_state;
++	struct workqueue_struct		*wq;
++	struct cg2900_chip_dev		*chip_dev;
++	spinlock_t			tx_bt_lock;
++	spinlock_t			tx_fm_lock;
++	spinlock_t			rw_lock;
++	bool				tx_fm_audio_awaiting_irpt;
++	enum fm_radio_mode		fm_radio_mode;
++	int				tx_nr_pkts_allowed_bt;
++	u16				audio_bt_cmd_op;
++	u16				audio_fm_cmd_id;
++	u16				hci_fm_cmd_func;
++	struct sk_buff_head		tx_queue_bt;
++	struct sk_buff_head		tx_queue_fm;
++	struct list_head		open_channels;
++	struct cg2900_user_data		*user_in_charge;
++	struct cg2900_user_data		*last_user;
++	struct cg2900_user_data		*logger;
++	struct cg2900_user_data		*bt_audio;
++	struct cg2900_user_data		*fm_audio;
++};
++
++/**
++ * struct main_info - Main info structure for CG2900 chip driver.
++ * @dev:			Device structure.
++ * @cell_base_id:		Base ID for MFD cells.
++ * @man_mutex:			Management mutex.
++ */
++struct main_info {
++	struct device			*dev;
++	int				cell_base_id;
++	struct mutex			man_mutex;
++};
++
++static struct main_info *main_info;
++
++/*
++ * main_wait_queue - Main Wait Queue in CG2900 driver.
++ */
++static DECLARE_WAIT_QUEUE_HEAD(main_wait_queue);
++
++static void chip_startup_finished(struct cg2900_chip_info *info, int err);
++
++/**
++ * bt_is_open() - Checks if any BT user is in open state.
++ * @info:	CG2900 info.
++ *
++ * Returns:
++ *   true if a BT channel is open.
++ *   false if no BT channel is open.
++ */
++static bool bt_is_open(struct cg2900_chip_info *info)
++{
++	struct list_head *cursor;
++	struct cg2900_channel_item *tmp;
++
++	list_for_each(cursor, &info->open_channels) {
++		tmp = list_entry(cursor, struct cg2900_channel_item, list);
++		if (tmp->user->h4_channel == CHANNEL_BT_CMD)
++			return true;
++	}
++	return false;
++}
++
++/**
++ * fm_is_open() - Checks if any FM user is in open state.
++ * @info:	CG2900 info.
++ *
++ * Returns:
++ *   true if a FM channel is open.
++ *   false if no FM channel is open.
++ */
++static bool fm_is_open(struct cg2900_chip_info *info)
++{
++	struct list_head *cursor;
++	struct cg2900_channel_item *tmp;
++
++	list_for_each(cursor, &info->open_channels) {
++		tmp = list_entry(cursor, struct cg2900_channel_item, list);
++		if (tmp->user->h4_channel == CHANNEL_FM_RADIO)
++			return true;
++	}
++	return false;
++}
++
++/**
++ * fm_irpt_expected() - check if this FM command will generate an interrupt.
++ * @cmd_id:	command identifier.
++ *
++ * Returns:
++ *   true if the command will generate an interrupt.
++ *   false if it won't.
++ */
++static bool fm_irpt_expected(struct cg2900_chip_info *info, u16 cmd_id)
++{
++	bool retval = false;
++
++	switch (cmd_id) {
++	case CG2900_FM_DO_AIP_FADE_START:
++		if (info->fm_radio_mode == FM_RADIO_MODE_FMT)
++			retval = true;
++		break;
++
++	case CG2900_FM_DO_AUP_BT_FADE_START:
++	case CG2900_FM_DO_AUP_EXT_FADE_START:
++	case CG2900_FM_DO_AUP_FADE_START:
++		if (info->fm_radio_mode == FM_RADIO_MODE_FMR)
++			retval = true;
++		break;
++
++	case CG2900_FM_DO_FMR_SETANTENNA:
++	case CG2900_FM_DO_FMR_SP_AFSWITCH_START:
++	case CG2900_FM_DO_FMR_SP_AFUPDATE_START:
++	case CG2900_FM_DO_FMR_SP_BLOCKSCAN_START:
++	case CG2900_FM_DO_FMR_SP_PRESETPI_START:
++	case CG2900_FM_DO_FMR_SP_SCAN_START:
++	case CG2900_FM_DO_FMR_SP_SEARCH_START:
++	case CG2900_FM_DO_FMR_SP_SEARCHPI_START:
++	case CG2900_FM_DO_FMR_SP_TUNE_SETCHANNEL:
++	case CG2900_FM_DO_FMR_SP_TUNE_STEPCHANNEL:
++	case CG2900_FM_DO_FMT_PA_SETCTRL:
++	case CG2900_FM_DO_FMT_PA_SETMODE:
++	case CG2900_FM_DO_FMT_SP_TUNE_SETCHANNEL:
++	case CG2900_FM_DO_GEN_ANTENNACHECK_START:
++	case CG2900_FM_DO_GEN_GOTOMODE:
++	case CG2900_FM_DO_GEN_POWERSUPPLY_SETMODE:
++	case CG2900_FM_DO_GEN_SELECTREFERENCECLOCK:
++	case CG2900_FM_DO_GEN_SETPROCESSINGCLOCK:
++	case CG2900_FM_DO_GEN_SETREFERENCECLOCKPLL:
++	case CG2900_FM_DO_TST_TX_RAMP_START:
++		retval = true;
++		break;
++
++	default:
++		break;
++	}
++
++	if (retval)
++		dev_dbg(info->dev, "Following interrupt event expected for this"
++			" Cmd complete evt: cmd_id = 0x%X\n",
++			cmd_id);
++
++	return retval;
++}
++
++/**
++ * fm_is_do_cmd_irpt() - Check if irpt_val is one of the FM DO command related interrupts.
++ * @irpt_val:	interrupt value.
++ *
++ * Returns:
++ *   true if it's do-command related interrupt value.
++ *   false if it's not.
++ */
++static bool fm_is_do_cmd_irpt(u16 irpt_val)
++{
++	if ((irpt_val & CG2900_FM_IRPT_OPERATION_SUCCEEDED) ||
++	    (irpt_val & CG2900_FM_IRPT_OPERATION_FAILED)) {
++		dev_dbg(MAIN_DEV, "Irpt evt for FM do-command found, "
++			"irpt_val = 0x%X\n", irpt_val);
++		return true;
++	}
++
++	return false;
++}
++
++/**
++ * fm_reset_flow_ctrl - Clears up internal FM flow control.
++ *
++ * Resets outstanding commands and clear FM TX list and set CG2900 FM mode to
++ * idle.
++ */
++static void fm_reset_flow_ctrl(struct cg2900_chip_info *info)
++{
++	dev_dbg(info->dev, "fm_reset_flow_ctrl\n");
++
++	skb_queue_purge(&info->tx_queue_fm);
++
++	/* Reset the fm_cmd_id. */
++	info->audio_fm_cmd_id = CG2900_FM_CMD_NONE;
++	info->hci_fm_cmd_func = CG2900_FM_CMD_PARAM_NONE;
++
++	info->fm_radio_mode = FM_RADIO_MODE_IDLE;
++}
++
++
++/**
++ * fm_parse_cmd - Parses a FM command packet.
++ * @data:	FM command packet.
++ * @cmd_func:	Out: FM legacy command function.
++ * @cmd_id:	Out: FM legacy command ID.
++ */
++static void fm_parse_cmd(u8 *data, u8 *cmd_func, u16 *cmd_id)
++{
++	/* Move past H4-header to start of actual package */
++	struct fm_leg_cmd *pkt = (struct fm_leg_cmd *)(data + HCI_H4_SIZE);
++
++	*cmd_func = CG2900_FM_CMD_PARAM_NONE;
++	*cmd_id   = CG2900_FM_CMD_NONE;
++
++	if (pkt->opcode != CG2900_FM_GEN_ID_LEGACY) {
++		dev_err(MAIN_DEV, "fm_parse_cmd: Not an FM legacy command "
++			"0x%02X\n", pkt->opcode);
++		return;
++	}
++
++	*cmd_func = pkt->fm_function;
++	if (*cmd_func == CG2900_FM_CMD_PARAM_WRITECOMMAND)
++		*cmd_id = cg2900_get_fm_cmd_id(le16_to_cpu(pkt->fm_cmd.head));
++}
++
++
++/**
++ * fm_parse_event - Parses a FM event packet
++ * @data:	FM event packet.
++ * @event:	Out: FM event.
++ * @cmd_func:	Out: FM legacy command function.
++ * @cmd_id:	Out: FM legacy command ID.
++ * @intr_val:	Out: FM interrupt value.
++ */
++static void fm_parse_event(u8 *data, u8 *event, u8 *cmd_func, u16 *cmd_id,
++			   u16 *intr_val)
++{
++	/* Move past H4-header to start of actual package */
++	union fm_leg_evt_or_irq *pkt = (union fm_leg_evt_or_irq *)data;
++
++	*cmd_func = CG2900_FM_CMD_PARAM_NONE;
++	*cmd_id = CG2900_FM_CMD_NONE;
++	*intr_val = 0;
++	*event = CG2900_FM_EVENT_UNKNOWN;
++
++	if (pkt->evt.opcode == CG2900_FM_GEN_ID_LEGACY &&
++	    pkt->evt.read_write == CG2900_FM_CMD_LEG_PARAM_WRITE) {
++		/* Command complete */
++		*event = CG2900_FM_EVENT_CMD_COMPLETE;
++		*cmd_func = pkt->evt.fm_function;
++		if (*cmd_func == CG2900_FM_CMD_PARAM_WRITECOMMAND)
++			*cmd_id = cg2900_get_fm_cmd_id(
++				le16_to_cpu(pkt->evt.response_head));
++	} else if (pkt->irq_v2.opcode == CG2900_FM_GEN_ID_LEGACY &&
++		   pkt->irq_v2.event_type == CG2900_FM_CMD_LEG_PARAM_IRQ) {
++		/* Interrupt, PG2 style */
++		*event = CG2900_FM_EVENT_INTERRUPT;
++		*intr_val = le16_to_cpu(pkt->irq_v2.irq);
++	} else if (pkt->irq_v1.opcode == CG2900_FM_GEN_ID_LEGACY) {
++		/* Interrupt, PG1 style */
++		*event = CG2900_FM_EVENT_INTERRUPT;
++		*intr_val = le16_to_cpu(pkt->irq_v1.irq);
++	} else
++		dev_err(MAIN_DEV, "fm_parse_event: Not an FM legacy command "
++			"0x%X %X %X %X\n", data[0], data[1], data[2], data[3]);
++}
++
++/**
++ * fm_update_mode - Updates the FM mode state machine.
++ * @data:	FM command packet.
++ *
++ * Parses a FM command packet and updates the FM mode state machine.
++ */
++static void fm_update_mode(struct cg2900_chip_info *info, u8 *data)
++{
++	u8 cmd_func;
++	u16 cmd_id;
++
++	fm_parse_cmd(data, &cmd_func, &cmd_id);
++
++	if (cmd_func == CG2900_FM_CMD_PARAM_WRITECOMMAND &&
++	    cmd_id == CG2900_FM_DO_GEN_GOTOMODE) {
++		/* Move past H4-header to start of actual package */
++		struct fm_leg_cmd *pkt =
++			(struct fm_leg_cmd *)(data + HCI_H4_SIZE);
++
++		info->fm_radio_mode = le16_to_cpu(pkt->fm_cmd.data[0]);
++		dev_dbg(info->dev, "FM Radio mode changed to %d\n",
++			info->fm_radio_mode);
++	}
++}
++
++
++/**
++ * transmit_skb_from_tx_queue_bt() - Check flow control info and transmit skb.
++ *
++ * The transmit_skb_from_tx_queue_bt() function checks if there are tickets
++ * available and commands waiting in the TX queue and if so transmits them
++ * to the controller.
++ * It shall always be called within spinlock_bh.
++ */
++static void transmit_skb_from_tx_queue_bt(struct cg2900_chip_dev *dev)
++{
++	struct cg2900_user_data *user;
++	struct cg2900_chip_info *info = dev->c_data;
++	struct sk_buff *skb;
++
++	dev_dbg(dev->dev, "transmit_skb_from_tx_queue_bt\n");
++
++	/* Dequeue an skb from the head of the list */
++	skb = skb_dequeue(&info->tx_queue_bt);
++	while (skb) {
++		if (info->tx_nr_pkts_allowed_bt <= 0) {
++			/*
++			 * If no more packets allowed just return, we'll get
++			 * back here after next Command Complete/Status event.
++			 * Put skb back at head of queue.
++			 */
++			skb_queue_head(&info->tx_queue_bt, skb);
++			return;
++		}
++
++		(info->tx_nr_pkts_allowed_bt)--;
++		dev_dbg(dev->dev, "tx_nr_pkts_allowed_bt = %d\n",
++			info->tx_nr_pkts_allowed_bt);
++
++		user = cg2900_skb_data(skb)->user; /* user is never NULL */
++
++		/*
++		 * If it's a command from audio application, store the OpCode,
++		 * it'll be used later to decide where to dispatch
++		 * the Command Complete event.
++		 */
++		if (info->bt_audio == user) {
++			struct hci_command_hdr *hdr = (struct hci_command_hdr *)
++				(skb->data + HCI_H4_SIZE);
++
++			info->audio_bt_cmd_op = le16_to_cpu(hdr->opcode);
++			dev_dbg(user->dev,
++				"Sending cmd from audio driver, saving "
++				"OpCode = 0x%04X\n", info->audio_bt_cmd_op);
++		}
++
++		cg2900_tx_to_chip(user, info->logger, skb);
++
++		/* Dequeue an skb from the head of the list */
++		skb = skb_dequeue(&info->tx_queue_bt);
++	}
++}
++
++/**
++ * transmit_skb_from_tx_queue_fm() - Check flow control info and transmit skb.
++ *
++ * The transmit_skb_from_tx_queue_fm() function checks if it possible to
++ * transmit and commands waiting in the TX queue and if so transmits them
++ * to the controller.
++ * It shall always be called within spinlock_bh.
++ */
++static void transmit_skb_from_tx_queue_fm(struct cg2900_chip_dev *dev)
++{
++	struct cg2900_user_data *user;
++	struct cg2900_chip_info *info = dev->c_data;
++	struct sk_buff *skb;
++
++	dev_dbg(dev->dev, "transmit_skb_from_tx_queue_fm\n");
++
++	/* Dequeue an skb from the head of the list */
++	skb = skb_dequeue(&info->tx_queue_fm);
++	while (skb) {
++		u16 cmd_id;
++		u8 cmd_func;
++
++		if (info->audio_fm_cmd_id != CG2900_FM_CMD_NONE ||
++		    info->hci_fm_cmd_func != CG2900_FM_CMD_PARAM_NONE) {
++			/*
++			 * There are currently outstanding FM commands.
++			 * Wait for them to finish. We will get back here later.
++			 * Queue back the skb at head of list.
++			 */
++			skb_queue_head(&info->tx_queue_bt, skb);
++			return;
++		}
++
++		user = cg2900_skb_data(skb)->user; /* user is never NULL */
++
++		if (!user->opened) {
++			/*
++			 * Channel is not open. That means that the user that
++			 * originally sent it has deregistered.
++			 * Just throw it away and check the next skb in the
++			 * queue.
++			 */
++			kfree_skb(skb);
++			/* Dequeue an skb from the head of the list */
++			skb = skb_dequeue(&info->tx_queue_fm);
++			continue;
++		}
++
++		fm_parse_cmd(&(skb->data[0]), &cmd_func, &cmd_id);
++
++		/*
++		 * Store the FM command function , it'll be used later to decide
++		 * where to dispatch the Command Complete event.
++		 */
++		if (info->fm_audio == user) {
++			info->audio_fm_cmd_id = cmd_id;
++			dev_dbg(user->dev, "Sending FM audio cmd 0x%04X\n",
++				info->audio_fm_cmd_id);
++		} else {
++			/* FM radio command */
++			info->hci_fm_cmd_func = cmd_func;
++			fm_update_mode(info, &skb->data[0]);
++			dev_dbg(user->dev, "Sending FM radio cmd 0x%04X\n",
++				info->hci_fm_cmd_func);
++		}
++
++		/*
++		 * We have only one ticket on FM. Just return after
++		 * sending the skb.
++		 */
++		cg2900_tx_to_chip(user, info->logger, skb);
++		return;
++	}
++}
++
++/**
++ * update_flow_ctrl_bt() - Update number of outstanding commands for BT CMD.
++ * @dev:	Current chip device.
++ * @skb:	skb with received packet.
++ *
++ * The update_flow_ctrl_bt() checks if incoming data packet is
++ * BT Command Complete/Command Status Event and if so updates number of tickets
++ * and number of outstanding commands. It also calls function to send queued
++ * commands (if the list of queued commands is not empty).
++ */
++static void update_flow_ctrl_bt(struct cg2900_chip_dev *dev,
++				const struct sk_buff * const skb)
++{
++	u8 *data = skb->data;
++	struct hci_event_hdr *event;
++	struct cg2900_chip_info *info = dev->c_data;
++
++	event = (struct hci_event_hdr *)data;
++	data += sizeof(*event);
++
++	if (HCI_EV_CMD_COMPLETE == event->evt) {
++		struct hci_ev_cmd_complete *complete;
++		complete = (struct hci_ev_cmd_complete *)data;
++
++		/*
++		 * If it's HCI Command Complete Event then we might get some
++		 * HCI tickets back. Also we can decrease the number outstanding
++		 * HCI commands (if it's not NOP command or one of the commands
++		 * that generate both Command Status Event and Command Complete
++		 * Event).
++		 * Check if we have any HCI commands waiting in the TX list and
++		 * send them if there are tickets available.
++		 */
++		spin_lock_bh(&info->tx_bt_lock);
++		info->tx_nr_pkts_allowed_bt = complete->ncmd;
++		dev_dbg(dev->dev, "New tx_nr_pkts_allowed_bt = %d\n",
++			info->tx_nr_pkts_allowed_bt);
++
++		if (!skb_queue_empty(&info->tx_queue_bt))
++			transmit_skb_from_tx_queue_bt(dev);
++		spin_unlock_bh(&info->tx_bt_lock);
++	} else if (HCI_EV_CMD_STATUS == event->evt) {
++		struct hci_ev_cmd_status *status;
++		status = (struct hci_ev_cmd_status *)data;
++
++		/*
++		 * If it's HCI Command Status Event then we might get some
++		 * HCI tickets back. Also we can decrease the number outstanding
++		 * HCI commands (if it's not NOP command).
++		 * Check if we have any HCI commands waiting in the TX queue and
++		 * send them if there are tickets available.
++		 */
++		spin_lock_bh(&info->tx_bt_lock);
++		info->tx_nr_pkts_allowed_bt = status->ncmd;
++		dev_dbg(dev->dev, "New tx_nr_pkts_allowed_bt = %d\n",
++			info->tx_nr_pkts_allowed_bt);
++
++		if (!skb_queue_empty(&info->tx_queue_bt))
++			transmit_skb_from_tx_queue_bt(dev);
++		spin_unlock_bh(&info->tx_bt_lock);
++	}
++}
++
++/**
++ * update_flow_ctrl_fm() - Update packets allowed for FM channel.
++ * @dev:	Current chip device.
++ * @skb:	skb with received packet.
++ *
++ * The update_flow_ctrl_fm() checks if incoming data packet is FM packet
++ * indicating that the previous command has been handled and if so update
++ * packets. It also calls function to send queued commands (if the list of
++ * queued commands is not empty).
++ */
++static void update_flow_ctrl_fm(struct cg2900_chip_dev *dev,
++				const struct sk_buff * const skb)
++{
++	u8 cmd_func = CG2900_FM_CMD_PARAM_NONE;
++	u16 cmd_id = CG2900_FM_CMD_NONE;
++	u16 irpt_val = 0;
++	u8 event = CG2900_FM_EVENT_UNKNOWN;
++	struct cg2900_chip_info *info = dev->c_data;
++
++	fm_parse_event(&(skb->data[0]), &event, &cmd_func, &cmd_id, &irpt_val);
++
++	if (event == CG2900_FM_EVENT_CMD_COMPLETE) {
++		/* FM legacy command complete event */
++		spin_lock_bh(&info->tx_fm_lock);
++		/*
++		 * Check if it's not an write command complete event, because
++		 * then it cannot be a DO command.
++		 * If it's a write command complete event check that is not a
++		 * DO command complete event before setting the outstanding
++		 * FM packets to none.
++		 */
++		if (cmd_func != CG2900_FM_CMD_PARAM_WRITECOMMAND ||
++		    !fm_irpt_expected(info, cmd_id)) {
++			info->hci_fm_cmd_func = CG2900_FM_CMD_PARAM_NONE;
++			info->audio_fm_cmd_id = CG2900_FM_CMD_NONE;
++			dev_dbg(dev->dev,
++				"FM_Write: Outstanding FM commands:\n"
++				"\tRadio: 0x%04X\n"
++				"\tAudio: 0x%04X\n",
++				info->hci_fm_cmd_func,
++				info->audio_fm_cmd_id);
++			transmit_skb_from_tx_queue_fm(dev);
++
++		/*
++		 * If there was a write do command complete event check if it is
++		 * DO command previously sent by the FM audio user. If that's
++		 * the case we need remember that in order to be able to
++		 * dispatch the interrupt to the correct user.
++		 */
++		} else if (cmd_id == info->audio_fm_cmd_id) {
++			info->tx_fm_audio_awaiting_irpt = true;
++			dev_dbg(dev->dev,
++				"FM Audio waiting for interrupt = true\n");
++		}
++		spin_unlock_bh(&info->tx_fm_lock);
++	} else if (event == CG2900_FM_EVENT_INTERRUPT) {
++		/* FM legacy interrupt */
++		if (fm_is_do_cmd_irpt(irpt_val)) {
++			/*
++			 * If it is an interrupt related to a DO command update
++			 * the outstanding flow control and transmit blocked
++			 * FM commands.
++			 */
++			spin_lock_bh(&info->tx_fm_lock);
++			info->hci_fm_cmd_func = CG2900_FM_CMD_PARAM_NONE;
++			info->audio_fm_cmd_id = CG2900_FM_CMD_NONE;
++			dev_dbg(dev->dev,
++				"FM_INT: Outstanding FM commands:\n"
++				"\tRadio: 0x%04X\n"
++				"\tAudio: 0x%04X\n",
++				info->hci_fm_cmd_func,
++				info->audio_fm_cmd_id);
++			info->tx_fm_audio_awaiting_irpt = false;
++			dev_dbg(dev->dev,
++				"FM Audio waiting for interrupt = false\n");
++			transmit_skb_from_tx_queue_fm(dev);
++			spin_unlock_bh(&info->tx_fm_lock);
++		}
++	}
++}
++
++/**
++ * send_bd_address() - Send HCI VS command with BD address to the chip.
++ */
++static void send_bd_address(struct cg2900_chip_info *info)
++{
++	struct bt_vs_store_in_fs_cmd *cmd;
++	u8 plen = sizeof(*cmd) + BT_BDADDR_SIZE;
++
++	cmd = kmalloc(plen, GFP_KERNEL);
++	if (!cmd) {
++		dev_err(info->dev, "send_bd_address could not allocate cmd\n");
++		return;
++	}
++
++	cmd->opcode = cpu_to_le16(CG2900_BT_OP_VS_STORE_IN_FS);
++	cmd->plen = BT_PARAM_LEN(plen);
++	cmd->user_id = CG2900_VS_STORE_IN_FS_USR_ID_BD_ADDR;
++	cmd->len = BT_BDADDR_SIZE;
++	/* Now copy the BD address received from user space control app. */
++	memcpy(cmd->data, bd_address, BT_BDADDR_SIZE);
++
++	dev_dbg(BOOT_DEV, "New boot_state: BOOT_SEND_BD_ADDRESS\n");
++	info->boot_state = BOOT_SEND_BD_ADDRESS;
++
++	cg2900_send_bt_cmd(info->user_in_charge, info->logger, cmd, plen);
++
++	kfree(cmd);
++}
++
++/**
++ * send_settings_file() - Transmit settings file.
++ *
++ * The send_settings_file() function transmit settings file.
++ * The file is read in parts to fit in HCI packets. When finished,
++ * close the settings file and send HCI reset to activate settings and patches.
++ */
++static void send_settings_file(struct cg2900_chip_info *info)
++{
++	int bytes_sent;
++
++	bytes_sent = cg2900_read_and_send_file_part(info->user_in_charge,
++						    info->logger,
++						    &info->file_info);
++	if (bytes_sent > 0) {
++		/* Data sent. Wait for CmdComplete */
++		return;
++	} else if (bytes_sent < 0) {
++		dev_err(BOOT_DEV, "send_settings_file: Error %d occurred\n",
++			bytes_sent);
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		chip_startup_finished(info, bytes_sent);
++		return;
++	}
++
++	/* No data was sent. This file is finished */
++	info->download_state = DOWNLOAD_SUCCESS;
++
++	/* Settings file finished. Release used resources */
++	dev_dbg(BOOT_DEV, "Settings file finished, release used resources\n");
++	release_firmware(info->file_info.fw_file);
++	info->file_info.fw_file = NULL;
++
++	dev_dbg(BOOT_DEV, "New file_load_state: FILE_LOAD_NO_MORE_FILES\n");
++	info->file_load_state = FILE_LOAD_NO_MORE_FILES;
++
++	/* Create and send HCI VS Store In FS command with bd address. */
++	send_bd_address(info);
++}
++
++/**
++ * send_patch_file - Transmit patch file.
++ *
++ * The send_patch_file() function transmit patch file.
++ * The file is read in parts to fit in HCI packets. When the complete file is
++ * transmitted, the file is closed.
++ * When finished, continue with settings file.
++ */
++static void send_patch_file(struct cg2900_chip_info *info)
++{
++	int err;
++	int bytes_sent;
++
++	bytes_sent = cg2900_read_and_send_file_part(info->user_in_charge,
++						    info->logger,
++						    &info->file_info);
++	if (bytes_sent > 0) {
++		/* Data sent. Wait for CmdComplete */
++		return;
++	} else if (bytes_sent < 0) {
++		dev_err(BOOT_DEV, "send_patch_file: Error %d occurred\n",
++			bytes_sent);
++		err = bytes_sent;
++		goto error_handling;
++	}
++
++	/* No data was sent. This file is finished */
++	info->download_state = DOWNLOAD_SUCCESS;
++
++	dev_dbg(BOOT_DEV, "Patch file finished, release used resources\n");
++	release_firmware(info->file_info.fw_file);
++	info->file_info.fw_file = NULL;
++
++	/* Retrieve the settings file */
++	err = request_firmware(&info->file_info.fw_file,
++			       info->settings_file_name,
++			       info->dev);
++	if (err) {
++		dev_err(BOOT_DEV, "Couldn't get settings file (%d)\n", err);
++		goto error_handling;
++	}
++	/* Now send the settings file */
++	dev_dbg(BOOT_DEV,
++		"New file_load_state: FILE_LOAD_GET_STATIC_SETTINGS\n");
++	info->file_load_state = FILE_LOAD_GET_STATIC_SETTINGS;
++	dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_PENDING\n");
++	info->download_state = DOWNLOAD_PENDING;
++	send_settings_file(info);
++	return;
++
++error_handling:
++	dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++	info->boot_state = BOOT_FAILED;
++	chip_startup_finished(info, err);
++}
++
++/**
++ * work_power_off_chip() - Work item to power off the chip.
++ * @work:	Reference to work data.
++ *
++ * The work_power_off_chip() function handles transmission of the HCI command
++ * vs_power_switch_off and then informs the CG2900 Core that this chip driver is
++ * finished and the Core driver can now shut off the chip.
++ */
++static void work_power_off_chip(struct work_struct *work)
++{
++	struct sk_buff *skb = NULL;
++	u8 *h4_header;
++	struct cg2900_platform_data *pf_data;
++	struct cg2900_work *my_work;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	if (!work) {
++		dev_err(MAIN_DEV, "work_power_off_chip: work == NULL\n");
++		return;
++	}
++
++	my_work = container_of(work, struct cg2900_work, work);
++	dev = my_work->user_data;
++	info = dev->c_data;
++
++	/*
++	 * Get the VS Power Switch Off command to use based on connected
++	 * connectivity controller
++	 */
++	pf_data = dev_get_platdata(dev->dev);
++	if (pf_data->get_power_switch_off_cmd)
++		skb = pf_data->get_power_switch_off_cmd(dev, NULL);
++
++	/*
++	 * Transmit the received command.
++	 * If no command found for the device, just continue
++	 */
++	if (!skb) {
++		dev_err(dev->dev,
++			"Could not retrieve PowerSwitchOff command\n");
++		goto shut_down_chip;
++	}
++
++	dev_dbg(dev->dev,
++		"Got power_switch_off command. Add H4 header and transmit\n");
++
++	/*
++	 * Move the data pointer to the H:4 header position and store
++	 * the H4 header
++	 */
++	h4_header = skb_push(skb, CG2900_SKB_RESERVE);
++	*h4_header = CHANNEL_BT_CMD;
++
++	dev_dbg(dev->dev, "New closing_state: CLOSING_POWER_SWITCH_OFF\n");
++	info->closing_state = CLOSING_POWER_SWITCH_OFF;
++
++	if (info->user_in_charge)
++		cg2900_tx_to_chip(info->user_in_charge, info->logger, skb);
++	else
++		cg2900_tx_no_user(dev, skb);
++
++	/*
++	 * Mandatory to wait 500ms after the power_switch_off command has been
++	 * transmitted, in order to make sure that the controller is ready.
++	 */
++	schedule_timeout_interruptible(msecs_to_jiffies(POWER_SW_OFF_WAIT));
++
++shut_down_chip:
++	dev_dbg(dev->dev, "New closing_state: CLOSING_SHUT_DOWN\n");
++	info->closing_state = CLOSING_SHUT_DOWN;
++
++	/* Close the transport, which will power off the chip */
++	if (dev->t_cb.close)
++		dev->t_cb.close(dev);
++
++	/* Chip shut-down finished, set correct state and wake up the chip. */
++	dev_dbg(dev->dev, "New main_state: CG2900_IDLE\n");
++	info->main_state = CG2900_IDLE;
++	wake_up_interruptible_all(&main_wait_queue);
++
++	kfree(my_work);
++}
++
++/**
++ * work_reset_after_error() - Handle reset.
++ * @work:	Reference to work data.
++ *
++ * Handle a reset after received Command Complete event.
++ */
++static void work_reset_after_error(struct work_struct *work)
++{
++	struct cg2900_work *my_work;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	if (!work) {
++		dev_err(MAIN_DEV, "work_reset_after_error: work == NULL\n");
++		return;
++	}
++
++	my_work = container_of(work, struct cg2900_work, work);
++	dev = my_work->user_data;
++	info = dev->c_data;
++
++	chip_startup_finished(info, -EIO);
++
++	kfree(my_work);
++}
++
++/**
++ * work_load_patch_and_settings() - Start loading patches and settings.
++ * @work:	Reference to work data.
++ */
++static void work_load_patch_and_settings(struct work_struct *work)
++{
++	int err = 0;
++	bool file_found;
++	const struct firmware *patch_info;
++	const struct firmware *settings_info;
++	struct cg2900_work *my_work;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	if (!work) {
++		dev_err(MAIN_DEV,
++			"work_load_patch_and_settings: work == NULL\n");
++		return;
++	}
++
++	my_work = container_of(work, struct cg2900_work, work);
++	dev = my_work->user_data;
++	info = dev->c_data;
++
++	/* Check that we are in the right state */
++	if (info->boot_state != BOOT_GET_FILES_TO_LOAD)
++		goto finished;
++
++	/* Open patch info file. */
++	err = request_firmware(&patch_info, PATCH_INFO_FILE,
++			       dev->dev);
++	if (err) {
++		dev_err(BOOT_DEV, "Couldn't get patch info file (%d)\n", err);
++		goto error_handling;
++	}
++
++	/*
++	 * Now we have the patch info file.
++	 * See if we can find the right patch file as well
++	 */
++	file_found = cg2900_get_file_name(patch_info, &info->patch_file_name,
++					  dev->chip.hci_revision,
++					  dev->chip.hci_sub_version);
++
++	/* Now we are finished with the patch info file */
++	release_firmware(patch_info);
++
++	if (!file_found) {
++		dev_err(BOOT_DEV, "Couldn't find patch file! Major error\n");
++		goto error_handling;
++	}
++
++	/* Open settings info file. */
++	err = request_firmware(&settings_info,
++			       FACTORY_SETTINGS_INFO_FILE,
++			       dev->dev);
++	if (err) {
++		dev_err(BOOT_DEV, "Couldn't get settings info file (%d)\n",
++			err);
++		goto error_handling;
++	}
++
++	/*
++	 * Now we have the settings info file.
++	 * See if we can find the right settings file as well.
++	 */
++	file_found = cg2900_get_file_name(settings_info,
++					  &info->settings_file_name,
++					  dev->chip.hci_revision,
++					  dev->chip.hci_sub_version);
++
++	/* Now we are finished with the patch info file */
++	release_firmware(settings_info);
++
++	if (!file_found) {
++		dev_err(BOOT_DEV, "Couldn't find settings file! Major error\n");
++		goto error_handling;
++	}
++
++	/* We now all info needed */
++	dev_dbg(BOOT_DEV, "New boot_state: BOOT_DOWNLOAD_PATCH\n");
++	info->boot_state = BOOT_DOWNLOAD_PATCH;
++	dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_PENDING\n");
++	info->download_state = DOWNLOAD_PENDING;
++	dev_dbg(BOOT_DEV, "New file_load_state: FILE_LOAD_GET_PATCH\n");
++	info->file_load_state = FILE_LOAD_GET_PATCH;
++	info->file_info.chunk_id = 0;
++	info->file_info.file_offset = 0;
++	info->file_info.fw_file = NULL;
++
++	/* OK. Now it is time to download the patches */
++	err = request_firmware(&(info->file_info.fw_file),
++			       info->patch_file_name,
++			       dev->dev);
++	if (err < 0) {
++		dev_err(BOOT_DEV, "Couldn't get patch file (%d)\n", err);
++		goto error_handling;
++	}
++	send_patch_file(info);
++
++	goto finished;
++
++error_handling:
++	dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++	info->boot_state = BOOT_FAILED;
++	chip_startup_finished(info, -EIO);
++finished:
++	kfree(my_work);
++}
++
++/**
++ * work_cont_file_download() - A file block has been written.
++ * @work:	Reference to work data.
++ *
++ * Handle a received HCI VS Write File Block Complete event.
++ * Normally this means continue to send files to the controller.
++ */
++static void work_cont_file_download(struct work_struct *work)
++{
++	struct cg2900_work *my_work;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	if (!work) {
++		dev_err(MAIN_DEV, "work_cont_file_download: work == NULL\n");
++		return;
++	}
++
++	my_work = container_of(work, struct cg2900_work, work);
++	dev = my_work->user_data;
++	info = dev->c_data;
++
++	/* Continue to send patches or settings to the controller */
++	if (info->file_load_state == FILE_LOAD_GET_PATCH)
++		send_patch_file(info);
++	else if (info->file_load_state == FILE_LOAD_GET_STATIC_SETTINGS)
++		send_settings_file(info);
++	else
++		dev_dbg(BOOT_DEV, "No more files to load\n");
++
++	kfree(my_work);
++}
++
++/**
++ * handle_reset_cmd_complete() - Handles HCI Reset Command Complete event.
++ * @data:	Pointer to received HCI data packet.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_reset_cmd_complete(struct cg2900_chip_dev *dev, u8 *data)
++{
++	u8 status = data[0];
++	struct cg2900_chip_info *info = dev->c_data;
++
++	dev_dbg(BOOT_DEV, "Received Reset complete event with status 0x%X\n",
++		status);
++
++	if (CG2900_CLOSING != info->main_state ||
++	    CLOSING_RESET != info->closing_state)
++		return false;
++
++	if (HCI_BT_ERROR_NO_ERROR != status) {
++		/*
++		 * Continue in case of error, the chip is going to be shut down
++		 * anyway.
++		 */
++		dev_err(BOOT_DEV, "Command complete for HciReset received with "
++			"error 0x%X\n", status);
++	}
++
++	cg2900_create_work_item(info->wq, work_power_off_chip, dev);
++
++	return true;
++}
++
++/**
++ * handle_vs_store_in_fs_cmd_complete() - Handles HCI VS StoreInFS Command Complete event.
++ * @data:	Pointer to received HCI data packet.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_store_in_fs_cmd_complete(struct cg2900_chip_dev *dev,
++					       u8 *data)
++{
++	u8 status = data[0];
++	struct cg2900_chip_info *info = dev->c_data;
++
++	dev_dbg(BOOT_DEV,
++		"Received Store_in_FS complete event with status 0x%X\n",
++		status);
++
++	if (info->boot_state != BOOT_SEND_BD_ADDRESS)
++		return false;
++
++	if (HCI_BT_ERROR_NO_ERROR == status) {
++		struct hci_command_hdr cmd;
++
++		/* Send HCI SystemReset command to activate patches */
++		dev_dbg(BOOT_DEV,
++			"New boot_state: BOOT_ACTIVATE_PATCHES_AND_SETTINGS\n");
++		info->boot_state = BOOT_ACTIVATE_PATCHES_AND_SETTINGS;
++
++		cmd.opcode = cpu_to_le16(CG2900_BT_OP_VS_SYSTEM_RESET);
++		cmd.plen = 0; /* No parameters for System Reset */
++		cg2900_send_bt_cmd(info->user_in_charge, info->logger, &cmd,
++				   sizeof(cmd));
++	} else {
++		dev_err(BOOT_DEV,
++			"Command complete for StoreInFS received with error "
++			"0x%X\n", status);
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
++	}
++
++	return true;
++}
++
++/**
++ * handle_vs_write_file_block_cmd_complete() - Handles HCI VS WriteFileBlock Command Complete event.
++ * @data:	Pointer to received HCI data packet.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_write_file_block_cmd_complete(struct cg2900_chip_dev *dev,
++						    u8 *data)
++{
++	u8 status = data[0];
++	struct cg2900_chip_info *info = dev->c_data;
++
++	if (info->boot_state != BOOT_DOWNLOAD_PATCH ||
++	    info->download_state != DOWNLOAD_PENDING)
++		return false;
++
++	if (HCI_BT_ERROR_NO_ERROR == status)
++		cg2900_create_work_item(info->wq, work_cont_file_download, dev);
++	else {
++		dev_err(BOOT_DEV,
++			"Command complete for WriteFileBlock received with"
++			" error 0x%X\n", status);
++		dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_FAILED\n");
++		info->download_state = DOWNLOAD_FAILED;
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		if (info->file_info.fw_file) {
++			release_firmware(info->file_info.fw_file);
++			info->file_info.fw_file = NULL;
++		}
++		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
++	}
++
++	return true;
++}
++
++/**
++ * handle_vs_write_file_block_cmd_status() - Handles HCI VS WriteFileBlock Command Status event.
++ * @status:	Returned status of WriteFileBlock command.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_write_file_block_cmd_status(struct cg2900_chip_dev *dev,
++						  u8 status)
++{
++	struct cg2900_chip_info *info = dev->c_data;
++
++	if (info->boot_state != BOOT_DOWNLOAD_PATCH ||
++	    info->download_state != DOWNLOAD_PENDING)
++		return false;
++
++	/*
++	 * Only do something if there is an error. Otherwise we will wait for
++	 * CmdComplete.
++	 */
++	if (HCI_BT_ERROR_NO_ERROR != status) {
++		dev_err(BOOT_DEV,
++			"Command status for WriteFileBlock received with"
++			" error 0x%X\n", status);
++		dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_FAILED\n");
++		info->download_state = DOWNLOAD_FAILED;
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		if (info->file_info.fw_file) {
++			release_firmware(info->file_info.fw_file);
++			info->file_info.fw_file = NULL;
++		}
++		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
++	}
++
++	return true;
++}
++
++/**
++ * handle_vs_power_switch_off_cmd_complete() - Handles HCI VS PowerSwitchOff Command Complete event.
++ * @data:	Pointer to received HCI data packet.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_power_switch_off_cmd_complete(struct cg2900_chip_dev *dev,
++						    u8 *data)
++{
++	u8 status = data[0];
++	struct cg2900_chip_info *info = dev->c_data;
++
++	if (CLOSING_POWER_SWITCH_OFF != info->closing_state)
++		return false;
++
++	dev_dbg(BOOT_DEV,
++		"handle_vs_power_switch_off_cmd_complete status %d\n", status);
++
++	/*
++	 * We were waiting for this but we don't need to do anything upon
++	 * reception except warn for error status
++	 */
++	if (HCI_BT_ERROR_NO_ERROR != status)
++		dev_err(BOOT_DEV,
++			"Command Complete for PowerSwitchOff received with "
++			"error 0x%X", status);
++
++	return true;
++}
++
++/**
++ * handle_vs_system_reset_cmd_complete() - Handle HCI VS SystemReset Command Complete event.
++ * @data:	Pointer to received HCI data packet.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_system_reset_cmd_complete(struct cg2900_chip_dev *dev,
++						u8 *data)
++{
++	u8 status = data[0];
++	struct bt_vs_bt_enable_cmd cmd;
++	struct cg2900_chip_info *info = dev->c_data;
++
++	if (info->boot_state != BOOT_ACTIVATE_PATCHES_AND_SETTINGS)
++		return false;
++
++	dev_dbg(BOOT_DEV, "handle_vs_system_reset_cmd_complete status %d\n",
++		status);
++
++	if (HCI_BT_ERROR_NO_ERROR == status) {
++		/*
++		 * We are now almost finished. Shut off BT Core. It will be
++		 * re-enabled by the Bluetooth driver when needed.
++		 */
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_DISABLE_BT\n");
++		info->boot_state = BOOT_DISABLE_BT;
++		cmd.op_code = cpu_to_le16(CG2900_BT_OP_VS_BT_ENABLE);
++		cmd.plen = BT_PARAM_LEN(sizeof(cmd));
++		cmd.enable = CG2900_BT_DISABLE;
++		cg2900_send_bt_cmd(info->user_in_charge, info->logger, &cmd,
++				   sizeof(cmd));
++	} else {
++		dev_err(BOOT_DEV,
++			"Received Reset complete event with status 0x%X\n",
++			status);
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		chip_startup_finished(info, -EIO);
++	}
++
++	return true;
++}
++
++/**
++ * handle_vs_bt_enable_cmd_status() - Handles HCI VS BtEnable Command Status event.
++ * @status:	Returned status of BtEnable command.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_bt_enable_cmd_status(struct cg2900_chip_dev *dev,
++					   u8 status)
++{
++	struct cg2900_chip_info *info = dev->c_data;
++
++	if (info->boot_state != BOOT_DISABLE_BT)
++		return false;
++
++	dev_dbg(BOOT_DEV, "handle_vs_bt_enable_cmd_status status %d\n", status);
++
++	/*
++	 * Only do something if there is an error. Otherwise we will wait for
++	 * CmdComplete.
++	 */
++	if (HCI_BT_ERROR_NO_ERROR != status) {
++		dev_err(BOOT_DEV,
++			"Received BtEnable status event with status 0x%X\n",
++			status);
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		chip_startup_finished(info, -EIO);
++	}
++
++	return true;
++}
++
++/**
++ * handle_vs_bt_enable_cmd_complete() - Handle HCI VS BtEnable Command Complete event.
++ * @data:	Pointer to received HCI data packet.
++ *
++ * Returns:
++ *   true,  if packet was handled internally,
++ *   false, otherwise.
++ */
++static bool handle_vs_bt_enable_cmd_complete(struct cg2900_chip_dev *dev,
++					     u8 *data)
++{
++	u8 status = data[0];
++	struct cg2900_chip_info *info = dev->c_data;
++
++	if (info->boot_state != BOOT_DISABLE_BT)
++		return false;
++
++	dev_dbg(BOOT_DEV, "handle_vs_bt_enable_cmd_complete status %d\n",
++		status);
++
++	if (HCI_BT_ERROR_NO_ERROR == status) {
++		/*
++		 * The boot sequence is now finished successfully.
++		 * Set states and signal to waiting thread.
++		 */
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_READY\n");
++		info->boot_state = BOOT_READY;
++		chip_startup_finished(info, 0);
++	} else {
++		dev_err(BOOT_DEV,
++			"Received BtEnable complete event with status 0x%X\n",
++			status);
++		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
++		info->boot_state = BOOT_FAILED;
++		chip_startup_finished(info, -EIO);
++	}
++
++	return true;
++}
++
++/**
++ * handle_rx_data_bt_evt() - Check if received data should be handled in CG2900 chip driver.
++ * @skb:	Data packet
++ *
++ * The handle_rx_data_bt_evt() function checks if received data should be
++ * handled in CG2900 chip driver. If so handle it correctly.
++ * Received data is always HCI BT Event.
++ *
++ * Returns:
++ *   True,  if packet was handled internally,
++ *   False, otherwise.
++ */
++static bool handle_rx_data_bt_evt(struct cg2900_chip_dev *dev,
++				  struct sk_buff *skb)
++{
++	bool pkt_handled = false;
++	/* skb cannot be NULL here so it is safe to de-reference */
++	u8 *data = skb->data;
++	struct hci_event_hdr *evt;
++	u16 op_code;
++
++	evt = (struct hci_event_hdr *)data;
++	data += sizeof(*evt);
++
++	/* First check the event code. */
++	if (HCI_EV_CMD_COMPLETE == evt->evt) {
++		struct hci_ev_cmd_complete *cmd_complete;
++
++		cmd_complete = (struct hci_ev_cmd_complete *)data;
++		op_code = le16_to_cpu(cmd_complete->opcode);
++		dev_dbg(dev->dev,
++			"Received Command Complete: op_code = 0x%04X\n",
++			op_code);
++		/* Move to first byte after OCF */
++		data += sizeof(*cmd_complete);
++
++		if (op_code == HCI_OP_RESET)
++			pkt_handled = handle_reset_cmd_complete(dev, data);
++		else if (op_code == CG2900_BT_OP_VS_STORE_IN_FS)
++			pkt_handled = handle_vs_store_in_fs_cmd_complete(dev,
++									 data);
++		else if (op_code == CG2900_BT_OP_VS_WRITE_FILE_BLOCK)
++			pkt_handled =
++				handle_vs_write_file_block_cmd_complete(dev,
++									data);
++		else if (op_code == CG2900_BT_OP_VS_POWER_SWITCH_OFF)
++			pkt_handled =
++				handle_vs_power_switch_off_cmd_complete(dev,
++									data);
++		else if (op_code == CG2900_BT_OP_VS_SYSTEM_RESET)
++			pkt_handled = handle_vs_system_reset_cmd_complete(dev,
++									  data);
++		else if (op_code == CG2900_BT_OP_VS_BT_ENABLE)
++			pkt_handled = handle_vs_bt_enable_cmd_complete(dev,
++								       data);
++	} else if (HCI_EV_CMD_STATUS == evt->evt) {
++		struct hci_ev_cmd_status *cmd_status;
++
++		cmd_status = (struct hci_ev_cmd_status *)data;
++
++		op_code = le16_to_cpu(cmd_status->opcode);
++
++		dev_dbg(dev->dev, "Received Command Status: op_code = 0x%04X\n",
++			op_code);
++
++		if (op_code == CG2900_BT_OP_VS_WRITE_FILE_BLOCK)
++			pkt_handled = handle_vs_write_file_block_cmd_status
++				(dev, cmd_status->status);
++		else if (op_code == CG2900_BT_OP_VS_BT_ENABLE)
++			pkt_handled = handle_vs_bt_enable_cmd_status
++				(dev, cmd_status->status);
++	} else if (HCI_EV_HW_ERROR == evt->evt) {
++		struct hci_ev_hw_error *hw_error;
++
++		hw_error = (struct hci_ev_hw_error *)data;
++		/*
++		 * Only do a printout. There might be a receiving stack that can
++		 * handle this event
++		 */
++		dev_err(dev->dev, "HW Error event received with error 0x%02X\n",
++			hw_error->hw_code);
++		return false;
++	} else
++		return false;
++
++	if (pkt_handled)
++		kfree_skb(skb);
++
++	return pkt_handled;
++}
++
++/**
++ * transmit_skb_with_flow_ctrl_bt() - Send the BT skb to the controller if it is allowed or queue it.
++ * @user:	Current user.
++ * @skb:	Data packet.
++ *
++ * The transmit_skb_with_flow_ctrl_bt() function checks if there are
++ * tickets available and if so transmits buffer to controller. Otherwise the skb
++ * and user name is stored in a list for later sending.
++ * If enabled, copy the transmitted data to the HCI logger as well.
++ */
++static void transmit_skb_with_flow_ctrl_bt(struct cg2900_user_data *user,
++					   struct sk_buff *skb)
++{
++	struct cg2900_chip_dev *dev = cg2900_get_prv(user);
++	struct cg2900_chip_info *info = dev->c_data;
++
++	/*
++	 * Because there are more users of some H4 channels (currently audio
++	 * application for BT command and FM channel) we need to have an
++	 * internal HCI command flow control in CG2900 driver.
++	 * So check here how many tickets we have and store skb in a queue if
++	 * there are no tickets left. The skb will be sent later when we get
++	 * more ticket(s).
++	 */
++	spin_lock_bh(&info->tx_bt_lock);
++
++	if (info->tx_nr_pkts_allowed_bt > 0) {
++		info->tx_nr_pkts_allowed_bt--;
++		dev_dbg(user->dev, "New tx_nr_pkts_allowed_bt = %d\n",
++			info->tx_nr_pkts_allowed_bt);
++
++		/*
++		 * If it's command from audio app store the OpCode,
++		 * it'll be used later to decide where to dispatch Command
++		 * Complete event.
++		 */
++		if (info->bt_audio == user) {
++			struct hci_command_hdr *hdr = (struct hci_command_hdr *)
++				(skb->data + HCI_H4_SIZE);
++
++			info->audio_bt_cmd_op = le16_to_cpu(hdr->opcode);
++			dev_dbg(user->dev,
++				"Sending cmd from audio driver, saving "
++				"OpCode = 0x%X\n",
++				info->audio_bt_cmd_op);
++		}
++
++		cg2900_tx_to_chip(user, info->logger, skb);
++	} else {
++		dev_dbg(user->dev, "Not allowed to send cmd to controller, "
++			"storing in TX queue\n");
++
++		cg2900_skb_data(skb)->user = user;
++		skb_queue_tail(&info->tx_queue_bt, skb);
++	}
++	spin_unlock_bh(&info->tx_bt_lock);
++}
++
++/**
++ * transmit_skb_with_flow_ctrl_fm() - Send the FM skb to the controller if it is allowed or queue it.
++ * @user:	Current user.
++ * @skb:	Data packet.
++ *
++ * The transmit_skb_with_flow_ctrl_fm() function checks if chip is available and
++ * if so transmits buffer to controller. Otherwise the skb and user name is
++ * stored in a list for later sending.
++ * Also it updates the FM radio mode if it's FM GOTOMODE command, this is needed
++ * to know how to handle some FM DO commands complete events.
++ * If enabled, copy the transmitted data to the HCI logger as well.
++ */
++static void transmit_skb_with_flow_ctrl_fm(struct cg2900_user_data *user,
++					   struct sk_buff *skb)
++{
++	u8 cmd_func = CG2900_FM_CMD_PARAM_NONE;
++	u16 cmd_id = CG2900_FM_CMD_NONE;
++	struct cg2900_chip_dev *dev = cg2900_get_prv(user);
++	struct cg2900_chip_info *info = dev->c_data;
++
++	fm_parse_cmd(&(skb->data[0]), &cmd_func, &cmd_id);
++
++	/*
++	 * If this is an FM IP disable or reset send command and also reset
++	 * the flow control and audio user.
++	 */
++	if (cmd_func == CG2900_FM_CMD_PARAM_DISABLE ||
++	    cmd_func == CG2900_FM_CMD_PARAM_RESET) {
++		spin_lock_bh(&info->tx_fm_lock);
++		fm_reset_flow_ctrl(info);
++		spin_unlock_bh(&info->tx_fm_lock);
++		cg2900_tx_to_chip(user, info->logger, skb);
++		return;
++	}
++
++	/*
++	 * If this is a FM user and no FM audio user command pending just send
++	 * FM command. It is up to the user of the FM channel to handle its own
++	 * flow control.
++	 */
++	spin_lock_bh(&info->tx_fm_lock);
++	if (info->fm_audio != user &&
++	    info->audio_fm_cmd_id == CG2900_FM_CMD_NONE) {
++		info->hci_fm_cmd_func = cmd_func;
++		dev_dbg(user->dev, "Sending FM radio command 0x%04X\n",
++			info->hci_fm_cmd_func);
++		/* If a GotoMode command update FM mode */
++		fm_update_mode(info, &skb->data[0]);
++		cg2900_tx_to_chip(user, info->logger, skb);
++	} else if (info->fm_audio == user &&
++		   info->hci_fm_cmd_func == CG2900_FM_CMD_PARAM_NONE &&
++		   info->audio_fm_cmd_id == CG2900_FM_CMD_NONE) {
++		/*
++		 * If it's command from fm audio user store the command id.
++		 * It'll be used later to decide where to dispatch
++		 * command complete event.
++		 */
++		info->audio_fm_cmd_id = cmd_id;
++		dev_dbg(user->dev, "Sending FM audio command 0x%04X\n",
++			info->audio_fm_cmd_id);
++		cg2900_tx_to_chip(user, info->logger, skb);
++	} else {
++		dev_dbg(user->dev,
++			"Not allowed to send FM cmd to controller, storing in "
++			"TX queue\n");
++
++		cg2900_skb_data(skb)->user = user;
++		skb_queue_tail(&info->tx_queue_fm, skb);
++	}
++	spin_unlock_bh(&info->tx_fm_lock);
++}
++
++/**
++ * is_bt_audio_user() - Checks if this packet is for the BT audio user.
++ * @info:	CG2900 info.
++ * @h4_channel:	H:4 channel for this packet.
++ * @skb:	Packet to check.
++ *
++ * Returns:
++ *   true if packet is for BT audio user.
++ *   false otherwise.
++ */
++static bool is_bt_audio_user(struct cg2900_chip_info *info, int h4_channel,
++			     const struct sk_buff * const skb)
++{
++	struct hci_event_hdr *hdr;
++	u8 *payload;
++	u16 opcode;
++
++	if (h4_channel != CHANNEL_BT_EVT)
++		return false;
++
++	hdr = (struct hci_event_hdr *)skb->data;
++	payload = (u8 *)(hdr + 1); /* follows header */
++
++	if (HCI_EV_CMD_COMPLETE == hdr->evt)
++		opcode = le16_to_cpu(
++			((struct hci_ev_cmd_complete *)payload)->opcode);
++	else if (HCI_EV_CMD_STATUS == hdr->evt)
++		opcode = le16_to_cpu(
++			((struct hci_ev_cmd_status *)payload)->opcode);
++	else
++		return false;
++
++	if (opcode != info->audio_bt_cmd_op)
++		return false;
++
++	dev_dbg(info->bt_audio->dev, "Audio BT OpCode match = 0x%04X\n",
++		opcode);
++	info->audio_bt_cmd_op = CG2900_BT_OPCODE_NONE;
++	return true;
++}
++
++/**
++ * is_fm_audio_user() - Checks if this packet is for the FM audio user.
++ * @info:	CG2900 info.
++ * @h4_channel:	H:4 channel for this packet.
++ * @skb:	Packet to check.
++ *
++ * Returns:
++ *   true if packet is for BT audio user.
++ *   false otherwise.
++ */
++static bool is_fm_audio_user(struct cg2900_chip_info *info, int h4_channel,
++			     const struct sk_buff * const skb)
++{
++	u8 cmd_func;
++	u16 cmd_id;
++	u16 irpt_val;
++	u8 event;
++
++	if (h4_channel != CHANNEL_FM_RADIO)
++		return false;
++
++	cmd_func = CG2900_FM_CMD_PARAM_NONE;
++	cmd_id = CG2900_FM_CMD_NONE;
++	irpt_val = 0;
++	event = CG2900_FM_EVENT_UNKNOWN;
++
++	fm_parse_event(&skb->data[0], &event, &cmd_func, &cmd_id,
++		       &irpt_val);
++	/* Check if command complete event FM legacy interface. */
++	if ((event == CG2900_FM_EVENT_CMD_COMPLETE) &&
++	    (cmd_func == CG2900_FM_CMD_PARAM_WRITECOMMAND) &&
++	    (cmd_id == info->audio_fm_cmd_id)) {
++		dev_dbg(info->fm_audio->dev,
++			"FM Audio Function Code match = 0x%04X\n",
++			cmd_id);
++		return true;
++	}
++
++	/* Check if Interrupt legacy interface. */
++	if ((event == CG2900_FM_EVENT_INTERRUPT) &&
++	    (fm_is_do_cmd_irpt(irpt_val)) &&
++	    (info->tx_fm_audio_awaiting_irpt))
++		return true;
++
++	return false;
++}
++
++/**
++ * data_from_chip() - Called when data is received from the chip.
++ * @dev:	Chip info.
++ * @cg2900_dev:	CG2900 user for this packet.
++ * @skb:	Packet received.
++ *
++ * The data_from_chip() function updates flow control and checks
++ * if packet is a response for a packet it itself has transmitted. If not it
++ * finds the correct user and sends the packet* to the user.
++ */
++static void data_from_chip(struct cg2900_chip_dev *dev,
++			   struct sk_buff *skb)
++{
++	int h4_channel;
++	struct list_head *cursor;
++	struct cg2900_channel_item *tmp;
++	struct cg2900_chip_info *info = dev->c_data;
++	struct cg2900_user_data *user = NULL;
++
++	h4_channel = skb->data[0];
++	skb_pull(skb, HCI_H4_SIZE);
++
++	spin_lock_bh(&info->rw_lock);
++	/* First check if it is a BT or FM audio event */
++	if (is_bt_audio_user(info, h4_channel, skb))
++		user = info->bt_audio;
++	else if (is_fm_audio_user(info, h4_channel, skb))
++		user = info->fm_audio;
++	spin_unlock_bh(&info->rw_lock);
++
++	/* Now check if we should update flow control */
++	if (h4_channel == CHANNEL_BT_EVT)
++		update_flow_ctrl_bt(dev, skb);
++	else if (h4_channel == CHANNEL_FM_RADIO)
++		update_flow_ctrl_fm(dev, skb);
++
++	/* Then check if this is a response to data we have sent */
++	if (h4_channel == CHANNEL_BT_EVT && handle_rx_data_bt_evt(dev, skb))
 +		return;
 +
- 	/* Update HCI stat counters */
- 	switch (pkt_type) {
- 	case HCI_COMMAND_PKT:
-@@ -139,7 +145,8 @@ restart:
- 
- 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
- 		len = tty->ops->write(tty, skb->data, skb->len);
--		hdev->stat.byte_tx += len;
-+		if (hdev)
-+			hdev->stat.byte_tx += len;
- 
- 		skb_pull(skb, len);
- 		if (skb->len) {
-@@ -158,6 +165,65 @@ restart:
- 	return 0;
- }
- 
-+int hci_uart_set_break(struct hci_uart *hu, bool break_on)
-+{
-+	struct tty_struct *tty = hu->tty;
-+	int state = TTY_BREAK_OFF;
++	spin_lock_bh(&info->rw_lock);
 +
-+	if (break_on)
-+		state = TTY_BREAK_ON;
++	if (user)
++		goto user_found;
 +
-+	if (tty->ops->break_ctl)
-+		return tty->ops->break_ctl(tty, state);
-+	else
-+		return -EOPNOTSUPP;
++	/* Let's see if it is the last user */
++	if (info->last_user && info->last_user->h4_channel == h4_channel) {
++		user = info->last_user;
++		goto user_found;
++	}
++
++	/* Search through the list of all open channels to find the user */
++	list_for_each(cursor, &info->open_channels) {
++		tmp = list_entry(cursor, struct cg2900_channel_item, list);
++		if (tmp->user->h4_channel == h4_channel) {
++			user = tmp->user;
++			goto user_found;
++		}
++	}
++
++user_found:
++	if (user != info->bt_audio && user != info->fm_audio)
++		info->last_user = user;
++
++	spin_unlock_bh(&info->rw_lock);
++
++	if (user)
++		user->read_cb(user, skb);
++	else {
++		dev_err(dev->dev,
++			"Could not find corresponding user to h4_channel %d\n",
++			h4_channel);
++		kfree_skb(skb);
++	}
 +}
 +
-+void hci_uart_flow_ctrl(struct hci_uart *hu, bool flow_on)
++/**
++ * chip_removed() - Called when transport has been removed.
++ * @dev:	Chip device.
++ *
++ * Removes registered MFD devices and frees internal resources.
++ */
++static void chip_removed(struct cg2900_chip_dev *dev)
 +{
-+	if (flow_on)
-+		tty_unthrottle(hu->tty);
-+	else
-+		tty_throttle(hu->tty);
++	struct cg2900_chip_info *info = dev->c_data;
++
++	mfd_remove_devices(dev->dev);
++	kfree(info->settings_file_name);
++	kfree(info->patch_file_name);
++	destroy_workqueue(info->wq);
++	kfree(info);
++	dev->c_data = NULL;
++	dev->c_cb.chip_removed = NULL;
++	dev->c_cb.data_from_chip = NULL;
 +}
 +
-+int hci_uart_set_baudrate(struct hci_uart *hu, int baud)
++/**
++ * last_bt_user_removed() - Called when last BT user is removed.
++ * @info:	Chip handler info.
++ *
++ * Clears out TX queue for BT.
++ */
++static void last_bt_user_removed(struct cg2900_chip_info *info)
 +{
-+	struct ktermios old_termios;
-+	struct tty_struct *tty = hu->tty;
++	spin_lock_bh(&info->tx_bt_lock);
++	skb_queue_purge(&info->tx_queue_bt);
 +
-+	if (!tty->ops->set_termios)
-+		return -EOPNOTSUPP;
++	/*
++	 * Reset number of packets allowed and number of outstanding
++	 * BT commands.
++	 */
++	info->tx_nr_pkts_allowed_bt = 1;
++	/* Reset the audio_bt_cmd_op. */
++	info->audio_bt_cmd_op = CG2900_BT_OPCODE_NONE;
++	spin_unlock_bh(&info->tx_bt_lock);
++}
 +
-+	mutex_lock(&(tty->termios_mutex));
-+	/* Start by storing the old termios. */
-+	memcpy(&old_termios, tty->termios, sizeof(old_termios));
++/**
++ * last_fm_user_removed() - Called when last FM user is removed.
++ * @info:	Chip handler info.
++ *
++ * Clears out TX queue for BT.
++ */
++static void last_fm_user_removed(struct cg2900_chip_info *info)
++{
++	spin_lock_bh(&info->tx_fm_lock);
++	fm_reset_flow_ctrl(info);
++	spin_unlock_bh(&info->tx_fm_lock);
++}
 +
-+	tty_encode_baud_rate(tty, baud, baud);
++/**
++ * chip_shutdown() - Reset and power the chip off.
++ * @user:	MFD device.
++ */
++static void chip_shutdown(struct cg2900_user_data *user)
++{
++	struct hci_command_hdr cmd;
++	struct cg2900_chip_dev *dev = cg2900_get_prv(user);
++	struct cg2900_chip_info *info = dev->c_data;
 +
-+	/* Finally inform the driver */
-+	tty->ops->set_termios(tty, &old_termios);
++	dev_dbg(user->dev, "chip_shutdown\n");
 +
-+	mutex_unlock(&(tty->termios_mutex));
++	/* First do a quick power switch of the chip to assure a good state */
++	if (dev->t_cb.set_chip_power)
++		dev->t_cb.set_chip_power(dev, false);
++
++	/*
++	 * Wait 50ms before continuing to be sure that the chip detects
++	 * chip power off.
++	 */
++	schedule_timeout_interruptible(
++			msecs_to_jiffies(LINE_TOGGLE_DETECT_TIMEOUT));
++
++	if (dev->t_cb.set_chip_power)
++		dev->t_cb.set_chip_power(dev, true);
++
++	/* Wait 100ms before continuing to be sure that the chip is ready */
++	schedule_timeout_interruptible(msecs_to_jiffies(CHIP_READY_TIMEOUT));
++
++	if (user != info->bt_audio && user != info->fm_audio)
++		info->last_user = user;
++	info->user_in_charge = user;
++
++	/*
++	 * Transmit HCI reset command to ensure the chip is using
++	 * the correct transport and to put BT part in reset.
++	 */
++	dev_dbg(user->dev, "New closing_state: CLOSING_RESET\n");
++	info->closing_state = CLOSING_RESET;
++	cmd.opcode = cpu_to_le16(HCI_OP_RESET);
++	cmd.plen = 0; /* No parameters for HCI reset */
++	cg2900_send_bt_cmd(info->user_in_charge, info->logger, &cmd,
++			   sizeof(cmd));
++}
++
++/**
++ * chip_startup_finished() - Called when chip startup has finished.
++ * @info:	Chip handler info.
++ * @err:	Result of chip startup, 0 for no error.
++ *
++ * Shuts down the chip upon error, sets state to active, wakes waiting threads,
++ * and informs transport that startup has finished.
++ */
++static void chip_startup_finished(struct cg2900_chip_info *info, int err)
++{
++	dev_dbg(BOOT_DEV, "chip_startup_finished (%d)\n", err);
++
++	if (err)
++		/* Shutdown the chip */
++		chip_shutdown(info->user_in_charge);
++	else {
++		dev_dbg(BOOT_DEV, "New main_state: CG2900_ACTIVE\n");
++		info->main_state = CG2900_ACTIVE;
++	}
++
++	wake_up_interruptible_all(&main_wait_queue);
++
++	if (err)
++		return;
++
++	if (!info->chip_dev->t_cb.chip_startup_finished)
++		dev_dbg(BOOT_DEV, "chip_startup_finished callback not found\n");
++	else
++		info->chip_dev->t_cb.chip_startup_finished(info->chip_dev);
++}
++
++/**
++ * cg2900_open() - Called when user wants to open an H4 channel.
++ * @user:	MFD device to open.
++ *
++ * Checks that H4 channel is not already opened. If chip is not started, starts
++ * up the chip. Sets channel as opened and adds user to active users.
++ *
++ * Returns:
++ *   0 if success.
++ *   -EINVAL if user is NULL or read_cb is NULL.
++ *   -EBUSY if chip is in transit state (being started or shutdown).
++ *   -EACCES if H4 channel is already opened.
++ *   -ENOMEM if allocation fails.
++ *   -EIO if chip startup fails.
++ *   Error codes generated by t_cb.open.
++ */
++static int cg2900_open(struct cg2900_user_data *user)
++{
++	int err;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++	struct list_head *cursor;
++	struct cg2900_channel_item *tmp;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV, "cg2900_open: Calling with NULL pointer\n");
++		return -EINVAL;
++	}
++
++	if (!user->read_cb) {
++		dev_err(user->dev, "cg2900_open: read_cb missing\n");
++		return -EINVAL;
++	}
++
++	dev_dbg(user->dev, "cg2900_open\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	mutex_lock(&main_info->man_mutex);
++
++	/*
++	 * Add a minor wait in order to avoid CPU blocking, looping openings.
++	 * Note there will of course be no wait if we are already in the right
++	 * state.
++	 */
++	err = wait_event_interruptible_timeout(main_wait_queue,
++			(CG2900_IDLE == info->main_state ||
++			 CG2900_ACTIVE == info->main_state),
++			msecs_to_jiffies(LINE_TOGGLE_DETECT_TIMEOUT));
++	if (err <= 0) {
++		if (CG2900_INIT == info->main_state)
++			dev_err(user->dev, "Transport not opened\n");
++		else
++			dev_err(user->dev, "cg2900_open currently busy (0x%X). "
++				"Try again\n", info->main_state);
++		err = -EBUSY;
++		goto err_free_mutex;
++	}
++
++	err = 0;
++
++	list_for_each(cursor, &info->open_channels) {
++		tmp = list_entry(cursor, struct cg2900_channel_item, list);
++		if (tmp->user->h4_channel == user->h4_channel &&
++		    tmp->user->is_audio == user->is_audio) {
++			dev_err(user->dev, "Channel %d is already opened\n",
++				user->h4_channel);
++			err = -EACCES;
++			goto err_free_mutex;
++		}
++	}
++
++	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
++	if (!tmp) {
++		dev_err(user->dev, "Could not allocate tmp\n");
++		err = -ENOMEM;
++		goto err_free_mutex;
++	}
++	tmp->user = user;
++
++	if (CG2900_ACTIVE != info->main_state &&
++	    !user->chip_independent) {
++		/* Open transport and start-up the chip */
++		if (dev->t_cb.set_chip_power)
++			dev->t_cb.set_chip_power(dev, true);
++
++		/* Wait to be sure that the chip is ready */
++		schedule_timeout_interruptible(
++				msecs_to_jiffies(CHIP_READY_TIMEOUT));
++
++		if (dev->t_cb.open) {
++			err = dev->t_cb.open(dev);
++			if (err) {
++				if (dev->t_cb.set_chip_power)
++					dev->t_cb.set_chip_power(dev, false);
++				goto err_free_list_item;
++			}
++		}
++
++		/* Start the boot sequence */
++		info->user_in_charge = user;
++		if (user != info->bt_audio && user != info->fm_audio)
++			info->last_user = user;
++		dev_dbg(user->dev, "New boot_state: BOOT_GET_FILES_TO_LOAD\n");
++		info->boot_state = BOOT_GET_FILES_TO_LOAD;
++		dev_dbg(user->dev, "New main_state: CG2900_BOOTING\n");
++		info->main_state = CG2900_BOOTING;
++		cg2900_create_work_item(info->wq, work_load_patch_and_settings,
++					dev);
++
++		dev_dbg(user->dev, "Wait up to 15 seconds for chip to start\n");
++		wait_event_interruptible_timeout(main_wait_queue,
++			(CG2900_ACTIVE == info->main_state ||
++			 CG2900_IDLE   == info->main_state),
++			msecs_to_jiffies(CHIP_STARTUP_TIMEOUT));
++		if (CG2900_ACTIVE != info->main_state) {
++			dev_err(user->dev, "CG2900 driver failed to start\n");
++
++			if (dev->t_cb.close)
++				dev->t_cb.close(dev);
++
++			dev_dbg(user->dev, "New main_state: CG2900_IDLE\n");
++			info->main_state = CG2900_IDLE;
++			err = -EIO;
++			goto err_free_list_item;
++		}
++	}
++
++	list_add_tail(&tmp->list, &info->open_channels);
++
++	user->opened = true;
++
++	dev_dbg(user->dev, "H:4 channel opened\n");
++
++	mutex_unlock(&main_info->man_mutex);
++	return 0;
++err_free_list_item:
++	kfree(tmp);
++err_free_mutex:
++	mutex_unlock(&main_info->man_mutex);
++	return err;
++}
++
++/**
++ * cg2900_hci_log_open() - Called when user wants to open HCI logger channel.
++ * @user:	MFD device to open.
++ *
++ * Registers user as hci_logger and calls @cg2900_open to open the channel.
++ *
++ * Returns:
++ *   0 if success.
++ *   -EINVAL if user is NULL.
++ *   -EACCES if H4 channel is already opened.
++ *   Error codes generated by cg2900_open.
++ */
++static int cg2900_hci_log_open(struct cg2900_user_data *user)
++{
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++	int err;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV,
++			"cg2900_hci_log_open: Calling with NULL pointer\n");
++		return -EINVAL;
++	}
++
++	dev_dbg(user->dev, "cg2900_hci_log_open\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	if (info->logger) {
++		dev_err(user->dev, "HCI Logger already stored\n");
++		return -EACCES;
++	}
++
++	info->logger = user;
++	err = cg2900_open(user);
++	if (err)
++		info->logger = NULL;
++	return err;
++}
++
++/**
++ * cg2900_bt_audio_open() - Called when user wants to open BT audio channel.
++ * @user:	MFD device to open.
++ *
++ * Registers user as bt_audio and calls @cg2900_open to open the channel.
++ *
++ * Returns:
++ *   0 if success.
++ *   -EINVAL if user is NULL.
++ *   -EACCES if H4 channel is already opened.
++ *   Error codes generated by cg2900_open.
++ */
++static int cg2900_bt_audio_open(struct cg2900_user_data *user)
++{
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++	int err;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV,
++			"cg2900_bt_audio_open: Calling with NULL pointer\n");
++		return -EINVAL;
++	}
++
++	dev_dbg(user->dev, "cg2900_bt_audio_open\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	if (info->bt_audio) {
++		dev_err(user->dev, "BT Audio already stored\n");
++		return -EACCES;
++	}
++
++	info->bt_audio = user;
++	err = cg2900_open(user);
++	if (err)
++		info->bt_audio = NULL;
++	return err;
++}
++
++/**
++ * cg2900_fm_audio_open() - Called when user wants to open FM audio channel.
++ * @user:	MFD device to open.
++ *
++ * Registers user as fm_audio and calls @cg2900_open to open the channel.
++ *
++ * Returns:
++ *   0 if success.
++ *   -EINVAL if user is NULL.
++ *   -EACCES if H4 channel is already opened.
++ *   Error codes generated by cg2900_open.
++ */
++static int cg2900_fm_audio_open(struct cg2900_user_data *user)
++{
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++	int err;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV,
++			"cg2900_fm_audio_open: Calling with NULL pointer\n");
++		return -EINVAL;
++	}
++
++	dev_dbg(user->dev, "cg2900_fm_audio_open\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	if (info->fm_audio) {
++		dev_err(user->dev, "FM Audio already stored\n");
++		return -EACCES;
++	}
++
++	info->fm_audio = user;
++	err = cg2900_open(user);
++	if (err)
++		info->fm_audio = NULL;
++	return err;
++}
++
++/**
++ * cg2900_close() - Called when user wants to close an H4 channel.
++ * @user:	MFD device to close.
++ *
++ * Clears up internal resources, sets channel as closed, and shuts down chip if
++ * this was the last user.
++ */
++static void cg2900_close(struct cg2900_user_data *user)
++{
++	bool keep_powered = false;
++	struct list_head *cursor, *next;
++	struct cg2900_channel_item *tmp;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV, "cg2900_close: Calling with NULL pointer\n");
++		return;
++	}
++
++	dev_dbg(user->dev, "cg2900_close\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	mutex_lock(&main_info->man_mutex);
++
++	/*
++	 * Go through each open channel. Remove our channel and check if there
++	 * is any other channel that want to keep the chip running
++	 */
++	list_for_each_safe(cursor, next, &info->open_channels) {
++		tmp = list_entry(cursor, struct cg2900_channel_item, list);
++		if (tmp->user == user) {
++			list_del(cursor);
++			kfree(tmp);
++		} else if (!tmp->user->chip_independent)
++			keep_powered = true;
++	}
++
++	if (user->h4_channel == CHANNEL_BT_CMD && !bt_is_open(info))
++		last_bt_user_removed(info);
++	else if (user->h4_channel == CHANNEL_FM_RADIO && !fm_is_open(info))
++		last_fm_user_removed(info);
++
++	if (keep_powered)
++		/* This was not the last user, we're done. */
++		goto finished;
++
++	if (CG2900_IDLE == info->main_state)
++		/* Chip has already been shut down. */
++		goto finished;
++
++	dev_dbg(user->dev, "New main_state: CG2900_CLOSING\n");
++	info->main_state = CG2900_CLOSING;
++	chip_shutdown(user);
++
++	dev_dbg(user->dev, "Wait up to 15 seconds for chip to shut-down\n");
++	wait_event_interruptible_timeout(main_wait_queue,
++				(CG2900_IDLE == info->main_state),
++				msecs_to_jiffies(CHIP_SHUTDOWN_TIMEOUT));
++
++	/* Force shutdown if we timed out */
++	if (CG2900_IDLE != info->main_state) {
++		dev_err(user->dev,
++			"ST-Ericsson CG2900 Core Driver was shut-down with "
++			"problems\n");
++
++		if (dev->t_cb.close)
++			dev->t_cb.close(dev);
++
++		dev_dbg(user->dev, "New main_state: CG2900_IDLE\n");
++		info->main_state = CG2900_IDLE;
++	}
++
++finished:
++	mutex_unlock(&main_info->man_mutex);
++	user->opened = false;
++	dev_dbg(user->dev, "H:4 channel closed\n");
++}
++
++/**
++ * cg2900_hci_log_close() - Called when user wants to close HCI logger channel.
++ * @user:	MFD device to close.
++ *
++ * Clears hci_logger user and calls @cg2900_close to close the channel.
++ */
++static void cg2900_hci_log_close(struct cg2900_user_data *user)
++{
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV,
++			"cg2900_hci_log_close: Calling with NULL pointer\n");
++		return;
++	}
++
++	dev_dbg(user->dev, "cg2900_hci_log_close\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	if (user != info->logger) {
++		dev_err(user->dev, "cg2900_hci_log_close: Trying to remove "
++			"another user\n");
++		return;
++	}
++
++	info->logger = NULL;
++	cg2900_close(user);
++}
++
++/**
++ * cg2900_bt_audio_close() - Called when user wants to close BT audio channel.
++ * @user:	MFD device to close.
++ *
++ * Clears bt_audio user and calls @cg2900_close to close the channel.
++ */
++static void cg2900_bt_audio_close(struct cg2900_user_data *user)
++{
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV,
++			"cg2900_bt_audio_close: Calling with NULL pointer\n");
++		return;
++	}
++
++	dev_dbg(user->dev, "cg2900_bt_audio_close\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	if (user != info->bt_audio) {
++		dev_err(user->dev, "cg2900_bt_audio_close: Trying to remove "
++			"another user\n");
++		return;
++	}
++
++	info->bt_audio = NULL;
++	cg2900_close(user);
++}
++
++/**
++ * cg2900_fm_audio_close() - Called when user wants to close FM audio channel.
++ * @user:	MFD device to close.
++ *
++ * Clears fm_audio user and calls @cg2900_close to close the channel.
++ */
++static void cg2900_fm_audio_close(struct cg2900_user_data *user)
++{
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV,
++			"cg2900_fm_audio_close: Calling with NULL pointer\n");
++		return;
++	}
++
++	dev_dbg(user->dev, "cg2900_fm_audio_close\n");
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	if (user != info->fm_audio) {
++		dev_err(user->dev, "cg2900_fm_audio_close: Trying to remove "
++			"another user\n");
++		return;
++	}
++
++	info->fm_audio = NULL;
++	cg2900_close(user);
++}
++
++/**
++ * cg2900_reset() - Called when user wants to reset the chip.
++ * @user:	MFD device to reset.
++ *
++ * Closes down the chip and calls reset_cb for all open users.
++ *
++ * Returns:
++ *   0 if success.
++ *   -EINVAL if user is NULL.
++ */
++static int cg2900_reset(struct cg2900_user_data *user)
++{
++	struct list_head *cursor, *next;
++	struct cg2900_channel_item *tmp;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
++
++	if (!user) {
++		dev_err(MAIN_DEV, "cg2900_reset: Calling with NULL pointer\n");
++		return -EINVAL;
++	}
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	dev_info(user->dev, "cg2900_reset\n");
++
++	BUG_ON(!main_info);
++
++	mutex_lock(&main_info->man_mutex);
++
++	dev_dbg(user->dev, "New main_state: CG2900_RESETING\n");
++	info->main_state = CG2900_RESETING;
++
++	chip_shutdown(user);
++
++	/*
++	 * Inform all opened channels about the reset and free the user devices
++	 */
++	list_for_each_safe(cursor, next, &info->open_channels) {
++		tmp = list_entry(cursor, struct cg2900_channel_item, list);
++		list_del(cursor);
++		tmp->user->opened  = false;
++		tmp->user->reset_cb(tmp->user);
++		kfree(tmp);
++	}
++
++	/* Reset finished. We are now idle until first channel is opened */
++	dev_dbg(user->dev, "New main_state: CG2900_IDLE\n");
++	info->main_state = CG2900_IDLE;
++
++	mutex_unlock(&main_info->man_mutex);
++
++	/*
++	 * Send wake-up since this might have been called from a failed boot.
++	 * No harm done if it is a CG2900 chip user who called.
++	 */
++	wake_up_interruptible_all(&main_wait_queue);
 +
 +	return 0;
 +}
 +
-+int hci_uart_tiocmget(struct hci_uart *hu)
++/**
++ * cg2900_alloc_skb() - Allocates socket buffer.
++ * @size:	Sk_buffer size in bytes.
++ * @priority:	GFP priorit for allocation.
++ *
++ * Allocates a sk_buffer and reserves space for H4 header.
++ *
++ * Returns:
++ *   sk_buffer if success.
++ *   NULL if allocation fails.
++ */
++static struct sk_buff *cg2900_alloc_skb(unsigned int size, gfp_t priority)
 +{
-+	struct tty_struct *tty = hu->tty;
++	struct sk_buff *skb;
 +
-+	if (!tty->ops->tiocmget ||  !hu->fd)
-+		return -EOPNOTSUPP;
++	dev_dbg(MAIN_DEV, "cg2900_alloc_skb size %d bytes\n", size);
 +
-+	return tty->ops->tiocmget(tty, hu->fd);
++	/* Allocate the SKB and reserve space for the header */
++	skb = alloc_skb(size + CG2900_SKB_RESERVE, priority);
++	if (skb)
++		skb_reserve(skb, CG2900_SKB_RESERVE);
++
++	return skb;
 +}
 +
-+void hci_uart_flush_buffer(struct hci_uart *hu)
++/**
++ * cg2900_write() - Called when user wants to write to the chip.
++ * @user:	MFD device representing H4 channel to write to.
++ * @skb:	Sk_buffer to transmit.
++ *
++ * Transmits the sk_buffer to the chip. If it is a BT cmd or FM audio packet it
++ * is checked that it is allowed to transmit the chip.
++ * Note that if error is returned it is up to the user to free the skb.
++ *
++ * Returns:
++ *   0 if success.
++ *   -EINVAL if user or skb is NULL.
++ *   -EACCES if channel is closed.
++ */
++static int cg2900_write(struct cg2900_user_data *user, struct sk_buff *skb)
 +{
-+	tty_driver_flush_buffer(hu->tty);
-+}
++	u8 *h4_header;
++	struct cg2900_chip_dev *dev;
++	struct cg2900_chip_info *info;
 +
- /* ------- Interface to HCI layer ------ */
- /* Initialize device */
- static int hci_uart_open(struct hci_dev *hdev)
-@@ -210,6 +276,7 @@ static int hci_uart_close(struct hci_dev *hdev)
- static int hci_uart_send_frame(struct sk_buff *skb)
- {
- 	struct hci_dev* hdev = (struct hci_dev *) skb->dev;
-+	struct tty_struct *tty;
- 	struct hci_uart *hu;
- 
- 	if (!hdev) {
-@@ -221,6 +288,7 @@ static int hci_uart_send_frame(struct sk_buff *skb)
- 		return -EBUSY;
- 
- 	hu = (struct hci_uart *) hdev->driver_data;
-+	tty = hu->tty;
- 
- 	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type, skb->len);
- 
-@@ -311,8 +379,11 @@ static void hci_uart_tty_close(struct tty_struct *tty)
- 
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
- 			hu->proto->close(hu);
--			hci_unregister_dev(hdev);
--			hci_free_dev(hdev);
++	BUG_ON(!main_info);
 +
-+			if (hdev) {
-+				hci_unregister_dev(hdev);
-+				hci_free_dev(hdev);
-+			}
- 		}
- 	}
- }
-@@ -367,7 +438,8 @@ static void hci_uart_tty_receive(struct tty_struct *tty, const u8 *data, char *f
- 
- 	spin_lock(&hu->rx_lock);
- 	hu->proto->recv(hu, (void *) data, count);
--	hu->hdev->stat.byte_rx += count;
-+	if (hu->hdev)
-+		hu->hdev->stat.byte_rx += count;
- 	spin_unlock(&hu->rx_lock);
- 
- 	tty_unthrottle(tty);
-@@ -423,11 +495,18 @@ static int hci_uart_set_proto(struct hci_uart *hu, int id)
- 	if (!p)
- 		return -EPROTONOSUPPORT;
- 
-+	hu->proto = p;
++	if (!user) {
++		dev_err(MAIN_DEV, "cg2900_write: Calling with NULL pointer\n");
++		return -EINVAL;
++	}
 +
- 	err = p->open(hu);
- 	if (err)
- 		return err;
- 
--	hu->proto = p;
++	if (!skb) {
++		dev_err(user->dev, "cg2900_write with no sk_buffer\n");
++		return -EINVAL;
++	}
++
++	dev = cg2900_get_prv(user);
++	info = dev->c_data;
++
++	dev_dbg(user->dev, "cg2900_write length %d bytes\n", skb->len);
++
++	if (!user->opened) {
++		dev_err(user->dev,
++			"Trying to transmit data on a closed channel\n");
++		return -EACCES;
++	}
++
 +	/*
-+	 * Protocol might register hdev by itself.
-+	 * In that case, there is no need to register it here.
++	 * Move the data pointer to the H:4 header position and
++	 * store the H4 header.
 +	 */
-+	if (!hu->proto->register_hci_dev)
++	h4_header = skb_push(skb, CG2900_SKB_RESERVE);
++	*h4_header = (u8)user->h4_channel;
++
++	if (user->h4_channel == CHANNEL_BT_CMD)
++		transmit_skb_with_flow_ctrl_bt(user, skb);
++	else if (user->h4_channel == CHANNEL_FM_RADIO)
++		transmit_skb_with_flow_ctrl_fm(user, skb);
++	else
++		cg2900_tx_to_chip(user, info->logger, skb);
++
++	return 0;
++}
++
++/**
++ * cg2900_no_write() - Used for channels where it is not allowed to write.
++ * @user:	MFD device representing H4 channel to write to.
++ * @skb:	Sk_buffer to transmit.
++ *
++ * Returns:
++ *   -EPERM.
++ */
++static int cg2900_no_write(struct cg2900_user_data *user,
++			   __attribute__((unused)) struct sk_buff *skb)
++{
++	dev_err(user->dev, "Not allowed to send on this channel\n");
++	return -EPERM;
++}
++
++/**
++ * cg2900_get_local_revision() - Called to retrieve revision data for the chip.
++ * @user:	MFD device to check.
++ * @rev_data:	Revision data to fill in.
++ *
++ * Returns:
++ *   true if success.
++ *   false upon failure.
++ */
++static bool cg2900_get_local_revision(struct cg2900_user_data *user,
++				      struct cg2900_rev_data *rev_data)
++{
++	struct cg2900_chip_dev *dev;
++
++	BUG_ON(!main_info);
++
++	if (!user) {
++		dev_err(MAIN_DEV, "cg2900_get_local_revision: Calling with "
++			"NULL pointer\n");
++		return false;
++	}
++
++	if (!rev_data) {
++		dev_err(user->dev, "Calling with rev_data NULL\n");
++		return false;
++	}
++
++	dev = cg2900_get_prv(user);
++
++	rev_data->revision = dev->chip.hci_revision;
++	rev_data->sub_version = dev->chip.hci_sub_version;
++
++	return true;
++}
++
++static struct cg2900_user_data btcmd_data = {
++	.h4_channel = CHANNEL_BT_CMD,
++};
++static struct cg2900_user_data btacl_data = {
++	.h4_channel = CHANNEL_BT_ACL,
++};
++static struct cg2900_user_data btevt_data = {
++	.h4_channel = CHANNEL_BT_EVT,
++};
++static struct cg2900_user_data fm_data = {
++	.h4_channel = CHANNEL_FM_RADIO,
++};
++static struct cg2900_user_data gnss_data = {
++	.h4_channel = CHANNEL_GNSS,
++};
++static struct cg2900_user_data debug_data = {
++	.h4_channel = CHANNEL_DEBUG,
++};
++static struct cg2900_user_data ste_tools_data = {
++	.h4_channel = CHANNEL_STE_TOOLS,
++};
++static struct cg2900_user_data hci_logger_data = {
++	.h4_channel = CHANNEL_HCI_LOGGER,
++	.chip_independent = true,
++	.write = cg2900_no_write,
++	.open = cg2900_hci_log_open,
++	.close = cg2900_hci_log_close,
++};
++static struct cg2900_user_data core_data = {
++	.h4_channel = CHANNEL_CORE,
++	.write = cg2900_no_write,
++};
++static struct cg2900_user_data audio_bt_data = {
++	.h4_channel = CHANNEL_BT_CMD,
++	.is_audio = true,
++	.open = cg2900_bt_audio_open,
++	.close = cg2900_bt_audio_close,
++};
++static struct cg2900_user_data audio_fm_data = {
++	.h4_channel = CHANNEL_FM_RADIO,
++	.is_audio = true,
++	.open = cg2900_fm_audio_open,
++	.close = cg2900_fm_audio_close,
++};
++
++static struct mfd_cell cg2900_devs[] = {
++	{
++		.name = "cg2900-btcmd",
++		.platform_data = &btcmd_data,
++		.data_size = sizeof(btcmd_data),
++	},
++	{
++		.name = "cg2900-btacl",
++		.platform_data = &btacl_data,
++		.data_size = sizeof(btacl_data),
++	},
++	{
++		.name = "cg2900-btevt",
++		.platform_data = &btevt_data,
++		.data_size = sizeof(btevt_data),
++	},
++	{
++		.name = "cg2900-fm",
++		.platform_data = &fm_data,
++		.data_size = sizeof(fm_data),
++	},
++	{
++		.name = "cg2900-gnss",
++		.platform_data = &gnss_data,
++		.data_size = sizeof(gnss_data),
++	},
++	{
++		.name = "cg2900-debug",
++		.platform_data = &debug_data,
++		.data_size = sizeof(debug_data),
++	},
++	{
++		.name = "cg2900-stetools",
++		.platform_data = &ste_tools_data,
++		.data_size = sizeof(ste_tools_data),
++	},
++	{
++		.name = "cg2900-hcilogger",
++		.platform_data = &hci_logger_data,
++		.data_size = sizeof(hci_logger_data),
++	},
++	{
++		.name = "cg2900-core",
++		.platform_data = &core_data,
++		.data_size = sizeof(core_data),
++	},
++	{
++		.name = "cg2900-audiobt",
++		.platform_data = &audio_bt_data,
++		.data_size = sizeof(audio_bt_data),
++	},
++	{
++		.name = "cg2900-audiofm",
++		.platform_data = &audio_fm_data,
++		.data_size = sizeof(audio_fm_data),
++	},
++};
++
++static struct cg2900_user_data char_btcmd_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_BT_CMD,
++	},
++	.h4_channel = CHANNEL_BT_CMD,
++};
++static struct cg2900_user_data char_btacl_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_BT_ACL,
++	},
++	.h4_channel = CHANNEL_BT_ACL,
++};
++static struct cg2900_user_data char_btevt_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_BT_EVT,
++	},
++	.h4_channel = CHANNEL_BT_EVT,
++};
++static struct cg2900_user_data char_fm_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_FM_RADIO,
++	},
++	.h4_channel = CHANNEL_FM_RADIO,
++};
++static struct cg2900_user_data char_gnss_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_GNSS,
++	},
++	.h4_channel = CHANNEL_GNSS,
++};
++static struct cg2900_user_data char_debug_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_DEBUG,
++	},
++	.h4_channel = CHANNEL_DEBUG,
++};
++static struct cg2900_user_data char_ste_tools_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_STE_TOOLS,
++	},
++	.h4_channel = CHANNEL_STE_TOOLS,
++};
++static struct cg2900_user_data char_hci_logger_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_HCI_LOGGER,
++	},
++	.h4_channel = CHANNEL_HCI_LOGGER,
++	.chip_independent = true,
++	.write = cg2900_no_write,
++	.open = cg2900_hci_log_open,
++	.close = cg2900_hci_log_close,
++};
++static struct cg2900_user_data char_core_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_CORE,
++	},
++	.h4_channel = CHANNEL_CORE,
++	.write = cg2900_no_write,
++};
++static struct cg2900_user_data char_audio_bt_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_BT_AUDIO,
++	},
++	.h4_channel = CHANNEL_BT_CMD,
++	.is_audio = true,
++};
++static struct cg2900_user_data char_audio_fm_data = {
++	.channel_data = {
++		.char_dev_name = CG2900_FM_AUDIO,
++	},
++	.h4_channel = CHANNEL_FM_RADIO,
++	.is_audio = true,
++};
++
++static struct mfd_cell cg2900_char_devs[] = {
++	{
++		.name = "cg2900-chardev",
++		.id = 0,
++		.platform_data = &char_btcmd_data,
++		.data_size = sizeof(char_btcmd_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 1,
++		.platform_data = &char_btacl_data,
++		.data_size = sizeof(char_btacl_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 2,
++		.platform_data = &char_btevt_data,
++		.data_size = sizeof(char_btevt_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 3,
++		.platform_data = &char_fm_data,
++		.data_size = sizeof(char_fm_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 4,
++		.platform_data = &char_gnss_data,
++		.data_size = sizeof(char_gnss_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 5,
++		.platform_data = &char_debug_data,
++		.data_size = sizeof(char_debug_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 6,
++		.platform_data = &char_ste_tools_data,
++		.data_size = sizeof(char_ste_tools_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 7,
++		.platform_data = &char_hci_logger_data,
++		.data_size = sizeof(char_hci_logger_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 8,
++		.platform_data = &char_core_data,
++		.data_size = sizeof(char_core_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 9,
++		.platform_data = &char_audio_bt_data,
++		.data_size = sizeof(char_audio_bt_data),
++	},
++	{
++		.name = "cg2900-chardev",
++		.id = 10,
++		.platform_data = &char_audio_fm_data,
++		.data_size = sizeof(char_audio_fm_data),
++	},
++};
++
++/**
++ * set_plat_data() - Initializes data for an MFD cell.
++ * @cell:	MFD cell.
++ * @dev:	Current chip.
++ *
++ * Sets each callback to default function unless already set.
++ */
++static void set_plat_data(struct mfd_cell *cell, struct cg2900_chip_dev *dev)
++{
++	struct cg2900_user_data *pf_data = cell->platform_data;
++
++	if (!pf_data->open)
++		pf_data->open = cg2900_open;
++	if (!pf_data->close)
++		pf_data->close = cg2900_close;
++	if (!pf_data->reset)
++		pf_data->reset = cg2900_reset;
++	if (!pf_data->alloc_skb)
++		pf_data->alloc_skb = cg2900_alloc_skb;
++	if (!pf_data->write)
++		pf_data->write = cg2900_write;
++	if (!pf_data->get_local_revision)
++		pf_data->get_local_revision = cg2900_get_local_revision;
++
++	cg2900_set_prv(pf_data, dev);
++}
++
++/**
++ * check_chip_support() - Checks if connected chip is handled by this driver.
++ * @dev:	Chip info structure.
++ *
++ * First check if chip is supported by this driver. If that is the case fill in
++ * the callbacks in @dev and initiate internal variables. Finally create MFD
++ * devices for all supported H4 channels. When finished power off the chip.
++ *
++ * Returns:
++ *   true if chip is handled by this driver.
++ *   false otherwise.
++ */
++static bool check_chip_support(struct cg2900_chip_dev *dev)
++{
++	struct cg2900_platform_data *pf_data;
++	struct cg2900_chip_info *info;
++	int i;
++	int err;
++
++	dev_dbg(dev->dev, "check_chip_support\n");
++
++	/*
++	 * Check if this is a CG2900 revision.
++	 * We do not care about the sub-version at the moment. Change this if
++	 * necessary.
++	 */
++	if ((dev->chip.manufacturer != CG2900_SUPP_MANUFACTURER) ||
++	    (dev->chip.hci_revision != CG2900_PG1_SPECIAL_REV &&
++	     (dev->chip.hci_revision < CG2900_SUPP_REVISION_MIN ||
++	      dev->chip.hci_revision > CG2900_SUPP_REVISION_MAX))) {
++		dev_dbg(dev->dev, "Chip not supported by CG2900 driver\n"
++			"\tMan: 0x%02X\n"
++			"\tRev: 0x%04X\n"
++			"\tSub: 0x%04X\n",
++			dev->chip.manufacturer, dev->chip.hci_revision,
++			dev->chip.hci_sub_version);
++		return false;
++	}
++
++	/* Store needed data */
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		dev_err(dev->dev, "Couldn't allocate info struct\n");
++		return false;
++	}
++
++	/* Initialize all variables */
++	skb_queue_head_init(&info->tx_queue_bt);
++	skb_queue_head_init(&info->tx_queue_fm);
++
++	INIT_LIST_HEAD(&info->open_channels);
++
++	spin_lock_init(&info->tx_bt_lock);
++	spin_lock_init(&info->tx_fm_lock);
++	spin_lock_init(&info->rw_lock);
++
++	info->tx_nr_pkts_allowed_bt = 1;
++	info->audio_bt_cmd_op = CG2900_BT_OPCODE_NONE;
++	info->audio_fm_cmd_id = CG2900_FM_CMD_NONE;
++	info->hci_fm_cmd_func = CG2900_FM_CMD_PARAM_NONE;
++	info->fm_radio_mode = FM_RADIO_MODE_IDLE;
++	info->chip_dev = dev;
++	info->dev = dev->dev;
++
++	info->wq = create_singlethread_workqueue(WQ_NAME);
++	if (!info->wq) {
++		dev_err(dev->dev, "Could not create workqueue\n");
++		goto err_handling_free_info;
++	}
++
++	info->patch_file_name = kzalloc(NAME_MAX + 1, GFP_ATOMIC);
++	if (!info->patch_file_name) {
++		dev_err(dev->dev,
++			"Couldn't allocate name buffer for patch file\n");
++		goto err_handling_destroy_wq;
++	}
++
++	info->settings_file_name = kzalloc(NAME_MAX + 1, GFP_ATOMIC);
++	if (!info->settings_file_name) {
++		dev_err(dev->dev,
++			"Couldn't allocate name buffers settings file\n");
++		goto err_handling_free_patch_name;
++	}
++
++	dev->c_data = info;
++	/* Set the callbacks */
++	dev->c_cb.data_from_chip = data_from_chip;
++	dev->c_cb.chip_removed = chip_removed;
++
++	mutex_lock(&main_info->man_mutex);
++
++	pf_data = dev_get_platdata(dev->dev);
++	btcmd_data.channel_data.bt_bus = pf_data->bus;
++	btacl_data.channel_data.bt_bus = pf_data->bus;
++	btevt_data.channel_data.bt_bus = pf_data->bus;
++
++	for (i = 0; i < ARRAY_SIZE(cg2900_devs); i++)
++		set_plat_data(&cg2900_devs[i], dev);
++	for (i = 0; i < ARRAY_SIZE(cg2900_char_devs); i++)
++		set_plat_data(&cg2900_char_devs[i], dev);
++
++	err = mfd_add_devices(dev->dev, main_info->cell_base_id, cg2900_devs,
++			      ARRAY_SIZE(cg2900_devs), NULL, 0);
++	if (err) {
++		dev_err(dev->dev, "Failed to add cg2900_devs (%d)\n", err);
++		goto err_handling_free_settings_name;
++	}
++
++	err = mfd_add_devices(dev->dev, main_info->cell_base_id,
++			      cg2900_char_devs, ARRAY_SIZE(cg2900_char_devs),
++			      NULL, 0);
++	if (err) {
++		dev_err(dev->dev, "Failed to add cg2900_char_devs (%d)\n", err);
++		goto err_handling_remove_devs;
++	}
++
++	main_info->cell_base_id += 30;
++	mutex_unlock(&main_info->man_mutex);
++
++	dev_info(dev->dev, "Chip supported by the CG2900 chip driver\n");
++
++	/* Finish by turning off the chip */
++	cg2900_create_work_item(info->wq, work_power_off_chip, dev);
++
++	return true;
++
++err_handling_remove_devs:
++	mfd_remove_devices(dev->dev);
++err_handling_free_settings_name:
++	kfree(info->settings_file_name);
++	mutex_unlock(&main_info->man_mutex);
++err_handling_free_patch_name:
++	kfree(info->patch_file_name);
++err_handling_destroy_wq:
++	destroy_workqueue(info->wq);
++err_handling_free_info:
++	kfree(info);
++	return false;
++}
++
++static struct cg2900_id_callbacks chip_support_callbacks = {
++	.check_chip_support = check_chip_support,
++};
++
++/**
++ * cg2900_chip_probe() - Initialize CG2900 chip handler resources.
++ * @pdev:	Platform device.
++ *
++ * This function initializes the CG2900 driver, then registers to
++ * the CG2900 Core.
++ *
++ * Returns:
++ *   0 if success.
++ *   -ENOMEM for failed alloc or structure creation.
++ *   Error codes generated by cg2900_register_chip_driver.
++ */
++static int __devinit cg2900_chip_probe(struct platform_device *pdev)
++{
++	int err;
++
++	dev_dbg(&pdev->dev, "cg2900_chip_probe\n");
++
++	main_info = kzalloc(sizeof(*main_info), GFP_ATOMIC);
++	if (!main_info) {
++		dev_err(&pdev->dev, "Couldn't allocate main_info\n");
++		return -ENOMEM;
++	}
++
++	main_info->dev = &pdev->dev;
++	mutex_init(&main_info->man_mutex);
++
++	err = cg2900_register_chip_driver(&chip_support_callbacks);
++	if (err) {
++		dev_err(&pdev->dev,
++			"Couldn't register chip driver (%d)\n", err);
++		goto error_handling;
++	}
++
++	dev_info(&pdev->dev, "CG2900 chip driver started\n");
++
++	return 0;
++
++error_handling:
++	mutex_destroy(&main_info->man_mutex);
++	kfree(main_info);
++	main_info = NULL;
++	return err;
++}
++
++/**
++ * cg2900_chip_remove() - Release CG2900 chip handler resources.
++ * @pdev:	Platform device.
++ *
++ * Returns:
++ *   0 if success (always success).
++ */
++static int __devexit cg2900_chip_remove(struct platform_device *pdev)
++{
++	dev_info(&pdev->dev, "CG2900 chip driver removed\n");
++
++	cg2900_deregister_chip_driver(&chip_support_callbacks);
++
++	if (!main_info)
 +		return 0;
- 
- 	err = hci_uart_register_dev(hu);
- 	if (err) {
-@@ -471,6 +550,8 @@ static int hci_uart_tty_ioctl(struct tty_struct *tty, struct file * file,
- 				clear_bit(HCI_UART_PROTO_SET, &hu->flags);
- 				return err;
- 			}
-+			/* Keep file descriptor.*/
-+			hu->fd = file;
- 		} else
- 			return -EBUSY;
- 		break;
-@@ -481,8 +562,12 @@ static int hci_uart_tty_ioctl(struct tty_struct *tty, struct file * file,
- 		return -EUNATCH;
- 
- 	case HCIUARTGETDEVICE:
--		if (test_bit(HCI_UART_PROTO_SET, &hu->flags))
--			return hu->hdev->id;
-+		if (test_bit(HCI_UART_PROTO_SET, &hu->flags)) {
-+			if (hu->hdev)
-+				return hu->hdev->id;
-+			else
-+				return -ENOMSG;
++	mutex_destroy(&main_info->man_mutex);
++	kfree(main_info);
++	main_info = NULL;
++	return 0;
++}
++
++static struct platform_driver cg2900_chip_driver = {
++	.driver = {
++		.name	= "cg2900-chip",
++		.owner	= THIS_MODULE,
++	},
++	.probe	= cg2900_chip_probe,
++	.remove	= __devexit_p(cg2900_chip_remove),
++};
++
++/**
++ * cg2900_chip_init() - Initialize module.
++ *
++ * Registers platform driver.
++ */
++static int __init cg2900_chip_init(void)
++{
++	pr_debug("cg2900_chip_init");
++	return platform_driver_register(&cg2900_chip_driver);
++}
++
++/**
++ * cg2900_chip_exit() - Remove module.
++ *
++ * Unregisters platform driver.
++ */
++static void __exit cg2900_chip_exit(void)
++{
++	pr_debug("cg2900_chip_exit");
++	platform_driver_unregister(&cg2900_chip_driver);
++}
++
++module_init(cg2900_chip_init);
++module_exit(cg2900_chip_exit);
++
++MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Linux CG2900 Connectivity Device Driver");
+diff --git a/drivers/mfd/cg2900/cg2900_chip.h b/drivers/mfd/cg2900/cg2900_chip.h
+new file mode 100644
+index 0000000..cb05b3f
+--- /dev/null
++++ b/drivers/mfd/cg2900/cg2900_chip.h
+@@ -0,0 +1,602 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Authors:
++ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for ST-Ericsson.
++ * Henrik Possung (henrik.possung@stericsson.com) for ST-Ericsson.
++ * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
++ * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
++ * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ *
++ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson CG2900 GPS/BT/FM controller.
++ */
++
++#ifndef _CG2900_CHIP_H_
++#define _CG2900_CHIP_H_
++
++/*
++ *	Utility
++ */
++
++static inline void set_low_nibble(__u8 *var, __u8 value)
++{
++	*var = (*var & 0xf0) | (value & 0x0f);
++}
++
++static inline void set_high_nibble(__u8 *var, __u8 value)
++{
++	*var = (*var & 0x0f) | (value << 4);
++}
++
++static inline void store_bit(__u8 *var, size_t bit, __u8 value)
++{
++	*var = (*var & ~(1u << bit)) | (value << bit);
++}
++
++/*
++ *	General chip defines
++ */
++
++/* Supported chips */
++#define CG2900_SUPP_MANUFACTURER			0x30
++#define CG2900_SUPP_REVISION_MIN			0x0100
++#define CG2900_SUPP_REVISION_MAX			0x0200
++
++/* Specific chip version data */
++#define CG2900_PG1_REV					0x0101
++#define CG2900_PG2_REV					0x0200
++#define CG2900_PG1_SPECIAL_REV				0x0700
++
++/*
++ *	Bluetooth
++ */
++
++#define BT_SIZE_OF_HDR				(sizeof(__le16) + sizeof(__u8))
++#define BT_PARAM_LEN(__pkt_len)			(__pkt_len - BT_SIZE_OF_HDR)
++
++struct bt_cmd_cmpl_event {
++	__u8	eventcode;
++	__u8	plen;
++	__u8	n_commands;
++	__le16	opcode;
++	/*
++	 * According to BT-specification what follows is "parameters"
++	 * and unique to every command, but all commands start the
++	 * parameters with the status field so include it here for
++	 * convenience
++	 */
++	__u8	status;
++	__u8	data[];
++} __attribute__((packed));
++
++/* BT VS Store In FS command */
++#define CG2900_BT_OP_VS_STORE_IN_FS			0xFC22
++struct bt_vs_store_in_fs_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	user_id;
++	__u8	len;
++	__u8	data[];
++} __attribute__((packed));
++
++#define CG2900_VS_STORE_IN_FS_USR_ID_BD_ADDR		0xFE
++
++/* BT VS Write File Block command */
++#define CG2900_BT_OP_VS_WRITE_FILE_BLOCK		0xFC2E
++struct bt_vs_write_file_block_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	id;
++	__u8	data[];
++} __attribute__((packed));
++
++#define CG2900_BT_DISABLE				0x00
++#define CG2900_BT_ENABLE				0x01
++
++/* BT VS BT Enable command */
++#define CG2900_BT_OP_VS_BT_ENABLE			0xFF10
++struct bt_vs_bt_enable_cmd {
++	__le16	op_code;
++	u8	plen;
++	u8	enable;
++} __attribute__((packed));
++
++/* Bytes in the command Hci_Cmd_ST_Set_Uart_Baud_Rate */
++#define CG2900_BAUD_RATE_57600				0x03
++#define CG2900_BAUD_RATE_115200				0x02
++#define CG2900_BAUD_RATE_230400				0x01
++#define CG2900_BAUD_RATE_460800				0x00
++#define CG2900_BAUD_RATE_921600				0x20
++#define CG2900_BAUD_RATE_2000000			0x25
++#define CG2900_BAUD_RATE_3000000			0x27
++#define CG2900_BAUD_RATE_4000000			0x2B
++
++/* BT VS SetBaudRate command */
++#define CG2900_BT_OP_VS_SET_BAUD_RATE			0xFC09
++struct bt_vs_set_baud_rate_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	baud_rate;
++} __attribute__((packed));
++
++/* Bluetooth Vendor Specific Opcodes */
++#define CG2900_BT_OP_VS_POWER_SWITCH_OFF		0xFD40
++#define CG2900_BT_OP_VS_SYSTEM_RESET			0xFF12
++
++#define CG2900_BT_OPCODE_NONE				0xFFFF
++
++/*
++ *	Common multimedia
++ */
++
++#define CG2900_CODEC_TYPE_NONE				0x00
++#define CG2900_CODEC_TYPE_SBC				0x01
++
++#define CG2900_PCM_MODE_SLAVE				0x00
++#define CG2900_PCM_MODE_MASTER				0x01
++
++#define CG2900_I2S_MODE_MASTER				0x00
++#define CG2900_I2S_MODE_SLAVE				0x01
++
++/*
++ *	CG2900 PG1 multimedia API
++ */
++
++#define CG2900_BT_VP_TYPE_PCM				0x00
++#define CG2900_BT_VP_TYPE_I2S				0x01
++#define CG2900_BT_VP_TYPE_SLIMBUS			0x02
++#define CG2900_BT_VP_TYPE_FM				0x03
++#define CG2900_BT_VP_TYPE_BT_SCO			0x04
++#define CG2900_BT_VP_TYPE_BT_A2DP			0x05
++#define CG2900_BT_VP_TYPE_ANALOG			0x07
++
++#define CG2900_BT_VS_SET_HARDWARE_CONFIG		0xFD54
++/* These don't have the same length, so a union won't work */
++struct bt_vs_set_hw_cfg_cmd_pcm {
++	__le16	opcode;
++	__u8	plen;
++	__u8	vp_type;
++	__u8	port_id;
++	__u8	mode_dir; /* NB: mode is in bit 1 (not 0) */
++	__u8	bit_clock;
++	__le16	frame_len;
++} __attribute__((packed));
++#define HWCONFIG_PCM_SET_MODE(pcfg, mode)		\
++	set_low_nibble(&(pcfg)->mode_dir, (mode) << 1)
++#define HWCONFIG_PCM_SET_DIR(pcfg, idx, dir)		\
++	store_bit(&(pcfg)->mode_dir, (idx) + 4, (dir))
++
++struct bt_vs_set_hw_cfg_cmd_i2s {
++	__le16	opcode;
++	__u8	plen;
++	__u8	vp_type;
++	__u8	port_id;
++	__u8	half_period;
++	__u8	master_slave;
++} __attribute__((packed));
++
++/* Max length for allocating */
++#define CG2900_BT_LEN_VS_SET_HARDWARE_CONFIG	\
++	(sizeof(struct bt_vs_set_hw_cfg_cmd_pcm))
++
++#define CG2900_BT_VS_SET_SESSION_CONFIG			0xFD55
++struct session_config_vport {
++	__u8	type;
++	union {
++		struct {
++			__le16	acl_handle;
++			__u8	reserved[10];
++		} sco;
++		struct {
++			__u8	reserved[12];
++		} fm;
++		struct {
++			__u8	index;
++			__u8	slots_used;
++			__u8	slot_start[4];
++			__u8	reserved[6];
++		} pcm;
++		struct {
++			__u8	index;
++			__u8	channel;
++			__u8	reserved[10];
++		} i2s;
++	};
++} __attribute__((packed));
++#define SESSIONCFG_PCM_SET_USED(port, idx, use)		\
++	store_bit(&(port).pcm.slots_used, (idx), (use))
++
++struct session_config_stream {
++	__u8	media_type;
++	__u8	csel_srate;
++	__u8	codec_type;
++	__u8	codec_mode;
++	__u8	codec_params[3];
++	struct session_config_vport inport;
++	struct session_config_vport outport;
++} __attribute__((packed));
++#define SESSIONCFG_SET_CHANNELS(pcfg, chnl)		\
++	set_low_nibble(&(pcfg)->csel_srate, (chnl))
++#define SESSIONCFG_I2S_SET_SRATE(pcfg, rate)		\
++	set_high_nibble(&(pcfg)->csel_srate, (rate))
++
++struct bt_vs_session_config_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	n_streams; /* we only support one here */
++	struct session_config_stream stream;
++} __attribute__((packed));
++
++#define CG2900_BT_SESSION_MEDIA_TYPE_AUDIO		0x00
++
++#define CG2900_BT_SESSION_RATE_8K			0x01
++#define CG2900_BT_SESSION_RATE_16K			0x02
++#define CG2900_BT_SESSION_RATE_44_1K			0x04
++#define CG2900_BT_SESSION_RATE_48K			0x05
++
++#define CG2900_BT_MEDIA_CONFIG_MONO			0x00
++#define CG2900_BT_MEDIA_CONFIG_STEREO			0x01
++#define CG2900_BT_MEDIA_CONFIG_JOINT_STEREO		0x02
++#define CG2900_BT_MEDIA_CONFIG_DUAL_CHANNEL		0x03
++
++#define CG2900_BT_SESSION_I2S_INDEX_I2S			0x00
++#define CG2900_BT_SESSION_PCM_INDEX_PCM_I2S		0x00
++
++
++#define CG2900_BT_VS_SESSION_CTRL			0xFD57
++struct bt_vs_session_ctrl_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	id;
++	__u8	control;
++} __attribute__((packed));
++
++#define CG2900_BT_SESSION_START				0x00
++#define CG2900_BT_SESSION_STOP				0x01
++#define CG2900_BT_SESSION_PAUSE				0x02
++#define CG2900_BT_SESSION_RESUME			0x03
++
++#define CG2900_BT_VS_RESET_SESSION_CONFIG		0xFD56
++struct bt_vs_reset_session_cfg_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	id;
++} __attribute__((packed));
++
++/*
++ *	CG2900 PG2 multimedia API
++ */
++
++#define CG2900_MC_PORT_PCM_I2S				0x00
++#define CG2900_MC_PORT_I2S				0x01
++#define CG2900_MC_PORT_BT_SCO				0x04
++#define CG2900_MC_PORT_FM_RX_0				0x07
++#define CG2900_MC_PORT_FM_RX_1				0x08
++#define CG2900_MC_PORT_FM_TX				0x09
++
++#define CG2900_MC_VS_PORT_CONFIG			0xFD64
++struct mc_vs_port_cfg_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	type;
++	/*
++	 * one of the following configuration structs should follow, but they
++	 * have different lengths so a union will not work
++	 */
++} __attribute__((packed));
++
++struct mc_vs_port_cfg_pcm_i2s {
++	__u8 role_dir;
++	__u8 sco_a2dp_slots_used;
++	__u8 fm_slots_used;
++	__u8 ring_slots_used;
++	__u8 slot_start[4];
++	__u8 ratio_mode;
++	__u8 frame_len;
++	__u8 bitclk_srate;
++} __attribute__((packed));
++#define PORTCFG_PCM_SET_ROLE(cfg, role)			\
++	set_low_nibble(&(cfg).role_dir, (role))
++#define PORTCFG_PCM_SET_DIR(cfg, idx, dir)		\
++	store_bit(&(cfg).role_dir, (idx) + 4, (dir))
++static inline void portcfg_pcm_set_sco_used(struct mc_vs_port_cfg_pcm_i2s *cfg,
++					    size_t index, __u8 use)
++{
++	if (use) {
++		/* clear corresponding slot in all cases */
++		cfg->sco_a2dp_slots_used &= ~(0x11 << index);
++		cfg->fm_slots_used &= ~(0x11 << index);
++		cfg->ring_slots_used &= ~(0x11 << index);
++		/* set for sco */
++		cfg->sco_a2dp_slots_used |= (1u << index);
++	} else {
++		/* only clear for sco */
++		cfg->sco_a2dp_slots_used &= ~(1u << index);
++	}
++}
++#define PORTCFG_PCM_SET_SCO_USED(cfg, idx, use)		\
++	portcfg_pcm_set_sco_used(&cfg, idx, use)
++#define PORTCFG_PCM_SET_RATIO(cfg, r)			\
++	set_low_nibble(&(cfg).ratio_mode, (r))
++#define PORTCFG_PCM_SET_MODE(cfg, mode)			\
++	set_high_nibble(&(cfg).ratio_mode, (mode))
++#define PORTCFG_PCM_SET_BITCLK(cfg, clk)		\
++	set_low_nibble(&(cfg).bitclk_srate, (clk))
++#define PORTCFG_PCM_SET_SRATE(cfg, rate)		\
++	set_high_nibble(&(cfg).bitclk_srate, (rate))
++
++#define CG2900_MC_PCM_SAMPLE_RATE_8			1
++#define CG2900_MC_PCM_SAMPLE_RATE_16			2
++#define CG2900_MC_PCM_SAMPLE_RATE_44_1			4
++#define CG2900_MC_PCM_SAMPLE_RATE_48			6
++
++struct mc_vs_port_cfg_i2s {
++	__u8 role_hper;
++	__u8 csel_srate;
++	__u8 wordlen;
++};
++#define PORTCFG_I2S_SET_ROLE(cfg, role)			\
++	set_low_nibble(&(cfg).role_hper, (role))
++#define PORTCFG_I2S_SET_HALFPERIOD(cfg, hper)		\
++	set_high_nibble(&(cfg).role_hper, (hper))
++#define PORTCFG_I2S_SET_CHANNELS(cfg, chnl)		\
++	set_low_nibble(&(cfg).csel_srate, (chnl))
++#define PORTCFG_I2S_SET_SRATE(cfg, rate)		\
++	set_high_nibble(&(cfg).csel_srate, (rate))
++#define PORTCFG_I2S_SET_WORDLEN(cfg, len)		\
++	set_low_nibble(&(cfg).wordlen, len)
++
++#define CG2900_MC_I2S_RIGHT_CHANNEL			1
++#define CG2900_MC_I2S_LEFT_CHANNEL			2
++#define CG2900_MC_I2S_BOTH_CHANNELS			3
++
++#define CG2900_MC_I2S_SAMPLE_RATE_8			0
++#define CG2900_MC_I2S_SAMPLE_RATE_16			1
++#define CG2900_MC_I2S_SAMPLE_RATE_44_1			2
++#define CG2900_MC_I2S_SAMPLE_RATE_48			4
++
++#define CG2900_MC_I2S_WORD_16				1
++#define CG2900_MC_I2S_WORD_32				3
++
++struct mc_vs_port_cfg_fm {
++	__u8 srate; /* NB: value goes in _upper_ nibble! */
++};
++#define PORTCFG_FM_SET_SRATE(cfg, rate)		\
++	set_high_nibble(&(cfg).srate, (rate))
++
++struct mc_vs_port_cfg_sco {
++	__le16	acl_id;
++	__u8	wbs_codec;
++	__u8	sbc_params[3]; /* replace when we actually enable WBS... */
++} __attribute__((packed));
++#define PORTCFG_SCO_SET_WBS(cfg, wbs)		\
++	set_low_nibble(&(cfg).wbs_codec, (wbs))
++#define PORTCFG_SCO_SET_CODEC(cfg, codec)	\
++	set_high_nibble(&(cfg).wbs_codec, (codec))
++
++#define CG2900_MC_VS_CREATE_STREAM			0xFD66
++struct mc_vs_create_stream_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	id;
++	__u8	inport;
++	__u8	outport;
++	__u8	order; /* NB: not used by chip */
++} __attribute__((packed));
++
++#define CG2900_MC_VS_DELETE_STREAM			0xFD67
++struct mc_vs_delete_stream_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	stream;
++} __attribute__((packed));
++
++#define CG2900_MC_VS_STREAM_CONTROL			0xFD68
++struct mc_vs_stream_ctrl_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	command;
++	__u8	n_streams;
++	__u8	stream[];
++} __attribute__((packed));
++
++#define CG2900_MC_STREAM_START				0x00
++#define CG2900_MC_STREAM_STOP				0x01
++#define CG2900_MC_STREAM_STOP_FLUSH			0x02
++
++#define CG2900_MC_VS_SET_FM_START_MODE			0xFD69
++
++/*
++ *	FM
++ */
++
++/* FM legacy command packet */
++struct fm_leg_cmd {
++	__u8	length;
++	__u8	opcode;
++	__u8	read_write;
++	__u8	fm_function;
++	union { /* Payload varies with function */
++		__le16	irqmask;
++		struct fm_leg_fm_cmd {
++			__le16	head;
++			__le16	data[];
++		} fm_cmd;
++	};
++} __attribute__((packed));
++
++/* FM legacy command complete packet */
++struct fm_leg_cmd_cmpl {
++	__u8	param_length;
++	__u8	status;
++	__u8	opcode;
++	__u8	read_write;
++	__u8	cmd_status;
++	__u8	fm_function;
++	__le16	response_head;
++	__le16	data[];
++} __attribute__((packed));
++
++/* FM legacy interrupt packet, PG2 style */
++struct fm_leg_irq_v2 {
++	__u8	param_length;
++	__u8	status;
++	__u8	opcode;
++	__u8	event_type;
++	__u8	event_id;
++	__le16	irq;
++} __attribute__((packed));
++
++/* FM legacy interrupt packet, PG1 style */
++struct fm_leg_irq_v1 {
++	__u8	param_length;
++	__u8	opcode;
++	__u8	event_id;
++	__le16	irq;
++} __attribute__((packed));
++
++union fm_leg_evt_or_irq {
++	__u8			param_length;
++	struct fm_leg_cmd_cmpl	evt;
++	struct fm_leg_irq_v2	irq_v2;
++	struct fm_leg_irq_v1	irq_v1;
++} __attribute__((packed));
++
++/* FM Opcode generic*/
++#define CG2900_FM_GEN_ID_LEGACY				0xFE
++
++/* FM event*/
++#define CG2900_FM_EVENT_UNKNOWN				0
++#define CG2900_FM_EVENT_CMD_COMPLETE			1
++#define CG2900_FM_EVENT_INTERRUPT			2
++
++/* FM do-command identifiers. */
++#define CG2900_FM_DO_AIP_FADE_START			0x0046
++#define CG2900_FM_DO_AUP_BT_FADE_START			0x01C2
++#define CG2900_FM_DO_AUP_EXT_FADE_START			0x0102
++#define CG2900_FM_DO_AUP_FADE_START			0x00A2
++#define CG2900_FM_DO_FMR_SETANTENNA			0x0663
++#define CG2900_FM_DO_FMR_SP_AFSWITCH_START		0x04A3
++#define CG2900_FM_DO_FMR_SP_AFUPDATE_START		0x0463
++#define CG2900_FM_DO_FMR_SP_BLOCKSCAN_START		0x0683
++#define CG2900_FM_DO_FMR_SP_PRESETPI_START		0x0443
++#define CG2900_FM_DO_FMR_SP_SCAN_START			0x0403
++#define CG2900_FM_DO_FMR_SP_SEARCH_START		0x03E3
++#define CG2900_FM_DO_FMR_SP_SEARCHPI_START		0x0703
++#define CG2900_FM_DO_FMR_SP_TUNE_SETCHANNEL		0x03C3
++#define CG2900_FM_DO_FMR_SP_TUNE_STEPCHANNEL		0x04C3
++#define CG2900_FM_DO_FMT_PA_SETCTRL			0x01A4
++#define CG2900_FM_DO_FMT_PA_SETMODE			0x01E4
++#define CG2900_FM_DO_FMT_SP_TUNE_SETCHANNEL		0x0064
++#define CG2900_FM_DO_GEN_ANTENNACHECK_START		0x02A1
++#define CG2900_FM_DO_GEN_GOTOMODE			0x0041
++#define CG2900_FM_DO_GEN_POWERSUPPLY_SETMODE		0x0221
++#define CG2900_FM_DO_GEN_SELECTREFERENCECLOCK		0x0201
++#define CG2900_FM_DO_GEN_SETPROCESSINGCLOCK		0x0241
++#define CG2900_FM_DO_GEN_SETREFERENCECLOCKPLL		0x01A1
++#define CG2900_FM_DO_TST_TX_RAMP_START			0x0147
++#define CG2900_FM_CMD_NONE				0xFFFF
++#define CG2900_FM_CMD_ID_GEN_GOTO_POWER_DOWN		0x0081
++#define CG2900_FM_CMD_ID_GEN_GOTO_STANDBY		0x0061
++
++/* FM Command IDs */
++#define CG2900_FM_CMD_ID_AUP_EXT_SET_MODE		0x0162
++#define CG2900_FM_CMD_ID_AUP_EXT_SET_CTRL		0x0182
++#define CG2900_FM_CMD_ID_AIP_SET_MODE			0x01C6
++#define CG2900_FM_CMD_ID_AIP_BT_SET_CTRL		0x01A6
++#define CG2900_FM_CMD_ID_AIP_BT_SET_MODE		0x01E6
++
++/* FM Command Parameters. */
++#define CG2900_FM_CMD_PARAM_ENABLE			0x00
++#define CG2900_FM_CMD_PARAM_DISABLE			0x01
++#define CG2900_FM_CMD_PARAM_RESET			0x02
++#define CG2900_FM_CMD_PARAM_WRITECOMMAND		0x10
++#define CG2900_FM_CMD_PARAM_SET_INT_MASK_ALL		0x20
++#define CG2900_FM_CMD_PARAM_GET_INT_MASK_ALL		0x21
++#define CG2900_FM_CMD_PARAM_SET_INT_MASK		0x22
++#define CG2900_FM_CMD_PARAM_GET_INT_MASK		0x23
++#define CG2900_FM_CMD_PARAM_FM_FW_DOWNLOAD		0x30
++#define CG2900_FM_CMD_PARAM_NONE			0xFF
++
++/* FM Legacy Command Parameters */
++#define CG2900_FM_CMD_LEG_PARAM_WRITE			0x00
++#define CG2900_FM_CMD_LEG_PARAM_IRQ			0x01
++
++/* FM Command Status. */
++#define CG2900_FM_CMD_STATUS_COMMAND_SUCCEEDED		0x00
++#define CG2900_FM_CMD_STATUS_HW_FAILURE			0x03
++#define CG2900_FM_CMD_STATUS_INVALID_PARAMS		0x12
++#define CG2900_FM_CMD_STATUS_UNINITILIZED		0x15
++#define CG2900_FM_CMD_STATUS_UNSPECIFIED_ERROR		0x1F
++#define CG2900_FM_CMD_STATUS_COMMAND_DISALLOWED		0x0C
++#define CG2900_FM_CMD_STATUS_FW_WRONG_SEQUENCE_NR	0xF1
++#define CG2900_FM_CMD_STATUS_FW_UNKNOWN_FILE		0xF2
++#define CG2900_FM_CMD_STATUS_FW_FILE_VER_MISMATCH	0xF3
++
++/* FM Interrupts. */
++#define CG2900_FM_IRPT_FIQ				0x0000
++#define CG2900_FM_IRPT_OPERATION_SUCCEEDED		0x0001
++#define CG2900_FM_IRPT_OPERATION_FAILED			0x0002
++#define CG2900_FM_IRPT_BUFFER_FULL			0x0008
++#define CG2900_FM_IRPT_BUFFER_EMPTY			0x0008
++#define CG2900_FM_IRPT_SIGNAL_QUALITY_LOW		0x0010
++#define CG2900_FM_IRPT_MUTE_STATUS_CHANGED		0x0010
++#define CG2900_FM_IRPT_MONO_STEREO_TRANSITION		0x0020
++#define CG2900_FM_IRPT_OVER_MODULATION			0x0020
++#define CG2900_FM_IRPT_RDS_SYNC_FOUND			0x0040
++#define CG2900_FM_IRPT_INPUT_OVERDRIVE			0x0040
++#define CG2900_FM_IRPT_RDS_SYNC_LOST			0x0080
++#define CG2900_FM_IRPT_PI_CODE_CHANGED			0x0100
++#define CG2900_FM_IRPT_REQUEST_BLOCK_AVALIBLE		0x0200
++#define CG2900_FM_IRPT_BUFFER_CLEARED			0x2000
++#define CG2900_FM_IRPT_WARM_BOOT_READY			0x4000
++#define CG2900_FM_IRPT_COLD_BOOT_READY			0x8000
++
++/* FM Legacy Function Command Parameters */
++
++/* AUP_EXT_SetMode Output enum */
++#define CG2900_FM_CMD_AUP_EXT_SET_MODE_DISABLED		0x0000
++#define CG2900_FM_CMD_AUP_EXT_SET_MODE_I2S		0x0001
++#define CG2900_FM_CMD_AUP_EXT_SET_MODE_PARALLEL		0x0002
++
++/* SetControl Conversion enum */
++#define CG2900_FM_CMD_SET_CTRL_CONV_UP			0x0000
++#define CG2900_FM_CMD_SET_CTRL_CONV_DOWN		0x0001
++
++/* AIP_SetMode Input enum */
++#define CG2900_FM_CMD_AIP_SET_MODE_INPUT_ANA		0x0000
++#define CG2900_FM_CMD_AIP_SET_MODE_INPUT_DIG		0x0001
++
++/* AIP_BT_SetMode Input enum */
++#define CG2900_FM_CMD_AIP_BT_SET_MODE_INPUT_RESERVED	0x0000
++#define CG2900_FM_CMD_AIP_BT_SET_MODE_INPUT_I2S		0x0001
++#define CG2900_FM_CMD_AIP_BT_SET_MODE_INPUT_PAR		0x0002
++#define CG2900_FM_CMD_AIP_BT_SET_MODE_INPUT_FIFO	0x0003
++
++/* FM Parameter Lengths = FM command length - length field (1 byte) */
++#define CG2900_FM_CMD_PARAM_LEN(len) (len - 1)
++
++/*
++ * FM Command ID mapped per byte and shifted 3 bits left
++ * Also adds number of parameters at first 3 bits of LSB.
++ */
++static inline __u16 cg2900_get_fm_cmd_id(__u16 opcode)
++{
++	return opcode >> 3;
++}
++
++static inline __u16 cg2900_make_fm_cmd_id(__u16 id, __u8 num_params)
++{
++	return (id << 3) | num_params;
++}
++
++/*
++ *	GNSS
++ */
++
++struct gnss_hci_hdr {
++	__u8	op_code;
++	__le16	plen;
++} __attribute__((packed));
++
++#endif /* _CG2900_CHIP_H_ */
+diff --git a/drivers/mfd/cg2900/cg2900_lib.c b/drivers/mfd/cg2900/cg2900_lib.c
+new file mode 100644
+index 0000000..a1148b5
+--- /dev/null
++++ b/drivers/mfd/cg2900/cg2900_lib.c
+@@ -0,0 +1,391 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Authors:
++ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ *
++ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson CG2900 GPS/BT/FM controller.
++ */
++#define NAME					"cg2900_lib"
++#define pr_fmt(fmt)				NAME ": " fmt "\n"
++
++#include <linux/kernel.h>
++#include <linux/limits.h>
++#include <linux/skbuff.h>
++#include <linux/types.h>
++#include <linux/mfd/cg2900.h>
++
++#include "cg2900_chip.h"
++#include "cg2900_core.h"
++#include "cg2900_lib.h"
++
++/*
++ * Max length in bytes for line buffer used to parse settings and patch file.
++ * Must be max length of name plus characters used to define chip version.
++ */
++#define LINE_BUFFER_LENGTH			(NAME_MAX + 30)
++
++/**
++ * cg2900_tx_to_chip() - Transmit buffer to the transport.
++ * @user:	User data for BT command channel.
++ * @logger:	User data for logger channel.
++ * @skb:	Data packet.
++ *
++ * The transmit_skb_to_chip() function transmit buffer to the transport.
++ * If enabled, copy the transmitted data to the HCI logger as well.
++ */
++void cg2900_tx_to_chip(struct cg2900_user_data *user,
++		       struct cg2900_user_data *logger, struct sk_buff *skb)
++{
++	int err;
++	struct sk_buff *skb_log;
++	struct cg2900_chip_dev *chip_dev;
++
++	dev_dbg(user->dev, "cg2900_tx_to_chip %d bytes.\n", skb->len);
++
++	if (!logger)
++		goto transmit;
++
++	/*
++	 * Alloc a new sk_buff and copy the data into it. Then send it to
++	 * the HCI logger.
++	 */
++	skb_log = alloc_skb(skb->len + HCI_H4_SIZE, GFP_KERNEL);
++	if (!skb_log) {
++		dev_err(user->dev,
++			"cg2900_tx_to_chip: Couldn't allocate skb_log\n");
++		goto transmit;
++	}
++
++	memcpy(skb_put(skb_log, skb->len), skb->data, skb->len);
++	skb_log->data[0] = (u8) LOGGER_DIRECTION_TX;
++
++	if (logger->read_cb)
++		logger->read_cb(logger, skb_log);
++
++transmit:
++	chip_dev = cg2900_get_prv(user);
++	err = chip_dev->t_cb.write(chip_dev, skb);
++	if (err) {
++		dev_err(user->dev, "cg2900_tx_to_chip: Transport write failed "
++			"(%d)\n", err);
++		kfree_skb(skb);
++	}
++}
++EXPORT_SYMBOL_GPL(cg2900_tx_to_chip);
++
++/**
++ * cg2900_tx_no_user() - Transmit buffer to the transport.
++ * @dev:	Current chip to transmit to.
++ * @skb:	Data packet.
++ *
++ * This function transmits buffer to the transport when no user exist (system
++ * startup for example).
++ */
++void cg2900_tx_no_user(struct cg2900_chip_dev *dev, struct sk_buff *skb)
++{
++	int err;
++
++	dev_dbg(dev->dev, "cg2900_tx_no_user %d bytes.\n", skb->len);
++
++	err = dev->t_cb.write(dev, skb);
++	if (err) {
++		dev_err(dev->dev, "cg2900_tx_no_user: Transport write failed "
++			"(%d)\n", err);
++		kfree_skb(skb);
++	}
++}
++EXPORT_SYMBOL_GPL(cg2900_tx_no_user);
++
++/**
++ * create_and_send_bt_cmd() - Copy and send sk_buffer.
++ * @user:	User data for current channel.
++ * @logger:	User data for logger channel.
++ * @data:	Data to send.
++ * @length:	Length in bytes of data.
++ *
++ * The create_and_send_bt_cmd() function allocate sk_buffer, copy supplied data
++ * to it, and send the sk_buffer to controller.
++ */
++void cg2900_send_bt_cmd(struct cg2900_user_data *user,
++			struct cg2900_user_data *logger,
++			void *data, int length)
++{
++	struct sk_buff *skb;
++
++	skb = user->alloc_skb(length, GFP_KERNEL);
++	if (!skb) {
++		dev_err(user->dev, "cg2900_send_bt_cmd: Couldn't alloc "
++			"sk_buff with length %d\n", length);
++		return;
++	}
++
++	memcpy(skb_put(skb, length), data, length);
++	skb_push(skb, HCI_H4_SIZE);
++	skb->data[0] = HCI_BT_CMD_H4_CHANNEL;
++
++	cg2900_tx_to_chip(user, logger, skb);
++}
++EXPORT_SYMBOL_GPL(cg2900_send_bt_cmd);
++
++/**
++ * cg2900_send_bt_cmd_no_user() - Copy and send sk_buffer with no assigned user.
++ * @dev:	Current chip to transmit to.
++ * @data:	Data to send.
++ * @length:	Length in bytes of data.
++ *
++ * The cg2900_send_bt_cmd_no_user() function allocate sk_buffer, copy supplied
++ * data to it, and send the sk_buffer to controller.
++ */
++void cg2900_send_bt_cmd_no_user(struct cg2900_chip_dev *dev, void *data,
++				int length)
++{
++	struct sk_buff *skb;
++
++	skb = alloc_skb(length + HCI_H4_SIZE, GFP_KERNEL);
++	if (!skb) {
++		dev_err(dev->dev, "cg2900_send_bt_cmd_no_user: Couldn't alloc "
++			"sk_buff with length %d\n", length);
++		return;
++	}
++
++	skb_reserve(skb, HCI_H4_SIZE);
++	memcpy(skb_put(skb, length), data, length);
++	skb_push(skb, HCI_H4_SIZE);
++	skb->data[0] = HCI_BT_CMD_H4_CHANNEL;
++
++	cg2900_tx_no_user(dev, skb);
++}
++EXPORT_SYMBOL_GPL(cg2900_send_bt_cmd_no_user);
++
++/**
++ * create_work_item() - Create work item and add it to the work queue.
++ * @wq:		Work queue.
++ * @work_func:	Work function.
++ * @user_data:	Arbitrary data set by user.
++ *
++ * The create_work_item() function creates work item and add it to
++ * the work queue.
++ * Note that work is allocated by kmalloc and work must be freed when work
++ * function is started.
++ */
++void cg2900_create_work_item(struct workqueue_struct *wq, work_func_t work_func,
++			     void *user_data)
++{
++	struct cg2900_work *new_work;
++	int err;
++
++	new_work = kmalloc(sizeof(*new_work), GFP_ATOMIC);
++	if (!new_work) {
++		pr_err("Failed to alloc memory for new_work");
++		return;
++	}
++
++	INIT_WORK(&new_work->work, work_func);
++	new_work->user_data = user_data;
++
++	err = queue_work(wq, &new_work->work);
++	if (!err) {
++		pr_err("Failed to queue work_struct because it's already "
++		       "in the queue");
++		kfree(new_work);
++	}
++}
++EXPORT_SYMBOL_GPL(cg2900_create_work_item);
++
++/**
++ * cg2900_get_text_line()- Replacement function for stdio function fgets.
++ * @wr_buffer:		Buffer to copy text to.
++ * @max_nbr_of_bytes:	Max number of bytes to read, i.e. size of rd_buffer.
++ * @rd_buffer:		Data to parse.
++ * @bytes_copied:	Number of bytes copied to wr_buffer.
++ *
++ * This function extracts one line of text from input file.
++ *
++ * Returns:
++ *   Pointer to next data to read.
++ */
++char *cg2900_get_text_line(char *wr_buffer, int max_nbr_of_bytes,
++			   char *rd_buffer, int *bytes_copied)
++{
++	char *curr_wr = wr_buffer;
++	char *curr_rd = rd_buffer;
++	char in_byte;
++
++	*bytes_copied = 0;
++
++	do {
++		*curr_wr = *curr_rd;
++		in_byte = *curr_wr;
++		curr_wr++;
++		curr_rd++;
++		(*bytes_copied)++;
++	} while ((*bytes_copied <= max_nbr_of_bytes) && (in_byte != '\0') &&
++		 (in_byte != '\n'));
++	*curr_wr = '\0';
++	return curr_rd;
++}
++EXPORT_SYMBOL_GPL(cg2900_get_text_line);
++
++/**
++ * cg2900_get_file_name() - Parse info file and find correct target file.
++ * @fw:			Firmware structure containing file data.
++ * @file_name:		(out) Pointer to name of requested file.
++ * @hci_revision:	HCI revision of chip.
++ * @hci_sub_version:	HCI sub version of chip.
++ *
++ * Returns:
++ *   true,  if target file was found,
++ *   false, otherwise.
++ */
++bool cg2900_get_file_name(const struct firmware *fw, char **file_name,
++			  u16 hci_revision, u16 hci_sub_version)
++{
++	char *line_buffer;
++	char *curr_file_buffer;
++	int bytes_left_to_parse = fw->size;
++	int bytes_read = 0;
++	bool file_found = false;
++	u32 hci_rev;
++	u32 lmp_sub;
++
++	curr_file_buffer = (char *)&(fw->data[0]);
++
++	line_buffer = kzalloc(LINE_BUFFER_LENGTH, GFP_KERNEL);
++	if (!line_buffer) {
++		pr_err("cg2900_get_file_name: Failed to allocate line_buffer");
++		return false;
++	}
++
++	while (!file_found) {
++		/* Get one line of text from the file to parse */
++		curr_file_buffer = cg2900_get_text_line(line_buffer,
++					min(LINE_BUFFER_LENGTH,
++					    (int)(fw->size - bytes_read)),
++					    curr_file_buffer,
++					    &bytes_read);
++
++		bytes_left_to_parse -= bytes_read;
++		if (bytes_left_to_parse <= 0) {
++			/* End of file => Leave while loop */
++			pr_err("cg2900_get_file_name: Reached end of file. No "
++			       "file found\n");
++			break;
 +		}
- 		return -EUNATCH;
- 
- 	case HCIUARTSETFLAGS:
-diff --git a/drivers/bluetooth/hci_ll.c b/drivers/bluetooth/hci_ll.c
-index 38595e7..085656c 100644
---- a/drivers/bluetooth/hci_ll.c
-+++ b/drivers/bluetooth/hci_ll.c
-@@ -515,6 +515,7 @@ static struct hci_uart_proto llp = {
- 	.enqueue	= ll_enqueue,
- 	.dequeue	= ll_dequeue,
- 	.flush		= ll_flush,
-+	.register_hci_dev = true,
- };
- 
- int __init ll_init(void)
-diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
-index 99fb352..ab195fb 100644
---- a/drivers/bluetooth/hci_uart.h
-+++ b/drivers/bluetooth/hci_uart.h
-@@ -43,9 +43,16 @@
- #define HCI_UART_H4DS	3
- #define HCI_UART_LL	4
- #define HCI_UART_ATH3K	5
-+#define HCI_UART_STE	6
- 
- #define HCI_UART_RAW_DEVICE	0
- 
-+/* UART break and flow control parameters */
-+#define BREAK_ON		true
-+#define BREAK_OFF		false
-+#define FLOW_ON			true
-+#define FLOW_OFF		false
 +
- struct hci_uart;
- 
- struct hci_uart_proto {
-@@ -56,6 +63,8 @@ struct hci_uart_proto {
- 	int (*recv)(struct hci_uart *hu, void *data, int len);
- 	int (*enqueue)(struct hci_uart *hu, struct sk_buff *skb);
- 	struct sk_buff *(*dequeue)(struct hci_uart *hu);
-+	bool register_hci_dev;
-+	struct device *dev;
- };
- 
- struct hci_uart {
-@@ -70,6 +79,8 @@ struct hci_uart {
- 	struct sk_buff		*tx_skb;
- 	unsigned long		tx_state;
- 	spinlock_t		rx_lock;
++		/*
++		 * Check if the line of text is a comment or not, comments begin
++		 * with '#'
++		 */
++		if (*line_buffer == '#')
++			continue;
 +
-+	struct file		*fd;
- };
++		hci_rev = 0;
++		lmp_sub = 0;
++
++		pr_debug("cg2900_get_file_name: Found a valid line: \t%s",
++			 line_buffer);
++
++		/*
++		 * Check if we can find the correct HCI revision and
++		 * LMP subversion as well as a file name in
++		 * the text line.
++		 */
++		if (sscanf(line_buffer, "%x%x%s", &hci_rev, &lmp_sub,
++			   *file_name) == 3
++		    && hci_rev == hci_revision && lmp_sub == hci_sub_version) {
++			pr_debug("cg2900_get_file_name: File found for chip:\n"
++				"\tFile name = %s\n"
++				"\tHCI Revision = 0x%X\n"
++				"\tLMP PAL Subversion = 0x%X",
++				*file_name, hci_rev, lmp_sub);
++
++			/*
++			 * Name has already been stored above. Nothing more to
++			 * do.
++			 */
++			file_found = true;
++		} else
++			/* Zero the name buffer so it is clear to next read */
++			memset(*file_name, 0x00, NAME_MAX + 1);
++	}
++	kfree(line_buffer);
++
++	return file_found;
++}
++EXPORT_SYMBOL_GPL(cg2900_get_file_name);
++
++/**
++ * read_and_send_file_part() - Transmit a part of the supplied file.
++ * @user:	User data for current channel.
++ * @logger:	User data for logger channel.
++ * @info:	File information.
++ *
++ * The cg2900_read_and_send_file_part() function transmit a part of the supplied
++ * file to the controller.
++ *
++ * Returns:
++ *   0 if there is no more data in the file.
++ *   >0 for number of bytes sent.
++ *   -ENOMEM if skb allocation failed.
++ */
++int cg2900_read_and_send_file_part(struct cg2900_user_data *user,
++				   struct cg2900_user_data *logger,
++				   struct cg2900_file_info *info)
++{
++	int bytes_to_copy;
++	struct sk_buff *skb;
++	struct bt_vs_write_file_block_cmd *cmd;
++	int plen;
++
++	/*
++	 * Calculate number of bytes to copy;
++	 * either max bytes for HCI packet or number of bytes left in file
++	 */
++	bytes_to_copy = min((int)HCI_BT_SEND_FILE_MAX_CHUNK_SIZE,
++			    (int)(info->fw_file->size - info->file_offset));
++
++	if (bytes_to_copy <= 0) {
++		/* Nothing more to read in file. */
++		dev_dbg(user->dev, "File download finished\n");
++		info->chunk_id = 0;
++		info->file_offset = 0;
++		return 0;
++	}
++
++	/* There is more data to send */
++	plen = sizeof(*cmd) + bytes_to_copy;
++	skb = user->alloc_skb(plen, GFP_KERNEL);
++	if (!skb) {
++		dev_err(user->dev, "Couldn't allocate sk_buffer\n");
++		return -ENOMEM;
++	}
++
++	skb_put(skb, plen);
++
++	cmd = (struct bt_vs_write_file_block_cmd *)skb->data;
++	cmd->opcode = cpu_to_le16(CG2900_BT_OP_VS_WRITE_FILE_BLOCK);
++	cmd->plen = BT_PARAM_LEN(plen);
++	cmd->id = info->chunk_id;
++	info->chunk_id++;
++
++	/* Copy the data from offset position */
++	memcpy(cmd->data,
++	       &(info->fw_file->data[info->file_offset]),
++	       bytes_to_copy);
++
++	/* Increase offset with number of bytes copied */
++	info->file_offset += bytes_to_copy;
++
++	skb_push(skb, CG2900_SKB_RESERVE);
++	skb->data[0] = HCI_BT_CMD_H4_CHANNEL;
++
++	cg2900_tx_to_chip(user, logger, skb);
++
++	return bytes_to_copy;
++}
++EXPORT_SYMBOL_GPL(cg2900_read_and_send_file_part);
++
++MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Linux CG2900 Library functions");
+diff --git a/drivers/mfd/cg2900/cg2900_lib.h b/drivers/mfd/cg2900/cg2900_lib.h
+new file mode 100644
+index 0000000..796f1b7
+--- /dev/null
++++ b/drivers/mfd/cg2900/cg2900_lib.h
+@@ -0,0 +1,61 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Authors:
++ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ *
++ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson CG2900 GPS/BT/FM controller.
++ */
++
++#ifndef _CG2900_LIB_H_
++#define _CG2900_LIB_H_
++
++#include <linux/firmware.h>
++#include <linux/skbuff.h>
++#include <linux/workqueue.h>
++#include <linux/mfd/cg2900.h>
++
++/**
++ * struct cg2900_work - Generic work structure.
++ * @work:	Work structure.
++ * @user_data:	Arbitrary data set by user.
++ */
++struct cg2900_work {
++	struct work_struct work;
++	void *user_data;
++};
++
++/**
++ * struct cg2900_file_info - Info structure for file to download.
++ * @fw_file:		Stores firmware file.
++ * @file_offset:	Current read offset in firmware file.
++ * @chunk_id:		Stores current chunk ID of write file
++ *			operations.
++ */
++struct cg2900_file_info {
++	const struct firmware	*fw_file;
++	int			file_offset;
++	u8			chunk_id;
++};
++
++extern void cg2900_tx_to_chip(struct cg2900_user_data *user,
++			      struct cg2900_user_data *logger,
++			      struct sk_buff *skb);
++extern void cg2900_tx_no_user(struct cg2900_chip_dev *dev, struct sk_buff *skb);
++extern void cg2900_send_bt_cmd(struct cg2900_user_data *user,
++			       struct cg2900_user_data *logger,
++			       void *data, int length);
++extern void cg2900_send_bt_cmd_no_user(struct cg2900_chip_dev *dev, void *data,
++				       int length);
++extern void cg2900_create_work_item(struct workqueue_struct *wq,
++				    work_func_t work_func,
++				    void *user_data);
++extern char *cg2900_get_text_line(char *wr_buffer, int max_nbr_of_bytes,
++				  char *rd_buffer, int *bytes_copied);
++extern bool cg2900_get_file_name(const struct firmware *fw, char **file_name,
++				 u16 hci_revision, u16 hci_sub_version);
++extern int cg2900_read_and_send_file_part(struct cg2900_user_data *user,
++					  struct cg2900_user_data *logger,
++					  struct cg2900_file_info *info);
++
++#endif /* _CG2900_LIB_H_ */
+diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
+index e30e008..c289ecf 100644
+--- a/include/net/bluetooth/hci.h
++++ b/include/net/bluetooth/hci.h
+@@ -698,6 +698,11 @@ struct hci_ev_cmd_status {
+ 	__le16   opcode;
+ } __packed;
  
- /* HCI_UART proto flag bits */
-@@ -82,6 +93,11 @@ struct hci_uart {
- int hci_uart_register_proto(struct hci_uart_proto *p);
- int hci_uart_unregister_proto(struct hci_uart_proto *p);
- int hci_uart_tx_wakeup(struct hci_uart *hu);
-+int hci_uart_set_baudrate(struct hci_uart *hu, int baud);
-+int hci_uart_set_break(struct hci_uart *hu, bool break_on);
-+int hci_uart_tiocmget(struct hci_uart *hu);
-+void hci_uart_flush_buffer(struct hci_uart *hu);
-+void hci_uart_flow_ctrl(struct hci_uart *hu, bool flow_on);
- 
- #ifdef CONFIG_BT_HCIUART_H4
- int h4_init(void);
++#define HCI_EV_HW_ERROR			0x10
++struct hci_ev_hw_error {
++	__u8     hw_code;
++} __packed;
++
+ #define HCI_EV_ROLE_CHANGE		0x12
+ struct hci_ev_role_change {
+ 	__u8     status;
 -- 
 1.7.3.2
 
