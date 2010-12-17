@@ -1,113 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab0LQE2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 23:28:46 -0500
-Received: from smtp.falooley.org ([66.180.170.91]:53167 "EHLO
-	smtp.falooley.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab0LQE2p (ORCPT
+	id S1753229Ab0LQE26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 23:28:58 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48328 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab0LQE2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 23:28:45 -0500
-Date: Thu, 16 Dec 2010 20:27:59 -0800
-From: Jason Lunz <lunz@acm.org>
-To: Anatolij Gustschin <agust@denx.de>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        atom ota <atomota@sleepyhammer.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Jeff Dike <jdike@addtoit.com>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        Rob Landley <rob@landley.net>, David Woodhouse <dwmw2@infradead.org>
-Subject: mtd: fix CONFIG_MTD_COMPLEX_MAPPINGS=n compile
-Message-ID: <20101217042759.GA3148@falooley.org>
-References: <20071024011712.GA3762@falooley.org>
- <1193208689.26096.48.camel@pmac.infradead.org>
- <20071227181524.GA19051@falooley.org>
- <20071228174853.GA4252@uranus.ravnborg.org>
- <20101207072919.GA8511@falooley.org>
- <AANLkTineLxHdcDKZEUGiqVNAauSX_xyQrs49kKaqhiWo@mail.gmail.com>
- <20101207182012.GA10546@falooley.org>
- <1292343878.2538.80.camel@localhost>
- <20101214195124.GA6010@falooley.org>
- <20101216230110.65156c55@wker>
+	Thu, 16 Dec 2010 23:28:55 -0500
+From: Miles Bader <miles@gnu.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enbeerg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+References: <alpine.DEB.2.00.1012151404070.21102@router.home>
+	<20101215125626.25f7d648.akpm@linux-foundation.org>
+	<4D092D15.7030700@zytor.com>
+	<AANLkTimhdmWGhxW9qnFWYxiVDManH4XG4RqTLJb_Fdbk@mail.gmail.com>
+	<4D093580.9000303@zytor.com> <buowrnakze2.fsf@dhlpc061.dev.necel.com>
+	<AANLkTim+cbxPxgS+13anHQRdN42uLci6z48hbiyWFdaV@mail.gmail.com>
+	<buooc8mko3x.fsf@dhlpc061.dev.necel.com> <4D0A3267.40300@zytor.com>
+System-Type: x86_64-unknown-linux-gnu
+Blat: Foop
+Date: Fri, 17 Dec 2010 13:26:33 +0900
+In-Reply-To: <4D0A3267.40300@zytor.com> (H. Peter Anvin's message of "Thu, 16
+	Dec 2010 07:38:15 -0800")
+Message-ID: <buolj3pja86.fsf@dhlpc061.dev.necel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101216230110.65156c55@wker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 11:01:10PM +0100, Anatolij Gustschin wrote:
-> This change breaks compiling when CONFIG_MTD_COMPLEX_MAPPINGS is not
-> defined in the kernel configuration. Please fix!
+"H. Peter Anvin" <hpa@zytor.com> writes:
+> The alternatives are equivalent when used in the common context.  Your
+> examples are bogus, because they don't account for the
+> __builtin_constant_p().
 
-Sorry, sloppy of me. This reverts all changes to mtd.h while keeping the
-ability to compile mtd on ARCH=um, with the exception mtdchar.
+Ah, true ... :}
 
-Jason
+-miles
 
---
-
-Revert hiding of inline_map_* functions in linux/mtd.h, and mark
-MTD_CHAR as incompatible with uml until a better solution can be found
-there.
-
-Signed-off-by: Jason Lunz <lunz@acm.org>
-
----
- drivers/mtd/Kconfig     |    1 +
- include/linux/mtd/map.h |   18 +++++++++---------
- 2 files changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-index 7537654..51471a5 100644
---- a/drivers/mtd/Kconfig
-+++ b/drivers/mtd/Kconfig
-@@ -174,6 +174,7 @@ comment "User Modules And Translation Layers"
- 
- config MTD_CHAR
- 	tristate "Direct char device access to MTD devices"
-+	depends on HAS_IOMEM
- 	help
- 	  This provides a character device for each MTD device present in
- 	  the system, allowing the user to read and write directly to the
-diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
-index 3d9f7e0..a9e6ba4 100644
---- a/include/linux/mtd/map.h
-+++ b/include/linux/mtd/map.h
-@@ -388,15 +388,6 @@ static inline map_word map_word_ff(struct map_info *map)
- 	return r;
- }
- 
--#ifdef CONFIG_MTD_COMPLEX_MAPPINGS
--#define map_read(map, ofs) (map)->read(map, ofs)
--#define map_copy_from(map, to, from, len) (map)->copy_from(map, to, from, len)
--#define map_write(map, datum, ofs) (map)->write(map, datum, ofs)
--#define map_copy_to(map, to, from, len) (map)->copy_to(map, to, from, len)
--
--extern void simple_map_init(struct map_info *);
--#define map_is_linear(map) (map->phys != NO_XIP)
--
- static inline map_word inline_map_read(struct map_info *map, unsigned long ofs)
- {
- 	map_word r;
-@@ -449,6 +440,15 @@ static inline void inline_map_copy_to(struct map_info *map, unsigned long to, co
- 	memcpy_toio(map->virt + to, from, len);
- }
- 
-+#ifdef CONFIG_MTD_COMPLEX_MAPPINGS
-+#define map_read(map, ofs) (map)->read(map, ofs)
-+#define map_copy_from(map, to, from, len) (map)->copy_from(map, to, from, len)
-+#define map_write(map, datum, ofs) (map)->write(map, datum, ofs)
-+#define map_copy_to(map, to, from, len) (map)->copy_to(map, to, from, len)
-+
-+extern void simple_map_init(struct map_info *);
-+#define map_is_linear(map) (map->phys != NO_XIP)
-+
- #else
- #define map_read(map, ofs) inline_map_read(map, ofs)
- #define map_copy_from(map, to, from, len) inline_map_copy_from(map, to, from, len)
 -- 
-1.7.2.3
-
+Abstainer, n. A weak person who yields to the temptation of denying himself a
+pleasure. A total abstainer is one who abstains from everything but
+abstention, and especially from inactivity in the affairs of others.
