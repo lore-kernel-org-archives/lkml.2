@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab0LQMLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 07:11:25 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45000 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab0LQMLX convert rfc822-to-8bit (ORCPT
+	id S1753888Ab0LQMNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 07:13:17 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17498 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab0LQMNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 07:11:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=apCSl1BSNh1fA3Cv0UkEsfiQ1wIOwdKLifHVCcbdg8dR63n9Rj8IJvIZ1XY+pc6cYJ
-         RtNy2l63SM7dLXtEn2QbRoHv0oLQAzYW07meczsfFkz4eGELP2nbap4qZzQKverN8jtv
-         +AXv2ROOWlKWuDPyE+i4nR/MO5cn0wb8Dt6x0=
+	Fri, 17 Dec 2010 07:13:16 -0500
+Date: Fri, 17 Dec 2010 13:07:07 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Ian Kent <raven@themaw.net>
+cc: autofs@linux.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [autofs] [PATCH][RFC] autofs4: Do not potentially dereference
+ null pointer returned by fget() in autofs_dev_ioctl_setpipefd()
+In-Reply-To: <1292382195.2979.17.camel@perseus>
+Message-ID: <alpine.LNX.2.00.1012171306310.4638@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1012122357570.9206@swampdragon.chaosbits.net> <1292382195.2979.17.camel@perseus>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
-Date: Fri, 17 Dec 2010 13:11:22 +0100
-Message-ID: <AANLkTikboaQGMGTVchXyo6tidtq7c33KDRU2puL1youv@mail.gmail.com>
-Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 support
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Cc: Pavan Savoy <pavan_savoy@sify.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org,
-        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Par,
+On Wed, 15 Dec 2010, Ian Kent wrote:
 
-On Fri, Dec 17, 2010 at 12:20 PM, Par-Gunnar Hjalmdahl
-<par-gunnar.p.hjalmdahl@stericsson.com> wrote:
-> This is the 3rd patch set for the ST-Ericsson CG2900 connectivity
-> controller. The CG2900 is a combo controller supporting GPS, Bluetooth,
-> and FM radio. It uses HCI H:4 protocol to combine different functionalities
-> on a common transport, where first byte in the data indicates the current
-> channel. Channels 1-4 are standardized in the Bluetooth Core specification
-> while the other channels are vendor specific.
->
-> Compared to 2nd patch set this patch set has the following changes:
->  * UART handling is moved from mfd to bluetooth folder. It now reuses the
->   existing N_HCI line discipline.
->  * mfd creation has been moved from cg2900_core into chip specific files.
->  * All information for each channel, including API functions, exist in each
->   MFD devices, making them independent of each other.
->  * All chip specific information has been moved from cg2900_core into the
->   chip specific files. cg2900_core now only handles registration and
->   connection between transport and chip driver.
->  * Fixes for several review comments including use of existing debug system.
+> On Mon, 2010-12-13 at 00:02 +0100, Jesper Juhl wrote:
+> > Hi,
+> > 
+> > In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
+> > which may return NULL, but we do not explicitly test for that NULL return 
+> > so we may end up dereferencing a NULL pointer - bad.
+> 
+> Oops, thanks for this.
+> 
+> > 
+> > A comment in fget() says "File object ref couldn't be taken" when that 
+> > function returns NULL, so I guess EBUSY is the proper error to return from 
+> > autofs_dev_ioctl_setpipefd() when this happens, but I'm far from sure 
+> > about this, so I'd like some feedback before this patch is merged.
+> 
+> Not sure EBUSY is the one to use.
+> 
+> What is happening here is that user space has opened a file handle it
+> thinks is against an autofs mount point (which may actually be covered
+> by another mount, hence the need for an ioctl) and is asking the kernel
+> to set it in the super block info struct so it can be used for control
+> operations. By the look of fget() a NULL return would happen if the file
+> table was full (ENFILE) or the file handle had already been closed
+> (probably EBADF) so perhaps EBADF would be a better choice.
+> 
+Ok. That makes sense.
+I'll re-spin the patch with that change and re-submit it soon.
 
-this patchset has only multiplied my confusion.
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Not really diving into the details, I'm just trying to understand how
-I'd rewrite the TI shared transport using your approach if I had to.
-It looks like I'd have to, at least:
- - implement a heavyweight line discipline driver (like cg2900_uart.c)
-half duplicating the functionality in yours;
- - implement specific MFD driver.
-
-Actually the reuse of this implementation will be at a level of
-statistics error. The only thing to reuse is actually the approach
-which I'm not really happy about.
-
-So...
-
-If you are aiming for a generic solution, then why you get more and
-more things handled in cg2900-specific code (e. g. packet routing
-which is fairly generic)?
-
-If you are solving your particular problems, isn't the change too
-dramatic e. g. when it comes to line discipline drivers and baudrate
-manipulation?
-
-As of now, I really see no reason why anyone would promote this
-solution instead of making something more generic out of ti-st and
-reusing it then.
-
-Thanks,
-   Vitaly
