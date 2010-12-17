@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0LQGXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 01:23:03 -0500
-Received: from mail-fx0-f43.google.com ([209.85.161.43]:55343 "EHLO
-	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab0LQGXB (ORCPT
+	id S1752709Ab0LQG1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 01:27:51 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35277 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab0LQG1u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 01:23:01 -0500
+	Fri, 17 Dec 2010 01:27:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fkbpbcXNqqzazl6Bn1OzXACHOT16Jim31gcK/x0L7vE3iEpYcar+HVmoej+/7tI3Oj
-         sX1JM6Wf3fOuoxxG6KmwpW0njY+mWIrWtl5a0pd53dW5f4ThVRueyo2Fqi5FN4Da59f4
-         vINBfRUJSRvZlEwnK+PKKkPlp2mZ2y3VlpJRg=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=vhA/QLKZvP/YAmkzvlENFoQPmiilohY4gPGpLwd4/Ofh6Ut8fEjqus5Yz6LkW2pbYm
+         Sg6lPMdLg/QGgtRtJwLs2mySgGk5E1nOCuESEOBBvH1pxaa6BCuJYdblTzFfRHJX3v3i
+         ZA5kKUtYxXuAtfrTN5iunc1frkOGcTyZMrras=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTingt6SM+uasicwPSJRE5vYpvJ=GyFf3bbKhO72G@mail.gmail.com>
-References: <cover.1292405004.git.fenghua.yu@intel.com>
-	<46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
-	<1292446118.2603.11.camel@edumazet-laptop>
-	<20101216011425.GA17446@linux-os.sc.intel.com>
-	<AANLkTingt6SM+uasicwPSJRE5vYpvJ=GyFf3bbKhO72G@mail.gmail.com>
-Date: Fri, 17 Dec 2010 14:22:59 +0800
-Message-ID: <AANLkTi=oXCqPHYs9reF9WL46Wxi_b8vL_NMSsAJJ34wD@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
-From: Junchang Wang <junchangwang@gmail.com>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "Tang, Xinan" <xinan.tang@intel.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <b9dded$hd6gpd@orsmga002.jf.intel.com>
+References: <AANLkTimOOmFqxU=r+-RphdfPJ54Qr+6LHU60Grzpnerr@mail.gmail.com>
+ <b9dded$hcr3k7@orsmga002.jf.intel.com> <AANLkTim=k601vg+sJJH3bvdfAmrCbCEouL78XoVxuDwy@mail.gmail.com>
+ <5b55a1$iv0t6h@fmsmga002.fm.intel.com> <AANLkTi=6HOsAg1mvoZ4GBy-vw2cH-bGUsQVGtCseWvy4@mail.gmail.com>
+ <b9dded$hd6gpd@orsmga002.jf.intel.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Fri, 17 Dec 2010 14:27:28 +0800
+Message-ID: <AANLkTimcUH4kvXu3DBk1PqPDjyzVYqZ1iT=eTTmF=DVi@mail.gmail.com>
+Subject: Re: [BUG] i915 boot got black screen with 2.6.37-rc5+
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, keithp@keithp.com, ak@linux.intel.com,
+        gregkh@suse.de, stable@kernel.org, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 9:28 AM, Changli Gao <xiaosuo@gmail.com> wrote:
-> On Thu, Dec 16, 2010 at 9:14 AM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+Still black screen.
+
+Cannot get the log from /var/log and cannot connect the pc through
+net.   So I didn't get the log.  Sorry for that.
+
+Thanks,
+Hui
+
+On Thu, Dec 16, 2010 at 18:10, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Thu, 16 Dec 2010 10:20:57 +0800, Hui Zhu <teawater@gmail.com> wrote:
+>> On Wed, Dec 15, 2010 at 18:20, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> > On Wed, 15 Dec 2010 17:28:45 +0800, Hui Zhu <teawater@gmail.com> wrote:
+>> >> lspci | grep Display
+>> >> 00:02.1 Display controller: Intel Corporation 82Q35 Express Integrated
+>> >> Graphics Controller (rev 02)
+>> >
+>> > Q35. I wasn't expecting that. Can you please add drm.debug=0xe to your
+>> > boot line and attach the dmesg from rc3 and rc5? Thanks.
+>> > -Chris
+>> >
+>> > --
+>> > Chris Wilson, Intel Open Source Technology Centre
+>> >
 >>
->> SKF_AD_QUEUE doesn't know number of rx queues. Thus user application can't
->> specify right SKF_AD_QUEUE.
+>> Thanks Chris.
+>>
+>> I post the logs of rc3+, rc4+ and rc5+ in attchement.  Wish they can
+>> be more helpful.
 >
-> It is wrong. AFAIK, you can get the queue number through
-> /sys/class/net/eth*/queues/ or /proc/interrupts
+> The hotplug probe was failing. The only change along that path I could see
+> was to setting some hotplug flags in the analag adapter register. Can you
+> try this patch to see if it fixes things for you? Meanwhile I'll check the
+> docs for the validity of those flags for the various gen.
 >
-
-Valuable comment. Thanks.
-
+> diff --git a/drivers/gpu/drm/i915/intel_crt.c
+> b/drivers/gpu/drm/i915/intel_crt.c
+> index 8df5743..14c276e 100644
+> --- a/drivers/gpu/drm/i915/intel_crt.c
+> +++ b/drivers/gpu/drm/i915/intel_crt.c
+> @@ -148,7 +148,9 @@ static void intel_crt_mode_set(struct drm_encoder *encoder,
+>                           dpll_md & ~DPLL_MD_UDI_MULTIPLIER_MASK);
+>        }
 >
-> If you turn to SKF_AD_QUEUE, I think no patch for kernel is needed.
+> -       adpa = ADPA_HOTPLUG_BITS;
+> +       adpa = 0;
+> +       if (INTEL_INFO(dev)->gen >= 4)
+> +               adpa |= ADPA_HOTPLUG_BITS;
+>        if (adjusted_mode->flags & DRM_MODE_FLAG_PHSYNC)
+>                adpa |= ADPA_HSYNC_ACTIVE_HIGH;
+>        if (adjusted_mode->flags & DRM_MODE_FLAG_PVSYNC)
 >
-This patch set is about parallelization of socket interfaces to gain
-performance boost (say, from 1Mpps to around 5Mpps), rather than
-simply bounding socket to cpu/queue. Therefore, it does worth having.
-
-
-Thanks.
--- 
---Junchang
+> --
+> Chris Wilson, Intel Open Source Technology Centre
+>
