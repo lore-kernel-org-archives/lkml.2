@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab0LQOxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 09:53:31 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40737 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754854Ab0LQOxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 09:53:30 -0500
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <20101217122831.39300d94.sfr@canb.auug.org.au>
-References: <20101217122831.39300d94.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 Dec 2010 09:53:27 -0500
-Message-ID: <1292597607.2820.17.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1755084Ab0LQO4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 09:56:04 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42565 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754952Ab0LQO4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 09:56:02 -0500
+Message-ID: <4D0B79E2.6040108@kernel.org>
+Date: Fri, 17 Dec 2010 15:55:30 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [cpuops cmpxchg V2 1/5] percpu: Generic this_cpu_cmpxchg() and
+ this_cpu_xchg support
+References: <20101214162842.542421046@linux.com> <20101214162853.057391047@linux.com>
+In-Reply-To: <20101214162853.057391047@linux.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Dec 2010 14:55:33 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-17 at 12:28 +1100, Stephen Rothwell wrote:
-> Hi Jens,
-> 
-> Today's linux-next merge of the block tree got a conflict in
-> drivers/scsi/sd.c between commit e765221e4b44b2141704a0ab201632446235712b
-> ("[SCSI] sd: improve logic and efficiecy of media-change detection") from
-> the  tree and commit c8d2e937355d02db3055c2fc203e5f017297ee1f ("sd:
-> implement sd_check_events()") from the block tree.
-> 
-> The changes here are a bit extensive for me to figure out, so I used
-> the block tree version of the conflicting code (there are other changes
-> in the scsi tree as well).  I probably needs checking.
+Hello, Christoph.
 
-Tejun, could you respin the sd patch on top of SCSI misc, please?  (I
-promise to review it speedily if you do).
+On 12/14/2010 05:28 PM, Christoph Lameter wrote:
+> Index: linux-2.6/include/linux/percpu.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/percpu.h	2010-12-08 13:16:22.000000000 -0600
+> +++ linux-2.6/include/linux/percpu.h	2010-12-08 14:43:46.000000000 -0600
+> @@ -242,21 +242,21 @@ extern void __bad_size_call_parameter(vo
+>  
+>  #define __pcpu_size_call_return2(stem, pcp, ...)			\
+>  ({									\
+> -	typeof(pcp) ret__;						\
+> +	typeof(pcp) pscr2_ret__;					\
+>  	__verify_pcpu_ptr(&(pcp));					\
+>  	switch(sizeof(pcp)) {						\
+> -	case 1: ret__ = stem##1(pcp, __VA_ARGS__);			\
+> +	case 1: pscr2_ret__ = stem##1(pcp, __VA_ARGS__);		\
+>  		break;							\
+> -	case 2: ret__ = stem##2(pcp, __VA_ARGS__);			\
+> +	case 2: pscr2_ret__ = stem##2(pcp, __VA_ARGS__);		\
+>  		break;							\
+> -	case 4: ret__ = stem##4(pcp, __VA_ARGS__);			\
+> +	case 4: pscr2_ret__ = stem##4(pcp, __VA_ARGS__);		\
+>  		break;							\
+> -	case 8: ret__ = stem##8(pcp, __VA_ARGS__);			\
+> +	case 8: pscr2_ret__ = stem##8(pcp, __VA_ARGS__);		\
+>  		break;							\
+>  	default:							\
+>  		__bad_size_call_parameter();break;			\
+>  	}								\
+> -	ret__;								\
+> +	pscr2_ret__;							\
+>  })
 
-Thanks,
+This chunk doesn't belong here.  It's the change I've made while
+applying your earlier patch.  Dropping this part.
 
-James
+Relocated xchg and cmpxchg ops so that they're first grouped by
+preemption safeness and put them after this_cpu_add_return() and
+friends.
 
+>   * IRQ safe versions of the per cpu RMW operations. Note that these operations
+>   * are *not* safe against modification of the same variable from another
+>   * processors (which one gets when using regular atomic operations)
+> - . They are guaranteed to be atomic vs. local interrupts and
+> + * They are guaranteed to be atomic vs. local interrupts and
 
+Noted this in the patch description.
+
+Thanks.
+
+-- 
+tejun
