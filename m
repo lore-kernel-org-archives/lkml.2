@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab0LQTfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:35:45 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34700 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab0LQTfj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:35:39 -0500
+	id S1755227Ab0LQTjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:39:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41646 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754063Ab0LQTjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 14:39:32 -0500
+Message-ID: <4D0BBC55.4010207@zytor.com>
+Date: Fri, 17 Dec 2010 11:39:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D0BB9AD.90506@kernel.org>
-References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop>
- <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop>
- <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop>
- <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop>
- <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org>
- <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org>
- <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org>
- <4D094703.7080701@zytor.com> <4D0AD464.2020408@kernel.org>
- <4D0AD486.9020704@kernel.org> <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com>
- <4D0BB9AD.90506@kernel.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 17 Dec 2010 20:35:22 +0100
-Message-ID: <AANLkTikC_5NG8GGqj8fqddm+GOA+APipitdQihwjX6_f@mail.gmail.com>
-Subject: Re: [PATCH -v2 2/2] x86, acpi: Parse all SRAT cpu entries even have
- cpu num limitation
 To: Yinghai Lu <yinghai@kernel.org>
-Cc: Venkatesh Pallipadi <venki@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+CC: Vivek Goyal <vgoyal@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maxim Uvarov <muvarov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <4D0AD976.3020504@zytor.com> <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org> <20101217170146.GC9568@redhat.com> <4D0BA45A.7020402@zytor.com> <20101217180242.GB12425@redhat.com> <4D0BAA24.3080801@kernel.org>
+In-Reply-To: <4D0BAA24.3080801@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guys, mind dropping linux-hotplug@ here? Linux-kernel@ should be
-enough. This list is almost entirely about *userspace* hotplug issues.
-
-Thanks,
-Kay
-
-On Fri, Dec 17, 2010 at 20:27, Yinghai Lu <yinghai@kernel.org> wrote:
-> On 12/17/2010 10:53 AM, Venkatesh Pallipadi wrote:
->> linus git + these two patches still fails on my test system with the
->> divide error. The failure dump is similar to what I reported here
->> http://lkml.indiana.edu/hypermail//linux/kernel/1012.1/03641.html
+On 12/17/2010 10:21 AM, Yinghai Lu wrote:
+>>>
+>>> Do we have actual testing for how high the 64-bit kernel will load?
 >>
->> This patch description talk about new Intel systems. The test system I
->> am seeing failure here is an ancient Intel (2 socket P4 HT) system.
->> AFAICS, it does not even have an SRAT table (no "ACPI: SRAT" message
->> in dmesg).
->
-> that could be different cause.
->
-> Do you have whole boot log with debug etc?
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-hotplug" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+>> I will do some experiments on my box today and let you know.
+> 
+> if bzImage is used, it is 896M.
+> 
+
+Why?  896 MiB is a 32-bit kernel limitation which doesn't have anything
+to do with the bzImage format.
+
+So unless there is something going on here, I suspect you're just plain
+flat wrong.
+
+	-hpa
