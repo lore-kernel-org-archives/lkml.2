@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab0LQQSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 11:18:36 -0500
-Received: from ausxippc101.us.dell.com ([143.166.85.207]:54877 "EHLO
-	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab0LQQSf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 11:18:35 -0500
-X-Loopcount0: from 10.170.28.39
-From: <Narendra_K@Dell.com>
-To: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-CC: <Matt_Domsch@Dell.com>, <Jordan_Hargrave@Dell.com>,
-        <Charles_Rose@Dell.com>
-Date: Fri, 17 Dec 2010 08:17:29 -0800
-Subject: Re: [PATCH] Enable pci=bfsort by default on future Dell systems
-Thread-Topic: [PATCH] Enable pci=bfsort by default on future Dell systems
-Thread-Index: AcueBeb13z1+0/pnT+qvDUBtsK0noQ==
-Message-ID: <20101217161102.GA32069@fedora-14-r710.oslab.blr.amer.dell.com>
-References: <20101214175048.GC31345@fedora-14-r710.oslab.blr.amer.dell.com>
-In-Reply-To: <20101214175048.GC31345@fedora-14-r710.oslab.blr.amer.dell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mutt/1.5.21 (2010-09-15)
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753885Ab0LQQV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 11:21:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54606 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753504Ab0LQQVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 11:21:55 -0500
+Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
+From: James Bottomley <James.Bottomley@suse.de>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
+        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4D0B8975.1040206@vlnb.net>
+References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>
+	 <1292599364.2820.21.camel@mulgrave.site>  <4D0B8975.1040206@vlnb.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 11:21:48 -0500
+Message-ID: <1292602908.2820.41.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 11:21:19PM +0530, K, Narendra wrote:
-> Hello,
+On Fri, 2010-12-17 at 19:01 +0300, Vladislav Bolkhovitin wrote:
+> James Bottomley, on 12/17/2010 06:22 PM wrote:
+> > OK, I think this has reached the stage where it's been polished enough
+> > outside mainline to the point where we can complete any remaining todo
+> > items in-tree.
+> > 
+> > So lets begin merging with the minimal target core and the TCM_Loop as
+> > two separate commits. I think the target core may just fit under the
+> > reflector mail length limits, but if not, you can send it as multiple
+> > patches and I'll recombine them.
 > 
-> This patch enables pci=bfsort by default on future Dell systems.
-> Please consider for inclusion if acceptable.
+> Well, could somebody eventually explain what are advantages of LIO over
+> SCST so you are choosing it?
 > 
-> From: Jordan Hargrave <jordan_hargrave@dell.com>
-> Subject: [PATCH] Enable pci=bfsort by default on future Dell systems
-> 
-> This patch enables pci=bfsort by default on future Dell systems.
-> It reads SMBIOS type 0xB1 vendor specific record and sets pci=bfsort accordingly.
-> 
-> Offset  Name    Length  Value   Description
-> 
-> 04      Flags0  Word    Varies  Bits 9-10
->                                 - 10:9 = 00  Unknown
->                                 - 10:9 = 01  Breadth First
->                                 - 10:9 = 10  Depth First
->                                 - 10:9 = 11  Reserved
-> 
-> 1. Any time pci=bfsort has to be enabled on a system, we need to add the model
-> number of the system to the white list. With this patch, that is not required.
-> 
-> 2. Typically, model number has to be added to the white list when the system is
-> under development. With this change, that is not required.
-> 
-> Signed-off-by: Jordan Hargrave <jordan_hargrave@dell.com>
-> Signed-off-by: Narendra K <narendra_k@dell.com>
-> ---
+> LIO is obviously worse all technically (see
+> http://scst.sourceforge.net/comparison.html) as well as in the number of
+> users and size of the community. Current in-rush attempts to make LIO
+> _look_ not worse than SCST changed nothing in this area.
 
-Hello Jesse,
+To be honest, I don't really give a toss about niche feature
+comparisons: both products have niche features the other doesn't.  The
+basic requirements in both products are solid.  If the niche feature has
+customer value, my estimation is that it can easily be added (to either
+product).
 
-Please let us know if there are any concerns with this patch. If the
-patch is acceptable, please consider it for inclusion.
+> In the resent threads how many people voted for LIO? Nobody. How many
+> for SCST? Many. Moreover, has any real user of LIO participated in those
+> threads? None?
 
-With regards,
-Narendra K
+This isn't a democracy ... it's about choosing the most community
+oriented code base so that it's easily maintainable and easy to add
+feature requests and improvements as and when they come along.  In the
+past six months, LIO has made genuine efforts to clean up its act,
+streamline its code and support the other community projects that would
+need to go above and around it.  You seem to have spent a lot of the
+intervening time arguing with the sysfs maintainer about why you're
+right and he's wrong.
+
+James
+
+> Doesn't that matter for you? Which code is the best doesn't matter for
+> Linux anymore?
+> 
+> Undercover games are going on?
+> 
+> Vlad
+
+
