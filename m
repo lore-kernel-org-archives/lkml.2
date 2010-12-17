@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab0LQVfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 16:35:44 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:33828 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab0LQVfl convert rfc822-to-8bit (ORCPT
+	id S1756589Ab0LQVfh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 16:35:37 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:55601 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921Ab0LQVfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 16:35:41 -0500
-X-Greylist: delayed 887 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Dec 2010 16:35:40 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=pE5MIjF8cDND7WFcCSgFNvOXjEcaJCVcVkDUvGhIxxSJU2+WoPL5CbFtRBaejE9675
-         WKEXjgiuk+vSZwZ5gsYQ==
+	Fri, 17 Dec 2010 16:35:34 -0500
+Message-ID: <4D0BD79B.2010600@vlnb.net>
+Date: Sat, 18 Dec 2010 00:35:23 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <20101217205238.GA8642@hmsreliant.think-freely.org>
-References: <20101214212846.17022.64836.stgit@mike.mtv.corp.google.com>
- <20101214212909.17022.96801.stgit@mike.mtv.corp.google.com> <20101217205238.GA8642@hmsreliant.think-freely.org>
-From: Mike Waychison <mikew@google.com>
-Date: Fri, 17 Dec 2010 13:20:30 -0800
-Message-ID: <AANLkTikG-XepYDb3R9=T8NP5TWVgsKNK-QmXrznGDHUO@mail.gmail.com>
-Subject: Re: [PATCH v3 03/22] netconsole: Introduce 'enabled' state-machine
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: simon.kagstrom@netinsight.net, davem@davemloft.net,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>, netdev@vger.kernel.org,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
+To: James Bottomley <James.Bottomley@suse.de>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
+        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bart Van Assche <bart.vanassche@gmail.com>
+Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
+References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>	 <1292599364.2820.21.camel@mulgrave.site>  <4D0B8975.1040206@vlnb.net>	 <1292602908.2820.41.camel@mulgrave.site>  <4D0BBE40.6030000@vlnb.net> <1292617658.2820.80.camel@mulgrave.site>
+In-Reply-To: <1292617658.2820.80.camel@mulgrave.site>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:WU74JZtKsg4iq+O96k31+WtvDwm6VPNF2YTZKtAFv/c
+ tHIzgIJ8e7HKlvX1MkE+P9Gh1vcgK8x3cGuHJn3n4MtxzgIVyr
+ qpopvyXzPFIvsGAjvvhUEKYjro8caTiBNUF8s4j2OIZmXW0ZQB
+ Ci0s2G1b+kmzCtC3ig7TxDWaNkQBDBuRHg7lRJf1K4oC3TlFrE
+ PcEQr3i/V9j+xOLt6+Xng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 12:52 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> On Tue, Dec 14, 2010 at 01:29:10PM -0800, Mike Waychison wrote:
 
->> @@ -680,16 +699,17 @@ static int netconsole_netdev_event(struct notifier_block *this,
->>       struct net_device *dev = ptr;
+James Bottomley, on 12/17/2010 11:27 PM wrote:
+>> James, sorry, but your position is weak and absurd. In it maturity,
+>> quality and features don't matter.
+> 
+> I didn't say maturity and quality, I said niche features.  Apparently
+> it's subjective, because both LIO and SCST think their own niche
+> features are essential and the other's are irrelevant.
+
+I also meant features. And those features are pretty much objective. See
+the comparison page. As I wrote, I'm willing to add to it anything I
+missed on the first request. Several month passed and there are no
+requests from LIO. So, the page must be complete and accurate.
+
+Although you can't ignore maturity and quality, especially considering
+in which rush new features added in LIO in past months.
+
+>From where do you know LIO and SCST are the same level of
+maturity/quality? NicholasB told you so?
+
+>> Following this logic Linux kernel and
+>> a student's home brewed OS kernel for his PhD work are equal.
+> 
+> So linux did begin as a student's home brewed OS kernel ...
+
+Does it mean that we should throw away all those decades of work and
+start again?
+
+>>  Obviously,
+>> this is wrong. No doubts, that all what Linux kernel can do with the
+>> same quality as it does can be added to the student's kernel sooner or
+>> later, ... but after several decades of hard work of thousands of people.
+> 
+> Precisely.
+
+Yes, sure. After several decades of hard work of thousands of people.
+Not now, when it's ready. We will believe and wait until it's done.
+
+> Or said a different way: as long as you choose the most
+> community oriented of competing offerings, the community will fill any
+> perceived gaps.  Conversely, you can destroy a project simply by
+> alienating the community.  That's why community is more important than
+> feature set.
+
+What in the SCST community doesn't satisfy you? It keeps growing, not
+"alienating". SCST mailing list has a continual flow of new subscribers
+as well as new patches. There are several hundreds messages a month in
+it. Many people has been participating for many years.
+
+What's wrong with it?
+
+James, what exactly don't you like in the way how SCST maintained? Tell
+us. We are following all the rules we know. But, definitely, you are not
+happy with something.
+
+>> At first, can you recall any cases where community comments to SCST were
+>> not addressed? All of them have been addressed and none ignored. NEVER.
 >>
->>       if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
->> -           event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
->> +           event == NETDEV_BONDING_DESLAVE))
->>               goto done;
->>
->>       spin_lock_irqsave(&target_list_lock, flags);
->>       list_for_each_entry(nt, &target_list, list) {
->> -             if (nt->np.dev == dev) {
->> +             if (nt->np_state == NETPOLL_ENABLED && nt->np.dev == dev) {
->>                       switch (event) {
->>                       case NETDEV_CHANGENAME:
->>                               strlcpy(nt->np.dev_name, dev->name, IFNAMSIZ);
->>                               break;
->> +                     case NETDEV_BONDING_DESLAVE:
->>                       case NETDEV_UNREGISTER:
-> I don't follow what you're doing here.  Previously NETDEV_BONDING_DESLAVE events
-> simply caused the netconsole interface to get deactivated, and now we're doing a
-> dev_put on the bonded interface bacause of the above move.  Given that
-> NETDEV_BONDING_DESLAVE events are generated when a slave leaves the bond, this
-> doesn't seem right, or am I missing something
+>> Simply, LIO is very much premature code comparing to SCST. It is very
+>> easy to find in it simple issues to comment, hence you see the big value
+>> of comments.
+> 
+> Look, I'm not interested in the backstabbing. *Both* projects have
+> fairly large user bases and businesses with revenue models built around
+> them, so I see that argument as a wash for both sides.
 
-Ya, I did a poor job of explaining this bit.  Let me try now:
+Me neither interested in backstabbing. But this is precisely what we are
+seeing.
 
-- NETDEV_GOING_DOWN is unneccesary because we will always see a
-NETDEV_UNREGISTER event, which is why it is removed.
-- I wasn't sure how to handle the NETDEV_BONDING_DESLAVE event in a
-consistent way.  Originally we would disable the target, but this
-actually leaks nt->np as it will never get cleaned up properly.  To
-the user, it looks as if the target gets disabled.
+NicholasB pleased key people (don't know how he managed to do it,
+although suspect), so now you are making absurd arguments trying to
+prove that his second grade meat has the first class taste.
 
-I don't think you have any contention with the first comment above
-(though I need to document it).
+Opinions of ones who tried to eat it doesn't matter, because it isn't a
+"democracy". From other side you don't want to try yourself, because
+NicholasB said the test is perfect, so you believe in it.
 
-You are right in that with this patch, the target is left enabled,
-when we should probably mark it as disabled.  I'd be happy to add the
-transition from NETPOLL_ENABLED -> NETPOLL_DISABLED here if you'd
-like, but it'd move again in the next patch anyway (which already
-re-introduces the state transition in defer_netpoll_cleanup()).  Sorry
-this is confusing :(   I'll make it clearer in the next series
-version.
+Are we in an absurd Kafka novel?
+
+>> Are we going to repeat that mistake again?
+> 
+> I don't think it was a mistake. STGT gave us the userspace modifiability
+> that neither LIO nor STGT offered at the time.
+
+Following your logic, it shouldn't have mattered, right? Because it can
+be added to SCST in the future. (LIO didn't even exist at that time.)
+
+But SCST offered user space backend at about time STGT was merged. So,
+it isn't too good argument.
+
+What's interesting is that LIO even now doesn't allow it.
+
+Moreover, accepting LIO is against your own rules you declared.
+Particularly:
+
+1. It doesn't have user space backend.
+
+2. It exports some information via procfs, which was declared as a big
+no-no.
+
+So I keep wondering, why does LIO have so much privileged treatment, so
+what was forbidden for SCST allowed for LIO?
+
+Let's treat SCST equally and allow COMMUNITY, not particular BIASED
+people to choose the best one!
+
+In this regard it looks to be a good idea to freeze accepting both LIO
+and SCST until the end of the next year and then choose one with the
+biggest activity in the related mailing lists, not counting me and
+NicholasB.
+
+You want the best community, so let community choose!
+
+Vlad
