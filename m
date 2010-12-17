@@ -1,69 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab0LQFp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 00:45:56 -0500
-Received: from relay01.digicable.hu ([92.249.128.189]:45050 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab0LQFpz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 00:45:55 -0500
-Message-ID: <4D0AF910.8070202@freemail.hu>
-Date: Fri, 17 Dec 2010 06:45:52 +0100
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	id S1751615Ab0LQFr2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 00:47:28 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:53766 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab0LQFr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 00:47:26 -0500
+Date: Thu, 16 Dec 2010 21:47:22 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: gerald.schaefer@de.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@vger.kernel.org, linux-ext4@vger.kernel.org,
+        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [BUG?] memory hotplug: include/linux/radix-tree.h:145 invoked
+ rcu_dereference_check() without protection!
+Message-ID: <20101217054722.GG2253@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101121133024.GF23423@thunk.org>
+ <20101121153949.GD20947@barrios-desktop>
+ <20101121173726.GG23423@thunk.org>
+ <AANLkTimeSWWo-TAJPPH81OO_h1zFzWAT1Gg=XSLyFftH@mail.gmail.com>
+ <rcu-radix-tree@mdm.bga.com>
+ <20101122061619.GA2764@linux.vnet.ibm.com>
+ <1291748509.19276.62.camel@thinkpad>
+ <20101208101947.b0646226.kamezawa.hiroyu@jp.fujitsu.com>
+ <1292507421.4885.19.camel@thinkpad>
+ <AANLkTinfTCpdKo-A8gF+xbss24PNQXvQV6Odh51mXxiH@mail.gmail.com>
 MIME-Version: 1.0
-To: Max Vozeler <max@vozeler.com>
-CC: gregkh <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>, usbip-devel@lists.sourceforge.net
-Subject: Re: usbip: sometimes stalls at kernel_recvmsg()
-References: <4D06A004.8070502@freemail.hu> <4D09C056.5020305@freemail.hu> <4D0A97B3.2090701@vozeler.com>
-In-Reply-To: <4D0A97B3.2090701@vozeler.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Original: 92.249.229.4
+In-Reply-To: <AANLkTinfTCpdKo-A8gF+xbss24PNQXvQV6Odh51mXxiH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Max,
-
-Max Vozeler wrote:
-> Hi NÃ©meth,
+On Fri, Dec 17, 2010 at 09:04:13AM +0900, Minchan Kim wrote:
+> On Thu, Dec 16, 2010 at 10:50 PM, Gerald Schaefer
+> <gerald.schaefer@de.ibm.com> wrote:
+> > I got the same warning now after increasing /proc/sys/vm/nr_hugepages, see
+> > below. Both cases are easily reproducible: memory unplug with big page cache,
+> > or adding large pages during run-time.
+> >
+> > ===================================================
+> > [ INFO: suspicious rcu_dereference_check() usage. ]
+> > ---------------------------------------------------
+> > include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
+> >
+> > other info that might help us debug this:
+> >
+> >
+> > rcu_scheduler_active = 1, debug_locks = 0
+> > 1 lock held by bash/761:
+> >  #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<00000000002263ae>] migrate_page_move_mapping+0x4a/0x2d8
+> >
+> > stack backtrace:
+> > CPU: 1 Not tainted 2.6.37-rc6 #4
+> > Process bash (pid: 761, task: 00000000181b5540, ksp: 00000000181bb7f8)
+> > 00000000181bb818 00000000181bb798 0000000000000002 0000000000000000
+> >       00000000181bb838 00000000181bb7b0 00000000181bb7b0 000000000056bafa
+> >       0000000000000000 000000003f42bdf0 0000000000000002 000000001c43be30
+> >       000003e00000000d 000003e00000000c 00000000181bb800 0000000000000000
+> >       0000000000000000 0000000000100bfa 00000000181bb798 00000000181bb7d8
+> > Call Trace:
+> > ([<0000000000100b02>] show_trace+0xee/0x144)
+> >  [<000000000022654e>] migrate_page_move_mapping+0x1ea/0x2d8
+> >  [<0000000000226c80>] migrate_page+0x38/0x68
+> >  [<0000000000226d9a>] move_to_new_page+0xea/0x2bc
+> >  [<000000000022785a>] migrate_pages+0x496/0x568
+> >  [<000000000021e24e>] compact_zone+0x432/0x7d8
+> >  [<000000000021e772>] compact_zone_order+0x9e/0xbc
+> >  [<000000000021ed52>] try_to_compact_pages+0x1ba/0x24c
+> >  [<00000000001e1afa>] __alloc_pages_nodemask+0x86a/0xa64
+> >  [<000000000021c80c>] alloc_fresh_huge_page.clone.2+0x68/0x18c
+> >  [<000000000021cc4c>] set_max_huge_pages.clone.0+0xa4/0x1ac
+> >  [<000000000021ce06>] hugetlb_sysctl_handler+0xb2/0xcc
+> >  [<00000000002a6572>] proc_sys_call_handler+0xe6/0x10c
+> >  [<00000000002a65be>] proc_sys_write+0x26/0x34
+> >  [<00000000002336e0>] vfs_write+0xac/0x18c
+> >  [<00000000002338bc>] SyS_write+0x58/0xa8
+> >  [<0000000000113976>] sysc_noemu+0x16/0x1c
+> >  [<0000020000162edc>] 0x20000162edc
+> > INFO: lockdep is turned off.
+> >
+> > I honestly do not understand 100% why this is a false positive, seeing that
+> > e.g. find_get_page() will also use radix_tree_deref_slot(), holding only the
+> > rcu_read_lock, while migrate_page_move_mapping() has no rcu_read_lock() but
+> > the &mapping->tree_lock instead. So I'm not quite sure how to fix this
+> > properly, but simply adding rcu_read_lock/unlock() to the affected code paths,
+> > even if it is not necessary for synchronization, would get rid of the warning,
+> > like in the following patch. Any ideas?
 > 
-> On 16.12.2010 08:31, NÃ©meth MÃ¡rton wrote:
->> NÃ©meth MÃ¡rton wrote:
->>> I'm working with usbip and I sometimes see a stall when I run
->>> the "lsusb" command from the userspace. 
+> In case of anon page, we hold rcu_read_lock in unmap_and_move.
+> The problem is file-backed page. In case of that, we hold lock_page
+> and mapping->tree_lock as update-side lock.
+> So we don't need rcu_read_lock.
 > 
-> Does it eventually recover?
-
-No, it doesn't. After 120 seconds messages are printed in dmesg
-that the "lsusb" process is blocked more than 120 seconds.
-
->>> I added some debug messages
->>> and it seems that the kernel_recvmsg() in
->>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/staging/usbip/usbip_common.c;h=210ef16bab8d271a52e5d36cd1994aad57ad99e1;hb=HEAD
->>>
->>> This is the only place I could find where the TCP messages are arriving in
->>> the usbip code.
->>>
->>> What happens if a message does not arrive? Does it stall forever? 
+> >
+> > ---
+> >  fs/hugetlbfs/inode.c |    2 ++
+> >  mm/migrate.c         |    4 ++++
+> >  2 files changed, 6 insertions(+)
+> >
+> > --- a/fs/hugetlbfs/inode.c
+> > +++ b/fs/hugetlbfs/inode.c
+> > @@ -580,7 +580,9 @@ static int hugetlbfs_migrate_page(struct
+> >  {
+> >        int rc;
+> >
+> > +       rcu_read_lock();
+> >        rc = migrate_huge_page_move_mapping(mapping, newpage, page);
+> > +       rcu_read_unlock();
+> >        if (rc)
+> >                return rc;
+> >        migrate_page_copy(newpage, page);
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -417,7 +417,9 @@ int migrate_page(struct address_space *m
+> >
+> >        BUG_ON(PageWriteback(page));    /* Writeback must be complete */
+> >
+> > +       rcu_read_lock();
+> >        rc = migrate_page_move_mapping(mapping, newpage, page);
+> > +       rcu_read_unlock();
+> >
+> >        if (rc)
+> >                return rc;
+> > @@ -444,7 +446,9 @@ int buffer_migrate_page(struct address_s
+> >
+> >        head = page_buffers(page);
+> >
+> > +       rcu_read_lock();
+> >        rc = migrate_page_move_mapping(mapping, newpage, page);
+> > +       rcu_read_unlock();
+> >
+> >        if (rc)
+> >                return rc;
+> >
+> >
+> >
 > 
-> Yes, it will block until detached or until a TCP
-> timeout or error closes the connection.
 > 
-> The TCP timeout can take several minutes.
+> How about this?
+> Maybe Paul have better idea.
+> (It's apparently be word-wrapped.)
+> 
+> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+> index ab2baa5..135af1e 100644
+> --- a/include/linux/radix-tree.h
+> +++ b/include/linux/radix-tree.h
+> @@ -146,6 +146,20 @@ static inline void *radix_tree_deref_slot(void **pslot)
+>  }
+> 
+>  /**
+> + * radix_tree_deref_slot_nocheck       - dereference a slot without RCU check
+> + * @pslot:     pointer to slot, returned by radix_tree_lookup_slot
+> + * Returns:    item that was stored in that slot with any direct pointer flag
+> + *             removed.
+> + *
+> + * This functions works like radix_tree_deref_slot except it doesn't check
+> + * RCU rule. Normally this funcion is used with update-side lock.
+> + * You should use this function very carefully.
+> + */
+> +static inline void *radix_tree_deref_slot_nocheck(void **pslot)
+> +{
+> +       return rcu_dereference_protected(*pslot, 1);
 
-What I don't really understand is that how is it possible that
-a packet from TCP communication is lost? TCP resends the lost
-packets automatically. In my case I run both the usbip server
-and client on the same machine using the host name "localhost".
-So I assume that there might be a protocol handshake problem
-here.
+I suggest replacing the "1" with lockdep expressions for the locks
+that you say might be held:
 
-There are, however cases when the timeout is needed, e.g. when
-the usbip server and client are physically disconnected so the
-TCP packet resend is no more possible.
+	return rcu_dereference_check(*pslot,
+				     lockdep_is_held(&mapping->tree_lock));
 
-	MÃ¡rton NÃ©meth
+This assumes that when you said "and" you meant both lock_page() and
+mapping->tree_lock.  Also you need to pass in the mapping, which
+should not be a problem given likely inlining.
 
+If you meant that either mapping->tree_lock or page_lock() might be
+held, I suppose that the page_lock() state could be passed in, but
+perhaps better to take a general lockdep expression.
+
+So, either or both?  ;-)
+
+						Thanx, Paul
+
+> +}
+> +/**
+>   * radix_tree_deref_retry      - check radix_tree_deref_slot
+>   * @arg:       pointer returned by radix_tree_deref_slot
+>   * Returns:    0 if retry is not required, otherwise retry is required
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 2eb2243..5be2841 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -244,7 +244,8 @@ static int migrate_page_move_mapping(struct
+> address_space *mappin
+> 
+>         expected_count = 2 + page_has_private(page);
+>         if (page_count(page) != expected_count ||
+> -                       (struct page *)radix_tree_deref_slot(pslot) != page) {
+> +                       (struct page *)radix_tree_deref_slot_nocheck(pslot)
+> +                               != page) {
+>                 spin_unlock_irq(&mapping->tree_lock);
+>                 return -EAGAIN;
+>         }
+> @@ -316,7 +317,8 @@ int migrate_huge_page_move_mapping(struct
+> address_space *mapping,
+> 
+>         expected_count = 2 + page_has_private(page);
+>         if (page_count(page) != expected_count ||
+> -           (struct page *)radix_tree_deref_slot(pslot) != page) {
+> +           (struct page *)radix_tree_deref_slot_nocheck(pslot)
+> +                               != page) {
+>                 spin_unlock_irq(&mapping->tree_lock);
+>                 return -EAGAIN;
+>         }
+> 
+> 
+> 
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
