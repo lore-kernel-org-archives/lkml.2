@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0LQLVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:21:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22582 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab0LQLVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:21:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,360,1288594800"; 
-   d="scan'208";a="584664162"
-Date: Fri, 17 Dec 2010 19:21:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] writeback: skip balance_dirty_pages() for in-memory fs
-Message-ID: <20101217112111.GA8323@localhost>
-References: <20101213144646.341970461@intel.com>
- <20101213150329.002158963@intel.com>
- <20101217021934.GA9525@localhost>
- <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
+	id S1753478Ab0LQLWS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:22:18 -0500
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:52660 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751177Ab0LQLWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 06:22:16 -0500
+From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH 00/11] mfd and bluetooth: Add CG2900 support
+Date: Fri, 17 Dec 2010 12:20:29 +0100
+Message-ID: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids unnecessary checks and dirty throttling on tmpfs/ramfs.
+This is the 3rd patch set for the ST-Ericsson CG2900 connectivity
+controller. The CG2900 is a combo controller supporting GPS, Bluetooth,
+and FM radio. It uses HCI H:4 protocol to combine different functionalities
+on a common transport, where first byte in the data indicates the current
+channel. Channels 1-4 are standardized in the Bluetooth Core specification
+while the other channels are vendor specific.
 
-It also prevents
+Compared to 2nd patch set this patch set has the following changes:
+ * UART handling is moved from mfd to bluetooth folder. It now reuses the
+   existing N_HCI line discipline.
+ * mfd creation has been moved from cg2900_core into chip specific files.
+ * All information for each channel, including API functions, exist in each
+   MFD devices, making them independent of each other.
+ * All chip specific information has been moved from cg2900_core into the
+   chip specific files. cg2900_core now only handles registration and
+   connection between transport and chip driver.
+ * Fixes for several review comments including use of existing debug system.
 
-[  388.126563] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+Par-Gunnar Hjalmdahl (11):
+  mfd: Add support for CG2900 controller framework
+  mfd: Add CG2900 character devices
+  mfd: Add support for CG2900 controller
+  mfd: Add support for STLC2690 controller
+  mfd: Add CG2900 audio
+  mfd: Add CG2900 test character device
+  Bluetooth: Add UART API functions to ldisc
+  Bluetooth: Add support for CG2900 UART
+  Bluetooth: Add support for CG2900 controller
+  arch_mach-ux500: Add U8500 board support for CG2900
+  Bluetooth and mach-ux500: Fix of minor issues
 
-in the balance_dirty_pages tracepoint, which will call
+ arch/arm/mach-ux500/Makefile             |    1 +
+ arch/arm/mach-ux500/board-mop500.c       |  152 ++
+ arch/arm/mach-ux500/devices-cg2900.c     |  315 +++
+ arch/arm/mach-ux500/devices-cg2900.h     |   19 +
+ drivers/bluetooth/Kconfig                |    7 +
+ drivers/bluetooth/Makefile               |    2 +
+ drivers/bluetooth/btcg2900.c             | 1134 ++++++++++
+ drivers/bluetooth/cg2900_uart.c          | 1849 ++++++++++++++++
+ drivers/bluetooth/hci_ath.c              |    1 +
+ drivers/bluetooth/hci_bcsp.c             |    3 +-
+ drivers/bluetooth/hci_h4.c               |    1 +
+ drivers/bluetooth/hci_ldisc.c            |  101 +-
+ drivers/bluetooth/hci_ll.c               |    1 +
+ drivers/bluetooth/hci_uart.h             |   18 +-
+ drivers/mfd/Kconfig                      |   53 +
+ drivers/mfd/Makefile                     |    2 +
+ drivers/mfd/cg2900/Makefile              |   16 +
+ drivers/mfd/cg2900/cg2900_audio.c        | 3415 ++++++++++++++++++++++++++++++
+ drivers/mfd/cg2900/cg2900_char_devices.c |  701 ++++++
+ drivers/mfd/cg2900/cg2900_chip.c         | 3250 ++++++++++++++++++++++++++++
+ drivers/mfd/cg2900/cg2900_chip.h         |  602 ++++++
+ drivers/mfd/cg2900/cg2900_core.c         |  711 +++++++
+ drivers/mfd/cg2900/cg2900_core.h         |   51 +
+ drivers/mfd/cg2900/cg2900_lib.c          |  391 ++++
+ drivers/mfd/cg2900/cg2900_lib.h          |   61 +
+ drivers/mfd/cg2900/cg2900_test.c         |  402 ++++
+ drivers/mfd/cg2900/stlc2690_chip.c       | 1673 +++++++++++++++
+ drivers/mfd/cg2900/stlc2690_chip.h       |   47 +
+ include/linux/mfd/cg2900.h               |  287 +++
+ include/linux/mfd/cg2900_audio.h         |  473 +++++
+ include/net/bluetooth/hci.h              |    5 +
+ 31 files changed, 15734 insertions(+), 10 deletions(-)
+ create mode 100644 arch/arm/mach-ux500/devices-cg2900.c
+ create mode 100644 arch/arm/mach-ux500/devices-cg2900.h
+ create mode 100644 drivers/bluetooth/btcg2900.c
+ create mode 100644 drivers/bluetooth/cg2900_uart.c
+ create mode 100644 drivers/mfd/cg2900/Makefile
+ create mode 100644 drivers/mfd/cg2900/cg2900_audio.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_char_devices.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_chip.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_chip.h
+ create mode 100644 drivers/mfd/cg2900/cg2900_core.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_core.h
+ create mode 100644 drivers/mfd/cg2900/cg2900_lib.c
+ create mode 100644 drivers/mfd/cg2900/cg2900_lib.h
+ create mode 100644 drivers/mfd/cg2900/cg2900_test.c
+ create mode 100644 drivers/mfd/cg2900/stlc2690_chip.c
+ create mode 100644 drivers/mfd/cg2900/stlc2690_chip.h
+ create mode 100644 include/linux/mfd/cg2900.h
+ create mode 100644 include/linux/mfd/cg2900_audio.h
 
-	dev_name(mapping->backing_dev_info->dev)
+-- 
+1.7.3.2
 
-but shmem_backing_dev_info.dev is NULL.
-
-CC: Hugh Dickins <hughd@google.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- linux-next.orig/mm/page-writeback.c	2010-12-17 19:09:19.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-12-17 19:09:22.000000000 +0800
-@@ -899,6 +899,9 @@ void balance_dirty_pages_ratelimited_nr(
- {
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
- 
-+	if (!bdi_cap_account_dirty(bdi))
-+		return;
-+
- 	current->nr_dirtied += nr_pages_dirtied;
- 
- 	if (unlikely(!current->nr_dirtied_pause))
