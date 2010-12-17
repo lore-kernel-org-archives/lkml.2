@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab0LQTrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:47:00 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37848 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab0LQTq6 (ORCPT
+	id S1752969Ab0LQTrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:47:24 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38732 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab0LQTrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:46:58 -0500
-Date: Fri, 17 Dec 2010 13:46:45 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Greg KH <greg@kroah.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <michael.kerrisk@gmail.com>
-Subject: Re: [RFC 1/5] user namespaces: Add a user_namespace as
- creator/owner of uts_namespace
-Message-ID: <20101217194645.GA3131@peq>
-References: <20101217152246.GA8221@mail.hallyn.com>
- <20101217152458.GA11162@mail.hallyn.com>
- <20101217173125.GA29982@kroah.com>
+	Fri, 17 Dec 2010 14:47:23 -0500
+Message-ID: <4D0BBE00.3010602@kernel.org>
+Date: Fri, 17 Dec 2010 11:46:08 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101217173125.GA29982@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maxim Uvarov <muvarov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <4D0AD976.3020504@zytor.com> <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org> <20101217170146.GC9568@redhat.com> <4D0BA45A.7020402@zytor.com> <20101217180242.GB12425@redhat.com> <4D0BAA24.3080801@kernel.org> <4D0BBC55.4010207@zytor.com>
+In-Reply-To: <4D0BBC55.4010207@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Greg KH (greg@kroah.com):
-> > +extern struct user_namespace init_user_ns;
-> >  struct uts_namespace init_uts_ns = {
-> >  	.kref = {
-> >  		.refcount	= ATOMIC_INIT(2),
+On 12/17/2010 11:39 AM, H. Peter Anvin wrote:
+> On 12/17/2010 10:21 AM, Yinghai Lu wrote:
+>>>>
+>>>> Do we have actual testing for how high the 64-bit kernel will load?
+>>>
+>>> I will do some experiments on my box today and let you know.
+>>
+>> if bzImage is used, it is 896M.
+>>
 > 
-> Wait, WTF?
+> Why?  896 MiB is a 32-bit kernel limitation which doesn't have anything
+> to do with the bzImage format.
 > 
-> You have a static kref and you try to automatically instanciate it here?
+> So unless there is something going on here, I suspect you're just plain
+> flat wrong.
 
-You're complaining about the pre-existing init_uts_ns right?
+kexec-tools have some checking when it loads bzImage.
 
-> As it's static, why are you even having a kref at all, what good does it
-> do you, you can't delete the thing,
-
-Can't delete this one, but can delete all the uts namespaces, obviously.
-As with init_tgcred in kernel/cred.c.
-
-It's initialized with a refcount which will keep it from ever getting
-freed.
-
-> it's always around, so just remove
-> it entirely please.
-> 
-> Or, dynamically create it properly.  In other words, this is majorly
-> broken.
-
-If we create it dynamically, then I don't think we can use it the way we
-do in kernel/utsname_sysctl.c for instance.
-
-thanks,
--serge
+	Yinghai
