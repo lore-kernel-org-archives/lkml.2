@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab0LQAvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:51:02 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29783 "EHLO
+	id S1754723Ab0LQAvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:51:19 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29778 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab0LQAuS (ORCPT
+	with ESMTP id S1754428Ab0LQAuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:50:18 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67160043"
+	Thu, 16 Dec 2010 19:50:17 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67160042"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-kernel@vger.kernel.org,
         Brian Swetland <swetland@google.com>,
         =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH 21/22] msm: iommu: Rework clock logic and add IOMMU bus clock control
-Date: Thu, 16 Dec 2010 16:50:05 -0800
-Message-Id: <1292547006-19741-22-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 20/22] msm: iommu: Clock control for the IOMMU driver
+Date: Thu, 16 Dec 2010 16:50:04 -0800
+Message-Id: <1292547006-19741-21-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd
 In-Reply-To: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
 References: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
@@ -28,359 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-Clean up the clock control code in the probe calls, and add
-support for controlling the clock for the IOMMU bus
-interconnect. With the (proper) clock driver in place, the
-clock control logic in the probe function can be made much
-cleaner since it does not have to deal with the placeholder
-driver anymore.
+Add clock control to the IOMMU driver. The IOMMU bus clock
+(and potentially an AXI clock) need to be on to gain access
+to IOMMU registers. Actively control these clocks when
+needed instead of leaving them on.
 
 Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/devices-msm8x60-iommu.c |    5 -
- arch/arm/mach-msm/include/mach/iommu.h    |    5 -
- arch/arm/mach-msm/iommu_dev.c             |  204 +++++++++++++++++------------
- 3 files changed, 120 insertions(+), 94 deletions(-)
+ arch/arm/mach-msm/iommu.c |   57 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 55 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-msm/devices-msm8x60-iommu.c b/arch/arm/mach-msm/devices-msm8x60-iommu.c
-index f9e7bd3..e12d7e2 100644
---- a/arch/arm/mach-msm/devices-msm8x60-iommu.c
-+++ b/arch/arm/mach-msm/devices-msm8x60-iommu.c
-@@ -282,7 +282,6 @@ static struct platform_device msm_root_iommu_dev = {
+diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
+index e2d58e4..c6d52ee 100644
+--- a/arch/arm/mach-msm/iommu.c
++++ b/arch/arm/mach-msm/iommu.c
+@@ -26,6 +26,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+ #include <linux/iommu.h>
++#include <linux/clk.h>
  
- static struct msm_iommu_dev jpegd_iommu = {
- 	.name = "jpegd",
--	.clk_rate = -1
+ #include <asm/cacheflush.h>
+ #include <asm/sizes.h>
+@@ -50,6 +51,30 @@ struct msm_priv {
+ 	struct list_head list_attached;
  };
  
- static struct msm_iommu_dev vpe_iommu = {
-@@ -307,7 +306,6 @@ static struct msm_iommu_dev ijpeg_iommu = {
- 
- static struct msm_iommu_dev vfe_iommu = {
- 	.name = "vfe",
--	.clk_rate = -1
- };
- 
- static struct msm_iommu_dev vcodec_a_iommu = {
-@@ -320,17 +318,14 @@ static struct msm_iommu_dev vcodec_b_iommu = {
- 
- static struct msm_iommu_dev gfx3d_iommu = {
- 	.name = "gfx3d",
--	.clk_rate = 27000000
- };
- 
- static struct msm_iommu_dev gfx2d0_iommu = {
- 	.name = "gfx2d0",
--	.clk_rate = 27000000
- };
- 
- static struct msm_iommu_dev gfx2d1_iommu = {
- 	.name = "gfx2d1",
--	.clk_rate = 27000000
- };
- 
- static struct platform_device msm_device_iommu_jpegd = {
-diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
-index 62f6699..10811ba 100644
---- a/arch/arm/mach-msm/include/mach/iommu.h
-+++ b/arch/arm/mach-msm/include/mach/iommu.h
-@@ -45,14 +45,9 @@
- /**
-  * struct msm_iommu_dev - a single IOMMU hardware instance
-  * name		Human-readable name given to this IOMMU HW instance
-- * clk_rate	Rate to set for this IOMMU's clock, if applicable to this
-- *		particular IOMMU. 0 means don't set a rate.
-- *		-1 means it is an AXI clock with no valid rate
-- *
-  */
- struct msm_iommu_dev {
- 	const char *name;
--	int clk_rate;
- };
- 
- /**
-diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
-index b83c73b..7f2b730 100644
---- a/arch/arm/mach-msm/iommu_dev.c
-+++ b/arch/arm/mach-msm/iommu_dev.c
-@@ -29,6 +29,7 @@
- 
- #include <mach/iommu_hw-8xxx.h>
- #include <mach/iommu.h>
-+#include <mach/clk.h>
- 
- struct iommu_ctx_iter_data {
- 	/* input */
-@@ -130,117 +131,134 @@ static int msm_iommu_probe(struct platform_device *pdev)
- {
- 	struct resource *r, *r2;
- 	struct clk *iommu_clk;
-+	struct clk *iommu_pclk;
- 	struct msm_iommu_drvdata *drvdata;
- 	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
- 	void __iomem *regs_base;
- 	resource_size_t	len;
--	int ret = 0, ncb, nm2v, irq;
-+	int ret, ncb, nm2v, irq;
- 
--	if (pdev->id != -1) {
--		drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
-+	if (pdev->id == -1) {
-+		msm_iommu_root_dev = pdev;
-+		return 0;
-+	}
- 
--		if (!drvdata) {
--			ret = -ENOMEM;
--			goto fail;
--		}
-+	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
- 
--		if (!iommu_dev) {
--			ret = -ENODEV;
--			goto fail;
--		}
-+	if (!drvdata) {
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
++static int __enable_clocks(struct msm_iommu_drvdata *drvdata)
++{
++	int ret;
 +
-+	if (!iommu_dev) {
-+		ret = -ENODEV;
-+		goto fail;
-+	}
- 
--		if (iommu_dev->clk_rate != 0) {
--			iommu_clk = clk_get(&pdev->dev, "iommu_clk");
--
--			if (IS_ERR(iommu_clk)) {
--				ret = -ENODEV;
--				goto fail;
--			}
--
--			if (iommu_dev->clk_rate > 0) {
--				ret = clk_set_rate(iommu_clk,
--							iommu_dev->clk_rate);
--				if (ret) {
--					clk_put(iommu_clk);
--					goto fail;
--				}
--			}
--
--			ret = clk_enable(iommu_clk);
--			if (ret) {
--				clk_put(iommu_clk);
--				goto fail;
--			}
-+	iommu_pclk = clk_get(NULL, "smmu_pclk");
-+	if (IS_ERR(iommu_pclk)) {
-+		ret = -ENODEV;
-+		goto fail;
-+	}
-+
-+	ret = clk_enable(iommu_pclk);
-+	if (ret)
-+		goto fail_enable;
-+
-+	iommu_clk = clk_get(&pdev->dev, "iommu_clk");
-+
-+	if (!IS_ERR(iommu_clk))	{
-+		if (clk_get_rate(iommu_clk) == 0)
-+			clk_set_min_rate(iommu_clk, 1);
-+
-+		ret = clk_enable(iommu_clk);
-+		if (ret) {
- 			clk_put(iommu_clk);
-+			goto fail_pclk;
- 		}
-+	} else
-+		iommu_clk = NULL;
- 
--		r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
--						 "physbase");
--		if (!r) {
--			ret = -ENODEV;
--			goto fail;
--		}
-+	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "physbase");
- 
--		len = r->end - r->start + 1;
-+	if (!r) {
-+		ret = -ENODEV;
-+		goto fail_clk;
-+	}
- 
--		r2 = request_mem_region(r->start, len, r->name);
--		if (!r2) {
--			pr_err("Could not request memory region: "
--			"start=%p, len=%d\n", (void *) r->start, len);
--			ret = -EBUSY;
--			goto fail;
--		}
-+	len = r->end - r->start + 1;
- 
--		regs_base = ioremap(r2->start, len);
-+	r2 = request_mem_region(r->start, len, r->name);
-+	if (!r2) {
-+		pr_err("Could not request memory region: start=%p, len=%d\n",
-+							(void *) r->start, len);
-+		ret = -EBUSY;
-+		goto fail_clk;
-+	}
- 
--		if (!regs_base) {
--			pr_err("Could not ioremap: start=%p, len=%d\n",
--				 (void *) r2->start, len);
--			ret = -EBUSY;
--			goto fail_mem;
--		}
-+	regs_base = ioremap(r2->start, len);
- 
--		irq = platform_get_irq_byname(pdev, "secure_irq");
--		if (irq < 0) {
--			ret = -ENODEV;
--			goto fail_io;
--		}
-+	if (!regs_base) {
-+		pr_err("Could not ioremap: start=%p, len=%d\n",
-+			 (void *) r2->start, len);
-+		ret = -EBUSY;
-+		goto fail_mem;
-+	}
-+
-+	irq = platform_get_irq_byname(pdev, "secure_irq");
-+	if (irq < 0) {
-+		ret = -ENODEV;
-+		goto fail_io;
-+	}
- 
--		mb();
-+	mb();
- 
--		if (GET_IDR(regs_base) == 0) {
--			pr_err("Invalid IDR value detected\n");
--			ret = -ENODEV;
--			goto fail_io;
--		}
-+	if (GET_IDR(regs_base) == 0) {
-+		pr_err("Invalid IDR value detected\n");
-+		ret = -ENODEV;
-+		goto fail_io;
-+	}
- 
--		ret = request_irq(irq, msm_iommu_fault_handler, 0,
--				"msm_iommu_secure_irpt_handler", drvdata);
--		if (ret) {
--			pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
--			goto fail_io;
--		}
-+	ret = request_irq(irq, msm_iommu_fault_handler, 0,
-+			"msm_iommu_secure_irpt_handler", drvdata);
-+	if (ret) {
-+		pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
-+		goto fail_io;
-+	}
- 
--		msm_iommu_reset(regs_base);
--		drvdata->base = regs_base;
--		drvdata->irq = irq;
-+	msm_iommu_reset(regs_base);
-+	drvdata->pclk = iommu_pclk;
-+	drvdata->clk = iommu_clk;
-+	drvdata->base = regs_base;
-+	drvdata->irq = irq;
- 
--		nm2v = GET_NM2VCBMT((unsigned long) regs_base);
--		ncb = GET_NCB((unsigned long) regs_base);
-+	nm2v = GET_NM2VCBMT((unsigned long) regs_base);
-+	ncb = GET_NCB((unsigned long) regs_base);
- 
--		pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
-+	pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
- 			iommu_dev->name, regs_base, irq, ncb+1);
- 
--		platform_set_drvdata(pdev, drvdata);
--	} else
--		msm_iommu_root_dev = pdev;
-+	platform_set_drvdata(pdev, drvdata);
- 
--	return 0;
-+	if (iommu_clk)
-+		clk_disable(iommu_clk);
-+
-+	clk_disable(iommu_pclk);
- 
-+	return 0;
- fail_io:
- 	iounmap(regs_base);
- fail_mem:
- 	release_mem_region(r->start, len);
-+fail_clk:
-+	if (iommu_clk) {
-+		clk_disable(iommu_clk);
-+		clk_put(iommu_clk);
-+	}
-+fail_pclk:
-+	clk_disable(iommu_pclk);
-+fail_enable:
-+	clk_put(iommu_pclk);
- fail:
- 	kfree(drvdata);
- 	return ret;
-@@ -252,7 +270,10 @@ static int msm_iommu_remove(struct platform_device *pdev)
- 
- 	drv = platform_get_drvdata(pdev);
- 	if (drv) {
--		memset(drv, 0, sizeof(struct msm_iommu_drvdata));
-+		if (drv->clk)
-+			clk_put(drv->clk);
-+		clk_put(drv->pclk);
-+		memset(drv, 0, sizeof(*drv));
- 		kfree(drv);
- 		platform_set_drvdata(pdev, NULL);
- 	}
-@@ -264,7 +285,7 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 	struct msm_iommu_ctx_dev *c = pdev->dev.platform_data;
- 	struct msm_iommu_drvdata *drvdata;
- 	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
--	int i, ret = 0;
-+	int i, ret;
- 	if (!c || !pdev->dev.parent) {
- 		ret = -EINVAL;
- 		goto fail;
-@@ -288,6 +309,18 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&ctx_drvdata->attached_elm);
- 	platform_set_drvdata(pdev, ctx_drvdata);
- 
 +	ret = clk_enable(drvdata->pclk);
 +	if (ret)
 +		goto fail;
 +
 +	if (drvdata->clk) {
 +		ret = clk_enable(drvdata->clk);
-+		if (ret) {
++		if (ret)
 +			clk_disable(drvdata->pclk);
-+			goto fail;
-+		}
 +	}
++fail:
++	return ret;
++}
 +
- 	/* Program the M2V tables for this context */
- 	for (i = 0; i < MAX_NUM_MIDS; i++) {
- 		int mid = c->mids[i];
-@@ -310,8 +343,11 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
- 		SET_NSCFG(drvdata->base, mid, 3);
- 	}
- 
--	pr_info("context device %s with bank index %d\n", c->name, c->num);
++static void __disable_clocks(struct msm_iommu_drvdata *drvdata)
++{
 +	if (drvdata->clk)
 +		clk_disable(drvdata->clk);
 +	clk_disable(drvdata->pclk);
++}
++
+ static int __flush_iotlb(struct iommu_domain *domain)
+ {
+ 	struct msm_priv *priv = domain->priv;
+@@ -77,9 +102,17 @@ static int __flush_iotlb(struct iommu_domain *domain)
+ 			BUG();
  
-+	dev_info(&pdev->dev, "context %s using bank %d\n", c->name, c->num);
- 	return 0;
+ 		iommu_drvdata = dev_get_drvdata(ctx_drvdata->pdev->dev.parent);
++		if (!iommu_drvdata)
++			BUG();
++
++		ret = __enable_clocks(iommu_drvdata);
++		if (ret)
++			goto fail;
++
+ 		SET_CTX_TLBIALL(iommu_drvdata->base, ctx_drvdata->num, 0);
++		__disable_clocks(iommu_drvdata);
+ 	}
+-
++fail:
+ 	return ret;
+ }
+ 
+@@ -265,9 +298,14 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
+ 			goto fail;
+ 		}
+ 
++	ret = __enable_clocks(iommu_drvdata);
++	if (ret)
++		goto fail;
++
+ 	__program_context(iommu_drvdata->base, ctx_dev->num,
+ 			  __pa(priv->pgtable));
+ 
++	__disable_clocks(iommu_drvdata);
+ 	list_add(&(ctx_drvdata->attached_elm), &priv->list_attached);
+ 	ret = __flush_iotlb(domain);
+ 
+@@ -303,7 +341,12 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
+ 	if (ret)
+ 		goto fail;
+ 
++	ret = __enable_clocks(iommu_drvdata);
++	if (ret)
++		goto fail;
++
+ 	__reset_context(iommu_drvdata->base, ctx_dev->num);
++	__disable_clocks(iommu_drvdata);
+ 	list_del_init(&ctx_drvdata->attached_elm);
+ 
  fail:
- 	kfree(ctx_drvdata);
+@@ -532,6 +575,10 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	base = iommu_drvdata->base;
+ 	ctx = ctx_drvdata->num;
+ 
++	ret = __enable_clocks(iommu_drvdata);
++	if (ret)
++		goto fail;
++
+ 	/* Invalidate context TLB */
+ 	SET_CTX_TLBIALL(base, ctx, 0);
+ 	SET_V2PPR_VA(base, ctx, va >> V2Pxx_VA_SHIFT);
+@@ -547,6 +594,7 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	if (GET_FAULT(base, ctx))
+ 		ret = 0;
+ 
++	__disable_clocks(iommu_drvdata);
+ fail:
+ 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+ 	return ret;
+@@ -590,7 +638,7 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
+ 	struct msm_iommu_drvdata *drvdata = dev_id;
+ 	void __iomem *base;
+ 	unsigned int fsr;
+-	int ncb, i;
++	int ncb, i, ret;
+ 
+ 	spin_lock(&msm_iommu_lock);
+ 
+@@ -604,6 +652,10 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
+ 	pr_err("Unexpected IOMMU page fault!\n");
+ 	pr_err("base = %08x\n", (unsigned int) base);
+ 
++	ret = __enable_clocks(drvdata);
++	if (ret)
++		goto fail;
++
+ 	ncb = GET_NCB(base)+1;
+ 	for (i = 0; i < ncb; i++) {
+ 		fsr = GET_FSR(base, i);
+@@ -614,6 +666,7 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
+ 			SET_FSR(base, i, 0x4000000F);
+ 		}
+ 	}
++	__disable_clocks(drvdata);
+ fail:
+ 	spin_unlock(&msm_iommu_lock);
+ 	return 0;
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
