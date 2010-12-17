@@ -1,138 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab0LQDFw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 22:05:52 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56083 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab0LQDFv (ORCPT
+	id S1752536Ab0LQDGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 22:06:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33588 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab0LQDGU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 22:05:51 -0500
-Message-ID: <4D0AD35C.1040408@kernel.org>
-Date: Thu, 16 Dec 2010 19:05:00 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Thu, 16 Dec 2010 22:06:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=jM/7rZhQ6AwHvgr0RGWTzbuKtewtNm9PfS7NhorjfFhw4xJMUESJYgqereCtWagpTD
+         i3TlNSOpOqv4vrauW+eZrAKYLW7UVu2YCV5mKygDkp95/oNreuJL53n/AazLK48fJLSv
+         7n0YA9dz23fqKfXQsLZF3R2ftXQbzSG9Jz1wc=
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org> <4D0A6F66.1010006@zytor.com> <4D0AA116.4050707@kernel.org> <4D0AA592.3060805@kernel.org> <4D0AB14F.9050900@kernel.org> <4D0AC213.3050102@zytor.com>
-In-Reply-To: <4D0AC213.3050102@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1292531553.2708.89.camel@laptop>
+References: <20101216145602.899838254@chello.nl>
+	<20101216150920.968046926@chello.nl>
+	<20101216184229.GA15889@redhat.com>
+	<1292525893.2708.50.camel@laptop>
+	<1292526220.2708.55.camel@laptop>
+	<1292528874.2708.85.camel@laptop>
+	<1292531553.2708.89.camel@laptop>
+Date: Fri, 17 Dec 2010 11:06:19 +0800
+X-Google-Sender-Auth: akySgcNiJD0b6DJx4fRdps-R4iM
+Message-ID: <AANLkTimXyic51Qhe_WsfFBwAw10AKdB7e-Z2q0oLRYKP@mail.gmail.com>
+Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
+From: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 05:51 PM, H. Peter Anvin wrote:
-> Can whomever has a test case for this please test the attached test patch?
-> 
-it works ...
+On Fri, Dec 17, 2010 at 4:32 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> @@ -953,7 +955,7 @@ static inline struct rq *__task_rq_lock(
+>        for (;;) {
+>                rq = task_rq(p);
+>                raw_spin_lock(&rq->lock);
+> -               if (likely(rq == task_rq(p)))
+> +               if (likely(rq == task_rq(p)) && !task_is_waking(p))
+>                        return rq;
+>                raw_spin_unlock(&rq->lock);
+>        }
+> @@ -973,7 +975,7 @@ static struct rq *task_rq_lock(struct ta
+>                local_irq_save(*flags);
+>                rq = task_rq(p);
+>                raw_spin_lock(&rq->lock);
+> -               if (likely(rq == task_rq(p)))
+> +               if (likely(rq == task_rq(p)) && !task_is_waking(p))
+>                        return rq;
+>                raw_spin_unlock_irqrestore(&rq->lock, *flags);
+>        }
 
-with PAGE_OFFSET=0xc0000000
+Looks like nothing prevents ttwu() from changing task's CPU while
+some one else is holding task_rq_lock(). Is this OK?
 
-'m in purgatory
-bootconsole [uart0] enabled
-Kernel Layout:
-  .text: [0x2e000000-0x2e3f08ca]
-.rodata: [0x2e3f2000-0x2e5a2fff]
-  .data: [0x2e5a3000-0x2e5f6467]
-  .init: [0x2e5f7000-0x2e670fff]
-   .bss: [0x2e675000-0x2e76ffff]
-   .brk: [0x2e770000-0x2e954fff]
-    memblock_x86_reserve_range: [0x00001000-0x00001fff]    EX TRAMPOLINE
-    memblock_x86_reserve_range: [0x2e000000-0x2e76ffff]    TEXT DATA BSS
-    memblock_x86_reserve_range: [0x35c20000-0x35f49fff]          RAMDISK
-    memblock_x86_reserve_range: [0x0009c800-0x000fffff]  * BIOS reserved
-Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
-Linux version 2.6.37-rc5-tip+ (root@mpk12-3214-189-181) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #9 SMP Thu Dec 16 08:46:56 PST 2010
-KERNEL supported cpus:
-  Intel GenuineIntel
-  AMD AuthenticAMD
-  NSC Geode by NSC
-  Cyrix CyrixInstead
-  Centaur CentaurHauls
-  Transmeta GenuineTMx86
-  Transmeta TransmetaCPU
-  UMC UMC UMC UMC
-BIOS-provided physical RAM map:
- BIOS-e820: [0x00000000000100-0x0000000009c7ff] (usable)
- BIOS-e820: [0x0000000009c800-0x0000000009ffff] (reserved)
- BIOS-e820: [0x000000000e0000-0x000000000fffff] (reserved)
- BIOS-e820: [0x00000000100000-0x0000007ff9ffff] (usable)
- BIOS-e820: [0x0000007ffae000-0x0000007ffaffff] (usable)
- BIOS-e820: [0x0000007ffb0000-0x0000007ffbdfff] (ACPI data)
- BIOS-e820: [0x0000007ffbe000-0x0000007ffeffff] (ACPI NVS)
- BIOS-e820: [0x0000007fff0000-0x0000007fffffff] (reserved)
- BIOS-e820: [0x000000e0000000-0x000000efffffff] (reserved)
- BIOS-e820: [0x000000fec00000-0x000000fec00fff] (reserved)
- BIOS-e820: [0x000000fee00000-0x000000feefffff] (reserved)
- BIOS-e820: [0x000000ff700000-0x000000ffffffff] (reserved)
-last_pfn = 0x7ffb0 max_arch_pfn = 0x1000000
-NX (Execute Disable) protection: active
-user-defined physical RAM map:
- user: [0x00000000000000-0x0000000009ffff] (usable)
- user: [0x0000002e000000-0x00000035f59fff] (usable)
- user: [0x0000007ffb0000-0x0000007ffeffff] (ACPI data)
-DMI present.
-_brk_end: ee8e6000, __brk_limit: ee955000
-_brk_end: ee8e601c, __brk_limit: ee955000
-_brk_end: ee8e6024, __brk_limit: ee955000
-_brk_end: ee8e6030, __brk_limit: ee955000
-_brk_end: ee8e6048, __brk_limit: ee955000
-_brk_end: ee8e6058, __brk_limit: ee955000
-_brk_end: ee8e6060, __brk_limit: ee955000
-_brk_end: ee8e607c, __brk_limit: ee955000
-_brk_end: ee8e60a4, __brk_limit: ee955000
-_brk_end: ee8e60bc, __brk_limit: ee955000
-_brk_end: ee8e60cc, __brk_limit: ee955000
-_brk_end: ee8e60e0, __brk_limit: ee955000
-_brk_end: ee8e6104, __brk_limit: ee955000
-_brk_end: ee8e6118, __brk_limit: ee955000
-_brk_end: ee8e6130, __brk_limit: ee955000
-_brk_end: ee8e6134, __brk_limit: ee955000
-_brk_end: ee8e6148, __brk_limit: ee955000
-_brk_end: ee8e6160, __brk_limit: ee955000
-_brk_end: ee8e618c, __brk_limit: ee955000
-_brk_end: ee8e61b8, __brk_limit: ee955000
-_brk_end: ee8e61e4, __brk_limit: ee955000
-_brk_end: ee8e6210, __brk_limit: ee955000
-_brk_end: ee8e6234, __brk_limit: ee955000
-_brk_end: ee8e6240, __brk_limit: ee955000
-_brk_end: ee8e6254, __brk_limit: ee955000
-_brk_end: ee8e6268, __brk_limit: ee955000
-DMI: Sun Fire X4240/Sun Fire X4240, BIOS 080014  10/15/2008
-e820 update range: [0x00000000000000-0x0000000000ffff] (usable) ==> (reserved)
-e820 remove range: [0x000000000a0000-0x000000000fffff] (usable)
-last_pfn = 0x35f5a max_arch_pfn = 0x1000000
-MTRR default type: uncachable
-MTRR fixed ranges enabled:
-  00000-9FFFF write-back
-  A0000-EFFFF uncachable
-  F0000-FFFFF write-protect
-MTRR variable ranges enabled:
-  0 base 000000000000 mask FFFF80000000 write-back
-  1 disabled
-  2 disabled
-  3 disabled
-  4 disabled
-  5 disabled
-  6 disabled
-  7 disabled
-x86 PAT enabled: cpu 0, old 0x7010600070106, new 0x7010600070106
-Scan SMP from c0000000 for 1024 bytes.
-Scan SMP from c009fc00 for 1024 bytes.
-Scan SMP from c00f0000 for 65536 bytes.
-found SMP MP-table at [c00ff780] ff780
-    memblock_x86_reserve_range: [0x000ff780-0x000ff78f]   * MP-table mpf
-  mpc: fc4e0-fc6e4
-    memblock_x86_reserve_range: [0x000fc4e0-0x000fc6e3]   * MP-table mpc
-    memblock_x86_reserve_range: [0x2e770000-0x2e8e627b]              BRK
-
-
-
+Thanks
+Yan, Zheng
