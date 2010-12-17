@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab0LQPPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 10:15:37 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:43693 "HELO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754877Ab0LQPPg (ORCPT
+	id S1753641Ab0LQPRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 10:17:17 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37459 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab0LQPRQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 10:15:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <87ei9kwa9w.fsf@deeprootsystems.com>
-References: <cover.1290635422.git.bengardiner@nanometrics.ca>
-	<cover.1291931041.git.bengardiner@nanometrics.ca>
-	<87tyild2ms.fsf@deeprootsystems.com>
-	<AANLkTik78Lb0ejUiAvqbkToi=QAKSXXj_6JaBkPYw70Z@mail.gmail.com>
-	<AANLkTi=HiJGwtznGRzFDz-4ywsB3rYPW0yF5U_RUruzV@mail.gmail.com>
-	<8762ux49w7.fsf@deeprootsystems.com>
-	<AANLkTikUoKPG4o1+pt9r6V6H+6LrwZpTN8X9X+AkimiB@mail.gmail.com>
-	<87ei9kwa9w.fsf@deeprootsystems.com>
-Date: Fri, 17 Dec 2010 10:15:35 -0500
-Message-ID: <AANLkTi=5vORsc4vxP60rBm5mWr=Ndt47SBFeEL5Guk9c@mail.gmail.com>
-Subject: Re: [PATCH v6 0/5] da850-evm: add gpio-{keys,leds} for UI and BB expanders
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
-        Gabor Juhos <juhosg@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 17 Dec 2010 10:17:16 -0500
+Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
+From: Peter Zijlstra <peterz@infradead.org>
+To: Harald Gustafsson <hgu1972@gmail.com>
+Cc: Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Dario Faggioli <faggioli@gandalf.sssup.it>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Michael Trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>
+In-Reply-To: <AANLkTinGkf3a4_sw32b4UqAmpUU+i6fDmDUT8tXdw14D@mail.gmail.com>
+References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+	 <1292596194.2266.283.camel@twins> <1292596369.2266.286.camel@twins>
+	 <AANLkTinGkf3a4_sw32b4UqAmpUU+i6fDmDUT8tXdw14D@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 17 Dec 2010 16:16:47 +0100
+Message-ID: <1292599007.2266.290.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+On Fri, 2010-12-17 at 16:06 +0100, Harald Gustafsson wrote:
+> 2010/12/17 Peter Zijlstra <peterz@infradead.org>:
+> > This is all assuming lowering the frequency is sensible to begin with in
+> > the first place... but that's all part of the CPUfreq governor, it needs
+> > to find a way to lower energy usage while conforming to the system
+> > constraints.
+> 
+> Yes, I and you have already suggested the safe way to not lower it below
+> the total dl bandwidth. But for softer use cases it might be possible to
+> e.g. exclude threads with longer periods than cpufreq change periods in the
+> minimum frequency.
 
-On Tue, Dec 14, 2010 at 12:10 PM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> Just pushed an updated version, and this time, I actually build tested for
-> davinci_all_defconfig and da8xx_omapl_defconfig. :)
->
-> Sorry for the churn,
-
-I tested linux-davinci master; HEAD was
-c63d0f1df0284f2fcb28c0943b17848500d01515. Everything is working as
-expected.
-
-Thanks again for taking up this series along with the complications
-introduced by the cherry pick.
-
-Best Regards,
-Ben Gardiner
-
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+I was more hinting at the fact that CPUfreq is at best a controversial
+approach to power savings. I much prefer the whole race-to-idle
+approach, its much simpler.
