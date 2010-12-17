@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab0LQNCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 08:02:34 -0500
-Received: from mailgw9.se.ericsson.net ([193.180.251.57]:60851 "EHLO
-	mailgw9.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab0LQNCd (ORCPT
+	id S1754349Ab0LQNCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 08:02:37 -0500
+Received: from mailgw10.se.ericsson.net ([193.180.251.61]:50296 "EHLO
+	mailgw10.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab0LQNCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 08:02:33 -0500
-X-AuditID: c1b4fb39-b7cfbae000005c8e-04-4d0b5f67b429
+	Fri, 17 Dec 2010 08:02:35 -0500
+X-AuditID: c1b4fb3d-b7b89ae0000036a3-54-4d0b5f698a72
 From: Harald Gustafsson <harald.gustafsson@ericsson.com>
 To: Dario Faggioli <faggioli@gandalf.sssup.it>,
         Peter Zijlstra <peterz@infradead.org>,
@@ -20,10 +20,12 @@ CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Tommaso Cucinotta <cucinotta@sssup.it>,
         Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
         Harald Gustafsson <harald.gustafsson@ericsson.com>
-Subject: [PATCH 1/3] Added runqueue clock normalized with cpufreq
-Date: Fri, 17 Dec 2010 14:02:02 +0100
-Message-ID: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+Subject: [PATCH 2/3] cpufreq normalized runtime to enforce runtime cycles also at lower frequencies.
+Date: Fri, 17 Dec 2010 14:02:03 +0100
+Message-ID: <a20c9f9531de85fc32008275d3fb89dac34ceb66.1292578808.git.harald.gustafsson@ericsson.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
@@ -31,188 +33,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a request for comments on additions to sched deadline v3 patches.
-Deadline scheduler is the first scheduler (I think) we introduce in Linux that
-specifies the runtime in time and not only as a weight or a relation.
-I have introduced a normalized runtime clock dependent on the CPU frequency.
-This is used, in [PATCH 2/3], to calculate the deadline thread's runtime
-so that approximately the same number of cycles are giving to the thread
-independent of the CPU frequency. 
+This patch do the actual changes to sched deadline v3 to
+utilize the normalized runtime clock. Note that the 
+deadline/periods still use the regular runtime clock. 
 
-I suggest that this is important for users of hard reservation based schedulers
-that the intended amount of work can be accomplished independent of the CPU frequency.
-The usage of CPU frequency scaling is important on mobile devices and hence 
-the combination of deadline scheduler and cpufreq should be solved.
-
-This patch series applies on a backported sched deadline v3 to a 2.6.34 kernel.
-That backport can be made available if anyone is interested. It also runs on
-my dual core ARM system.
-
-So before I do this for the linux tip I would welcome a discussion about if this
-is a good idea and also suggestions on how to improve this.
-
-This first patch introduce the normalized runtime clock, this could be made
-lockless instead if requested.
-
-/Harald
-
-Change-Id: Ie0d9b8533cf4e5720eefd3af860d3a8577101907
+Change-Id: I75c88676e9e18a71d94d6c4e779b376a7ac0615f
 
 Signed-off-by: Harald Gustafsson <harald.gustafsson@ericsson.com>
 ---
- kernel/sched.c |  103 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 103 insertions(+), 0 deletions(-)
+ include/linux/sched.h |    6 +++
+ kernel/sched.c        |    2 +
+ kernel/sched_dl.c     |   82 +++++++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 84 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 89a158e..167771c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1301,6 +1301,12 @@ struct sched_dl_entity {
+ 	u64 deadline;		/* absolute deadline for this instance	*/
+ 	unsigned int flags;	/* specifying the scheduler behaviour   */
+ 
++        /*
++	 * CPU frequency normalized start time.
++	 * Put it inside DL since only one using it.
++	 */
++        u64 exec_start_norm;
++
+ 	/*
+ 	 * Some bool flags:
+ 	 *
 diff --git a/kernel/sched.c b/kernel/sched.c
-index c075664..2816371 100644
+index 2816371..ddb18d2 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -72,6 +72,7 @@
- #include <linux/ctype.h>
- #include <linux/ftrace.h>
- #include <linux/slab.h>
-+#include <linux/cpufreq.h>
- #include <linux/cgroup_cpufreq.h>
+@@ -2671,6 +2671,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->dl.dl_deadline = p->dl.deadline = 0;
+ 	p->dl.dl_period = 0;
+ 	p->dl.flags = 0;
++	p->dl.exec_start_norm = 0;
  
- #include <asm/tlb.h>
-@@ -596,6 +597,16 @@ struct rq {
+ 	INIT_LIST_HEAD(&p->rt.run_list);
+ 	p->se.on_rq = 0;
+@@ -8475,6 +8476,7 @@ void normalize_rt_tasks(void)
+ 			continue;
  
- 	u64 clock;
- 
-+        /* Need to keep track of clock cycles since
-+	 * dl need to work with cpufreq, is derived based
-+	 * on rq clock and cpufreq.
-+	 */
-+        u64 clock_norm;
-+        u64 delta_clock_norm;
-+        u64 delta_clock;
-+        /* norm factor is in the Q31 format */
-+        u64 norm_factor; 
-+
- 	atomic_t nr_iowait;
- 
- #ifdef CONFIG_SMP
-@@ -697,7 +708,17 @@ static inline int cpu_of(struct rq *rq)
- 
- inline void update_rq_clock(struct rq *rq)
- {
-+        u64 delta_clock = rq->delta_clock;
- 	rq->clock = sched_clock_cpu(cpu_of(rq));
-+#ifndef CONFIG_CPU_FREQ
-+	rq->clock_norm = rq->clock;
-+#else
-+	rq->delta_clock = rq->clock;
-+	rq->clock_norm += rq->delta_clock_norm;
-+	rq->delta_clock_norm = 0;
-+	if(delta_clock !=0)
-+	    rq->clock_norm += ((rq->delta_clock - delta_clock) * rq->norm_factor) >> 32;
-+#endif /*CONFIG_CPU_FREQ*/
+ 		p->se.exec_start		= 0;
++		p->dl.exec_start_norm		= 0;
+ #ifdef CONFIG_SCHEDSTATS
+ 		p->se.wait_start		= 0;
+ 		p->se.sleep_start		= 0;
+diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
+index 5aa5a52..049c001 100644
+--- a/kernel/sched_dl.c
++++ b/kernel/sched_dl.c
+@@ -333,6 +333,40 @@ static bool dl_entity_overflow(struct sched_dl_entity *dl_se,
  }
  
  /*
-@@ -8115,6 +8136,79 @@ static void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
- }
- #endif
- 
-+#ifdef CONFIG_CPU_FREQ
-+static int rq_clock_cpufreq_notify(struct notifier_block *nb, unsigned long val,
-+				   void *data)
++ * A cpu freq normalized overflow check, see dl_entity_overflow
++ * function for details. Check against current cpu frequency.
++ * For this to hold, we must check if:
++ *   runtime / (norm_factor * (deadline - t)) < dl_runtime / dl_deadline .
++ */
++static bool dl_entity_overflow_norm(struct sched_dl_entity *dl_se,
++				    struct sched_dl_entity *pi_se, u64 t,
++				    struct rq *rq)
 +{
-+	struct cpufreq_policy *policy;
-+	struct cpufreq_freqs *freq = data;
-+	struct rq *rq;
-+	u64 delta_clock, temp;
-+	int cpu=freq->cpu;
-+	unsigned long flags;
++	u64 left, right;
 +
-+	printk(KERN_INFO "rq_clock_cpufreq_notify called for cpu %i\n", cpu);
++	/*
++	 * left and right are the two sides of the equation above,
++	 * after a bit of shuffling to use multiplications instead
++	 * of divisions.
++	 *
++	 * Note that none of the time values involved in the two
++	 * multiplications are absolute: dl_deadline and dl_runtime
++	 * are the relative deadline and the maximum runtime of each
++	 * instance, runtime is the runtime left for the last instance
++	 * and (deadline - t), since t is rq->clock, is the time left
++	 * to the (absolute) deadline. Therefore, overflowing the u64
++	 * type is very unlikely to occur in both cases.
++	 * Likewise the runtime multiplied with the norm factor is
++	 * for the same reasons unlikely to overflow u64 and since
++	 * norm factor is max 1<<32.
++	 */
++	left = pi_se->dl_deadline * dl_se->runtime;
++	right = (dl_se->deadline - t) * ((pi_se->dl_runtime * rq->norm_factor) >> 32);
 +
-+	if (val != CPUFREQ_POSTCHANGE)
-+		return 0;
-+
-+	if (freq->old == freq->new)
-+	        return 0;
-+
-+	/* Update cpufreq_index with current speed */
-+	policy = cpufreq_cpu_get(cpu);
-+
-+	/* calculate the norm factor in Q31 base */
-+	temp = (((u64) freq->new) << 32);
-+	temp = div_u64(temp, policy->cpuinfo.max_freq);
-+
-+	if(policy->shared_type == CPUFREQ_SHARED_TYPE_ALL) {
-+	    for_each_cpu(cpu, policy->cpus) {
-+		rq = cpu_rq(cpu);
-+		raw_spin_lock_irqsave(&rq->lock, flags);
-+		delta_clock = rq->delta_clock;
-+		rq->delta_clock = sched_clock_cpu(freq->cpu);
-+		if(delta_clock != 0)
-+		    rq->delta_clock_norm += ((rq->delta_clock - delta_clock) * rq->norm_factor) >> 32; 
-+		rq->norm_factor = temp;
-+		raw_spin_unlock_irqrestore(&rq->lock, flags);
-+		printk(KERN_INFO "cpufreq transition cpu:%i, norm:%llu, cycles:%llu\n", 
-+		       freq->cpu, rq->norm_factor, rq->delta_clock_norm);
-+	    }
-+	}
-+	else {
-+	    raw_spin_lock_irqsave(&rq->lock, flags);
-+	    rq = cpu_rq(cpu);
-+	    delta_clock = rq->delta_clock;
-+	    rq->delta_clock = sched_clock_cpu(freq->cpu);
-+	    if(delta_clock != 0)
-+		rq->delta_clock_norm += ((rq->delta_clock - delta_clock) * rq->norm_factor) >> 32; 
-+	    rq->norm_factor = temp;
-+	    raw_spin_unlock_irqrestore(&rq->lock, flags);
-+	    printk(KERN_INFO "cpufreq transition cpu:%i, norm:%llu, cycles:%llu\n", 
-+		   freq->cpu, rq->norm_factor, rq->delta_clock_norm);
-+	}
-+
-+	cpufreq_cpu_put(policy);
-+	return 0;
++	return dl_time_before(right, left);
 +}
 +
-+static struct notifier_block cpufreq_notifier = {
-+	.notifier_call = rq_clock_cpufreq_notify,
-+};
-+
-+static int __init init_rq_clock_cpufreq(void) 
-+{
-+        int ret=cpufreq_register_notifier(&cpufreq_notifier,
-+					  CPUFREQ_TRANSITION_NOTIFIER);
-+
-+	//FIXME should set norm_factor etc here as well if not max speed
-+	printk(KERN_INFO "init_rq_clock_cpufreq called ret:%i\n", ret);
-+	return ret;
-+}
-+late_initcall(init_rq_clock_cpufreq);
-+#endif /*CONFIG_CPU_FREQ*/
-+
- void __init sched_init(void)
- {
- 	int i, j;
-@@ -8243,6 +8337,11 @@ void __init sched_init(void)
- #endif
- 		init_rq_hrtick(rq);
- 		atomic_set(&rq->nr_iowait, 0);
-+
-+		rq->norm_factor = 1ULL <<32;
-+		rq->clock_norm = 0;
-+		rq->delta_clock_norm = 0;
-+		rq->delta_clock = 0;
++/*
+  * When a -deadline entity is queued back on the runqueue, its runtime and
+  * deadline might need updating.
+  *
+@@ -358,12 +392,16 @@ static void update_dl_entity(struct sched_dl_entity *dl_se,
  	}
  
- 	set_load_weight(&init_task);
-@@ -8255,6 +8354,10 @@ void __init sched_init(void)
- 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
+ 	if (dl_time_before(dl_se->deadline, rq->clock) ||
+-	    dl_entity_overflow(dl_se, pi_se, rq->clock)) {
++	    dl_entity_overflow_norm(dl_se, pi_se, rq->clock, rq)) {
+ 		dl_se->deadline = rq->clock + pi_se->dl_deadline;
+ 		dl_se->runtime = pi_se->dl_runtime;
+ 		overflow = 1;
+ 	}
+ #ifdef CONFIG_SCHEDSTATS
++	if(dl_entity_overflow(dl_se, pi_se, rq->clock))
++	    overflow |= 2;
++	if(dl_entity_overflow_norm(dl_se, pi_se, rq->clock, rq))
++	    overflow |= 4;
+ 	trace_sched_stat_updt_dl(dl_task_of(dl_se), rq->clock, overflow);
  #endif
- 
-+#ifdef CONFIG_CPU_FREQ
-+	init_rq_clock_cpufreq();
-+#endif /*CONFIG_CPU_FREQ*/
-+
- 	/*
- 	 * The boot idle thread does lazy MMU switching as well:
+ }
+@@ -549,10 +587,15 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+ 	 * executing, then we have already used some of the runtime of
+ 	 * the next instance. Thus, if we do not account that, we are
+ 	 * stealing bandwidth from the system at each deadline miss!
++	 *
++	 * Use normalization of deadline and clock to compensate the
++	 * runtime. Here assuming that the whole exceeded runtime is
++	 * done with current cpu frequency.
  	 */
+ 	if (dmiss) {
+ 		dl_se->runtime = rorun ? dl_se->runtime : 0;
+-		dl_se->runtime -= rq->clock - dl_se->deadline;
++		dl_se->runtime -= ((rq->clock - dl_se->deadline)
++				   * rq->norm_factor) >> 32;
+ 	}
+ 
+ 	return 1;
+@@ -576,31 +619,46 @@ static void update_curr_dl(struct rq *rq)
+ {
+ 	struct task_struct *curr = rq->curr;
+ 	struct sched_dl_entity *dl_se = &curr->dl;
+-	u64 delta_exec;
++	u64 delta_exec, delta_exec_norm;
+ 
+ 	if (!dl_task(curr) || !on_dl_rq(dl_se))
+ 		return;
+ 
++	/*
++	 * Maintaine the unnormalized execution statistics
++	 * to keep user space happy.
++	 *
++	 * Do cpu frequency normalized runtime handling for
++	 * the actual DL scheduling to enforce the CPU
++	 * max frequency runtime cycles even at lower freq.
++	 */
++
+ 	delta_exec = rq->clock - curr->se.exec_start;
+ 	if (unlikely((s64)delta_exec < 0))
+ 		delta_exec = 0;
+ 
++	delta_exec_norm = rq->clock_norm - curr->dl.exec_start_norm;
++	if (unlikely((s64)delta_exec_norm < 0))
++		delta_exec_norm = 0;
++
+ 	schedstat_set(curr->se.exec_max,
+ 		      max(curr->se.exec_max, delta_exec));
+ 
+ 	curr->se.sum_exec_runtime += delta_exec;
+ 	schedstat_add(&rq->dl, exec_clock, delta_exec);
+ 	account_group_exec_runtime(curr, delta_exec);
+-	trace_sched_stat_runtime_dl(curr, rq->clock, delta_exec);
++	trace_sched_stat_runtime_dl(curr, rq->clock, delta_exec_norm);
+ 
+ 	curr->se.exec_start = rq->clock;
++	curr->dl.exec_start_norm = rq->clock_norm;
+ 	cpuacct_charge(curr, delta_exec);
+ 	cg_cpufreq_charge(curr, delta_exec, curr->se.exec_start);
+ 
+ 	sched_dl_avg_update(rq, delta_exec);
+ 
+ 	dl_se->stats.tot_rtime += delta_exec;
+-	dl_se->runtime -= delta_exec;
++
++	dl_se->runtime -= delta_exec_norm;
+ 	if (dl_runtime_exceeded(rq, dl_se)) {
+ 		__dequeue_task_dl(rq, curr, 0);
+ 		if (likely(start_dl_timer(dl_se, !!curr->pi_top_task)))
+@@ -865,10 +923,12 @@ static long wait_interval_dl(struct task_struct *p, struct timespec *rqtp,
+ 	 * instant. This involves a division (to calculate the reverse of the
+ 	 * task's bandwidth), but it is worth to notice that it is quite
+ 	 * unlikely that we get into here very often.
++	 * Use normalized overflow check since used for setting the timer.
+ 	 */
++
+ 	wakeup = timespec_to_ns(rqtp);
+ 	if (dl_time_before(wakeup, dl_se->deadline) &&
+-	    !dl_entity_overflow(dl_se, dl_se, wakeup)) {
++	    !dl_entity_overflow_norm(dl_se, dl_se, wakeup, rq)) {
+ 		u64 ibw = (u64)dl_se->runtime * dl_se->dl_period;
+ 
+ 		ibw = div_u64(ibw, dl_se->dl_runtime);
+@@ -989,6 +1049,13 @@ static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p,
+ #ifdef CONFIG_SCHED_HRTICK
+ static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
+ {
++        /*
++	 * Don't use normalized runtime to calculate the
++	 * delta, since the clock frequency might increase
++	 * and we then misses our needed tick time.
++	 * Worst case we will be ticked an extra time.
++	 * We also don't need to do a u64 division.
++	 */
+ 	s64 delta = p->dl.dl_runtime - p->dl.runtime;
+ 
+ 	if (delta > 10000)
+@@ -1037,6 +1104,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq)
+ 
+ 	p = dl_task_of(dl_se);
+ 	p->se.exec_start = rq->clock;
++	p->dl.exec_start_norm = rq->clock_norm;
+ 
+ 	/* Running task will never be pushed. */
+ 	if (p)
+@@ -1061,6 +1129,7 @@ static void put_prev_task_dl(struct rq *rq, struct task_struct *p)
+ 
+ 	update_curr_dl(rq);
+ 	p->se.exec_start = 0;
++	p->dl.exec_start_norm = 0;
+ 
+ 	if (on_dl_rq(&p->dl) && p->dl.nr_cpus_allowed > 1)
+ 		enqueue_pushable_dl_task(rq, p);
+@@ -1102,6 +1171,7 @@ static void set_curr_task_dl(struct rq *rq)
+ 	struct task_struct *p = rq->curr;
+ 
+ 	p->se.exec_start = rq->clock;
++	p->dl.exec_start_norm = rq->clock_norm;
+ 
+ 	/* You can't push away the running task */
+ 	dequeue_pushable_dl_task(rq, p);
 -- 
 1.7.0.4
 
