@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0LQKKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 05:10:50 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37569 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab0LQKKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 05:10:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=LFeONvwTffV7r8l7Do3+qt5cVYUHMcSYk5AH53tnCvgglrXcAiusdwV1z5PEnDtma4
-         j63VKnAsCJMTHREc1argN8X7SvrNSrYJynC7NPRDJ6hHCZ90LARGvmMOSIYHuMA8jHJf
-         JV/iixHCS+Qa8Zn7c73dNoF7xKVsvzW8/YybM=
-Date: Fri, 17 Dec 2010 18:10:39 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Am??rico Wang <xiyou.wangcong@gmail.com>,
-        Mariusz Kozlowski <mk@lab.zgora.pl>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rculist: fix borked __list_for_each_rcu() macro
-Message-ID: <20101217101039.GC8413@cr0.nay.redhat.com>
-References: <1292451072-5095-1-git-send-email-mk@lab.zgora.pl>
- <20101215232005.GB6595@linux.vnet.ibm.com>
- <20101216060236.GB4826@mako-laptop>
- <20101216073840.GA5313@cr0.nay.redhat.com>
- <20101216155054.GB2203@linux.vnet.ibm.com>
+	id S1753510Ab0LQKQi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 05:16:38 -0500
+Received: from www.tglx.de ([62.245.132.106]:40653 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238Ab0LQKQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 05:16:36 -0500
+Date: Fri, 17 Dec 2010 11:16:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg KH <greg@kroah.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (tty
+ tree related)
+In-Reply-To: <20101217070431.GA25192@kroah.com>
+Message-ID: <alpine.LFD.2.00.1012171107310.12146@localhost6.localdomain6>
+References: <20101217171120.295b0c0c.sfr@canb.auug.org.au> <20101217070431.GA25192@kroah.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101216155054.GB2203@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 07:50:54AM -0800, Paul E. McKenney wrote:
->On Thu, Dec 16, 2010 at 03:38:40PM +0800, Américo Wang wrote:
->> On Thu, Dec 16, 2010 at 07:02:36AM +0100, Mariusz Kozlowski wrote:
->> >On Wed, Dec 15, 2010 at 03:20:05PM -0800, Paul E. McKenney wrote:
->> >> On Wed, Dec 15, 2010 at 11:11:12PM +0100, Mariusz Kozlowski wrote:
->> >> > This restores parentheses blance.
->> >> 
->> >> Good catch, queued!!!
->> >> 
->> >> This does not actually appear to be in use anywhere in the kernel any
->> >> more, so I queued this for 2.6.38 rather than in the 2.6.37 urgent queue.
->> >> So, just out of curiosity, how did you find this one?
->> >
->> >Some years ago I wrote a dumb script that walks trees of () and {}.
->> >It catches unbalanced trees. It's dumb enough to fail with #ifdef etc,
->> >but most of the time it does its job. It reaches unreachable code
->> >and unused one too.
->> 
->> gcc will complain about this, however, in this case, it is used.
->
->Hello, Américo!
->
->I did a "git grep -l __list_for_each_rcu" and its output was only:
->
->	include/linux/rculist.h:#define __list_for_each_rcu(pos, head) \
->
->This was in Linus's tree.  And gcc certainly would have failed if
->this macro had been used in any recent build.
->
+On Thu, 16 Dec 2010, Greg KH wrote:
+> On Fri, Dec 17, 2010 at 05:11:20PM +1100, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> > 
+> > drivers/serial/apbuart.c:596: error: conflicting types for 'grlib_apbuart_configure'
+> > drivers/serial/apbuart.c:523: note: previous declaration of 'grlib_apbuart_configure' was here
+> > 
+> > Caused by commit 35c64e5d13c3d7d8c4ad061ad5e20498b9160c24 ("drivers:
+> > serial: apbuart: Handle OF failures gracefully").  This build has
+> > CONFIG_SERIAL_GRLIB_GAISLER_APBUART_CONSOLE set ...
+> > 
+> > I have reverted this commit for today.
+> 
+> Ugh.  Thomas, care to send me a patch?
 
-Yeah, my bad, actually I meant to say "unused"... :-(
-Sorry for confusing!
+Sorry, I missed the console part. Patch below.
 
-My point is that gcc should do this basic lexical check, no need
-to invent another tool. :)
+Thanks,
 
-Thanks.
+	tglx
+---
+Subject: drivers: serial: apbuart: Fixup apbuart_console_init()
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 17 Dec 2010 11:09:49 +0100
+
+commit 35c64e5d (drivers: serial: apbuart: Handle OF failures
+gracefully) missed that the modified grlib_apbuart_configure()
+function is called from apbuart_console_init() as well.
+
+Fix the fallout.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/serial/apbuart.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux-2.6-tip/drivers/serial/apbuart.c
+===================================================================
+--- linux-2.6-tip.orig/drivers/serial/apbuart.c
++++ linux-2.6-tip/drivers/serial/apbuart.c
+@@ -520,11 +520,12 @@ static struct console grlib_apbuart_cons
+ };
+ 
+ 
+-static void grlib_apbuart_configure(void);
++static int grlib_apbuart_configure(void);
+ 
+ static int __init apbuart_console_init(void)
+ {
+-	grlib_apbuart_configure();
++	if (grlib_apbuart_configure())
++		return -ENODEV;
+ 	register_console(&grlib_apbuart_console);
+ 	return 0;
+ }
+
+
