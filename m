@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab0LQL0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:26:40 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:43242 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753912Ab0LQL0h (ORCPT
+	id S1754004Ab0LQL07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:26:59 -0500
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:43297 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753225Ab0LQL05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:26:37 -0500
+	Fri, 17 Dec 2010 06:26:57 -0500
 From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 To: Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
@@ -17,9 +17,9 @@ Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
         Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-Subject: [PATCH 04/11] mfd: Add support for STLC2690 controller
-Date: Fri, 17 Dec 2010 12:24:11 +0100
-Message-ID: <1292585051-28442-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH 08/11] Bluetooth: Add support for CG2900 UART
+Date: Fri, 17 Dec 2010 12:25:17 +0100
+Message-ID: <1292585117-28584-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,58 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the ST-Ericsson STLC2690
-framework. The STLC2690 is a chip supporting Bluetooth and FM radio.
-Only Bluetooth however supports the H:4 channels where first byte
-identifies current channel.
-This patch adds support for allocating H:4 channels for both
-Kernel and User space (using char devs) using MFD framework.
+This patch adds support for the ST-Ericsson CG2900
+UART transport. The CG2900 is chip supporting GPS, Bluetooth,
+and FM radio.
+This file registers towards the N_HCI line discipline driver
+and when a transport is opened, i.e. a UART is opened, it
+registers as a transport towards the CG2900 framework.
+This driver also handles baud rate changing and power control
+towards the CG2900 chip.
 
 Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 ---
- drivers/mfd/Kconfig                |    8 +
- drivers/mfd/cg2900/Makefile        |    1 +
- drivers/mfd/cg2900/stlc2690_chip.c | 1673 ++++++++++++++++++++++++++++++++++++
- drivers/mfd/cg2900/stlc2690_chip.h |   47 +
- 4 files changed, 1729 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/cg2900/stlc2690_chip.c
- create mode 100644 drivers/mfd/cg2900/stlc2690_chip.h
+ drivers/bluetooth/Makefile      |    1 +
+ drivers/bluetooth/cg2900_uart.c | 1849 +++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig             |    9 +
+ 3 files changed, 1859 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/bluetooth/cg2900_uart.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 1328b5d..931cb58 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -282,6 +282,14 @@ config MFD_CG2900_CHIP
- 	  H:4 interface where first byte determines channel used.
- 	  CG2900 support Bluetooth, FM radio, and GPS.
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..5ec417d 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
+ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
+ obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
+ obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
++obj-$(CONFIG_MFD_CG2900_UART)   += cg2900_uart.o
  
-+config MFD_STLC2690_CHIP
-+	tristate "Support STLC2690 Connectivity controller"
-+	depends on MFD_CG2900
-+	help
-+	  Support for ST-Ericsson STLC2690 Connectivity Controller.
-+	  STLC2690 support Bluetooth and FM radio, however FM is not supported
-+	  over H:4 interface.
-+
- config PMIC_DA903X
- 	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
- 	depends on I2C=y
-diff --git a/drivers/mfd/cg2900/Makefile b/drivers/mfd/cg2900/Makefile
-index 9a5e228..c4f4fc8 100644
---- a/drivers/mfd/cg2900/Makefile
-+++ b/drivers/mfd/cg2900/Makefile
-@@ -8,4 +8,5 @@ export-objs			:= cg2900_core.o cg2900_lib.o
- obj-$(CONFIG_MFD_CG2900)	+= cg2900_char_devices.o
- 
- obj-$(CONFIG_MFD_CG2900_CHIP)	+= cg2900_chip.o
-+obj-$(CONFIG_MFD_STLC2690_CHIP)	+= stlc2690_chip.o
- 
-diff --git a/drivers/mfd/cg2900/stlc2690_chip.c b/drivers/mfd/cg2900/stlc2690_chip.c
+ btmrvl-y			:= btmrvl_main.o
+ btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
+diff --git a/drivers/bluetooth/cg2900_uart.c b/drivers/bluetooth/cg2900_uart.c
 new file mode 100644
-index 0000000..3507217
+index 0000000..5e29d2d
 --- /dev/null
-+++ b/drivers/mfd/cg2900/stlc2690_chip.c
-@@ -0,0 +1,1673 @@
++++ b/drivers/bluetooth/cg2900_uart.c
+@@ -0,0 +1,1849 @@
 +/*
 + * Copyright (C) ST-Ericsson SA 2010
 + * Authors:
@@ -87,1724 +70,1867 @@ index 0000000..3507217
 + * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
 + * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
 + * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
++ * Lukasz Rymanowski (lukasz.rymanowski@tieto.com) for ST-Ericsson.
 + * License terms:  GNU General Public License (GPL), version 2
 + *
-+ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson STLC2690 BT/FM controller.
++ * Linux Bluetooth UART Driver for ST-Ericsson CG2900 connectivity controller.
 + */
-+#define NAME					"stlc2690_chip"
-+#define pr_fmt(fmt)				NAME ": " fmt "\n"
++#define NAME			"cg2900_uart"
++#define pr_fmt(fmt)		NAME ": " fmt "\n"
 +
 +#include <asm/byteorder.h>
 +#include <linux/device.h>
-+#include <linux/firmware.h>
-+#include <linux/gfp.h>
-+#include <linux/init.h>
-+#include <linux/jiffies.h>
-+#include <linux/kernel.h>
-+#include <linux/limits.h>
-+#include <linux/list.h>
++#include <linux/gpio.h>
++#include <linux/irq.h>
 +#include <linux/module.h>
 +#include <linux/mutex.h>
 +#include <linux/platform_device.h>
++#include <linux/pm.h>
++#include <linux/poll.h>
 +#include <linux/sched.h>
 +#include <linux/skbuff.h>
-+#include <linux/stat.h>
-+#include <linux/time.h>
 +#include <linux/timer.h>
++#include <linux/regulator/consumer.h>
++#include <linux/tty.h>
++#include <linux/tty_ldisc.h>
 +#include <linux/types.h>
-+#include <linux/wait.h>
 +#include <linux/workqueue.h>
 +#include <linux/mfd/cg2900.h>
-+#include <linux/mfd/core.h>
 +#include <net/bluetooth/bluetooth.h>
 +#include <net/bluetooth/hci.h>
 +
-+#include "cg2900_core.h"
-+#include "cg2900_lib.h"
-+#include "stlc2690_chip.h"
++#include "hci_uart.h"
 +
-+#define MAIN_DEV				(main_info->dev)
-+#define BOOT_DEV				(info->user_in_charge->dev)
++#define MAIN_DEV		(uart_info->dev)
 +
-+#define WQ_NAME					"stlc2690_chip_wq"
-+#define PATCH_INFO_FILE				"cg2900_patch_info.fw"
-+#define FACTORY_SETTINGS_INFO_FILE		"cg2900_settings_info.fw"
-+
-+#define LINE_TOGGLE_DETECT_TIMEOUT		50	/* ms */
-+#define CHIP_READY_TIMEOUT			100	/* ms */
-+#define CHIP_STARTUP_TIMEOUT			15000	/* ms */
-+#define CHIP_SHUTDOWN_TIMEOUT			15000	/* ms */
-+
-+/** CHANNEL_BT_CMD - Bluetooth HCI H:4 channel
-+ * for Bluetooth commands in the ST-Ericsson connectivity controller.
-+ */
-+#define CHANNEL_BT_CMD				0x01
-+
-+/** CHANNEL_BT_ACL - Bluetooth HCI H:4 channel
-+ * for Bluetooth ACL data in the ST-Ericsson connectivity controller.
-+ */
-+#define CHANNEL_BT_ACL				0x02
-+
-+/** CHANNEL_BT_EVT - Bluetooth HCI H:4 channel
-+ * for Bluetooth events in the ST-Ericsson connectivity controller.
-+ */
-+#define CHANNEL_BT_EVT				0x04
-+
-+/** CHANNEL_HCI_LOGGER - Bluetooth HCI H:4 channel
-+ * for logging all transmitted H4 packets (on all channels).
-+ */
-+#define CHANNEL_HCI_LOGGER			0xFA
-+
-+/** CHANNEL_CORE - Bluetooth HCI H:4 channel
-+ * for user space control of the ST-Ericsson connectivity controller.
-+ */
-+#define CHANNEL_CORE				0xFD
++/* Workqueues' names */
++#define UART_WQ_NAME		"cg2900_uart_wq"
++#define UART_NAME		"cg2900_uart"
 +
 +/*
-+ * For the char dev names we keep the same names in order to be able to reuse
-+ * the users and to keep a consistent interface.
++ * A BT command complete event without any parameters is the defined size plus
++ * 1 byte extra for the status field which is always present in a
++ * command complete event.
 + */
-+
-+/** STLC2690_BT_CMD - Bluetooth HCI H4 channel for Bluetooth commands.
-+ */
-+#define STLC2690_BT_CMD				"cg2900_bt_cmd"
-+
-+/** STLC2690_BT_ACL - Bluetooth HCI H4 channel for Bluetooth ACL data.
-+ */
-+#define STLC2690_BT_ACL				"cg2900_bt_acl"
-+
-+/** STLC2690_BT_EVT - Bluetooth HCI H4 channel for Bluetooth events.
-+ */
-+#define STLC2690_BT_EVT				"cg2900_bt_evt"
-+
-+/** STLC2690_HCI_LOGGER - BT channel for logging all transmitted H4 packets.
-+ * Data read is copy of all data transferred on the other channels.
-+ * Only write allowed is configuration of the HCI Logger.
-+ */
-+#define STLC2690_HCI_LOGGER			"cg2900_hci_logger"
-+
-+/** STLC2690_CORE- Channel for keeping ST-Ericsson STLC2690 enabled.
-+ * Opening this channel forces the chip to stay powered.
-+ * No data can be written to or read from this channel.
-+ */
-+#define STLC2690_CORE				"cg2900_core"
-+
-+/**
-+ * enum main_state - Main-state for STLC2690 driver.
-+ * @STLC2690_INIT:	STLC2690 initializing.
-+ * @STLC2690_IDLE:	No user registered to STLC2690 driver.
-+ * @STLC2690_BOOTING:	STLC2690 booting after first user is registered.
-+ * @STLC2690_CLOSING:	STLC2690 closing after last user has deregistered.
-+ * @STLC2690_RESETING:	STLC2690 reset requested.
-+ * @STLC2690_ACTIVE:	STLC2690 up and running with at least one user.
-+ */
-+enum main_state {
-+	STLC2690_INIT,
-+	STLC2690_IDLE,
-+	STLC2690_BOOTING,
-+	STLC2690_CLOSING,
-+	STLC2690_RESETING,
-+	STLC2690_ACTIVE
-+};
-+
-+/**
-+ * enum boot_state - BOOT-state for STLC2690 chip driver.
-+ * @BOOT_RESET:				HCI Reset has been sent.
-+ * @BOOT_SEND_BD_ADDRESS:		VS Store In FS command with BD address
-+ *					has been sent.
-+ * @BOOT_GET_FILES_TO_LOAD:		STLC2690 chip driver is retrieving file
-+ *					to load.
-+ * @BOOT_DOWNLOAD_PATCH:		STLC2690 chip driver is downloading
-+ *					patches.
-+ * @BOOT_ACTIVATE_PATCHES_AND_SETTINGS:	STLC2690 chip driver is activating
-+ *					patches and settings.
-+ * @BOOT_READY:				STLC2690 chip driver boot is ready.
-+ * @BOOT_FAILED:			STLC2690 chip driver boot failed.
-+ */
-+enum boot_state {
-+	BOOT_RESET,
-+	BOOT_SEND_BD_ADDRESS,
-+	BOOT_GET_FILES_TO_LOAD,
-+	BOOT_DOWNLOAD_PATCH,
-+	BOOT_ACTIVATE_PATCHES_AND_SETTINGS,
-+	BOOT_READY,
-+	BOOT_FAILED
-+};
-+
-+/**
-+ * enum file_load_state - BOOT_FILE_LOAD-state for STLC2690 chip driver.
-+ * @FILE_LOAD_GET_PATCH:		Loading patches.
-+ * @FILE_LOAD_GET_STATIC_SETTINGS:	Loading static settings.
-+ * @FILE_LOAD_NO_MORE_FILES:		No more files to load.
-+ * @FILE_LOAD_FAILED:			File loading failed.
-+ */
-+enum file_load_state {
-+	FILE_LOAD_GET_PATCH,
-+	FILE_LOAD_GET_STATIC_SETTINGS,
-+	FILE_LOAD_NO_MORE_FILES,
-+	FILE_LOAD_FAILED
-+};
-+
-+/**
-+ * enum download_state - BOOT_DOWNLOAD state.
-+ * @DOWNLOAD_PENDING:	Download in progress.
-+ * @DOWNLOAD_SUCCESS:	Download successfully finished.
-+ * @DOWNLOAD_FAILED:	Downloading failed.
-+ */
-+enum download_state {
-+	DOWNLOAD_PENDING,
-+	DOWNLOAD_SUCCESS,
-+	DOWNLOAD_FAILED
-+};
-+
-+
-+/**
-+ * struct stlc2690_channel_item - List object for channel.
-+ * @list:	list_head struct.
-+ * @user:	User for this channel.
-+ */
-+struct stlc2690_channel_item {
-+	struct list_head	list;
-+	struct cg2900_user_data	*user;
-+};
-+
-+/**
-+ * struct stlc2690_skb_data - Structure for storing private data in an sk_buffer.
-+ * @dev:	STLC2690 device for this sk_buffer.
-+ */
-+struct stlc2690_skb_data {
-+	struct cg2900_user_data *user;
-+};
-+#define stlc2690_skb_data(__skb) ((struct stlc2690_skb_data *)((__skb)->cb))
-+
-+/**
-+ * struct stlc2690_chip_info - Main info structure for STLC2690 chip driver.
-+ * @patch_file_name:		Stores patch file name.
-+ * @settings_file_name:		Stores settings file name.
-+ * @file_info:			Firmware file info (patch or settings).
-+ * @main_state:			Current MAIN-state of STLC2690 chip driver.
-+ * @boot_state:			Current BOOT-state of STLC2690 chip driver.
-+ * @file_load_state:		Current BOOT_FILE_LOAD-state of STLC2690 chip
-+ *				driver.
-+ * @download_state:		Current BOOT_DOWNLOAD-state of STLC2690 chip
-+ *				driver.
-+ * @wq:				STLC2690 chip driver workqueue.
-+ * @chip_dev:			Chip handler info.
-+ * @user_in_charge:		User currently operating. Normally used at
-+ *				channel open and close.
-+ * @last_user:			Last user of this chip.
-+ * @logger:			Logger user of this chip.
-+ */
-+struct stlc2690_chip_info {
-+	char				*patch_file_name;
-+	char				*settings_file_name;
-+	struct cg2900_file_info		file_info;
-+	enum main_state			main_state;
-+	enum boot_state			boot_state;
-+	enum file_load_state		file_load_state;
-+	enum download_state		download_state;
-+	struct workqueue_struct		*wq;
-+	struct cg2900_chip_dev		*chip_dev;
-+	spinlock_t			rw_lock;
-+	struct list_head		open_channels;
-+	struct cg2900_user_data		*user_in_charge;
-+	struct cg2900_user_data		*last_user;
-+	struct cg2900_user_data		*logger;
-+};
-+
-+/**
-+ * struct main_info - Main info structure for STLC2690 chip driver.
-+ * @dev:			Device structure.
-+ * @cell_base_id:		Base ID for MFD cells.
-+ * @man_mutex:			Management mutex.
-+ */
-+struct main_info {
-+	struct device			*dev;
-+	int				cell_base_id;
-+	struct mutex			man_mutex;
-+};
-+
-+static struct main_info *main_info;
-+
-+/*
-+ * main_wait_queue - Main Wait Queue in STLC2690 driver.
-+ */
-+static DECLARE_WAIT_QUEUE_HEAD(main_wait_queue);
-+
-+static void chip_startup_finished(struct stlc2690_chip_info *info, int err);
-+
-+/**
-+ * send_bd_address() - Send HCI VS command with BD address to the chip.
-+ */
-+static void send_bd_address(struct stlc2690_chip_info *info)
-+{
-+	struct bt_vs_store_in_fs_cmd *cmd;
-+	u8 plen = sizeof(*cmd) + BT_BDADDR_SIZE;
-+
-+	cmd = kmalloc(plen, GFP_KERNEL);
-+	if (!cmd)
-+		return;
-+
-+	cmd->opcode = cpu_to_le16(STLC2690_BT_OP_VS_STORE_IN_FS);
-+	cmd->plen = BT_PARAM_LEN(plen);
-+	cmd->user_id = STLC2690_VS_STORE_IN_FS_USR_ID_BD_ADDR;
-+	cmd->len = BT_BDADDR_SIZE;
-+	/* Now copy the BD address received from user space control app. */
-+	memcpy(cmd->data, bd_address, BT_BDADDR_SIZE);
-+
-+	dev_dbg(BOOT_DEV, "New boot_state: BOOT_SEND_BD_ADDRESS\n");
-+	info->boot_state = BOOT_SEND_BD_ADDRESS;
-+
-+	cg2900_send_bt_cmd(info->user_in_charge, info->logger, cmd, plen);
-+
-+	kfree(cmd);
-+}
-+
-+/**
-+ * send_settings_file() - Transmit settings file.
-+ *
-+ * The send_settings_file() function transmit settings file.
-+ * The file is read in parts to fit in HCI packets. When finished,
-+ * close the settings file and send HCI reset to activate settings and patches.
-+ */
-+static void send_settings_file(struct stlc2690_chip_info *info)
-+{
-+	int bytes_sent;
-+
-+	bytes_sent = cg2900_read_and_send_file_part(info->user_in_charge,
-+						    info->logger,
-+						    &info->file_info);
-+	if (bytes_sent > 0) {
-+		/* Data sent. Wait for CmdComplete */
-+		return;
-+	} else if (bytes_sent < 0) {
-+		dev_err(BOOT_DEV, "send_settings_file: Error %d occurred\n",
-+			bytes_sent);
-+		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
-+		info->boot_state = BOOT_FAILED;
-+		chip_startup_finished(info, bytes_sent);
-+		return;
-+	}
-+
-+	/* No data was sent. This file is finished */
-+	info->download_state = DOWNLOAD_SUCCESS;
-+
-+	/* Settings file finished. Release used resources */
-+	dev_dbg(BOOT_DEV, "Settings file finished, release used resources\n");
-+	release_firmware(info->file_info.fw_file);
-+	info->file_info.fw_file = NULL;
-+
-+	dev_dbg(BOOT_DEV, "New file_load_state: FILE_LOAD_NO_MORE_FILES\n");
-+	info->file_load_state = FILE_LOAD_NO_MORE_FILES;
-+
-+	/* Create and send HCI VS Store In FS command with bd address. */
-+	send_bd_address(info);
-+}
-+
-+/**
-+ * send_patch_file - Transmit patch file.
-+ *
-+ * The send_patch_file() function transmit patch file.
-+ * The file is read in parts to fit in HCI packets. When the complete file is
-+ * transmitted, the file is closed.
-+ * When finished, continue with settings file.
-+ */
-+static void send_patch_file(struct stlc2690_chip_info *info)
-+{
-+	int err;
-+	int bytes_sent;
-+
-+	bytes_sent = cg2900_read_and_send_file_part(info->user_in_charge,
-+						    info->logger,
-+						    &info->file_info);
-+	if (bytes_sent > 0) {
-+		/* Data sent. Wait for CmdComplete */
-+		return;
-+	} else if (bytes_sent < 0) {
-+		dev_err(BOOT_DEV, "send_patch_file: Error %d occurred\n",
-+			bytes_sent);
-+		err = bytes_sent;
-+		goto error_handling;
-+	}
-+
-+	/* No data was sent. This file is finished */
-+	info->download_state = DOWNLOAD_SUCCESS;
-+
-+	dev_dbg(BOOT_DEV, "Patch file finished, release used resources\n");
-+	release_firmware(info->file_info.fw_file);
-+	info->file_info.fw_file = NULL;
-+	/* Retrieve the settings file */
-+	err = request_firmware(&info->file_info.fw_file,
-+			       info->settings_file_name,
-+			       info->chip_dev->dev);
-+	if (err) {
-+		dev_err(BOOT_DEV, "Couldn't get settings file (%d)\n", err);
-+		goto error_handling;
-+	}
-+	/* Now send the settings file */
-+	dev_dbg(BOOT_DEV,
-+		"New file_load_state: FILE_LOAD_GET_STATIC_SETTINGS\n");
-+	info->file_load_state = FILE_LOAD_GET_STATIC_SETTINGS;
-+	dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_PENDING\n");
-+	info->download_state = DOWNLOAD_PENDING;
-+	send_settings_file(info);
-+	return;
-+
-+error_handling:
-+	dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
-+	info->boot_state = BOOT_FAILED;
-+	chip_startup_finished(info, err);
-+}
-+
-+/**
-+ * work_reset_after_error() - Handle reset.
-+ * @work:	Reference to work data.
-+ *
-+ * Handle a reset after received Command Complete event.
-+ */
-+static void work_reset_after_error(struct work_struct *work)
-+{
-+	struct cg2900_work *my_work;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	if (!work) {
-+		dev_err(MAIN_DEV, "work_reset_after_error: work == NULL\n");
-+		return;
-+	}
-+
-+	my_work = container_of(work, struct cg2900_work, work);
-+	dev = my_work->user_data;
-+	info = dev->c_data;
-+
-+	chip_startup_finished(info, -EIO);
-+
-+	kfree(my_work);
-+}
-+
-+/**
-+ * work_load_patch_and_settings() - Start loading patches and settings.
-+ * @work:	Reference to work data.
-+ */
-+static void work_load_patch_and_settings(struct work_struct *work)
-+{
-+	int err = 0;
-+	bool file_found;
-+	const struct firmware *patch_info;
-+	const struct firmware *settings_info;
-+	struct cg2900_work *my_work;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	if (!work) {
-+		dev_err(MAIN_DEV,
-+			"work_load_patch_and_settings: work == NULL\n");
-+		return;
-+	}
-+
-+	my_work = container_of(work, struct cg2900_work, work);
-+	dev = my_work->user_data;
-+	info = dev->c_data;
-+
-+	/* Check that we are in the right state */
-+	if (info->boot_state != BOOT_GET_FILES_TO_LOAD)
-+		goto finished;
-+
-+	/* Open patch info file. */
-+	err = request_firmware(&patch_info, PATCH_INFO_FILE,
-+			       dev->dev);
-+	if (err) {
-+		dev_err(BOOT_DEV, "Couldn't get patch info file (%d)\n", err);
-+		goto error_handling;
-+	}
-+
-+	/*
-+	 * Now we have the patch info file.
-+	 * See if we can find the right patch file as well
-+	 */
-+	file_found = cg2900_get_file_name(patch_info, &info->patch_file_name,
-+					  info->chip_dev->chip.hci_revision,
-+					  info->chip_dev->chip.hci_sub_version);
-+
-+	/* Now we are finished with the patch info file */
-+	release_firmware(patch_info);
-+
-+	if (!file_found) {
-+		dev_err(BOOT_DEV, "Couldn't find patch file! Major error\n");
-+		goto error_handling;
-+	}
-+
-+	/* Open settings info file. */
-+	err = request_firmware(&settings_info,
-+			       FACTORY_SETTINGS_INFO_FILE,
-+			       dev->dev);
-+	if (err) {
-+		dev_err(BOOT_DEV, "Couldn't get settings info file (%d)\n",
-+			err);
-+		goto error_handling;
-+	}
-+
-+	/*
-+	 * Now we have the settings info file.
-+	 * See if we can find the right settings file as well.
-+	 */
-+	file_found = cg2900_get_file_name(settings_info,
-+					  &info->settings_file_name,
-+					  info->chip_dev->chip.hci_revision,
-+					  info->chip_dev->chip.hci_sub_version);
-+
-+	/* Now we are finished with the patch info file */
-+	release_firmware(settings_info);
-+
-+	if (!file_found) {
-+		dev_err(BOOT_DEV, "Couldn't find settings file! Major error\n");
-+		goto error_handling;
-+	}
-+
-+	/* We now all info needed */
-+	dev_dbg(BOOT_DEV, "New boot_state: BOOT_DOWNLOAD_PATCH\n");
-+	info->boot_state = BOOT_DOWNLOAD_PATCH;
-+	dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_PENDING\n");
-+	info->download_state = DOWNLOAD_PENDING;
-+	dev_dbg(BOOT_DEV, "New file_load_state: FILE_LOAD_GET_PATCH\n");
-+	info->file_load_state = FILE_LOAD_GET_PATCH;
-+	info->file_info.chunk_id = 0;
-+	info->file_info.file_offset = 0;
-+	info->file_info.fw_file = NULL;
-+
-+	/* OK. Now it is time to download the patches */
-+	err = request_firmware(&(info->file_info.fw_file),
-+			       info->patch_file_name,
-+			       dev->dev);
-+	if (err < 0) {
-+		dev_err(BOOT_DEV, "Couldn't get patch file (%d)\n", err);
-+		goto error_handling;
-+	}
-+	send_patch_file(info);
-+
-+	goto finished;
-+
-+error_handling:
-+	dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
-+	info->boot_state = BOOT_FAILED;
-+	chip_startup_finished(info, -EIO);
-+finished:
-+	kfree(my_work);
-+}
-+
-+/**
-+ * work_cont_file_download() - A file block has been written.
-+ * @work:	Reference to work data.
-+ *
-+ * Handle a received HCI VS Write File Block Complete event.
-+ * Normally this means continue to send files to the controller.
-+ */
-+static void work_cont_file_download(struct work_struct *work)
-+{
-+	struct cg2900_work *my_work;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	if (!work) {
-+		dev_err(MAIN_DEV, "work_cont_file_download: work == NULL\n");
-+		return;
-+	}
-+
-+	my_work = container_of(work, struct cg2900_work, work);
-+	dev = my_work->user_data;
-+	info = dev->c_data;
-+
-+	/* Continue to send patches or settings to the controller */
-+	if (info->file_load_state == FILE_LOAD_GET_PATCH)
-+		send_patch_file(info);
-+	else if (info->file_load_state == FILE_LOAD_GET_STATIC_SETTINGS)
-+		send_settings_file(info);
-+	else
-+		dev_dbg(BOOT_DEV, "No more files to load\n");
-+
-+	kfree(my_work);
-+}
-+
-+/**
-+ * handle_reset_cmd_complete() - Handles HCI Reset Command Complete event.
-+ * @data:	Pointer to received HCI data packet.
-+ *
-+ * Returns:
-+ *   true,  if packet was handled internally,
-+ *   false, otherwise.
-+ */
-+static bool handle_reset_cmd_complete(struct cg2900_chip_dev *dev, u8 *data)
-+{
-+	u8 status = data[0];
-+	struct stlc2690_chip_info *info = dev->c_data;
-+
-+	dev_dbg(BOOT_DEV, "Received Reset complete event with status 0x%X\n",
-+		status);
-+
-+	if (BOOT_RESET != info->boot_state &&
-+	    BOOT_ACTIVATE_PATCHES_AND_SETTINGS != info->boot_state)
-+		return false;
-+
-+	if (HCI_BT_ERROR_NO_ERROR != status) {
-+		dev_err(BOOT_DEV, "Command complete for HciReset received with "
-+			"error 0x%X\n", status);
-+		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
-+		return true;
-+	}
-+
-+	if (BOOT_RESET == info->boot_state) {
-+		info->boot_state = BOOT_GET_FILES_TO_LOAD;
-+		cg2900_create_work_item(info->wq, work_load_patch_and_settings,
-+					dev);
-+	} else {
-+		/*
-+		 * The boot sequence is now finished successfully.
-+		 * Set states and signal to waiting thread.
-+		 */
-+		dev_dbg(BOOT_DEV, "New boot_state: BOOT_READY\n");
-+		info->boot_state = BOOT_READY;
-+		chip_startup_finished(info, 0);
-+	}
-+
-+	return true;
-+}
-+
-+
-+/**
-+ * handle_vs_store_in_fs_cmd_complete() - Handles HCI VS StoreInFS Command Complete event.
-+ * @data:	Pointer to received HCI data packet.
-+ *
-+ * Returns:
-+ *   true,  if packet was handled internally,
-+ *   false, otherwise.
-+ */
-+static bool handle_vs_store_in_fs_cmd_complete(struct cg2900_chip_dev *dev,
-+					       u8 *data)
-+{
-+	u8 status = data[0];
-+	struct stlc2690_chip_info *info = dev->c_data;
-+
-+	dev_dbg(BOOT_DEV,
-+		"Received Store_in_FS complete event with status 0x%X\n",
-+		status);
-+
-+	if (info->boot_state != BOOT_SEND_BD_ADDRESS)
-+		return false;
-+
-+	if (HCI_BT_ERROR_NO_ERROR == status) {
-+		struct hci_command_hdr cmd;
-+
-+		/* Send HCI Reset command to activate patches */
-+		dev_dbg(BOOT_DEV,
-+			"New boot_state: BOOT_ACTIVATE_PATCHES_AND_SETTINGS\n");
-+		info->boot_state = BOOT_ACTIVATE_PATCHES_AND_SETTINGS;
-+
-+		cmd.opcode = cpu_to_le16(HCI_OP_RESET);
-+		cmd.plen = 0; /* No parameters for Reset */
-+		cg2900_send_bt_cmd(info->user_in_charge, info->logger, &cmd,
-+				   sizeof(cmd));
-+	} else {
-+		dev_err(BOOT_DEV,
-+			"Command complete for StoreInFS received with error "
-+			"0x%X\n", status);
-+		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
-+		info->boot_state = BOOT_FAILED;
-+		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
-+	}
-+
-+	return true;
-+}
-+
-+/**
-+ * handle_vs_write_file_block_cmd_complete() - Handles HCI VS WriteFileBlock Command Complete event.
-+ * @data:	Pointer to received HCI data packet.
-+ *
-+ * Returns:
-+ *   true,  if packet was handled internally,
-+ *   false, otherwise.
-+ */
-+static bool handle_vs_write_file_block_cmd_complete(struct cg2900_chip_dev *dev,
-+						    u8 *data)
-+{
-+	u8 status = data[0];
-+	struct stlc2690_chip_info *info = dev->c_data;
-+
-+	if (info->boot_state != BOOT_DOWNLOAD_PATCH ||
-+	    info->download_state != DOWNLOAD_PENDING)
-+		return false;
-+
-+	if (HCI_BT_ERROR_NO_ERROR == status)
-+		cg2900_create_work_item(info->wq, work_cont_file_download, dev);
-+	else {
-+		dev_err(BOOT_DEV,
-+			"Command complete for WriteFileBlock received with"
-+			" error 0x%X\n", status);
-+		dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_FAILED\n");
-+		info->download_state = DOWNLOAD_FAILED;
-+		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
-+		info->boot_state = BOOT_FAILED;
-+		if (info->file_info.fw_file) {
-+			release_firmware(info->file_info.fw_file);
-+			info->file_info.fw_file = NULL;
-+		}
-+		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
-+	}
-+
-+	return true;
-+}
-+
-+/**
-+ * handle_vs_write_file_block_cmd_status() - Handles HCI VS WriteFileBlock Command Status event.
-+ * @status:	Returned status of WriteFileBlock command.
-+ *
-+ * Returns:
-+ *   true,  if packet was handled internally,
-+ *   false, otherwise.
-+ */
-+static bool handle_vs_write_file_block_cmd_status(struct cg2900_chip_dev *dev,
-+						  u8 status)
-+{
-+	struct stlc2690_chip_info *info = dev->c_data;
-+
-+	if (info->boot_state != BOOT_DOWNLOAD_PATCH ||
-+	    info->download_state != DOWNLOAD_PENDING)
-+		return false;
-+
-+	/*
-+	 * Only do something if there is an error. Otherwise we will wait for
-+	 * CmdComplete.
-+	 */
-+	if (HCI_BT_ERROR_NO_ERROR != status) {
-+		dev_err(BOOT_DEV,
-+			"Command status for WriteFileBlock received with"
-+			" error 0x%X\n", status);
-+		dev_dbg(BOOT_DEV, "New download_state: DOWNLOAD_FAILED\n");
-+		info->download_state = DOWNLOAD_FAILED;
-+		dev_dbg(BOOT_DEV, "New boot_state: BOOT_FAILED\n");
-+		info->boot_state = BOOT_FAILED;
-+		if (info->file_info.fw_file) {
-+			release_firmware(info->file_info.fw_file);
-+			info->file_info.fw_file = NULL;
-+		}
-+		cg2900_create_work_item(info->wq, work_reset_after_error, dev);
-+	}
-+
-+	return true;
-+}
-+
-+/**
-+ * handle_rx_data_bt_evt() - Check if received data should be handled in STLC2690 chip driver.
-+ * @skb:	Data packet
-+ *
-+ * The handle_rx_data_bt_evt() function checks if received data should be
-+ * handled in STLC2690 chip driver. If so handle it correctly.
-+ * Received data is always HCI BT Event.
-+ *
-+ * Returns:
-+ *   True,  if packet was handled internally,
-+ *   False, otherwise.
-+ */
-+static bool handle_rx_data_bt_evt(struct cg2900_chip_dev *dev,
-+				  struct sk_buff *skb)
-+{
-+	bool pkt_handled = false;
-+	/* skb cannot be NULL here so it is safe to de-reference */
-+	u8 *data = skb->data;
-+	struct hci_event_hdr *evt;
-+	u16 op_code;
-+
-+	evt = (struct hci_event_hdr *)data;
-+	data += sizeof(*evt);
-+
-+	/* First check the event code. */
-+	if (HCI_EV_CMD_COMPLETE == evt->evt) {
-+		struct hci_ev_cmd_complete *cmd_complete;
-+
-+		cmd_complete = (struct hci_ev_cmd_complete *)data;
-+		op_code = le16_to_cpu(cmd_complete->opcode);
-+		dev_dbg(dev->dev,
-+			"Received Command Complete: op_code = 0x%04X\n",
-+			op_code);
-+		/* Move to first byte after OCF */
-+		data += sizeof(*cmd_complete);
-+
-+		if (op_code == HCI_OP_RESET)
-+			pkt_handled = handle_reset_cmd_complete(dev, data);
-+		else if (op_code == STLC2690_BT_OP_VS_STORE_IN_FS)
-+			pkt_handled = handle_vs_store_in_fs_cmd_complete(dev,
-+									 data);
-+		else if (op_code == STLC2690_BT_OP_VS_WRITE_FILE_BLOCK)
-+			pkt_handled =
-+				handle_vs_write_file_block_cmd_complete(dev,
-+									data);
-+	} else if (HCI_EV_CMD_STATUS == evt->evt) {
-+		struct hci_ev_cmd_status *cmd_status;
-+
-+		cmd_status = (struct hci_ev_cmd_status *)data;
-+
-+		op_code = le16_to_cpu(cmd_status->opcode);
-+
-+		dev_dbg(dev->dev, "Received Command Status: op_code = 0x%04X\n",
-+			op_code);
-+
-+		if (op_code == STLC2690_BT_OP_VS_WRITE_FILE_BLOCK)
-+			pkt_handled = handle_vs_write_file_block_cmd_status
-+				(dev, cmd_status->status);
-+	} else if (HCI_EV_HW_ERROR == evt->evt) {
-+		struct hci_ev_hw_error *hw_error;
-+
-+		hw_error = (struct hci_ev_hw_error *)data;
-+		/*
-+		 * Only do a printout. There might be a receiving stack that can
-+		 * handle this event
-+		 */
-+		dev_err(dev->dev, "HW Error event received with error 0x%02X\n",
-+			hw_error->hw_code);
-+		return false;
-+	} else
-+		return false;
-+
-+	if (pkt_handled)
-+		kfree_skb(skb);
-+
-+	return pkt_handled;
-+}
-+
-+/**
-+ * data_from_chip() - Called when data is received from the chip.
-+ * @dev:	Chip info.
-+ * @skb:	Packet received.
-+ *
-+ * The data_from_chip() function checks if packet is a response for a packet it
-+ * itself has transmitted. If not it finds the correct user and sends the packet
-+ * to the user.
-+ */
-+static void data_from_chip(struct cg2900_chip_dev *dev,
-+			   struct sk_buff *skb)
-+{
-+	int h4_channel;
-+	struct list_head *cursor;
-+	struct stlc2690_channel_item *tmp;
-+	struct stlc2690_chip_info *info = dev->c_data;
-+	struct cg2900_user_data *user = NULL;
-+
-+	h4_channel = skb->data[0];
-+	skb_pull(skb, HCI_H4_SIZE);
-+
-+	/* Then check if this is a response to data we have sent */
-+	if (h4_channel == CHANNEL_BT_EVT && handle_rx_data_bt_evt(dev, skb))
-+		return;
-+
-+	spin_lock_bh(&info->rw_lock);
-+
-+	/* Let's see if this packet has the same user as the last one */
-+	if (info->last_user && info->last_user->h4_channel == h4_channel) {
-+		user = info->last_user;
-+		goto user_found;
-+	}
-+
-+	/* Search through the list of all open channels to find the user */
-+	list_for_each(cursor, &info->open_channels) {
-+		tmp = list_entry(cursor, struct stlc2690_channel_item, list);
-+		if (tmp->user->h4_channel == h4_channel) {
-+			user = tmp->user;
-+			goto user_found;
-+		}
-+	}
-+
-+user_found:
-+	info->last_user = user;
-+	spin_unlock_bh(&info->rw_lock);
-+
-+	if (user)
-+		user->read_cb(user, skb);
-+	else {
-+		dev_err(dev->dev,
-+			"Could not find corresponding user to h4_channel %d\n",
-+			h4_channel);
-+		kfree_skb(skb);
-+	}
-+}
-+
-+static void chip_removed(struct cg2900_chip_dev *dev)
-+{
-+	struct stlc2690_chip_info *info = dev->c_data;
-+
-+	mfd_remove_devices(dev->dev);
-+	kfree(info->settings_file_name);
-+	kfree(info->patch_file_name);
-+	destroy_workqueue(info->wq);
-+	kfree(info);
-+	dev->c_data = NULL;
-+	dev->c_cb.chip_removed = NULL;
-+	dev->c_cb.data_from_chip = NULL;
-+}
-+
-+/**
-+ * chip_shutdown() - Reset and power the chip off.
-+ */
-+static void chip_shutdown(struct cg2900_user_data *user)
-+{
-+	struct cg2900_chip_dev *dev = cg2900_get_prv(user);
-+	struct stlc2690_chip_info *info = dev->c_data;
-+
-+	dev_dbg(user->dev, "chip_shutdown\n");
-+
-+	/* Close the transport, which will power off the chip */
-+	if (dev->t_cb.close)
-+		dev->t_cb.close(dev);
-+
-+	/* Chip shut-down finished, set correct state and wake up the chip. */
-+	dev_dbg(dev->dev, "New main_state: STLC2690_IDLE\n");
-+	info->main_state = STLC2690_IDLE;
-+	wake_up_interruptible_all(&main_wait_queue);
-+}
-+
-+static void chip_startup_finished(struct stlc2690_chip_info *info, int err)
-+{
-+	dev_dbg(BOOT_DEV, "chip_startup_finished (%d)\n", err);
-+
-+	if (err)
-+		/* Shutdown the chip */
-+		chip_shutdown(info->user_in_charge);
-+	else {
-+		dev_dbg(BOOT_DEV, "New main_state: CORE_ACTIVE\n");
-+		info->main_state = STLC2690_ACTIVE;
-+	}
-+
-+	wake_up_interruptible_all(&main_wait_queue);
-+
-+	if (err)
-+		return;
-+
-+	if (!info->chip_dev->t_cb.chip_startup_finished)
-+		dev_err(BOOT_DEV, "chip_startup_finished callback not found\n");
-+	else
-+		info->chip_dev->t_cb.chip_startup_finished(info->chip_dev);
-+}
-+
-+static int stlc2690_open(struct cg2900_user_data *user)
-+{
-+	int err;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+	struct list_head *cursor;
-+	struct stlc2690_channel_item *tmp;
-+	struct hci_command_hdr cmd;
-+
-+	BUG_ON(!main_info);
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV, "stlc2690_open: Calling with NULL pointer\n");
-+		return -EINVAL;
-+	}
-+
-+	dev_dbg(user->dev, "stlc2690_open\n");
-+
-+	dev = cg2900_get_prv(user);
-+	info = dev->c_data;
-+
-+	mutex_lock(&main_info->man_mutex);
-+
-+	/* Add a minor wait in order to avoid CPU blocking, looping openings */
-+	err = wait_event_interruptible_timeout(main_wait_queue,
-+			(STLC2690_IDLE == info->main_state ||
-+			 STLC2690_ACTIVE == info->main_state),
-+			msecs_to_jiffies(LINE_TOGGLE_DETECT_TIMEOUT));
-+	if (err <= 0) {
-+		if (STLC2690_INIT == info->main_state)
-+			dev_err(user->dev, "Transport not opened\n");
-+		else
-+			dev_err(user->dev, "stlc2690_open currently busy "
-+				"(0x%X). Try again\n", info->main_state);
-+		err = -EBUSY;
-+		goto err_free_mutex;
-+	}
-+
-+	err = 0;
-+
-+	list_for_each(cursor, &info->open_channels) {
-+		tmp = list_entry(cursor, struct stlc2690_channel_item, list);
-+		if (tmp->user->h4_channel == user->h4_channel) {
-+			dev_err(user->dev, "Channel %d is already opened\n",
-+				user->h4_channel);
-+			err = -EACCES;
-+			goto err_free_mutex;
-+		}
-+	}
-+
-+	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
-+	if (!tmp) {
-+		dev_err(user->dev, "Could not allocate tmp\n");
-+		err = -ENOMEM;
-+		goto err_free_mutex;
-+	}
-+	tmp->user = user;
-+
-+	if (STLC2690_ACTIVE != info->main_state &&
-+	    !user->chip_independent) {
-+		/* Open transport and start-up the chip */
-+		if (dev->t_cb.set_chip_power)
-+			dev->t_cb.set_chip_power(dev, true);
-+
-+		/* Wait to be sure that the chip is ready */
-+		schedule_timeout_interruptible(
-+				msecs_to_jiffies(CHIP_READY_TIMEOUT));
-+
-+		if (dev->t_cb.open)
-+			err = dev->t_cb.open(dev);
-+		if (err) {
-+			if (dev->t_cb.set_chip_power)
-+				dev->t_cb.set_chip_power(dev, false);
-+			goto err_free_list_item;
-+		}
-+
-+		/* Start the boot sequence */
-+		info->user_in_charge = user;
-+		info->last_user = user;
-+		dev_dbg(user->dev, "New boot_state: BOOT_RESET\n");
-+		info->boot_state = BOOT_RESET;
-+		dev_dbg(user->dev, "New main_state: STLC2690_BOOTING\n");
-+		info->main_state = STLC2690_BOOTING;
-+		cmd.opcode = cpu_to_le16(HCI_OP_RESET);
-+		cmd.plen = 0; /* No parameters for HCI reset */
-+		cg2900_send_bt_cmd(user, info->logger, &cmd, sizeof(cmd));
-+
-+		dev_dbg(user->dev, "Wait up to 15 seconds for chip to start\n");
-+		wait_event_interruptible_timeout(main_wait_queue,
-+			(STLC2690_ACTIVE == info->main_state ||
-+			 STLC2690_IDLE   == info->main_state),
-+			msecs_to_jiffies(CHIP_STARTUP_TIMEOUT));
-+		if (STLC2690_ACTIVE != info->main_state) {
-+			dev_err(user->dev, "STLC2690 driver failed to start\n");
-+
-+			if (dev->t_cb.close)
-+				dev->t_cb.close(dev);
-+
-+			dev_dbg(user->dev, "New main_state: CORE_IDLE\n");
-+			info->main_state = STLC2690_IDLE;
-+			err = -EIO;
-+			goto err_free_list_item;
-+		}
-+	}
-+
-+	list_add_tail(&tmp->list, &info->open_channels);
-+
-+	user->opened = true;
-+
-+	dev_dbg(user->dev, "H:4 channel opened\n");
-+
-+	mutex_unlock(&main_info->man_mutex);
-+	return 0;
-+err_free_list_item:
-+	kfree(tmp);
-+err_free_mutex:
-+	mutex_unlock(&main_info->man_mutex);
-+	return err;
-+}
-+
-+static int stlc2690_hci_log_open(struct cg2900_user_data *user)
-+{
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+	int err;
-+
-+	BUG_ON(!main_info);
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV,
-+			"stlc2690_hci_log_open: Calling with NULL pointer\n");
-+		return -EINVAL;
-+	}
-+
-+	dev_dbg(user->dev, "stlc2690_hci_log_open\n");
-+
-+	dev = cg2900_get_prv(user);
-+	info = dev->c_data;
-+
-+	if (info->logger) {
-+		dev_err(user->dev, "HCI Logger already stored\n");
-+		return -EACCES;
-+	}
-+
-+	info->logger = user;
-+	err = stlc2690_open(user);
-+	if (err)
-+		info->logger = NULL;
-+	return err;
-+}
-+
-+static void stlc2690_close(struct cg2900_user_data *user)
-+{
-+	bool keep_powered = false;
-+	struct list_head *cursor, *next;
-+	struct stlc2690_channel_item *tmp;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	BUG_ON(!main_info);
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV,
-+			"stlc2690_close: Calling with NULL pointer\n");
-+		return;
-+	}
-+
-+	dev_dbg(user->dev, "stlc2690_close\n");
-+
-+	dev = cg2900_get_prv(user);
-+	info = dev->c_data;
-+
-+	mutex_lock(&main_info->man_mutex);
-+
-+	/*
-+	 * Go through each open channel. Remove our channel and check if there
-+	 * is any other channel that want to keep the chip running
-+	 */
-+	list_for_each_safe(cursor, next, &info->open_channels) {
-+		tmp = list_entry(cursor, struct stlc2690_channel_item, list);
-+		if (tmp->user == user) {
-+			list_del(cursor);
-+			kfree(tmp);
-+		} else if (!tmp->user->chip_independent)
-+			keep_powered = true;
-+	}
-+
-+	if (keep_powered)
-+		/* This was not the last user, we're done. */
-+		goto finished;
-+
-+	if (STLC2690_IDLE == info->main_state)
-+		/* Chip has already been shut down. */
-+		goto finished;
-+
-+	dev_dbg(user->dev, "New main_state: CORE_CLOSING\n");
-+	info->main_state = STLC2690_CLOSING;
-+	chip_shutdown(user);
-+
-+	dev_dbg(user->dev, "Wait up to 15 seconds for chip to shut-down\n");
-+	wait_event_interruptible_timeout(main_wait_queue,
-+				(STLC2690_IDLE == info->main_state),
-+				msecs_to_jiffies(CHIP_SHUTDOWN_TIMEOUT));
-+
-+	/* Force shutdown if we timed out */
-+	if (STLC2690_IDLE != info->main_state) {
-+		dev_err(user->dev,
-+			"ST-Ericsson STLC2690 Core Driver was shut-down with "
-+			"problems\n");
-+
-+		if (dev->t_cb.close)
-+			dev->t_cb.close(dev);
-+
-+		dev_dbg(user->dev, "New main_state: CORE_IDLE\n");
-+		info->main_state = STLC2690_IDLE;
-+	}
-+
-+finished:
-+	mutex_unlock(&main_info->man_mutex);
-+	user->opened = false;
-+	dev_dbg(user->dev, "H:4 channel closed\n");
-+}
-+
-+static void stlc2690_hci_log_close(struct cg2900_user_data *user)
-+{
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	BUG_ON(!main_info);
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV,
-+			"stlc2690_hci_log_close: Calling with NULL pointer\n");
-+		return;
-+	}
-+
-+	dev_dbg(user->dev, "stlc2690_hci_log_close\n");
-+
-+	dev = cg2900_get_prv(user);
-+	info = dev->c_data;
-+
-+	info->logger = NULL;
-+	stlc2690_close(user);
-+}
-+
-+static int stlc2690_reset(struct cg2900_user_data *user)
-+{
-+	struct list_head *cursor, *next;
-+	struct stlc2690_channel_item *tmp;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV,
-+			"stlc2690_reset: Calling with NULL pointer\n");
-+		return -EINVAL;
-+	}
-+
-+	dev = cg2900_get_prv(user);
-+	info = dev->c_data;
-+
-+	dev_info(user->dev, "stlc2690_reset\n");
-+
-+	BUG_ON(!main_info);
-+
-+	mutex_lock(&main_info->man_mutex);
-+
-+	dev_dbg(user->dev, "New main_state: CORE_RESETING\n");
-+	info->main_state = STLC2690_RESETING;
-+
-+	chip_shutdown(user);
-+
-+	/*
-+	 * Inform all opened channels about the reset and free the user devices
-+	 */
-+	list_for_each_safe(cursor, next, &info->open_channels) {
-+		tmp = list_entry(cursor, struct stlc2690_channel_item, list);
-+		list_del(cursor);
-+		tmp->user->opened = false;
-+		tmp->user->reset_cb(tmp->user);
-+		kfree(tmp);
-+	}
-+
-+	/* Reset finished. We are now idle until first channel is opened */
-+	dev_dbg(user->dev, "New main_state: STLC2690_IDLE\n");
-+	info->main_state = STLC2690_IDLE;
-+
-+	mutex_unlock(&main_info->man_mutex);
-+
-+	/*
-+	 * Send wake-up since this might have been called from a failed boot.
-+	 * No harm done if it is a STLC2690 chip user who called.
-+	 */
-+	wake_up_interruptible_all(&main_wait_queue);
-+
-+	return 0;
-+}
-+
-+static struct sk_buff *stlc2690_alloc_skb(unsigned int size, gfp_t priority)
-+{
-+	struct sk_buff *skb;
-+
-+	dev_dbg(MAIN_DEV, "stlc2690_alloc_skb size %d bytes\n", size);
-+
-+	/* Allocate the SKB and reserve space for the header */
-+	skb = alloc_skb(size + CG2900_SKB_RESERVE, priority);
-+	if (skb)
-+		skb_reserve(skb, CG2900_SKB_RESERVE);
-+
-+	return skb;
-+}
-+
-+static int stlc2690_write(struct cg2900_user_data *user, struct sk_buff *skb)
-+{
-+	int err = 0;
-+	u8 *h4_header;
-+	struct cg2900_chip_dev *dev;
-+	struct stlc2690_chip_info *info;
-+
-+	BUG_ON(!main_info);
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV,
-+			"stlc2690_write: Calling with NULL pointer\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!skb) {
-+		dev_err(user->dev, "stlc2690_write with no sk_buffer\n");
-+		return -EINVAL;
-+	}
-+
-+	dev = cg2900_get_prv(user);
-+	info = dev->c_data;
-+
-+	dev_dbg(user->dev, "stlc2690_write length %d bytes\n", skb->len);
-+
-+	if (!user->opened) {
-+		dev_err(user->dev,
-+			"Trying to transmit data on a closed channel\n");
-+		return -EACCES;
-+	}
-+
-+	/*
-+	 * Move the data pointer to the H:4 header position and
-+	 * store the H4 header.
-+	 */
-+	h4_header = skb_push(skb, CG2900_SKB_RESERVE);
-+	*h4_header = (u8)user->h4_channel;
-+	cg2900_tx_to_chip(user, info->logger, skb);
-+
-+	return err;
-+}
-+
-+static int stlc2690_no_write(struct cg2900_user_data *user,
-+			     struct sk_buff *skb)
-+{
-+	dev_err(user->dev, "Not allowed to send on this channel\n");
-+	return -EPERM;
-+}
-+
-+static bool stlc2690_get_local_revision(struct cg2900_user_data *user,
-+					struct cg2900_rev_data *rev_data)
-+{
-+	struct cg2900_chip_dev *dev;
-+
-+	BUG_ON(!main_info);
-+
-+	if (!user) {
-+		dev_err(MAIN_DEV, "stlc2690_get_local_revision: Calling with "
-+			"NULL pointer\n");
-+		return false;
-+	}
-+
-+	if (!rev_data) {
-+		dev_err(user->dev, "Calling with rev_data NULL\n");
-+		return false;
-+	}
-+
-+	dev = cg2900_get_prv(user);
-+
-+	rev_data->revision = dev->chip.hci_revision;
-+	rev_data->sub_version = dev->chip.hci_sub_version;
-+
-+	return true;
-+}
-+
-+static struct cg2900_user_data btcmd_data = {
-+	.h4_channel = CHANNEL_BT_CMD,
-+};
-+static struct cg2900_user_data btacl_data = {
-+	.h4_channel = CHANNEL_BT_ACL,
-+};
-+static struct cg2900_user_data btevt_data = {
-+	.h4_channel = CHANNEL_BT_EVT,
-+};
-+static struct cg2900_user_data hci_logger_data = {
-+	.h4_channel = CHANNEL_HCI_LOGGER,
-+	.chip_independent = true,
-+	.write = stlc2690_no_write,
-+	.open = stlc2690_hci_log_open,
-+	.close = stlc2690_hci_log_close,
-+};
-+static struct cg2900_user_data core_data = {
-+	.h4_channel = CHANNEL_CORE,
-+	.write = stlc2690_no_write,
-+};
-+
-+static struct mfd_cell stlc2690_devs[] = {
-+	{
-+		.name = "cg2900-btcmd",
-+		.platform_data = &btcmd_data,
-+		.data_size = sizeof(btcmd_data),
-+	},
-+	{
-+		.name = "cg2900-btacl",
-+		.platform_data = &btacl_data,
-+		.data_size = sizeof(btacl_data),
-+	},
-+	{
-+		.name = "cg2900-btevt",
-+		.platform_data = &btevt_data,
-+		.data_size = sizeof(btevt_data),
-+	},
-+	{
-+		.name = "cg2900-hcilogger",
-+		.platform_data = &hci_logger_data,
-+		.data_size = sizeof(hci_logger_data),
-+	},
-+	{
-+		.name = "cg2900-core",
-+		.platform_data = &core_data,
-+		.data_size = sizeof(core_data),
-+	},
-+};
-+
-+static struct cg2900_user_data char_btcmd_data = {
-+	.channel_data = {
-+		.char_dev_name = STLC2690_BT_CMD,
-+	},
-+	.h4_channel = CHANNEL_BT_CMD,
-+};
-+static struct cg2900_user_data char_btacl_data = {
-+	.channel_data = {
-+		.char_dev_name = STLC2690_BT_ACL,
-+	},
-+	.h4_channel = CHANNEL_BT_ACL,
-+};
-+static struct cg2900_user_data char_btevt_data = {
-+	.channel_data = {
-+		.char_dev_name = STLC2690_BT_EVT,
-+	},
-+	.h4_channel = CHANNEL_BT_EVT,
-+};
-+static struct cg2900_user_data char_hci_logger_data = {
-+	.channel_data = {
-+		.char_dev_name = STLC2690_HCI_LOGGER,
-+	},
-+	.h4_channel = CHANNEL_HCI_LOGGER,
-+	.chip_independent = true,
-+	.write = stlc2690_no_write,
-+	.open = stlc2690_hci_log_open,
-+	.close = stlc2690_hci_log_close,
-+};
-+static struct cg2900_user_data char_core_data = {
-+	.channel_data = {
-+		.char_dev_name = STLC2690_CORE,
-+	},
-+	.h4_channel = CHANNEL_CORE,
-+	.write = stlc2690_no_write,
-+};
-+
-+static struct mfd_cell stlc2690_char_devs[] = {
-+	{
-+		.name = "cg2900-chardev",
-+		.id = 0,
-+		.platform_data = &char_btcmd_data,
-+		.data_size = sizeof(char_btcmd_data),
-+	},
-+	{
-+		.name = "cg2900-chardev",
-+		.id = 1,
-+		.platform_data = &char_btacl_data,
-+		.data_size = sizeof(char_btacl_data),
-+	},
-+	{
-+		.name = "cg2900-chardev",
-+		.id = 2,
-+		.platform_data = &char_btevt_data,
-+		.data_size = sizeof(char_btevt_data),
-+	},
-+	{
-+		.name = "cg2900-chardev",
-+		.id = 7,
-+		.platform_data = &char_hci_logger_data,
-+		.data_size = sizeof(char_hci_logger_data),
-+	},
-+	{
-+		.name = "cg2900-chardev",
-+		.id = 8,
-+		.platform_data = &char_core_data,
-+		.data_size = sizeof(char_core_data),
-+	},
-+};
-+
-+/**
-+ * set_plat_data() - Initializes data for an MFD cell.
-+ * @cell:	MFD cell.
-+ * @dev:	Current chip.
-+ *
-+ * Sets each callback to default function unless already set.
-+ */
-+static void set_plat_data(struct mfd_cell *cell, struct cg2900_chip_dev *dev)
-+{
-+	struct cg2900_user_data *user = cell->platform_data;
-+
-+	if (!user->open)
-+		user->open = stlc2690_open;
-+	if (!user->close)
-+		user->close = stlc2690_close;
-+	if (!user->reset)
-+		user->reset = stlc2690_reset;
-+	if (!user->alloc_skb)
-+		user->alloc_skb = stlc2690_alloc_skb;
-+	if (!user->write)
-+		user->write = stlc2690_write;
-+	if (!user->get_local_revision)
-+		user->get_local_revision = stlc2690_get_local_revision;
-+
-+	cg2900_set_prv(user, dev);
-+}
-+
-+/**
-+ * check_chip_support() - Checks if connected chip is handled by this driver.
-+ * @dev:	Chip info structure.
-+ *
-+ * If supported return true and fill in @callbacks.
-+ *
-+ * Returns:
-+ *   true if chip is handled by this driver.
-+ *   false otherwise.
-+ */
-+static bool check_chip_support(struct cg2900_chip_dev *dev)
-+{
-+	struct cg2900_platform_data *pf_data;
-+	struct stlc2690_chip_info *info;
-+	int i;
-+	int err;
-+
-+	dev_dbg(dev->dev, "check_chip_support\n");
-+
-+	/*
-+	 * Check if this is a STLC2690 revision.
-+	 * We do not care about the sub-version at the moment. Change this if
-+	 * necessary.
-+	 */
-+	if (dev->chip.manufacturer != STLC2690_SUPP_MANUFACTURER ||
-+	    dev->chip.hci_revision < STLC2690_SUPP_REVISION_MIN ||
-+	    dev->chip.hci_revision > STLC2690_SUPP_REVISION_MAX) {
-+		dev_dbg(dev->dev, "Chip not supported by STLC2690 driver\n"
-+			"\tMan: 0x%02X\n"
-+			"\tRev: 0x%04X\n"
-+			"\tSub: 0x%04X\n",
-+			dev->chip.manufacturer, dev->chip.hci_revision,
-+			dev->chip.hci_sub_version);
-+		return false;
-+	}
-+
-+	/* Store needed data */
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info) {
-+		dev_err(dev->dev, "Couldn't allocate info struct\n");
-+		return false;
-+	}
-+
-+	/* Initialize all variables */
-+	INIT_LIST_HEAD(&info->open_channels);
-+	spin_lock_init(&info->rw_lock);
-+	info->chip_dev = dev;
-+
-+	info->wq = create_singlethread_workqueue(WQ_NAME);
-+	if (!info->wq) {
-+		dev_err(dev->dev, "Could not create workqueue\n");
-+		goto err_handling_free_info;
-+	}
-+
-+	info->patch_file_name = kzalloc(NAME_MAX + 1, GFP_ATOMIC);
-+	if (!info->patch_file_name) {
-+		dev_err(dev->dev,
-+			"Couldn't allocate name buffer for patch file\n");
-+		goto err_handling_destroy_wq;
-+	}
-+
-+	info->settings_file_name = kzalloc(NAME_MAX + 1, GFP_ATOMIC);
-+	if (!info->settings_file_name) {
-+		dev_err(dev->dev,
-+			"Couldn't allocate name buffers settings file\n");
-+		goto err_handling_free_patch_name;
-+	}
-+
-+	dev->c_data = info;
-+	/* Set the callbacks */
-+	dev->c_cb.data_from_chip = data_from_chip;
-+	dev->c_cb.chip_removed = chip_removed,
-+	info->chip_dev = dev;
-+
-+	mutex_lock(&main_info->man_mutex);
-+
-+	pf_data = dev_get_platdata(dev->dev);
-+	btcmd_data.channel_data.bt_bus = pf_data->bus;
-+	btacl_data.channel_data.bt_bus = pf_data->bus;
-+	btevt_data.channel_data.bt_bus = pf_data->bus;
-+
-+	for (i = 0; i < ARRAY_SIZE(stlc2690_devs); i++)
-+		set_plat_data(&stlc2690_devs[i], dev);
-+	for (i = 0; i < ARRAY_SIZE(stlc2690_char_devs); i++)
-+		set_plat_data(&stlc2690_char_devs[i], dev);
-+
-+	err = mfd_add_devices(dev->dev, main_info->cell_base_id, stlc2690_devs,
-+			      ARRAY_SIZE(stlc2690_devs), NULL, 0);
-+	if (err) {
-+		dev_err(dev->dev, "Failed to add stlc2690_devs (%d)\n", err);
-+		goto err_handling_free_settings_name;
-+	}
-+
-+	err = mfd_add_devices(dev->dev, main_info->cell_base_id,
-+			      stlc2690_char_devs,
-+			      ARRAY_SIZE(stlc2690_char_devs), NULL, 0);
-+	if (err) {
-+		dev_err(dev->dev, "Failed to add stlc2690_char_devs (%d)\n",
-+			err);
-+		goto err_handling_remove_devs;
-+	}
-+
-+	main_info->cell_base_id += 30;
-+	mutex_unlock(&main_info->man_mutex);
-+
-+	dev_info(dev->dev, "Chip supported by the STLC2690 chip driver\n");
-+
-+	/* Close the transport, which will power off the chip */
-+	if (dev->t_cb.close)
-+		dev->t_cb.close(dev);
-+
-+	dev_dbg(dev->dev, "New main_state: STLC2690_IDLE\n");
-+	info->main_state = STLC2690_IDLE;
-+
-+	return true;
-+
-+err_handling_remove_devs:
-+	mfd_remove_devices(dev->dev);
-+err_handling_free_settings_name:
-+	kfree(info->settings_file_name);
-+err_handling_free_patch_name:
-+	kfree(info->patch_file_name);
-+err_handling_destroy_wq:
-+	destroy_workqueue(info->wq);
-+err_handling_free_info:
-+	kfree(info);
-+	return false;
-+}
-+
-+static struct cg2900_id_callbacks chip_support_callbacks = {
-+	.check_chip_support = check_chip_support,
-+};
-+
-+/**
-+ * stlc2690_chip_probe() - Initialize STLC2690 chip handler resources.
-+ * @pdev:	Platform device.
-+ *
-+ * This function initializes the STLC2690 driver, then registers to
-+ * the CG2900 Core.
-+ *
-+ * Returns:
-+ *   0 if success.
-+ *   -ENOMEM for failed alloc or structure creation.
-+ *   Error codes generated by cg2900_register_chip_driver.
-+ */
-+static int __devinit stlc2690_chip_probe(struct platform_device *pdev)
-+{
-+	int err;
-+
-+	dev_dbg(&pdev->dev, "stlc2690_chip_probe\n");
-+
-+	main_info = kzalloc(sizeof(*main_info), GFP_ATOMIC);
-+	if (!main_info) {
-+		dev_err(&pdev->dev, "Couldn't allocate main_info\n");
-+		return -ENOMEM;
-+	}
-+
-+	main_info->dev = &pdev->dev;
-+	mutex_init(&main_info->man_mutex);
-+
-+	err = cg2900_register_chip_driver(&chip_support_callbacks);
-+	if (err) {
-+		dev_err(&pdev->dev,
-+			"Couldn't register chip driver (%d)\n", err);
-+		goto error_handling;
-+	}
-+
-+	dev_info(&pdev->dev, "STLC2690 chip driver started\n");
-+
-+	return 0;
-+
-+error_handling:
-+	mutex_destroy(&main_info->man_mutex);
-+	kfree(main_info);
-+	main_info = NULL;
-+	return err;
-+}
-+
-+/**
-+ * stlc2690_chip_remove() - Release STLC2690 chip handler resources.
-+ * @pdev:	Platform device.
-+ *
-+ * Returns:
-+ *   0 if success (always success).
-+ */
-+static int __devexit stlc2690_chip_remove(struct platform_device *pdev)
-+{
-+	dev_info(&pdev->dev, "STLC2690 chip driver removed\n");
-+
-+	cg2900_deregister_chip_driver(&chip_support_callbacks);
-+
-+	if (!main_info)
-+		return 0;
-+
-+	mutex_destroy(&main_info->man_mutex);
-+	kfree(main_info);
-+	main_info = NULL;
-+	return 0;
-+}
-+
-+static struct platform_driver stlc2690_chip_driver = {
-+	.driver = {
-+		.name	= "stlc2690-chip",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe	= stlc2690_chip_probe,
-+	.remove	= __devexit_p(stlc2690_chip_remove),
-+};
-+
-+/**
-+ * stlc2690_chip_init() - Initialize module.
-+ *
-+ * Registers platform driver.
-+ */
-+static int __init stlc2690_chip_init(void)
-+{
-+	pr_debug("stlc2690_chip_init");
-+	return platform_driver_register(&stlc2690_chip_driver);
-+}
-+
-+/**
-+ * stlc2690_chip_exit() - Remove module.
-+ *
-+ * Unregisters platform driver.
-+ */
-+static void __exit stlc2690_chip_exit(void)
-+{
-+	pr_debug("stlc2690_chip_exit");
-+	platform_driver_unregister(&stlc2690_chip_driver);
-+}
-+
-+module_init(stlc2690_chip_init);
-+module_exit(stlc2690_chip_exit);
-+
-+MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Linux STLC2690 Connectivity Device Driver");
-diff --git a/drivers/mfd/cg2900/stlc2690_chip.h b/drivers/mfd/cg2900/stlc2690_chip.h
-new file mode 100644
-index 0000000..63670c1
---- /dev/null
-+++ b/drivers/mfd/cg2900/stlc2690_chip.h
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ * Authors:
-+ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for ST-Ericsson.
-+ * Henrik Possung (henrik.possung@stericsson.com) for ST-Ericsson.
-+ * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
-+ * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
-+ * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ *
-+ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson STLC2690 BT/FM controller.
-+ */
-+
-+#ifndef _STLC2690_CHIP_H_
-+#define _STLC2690_CHIP_H_
-+
-+/* Supported chips */
-+#define STLC2690_SUPP_MANUFACTURER		0x30
-+#define STLC2690_SUPP_REVISION_MIN		0x0500
-+#define STLC2690_SUPP_REVISION_MAX		0x06FF
++#define HCI_BT_CMD_COMPLETE_LEN	(sizeof(struct hci_ev_cmd_complete) + 1)
++
++/* Timers used in milliseconds */
++#define UART_TX_TIMEOUT		100
++#define UART_RESP_TIMEOUT	1000
++
++/* Number of bytes to reserve at start of sk_buffer when receiving packet */
++#define RX_SKB_RESERVE		8
++/* Max size of received packet (not including reserved bytes) */
++#define RX_SKB_MAX_SIZE		1024
++
++/* Size of the header in the different packets */
++#define HCI_BT_EVT_HDR_SIZE	2
++#define HCI_BT_ACL_HDR_SIZE	4
++#define HCI_FM_RADIO_HDR_SIZE	1
++#define HCI_GNSS_HDR_SIZE	3
++
++/* Position of length field in the different packets */
++#define HCI_EVT_LEN_POS		2
++#define HCI_ACL_LEN_POS		3
++#define FM_RADIO_LEN_POS	1
++#define GNSS_LEN_POS		2
++
++/* Baud rate defines */
++#define ZERO_BAUD_RATE		0
++#define DEFAULT_BAUD_RATE	115200
++#define HIGH_BAUD_RATE		3000000
 +
 +#define BT_SIZE_OF_HDR				(sizeof(__le16) + sizeof(__u8))
 +#define BT_PARAM_LEN(__pkt_len)			(__pkt_len - BT_SIZE_OF_HDR)
 +
-+/* BT VS Store In FS command */
-+#define STLC2690_BT_OP_VS_STORE_IN_FS		0xFC22
-+struct bt_vs_store_in_fs_cmd {
-+	__le16	opcode;
-+	__u8	plen;
-+	__u8	user_id;
-+	__u8	len;
-+	__u8	data[];
++/* Standardized Bluetooth H:4 channels */
++#define HCI_BT_CMD_H4_CHANNEL			0x01
++#define HCI_BT_ACL_H4_CHANNEL			0x02
++#define HCI_BT_SCO_H4_CHANNEL			0x03
++#define HCI_BT_EVT_H4_CHANNEL			0x04
++
++#define BT_BDADDR_SIZE				6
++
++/* Reserve 1 byte for the HCI H:4 header */
++#define HCI_H4_SIZE				1
++#define CG2900_SKB_RESERVE			HCI_H4_SIZE
++
++/* Default H4 channels which may change depending on connected controller */
++#define HCI_FM_RADIO_H4_CHANNEL			0x08
++#define HCI_GNSS_H4_CHANNEL			0x09
++
++/* Bluetooth error codes */
++#define HCI_BT_ERROR_NO_ERROR			0x00
++
++/* Bytes in the command Hci_Cmd_ST_Set_Uart_Baud_Rate */
++#define CG2900_BAUD_RATE_57600				0x03
++#define CG2900_BAUD_RATE_115200				0x02
++#define CG2900_BAUD_RATE_230400				0x01
++#define CG2900_BAUD_RATE_460800				0x00
++#define CG2900_BAUD_RATE_921600				0x20
++#define CG2900_BAUD_RATE_2000000			0x25
++#define CG2900_BAUD_RATE_3000000			0x27
++#define CG2900_BAUD_RATE_4000000			0x2B
++
++/* GNSS */
++struct gnss_hci_hdr {
++	__u8	op_code;
++	__le16	plen;
 +} __attribute__((packed));
 +
-+/* BT VS Write File Block command */
-+#define STLC2690_BT_OP_VS_WRITE_FILE_BLOCK	0xFC2E
-+struct bt_vs_write_file_block_cmd {
-+	__le16	opcode;
-+	__u8	plen;
-+	__u8	id;
-+	__u8	data[];
++/* FM legacy command packet */
++struct fm_leg_cmd {
++	__u8	length;
++	__u8	opcode;
++	__u8	read_write;
++	__u8	fm_function;
++	union { /* Payload varies with function */
++		__le16	irqmask;
++		struct fm_leg_fm_cmd {
++			__le16	head;
++			__le16	data[];
++		} fm_cmd;
++	};
 +} __attribute__((packed));
 +
-+/* User ID for storing BD address in chip using Store_In_FS command */
-+#define STLC2690_VS_STORE_IN_FS_USR_ID_BD_ADDR	0xFE
++/* FM legacy command complete packet */
++struct fm_leg_cmd_cmpl {
++	__u8	param_length;
++	__u8	status;
++	__u8	opcode;
++	__u8	read_write;
++	__u8	cmd_status;
++	__u8	fm_function;
++	__le16	response_head;
++	__le16	data[];
++} __attribute__((packed));
 +
-+#endif /* _STLC2690_CHIP_H_ */
++/* FM legacy interrupt packet, PG2 style */
++struct fm_leg_irq_v2 {
++	__u8	param_length;
++	__u8	status;
++	__u8	opcode;
++	__u8	event_type;
++	__u8	event_id;
++	__le16	irq;
++} __attribute__((packed));
++
++/* FM legacy interrupt packet, PG1 style */
++struct fm_leg_irq_v1 {
++	__u8	param_length;
++	__u8	opcode;
++	__u8	event_id;
++	__le16	irq;
++} __attribute__((packed));
++
++union fm_leg_evt_or_irq {
++	__u8			param_length;
++	struct fm_leg_cmd_cmpl	evt;
++	struct fm_leg_irq_v2	irq_v2;
++	struct fm_leg_irq_v1	irq_v1;
++} __attribute__((packed));
++
++/* BT VS SetBaudRate command */
++#define CG2900_BT_OP_VS_SET_BAUD_RATE			0xFC09
++struct bt_vs_set_baud_rate_cmd {
++	__le16	opcode;
++	__u8	plen;
++	__u8	baud_rate;
++} __attribute__((packed));
++
++/**
++ * enum uart_rx_state - UART RX-state for UART.
++ * @W4_PACKET_TYPE:	Waiting for packet type.
++ * @W4_EVENT_HDR:	Waiting for BT event header.
++ * @W4_ACL_HDR:		Waiting for BT ACL header.
++ * @W4_FM_RADIO_HDR:	Waiting for FM header.
++ * @W4_GNSS_HDR:	Waiting for GNSS header.
++ * @W4_DATA:		Waiting for data in rest of the packet (after header).
++ */
++enum uart_rx_state {
++	W4_PACKET_TYPE,
++	W4_EVENT_HDR,
++	W4_ACL_HDR,
++	W4_FM_RADIO_HDR,
++	W4_GNSS_HDR,
++	W4_DATA
++};
++
++/**
++  * enum sleep_state - Sleep-state for UART.
++  * @CHIP_AWAKE:  Chip is awake.
++  * @CHIP_FALLING_ASLEEP:  Chip is falling asleep.
++  * @CHIP_ASLEEP: Chip is asleep.
++  * @CHIP_SUSPENDED: Chip in suspend state.
++  * @CHIP_RESUMING: Chip is going back from suspend state.
++  * @CHIP_POWERED_DOWN: Chip is off.
++  */
++enum sleep_state {
++	CHIP_AWAKE,
++	CHIP_FALLING_ASLEEP,
++	CHIP_ASLEEP,
++	CHIP_SUSPENDED,
++	CHIP_RESUMING,
++	CHIP_POWERED_DOWN
++};
++
++/**
++ * enum baud_rate_change_state - Baud rate-state for UART.
++ * @BAUD_IDLE:		No baud rate change is ongoing.
++ * @BAUD_SENDING_RESET:	HCI reset has been sent. Waiting for command complete
++ *			event.
++ * @BAUD_START:		Set baud rate cmd scheduled for sending.
++ * @BAUD_SENDING:	Set baud rate cmd sending in progress.
++ * @BAUD_WAITING:	Set baud rate cmd sent, waiting for command complete
++ *			event.
++ * @BAUD_SUCCESS:	Baud rate change has succeeded.
++ * @BAUD_FAIL:		Baud rate change has failed.
++ */
++enum baud_rate_change_state {
++	BAUD_IDLE,
++	BAUD_SENDING_RESET,
++	BAUD_START,
++	BAUD_SENDING,
++	BAUD_WAITING,
++	BAUD_SUCCESS,
++	BAUD_FAIL
++};
++
++/**
++ * struct uart_work_struct - Work structure for UART module.
++ * @work:	Work structure.
++ * @data:	Pointer to private data.
++ *
++ * This structure is used to pack work for work queue.
++ */
++struct uart_work_struct{
++	struct work_struct	work;
++	void			*data;
++};
++/**
++ * struct uart_info - Main UART info structure.
++ * @rx_state:		Current RX state.
++ * @rx_count:		Number of bytes left to receive.
++ * @rx_skb:		SK_buffer to store the received data into.
++ * @tx_queue:		TX queue for sending data to chip.
++ * @hu:			Hci uart structure.
++ * @wq:			UART work queue.
++ * @baud_rate_state:	UART baud rate change state.
++ * @baud_rate:		Current baud rate setting.
++ * @sleep_state:	UART sleep state.
++ * @timer:		UART timer (for chip sleep).
++ * @sleep_state_lock:	Used to protect chip state.
++ * @sleep_allowed:	Indicate if tty has functions needed for sleep mode.
++ * @regulator:		Regulator.
++ * @regulator_enabled:	True if regulator is enabled.
++ * @dev:		Pointer to CG2900 uart device.
++ * @chip_dev:		Chip device for current UART transport.
++ * @cts_irq:		CTS interrupt for this UART.
++ */
++struct uart_info {
++	enum uart_rx_state		rx_state;
++	unsigned long			rx_count;
++	struct sk_buff			*rx_skb;
++	struct sk_buff_head		tx_queue;
++
++	struct hci_uart			*hu;
++
++	struct workqueue_struct		*wq;
++	enum baud_rate_change_state	baud_rate_state;
++	int				baud_rate;
++	enum sleep_state		sleep_state;
++	struct timer_list		timer;
++	struct mutex			sleep_state_lock;
++	bool				sleep_allowed;
++	struct	regulator		*regulator;
++	bool				regulator_enabled;
++	struct device			*dev;
++	struct cg2900_chip_dev		chip_dev;
++	int				cts_irq;
++};
++
++/* Module parameters */
++static int uart_default_baud = DEFAULT_BAUD_RATE;
++static int uart_high_baud = HIGH_BAUD_RATE;
++static int uart_debug;
++
++static DECLARE_WAIT_QUEUE_HEAD(uart_wait_queue);
++
++static void update_timer(struct uart_info *uart_info);
++
++/**
++ * is_chip_flow_off() - Check if chip has set flow off.
++ * @tty:	Pointer to tty.
++ *
++ * Returns:
++ *   true - chip flows off.
++ *   false - chip flows on.
++ */
++static bool is_chip_flow_off(struct uart_info *uart_info)
++{
++	int lines;
++
++	lines = hci_uart_tiocmget(uart_info->hu);
++
++	if (lines & TIOCM_CTS)
++		return false;
++	else
++		return true;
++}
++
++/**
++ * create_work_item() - Create work item and add it to the work queue.
++ * @uart_info:	Main Uart structure.
++ * @work_func:	Work function.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EBUSY if not possible to queue work.
++ *   -ENOMEM if allocation fails.
++ */
++static int create_work_item(struct uart_info *uart_info,
++					work_func_t work_func)
++{
++	struct uart_work_struct *new_work;
++	int res;
++
++	new_work = kmalloc(sizeof(*new_work), GFP_ATOMIC);
++	if (!new_work) {
++		dev_err(MAIN_DEV,
++			"Failed to alloc memory for uart_work_struct\n");
++		return -ENOMEM;
++	}
++
++	new_work->data = uart_info;
++	INIT_WORK(&new_work->work, work_func);
++
++	res = queue_work(uart_info->wq, &new_work->work);
++	if (!res) {
++		dev_err(MAIN_DEV,
++			"Failed to queue work_struct because it's already "
++			"in the queue\n");
++		kfree(new_work);
++		return -EBUSY;
++	}
++
++	return 0;
++}
++
++/**
++ * handle_cts_irq() - Called to handle CTS interrupt in work context.
++ * @work:	work which needs to be done.
++ *
++ * The handle_cts_irq() function is a work handler called if interrupt on CTS
++ * occurred. It updates the sleep timer which will wake up the transport.
++ */
++static void handle_cts_irq(struct work_struct *work)
++{
++	struct uart_work_struct *current_work =
++		container_of(work, struct uart_work_struct, work);
++
++	/* Restart timer and disable interrupt. */
++	update_timer((struct uart_info *)current_work->data);
++	kfree(current_work);
++}
++
++/**
++ * cts_interrupt() - Called to handle CTS interrupt.
++ * @irq:	Interrupt that occurred.
++ * @dev_id:	Device ID where interrupt occurred.
++ *
++ * The handle_cts_irq() function is called if interrupt on CTS occurred.
++ * It disables the interrupt and starts a new work thread to handle
++ * the interrupt.
++ */
++static irqreturn_t cts_interrupt(int irq, void *dev_id)
++{
++	struct uart_info *uart_info = dev_get_drvdata(dev_id);
++#ifdef CONFIG_PM
++	disable_irq_wake(irq);
++#endif
++	disable_irq_nosync(irq);
++
++	/* If chip is suspended, resume callback will be called. */
++	if (CHIP_SUSPENDED != uart_info->sleep_state)
++		/* Create work and leave IRQ context. */
++		(void)create_work_item(uart_info, handle_cts_irq);
++	else {
++		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_RESUMING\n");
++		uart_info->sleep_state = CHIP_RESUMING;
++	}
++
++	return IRQ_HANDLED;
++}
++
++/**
++ * set_cts_irq() - Enable interrupt on CTS.
++ * @uart_info: Main Uart structure.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   Error codes from request_irq and disable_uart.
++ */
++static int set_cts_irq(struct uart_info *uart_info)
++{
++	int err;
++	struct cg2900_platform_data *pf_data;
++
++	pf_data = dev_get_platdata(uart_info->dev);
++
++	/* First disable the UART so we can use IRQ on the GPIOs */
++	if (pf_data->uart.disable_uart) {
++		err = pf_data->uart.disable_uart(&uart_info->chip_dev);
++		if (err) {
++			dev_err(MAIN_DEV, "Could not disable UART (%d)\n", err);
++			goto error;
++		}
++	}
++
++	/* Set IRQ on CTS. */
++	err = request_irq(uart_info->cts_irq,
++			  cts_interrupt,
++			  IRQF_TRIGGER_FALLING,
++			  UART_NAME,
++			  uart_info->dev);
++	if (err) {
++		dev_err(MAIN_DEV, "Could not request CTS IRQ (%d)\n", err);
++		goto error;
++	}
++
++#ifdef CONFIG_PM
++	enable_irq_wake(uart_info->cts_irq);
++#endif
++	return 0;
++
++error:
++	if (pf_data->uart.enable_uart)
++		(void)pf_data->uart.enable_uart(&uart_info->chip_dev);
++	return err;
++}
++
++/**
++ * unset_cts_irq() - Disable interrupt on CTS.
++ * @uart_info: Main Uart structure.
++ */
++static void unset_cts_irq(struct uart_info *uart_info)
++{
++	int err = 0;
++	struct cg2900_platform_data *pf_data;
++
++	pf_data = dev_get_platdata(uart_info->dev);
++
++	/* Free CTS interrupt and restore UART settings. */
++	free_irq(uart_info->cts_irq, uart_info->dev);
++
++	if (pf_data->uart.enable_uart) {
++		err = pf_data->uart.enable_uart(&uart_info->chip_dev);
++		if (err)
++			dev_err(MAIN_DEV,
++				"Unable to enable UART Hardware (%d)\n", err);
++	}
++}
++
++/**
++ * get_sleep_timeout() - Get sleep timeout.
++ * @uart_info: Main Uart structure.
++ *
++ * Check all conditions for sleep and return sleep timeout.
++ * Return:
++ *	0: sleep not allowed.
++ *	other: Timeout value in ms.
++ */
++static unsigned long get_sleep_timeout(struct uart_info *uart_info)
++{
++	unsigned long timeout_jiffies = cg2900_get_sleep_timeout();
++
++	if (timeout_jiffies &&
++		uart_info->hu &&
++		uart_info->hu->fd &&
++		uart_info->sleep_allowed)
++		return timeout_jiffies;
++
++	return 0;
++}
++
++/**
++ * update_timer() - Updates or starts the sleep timer.
++ * @uart_info: Main Uart structure.
++ *
++ * Updates or starts the sleep timer used to detect when there are no current
++ * data transmissions.
++ */
++static void update_timer(struct uart_info *uart_info)
++{
++	unsigned long timeout_jiffies = get_sleep_timeout(uart_info);
++
++	del_timer(&uart_info->timer);
++
++	/* Resuming state is special. Need to get back chip to awake state. */
++	if (!timeout_jiffies && uart_info->sleep_state != CHIP_RESUMING)
++		return;
++
++	mutex_lock(&(uart_info->sleep_state_lock));
++	/*
++	 * This function indicates data is transmitted.
++	 * Therefore see to that the chip is awake.
++	 */
++	if (CHIP_AWAKE == uart_info->sleep_state)
++		goto finished;
++
++
++	if (CHIP_ASLEEP == uart_info->sleep_state ||
++		CHIP_RESUMING == uart_info->sleep_state) {
++		/* Disable IRQ only when it was enabled. */
++		unset_cts_irq(uart_info);
++		(void)hci_uart_set_baudrate(uart_info->hu,
++							uart_info->baud_rate);
++	}
++	/* Set FLOW on. */
++	hci_uart_flow_ctrl(uart_info->hu, FLOW_ON);
++
++	/* Unset BREAK. */
++	dev_dbg(MAIN_DEV, "update_timer: Clear break\n");
++	hci_uart_set_break(uart_info->hu, BREAK_OFF);
++
++	dev_dbg(MAIN_DEV, "New sleep_state: CHIP_AWAKE\n");
++	uart_info->sleep_state = CHIP_AWAKE;
++
++finished:
++	mutex_unlock(&(uart_info->sleep_state_lock));
++	/*
++	 * If timer is running restart it. If not, start it.
++	 * All this is handled by mod_timer().
++	 */
++	mod_timer(&(uart_info->timer), jiffies + timeout_jiffies);
++}
++
++/**
++ * sleep_timer_expired() - Called when sleep timer expires.
++ * @data:	Value supplied when starting the timer.
++ *
++ * The sleep_timer_expired() function is called if there are no ongoing data
++ * transmissions. It tries to put the chip in sleep mode.
++ *
++ */
++static void sleep_timer_expired(unsigned long data)
++{
++	struct uart_info *uart_info = (struct uart_info *)data;
++	unsigned long timeout_jiffies = get_sleep_timeout(uart_info);
++	int err = 0;
++
++	if (!timeout_jiffies)
++		return;
++
++	mutex_lock(&(uart_info->sleep_state_lock));
++
++	switch (uart_info->sleep_state) {
++	case CHIP_FALLING_ASLEEP:
++		if (!is_chip_flow_off(uart_info))
++			goto run_timer;
++
++		/* Flow OFF. */
++		hci_uart_flow_ctrl(uart_info->hu, FLOW_OFF);
++
++		/*
++		 * Set baud zero.
++		 * This cause shut off UART clock as well.
++		 */
++		(void)hci_uart_set_baudrate(uart_info->hu,
++							ZERO_BAUD_RATE);
++		err = set_cts_irq(uart_info);
++		if (err < 0) {
++			dev_err(MAIN_DEV, "Can not set interrupt on CTS, "
++							"err:%d\n", err);
++			(void)hci_uart_set_baudrate(uart_info->hu,
++							uart_info->baud_rate);
++			hci_uart_flow_ctrl(uart_info->hu, FLOW_ON);
++			hci_uart_set_break(uart_info->hu, BREAK_OFF);
++
++			dev_dbg(MAIN_DEV, "New sleep_state: CHIP_AWAKE\n");
++			uart_info->sleep_state = CHIP_AWAKE;
++
++			if (err == -ECANCELED)
++				goto run_timer;
++			else
++				goto error;
++		}
++
++		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_ASLEEP\n");
++		uart_info->sleep_state = CHIP_ASLEEP;
++		break;
++	case CHIP_AWAKE:
++
++		dev_dbg(MAIN_DEV, "sleep_timer_expired: Set break\n");
++		hci_uart_set_break(uart_info->hu, BREAK_ON);
++
++		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_FALLING_ASLEEP\n");
++		uart_info->sleep_state = CHIP_FALLING_ASLEEP;
++		goto run_timer;
++
++	case CHIP_POWERED_DOWN:
++	case CHIP_SUSPENDED:
++	case CHIP_ASLEEP: /* Fallthrough. */
++	default:
++		dev_dbg(MAIN_DEV,
++			"Chip sleeps, is suspended or powered down\n");
++		break;
++	}
++
++	mutex_unlock(&(uart_info->sleep_state_lock));
++
++	return;
++
++run_timer:
++	mutex_unlock(&(uart_info->sleep_state_lock));
++	mod_timer(&(uart_info->timer), jiffies + timeout_jiffies);
++	return;
++error:
++	/* Disable sleep mode.*/
++	dev_err(MAIN_DEV, "Disable sleep mode\n");
++	uart_info->sleep_allowed = false;
++	mutex_unlock(&(uart_info->sleep_state_lock));
++}
++
++#ifdef CONFIG_PM
++/**
++ * cg2900_uart_suspend() - Called by Linux PM to put the device in a low power mode.
++ * @pdev:	Pointer to platform device.
++ * @state:	New state.
++ *
++ * In UART case, CG2900 driver does nothing on suspend.
++ *
++ * Returns:
++ *   0 - Success.
++ */
++static int cg2900_uart_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	struct uart_info *uart_info = dev_get_drvdata(&pdev->dev);
++
++	if (uart_info->sleep_state == CHIP_POWERED_DOWN)
++		return 0;
++
++	if (uart_info->sleep_state != CHIP_ASLEEP)
++		return -EBUSY;
++
++	dev_dbg(MAIN_DEV, "New sleep_state: CHIP_SUSPENDED\n");
++	uart_info->sleep_state = CHIP_SUSPENDED;
++	return 0;
++}
++
++/**
++ * cg2900_uart_resume() - Called to bring a device back from a low power state.
++ * @pdev:	Pointer to platform device.
++ *
++ * In UART case, CG2900 driver does nothing on resume.
++ *
++ * Returns:
++ *   0 - Success.
++ */
++static int cg2900_uart_resume(struct platform_device *pdev)
++{
++	struct uart_info *uart_info = dev_get_drvdata(&pdev->dev);
++
++	if (uart_info->sleep_state == CHIP_POWERED_DOWN)
++		return 0;
++
++	if (uart_info->sleep_state == CHIP_RESUMING)
++		/* System resume because of trafic on UART. Lets wakeup.*/
++		update_timer(uart_info);
++	else {
++		/* No need to wakeup chip. Go back to Asleep state.*/
++		dev_dbg(MAIN_DEV, "New sleep_state: CHIP_ASLEEP\n");
++		uart_info->sleep_state = CHIP_ASLEEP;
++	}
++	return 0;
++}
++#endif /* CONFIG_PM */
++
++/**
++ * cg2900_enable_regulator() - Enable regulator.
++ * @uart_info: Main Uart structure.
++ *
++ * Returns:
++ *   0 - Success.
++ *   Error from regulator_get, regulator_enable.
++ */
++static int cg2900_enable_regulator(struct uart_info *uart_info)
++{
++#ifdef CONFIG_REGULATOR
++	int err;
++
++	/* Get and enable regulator. */
++	uart_info->regulator = regulator_get(uart_info->dev, "gbf_1v8");
++	if (IS_ERR(uart_info->regulator)) {
++		dev_err(MAIN_DEV, "Not able to find regulator\n");
++		err = PTR_ERR(uart_info->regulator);
++	} else {
++		err = regulator_enable(uart_info->regulator);
++		if (err)
++			dev_err(MAIN_DEV, "Not able to enable regulator\n");
++		else
++			uart_info->regulator_enabled = true;
++	}
++	return err;
++#else
++	return 0;
++#endif
++}
++
++/**
++ * cg2900_disable_regulator() - Disable regulator.
++ * @uart_info: Main Uart structure.
++ *
++ */
++static void cg2900_disable_regulator(struct uart_info *uart_info)
++{
++#ifdef CONFIG_REGULATOR
++	/* Disable and put regulator. */
++	if (uart_info->regulator && uart_info->regulator_enabled) {
++		regulator_disable(uart_info->regulator);
++		uart_info->regulator_enabled = false;
++	}
++	regulator_put(uart_info->regulator);
++	uart_info->regulator = NULL;
++#endif
++}
++
++/**
++ * is_set_baud_rate_cmd() - Checks if data contains set baud rate hci cmd.
++ * @data:	Pointer to data array to check.
++ *
++ * Returns:
++ *   true - if cmd found;
++ *   false - otherwise.
++ */
++static bool is_set_baud_rate_cmd(const char *data)
++{
++	struct hci_command_hdr *cmd;
++
++	if (data[0] != HCI_BT_CMD_H4_CHANNEL)
++		return false;
++
++	cmd = (struct hci_command_hdr *)&data[1];
++	if (le16_to_cpu(cmd->opcode) == CG2900_BT_OP_VS_SET_BAUD_RATE &&
++	    cmd->plen == BT_PARAM_LEN(sizeof(struct bt_vs_set_baud_rate_cmd)))
++		return true;
++
++	return false;
++}
++
++/**
++ * is_bt_cmd_complete_no_param() - Checks if data contains command complete event for a certain command.
++ * @skb:	sk_buffer containing the data including H:4 header.
++ * @opcode:	Command op code.
++ * @status:	Command status.
++ *
++ * Returns:
++ *   true - If this is the command complete we were looking for;
++ *   false - otherwise.
++ */
++static bool is_bt_cmd_complete_no_param(struct sk_buff *skb, u16 opcode,
++					u8 *status)
++{
++	struct hci_event_hdr *event;
++	struct hci_ev_cmd_complete *complete;
++	u8 *data = &(skb->data[0]);
++
++	if (HCI_BT_EVT_H4_CHANNEL != *data)
++		return false;
++
++	data += HCI_H4_SIZE;
++	event = (struct hci_event_hdr *)data;
++	if (HCI_EV_CMD_COMPLETE != event->evt ||
++	    HCI_BT_CMD_COMPLETE_LEN != event->plen)
++		return false;
++
++	data += sizeof(*event);
++	complete = (struct hci_ev_cmd_complete *)data;
++	if (opcode != le16_to_cpu(complete->opcode))
++		return false;
++
++	if (status) {
++		/*
++		 * All command complete have the status field at first byte of
++		 * packet data.
++		 */
++		data += sizeof(*complete);
++		*status = *data;
++	}
++	return true;
++}
++
++/**
++ * alloc_rx_skb() - Alloc an sk_buff structure for receiving data from controller.
++ * @size:	Size in number of octets.
++ * @priority:	Allocation priority, e.g. GFP_KERNEL.
++ *
++ * Returns:
++ *   Pointer to sk_buff structure.
++ */
++static struct sk_buff *alloc_rx_skb(unsigned int size, gfp_t priority)
++{
++	struct sk_buff *skb;
++
++	/* Allocate the SKB and reserve space for the header */
++	skb = alloc_skb(size + RX_SKB_RESERVE, priority);
++	if (skb)
++		skb_reserve(skb, RX_SKB_RESERVE);
++
++	return skb;
++}
++
++/**
++ * finish_setting_baud_rate() - Handles sending the ste baud rate hci cmd.
++ * @hu:	Pointer to associated Hci uart structure.
++ *
++ * finish_setting_baud_rate() makes sure that the set baud rate cmd has
++ * been really sent out on the wire and then switches the tty driver to new
++ * baud rate.
++ */
++static void finish_setting_baud_rate(struct hci_uart *hu)
++{
++	struct uart_info *uart_info =
++			(struct uart_info *)dev_get_drvdata(hu->proto->dev);
++	/*
++	 * Give the tty driver time to send data and proceed. If it hasn't
++	 * been sent we can't do much about it anyway.
++	 */
++	schedule_timeout_interruptible(msecs_to_jiffies(UART_TX_TIMEOUT));
++
++	/*
++	 * Now set the termios struct to the new baudrate. Start by storing
++	 * the old termios.
++	 */
++	if (hci_uart_set_baudrate(hu, uart_info->baud_rate) < 0) {
++		/* Something went wrong.*/
++		dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_IDLE\n");
++		uart_info->baud_rate_state = BAUD_IDLE;
++	} else {
++		dev_dbg(MAIN_DEV, "Setting termios to new baud rate\n");
++		dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_WAITING\n");
++		uart_info->baud_rate_state = BAUD_WAITING;
++	}
++
++	hci_uart_flow_ctrl(hu, FLOW_ON);
++}
++
++/**
++ * alloc_set_baud_rate_cmd() - Allocates new sk_buff and fills in the change baud rate hci cmd.
++ * @uart_info:	Main Uart structure.
++ * @baud:	(in/out) Requested new baud rate. Updated to default baud rate
++ *		upon invalid value.
++ *
++ * Returns:
++ *   Pointer to allocated sk_buff if successful;
++ *   NULL otherwise.
++ */
++static struct sk_buff *alloc_set_baud_rate_cmd(struct uart_info *uart_info,
++							int *baud)
++{
++	struct sk_buff *skb;
++	u8 *h4;
++	struct bt_vs_set_baud_rate_cmd *cmd;
++
++	skb = alloc_skb(sizeof(*cmd) + CG2900_SKB_RESERVE, GFP_ATOMIC);
++	if (!skb) {
++		dev_err(MAIN_DEV,
++			"alloc_set_baud_rate_cmd: Failed to alloc skb\n");
++		return NULL;
++	}
++	skb_reserve(skb, CG2900_SKB_RESERVE);
++
++	cmd = (struct bt_vs_set_baud_rate_cmd *)skb_put(skb, sizeof(cmd));
++
++	/* Create the Hci_Cmd_ST_Set_Uart_Baud_Rate packet */
++	cmd->opcode = cpu_to_le16(CG2900_BT_OP_VS_SET_BAUD_RATE);
++	cmd->plen = BT_PARAM_LEN(sizeof(cmd));
++
++	switch (*baud) {
++	case 57600:
++		cmd->baud_rate = CG2900_BAUD_RATE_57600;
++		break;
++	case 115200:
++		cmd->baud_rate = CG2900_BAUD_RATE_115200;
++		break;
++	case 230400:
++		cmd->baud_rate = CG2900_BAUD_RATE_230400;
++		break;
++	case 460800:
++		cmd->baud_rate = CG2900_BAUD_RATE_460800;
++		break;
++	case 921600:
++		cmd->baud_rate = CG2900_BAUD_RATE_921600;
++		break;
++	case 2000000:
++		cmd->baud_rate = CG2900_BAUD_RATE_2000000;
++		break;
++	case 3000000:
++		cmd->baud_rate = CG2900_BAUD_RATE_3000000;
++		break;
++	case 4000000:
++		cmd->baud_rate = CG2900_BAUD_RATE_4000000;
++		break;
++	default:
++		dev_err(MAIN_DEV,
++			"Invalid speed requested (%d), using 115200 bps "
++			"instead\n", *baud);
++		cmd->baud_rate = CG2900_BAUD_RATE_115200;
++		*baud = 115200;
++		break;
++	};
++
++	h4 = skb_push(skb, HCI_H4_SIZE);
++	*h4 = HCI_BT_CMD_H4_CHANNEL;
++
++	return skb;
++}
++
++/**
++ * work_do_transmit() - Transmit data packet to connectivity controller over UART.
++ * @work:	Pointer to work info structure. Contains uart_info structure
++ *		pointer.
++ */
++static void work_do_transmit(struct work_struct *work)
++{
++	struct uart_work_struct *current_work;
++	struct uart_info *uart_info;
++
++	current_work = container_of(work, struct uart_work_struct, work);
++	uart_info = (struct uart_info *)current_work->data;
++
++	kfree(current_work);
++
++	/* Restart timer. */
++	update_timer(uart_info);
++
++	(void)hci_uart_tx_wakeup(uart_info->hu);
++}
++
++/**
++ * work_hw_deregistered() - Handle HW deregistered.
++ * @work: Reference to work data.
++ */
++static void work_hw_deregistered(struct work_struct *work)
++{
++	struct uart_work_struct *current_work;
++	struct uart_info *uart_info;
++	int err;
++	current_work = container_of(work, struct uart_work_struct, work);
++	uart_info = (struct uart_info *)current_work->data;
++
++	err = cg2900_deregister_trans_driver(&uart_info->chip_dev);
++	if (err)
++		dev_err(MAIN_DEV, "Could not deregister UART from Core (%d)\n",
++			err);
++
++	kfree(current_work);
++}
++
++/**
++ * set_baud_rate() - Sets new baud rate for the UART.
++ * @hu:		Pointer to hci_uart structure.
++ * @baud:	New baud rate.
++ *
++ * This function first sends the HCI command
++ * Hci_Cmd_ST_Set_Uart_Baud_Rate. It then changes the baud rate in HW, and
++ * finally it waits for the Command Complete event for the
++ * Hci_Cmd_ST_Set_Uart_Baud_Rate command.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EALREADY if baud rate change is already in progress.
++ *   -EFAULT if one or more of the UART related structs is not allocated.
++ *   -ENOMEM if skb allocation has failed.
++ *   -EPERM if setting the new baud rate has failed.
++ *   Errors from create_work_item.
++ */
++static int set_baud_rate(struct hci_uart *hu, int baud)
++{
++	int err = 0;
++	struct sk_buff *skb;
++	int old_baud_rate;
++	struct uart_info *uart_info =
++			(struct uart_info *)dev_get_drvdata(hu->proto->dev);
++
++	dev_dbg(MAIN_DEV, "set_baud_rate (%d baud)\n", baud);
++
++	if (uart_info->baud_rate_state != BAUD_IDLE) {
++		dev_err(MAIN_DEV,
++			"Trying to set new baud rate before old setting "
++			   "is finished\n");
++		return -EALREADY;
++	}
++
++	hci_uart_flow_ctrl(uart_info->hu, FLOW_OFF);
++
++	/*
++	 * Store old baud rate so that we can restore it if something goes
++	 * wrong.
++	 */
++	old_baud_rate = uart_info->baud_rate;
++
++	skb = alloc_set_baud_rate_cmd(uart_info, &baud);
++	if (!skb) {
++		dev_err(MAIN_DEV, "alloc_set_baud_rate_cmd failed\n");
++		return -ENOMEM;
++	}
++
++	dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_START\n");
++	uart_info->baud_rate_state = BAUD_START;
++	uart_info->baud_rate = baud;
++
++	/* Queue the sk_buffer... */
++	skb_queue_tail(&uart_info->tx_queue, skb);
++
++	/* ... and call the common UART TX function */
++	err = create_work_item(uart_info, work_do_transmit);
++	if (err) {
++		dev_err(MAIN_DEV,
++			"Failed to send change baud rate cmd, freeing skb\n");
++		skb = skb_dequeue_tail(&uart_info->tx_queue);
++		dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_IDLE\n");
++		uart_info->baud_rate_state = BAUD_IDLE;
++		uart_info->baud_rate = old_baud_rate;
++		kfree_skb(skb);
++		return err;
++	}
++
++	dev_dbg(MAIN_DEV, "Set baud rate cmd scheduled for sending\n");
++
++	/*
++	 * Now wait for the command complete.
++	 * It will come at the new baudrate.
++	 */
++	wait_event_interruptible_timeout(uart_wait_queue,
++				((BAUD_SUCCESS == uart_info->baud_rate_state) ||
++				 (BAUD_FAIL    == uart_info->baud_rate_state)),
++				 msecs_to_jiffies(UART_RESP_TIMEOUT));
++	if (BAUD_SUCCESS == uart_info->baud_rate_state)
++		dev_info(MAIN_DEV, "Baud rate changed to %d baud\n", baud);
++	else {
++		dev_err(MAIN_DEV, "Failed to set new baud rate (%d)\n",
++			   uart_info->baud_rate_state);
++		err = -EPERM;
++	}
++
++	/* Finally flush the TTY so we are sure that is no bad data there */
++	hci_uart_flush_buffer(hu);
++	dev_dbg(MAIN_DEV, "Flushing TTY after baud rate change\n");
++	/* Finished. Set state to IDLE */
++	dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_IDLE\n");
++	uart_info->baud_rate_state = BAUD_IDLE;
++
++	return err;
++}
++
++/**
++ * uart_write() - Transmit data to CG2900 over UART.
++ * @dev:	Transport device information.
++ * @skb:	SK buffer to transmit.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   Errors from create_work_item.
++ */
++static int uart_write(struct cg2900_chip_dev *dev, struct sk_buff *skb)
++{
++	int err;
++	struct uart_info *uart_info = dev_get_drvdata(dev->dev);
++
++	/* Delete sleep timer. */
++	(void)del_timer(&uart_info->timer);
++
++	if (uart_debug)
++		dev_dbg(MAIN_DEV, "uart_write: data len = %d\n", skb->len);
++
++	/* Queue the sk_buffer... */
++	skb_queue_tail(&uart_info->tx_queue, skb);
++
++	/* ...and start TX operation */
++
++	err = create_work_item(uart_info, work_do_transmit);
++	if (err)
++		dev_err(MAIN_DEV,
++			"Failed to create work item (%d) uart_tty_wakeup\n",
++			err);
++
++	return err;
++}
++
++/**
++ * uart_open() - Open the CG2900 UART for data transfers.
++ * @dev:	Transport device information.
++ *
++ * Returns:
++ *   0 if there is no error,
++ *   -EACCES if write to transport failed,
++ *   -EIO if chip did not answer to commands.
++ *   Errors from set_baud_rate.
++ */
++static int uart_open(struct cg2900_chip_dev *dev)
++{
++	u8 *h4;
++	struct sk_buff *skb;
++	struct hci_command_hdr *cmd;
++	struct uart_info *uart_info = dev_get_drvdata(dev->dev);
++	/*
++	 * Chip has just been started up. It has a system to autodetect
++	 * exact baud rate and transport to use. There are only a few commands
++	 * it will recognize and HCI Reset is one of them.
++	 * We therefore start with sending that before actually changing
++	 * baud rate.
++	 *
++	 * Create the Hci_Reset packet
++	 */
++
++	skb = alloc_skb(sizeof(*cmd) + HCI_H4_SIZE, GFP_ATOMIC);
++	if (!skb) {
++		dev_err(MAIN_DEV, "Couldn't allocate sk_buff with length %d",
++			     sizeof(*cmd));
++		return -EACCES;
++	}
++	skb_reserve(skb, HCI_H4_SIZE);
++	cmd = (struct hci_command_hdr *)skb_put(skb, sizeof(*cmd));
++	cmd->opcode = cpu_to_le16(HCI_OP_RESET);
++	cmd->plen = 0; /* No parameters for HCI reset */
++
++	h4 = skb_push(skb, HCI_H4_SIZE);
++	*h4 = HCI_BT_CMD_H4_CHANNEL;
++
++	dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_SENDING_RESET\n");
++	uart_info->baud_rate_state = BAUD_SENDING_RESET;
++	dev_dbg(MAIN_DEV, "Sending HCI reset before baud rate change\n");
++
++
++	/* Queue the sk_buffer... */
++	skb_queue_tail(&uart_info->tx_queue, skb);
++
++	(void)hci_uart_tx_wakeup(uart_info->hu);
++
++	/*
++	 * Wait for command complete. If error, exit without changing
++	 * baud rate.
++	 */
++	wait_event_interruptible_timeout(uart_wait_queue,
++					BAUD_IDLE == uart_info->baud_rate_state,
++					msecs_to_jiffies(UART_RESP_TIMEOUT));
++	if (BAUD_IDLE != uart_info->baud_rate_state) {
++		dev_err(MAIN_DEV, "Failed to send HCI Reset\n");
++		dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_IDLE\n");
++		uart_info->baud_rate_state = BAUD_IDLE;
++		return -EIO;
++	}
++
++	/* Just return if there will be no change of baud rate */
++	if (uart_default_baud != uart_high_baud)
++		return set_baud_rate(uart_info->hu, uart_high_baud);
++	else
++		return 0;
++}
++
++/**
++ * uart_set_chip_power() - Enable or disable the CG2900.
++ * @chip_on:	true if chip shall be enabled, false otherwise.
++ */
++static void uart_set_chip_power(struct cg2900_chip_dev *dev, bool chip_on)
++{
++	int uart_baudrate = uart_default_baud;
++	struct cg2900_platform_data *pf_data;
++	struct uart_info *uart_info;
++
++	pf_data = dev_get_platdata(dev->dev);
++	uart_info = dev_get_drvdata(dev->dev);
++
++	dev_info(MAIN_DEV, "Set chip power: %s\n",
++		    (chip_on ? "ENABLE" : "DISABLE"));
++
++	if (!uart_info->hu) {
++		dev_err(MAIN_DEV, "Hci uart struct is not allocated!");
++		return;
++	}
++
++	if (chip_on) {
++		if (uart_info->sleep_state != CHIP_POWERED_DOWN) {
++			dev_err(MAIN_DEV, "Chip is already powered up");
++			return;
++		}
++
++		if (cg2900_enable_regulator(uart_info))
++			return;
++
++		if (pf_data->enable_chip) {
++			pf_data->enable_chip(dev);
++			dev_dbg(MAIN_DEV, "New sleep_state: CHIP_AWAKE\n");
++			uart_info->sleep_state = CHIP_AWAKE;
++		}
++		goto finished;
++	}
++
++	/* Turn off the chip.*/
++	switch (uart_info->sleep_state) {
++	case CHIP_AWAKE:
++		break;
++	case CHIP_FALLING_ASLEEP:
++		del_timer(&uart_info->timer);
++		hci_uart_set_break(uart_info->hu, BREAK_OFF);
++		break;
++	case CHIP_SUSPENDED:
++	case CHIP_ASLEEP:
++		unset_cts_irq(uart_info);
++		hci_uart_flow_ctrl(uart_info->hu, FLOW_ON);
++		hci_uart_set_break(uart_info->hu, BREAK_OFF);
++		break;
++	default:
++		break;
++	}
++
++	if (pf_data->disable_chip) {
++		pf_data->disable_chip(dev);
++		dev_dbg(MAIN_DEV,
++			"New sleep_state: CHIP_POWERED_DOWN\n");
++		uart_info->sleep_state = CHIP_POWERED_DOWN;
++	}
++
++	cg2900_disable_regulator(uart_info);
++	/*
++	 * Setting baud rate to 0 will tell UART driver to shut off its
++	 * clocks.
++	 */
++	uart_baudrate = ZERO_BAUD_RATE;
++
++finished:
++	/*
++	 * Now we have to set the digital baseband UART
++	 * to default baudrate if chip is ON or to zero baudrate if
++	 * chip is turning OFF.
++	 */
++	 (void)hci_uart_set_baudrate(uart_info->hu, uart_baudrate);
++}
++
++/**
++ * uart_chip_startup_finished() - CG2900 startup finished.
++ */
++static void uart_chip_startup_finished(struct cg2900_chip_dev *dev)
++{
++	struct uart_info *uart_info = dev_get_drvdata(dev->dev);
++	/* Run the timer. */
++	update_timer(uart_info);
++}
++/**
++ * uart_close() - Close the CG2900 UART for data transfers.
++ * @dev:	Transport device information.
++ *
++ * Returns:
++ *   0 if there is no error.
++ */
++static int uart_close(struct cg2900_chip_dev *dev)
++{
++	/* The chip is already shut down. Power off the chip. */
++	uart_set_chip_power(dev, false);
++	return 0;
++}
++
++/**
++ * send_skb_to_core() - Sends packet received from UART to CG2900 Core.
++ * @skb:	Received data packet.
++ *
++ * This function checks if UART is waiting for Command complete event,
++ * see set_baud_rate.
++ * If it is waiting it checks if it is the expected packet and the status.
++ * If not is passes the packet to CG2900 Core.
++ */
++static void send_skb_to_core(struct uart_info *uart_info, struct sk_buff *skb)
++{
++	u8 status;
++
++	if (!skb) {
++		dev_err(MAIN_DEV, "send_skb_to_core: Received NULL as skb\n");
++		return;
++	}
++
++	if (BAUD_WAITING == uart_info->baud_rate_state) {
++		/*
++		 * Should only really be one packet received now:
++		 * the CmdComplete for the SetBaudrate command
++		 * Let's see if this is the packet we are waiting for.
++		 */
++		if (!is_bt_cmd_complete_no_param(skb,
++				CG2900_BT_OP_VS_SET_BAUD_RATE, &status)) {
++			/*
++			 * Received other event. Should not really happen,
++			 * but pass the data to CG2900 Core anyway.
++			 */
++			dev_dbg(MAIN_DEV, "Sending packet to CG2900 Core while "
++				"waiting for BaudRate CmdComplete\n");
++			uart_info->chip_dev.c_cb.data_from_chip
++				(&uart_info->chip_dev, skb);
++			return;
++		}
++
++		/*
++		 * We have received complete event for our baud rate
++		 * change command
++		 */
++		if (HCI_BT_ERROR_NO_ERROR == status) {
++			dev_dbg(MAIN_DEV, "Received baud rate change complete "
++				"event OK\n");
++			dev_dbg(MAIN_DEV,
++				"New baud_rate_state: BAUD_SUCCESS\n");
++			uart_info->baud_rate_state = BAUD_SUCCESS;
++		} else {
++			dev_err(MAIN_DEV,
++				"Received baud rate change complete event "
++				"with status 0x%X\n", status);
++			dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_FAIL\n");
++			uart_info->baud_rate_state = BAUD_FAIL;
++		}
++		wake_up_interruptible(&uart_wait_queue);
++		kfree_skb(skb);
++	} else if (BAUD_SENDING_RESET == uart_info->baud_rate_state) {
++		/*
++		 * Should only really be one packet received now:
++		 * the CmdComplete for the Reset command
++		 * Let's see if this is the packet we are waiting for.
++		 */
++		if (!is_bt_cmd_complete_no_param(skb, HCI_OP_RESET, &status)) {
++			/*
++			 * Received other event. Should not really happen,
++			 * but pass the data to CG2900 Core anyway.
++			 */
++			dev_dbg(MAIN_DEV, "Sending packet to CG2900 Core while "
++				"waiting for Reset CmdComplete\n");
++			uart_info->chip_dev.c_cb.data_from_chip
++					(&uart_info->chip_dev, skb);
++			return;
++		}
++
++		/*
++		 * We have received complete event for our baud rate
++		 * change command
++		 */
++		if (HCI_BT_ERROR_NO_ERROR == status) {
++			dev_dbg(MAIN_DEV,
++				"Received HCI reset complete event OK\n");
++			/*
++			 * Go back to BAUD_IDLE since this was not really
++			 * baud rate change but just a preparation of the chip
++			 * to be ready to receive commands.
++			 */
++			dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_IDLE\n");
++			uart_info->baud_rate_state = BAUD_IDLE;
++		} else {
++			dev_err(MAIN_DEV,
++				"Received HCI reset complete event with "
++				"status 0x%X", status);
++			dev_dbg(MAIN_DEV, "New baud_rate_state: BAUD_FAIL\n");
++			uart_info->baud_rate_state = BAUD_FAIL;
++		}
++		wake_up_interruptible(&uart_wait_queue);
++		kfree_skb(skb);
++	} else {
++		/* Just pass data to CG2900 Core */
++		uart_info->chip_dev.c_cb.data_from_chip
++						(&uart_info->chip_dev, skb);
++	}
++}
++
++/**
++ * check_data_len() - Check number of bytes to receive.
++ * @len:	Number of bytes left to receive.
++ */
++static void check_data_len(struct uart_info *uart_info, int len)
++{
++	/* First get number of bytes left in the sk_buffer */
++	register int room = skb_tailroom(uart_info->rx_skb);
++
++	if (!len) {
++		/* No data left to receive. Transmit to CG2900 Core */
++		send_skb_to_core(uart_info, uart_info->rx_skb);
++	} else if (len > room) {
++		dev_err(MAIN_DEV, "Data length is too large (%d > %d)\n",
++			len, room);
++		kfree_skb(uart_info->rx_skb);
++	} else {
++		/*
++		 * "Normal" case. Switch to data receiving state and store
++		 * data length.
++		 */
++		uart_info->rx_state = W4_DATA;
++		uart_info->rx_count = len;
++		return;
++	}
++
++	uart_info->rx_state = W4_PACKET_TYPE;
++	uart_info->rx_skb   = NULL;
++	uart_info->rx_count = 0;
++}
++
++/**
++ * cg2900_hu_receive() - Handles received UART data.
++ * @data:	Data received
++ * @count:	Number of bytes received
++ *
++ * The cg2900_hu_receive() function handles received UART data and puts it
++ * together to one complete packet.
++ *
++ * Returns:
++ *   Number of bytes not handled, i.e. 0 = no error.
++ */
++static int cg2900_hu_receive(struct hci_uart *hu,
++					void *data, int count)
++{
++	const u8 *r_ptr;
++	u8 *w_ptr;
++	int len;
++	struct hci_event_hdr	*evt;
++	struct hci_acl_hdr	*acl;
++	union fm_leg_evt_or_irq	*fm;
++	struct gnss_hci_hdr	*gnss;
++	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
++	u8 *tmp;
++
++	r_ptr = (const u8 *)data;
++
++	update_timer(uart_info);
++
++	if (uart_debug)
++		print_hex_dump_bytes(NAME " RX:\t", DUMP_PREFIX_NONE,
++				     data, count);
++
++	/* Continue while there is data left to handle */
++	while (count) {
++		/*
++		 * If we have already received a packet we know how many bytes
++		 * there are left.
++		 */
++		if (!uart_info->rx_count)
++			goto check_h4_header;
++
++		/* First copy received data into the skb_rx */
++		len = min_t(unsigned int, uart_info->rx_count, count);
++		memcpy(skb_put(uart_info->rx_skb, len), r_ptr, len);
++		/* Update counters from the length and step the data pointer */
++		uart_info->rx_count -= len;
++		count -= len;
++		r_ptr += len;
++
++		if (uart_info->rx_count)
++			/*
++			 * More data to receive to current packet. Break and
++			 * wait for next data on the UART.
++			 */
++			break;
++
++		/* Handle the different states */
++		tmp = uart_info->rx_skb->data + CG2900_SKB_RESERVE;
++		switch (uart_info->rx_state) {
++		case W4_DATA:
++			/*
++			 * Whole data packet has been received.
++			 * Transmit it to CG2900 Core.
++			 */
++			send_skb_to_core(uart_info, uart_info->rx_skb);
++
++			uart_info->rx_state = W4_PACKET_TYPE;
++			uart_info->rx_skb = NULL;
++			continue;
++
++		case W4_EVENT_HDR:
++			evt = (struct hci_event_hdr *)tmp;
++			check_data_len(uart_info, evt->plen);
++			/* Header read. Continue with next bytes */
++			continue;
++
++		case W4_ACL_HDR:
++			acl = (struct hci_acl_hdr *)tmp;
++			check_data_len(uart_info, le16_to_cpu(acl->dlen));
++			/* Header read. Continue with next bytes */
++			continue;
++
++		case W4_FM_RADIO_HDR:
++			fm = (union fm_leg_evt_or_irq *)tmp;
++			check_data_len(uart_info, fm->param_length);
++			/* Header read. Continue with next bytes */
++			continue;
++
++		case W4_GNSS_HDR:
++			gnss = (struct gnss_hci_hdr *)tmp;
++			check_data_len(uart_info, le16_to_cpu(gnss->plen));
++			/* Header read. Continue with next bytes */
++			continue;
++
++		default:
++			dev_err(MAIN_DEV,
++				"Bad state indicating memory overwrite "
++				"(0x%X)\n", (u8)(uart_info->rx_state));
++			break;
++		}
++
++check_h4_header:
++		/* Check which H:4 packet this is and update RX states */
++		if (*r_ptr == HCI_BT_EVT_H4_CHANNEL) {
++			uart_info->rx_state = W4_EVENT_HDR;
++			uart_info->rx_count = HCI_BT_EVT_HDR_SIZE;
++		} else if (*r_ptr == HCI_BT_ACL_H4_CHANNEL) {
++			uart_info->rx_state = W4_ACL_HDR;
++			uart_info->rx_count = HCI_BT_ACL_HDR_SIZE;
++		} else if (*r_ptr == HCI_FM_RADIO_H4_CHANNEL) {
++			uart_info->rx_state = W4_FM_RADIO_HDR;
++			uart_info->rx_count = HCI_FM_RADIO_HDR_SIZE;
++		} else if (*r_ptr == HCI_GNSS_H4_CHANNEL) {
++			uart_info->rx_state = W4_GNSS_HDR;
++			uart_info->rx_count = HCI_GNSS_HDR_SIZE;
++		} else {
++			dev_err(MAIN_DEV, "Unknown HCI packet type 0x%X\n",
++				(u8)*r_ptr);
++			r_ptr++;
++			count--;
++			continue;
++		}
++
++		/*
++		 * Allocate packet. We do not yet know the size and therefore
++		 * allocate max size.
++		 */
++		uart_info->rx_skb = alloc_rx_skb(RX_SKB_MAX_SIZE, GFP_ATOMIC);
++		if (!uart_info->rx_skb) {
++			dev_err(MAIN_DEV,
++				"Can't allocate memory for new packet\n");
++			uart_info->rx_state = W4_PACKET_TYPE;
++			uart_info->rx_count = 0;
++			return 0;
++		}
++
++		/* Write the H:4 header first in the sk_buffer */
++		w_ptr = skb_put(uart_info->rx_skb, 1);
++		*w_ptr = *r_ptr;
++
++		/* First byte (H4 header) read. Goto next byte */
++		r_ptr++;
++		count--;
++	}
++
++	return count;
++}
++
++/**
++ * cg2900_hu_open() - Called when UART line discipline changed to N_HCI.
++ * @hu:	Pointer to associated Hci uart structure.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   Errors from cg2900_register_trans_driver.
++ */
++static int cg2900_hu_open(struct hci_uart *hu)
++{
++	int err;
++	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
++
++	if (!uart_info)
++		return -EACCES;
++
++	dev_info(MAIN_DEV, "UART opened\n");
++
++	skb_queue_head_init(&uart_info->tx_queue);
++
++	uart_info->hu = hu;
++
++	/* Tell CG2900 Core that UART is connected */
++	err = cg2900_register_trans_driver(&uart_info->chip_dev);
++	if (err)
++		dev_err(MAIN_DEV, "Could not register transport driver (%d)\n",
++			err);
++
++	if (hu->tty->ops->tiocmget && hu->tty->ops->break_ctl)
++		uart_info->sleep_allowed = true;
++	else {
++		dev_err(MAIN_DEV, "Sleep mode not available\n");
++		uart_info->sleep_allowed = false;
++	}
++
++	return err;
++
++}
++
++/**
++ * cg2900_hu_close() - Close UART tty.
++ * @hu:	Pointer to associated hci_uart structure.
++ *
++ * The uart_tty_close() function is called when the line discipline is changed
++ * to something else, the TTY is closed, or the TTY detects a hangup.
++ */
++static int cg2900_hu_close(struct hci_uart *hu)
++{
++	int err;
++	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
++
++
++	BUG_ON(!uart_info);
++	BUG_ON(!uart_info->wq);
++
++	/* Purge any stored sk_buffers */
++	skb_queue_purge(&uart_info->tx_queue);
++	if (uart_info->rx_skb) {
++		kfree_skb(uart_info->rx_skb);
++		uart_info->rx_skb = NULL;
++	}
++
++	dev_info(MAIN_DEV, "UART closed\n");
++	err = create_work_item(uart_info, work_hw_deregistered);
++	if (err)
++		dev_err(MAIN_DEV, "Failed to create work item (%d) "
++			"work_hw_deregistered\n", err);
++
++	uart_info->hu = NULL;
++
++	return 0;
++}
++
++/**
++ * cg2900_hu_dequeue() - Get new skbuff.
++ * @hu: Pointer to associated hci_uart structure.
++ *
++ * The uart_tty_close() function is called when the line discipline is changed
++ * to something else, the TTY is closed, or the TTY detects a hangup.
++ */
++static struct sk_buff *cg2900_hu_dequeue(struct hci_uart *hu)
++{
++	struct sk_buff *skb;
++	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
++	skb = skb_dequeue(&uart_info->tx_queue);
++
++	if (BAUD_SENDING == uart_info->baud_rate_state)
++		finish_setting_baud_rate(hu);
++	/*
++	 * If it's set baud rate cmd set correct baud state and after
++	 * sending is finished inform the tty driver about the new
++	 * baud rate.
++	 */
++	if ((BAUD_START == uart_info->baud_rate_state) &&
++		skb && (is_set_baud_rate_cmd(skb->data))) {
++		dev_dbg(MAIN_DEV, "UART set baud rate cmd found.");
++		uart_info->baud_rate_state = BAUD_SENDING;
++	}
++
++	if (uart_debug && skb)
++		print_hex_dump_bytes(NAME " TX:\t", DUMP_PREFIX_NONE,
++				     skb->data, skb->len);
++
++	return skb;
++}
++
++/**
++ * cg2900_hu_flush() - Flush buffers.
++ * @hu: Pointer to associated hci_uart structure.
++ *
++ */
++static int cg2900_hu_flush(struct hci_uart *hu)
++{
++	struct uart_info *uart_info = dev_get_drvdata(hu->proto->dev);
++
++	dev_dbg(MAIN_DEV, "ui %p", uart_info);
++	skb_queue_purge(&uart_info->tx_queue);
++	return 0;
++}
++
++/**
++ * cg2900_uart_probe() - Initialize CG2900 UART resources.
++ * @pdev:	Platform device.
++ *
++ * This function initializes the module and registers to the UART framework.
++ *
++ * Returns:
++ *   0 if success.
++ *   -ENOMEM for failed alloc or structure creation.
++ *   -ECHILD for failed work queue creation.
++ *   Error codes generated by tty_register_ldisc.
++ */
++static int __devinit cg2900_uart_probe(struct platform_device *pdev)
++{
++	int err = 0;
++	struct uart_info *uart_info;
++	struct hci_uart_proto *p;
++	struct resource *resource;
++
++	pr_debug("cg2900_uart_probe");
++
++	uart_info = kzalloc(sizeof(*uart_info), GFP_KERNEL);
++	if (!uart_info) {
++		pr_err("Couldn't allocate uart_info");
++		return -ENOMEM;
++	}
++
++	uart_info->sleep_state = CHIP_POWERED_DOWN;
++	mutex_init(&(uart_info->sleep_state_lock));
++
++	uart_info->chip_dev.t_cb.open = uart_open;
++	uart_info->chip_dev.t_cb.close = uart_close;
++	uart_info->chip_dev.t_cb.write = uart_write;
++	uart_info->chip_dev.t_cb.set_chip_power = uart_set_chip_power;
++	uart_info->chip_dev.t_cb.chip_startup_finished =
++			uart_chip_startup_finished;
++	uart_info->chip_dev.pdev = pdev;
++	uart_info->chip_dev.dev = &pdev->dev;
++	uart_info->chip_dev.t_data = uart_info;
++
++	resource = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!resource) {
++		dev_err(&pdev->dev, "CTS IRQ does not exist\n");
++		err = -EINVAL;
++		goto error_handling_free;
++	}
++	uart_info->cts_irq = resource->start;
++
++	/* Init UART TX work queue */
++	uart_info->wq = create_singlethread_workqueue(UART_WQ_NAME);
++	if (!uart_info->wq) {
++		dev_err(MAIN_DEV, "Could not create workqueue\n");
++		err = -ECHILD; /* No child processes */
++		goto error_handling_free;
++	}
++	init_timer(&uart_info->timer);
++	uart_info->timer.function = sleep_timer_expired;
++	uart_info->timer.expires  = jiffies + cg2900_get_sleep_timeout();
++	uart_info->timer.data = (unsigned long)uart_info;
++
++	uart_info->dev = &pdev->dev;
++
++	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	if (!p) {
++		dev_err(MAIN_DEV, "Could not allocate p.");
++		goto error_handling_wq;
++	}
++
++	p->dev		= uart_info->dev;
++	p->id		= HCI_UART_STE;
++	p->open		= &cg2900_hu_open;
++	p->close	= &cg2900_hu_close;
++	p->recv		= &cg2900_hu_receive;
++	p->dequeue	= &cg2900_hu_dequeue;
++	p->flush	= &cg2900_hu_flush;
++
++	dev_set_drvdata(uart_info->dev, (void *)uart_info);
++
++	err = hci_uart_register_proto(p);
++	if (err) {
++		dev_err(MAIN_DEV, "Can not register protocol.");
++		kfree(p);
++		goto error_handling_wq;
++	}
++
++	goto finished;
++
++error_handling_wq:
++	destroy_workqueue(uart_info->wq);
++error_handling_free:
++	kfree(uart_info);
++	uart_info = NULL;
++finished:
++	return err;
++}
++
++/**
++ * cg2900_uart_remove() - Release CG2900 UART resources.
++ * @pdev:	Platform device.
++ *
++ * Returns:
++ *   0 if success.
++ *   Error codes generated by tty_unregister_ldisc.
++ */
++static int __devexit cg2900_uart_remove(struct platform_device *pdev)
++{
++	struct uart_info *uart_info = dev_get_drvdata(&pdev->dev);
++
++	pr_debug("cg2900_uart_remove");
++
++	if (!uart_info)
++		return -ECHILD;
++
++	if (uart_info->hu)
++		hci_uart_unregister_proto(uart_info->hu->proto);
++
++	destroy_workqueue(uart_info->wq);
++
++	dev_info(MAIN_DEV, "CG2900 UART removed\n");
++	kfree(uart_info);
++	uart_info = NULL;
++	return 0;
++}
++
++static struct platform_driver cg2900_uart_driver = {
++	.driver = {
++		.name	= "cg2900-uart",
++		.owner	= THIS_MODULE,
++	},
++	.probe	= cg2900_uart_probe,
++	.remove	= __devexit_p(cg2900_uart_remove),
++#ifdef CONFIG_PM
++	.suspend = cg2900_uart_suspend,
++	.resume = cg2900_uart_resume
++#endif
++};
++
++
++/**
++ * cg2900_uart_init() - Initialize module.
++ *
++ * Registers platform driver.
++ */
++static int __init cg2900_uart_init(void)
++{
++	pr_debug("cg2900_uart_init");
++	return platform_driver_register(&cg2900_uart_driver);
++}
++
++/**
++ * cg2900_uart_exit() - Remove module.
++ *
++ * Unregisters platform driver.
++ */
++static void __exit cg2900_uart_exit(void)
++{
++	pr_debug("cg2900_uart_exit");
++	platform_driver_unregister(&cg2900_uart_driver);
++}
++
++module_init(cg2900_uart_init);
++module_exit(cg2900_uart_exit);
++
++module_param(uart_default_baud, int, S_IRUGO);
++MODULE_PARM_DESC(uart_default_baud,
++		 "Default UART baud rate, e.g. 115200. If not set 115200 will "
++		 "be used.");
++
++module_param(uart_high_baud, int, S_IRUGO | S_IWUSR | S_IWGRP);
++MODULE_PARM_DESC(uart_high_baud,
++		 "High speed UART baud rate, e.g. 4000000.  If not set 3000000 "
++		 "will be used.");
++
++module_param(uart_debug, int, S_IRUGO | S_IWUSR | S_IWGRP);
++MODULE_PARM_DESC(uart_debug, "Enable/Disable debug. 0 means Debug disabled.");
++MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("ST-Ericsson CG2900 UART Driver");
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 4c2b5cc..d5c57bc 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -290,6 +290,15 @@ config MFD_STLC2690_CHIP
+ 	  STLC2690 support Bluetooth and FM radio, however FM is not supported
+ 	  over H:4 interface.
+ 
++config MFD_CG2900_UART
++	tristate "Support CG2900 UART transport"
++	depends on MFD_CG2900
++	select BT
++	select BT_HCIUART
++	help
++	  Support for UART as transport for ST-Ericsson CG2900 Connectivity
++	  Controller. Registers against Bluetooth N_HCI TTY line discipline.
++
+ config MFD_CG2900_AUDIO
+ 	tristate "Support CG2900 audio interface"
+ 	depends on MFD_CG2900
 -- 
 1.7.3.2
 
