@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab0LQDVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 22:21:45 -0500
-Received: from hera.kernel.org ([140.211.167.34]:54112 "EHLO hera.kernel.org"
+	id S1752706Ab0LQDV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 22:21:58 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64200 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690Ab0LQDVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 22:21:43 -0500
-Date: Fri, 17 Dec 2010 03:19:03 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tglx@linutronix.de, sgruszka@redhat.com,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        sgruszka@redhat.com
-In-Reply-To: <4D0AD3ED.8070607@kernel.org>
-References: <4D0AD3ED.8070607@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-32: Make sure we can map all of lowmem if we need to
-Message-ID: <tip-147dd5610c8d1bacb88a6c1dfdaceaf257946ed0@git.kernel.org>
-Git-Commit-ID: 147dd5610c8d1bacb88a6c1dfdaceaf257946ed0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 17 Dec 2010 03:19:04 +0000 (UTC)
+	id S1752616Ab0LQDV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 22:21:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,358,1288594800"; 
+   d="scan'208";a="688040131"
+Subject: Re: [BUG]x86: relocatable doesn't work with new binutils
+From: Shaohua Li <shaohua.li@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+In-Reply-To: <4D0AD1F9.7030704@zytor.com>
+References: <1292553726.2323.482.camel@sli10-conroe>
+	 <4D0AD1F9.7030704@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 11:21:54 +0800
+Message-ID: <1292556114.2323.484.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  147dd5610c8d1bacb88a6c1dfdaceaf257946ed0
-Gitweb:     http://git.kernel.org/tip/147dd5610c8d1bacb88a6c1dfdaceaf257946ed0
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 16 Dec 2010 19:11:09 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 16 Dec 2010 19:11:09 -0800
+On Fri, 2010-12-17 at 10:59 +0800, H. Peter Anvin wrote:
+> On 12/16/2010 06:42 PM, Shaohua Li wrote:
+> > We can easily workaround this issue by moving jiffies to a section or at
+> > least warn people if such binutils are using. what should we do?
+> 
+> I think we should do the workaround, but still get distros to update the
+> broken binutils.
+Here is my workaround.
+The problem is a lot of kernel versions are affected by this, fix all?
 
-x86-32: Make sure we can map all of lowmem if we need to
 
-A relocatable kernel can be anywhere in lowmem -- and in the case of a
-kdump kernel, is likely to be fairly high.  Since the early page
-tables map everything from address zero up we need to make sure we
-allocate enough brk that we can map all of lowmem if we need to.
 
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Tested-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4D0AD3ED.8070607@kernel.org>
+The CONFIG_RELOCATABLE is broken with new binutils, which will make boot
+panic. According to Lu Hongjiu, the affected binutils are from
+2.20.51.0.12 to 2.21.51.0.3, which are release since Oct 22 this year.
+At least ubuntu 10.10 is using such binutils. see:
+http://sourceware.org/bugzilla/show_bug.cgi?id=12327
+The reason of boot panic is we have 'jiffies = jiffies_64;' in
+vmlinux.lds.S. The jiffies isn't in any section. In kernel build, there
+is warning saying jiffies is an absolute address and can't be
+relocatable. At runtime, jiffies will have virtual address 0.
+
+Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+
 ---
- arch/x86/boot/compressed/misc.c |    2 +-
- arch/x86/kernel/head_32.S       |   12 +++++++-----
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ arch/x86/kernel/vmlinux.lds.S |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 23f315c..325c052 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -355,7 +355,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 	if (heap > 0x3fffffffffffUL)
- 		error("Destination address too large");
+Index: linux/arch/x86/kernel/vmlinux.lds.S
+===================================================================
+--- linux.orig/arch/x86/kernel/vmlinux.lds.S	2010-12-16 09:18:05.000000000 +0800
++++ linux/arch/x86/kernel/vmlinux.lds.S	2010-12-17 11:13:14.000000000 +0800
+@@ -34,11 +34,9 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONF
+ #ifdef CONFIG_X86_32
+ OUTPUT_ARCH(i386)
+ ENTRY(phys_startup_32)
+-jiffies = jiffies_64;
  #else
--	if (heap > ((-__PAGE_OFFSET-(512<<20)-1) & 0x7fffffff))
-+	if (heap > ((-__PAGE_OFFSET-(128<<20)-1) & 0x7fffffff))
- 		error("Destination address too large");
- #endif
- #ifndef CONFIG_RELOCATABLE
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index bcece91..d7cdf5b 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -60,16 +60,18 @@
- #define PAGE_TABLE_SIZE(pages) ((pages) / PTRS_PER_PGD)
+ OUTPUT_ARCH(i386:x86-64)
+ ENTRY(phys_startup_64)
+-jiffies_64 = jiffies;
  #endif
  
-+/* Number of possible pages in the lowmem region */
-+LOWMEM_PAGES = (((1<<32) - __PAGE_OFFSET) >> PAGE_SHIFT)
-+	
- /* Enough space to fit pagetables for the low memory linear map */
--MAPPING_BEYOND_END = \
--	PAGE_TABLE_SIZE(((1<<32) - __PAGE_OFFSET) >> PAGE_SHIFT) << PAGE_SHIFT
-+MAPPING_BEYOND_END = PAGE_TABLE_SIZE(LOWMEM_PAGES) << PAGE_SHIFT
+ #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+@@ -138,6 +136,11 @@ SECTIONS
+ 		CACHELINE_ALIGNED_DATA(L1_CACHE_BYTES)
  
- /*
-  * Worst-case size of the kernel mapping we need to make:
-- * the worst-case size of the kernel itself, plus the extra we need
-- * to map for the linear map.
-+ * a relocatable kernel can live anywhere in lowmem, so we need to be able
-+ * to map all of lowmem.
-  */
--KERNEL_PAGES = (KERNEL_IMAGE_SIZE + MAPPING_BEYOND_END)>>PAGE_SHIFT
-+KERNEL_PAGES = LOWMEM_PAGES
+ 		DATA_DATA
++#ifdef CONFIG_X86_32
++		jiffies = jiffies_64;
++#else
++		jiffies_64 = jiffies;
++#endif
+ 		CONSTRUCTORS
  
- INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
- RESERVE_BRK(pagetables, INIT_MAP_SIZE)
+ 		/* rarely changed data like cpu maps */
+
+
