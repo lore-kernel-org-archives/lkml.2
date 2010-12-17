@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab0LQOXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 09:23:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074Ab0LQOXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 09:23:08 -0500
-Message-ID: <4D0B71DF.9080804@redhat.com>
-Date: Fri, 17 Dec 2010 09:21:19 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	id S1755098Ab0LQOYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 09:24:07 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42659 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754860Ab0LQOYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 09:24:05 -0500
+Date: Fri, 17 Dec 2010 14:24:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
+        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: skip balance_dirty_pages() for in-memory fs
-References: <20101213144646.341970461@intel.com> <20101213150329.002158963@intel.com> <20101217021934.GA9525@localhost> <alpine.LSU.2.00.1012162239270.23229@sister.anvils> <20101217112111.GA8323@localhost>
-In-Reply-To: <20101217112111.GA8323@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+Message-ID: <20101217142402.GA19391@rakim.wolfsonmicro.main>
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+ <201012171425.07775.rjw@sisk.pl>
+ <20101217133434.GH31453@rakim.wolfsonmicro.main>
+ <201012171449.26082.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201012171449.26082.rjw@sisk.pl>
+X-Cookie: Edited for television.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2010 06:21 AM, Wu Fengguang wrote:
-> This avoids unnecessary checks and dirty throttling on tmpfs/ramfs.
->
-> It also prevents
->
-> [  388.126563] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
->
-> in the balance_dirty_pages tracepoint, which will call
->
-> 	dev_name(mapping->backing_dev_info->dev)
->
-> but shmem_backing_dev_info.dev is NULL.
->
-> CC: Hugh Dickins<hughd@google.com>
-> Signed-off-by: Wu Fengguang<fengguang.wu@intel.com>
+On Fri, Dec 17, 2010 at 02:49:25PM +0100, Rafael J. Wysocki wrote:
+> On Friday, December 17, 2010, Mark Brown wrote:
 
-Acked-by: Rik van Riel <riel@redhat.com>
+> > By, for example, providing default implementations which the buses can
+> > use if they choose to.
 
--- 
-All rights reversed
+> OK, so we have generic_subsys_pm_ops.  Do we need anything beyond that?
+
+Hrm.  Possibly just some fiddling with those or alternative versions.
+For example, looking at the I2C bus suspend it's this:
+
+static int i2c_device_pm_suspend(struct device *dev)
+{
+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+
+	if (pm) {
+		if (pm_runtime_suspended(dev))
+			return 0;
+		else
+			return pm->suspend ? pm->suspend(dev) : 0;
+	}
+
+	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
+}
+
+Ideally the if (pm) block could just be factored out into the pm core as
+there's nothing I2C-specific about that at all.  Possibly even the whole
+logic surrounding fall back to legacy, though that smells a bit.  The
+generic suspend operation doesn't fit here:
+
+int pm_generic_suspend(struct device *dev)
+{
+	return __pm_generic_call(dev, PM_EVENT_SUSPEND);
+}
+EXPORT_SYMBOL_GPL(pm_generic_suspend);
