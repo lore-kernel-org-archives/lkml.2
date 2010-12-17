@@ -1,311 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab0LQIad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 03:30:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:37235 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0LQI3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 03:29:44 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67207084"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Brian Swetland <swetland@google.com>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>
-Subject: [PATCH v6 3/5] msm: timer: SMP timer support for msm
-Date: Fri, 17 Dec 2010 00:28:46 -0800
-Message-Id: <1292574528-13310-4-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1292574528-13310-1-git-send-email-johlstei@codeaurora.org>
-References: <1292574528-13310-1-git-send-email-johlstei@codeaurora.org>
+	id S1752401Ab0LQIje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 03:39:34 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:57899 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842Ab0LQIjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 03:39:32 -0500
+Date: Fri, 17 Dec 2010 08:39:12 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: gerald.schaefer@de.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        paulmck@linux.vnet.ibm.com, Milton Miller <miltonm@bga.com>,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org,
+        linux-ext4@vger.kernel.org, "Ted Ts'o" <tytso@mit.edu>,
+        Arun Bhanu <ab@arunbhanu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [BUG?] memory hotplug: include/linux/radix-tree.h:145 invoked
+	rcu_dereference_check() without protection!
+Message-ID: <20101217083912.GM13914@csn.ul.ie>
+References: <20101121133024.GF23423@thunk.org> <20101121153949.GD20947@barrios-desktop> <20101121173726.GG23423@thunk.org> <AANLkTimeSWWo-TAJPPH81OO_h1zFzWAT1Gg=XSLyFftH@mail.gmail.com> <rcu-radix-tree@mdm.bga.com> <20101122061619.GA2764@linux.vnet.ibm.com> <1291748509.19276.62.camel@thinkpad> <20101208101947.b0646226.kamezawa.hiroyu@jp.fujitsu.com> <1292507421.4885.19.camel@thinkpad> <AANLkTinfTCpdKo-A8gF+xbss24PNQXvQV6Odh51mXxiH@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinfTCpdKo-A8gF+xbss24PNQXvQV6Odh51mXxiH@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The msm provides timer hardware that is private to each core. Each
-timer has separate counter and match registers, so we create separate
-clock_event_devices for each core. For the global clocksource, use
-cpu 0's counter.
+On Fri, Dec 17, 2010 at 09:04:13AM +0900, Minchan Kim wrote:
+> On Thu, Dec 16, 2010 at 10:50 PM, Gerald Schaefer
+> <gerald.schaefer@de.ibm.com> wrote:
+> > I got the same warning now after increasing /proc/sys/vm/nr_hugepages, see
+> > below. Both cases are easily reproducible: memory unplug with big page cache,
+> > or adding large pages during run-time.
+> >
+> > ===================================================
+> > [ INFO: suspicious rcu_dereference_check() usage. ]
+> > ---------------------------------------------------
+> > include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
+> >
+> > other info that might help us debug this:
+> >
+> >
+> > rcu_scheduler_active = 1, debug_locks = 0
+> > 1 lock held by bash/761:
+> >  #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<00000000002263ae>] migrate_page_move_mapping+0x4a/0x2d8
+> >
+> > stack backtrace:
+> > CPU: 1 Not tainted 2.6.37-rc6 #4
+> > Process bash (pid: 761, task: 00000000181b5540, ksp: 00000000181bb7f8)
+> > 00000000181bb818 00000000181bb798 0000000000000002 0000000000000000
+> >       00000000181bb838 00000000181bb7b0 00000000181bb7b0 000000000056bafa
+> >       0000000000000000 000000003f42bdf0 0000000000000002 000000001c43be30
+> >       000003e00000000d 000003e00000000c 00000000181bb800 0000000000000000
+> >       0000000000000000 0000000000100bfa 00000000181bb798 00000000181bb7d8
+> > Call Trace:
+> > ([<0000000000100b02>] show_trace+0xee/0x144)
+> >  [<000000000022654e>] migrate_page_move_mapping+0x1ea/0x2d8
+> >  [<0000000000226c80>] migrate_page+0x38/0x68
+> >  [<0000000000226d9a>] move_to_new_page+0xea/0x2bc
+> >  [<000000000022785a>] migrate_pages+0x496/0x568
+> >  [<000000000021e24e>] compact_zone+0x432/0x7d8
+> >  [<000000000021e772>] compact_zone_order+0x9e/0xbc
+> >  [<000000000021ed52>] try_to_compact_pages+0x1ba/0x24c
+> >  [<00000000001e1afa>] __alloc_pages_nodemask+0x86a/0xa64
+> >  [<000000000021c80c>] alloc_fresh_huge_page.clone.2+0x68/0x18c
+> >  [<000000000021cc4c>] set_max_huge_pages.clone.0+0xa4/0x1ac
+> >  [<000000000021ce06>] hugetlb_sysctl_handler+0xb2/0xcc
+> >  [<00000000002a6572>] proc_sys_call_handler+0xe6/0x10c
+> >  [<00000000002a65be>] proc_sys_write+0x26/0x34
+> >  [<00000000002336e0>] vfs_write+0xac/0x18c
+> >  [<00000000002338bc>] SyS_write+0x58/0xa8
+> >  [<0000000000113976>] sysc_noemu+0x16/0x1c
+> >  [<0000020000162edc>] 0x20000162edc
+> > INFO: lockdep is turned off.
+> >
+> > I honestly do not understand 100% why this is a false positive, seeing that
+> > e.g. find_get_page() will also use radix_tree_deref_slot(), holding only the
+> > rcu_read_lock, while migrate_page_move_mapping() has no rcu_read_lock() but
+> > the &mapping->tree_lock instead. So I'm not quite sure how to fix this
+> > properly, but simply adding rcu_read_lock/unlock() to the affected code paths,
+> > even if it is not necessary for synchronization, would get rid of the warning,
+> > like in the following patch. Any ideas?
+> 
+> In case of anon page, we hold rcu_read_lock in unmap_and_move.
+> The problem is file-backed page. In case of that, we hold lock_page
+> and mapping->tree_lock as update-side lock.
+> So we don't need rcu_read_lock.
+> 
+> >
+> > ---
+> >  fs/hugetlbfs/inode.c |    2 ++
+> >  mm/migrate.c         |    4 ++++
+> >  2 files changed, 6 insertions(+)
+> >
+> > --- a/fs/hugetlbfs/inode.c
+> > +++ b/fs/hugetlbfs/inode.c
+> > @@ -580,7 +580,9 @@ static int hugetlbfs_migrate_page(struct
+> >  {
+> >        int rc;
+> >
+> > +       rcu_read_lock();
+> >        rc = migrate_huge_page_move_mapping(mapping, newpage, page);
+> > +       rcu_read_unlock();
+> >        if (rc)
+> >                return rc;
+> >        migrate_page_copy(newpage, page);
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -417,7 +417,9 @@ int migrate_page(struct address_space *m
+> >
+> >        BUG_ON(PageWriteback(page));    /* Writeback must be complete */
+> >
+> > +       rcu_read_lock();
+> >        rc = migrate_page_move_mapping(mapping, newpage, page);
+> > +       rcu_read_unlock();
+> >
+> >        if (rc)
+> >                return rc;
+> > @@ -444,7 +446,9 @@ int buffer_migrate_page(struct address_s
+> >
+> >        head = page_buffers(page);
+> >
+> > +       rcu_read_lock();
+> >        rc = migrate_page_move_mapping(mapping, newpage, page);
+> > +       rcu_read_unlock();
+> >
+> >        if (rc)
+> >                return rc;
+> >
+> >
+> >
+> 
+> 
+> How about this?
+> Maybe Paul have better idea.
+> (It's apparently be word-wrapped.)
+> 
 
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
----
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    6 +-
- arch/arm/mach-msm/io.c                          |    1 +
- arch/arm/mach-msm/timer.c                       |  137 +++++++++++++++++++----
- 3 files changed, 120 insertions(+), 24 deletions(-)
+heh, I wrote a patch almost identical to this and ran it overnight for testing
+(test was a memory consumer running while a parallel process grew and shrunk
+the hugepage pool). It passes but that is hardly a surprise. We differed
+slightly in a number of respects though.
 
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 45bab50..873e0b7 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -60,7 +60,11 @@
- 
- #define MSM_TMR_BASE		IOMEM(0xF0200000)
- #define MSM_TMR_PHYS		0x02000000
--#define MSM_TMR_SIZE		(SZ_1M)
-+#define MSM_TMR_SIZE		SZ_4K
-+
-+#define MSM_TMR0_BASE		IOMEM(0xF0201000)
-+#define MSM_TMR0_PHYS		0x02040000
-+#define MSM_TMR0_SIZE		SZ_4K
- 
- #define MSM_GPT_BASE		(MSM_TMR_BASE + 0x4)
- #define MSM_DGT_BASE		(MSM_TMR_BASE + 0x24)
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index d36b610..b826b6b 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -105,6 +105,7 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
- 	MSM_DEVICE(QGIC_DIST),
- 	MSM_DEVICE(QGIC_CPU),
- 	MSM_DEVICE(TMR),
-+	MSM_DEVICE(TMR0),
- 	MSM_DEVICE(ACC),
- 	MSM_DEVICE(GCC),
- };
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 950100f..65d8da0 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -47,6 +47,19 @@ enum {
- 
- #define GPT_HZ 32768
- 
-+enum timer_location {
-+	LOCAL_TIMER = 0,
-+	GLOBAL_TIMER = 1,
-+};
-+
-+#ifdef MSM_TMR0_BASE
-+#define MSM_TMR_GLOBAL		(MSM_TMR0_BASE - MSM_TMR_BASE)
-+#else
-+#define MSM_TMR_GLOBAL		0
-+#endif
-+
-+#define MSM_GLOBAL_TIMER MSM_CLOCK_DGT
-+
- #if defined(CONFIG_ARCH_QSD8X50)
- #define DGT_HZ (19200000 / 4) /* 19.2 MHz / 4 by default */
- #define MSM_DGT_SHIFT (0)
-@@ -65,49 +78,67 @@ struct msm_clock {
- 	void __iomem                *regbase;
- 	uint32_t                    freq;
- 	uint32_t                    shift;
-+	void __iomem                *global_counter;
-+	void __iomem                *local_counter;
- };
- 
-+enum {
-+	MSM_CLOCK_GPT,
-+	MSM_CLOCK_DGT,
-+	NR_TIMERS,
-+};
-+
-+
-+static struct msm_clock msm_clocks[];
-+static struct clock_event_device *local_clock_event;
-+
- static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
- {
- 	struct clock_event_device *evt = dev_id;
-+	if (smp_processor_id() != 0)
-+		evt = local_clock_event;
-+	if (evt->event_handler == NULL)
-+		return IRQ_HANDLED;
- 	evt->event_handler(evt);
- 	return IRQ_HANDLED;
+> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+> index ab2baa5..135af1e 100644
+> --- a/include/linux/radix-tree.h
+> +++ b/include/linux/radix-tree.h
+> @@ -146,6 +146,20 @@ static inline void *radix_tree_deref_slot(void **pslot)
+>  }
+> 
+>  /**
+> + * radix_tree_deref_slot_nocheck       - dereference a slot without RCU check
+> + * @pslot:     pointer to slot, returned by radix_tree_lookup_slot
+> + * Returns:    item that was stored in that slot with any direct pointer flag
+> + *             removed.
+> + *
+> + * This functions works like radix_tree_deref_slot except it doesn't check
+> + * RCU rule. Normally this funcion is used with update-side lock.
+> + * You should use this function very carefully.
+> + */
+> +static inline void *radix_tree_deref_slot_nocheck(void **pslot)
+> +{
+> +       return rcu_dereference_protected(*pslot, 1);
+> +}
+
+For this, I had
+
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index ab2baa5..252d21c 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -146,6 +146,25 @@ static inline void *radix_tree_deref_slot(void **pslot)
  }
  
--static cycle_t msm_gpt_read(struct clocksource *cs)
-+static cycle_t msm_read_timer_count(struct clocksource *cs)
- {
--	return readl(MSM_GPT_BASE + TIMER_COUNT_VAL);
-+	struct msm_clock *clk = container_of(cs, struct msm_clock, clocksource);
-+
-+	return readl(clk->global_counter);
- }
- 
--static cycle_t msm_dgt_read(struct clocksource *cs)
-+static struct msm_clock *clockevent_to_clock(struct clock_event_device *evt)
- {
--	return readl(MSM_DGT_BASE + TIMER_COUNT_VAL) >> MSM_DGT_SHIFT;
-+#ifdef CONFIG_SMP
-+	int i;
-+	for (i = 0; i < NR_TIMERS; i++)
-+		if (evt == &(msm_clocks[i].clockevent))
-+			return &msm_clocks[i];
-+	return &msm_clocks[MSM_GLOBAL_TIMER];
-+#else
-+	return container_of(evt, struct msm_clock, clockevent);
-+#endif
- }
- 
- static int msm_timer_set_next_event(unsigned long cycles,
- 				    struct clock_event_device *evt)
- {
--	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
--	uint32_t now = readl(clock->regbase + TIMER_COUNT_VAL);
-+	struct msm_clock *clock = clockevent_to_clock(evt);
-+	uint32_t now = readl(clock->local_counter);
- 	uint32_t alarm = now + (cycles << clock->shift);
--	int late;
- 
- 	writel(alarm, clock->regbase + TIMER_MATCH_VAL);
--	now = readl(clock->regbase + TIMER_COUNT_VAL);
--	late = now - alarm;
--	if (late >= (-2 << clock->shift) && late < DGT_HZ*5) {
--		printk(KERN_NOTICE "msm_timer_set_next_event(%lu) clock %s, "
--		       "alarm already expired, now %x, alarm %x, late %d\n",
--		       cycles, clock->clockevent.name, now, alarm, late);
--		return -ETIME;
--	}
- 	return 0;
- }
- 
- static void msm_timer_set_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *evt)
- {
--	struct msm_clock *clock = container_of(evt, struct msm_clock, clockevent);
-+	struct msm_clock *clock = clockevent_to_clock(evt);
-+
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_RESUME:
- 	case CLOCK_EVT_MODE_PERIODIC:
-@@ -123,7 +154,7 @@ static void msm_timer_set_mode(enum clock_event_mode mode,
- }
- 
- static struct msm_clock msm_clocks[] = {
--	{
-+	[MSM_CLOCK_GPT] = {
- 		.clockevent = {
- 			.name           = "gp_timer",
- 			.features       = CLOCK_EVT_FEAT_ONESHOT,
-@@ -135,7 +166,7 @@ static struct msm_clock msm_clocks[] = {
- 		.clocksource = {
- 			.name           = "gp_timer",
- 			.rating         = 200,
--			.read           = msm_gpt_read,
-+			.read           = msm_read_timer_count,
- 			.mask           = CLOCKSOURCE_MASK(32),
- 			.shift          = 17,
- 			.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -148,9 +179,12 @@ static struct msm_clock msm_clocks[] = {
- 			.irq     = INT_GP_TIMER_EXP
- 		},
- 		.regbase = MSM_GPT_BASE,
--		.freq = GPT_HZ
-+		.freq = GPT_HZ,
-+		.local_counter = MSM_GPT_BASE + TIMER_COUNT_VAL,
-+		.global_counter = MSM_GPT_BASE + TIMER_COUNT_VAL +
-+			MSM_TMR_GLOBAL,
- 	},
--	{
-+	[MSM_CLOCK_DGT] = {
- 		.clockevent = {
- 			.name           = "dg_timer",
- 			.features       = CLOCK_EVT_FEAT_ONESHOT,
-@@ -162,7 +196,7 @@ static struct msm_clock msm_clocks[] = {
- 		.clocksource = {
- 			.name           = "dg_timer",
- 			.rating         = 300,
--			.read           = msm_dgt_read,
-+			.read           = msm_read_timer_count,
- 			.mask           = CLOCKSOURCE_MASK((32 - MSM_DGT_SHIFT)),
- 			.shift          = 24 - MSM_DGT_SHIFT,
- 			.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
-@@ -176,7 +210,10 @@ static struct msm_clock msm_clocks[] = {
- 		},
- 		.regbase = MSM_DGT_BASE,
- 		.freq = DGT_HZ >> MSM_DGT_SHIFT,
--		.shift = MSM_DGT_SHIFT
-+		.shift = MSM_DGT_SHIFT,
-+		.local_counter = MSM_DGT_BASE + TIMER_COUNT_VAL,
-+		.global_counter = MSM_DGT_BASE + TIMER_COUNT_VAL +
-+			MSM_TMR_GLOBAL,
- 	}
- };
- 
-@@ -185,7 +222,7 @@ static void __init msm_timer_init(void)
- 	int i;
- 	int res;
- 
--#ifdef CONFIG_ARCH_MSM8X60
-+#ifdef CONFIG_ARCH_MSM_SCORPIONMP
- 	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
- #endif
- 
-@@ -220,6 +257,60 @@ static void __init msm_timer_init(void)
- 	}
- }
- 
-+#ifdef CONFIG_SMP
-+void local_timer_setup(struct clock_event_device *evt)
+ /**
++ * radix_tree_deref_slot_protected	- dereference a slot without RCU lock but with tree lock held
++ * @pslot:	pointer to slot, returned by radix_tree_lookup_slot
++ * Returns:	item that was stored in that slot with any direct pointer flag
++ *		removed.
++ *
++ * For use with radix_tree_lookup_slot().  Caller must hold tree read
++ * locked across slot lookup and dereference. Not required if write lock is
++ * held (ie. items cannot be concurrently inserted).
++ *
++ * radix_tree_deref_retry must be used to confirm validity of the pointer if
++ * only the read lock is held.
++ */
++static inline void *radix_tree_deref_slot_protected(void **pslot,
++							spinlock_t *treelock)
 +{
-+	unsigned long flags;
-+	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
-+
-+	/* Use existing clock_event for cpu 0 */
-+	if (!smp_processor_id())
-+		return;
-+
-+	writel(DGT_CLK_CTL_DIV_4, MSM_TMR_BASE + DGT_CLK_CTL);
-+
-+	if (!local_clock_event) {
-+		writel(0, clock->regbase  + TIMER_ENABLE);
-+		writel(0, clock->regbase + TIMER_CLEAR);
-+		writel(~0, clock->regbase + TIMER_MATCH_VAL);
-+	}
-+	evt->irq = clock->irq.irq;
-+	evt->name = "local_timer";
-+	evt->features = CLOCK_EVT_FEAT_ONESHOT;
-+	evt->rating = clock->clockevent.rating;
-+	evt->set_mode = msm_timer_set_mode;
-+	evt->set_next_event = msm_timer_set_next_event;
-+	evt->shift = clock->clockevent.shift;
-+	evt->mult = div_sc(clock->freq, NSEC_PER_SEC, evt->shift);
-+	evt->max_delta_ns =
-+		clockevent_delta2ns(0xf0000000 >> clock->shift, evt);
-+	evt->min_delta_ns = clockevent_delta2ns(4, evt);
-+
-+	local_clock_event = evt;
-+
-+	local_irq_save(flags);
-+	get_irq_chip(clock->irq.irq)->unmask(clock->irq.irq);
-+	local_irq_restore(flags);
-+
-+	clockevents_register_device(evt);
++	return rcu_dereference_protected(*pslot, lockdep_is_held(treelock));
 +}
 +
-+inline int local_timer_ack(void)
-+{
-+	return 1;
-+}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+void __cpuexit local_timer_stop(void)
-+{
-+	struct msm_clock *clock = clockevent_to_clock(local_clock_event);
-+	writel(0, clock->regbase + TIMER_MATCH_VAL);
-+	writel(0, clock->regbase + TIMER_ENABLE);
-+	get_irq_chip(local_clock_event->irq)->mask(local_clock_event->irq);
-+}
-+#endif
-+#endif
-+
- struct sys_timer msm_timer = {
- 	.init = msm_timer_init
- };
++/**
+  * radix_tree_deref_retry	- check radix_tree_deref_slot
+  * @arg:	pointer returned by radix_tree_deref_slot
+  * Returns:	0 if retry is not required, otherwise retry is required
+
+In the documentation, I noted that the check might be without RCU but with
+the knowledge that it's protected by the tree lock. I'm not a RCU expert
+but this is only safe when you know there isn't a parallel updater and the
+treelock should be preventing that, right?
+
+Even so, other users of rcu_dereference_protected() check a lock condition
+which I used tree lock for. I intended to read through the rest of
+documentation properly this morning to determine if this was indeed the
+right approach.
+
+I used the name _protected instead of _nocheck because the dereference
+is still protected (by the tree lock) just not by RCU. Again, have to
+check the documentation to ensure this is correct.
+
+> +/**
+>   * radix_tree_deref_retry      - check radix_tree_deref_slot
+>   * @arg:       pointer returned by radix_tree_deref_slot
+>   * Returns:    0 if retry is not required, otherwise retry is required
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 2eb2243..5be2841 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -244,7 +244,8 @@ static int migrate_page_move_mapping(struct
+> address_space *mappin
+> 
+>         expected_count = 2 + page_has_private(page);
+>         if (page_count(page) != expected_count ||
+> -                       (struct page *)radix_tree_deref_slot(pslot) != page) {
+> +                       (struct page *)radix_tree_deref_slot_nocheck(pslot)
+> +                               != page) {
+>                 spin_unlock_irq(&mapping->tree_lock);
+>                 return -EAGAIN;
+>         }
+
+We only differed here by my passing in the &mapping->tree_lock
+
+
+
+> @@ -316,7 +317,8 @@ int migrate_huge_page_move_mapping(struct
+> address_space *mapping,
+> 
+>         expected_count = 2 + page_has_private(page);
+>         if (page_count(page) != expected_count ||
+> -           (struct page *)radix_tree_deref_slot(pslot) != page) {
+> +           (struct page *)radix_tree_deref_slot_nocheck(pslot)
+> +                               != page) {
+>                 spin_unlock_irq(&mapping->tree_lock);
+>                 return -EAGAIN;
+>         }
+
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
