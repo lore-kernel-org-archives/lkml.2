@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab0LQOYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 09:24:07 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42659 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754860Ab0LQOYF (ORCPT
+	id S1754951Ab0LQOaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 09:30:19 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:53866 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab0LQOaR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 09:24:05 -0500
-Date: Fri, 17 Dec 2010 14:24:03 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Message-ID: <20101217142402.GA19391@rakim.wolfsonmicro.main>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
- <201012171425.07775.rjw@sisk.pl>
- <20101217133434.GH31453@rakim.wolfsonmicro.main>
- <201012171449.26082.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201012171449.26082.rjw@sisk.pl>
-X-Cookie: Edited for television.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Dec 2010 09:30:17 -0500
+Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
+From: Peter Zijlstra <peterz@infradead.org>
+To: Harald Gustafsson <harald.gustafsson@ericsson.com>
+Cc: Dario Faggioli <faggioli@gandalf.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Michael Trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>
+In-Reply-To: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 17 Dec 2010 15:29:54 +0100
+Message-ID: <1292596194.2266.283.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 02:49:25PM +0100, Rafael J. Wysocki wrote:
-> On Friday, December 17, 2010, Mark Brown wrote:
+On Fri, 2010-12-17 at 14:02 +0100, Harald Gustafsson wrote:
 
-> > By, for example, providing default implementations which the buses can
-> > use if they choose to.
+> This is a request for comments on additions to sched deadline v3 patches.
+> Deadline scheduler is the first scheduler (I think) we introduce in Linux that
+> specifies the runtime in time and not only as a weight or a relation.
+> I have introduced a normalized runtime clock dependent on the CPU frequency.
+> This is used, in [PATCH 2/3], to calculate the deadline thread's runtime
+> so that approximately the same number of cycles are giving to the thread
+> independent of the CPU frequency. 
+> 
+> I suggest that this is important for users of hard reservation based schedulers
+> that the intended amount of work can be accomplished independent of the CPU frequency.
+> The usage of CPU frequency scaling is important on mobile devices and hence 
+> the combination of deadline scheduler and cpufreq should be solved.
 
-> OK, so we have generic_subsys_pm_ops.  Do we need anything beyond that?
+> So before I do this for the linux tip I would welcome a discussion about if this
+> is a good idea and also suggestions on how to improve this. 
 
-Hrm.  Possibly just some fiddling with those or alternative versions.
-For example, looking at the I2C bus suspend it's this:
+I'm thinking this is going about it totally wrong..
 
-static int i2c_device_pm_suspend(struct device *dev)
-{
-	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+Solving the CPUfreq problem involves writing a SCHED_DEADLINE aware
+CPUfreq governor. The governor must know about the constraints placed on
+the system by the task-set. You simply cannot lower the frequency when
+your system is at u=1.
 
-	if (pm) {
-		if (pm_runtime_suspended(dev))
-			return 0;
-		else
-			return pm->suspend ? pm->suspend(dev) : 0;
-	}
+Once you have a governor that keeps the freq such that: freq/max_freq >=
+utilization (which is only sufficient for deadline == period systems),
+then you need to frob the SCHED_DEADLINE runtime accounting.
 
-	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
-}
+Adding a complete normalized clock to the system like you've done is a
+total no-go, it adds overhead even for the !SCHED_DEADLINE case.
 
-Ideally the if (pm) block could just be factored out into the pm core as
-there's nothing I2C-specific about that at all.  Possibly even the whole
-logic surrounding fall back to legacy, though that smells a bit.  The
-generic suspend operation doesn't fit here:
+The simple solution would be to slow down the runtime accounting of
+SCHED_DEADLINE tasks by freq/max_freq. So instead of having:
 
-int pm_generic_suspend(struct device *dev)
-{
-	return __pm_generic_call(dev, PM_EVENT_SUSPEND);
-}
-EXPORT_SYMBOL_GPL(pm_generic_suspend);
+  dl_se->runtime -= delta;
+
+you do something like:
+
+  dl_se->runtime -= (freq * delta) / max_freq;
+
+Which auto-magically grows the actual bandwidth, and since the deadlines
+are wall-time already it all works out nicely. It also keeps the
+overhead inside SCHED_DEADLINE.
+
+ 
