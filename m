@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab0LQMyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 07:54:53 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43830 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab0LQMyw (ORCPT
+	id S1754179Ab0LQM4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 07:56:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32889 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab0LQM4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 07:54:52 -0500
-Date: Fri, 17 Dec 2010 12:54:28 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: rjw@sisk.pl, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Message-ID: <20101217125427.GA29640@sirena.org.uk>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+	Fri, 17 Dec 2010 07:56:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=mvkMo3mZxF53K8XRERnxqLhn0qdOuZumX+caonvVF6CNB9SYSHcxpEFrb7DXKye94g
+         QXqMIo26f2eRCfhkinKPZndcSNV09npWxpaNjfhTbrZAA2bbslgMjEnrEofSaX3WVSvC
+         2K4e2CHUVIBQqogjGdHvCFWyP6N2kV5KgB9gk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
-X-Cookie: Yow!  Am I in Milwaukee?
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Date: Fri, 17 Dec 2010 20:56:35 +0800
+Message-ID: <AANLkTi=8yR1cQOTF5_0xebNAemrrgmqEpuGTyNENUXPm@mail.gmail.com>
+Subject: [PATCH] remove noop in workqueue
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 11:56:57PM +0530, Rabin Vincent wrote:
+Checking WORKER_NOT_RUNNING in the flags word of worker is unnecessary
+if it is set in the flags parameter.
 
-> There seem to be some differences between the generic ops and the i2c
-> and platform busses' implementations of the interaction between runtime
-> PM and system sleep:
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
->   (1) The platform bus does not implement the
->       don't-call-pm->suspend()-if pm_runtime_suspended()-returns-true
->       functionality implemented by the generic ops and i2c.
+--- a/kernel/workqueue.c	2010-11-01 19:54:12.000000000 +0800
++++ b/kernel/workqueue.c	2010-12-17 20:57:00.000000000 +0800
+@@ -770,7 +770,6 @@ static inline void worker_clr_flags(stru
 
-This is platform lagging behind I2C in implementation - both originally 
-did what platform does and then I2C was updated and platform wasn't.
-
-It'd be really good if this could all be factored out into the PM core,
-we're going to have to do the same thing for at least SPI as well and
-possibly some other buses :/
+ 	/* if transitioning out of NOT_RUNNING, increment nr_running */
+ 	if ((flags & WORKER_NOT_RUNNING) && (oflags & WORKER_NOT_RUNNING))
+-		if (!(worker->flags & WORKER_NOT_RUNNING))
+ 			atomic_inc(get_gcwq_nr_running(gcwq->cpu));
+ }
