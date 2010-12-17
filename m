@@ -1,113 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0LQUyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 15:54:39 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:45947 "EHLO e1.ny.us.ibm.com"
+	id S1756195Ab0LQUzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 15:55:06 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51550 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755303Ab0LQUyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 15:54:38 -0500
-Date: Fri, 17 Dec 2010 12:54:33 -0800
+	id S1755303Ab0LQUzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 15:55:04 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
-Subject: [PATCH tip/core/rcu 0/20] second preview of RCU patches for 2.6.38
-Message-ID: <20101217205433.GA10199@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 10/20] rcu: update documentation/comments for Lai's adoption patch
+Date: Fri, 17 Dec 2010 12:54:41 -0800
+Message-Id: <1292619291-2468-10-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <20101217205433.GA10199@linux.vnet.ibm.com>
+References: <20101217205433.GA10199@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+Lai's RCU-callback immediate-adoption patch changes the RCU tracing
+output, so update tracing.txt.  Also update a few comments to clarify
+the synchronization design.
 
-This patchset contains RCU priority boosting for the tiny RCU
-implementations and a number of fixes and cleanups.  The patches
-are as follows, with the first 12 being updates from the earlier
-posting at https://lkml.org/lkml/2010/11/6/187:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ Documentation/RCU/trace.txt |   12 ++++--------
+ kernel/rcutree.c            |   10 ++++++----
+ kernel/rcutree_plugin.h     |    2 +-
+ 3 files changed, 11 insertions(+), 13 deletions(-)
 
-1.	Add rcutorture tests to check for correct priority boosting.
-2-6.	RCU priority boosting for the tiny RCU implementations.
-	RCU priority boosting for the tree RCU implementations is
-	in progress, but not yet ready for prime time.
-7.	Fix a few naming holdouts from old Classic RCU.
-8.	Move synchronize_sched_expedited() out of sched.c
-	(from Lai Jiangshan).
-9.	Simplify the RCU callback orphan/adopt code for CPU hotplug
-	(from Lai Jiangshan).
-10.	Update RCU tracing documentation to reflect patch #9.
-11.	Fix a race condition in synchronize_sched_expedited(),
-	but Tejun Heo has suggested another approach that might
-	be better longer term.
-12.	Make synchronize_srcu_expedited() spin for a bit to avoid
-	blocking -- again, there may be a better long-term fix.
-	That said, this adaptive approach seems to work very well
-	in practice.
-13.	Improve synchronize_sched_expedited()'s ability to batch
-	concurrent requests, as foreshadowed above.
-14-15.	Make RCU avoid looking for quiescent states in cases when
-	they are not required, thereby improving RCU's energy
-	efficiency (from Frederic Weisbecker).
-16.	Enlist the rnp->qsmask data to simplify #14 and #15 and
-	also handle another case where RCU was unnecessarily asking
-	CPUs to go through quiescent states.
-17.	Limit tree RCU's leaf-level fanout to reduce lock contention.
-	Lock contention is higher at the leaf level that elsewhere
-	in the tree of rcu_node structures due to the fact that
-	CPUs synchronize at the leaf level to detect grace-period
-	events.
-18.	Reduce tree RCU's leaf-level lock contention still further
-	by making __call_rcu() less aggressive about starting new
-	grace periods.  The aggression is a holdover from ancient
-	times predating synchronize_rcu_expedited().
-19.	Fix a mismatched-parentheses error in __list_for_each_rcu()
-	(from Mariusz Kozlowski).
-20.	Given that there are no in-tree users, remove the aforementioned
-	__list_for_each_rcu().  This is maintained as a separate
-	commit in case there is a use out there somewhere making its
-	way into mainline.  (Though I would rather keep this API
-	out -- list_for_each_entry_rcu() is much better in most cases.)
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index ff6d3f1..6a8c73f 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -134,7 +134,8 @@ o	"ci" is the number of RCU callbacks that have been invoked for
+ 	been registered in absence of CPU-hotplug activity.
+ 
+ o	"co" is the number of RCU callbacks that have been orphaned due to
+-	this CPU going offline.
++	this CPU going offline.  These orphaned callbacks have been moved
++	to an arbitrarily chosen online CPU.
+ 
+ o	"ca" is the number of RCU callbacks that have been adopted due to
+ 	other CPUs going offline.  Note that ci+co-ca+ql is the number of
+@@ -172,12 +173,12 @@ o	"gpnum" is the number of grace periods that have started.  It is
+ 
+ The output of "cat rcu/rcuhier" looks as follows, with very long lines:
+ 
+-c=6902 g=6903 s=2 jfq=3 j=72c7 nfqs=13142/nfqsng=0(13142) fqlh=6 oqlen=0
++c=6902 g=6903 s=2 jfq=3 j=72c7 nfqs=13142/nfqsng=0(13142) fqlh=6
+ 1/1 .>. 0:127 ^0    
+ 3/3 .>. 0:35 ^0    0/0 .>. 36:71 ^1    0/0 .>. 72:107 ^2    0/0 .>. 108:127 ^3    
+ 3/3f .>. 0:5 ^0    2/3 .>. 6:11 ^1    0/0 .>. 12:17 ^2    0/0 .>. 18:23 ^3    0/0 .>. 24:29 ^4    0/0 .>. 30:35 ^5    0/0 .>. 36:41 ^0    0/0 .>. 42:47 ^1    0/0 .>. 48:53 ^2    0/0 .>. 54:59 ^3    0/0 .>. 60:65 ^4    0/0 .>. 66:71 ^5    0/0 .>. 72:77 ^0    0/0 .>. 78:83 ^1    0/0 .>. 84:89 ^2    0/0 .>. 90:95 ^3    0/0 .>. 96:101 ^4    0/0 .>. 102:107 ^5    0/0 .>. 108:113 ^0    0/0 .>. 114:119 ^1    0/0 .>. 120:125 ^2    0/0 .>. 126:127 ^3    
+ rcu_bh:
+-c=-226 g=-226 s=1 jfq=-5701 j=72c7 nfqs=88/nfqsng=0(88) fqlh=0 oqlen=0
++c=-226 g=-226 s=1 jfq=-5701 j=72c7 nfqs=88/nfqsng=0(88) fqlh=0
+ 0/1 .>. 0:127 ^0    
+ 0/3 .>. 0:35 ^0    0/0 .>. 36:71 ^1    0/0 .>. 72:107 ^2    0/0 .>. 108:127 ^3    
+ 0/3f .>. 0:5 ^0    0/3 .>. 6:11 ^1    0/0 .>. 12:17 ^2    0/0 .>. 18:23 ^3    0/0 .>. 24:29 ^4    0/0 .>. 30:35 ^5    0/0 .>. 36:41 ^0    0/0 .>. 42:47 ^1    0/0 .>. 48:53 ^2    0/0 .>. 54:59 ^3    0/0 .>. 60:65 ^4    0/0 .>. 66:71 ^5    0/0 .>. 72:77 ^0    0/0 .>. 78:83 ^1    0/0 .>. 84:89 ^2    0/0 .>. 90:95 ^3    0/0 .>. 96:101 ^4    0/0 .>. 102:107 ^5    0/0 .>. 108:113 ^0    0/0 .>. 114:119 ^1    0/0 .>. 120:125 ^2    0/0 .>. 126:127 ^3
+@@ -216,11 +217,6 @@ o	"fqlh" is the number of calls to force_quiescent_state() that
+ 	exited immediately (without even being counted in nfqs above)
+ 	due to contention on ->fqslock.
+ 
+-o	"oqlen" is the number of callbacks on the "orphan" callback
+-	list.  RCU callbacks are placed on this list by CPUs going
+-	offline, and are "adopted" either by the CPU helping the outgoing
+-	CPU or by the next rcu_barrier*() call, whichever comes first.
+-
+ o	Each element of the form "1/1 0:127 ^0" represents one struct
+ 	rcu_node.  Each line represents one level of the hierarchy, from
+ 	root to leaves.  It is best to think of the rcu_data structures
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 669d7fe..120820f 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1668,7 +1668,9 @@ static void _rcu_barrier(struct rcu_state *rsp,
+ 	 * decrement rcu_barrier_cpu_count -- otherwise the first CPU
+ 	 * might complete its grace period before all of the other CPUs
+ 	 * did their increment, causing this function to return too
+-	 * early.
++	 * early.  Note that on_each_cpu() disables irqs, which prevents
++	 * any CPUs from coming online or going offline until each online
++	 * CPU has queued its RCU-barrier callback.
+ 	 */
+ 	atomic_set(&rcu_barrier_cpu_count, 1);
+ 	on_each_cpu(rcu_barrier_func, (void *)call_rcu_func, 1);
+@@ -1797,9 +1799,9 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+ 	case CPU_DYING:
+ 	case CPU_DYING_FROZEN:
+ 		/*
+-		 * The whole machine is "stopped" except this cpu, so we can
+-		 * touch any data without introducing corruption. And we send
+-		 * the callbacks to an attribute chosen online cpu.
++		 * The whole machine is "stopped" except this CPU, so we can
++		 * touch any data without introducing corruption. We send the
++		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
+ 		 */
+ 		rcu_send_cbs_to_online(&rcu_bh_state);
+ 		rcu_send_cbs_to_online(&rcu_sched_state);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 0de359b..643c8f6 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -774,7 +774,7 @@ static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
+ }
+ 
+ /*
+- * Move preemptable DYING RCU's callbacks to other online CPU.
++ * Move preemptable RCU's callbacks from dying CPU to other online CPU.
+  */
+ static void rcu_preempt_send_cbs_to_online(void)
+ {
+-- 
+1.7.3.2
 
-For a testing-only version of this patchset from git, please see:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
-
-							Thanx, Paul
-
- Documentation/RCU/trace.txt   |   12 -
- b/Documentation/RCU/trace.txt |  132 +++++++++++-
- b/include/linux/init_task.h   |    9 
- b/include/linux/rculist.h     |    2 
- b/include/linux/rcupdate.h    |    1 
- b/include/linux/rcutiny.h     |    8 
- b/include/linux/rcutree.h     |    1 
- b/include/linux/sched.h       |   11 -
- b/init/Kconfig                |   39 +++
- b/kernel/rcutiny.c            |   71 +++++-
- b/kernel/rcutiny_plugin.h     |   15 -
- b/kernel/rcutorture.c         |  270 ++++++++++++++++++++++++-
- b/kernel/rcutree.c            |   81 +------
- b/kernel/rcutree.h            |   16 -
- b/kernel/rcutree_plugin.h     |   71 ++++++
- b/kernel/rcutree_trace.c      |    8 
- b/kernel/sched.c              |   69 ------
- b/kernel/srcu.c               |    8 
- include/linux/rculist.h       |    5 
- include/linux/rcupdate.h      |    3 
- include/linux/rcutiny.h       |    5 
- include/linux/rcutree.h       |    1 
- init/Kconfig                  |   16 +
- kernel/rcutiny.c              |   70 ++----
- kernel/rcutiny_plugin.h       |  444 ++++++++++++++++++++++++++++++++++++++++--
- kernel/rcutree.c              |   95 ++++++--
- kernel/rcutree.h              |   45 ++--
- kernel/rcutree_plugin.h       |  110 +++++++---
- kernel/rcutree_trace.c        |    4 
- 29 files changed, 1272 insertions(+), 350 deletions(-)
