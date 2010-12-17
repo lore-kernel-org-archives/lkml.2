@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0LQT3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:29:44 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49483 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab0LQT3k (ORCPT
+	id S1754699Ab0LQTbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:31:47 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:48646 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab0LQTbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:29:40 -0500
-Message-ID: <4D0BB9AD.90506@kernel.org>
-Date: Fri, 17 Dec 2010 11:27:41 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Fri, 17 Dec 2010 14:31:44 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <20101217152246.GA8221@mail.hallyn.com>
+	<20101217152458.GA11162@mail.hallyn.com>
+	<20101217152547.GB11162@mail.hallyn.com>
+	<20101217152625.GC11162@mail.hallyn.com>
+	<20101217152659.GD11162@mail.hallyn.com>
+Date: Fri, 17 Dec 2010 11:31:40 -0800
+In-Reply-To: <20101217152659.GD11162@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Fri, 17 Dec 2010 15:26:59 +0000")
+Message-ID: <m14oacryar.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Venkatesh Pallipadi <venki@google.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: Re: [PATCH -v2 2/2] x86, acpi: Parse all SRAT cpu entries even have
- cpu num limitation
-References: <20101111100628.GA24728@localhost>	<1289478978.2084.74.camel@laptop>	<20101111124015.GA9706@localhost>	<1289480656.2084.80.camel@laptop>	<20101113084018.GA23098@localhost>	<1289644224.2084.521.camel@laptop>	<20101113120030.GA31517@localhost>	<1289653078.2084.675.camel@laptop>	<20101113131042.GA5522@localhost>	<4CDEE314.6090107@kernel.org>	<20101113235746.GA9458@localhost>	<4CDF3DA1.2090806@kernel.org>	<4D093ABB.4030206@zytor.com>	<4D0943D5.1090404@kernel.org>	<4D094703.7080701@zytor.com>	<4D0AD464.2020408@kernel.org>	<4D0AD486.9020704@kernel.org> <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com>
-In-Reply-To: <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/0n9dcrllCWv5m8ESAYEth8MWYX4XMgqo=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC 4/5] user namespaces: allow killing tasks in your own or child userns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2010 10:53 AM, Venkatesh Pallipadi wrote:
-> linus git + these two patches still fails on my test system with the
-> divide error. The failure dump is similar to what I reported here
-> http://lkml.indiana.edu/hypermail//linux/kernel/1012.1/03641.html
-> 
-> This patch description talk about new Intel systems. The test system I
-> am seeing failure here is an ancient Intel (2 socket P4 HT) system.
-> AFAICS, it does not even have an SRAT table (no "ACPI: SRAT" message
-> in dmesg).
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-that could be different cause.
+> Changelog:
+> 	Dec 8: Fixed bug in my check_kill_permission pointed out by
+> 	       Eric Biederman.
+> 	Dec 13: Apply Eric's suggestion to pass target task into kill_ok_by_cred()
+> 	        for clarity
+>
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> ---
+>  kernel/signal.c |   33 ++++++++++++++++++++++++++++-----
+>  1 files changed, 28 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 4e3cff1..499bd36 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -659,11 +686,7 @@ static int check_kill_permission(int sig, struct siginfo *info,
+>  	cred = current_cred();
+>  	tcred = __task_cred(t);
+Nit pick  you don't need to compute cred and tcred here now.
 
-Do you have whole boot log with debug etc?
-
+>  	if (!same_thread_group(current, t) &&
+> -	    (cred->euid ^ tcred->suid) &&
+> -	    (cred->euid ^ tcred->uid) &&
+> -	    (cred->uid  ^ tcred->suid) &&
+> -	    (cred->uid  ^ tcred->uid) &&
+> -	    !capable(CAP_KILL)) {
+> +	    !kill_ok_by_cred(t)) {
+>  		switch (sig) {
+>  		case SIGCONT:
+>  			sid = task_session(t);
