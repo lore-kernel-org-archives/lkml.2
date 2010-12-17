@@ -1,331 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab0LQT46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:56:58 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:58392 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab0LQT4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:56:01 -0500
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Subject: [PATCHv6 15/16] pps: add parallel port PPS client
-Date: Fri, 17 Dec 2010 22:54:39 +0300
-Message-Id: <5aad62a4e5290f8baa5994b227e7fe6edaa7841a.1292604060.git.lasaine@lvk.cs.msu.su>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
-References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+	id S1755986Ab0LQT5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:57:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57723 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755532Ab0LQT44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 14:56:56 -0500
+Message-ID: <4D0BC067.90507@zytor.com>
+Date: Fri, 17 Dec 2010 11:56:23 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Maxim Uvarov <muvarov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Neil Horman <nhorman@redhat.com>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <4D0AD976.3020504@zytor.com> <3C6B7683-9CDC-4C4A-A32A-56227DE01387@kernel.org> <20101217170146.GC9568@redhat.com> <4D0BA45A.7020402@zytor.com> <20101217180242.GB12425@redhat.com> <4D0BAA24.3080801@kernel.org> <4D0BBC55.4010207@zytor.com> <4D0BBE00.3010602@kernel.org> <20101217195035.GE14502@redhat.com>
+In-Reply-To: <20101217195035.GE14502@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------060706070509000800080800"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add parallel port PPS client. It uses a standard method for capturing
-timestamps for assert edge transitions: getting a timestamp soon after
-an interrupt has happened. This is not a very precise source of time
-information due to interrupt handling delays. However, timestamps for
-clear edge transitions are much more precise because the interrupt
-handler continuously polls hardware port until the transition is done.
-Hardware port operations require only about 1us so the maximum error
-should not exceed this value. This was my primary goal when developing
-this client.
-Clear edge capture could be disabled using clear_wait parameter.
+This is a multi-part message in MIME format.
+--------------060706070509000800080800
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+On 12/17/2010 11:50 AM, Vivek Goyal wrote:
+> On Fri, Dec 17, 2010 at 11:46:08AM -0800, Yinghai Lu wrote:
+>> On 12/17/2010 11:39 AM, H. Peter Anvin wrote:
+>>> On 12/17/2010 10:21 AM, Yinghai Lu wrote:
+>>>>>>
+>>>>>> Do we have actual testing for how high the 64-bit kernel will load?
+>>>>>
+>>>>> I will do some experiments on my box today and let you know.
+>>>>
+>>>> if bzImage is used, it is 896M.
+>>>>
+>>>
+>>> Why?  896 MiB is a 32-bit kernel limitation which doesn't have anything
+>>> to do with the bzImage format.
+>>>
+>>> So unless there is something going on here, I suspect you're just plain
+>>> flat wrong.
+>>
+>> kexec-tools have some checking when it loads bzImage.
+>>
+> 
+> Yinghai,
+> 
+> I think x86_64 might have just inherited the settings of 32bit without
+> giving it too much of thought. At that point of time nobody bothered
+> to load the kernel from high addresses. So these might be artificial
+> limits.
+> 
+
+Can we do this in the meantime, just so we fix the immediate problem?
+
+	-hpa
+
+--------------060706070509000800080800
+Content-Type: text/x-patch;
+ name="0001-x86-kexec-Limit-the-crashkernel-address-to-768-MiB.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-x86-kexec-Limit-the-crashkernel-address-to-768-MiB.patc";
+ filename*1="h"
+
+>From 1ec83ca8dcc85bc5810bf7407d470a7261be1372 Mon Sep 17 00:00:00 2001
+From: H. Peter Anvin <hpa@linux.intel.com>
+Date: Thu, 16 Dec 2010 19:20:41 -0800
+Subject: [PATCH] x86, kexec: Limit the crashkernel address to 768 MiB
+
+Keep the crash kernel address below 768 MiB.  This makes it work on
+32 bits even if the vmalloc= setting is adjusted slightly.
+
+For 64 bits, we should be able to increase this substantially once a
+hard-coded 896 MiB limit in kexec-tools is fixed.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <20101217195035.GE14502@redhat.com>
 ---
- drivers/pps/clients/Kconfig       |    7 +
- drivers/pps/clients/Makefile      |    1 +
- drivers/pps/clients/pps_parport.c |  247 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 255 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pps/clients/pps_parport.c
+ arch/x86/kernel/setup.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
-index 4e801bd..8520a7f 100644
---- a/drivers/pps/clients/Kconfig
-+++ b/drivers/pps/clients/Kconfig
-@@ -22,4 +22,11 @@ config PPS_CLIENT_LDISC
- 	  If you say yes here you get support for a PPS source connected
- 	  with the CD (Carrier Detect) pin of your serial port.
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 21c6746..2b7f5ab 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -501,7 +501,14 @@ static inline unsigned long long get_total_mem(void)
+ 	return total << PAGE_SHIFT;
+ }
  
-+config PPS_CLIENT_PARPORT
-+	tristate "Parallel port PPS client"
-+	depends on PPS && PARPORT
-+	help
-+	  If you say yes here you get support for a PPS source connected
-+	  with the interrupt pin of your parallel port.
-+
- endif
-diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
-index 812c9b1..42517da 100644
---- a/drivers/pps/clients/Makefile
-+++ b/drivers/pps/clients/Makefile
-@@ -4,6 +4,7 @@
- 
- obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
- obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
-+obj-$(CONFIG_PPS_CLIENT_PARPORT) += pps_parport.o
- 
- ifeq ($(CONFIG_PPS_DEBUG),y)
- EXTRA_CFLAGS += -DDEBUG
-diff --git a/drivers/pps/clients/pps_parport.c b/drivers/pps/clients/pps_parport.c
-new file mode 100644
-index 0000000..501d440
---- /dev/null
-+++ b/drivers/pps/clients/pps_parport.c
-@@ -0,0 +1,247 @@
+-#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
 +/*
-+ * pps_parport.c -- kernel parallel port PPS client
-+ *
-+ *
-+ * Copyright (C) 2009   Alexander Gordeev <lasaine@lvk.cs.msu.su>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ * Keep the crash kernel below this limit.  This should be sufficient
++ * to load a 32-bit kernel even if the vmalloc limit is modified
++ * (within reason.)  This can be increased on 64 bits once kexec-tools
++ * is fixed.
 + */
++#define CRASH_KERNEL_ADDR_MAX	(768 << 20)
 +
-+
-+/*
-+ * TODO:
-+ * implement echo over SEL pin
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/irqnr.h>
-+#include <linux/time.h>
-+#include <linux/parport.h>
-+#include <linux/pps_kernel.h>
-+
-+#define DRVDESC "parallel port PPS client"
-+
-+/* module parameters */
-+
-+#define CLEAR_WAIT_MAX		100
-+#define CLEAR_WAIT_MAX_ERRORS	5
-+
-+static unsigned int clear_wait = 100;
-+MODULE_PARM_DESC(clear_wait,
-+	"Maximum number of port reads when polling for signal clear,"
-+	" zero turns clear edge capture off entirely");
-+module_param(clear_wait, uint, 0);
-+
-+
-+/* internal per port structure */
-+struct pps_client_pp {
-+	struct pardevice *pardev;	/* parport device */
-+	struct pps_device *pps;		/* PPS device */
-+	unsigned int cw;		/* port clear timeout */
-+	unsigned int cw_err;		/* number of timeouts */
-+};
-+
-+static inline int signal_is_set(struct parport *port)
-+{
-+	return (port->ops->read_status(port) & PARPORT_STATUS_ACK) != 0;
-+}
-+
-+/* parport interrupt handler */
-+static void parport_irq(void *handle)
-+{
-+	struct pps_event_time ts_assert, ts_clear;
-+	struct pps_client_pp *dev = handle;
-+	struct parport *port = dev->pardev->port;
-+	unsigned int i;
-+	unsigned long flags;
-+
-+	/* first of all we get the time stamp... */
-+	pps_get_ts(&ts_assert);
-+
-+	if (dev->cw == 0)
-+		/* clear edge capture disabled */
-+		goto out_assert;
-+
-+	/* try capture the clear edge */
-+	local_irq_save(flags);
-+	/* check the signal (no signal means the pulse is lost this time) */
-+	if (!signal_is_set(port)) {
-+		local_irq_restore(flags);
-+		dev_err(dev->pps->dev, "lost the signal\n");
-+		goto out_assert;
-+	}
-+
-+	/* poll the port until the signal is unset */
-+	for (i = dev->cw; i; i--)
-+		if (!signal_is_set(port)) {
-+			pps_get_ts(&ts_clear);
-+			local_irq_restore(flags);
-+			dev->cw_err = 0;
-+			goto out_both;
-+		}
-+	local_irq_restore(flags);
-+
-+	/* timeout */
-+	dev->cw_err++;
-+	if (dev->cw_err >= CLEAR_WAIT_MAX_ERRORS) {
-+		dev_err(dev->pps->dev, "disabled clear edge capture after %d"
-+				" timeouts\n", dev->cw_err);
-+		dev->cw = 0;
-+		dev->cw_err = 0;
-+	}
-+
-+out_assert:
-+	/* fire assert event */
-+	pps_event(dev->pps, &ts_assert,
-+			PPS_CAPTUREASSERT, NULL);
-+	return;
-+
-+out_both:
-+	/* fire assert event */
-+	pps_event(dev->pps, &ts_assert,
-+			PPS_CAPTUREASSERT, NULL);
-+	/* fire clear event */
-+	pps_event(dev->pps, &ts_clear,
-+			PPS_CAPTURECLEAR, NULL);
-+	return;
-+}
-+
-+/* the PPS echo function */
-+static void pps_echo(struct pps_device *pps, int event, void *data)
-+{
-+	dev_info(pps->dev, "echo %s %s\n",
-+		event & PPS_CAPTUREASSERT ? "assert" : "",
-+		event & PPS_CAPTURECLEAR ? "clear" : "");
-+}
-+
-+static void parport_attach(struct parport *port)
-+{
-+	struct pps_client_pp *device;
-+	struct pps_source_info info = {
-+		.name		= KBUILD_MODNAME,
-+		.path		= "",
-+		.mode		= PPS_CAPTUREBOTH | \
-+				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
-+				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
-+				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
-+		.echo		= pps_echo,
-+		.owner		= THIS_MODULE,
-+		.dev		= NULL
-+	};
-+
-+	device = kzalloc(sizeof(struct pps_client_pp), GFP_KERNEL);
-+	if (!device) {
-+		pr_err("memory allocation failed, not attaching\n");
-+		return;
-+	}
-+
-+	device->pardev = parport_register_device(port, KBUILD_MODNAME,
-+			NULL, NULL, parport_irq, 0, device);
-+	if (!device->pardev) {
-+		pr_err("couldn't register with %s\n", port->name);
-+		goto err_free;
-+	}
-+
-+	if (parport_claim_or_block(device->pardev) < 0) {
-+		pr_err("couldn't claim %s\n", port->name);
-+		goto err_unregister_dev;
-+	}
-+
-+	device->pps = pps_register_source(&info,
-+			PPS_CAPTUREBOTH | PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
-+	if (device->pps == NULL) {
-+		pr_err("couldn't register PPS source\n");
-+		goto err_release_dev;
-+	}
-+
-+	device->cw = clear_wait;
-+
-+	port->ops->enable_irq(port);
-+
-+	pr_info("attached to %s\n", port->name);
-+
-+	return;
-+
-+err_release_dev:
-+	parport_release(device->pardev);
-+err_unregister_dev:
-+	parport_unregister_device(device->pardev);
-+err_free:
-+	kfree(device);
-+}
-+
-+static void parport_detach(struct parport *port)
-+{
-+	struct pardevice *pardev = port->cad;
-+	struct pps_client_pp *device;
-+
-+	/* FIXME: oooh, this is ugly! */
-+	if (strcmp(pardev->name, KBUILD_MODNAME))
-+		/* not our port */
-+		return;
-+
-+	device = pardev->private;
-+
-+	port->ops->disable_irq(port);
-+	pps_unregister_source(device->pps);
-+	parport_release(pardev);
-+	parport_unregister_device(pardev);
-+	kfree(device);
-+}
-+
-+static struct parport_driver pps_parport_driver = {
-+	.name = KBUILD_MODNAME,
-+	.attach = parport_attach,
-+	.detach = parport_detach,
-+};
-+
-+/* module staff */
-+
-+static int __init pps_parport_init(void)
-+{
-+	int ret;
-+
-+	pr_info(DRVDESC "\n");
-+
-+	if (clear_wait > CLEAR_WAIT_MAX) {
-+		pr_err("clear_wait value should be not greater"
-+				" then %d\n", CLEAR_WAIT_MAX);
-+		return -EINVAL;
-+	}
-+
-+	ret = parport_register_driver(&pps_parport_driver);
-+	if (ret) {
-+		pr_err("unable to register with parport\n");
-+		return ret;
-+	}
-+
-+	return  0;
-+}
-+
-+static void __exit pps_parport_exit(void)
-+{
-+	parport_unregister_driver(&pps_parport_driver);
-+}
-+
-+module_init(pps_parport_init);
-+module_exit(pps_parport_exit);
-+
-+MODULE_AUTHOR("Alexander Gordeev <lasaine@lvk.cs.msu.su>");
-+MODULE_DESCRIPTION(DRVDESC);
-+MODULE_LICENSE("GPL");
+ static void __init reserve_crashkernel(void)
+ {
+ 	unsigned long long total_mem;
+@@ -520,10 +527,10 @@ static void __init reserve_crashkernel(void)
+ 		const unsigned long long alignment = 16<<20;	/* 16M */
+ 
+ 		/*
+-		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
++		 *  kexec want bzImage is below CRASH_KERNEL_ADDR_MAX
+ 		 */
+ 		crash_base = memblock_find_in_range(alignment,
+-			       DEFAULT_BZIMAGE_ADDR_MAX, crash_size, alignment);
++			       CRASH_KERNEL_ADDR_MAX, crash_size, alignment);
+ 
+ 		if (crash_base == MEMBLOCK_ERROR) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
 -- 
 1.7.2.3
 
+
+--------------060706070509000800080800--
