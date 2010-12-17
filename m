@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab0LQFVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 00:21:51 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18430 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab0LQFVu convert rfc822-to-8bit (ORCPT
+	id S1751490Ab0LQF0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 00:26:51 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:58901 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750866Ab0LQF0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 00:21:50 -0500
+	Fri, 17 Dec 2010 00:26:51 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EADaDCk15Lc+z/2dsb2JhbACDZKBbdLIukGKBIYM1dAQ
+Date: Fri, 17 Dec 2010 16:26:42 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Axel <axel.lin@gmail.com>
+Cc: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>,
+        Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: include/linux: Add missing include / fix build failure
+Message-ID: <20101217052642.GA3282@amd>
+References: <g06LM-1y8-17@gated-at.bofh.it>
+ <g096W-5pB-17@gated-at.bofh.it>
+ <g09gC-5Db-9@gated-at.bofh.it>
+ <0d7b441c-a702-4bce-8711-8c0cedfb5d8a@c17g2000prm.googlegroups.com>
 MIME-Version: 1.0
-Message-ID: <deceffd7-c3a8-49a9-b203-4b4d06af1195@default>
-Date: Thu, 16 Dec 2010 21:15:07 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Chris Mason <chris.mason@oracle.com>, akpm@linux-foundation.org,
-        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        ngupta@vflare.org, jeremy@goop.org,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        minchan.kim@gmail.com
-Subject: RE: [PATCH V0 1/4] kztmem: simplified radix tree data structure
- support
-References: <20101207180653.GA28115@ca-server1.us.oracle.com
- dd88185d-bc2c-4d65-8730-8b1fc712306a@default>
-In-Reply-To: <dd88185d-bc2c-4d65-8730-8b1fc712306a@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6539.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <0d7b441c-a702-4bce-8711-8c0cedfb5d8a@c17g2000prm.googlegroups.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> A monolithic patch containing all of kztmem, cleancache, and frontswap
-> that applies cleanly to 2.6.36 can be found at:
+On Wed, Dec 15, 2010 at 11:57:41PM -0800, Axel wrote:
+> On 12月16日, 上午7時50分, Peter Hüwe <PeterHu...@gmx.de> wrote:
+> > From: Peter Huewe <peterhu...@gmx.de>
+> >
+> > This patch fixes a build failure[1-2] by adding the missing asm/memory.h
+> > include needed for arch_is_coherent().
+> >
+> > Error message:
+> > In file included from include/linux/list_bl.h:5,
+> >                  from include/linux/rculist_bl.h:7,
+> >                  from include/linux/dcache.h:7,
+> >                  from include/linux/fs.h:381,
+> >                  from arch/arm/mm/mmap.c:4:
+> > include/linux/bit_spinlock.h: In function 'bit_spin_unlock':
+> > include/linux/bit_spinlock.h:61: error: implicit declaration of function
+> > 'arch_is_coherent'
+> >
+> > KernelVersion: linux-next-20101215
+> > Used configs: hackkit_defconfig (arm), ep93xx_defconfig (arm)
+> >
+> > References:
+> > [1]http://kisskb.ellerman.id.au/kisskb/buildresult/3651495/
+> > [2]http://kisskb.ellerman.id.au/kisskb/buildresult/3651425/
+> >
+> > Signed-off-by: Peter Huewe <peterhu...@gmx.de>
+> > ---
+> > v2:
+> > moved additional information in the commit message.
+> >
+> >  include/linux/bit_spinlock.h |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/bit_spinlock.h b/include/linux/bit_spinlock.h
+> > index e612575..053fad7 100644
+> > --- a/include/linux/bit_spinlock.h
+> > +++ b/include/linux/bit_spinlock.h
+> > @@ -4,6 +4,7 @@
+> >  #include <linux/kernel.h>
+> >  #include <linux/preempt.h>
+> >  #include <asm/atomic.h>
+> > +#include <asm/memory.h>
+> >
+> >  /*
+> >   *  bit-based spin_lock()
+> > --
+> > 1.7.2.2
+> >
+> > --
 > 
-> http://oss.oracle.com/projects/tmem/dist/files/kztmem/kztmem-linux-
-> 2.6.36-101207.patch
+> hi Peter,
+> After apply the patch,
+> I got below error message while
+> # make i386_defconfig;make
 > 
-> (Or http://oss.oracle.com/projects/tmem and Downloads and kztmem
-> patches)
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CC      init/main.o
+> In file included from include/linux/list_bl.h:5,
+>                  from include/linux/rculist_bl.h:7,
+>                  from include/linux/dcache.h:7,
+>                  from include/linux/fs.h:381,
+>                  from include/linux/proc_fs.h:5,
+>                  from init/main.c:14:
+> include/linux/bit_spinlock.h:7:24: error: asm/memory.h: No such file
+> or directory
+> make[1]: *** [init/main.o] Error 1
+> make: *** [init] Error 2
 > 
-> I'm a git novice but can prepare a git tree also if desired.
-> 
-> To try kztmem:
-> 
-> 1) apply the monolithic patch to 2.6.36
-> 2) rebuild your config ensuring that CONFIG_KZTMEM, CONFIG_CLEANCACHE,
->    CONFIG_FRONTSWAP, and CONFIG_ZRAM (for xvMalloc) become enabled
-> 3) rebuild and reboot with "kztmem" as a kernel boot parameter
-> 4) see /sys/kernel/mm/kztmem/* for statistics... note that with
->    lots of RAM and no swapping, little or no activity will be seen
-> 
-> As I said, there are known weird bugs that may or may not show
-> up in your configuration and build environment, so be prepared
-> in advance that the kernel may crash... removing kztmem as
-> a boot parameter should disable kztmem and result in a normal boot.
-> 
-> Thanks in advance for trying and testing (and, if you are so
-> inclined, debugging) kztmem!  I'll be happy to answer any
-> questions on- or off-list!
+> I personally fix it by below patch now, but I'm not so sure if this is
+> a good way to fix it.
 
-FYI, in case anyone was thinking about giving it a spin,
-I have just posted an update of the (monolithic) kztmem
-patch here:
-
-http://oss.oracle.com/projects/tmem/dist/files/kztmem/kztmem-linux-2.6.36-101207.patch 
-
-I think all the weird bugs and crashes are now gone, though I
-have some concurrency rework to do after some feedback from
-Jeremy Fitzhardinge, and that's not going to happen until
-after the holidays.  So I am posting this intermediate version
-if you want to try it, but please hold off on any detailed
-code review until I post v1 to lkml/linux-mm.
+Yes it should be fixed in arm code. If someone would send along a
+patch to the maintainer, that would be appreciated.
 
 Thanks,
-Dan
+Nick
+
+> 
+> git diff arch/arm/include/asm/system.h
+> diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/
+> system.h
+> index ec4327a..3222ab8 100644
+> --- a/arch/arm/include/asm/system.h
+> +++ b/arch/arm/include/asm/system.h
+> @@ -155,6 +155,7 @@ extern unsigned int user_debug;
+>  #define rmb()          dmb()
+>  #define wmb()          mb()
+>  #else
+> +#include <asm/memory.h>
+>  #define mb()   do { if (arch_is_coherent()) dmb(); else barrier(); }
+> while (0)
+>  #define rmb()  do { if (arch_is_coherent()) dmb(); else barrier(); }
+> while (0)
+>  #define wmb()  do { if (arch_is_coherent()) dmb(); else barrier(); }
+> while (0)
