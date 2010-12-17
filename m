@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab0LQXfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 18:35:37 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46776 "EHLO mx1.suse.de"
+	id S1756170Ab0LQXhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 18:37:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755160Ab0LQXfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 18:35:36 -0500
-Date: Fri, 17 Dec 2010 15:35:27 -0800
-From: Greg KH <gregkh@suse.de>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: rmorell@nvidia.com, David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Message-ID: <20101217233527.GA31162@suse.de>
-References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
- <20101217224221.GE25105@morell.nvidia.com>
- <20101217230940.GB21147@suse.de>
- <201012180017.41391.oliver@neukum.org>
+	id S1755160Ab0LQXhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 18:37:52 -0500
+Date: Sat, 18 Dec 2010 00:37:40 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2010-12-16-14-56 uploaded (hugetlb)
+Message-ID: <20101217233740.GR1671@random.random>
+References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
+ <20101217143316.fa36be7d.randy.dunlap@oracle.com>
+ <20101217145334.3d67d80b.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201012180017.41391.oliver@neukum.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101217145334.3d67d80b.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 12:17:40AM +0100, Oliver Neukum wrote:
-> Am Samstag, 18. Dezember 2010, 00:09:40 schrieb Greg KH:
-> > I still don't like it, it feels like a hack that is not going to be able
-> > to be maintained very well.
-> > 
-> > And I still think the individual drivers should be fixed...
-> > 
-> 
-> But they are not buggy. The USB API was written under the
-> assumption that HCDs can deal with byte level granularity and alignment.
-> Hence the network driver pass DMA-able memory with an alignment
-> that suits them.
+Hello,
 
-Ok, fair enough.
+On Fri, Dec 17, 2010 at 02:53:34PM -0800, Andrew Morton wrote:
+> afacit, CONFIG_HUGETLBFS must be enabled if CONFIG_HUGETLB_PAGE=y, and
+> thp-config_transparent_hugepage.patch broke that, by permitting
+> CONFIG_HUGETLBFS=n, CONFIG_HUGETLB_PAGE=y,
+> CONFIG_TRANSPARENT_HUGEPAGE=y.
 
-But I still don't like that urb flag stuff as a solution to this...
+CONFIG_HUGETLBFS and CONFIG_HUGETLB_PAGE existed before, and
+HUGETLBFS=n && HUGETLB_PAGE=y used to build just fine, I clearly
+didn't try a build with HUGETLBFS=n recently.
 
-thanks,
+> There's lots of stuff in hugetlb.h which is clearly related to
+> hugetlbfs, but is enabled by CONFIG_HUGETLB_PAGE, so those things seem
+> to be pretty joined at the hip nowadays.
 
-greg k-h
+Yes, it used to build just fine but I guess after the last hugetlbfs
+updates I'm getting flood of errors no matter how I adjust things.
+hugetlbfs code who needs some fixup here.
