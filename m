@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab0LQBky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 20:40:54 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40576 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab0LQBkw convert rfc822-to-8bit (ORCPT
+	id S1752142Ab0LQBqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 20:46:22 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57294 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab0LQBqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 20:40:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GPNxvsHndO7QqvCWXSe7U2rGVtfCGaJ3Eu5E+81N8VqmanyxGlC4S9ZhXv7/hqQ3Ze
-         ZJ4E4sg4yBrl2o6dOOfqXO80a5Av18UZSPHd7/2tDD7WsP0yVVzxJi19MvT939Si0WQS
-         KWyFHFSW9xLbRls0emHPZ6u5WvYS/vWt4TBVw=
+	Thu, 16 Dec 2010 20:46:21 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67166539"
+Message-ID: <3bf69fb1c4f33c8a1f405b4f05ba1a59.squirrel@www.codeaurora.org>
+Date: Thu, 16 Dec 2010 17:46:07 -0800 (PST)
+Subject: Re: [PATCH 2/2] regulator: Optimise out noop voltage changes
+From: "Saravana Kannan" <skannan@codeaurora.org>
+To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+Cc: "Saravana Kannan" <skannan@codeaurora.org>,
+        "Liam Girdwood" <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1012161708260.3351@tigran.mtv.corp.google.com>
-References: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu>
-	<AANLkTikXQmsgZ8Ea-GoQ4k2St6yCJj8Z3XthuBQ9u+EV@mail.gmail.com>
-	<E1PTCV4-0007sR-SO@pomaz-ex.szeredi.hu>
-	<20101216220457.GA3450@barrios-desktop>
-	<alpine.LSU.2.00.1012161708260.3351@tigran.mtv.corp.google.com>
-Date: Fri, 17 Dec 2010 10:40:51 +0900
-Message-ID: <AANLkTinhkZKWkthN1R39+6nDbN0xZq-g7jP5-LVLxZ3E@mail.gmail.com>
-Subject: Re: [PATCH] mm: add replace_page_cache_page() function
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
 
-On Fri, Dec 17, 2010 at 10:21 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Fri, 17 Dec 2010, Minchan Kim wrote:
->> On Thu, Dec 16, 2010 at 12:59:58PM +0100, Miklos Szeredi wrote:
->> > On Thu, 16 Dec 2010, Minchan Kim wrote:
->> > >
->> > > Why do you release reference of old?
->> >
->> > That's the page cache reference we release.  Just like we acquire the
->> > page cache reference for "new" above.
->>
->> I mean current page cache handling semantic and page reference counting semantic
->> is separeated. For example, remove_from_page_cache doesn't drop the reference of page.
->> That's because we need more works after drop the page from page cache.
->> Look at shmem_writepage, truncate_complete_page.
+> Reported-by: Saravana Kannan <skannan@codeaurora.org>
+Thanks
+
+>  int regulator_set_voltage(struct regulator *regulator, int min_uV, int
+> max_uV)
+>  {
+>  	struct regulator_dev *rdev = regulator->rdev;
+> -	int ret;
+> +	int ret = 0;
 >
-> I disagree with you there: I like the way Miklos made it symmetric,
-> I like the way delete_from_swap_cache drops the swap cache reference,
-> I dislike the way remove_from_page_cache does not - I did once try to
-> change that, but did a bad job, messed up reiserfs or reiser4 I forget
-> which, retreated in shame.
-
-I agree symmetric is good. I just said current fact which is that
-remove_from_page_cache doesn't release ref.
-So I thought we have to match current semantic to protect confusing.
-Okay. I will not oppose current semantics.
-Instead of it, please add it (ex, caller should hold the page
-reference) in function description.
-
-I am happy to hear that you tried it.
-Although it is hard, I think it's very valuable thing.
-Could you give me hint to googling your effort and why it is failed?
-
+>  	mutex_lock(&rdev->mutex);
 >
-> In both the examples you give, shmem_writepage and truncate_complete_page,
-> the caller has to be holding their own reference, in part because they
-> locked the page, and will need to unlock it before releasing their ref.
-> I think that would be true of any replace_page_cache_page caller.
+> +	/* If we're setting the same range as last time the change
+> +	 * should be a noop (some cpufreq implementations use the same +	 *
+voltage for multiple frequencies, for example).
+> +	 */
+> +	if (regulator->min_uV == min_uV && regulator->max_uV == max_uV)
++		goto out;
+> +
 
-Agree.
+I have only web email access now. Sorry for the vague references to code
+that follow.
 
->
->>
->> You makes the general API and caller might need works before the old page
->> is free. So how about this?
->>
->> err = replace_page_cache_page(oldpage, newpage, GFP_KERNEL);
->> if (err) {
->>         ...
->> }
->>
->> page_cache_release(oldpage); /* drop ref of page cache */
->>
->>
->> >
->> > I suspect it's historic that page_cache_release() doesn't drop the
->> > page cache ref.
->>
->> Sorry I can't understand your words.
->
-> Me neither: I believe Miklos meant __remove_from_page_cache() rather
-> than page_cache_release() in that instance.
+When you reported a merge/rebase issue the other day, I didn't respond
+with a similar patch for the following reasons:
+1. With support for multiple consumers, we can further optimize and call
+the producer's set voltage only if the final voltage range changes. So if
+consumer A asks for (2.0 - 5.0) and consumer B keeps changing between (1.0
+- 5.0) and (1.5 - 5.0), then we can completely no-op all of consumer B's
+calls.
 
-Maybe. :)
+2. When I was trying to do the above this Sunday, I also noticed what
+looks like a bug or at least an unpleasant behavior. A consumer's min_uV
+and max_uV were being updated (for-next around Dec 12th) before calling
+the producer's set voltage. So, in the above example, if consumer C comes
+in and asks for (10 - 15), it will prevent the producer voltage from ever
+changing again. All of consumer A and B's future requests will result in a
+failure since min_uV > max_uV when you do the consumer aggregation.
 
-Thanks for the comment, Hugh.
->
-> Hugh
->
+Hope my vague references to code is good enough to point you the code I'm
+talking about. May be you already fixed it too!
 
-
-
+Thanks,
+Saravana
 -- 
-Kind regards,
-Minchan Kim
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+
+
