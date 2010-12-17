@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab0LQTfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:35:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab0LQTfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:35:36 -0500
-Date: Fri, 17 Dec 2010 20:28:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
-Message-ID: <20101217192814.GA16133@redhat.com>
-References: <20101216145602.899838254@chello.nl> <20101216150920.968046926@chello.nl> <20101216184229.GA15889@redhat.com> <1292525893.2708.50.camel@laptop> <1292526220.2708.55.camel@laptop> <1292528874.2708.85.camel@laptop> <1292531553.2708.89.camel@laptop> <20101217165414.GA8997@redhat.com> <1292607781.2266.295.camel@twins> <1292609740.2266.323.camel@twins>
+	id S1755324Ab0LQTfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:35:45 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34700 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab0LQTfj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 14:35:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292609740.2266.323.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D0BB9AD.90506@kernel.org>
+References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop>
+ <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop>
+ <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop>
+ <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop>
+ <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org>
+ <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org>
+ <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org>
+ <4D094703.7080701@zytor.com> <4D0AD464.2020408@kernel.org>
+ <4D0AD486.9020704@kernel.org> <AANLkTin-LGig2RHHmvvy5H04jQRus_1mmS1Cr4KDWKsN@mail.gmail.com>
+ <4D0BB9AD.90506@kernel.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 17 Dec 2010 20:35:22 +0100
+Message-ID: <AANLkTikC_5NG8GGqj8fqddm+GOA+APipitdQihwjX6_f@mail.gmail.com>
+Subject: Re: [PATCH -v2 2/2] x86, acpi: Parse all SRAT cpu entries even have
+ cpu num limitation
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Venkatesh Pallipadi <venki@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17, Peter Zijlstra wrote:
+Guys, mind dropping linux-hotplug@ here? Linux-kernel@ should be
+enough. This list is almost entirely about *userspace* hotplug issues.
+
+Thanks,
+Kay
+
+On Fri, Dec 17, 2010 at 20:27, Yinghai Lu <yinghai@kernel.org> wrote:
+> On 12/17/2010 10:53 AM, Venkatesh Pallipadi wrote:
+>> linus git + these two patches still fails on my test system with the
+>> divide error. The failure dump is similar to what I reported here
+>> http://lkml.indiana.edu/hypermail//linux/kernel/1012.1/03641.html
+>>
+>> This patch description talk about new Intel systems. The test system I
+>> am seeing failure here is an ancient Intel (2 socket P4 HT) system.
+>> AFAICS, it does not even have an SRAT table (no "ACPI: SRAT" message
+>> in dmesg).
 >
-> By fully serializing all wakeups using ->pi_lock it becomes a lot
-> simpler
-
-Hmm, yes. Contrary to my expectations ;)
-
-> static int
-> try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
-> {
->         unsigned long flags;
->         int cpu, ret = 0;
+> that could be different cause.
 >
->         smp_wmb();
->         raw_spin_lock_irqsave(&p->pi_lock, flags);
+> Do you have whole boot log with debug etc?
 >
->         if (!(p->state & state))
->                 goto unlock;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-hotplug" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
->         ret = 1; /* we qualify as a proper wakeup now */
->
->         if (p->se.on_rq && ttwu_force(p, state, wake_flags))
->                 goto unlock;
-
-Well. All I can say, I'll try to re-read this code with the fresh head ;)
-We should ensure that on_rq == 0 can not be racy.
-
->         p->state = TASK_WAKING;
->         smp_wmb();
->         raw_spin_unlock_wait(&task_rq(p)->lock);
-
-This needs smp_mb(), unlock_wait() reads the memory.
-
-Oleg.
-
