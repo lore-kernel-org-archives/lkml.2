@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab0LQUzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 15:55:18 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:33699 "EHLO e5.ny.us.ibm.com"
+	id S1756292Ab0LQUzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 15:55:21 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:33703 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756198Ab0LQUzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756201Ab0LQUzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Dec 2010 15:55:09 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,11 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 05/20] rcu: document TINY_RCU and TINY_PREEMPT_RCU tracing.
-Date: Fri, 17 Dec 2010 12:54:36 -0800
-Message-Id: <1292619291-2468-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 18/20] rcu: reduce __call_rcu()-induced contention on rcu_node structures
+Date: Fri, 17 Dec 2010 12:54:49 -0800
+Message-Id: <1292619291-2468-18-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20101217205433.GA10199@linux.vnet.ibm.com>
 References: <20101217205433.GA10199@linux.vnet.ibm.com>
@@ -26,167 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paul.mckenney@linaro.org>
+When the current __call_rcu() function was written, the expedited
+APIs did not exist.  The __call_rcu() implementation therefore went
+to great lengths to detect the end of old grace periods and to start
+new ones, all in the name of reducing grace-period latency.  Now the
+expedited APIs do exist, and the usage of __call_rcu() has increased
+considerably.  This commit therefore causes __call_rcu() to avoid
+worrying about grace periods unless there are a large number of
+RCU callbacks stacked up on the current CPU.
 
-Add the required verbiage to Documentation/RCU/trace.txt.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/trace.txt |  132 ++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 124 insertions(+), 8 deletions(-)
+ kernel/rcutree.c |   38 +++++++++++++++++++++-----------------
+ 1 files changed, 21 insertions(+), 17 deletions(-)
 
-diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index a851118..ff6d3f1 100644
---- a/Documentation/RCU/trace.txt
-+++ b/Documentation/RCU/trace.txt
-@@ -1,18 +1,22 @@
- CONFIG_RCU_TRACE debugfs Files and Formats
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 01c8ad3..d0ddfea 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1435,22 +1435,11 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	 */
+ 	local_irq_save(flags);
+ 	rdp = this_cpu_ptr(rsp->rda);
+-	rcu_process_gp_end(rsp, rdp);
+-	check_for_new_grace_period(rsp, rdp);
  
+ 	/* Add the callback to our list. */
+ 	*rdp->nxttail[RCU_NEXT_TAIL] = head;
+ 	rdp->nxttail[RCU_NEXT_TAIL] = &head->next;
  
--The rcutree implementation of RCU provides debugfs trace output that
--summarizes counters and state.  This information is useful for debugging
--RCU itself, and can sometimes also help to debug abuses of RCU.
--The following sections describe the debugfs files and formats.
-+The rcutree and rcutiny implementations of RCU provide debugfs trace
-+output that summarizes counters and state.  This information is useful for
-+debugging RCU itself, and can sometimes also help to debug abuses of RCU.
-+The following sections describe the debugfs files and formats, first
-+for rcutree and next for rcutiny.
- 
- 
--Hierarchical RCU debugfs Files and Formats
-+CONFIG_TREE_RCU and CONFIG_TREE_PREEMPT_RCU debugfs Files and Formats
- 
--This implementation of RCU provides three debugfs files under the
-+These implementations of RCU provides five debugfs files under the
- top-level directory RCU: rcu/rcudata (which displays fields in struct
--rcu_data), rcu/rcugp (which displays grace-period counters), and
--rcu/rcuhier (which displays the struct rcu_node hierarchy).
-+rcu_data), rcu/rcudata.csv (which is a .csv spreadsheet version of
-+rcu/rcudata), rcu/rcugp (which displays grace-period counters),
-+rcu/rcuhier (which displays the struct rcu_node hierarchy), and
-+rcu/rcu_pending (which displays counts of the reasons that the
-+rcu_pending() function decided that there was core RCU work to do).
- 
- The output of "cat rcu/rcudata" looks as follows:
- 
-@@ -326,3 +330,115 @@ o	"nn" is the number of times that this CPU needed nothing.  Alert
- 	readers will note that the rcu "nn" number for a given CPU very
- 	closely matches the rcu_bh "np" number for that same CPU.  This
- 	is due to short-circuit evaluation in rcu_pending().
+-	/* Start a new grace period if one not already started. */
+-	if (!rcu_gp_in_progress(rsp)) {
+-		unsigned long nestflag;
+-		struct rcu_node *rnp_root = rcu_get_root(rsp);
+-
+-		raw_spin_lock_irqsave(&rnp_root->lock, nestflag);
+-		rcu_start_gp(rsp, nestflag);  /* releases rnp_root->lock. */
+-	}
+-
+ 	/*
+ 	 * Force the grace period if too many callbacks or too long waiting.
+ 	 * Enforce hysteresis, and don't invoke force_quiescent_state()
+@@ -1459,12 +1448,27 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	 * is the only one waiting for a grace period to complete.
+ 	 */
+ 	if (unlikely(++rdp->qlen > rdp->qlen_last_fqs_check + qhimark)) {
+-		rdp->blimit = LONG_MAX;
+-		if (rsp->n_force_qs == rdp->n_force_qs_snap &&
+-		    *rdp->nxttail[RCU_DONE_TAIL] != head)
+-			force_quiescent_state(rsp, 0);
+-		rdp->n_force_qs_snap = rsp->n_force_qs;
+-		rdp->qlen_last_fqs_check = rdp->qlen;
 +
++		/* Are we ignoring a completed grace period? */
++		rcu_process_gp_end(rsp, rdp);
++		check_for_new_grace_period(rsp, rdp);
 +
-+CONFIG_TINY_RCU and CONFIG_TINY_PREEMPT_RCU debugfs Files and Formats
++		/* Start a new grace period if one not already started. */
++		if (!rcu_gp_in_progress(rsp)) {
++			unsigned long nestflag;
++			struct rcu_node *rnp_root = rcu_get_root(rsp);
 +
-+These implementations of RCU provides a single debugfs file under the
-+top-level directory RCU, namely rcu/rcudata, which displays fields in
-+rcu_bh_ctrlblk, rcu_sched_ctrlblk and, for CONFIG_TINY_PREEMPT_RCU,
-+rcu_preempt_ctrlblk.
-+
-+The output of "cat rcu/rcudata" is as follows:
-+
-+rcu_preempt: qlen=24 gp=1097669 g197/p197/c197 tasks=...
-+             ttb=. btg=no ntb=184 neb=0 nnb=183 j=01f7 bt=0274
-+             normal balk: nt=1097669 gt=0 bt=371 b=0 ny=25073378 nos=0
-+             exp balk: bt=0 nos=0
-+rcu_sched: qlen: 0
-+rcu_bh: qlen: 0
-+
-+This is split into rcu_preempt, rcu_sched, and rcu_bh sections, with the
-+rcu_preempt section appearing only in CONFIG_TINY_PREEMPT_RCU builds.
-+The last three lines of the rcu_preempt section appear only in
-+CONFIG_RCU_BOOST kernel builds.  The fields are as follows:
-+
-+o	"qlen" is the number of RCU callbacks currently waiting either
-+	for an RCU grace period or waiting to be invoked.  This is the
-+	only field present for rcu_sched and rcu_bh, due to the
-+	short-circuiting of grace period in those two cases.
-+
-+o	"gp" is the number of grace periods that have completed.
-+
-+o	"g197/p197/c197" displays the grace-period state, with the
-+	"g" number being the number of grace periods that have started
-+	(mod 256), the "p" number being the number of grace periods
-+	that the CPU has responded to (also mod 256), and the "c"
-+	number being the number of grace periods that have completed
-+	(once again mode 256).
-+
-+	Why have both "gp" and "g"?  Because the data flowing into
-+	"gp" is only present in a CONFIG_RCU_TRACE kernel.
-+
-+o	"tasks" is a set of bits.  The first bit is "T" if there are
-+	currently tasks that have recently blocked within an RCU
-+	read-side critical section, the second bit is "N" if any of the
-+	aforementioned tasks are blocking the current RCU grace period,
-+	and the third bit is "E" if any of the aforementioned tasks are
-+	blocking the current expedited grace period.  Each bit is "."
-+	if the corresponding condition does not hold.
-+
-+o	"ttb" is a single bit.  It is "B" if any of the blocked tasks
-+	need to be priority boosted and "." otherwise.
-+
-+o	"btg" indicates whether boosting has been carried out during
-+	the current grace period, with "exp" indicating that boosting
-+	is in progress for an expedited grace period, "no" indicating
-+	that boosting has not yet started for a normal grace period,
-+	"begun" indicating that boosting has bebug for a normal grace
-+	period, and "done" indicating that boosting has completed for
-+	a normal grace period.
-+
-+o	"ntb" is the total number of tasks subjected to RCU priority boosting
-+	periods since boot.
-+
-+o	"neb" is the number of expedited grace periods that have had
-+	to resort to RCU priority boosting since boot.
-+
-+o	"nnb" is the number of normal grace periods that have had
-+	to resort to RCU priority boosting since boot.
-+
-+o	"j" is the low-order 12 bits of the jiffies counter in hexadecimal.
-+
-+o	"bt" is the low-order 12 bits of the value that the jiffies counter
-+	will have at the next time that boosting is scheduled to begin.
-+
-+o	In the line beginning with "normal balk", the fields are as follows:
-+
-+	o	"nt" is the number of times that the system balked from
-+		boosting because there were no blocked tasks to boost.
-+		Note that the system will balk from boosting even if the
-+		grace period is overdue when the currently running task
-+		is looping within an RCU read-side critical section.
-+		There is no point in boosting in this case, because
-+		boosting a running task won't make it run any faster.
-+
-+	o	"gt" is the number of times that the system balked
-+		from boosting because, although there were blocked tasks,
-+		none of them were preventing the current grace period
-+		from completing.
-+
-+	o	"bt" is the number of times that the system balked
-+		from boosting because boosting was already in progress.
-+
-+	o	"b" is the number of times that the system balked from
-+		boosting because boosting had already completed for
-+		the grace period in question.
-+
-+	o	"ny" is the number of times that the system balked from
-+		boosting because it was not yet time to start boosting
-+		the grace period in question.
-+
-+	o	"nos" is the number of times that the system balked from
-+		boosting for inexplicable ("not otherwise specified")
-+		reasons.  This can actually happen due to races involving
-+		increments of the jiffies counter.
-+
-+o	In the line beginning with "exp balk", the fields are as follows:
-+
-+	o	"bt" is the number of times that the system balked from
-+		boosting because there were no blocked tasks to boost.
-+
-+	o	"nos" is the number of times that the system balked from
-+		 boosting for inexplicable ("not otherwise specified")
-+		 reasons.
++			raw_spin_lock_irqsave(&rnp_root->lock, nestflag);
++			rcu_start_gp(rsp, nestflag);  /* rlses rnp_root->lock */
++		} else {
++			/* Give the grace period a kick. */
++			rdp->blimit = LONG_MAX;
++			if (rsp->n_force_qs == rdp->n_force_qs_snap &&
++			    *rdp->nxttail[RCU_DONE_TAIL] != head)
++				force_quiescent_state(rsp, 0);
++			rdp->n_force_qs_snap = rsp->n_force_qs;
++			rdp->qlen_last_fqs_check = rdp->qlen;
++		}
+ 	} else if (ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs), jiffies))
+ 		force_quiescent_state(rsp, 1);
+ 	local_irq_restore(flags);
 -- 
 1.7.3.2
 
