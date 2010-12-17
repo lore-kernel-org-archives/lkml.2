@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab0LQAK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:10:26 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34087 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553Ab0LQAKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:10:25 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rabin Vincent <rabin@rab.in>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Date: Fri, 17 Dec 2010 01:09:42 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: stern@rowland.harvard.edu, linux-pm@lists.linux-foundation.org,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
-In-Reply-To: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+	id S1753847Ab0LQAPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:15:52 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:45686 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab0LQAPv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 19:15:51 -0500
+Message-ID: <4D0AABB3.7050404@psi5.com>
+Date: Fri, 17 Dec 2010 01:15:47 +0100
+From: Christian Brandt <brandtc@psi5.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Hugh Dickins <hughd@google.com>
+CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Ric Wheeler <ricwheeler@gmail.com>, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: swap storage alignment and stride size
+References: <4CFFBA7D.6060802@psi5.com> <4CFFE2EA.9040909@gmail.com> <yq1d3p486qe.fsf@sermon.lab.mkp.net> <alpine.LSU.2.00.1012142038430.13004@tigran.mtv.corp.google.com> <yq18vzq6dgb.fsf@sermon.lab.mkp.net> <alpine.LSU.2.00.1012151627400.8734@tigran.mtv.corp.google.com>
+In-Reply-To: <alpine.LSU.2.00.1012151627400.8734@tigran.mtv.corp.google.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201012170109.43137.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 16, 2010, Rabin Vincent wrote:
-> Hello,
-> 
-> There seem to be some differences between the generic ops and the i2c
-> and platform busses' implementations of the interaction between runtime
-> PM and system sleep:
-> 
->   (1) The platform bus does not implement the
->       don't-call-pm->suspend()-if pm_runtime_suspended()-returns-true
->       functionality implemented by the generic ops and i2c.
-> 
->   (2) Both I2C and platform do not set the device as active when a
->       pm->resume callback exists and it succeeds.
-> 
->       This seems to have been done in i2c until recently, but has been
->       removed by 753419f59e ("i2c: Fix for suspend/resume issue").  It
->       seems to me that this removal is incorrect, and instead the real
->       problem with the implementation was that it set the device as
->       active even if no resume callback existed, whereas it should only
->       do so when it exists and returns zero, like the generic ops.
-> 
-> Are these divergences from the generic ops to be considered as bugs?
+Am 16.12.2010 01:42, schrieb Hugh Dickins:
 
-I think so.  I'm not sure about (1), because someone may already depend on
-that behavior, but (2) looks like a bug to me.
+> No, the 4k-aligned remains 4k-aligned, of course.  But if you aligned
+> your swap partition on, say, a 1MB boundary, and are thinking of
+> working in aligned 1MB blocks, then it may be awkward that there's
+> always this special 4k at the start (it could be written back each
+> time even though it hasn't changed, but it's still an odd case).
 
-> Atleast (2) will cause devices which use UNIVERSAL_DEV_PM_OPS to have
-> incorrect runtime pm state after a resume from system sleep.
-> 
-> If so, before I send patches to fix them: can it be assumed that only
-> drivers using dev_pm_ops (and not the legacy ops of these busses) will
-> need the interactions between runtime PM and system sleep as done in the
-> generic ops?
+Hallo Hugh, I stayed a bit quit after my question to see what people
+think. So I wasn't wrong from the start, neither kernel nor userland
+tools care for anything beyond page size today. For today I'll be happy
+enough with the status quo
 
-Yes, you can make this assumption safely.  The drivers that don't use
-dev_pm_ops can't support runtime PM at all.
+Though I have a clear vision what I would like:
 
-> This would mean that simple busses could simply use the
-> generic ops like below instead of duplicating their behaviour:
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 6b4cc56..46117e0 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -212,7 +212,7 @@ static int i2c_device_pm_resume(struct device *dev)
->  	int ret;
-> 
->  	if (pm)
-> -		ret = pm->resume ? pm->resume(dev) : 0;
-> +		ret = pm_generic_resume(dev);
->  	else
->  		ret = i2c_legacy_resume(dev);
+The kernel needs to be prepared to handle larger groups of pages.
+In a perfect world it would favorite larger operations whicha are
+already aligned to underlying architectures.
+Eg, lets first write that very big 8192kiB chunk which is perfectly
+aligned. But ignore the small pieces scattered around memory below the
+chunk size until memory gets really low.
+Small pieces don't eat up much memory any.
+May it would even help to swap out only chunk-aligned parts even when
+there are small pre- and post-data around the big chunk.
 
-Thanks,
-Rafael
+Also I would expect a userspace tool to setup a swap space with
+alternate settings (e.g. offset to device start, chunk size, alignment)
+- a nice new role for mkswap?
+
+The chunk size shouldn't be any fixed value.
+Often I have 64k, sometimes 256k, rarelly even 4096kiB.
+And you never know what strange layouts are luring around the next
+corner, maybe in 2015 we will all use SSD drives with a cell size of
+12288kByte, already today several budget SSDs have pretty strange cell
+sizes:
+My cheapish Acer 24giB drive has 384kiB because it has connected three
+8giB flash chips to the four channel controler with the fourth channel
+being broken/disabled...
+
+-- 
+Christian Brandt
