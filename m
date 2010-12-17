@@ -1,195 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab0LQTYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:24:48 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41685 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab0LQTYp convert rfc822-to-8bit (ORCPT
+	id S1754659Ab0LQT06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:26:58 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:40829 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab0LQT05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:24:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RU5Tklfy2xYSRS75NtYjCnd47mEncE6e+ZLQqoeVASIWYAbNE/rbg5T6BXzr/L1NNc
-         uWdKfE3KYlDWjZ5/sMSeUXqUUwN+2rnNqwPXnW9y43J7/XXKc+Z3Uxfj5sT3VD4b+QKP
-         EEGI/pShSXQoLVf4ZxIn5MJ27AwZNy7pvrbTs=
+	Fri, 17 Dec 2010 14:26:57 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg KH <greg@kroah.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <20101217152246.GA8221@mail.hallyn.com>
+	<20101217152458.GA11162@mail.hallyn.com>
+	<20101217173125.GA29982@kroah.com>
+Date: Fri, 17 Dec 2010 11:26:50 -0800
+In-Reply-To: <20101217173125.GA29982@kroah.com> (Greg KH's message of "Fri, 17
+	Dec 2010 09:31:25 -0800")
+Message-ID: <m18vzoryit.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1292531413-28924-1-git-send-email-rydberg@euromail.se>
-References: <1292531413-28924-1-git-send-email-rydberg@euromail.se>
-Date: Fri, 17 Dec 2010 11:24:44 -0800
-Message-ID: <AANLkTimj3h_oVSj_QA5V=qB7WXXifbWcFtEgA6+6zPZc@mail.gmail.com>
-Subject: Re: [PATCH] Input: introduce device information ioctl
-From: Ping Cheng <pinglinux@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+C+nPb6pVdn+hzF1qF2/qH63OCFkkgeZ8=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg KH <greg@kroah.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC 1/5] user namespaces: Add a user_namespace as creator/owner of uts_namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 16, 2010 at 12:30 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Today, userspace sets up an input device based on the data it emits.
-> This is not always enough; a tablet and a touchscreen may emit exactly
-> the same data, for instance, but the former should be set up with a
-> pointer whereas the latter does not need to. Recently, a new type of
-> touchpad has emerged where the buttons are under the pad, which
-> changes handling logic without changing the emitted data. This patch
-> introduces a new ioctl, EVIOCGPROP, which enables user access to a set
-> of device properties useful during setup. The properties are given as
-> a bitmap in the same fashion as the event types, and are also made
-> available via sysfs.
->
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Greg KH <greg@kroah.com> writes:
 
-Reviewed-by: Ping Cheng <pingc@wacom.com>
+> On Fri, Dec 17, 2010 at 03:24:58PM +0000, Serge E. Hallyn wrote:
+>> copy_process() handles CLONE_NEWUSER before the rest of the
+>> namespaces.  So in the case of clone(CLONE_NEWUSER|CLONE_NEWUTS)
+>> the new uts namespace will have the new user namespace as its
+>> owner.  That is what we want, since we want root in that new
+>> userns to be able to have privilege over it.
+>> 
+>> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+>> ---
+>>  include/linux/utsname.h |    3 +++
+>>  init/version.c          |    2 ++
+>>  kernel/nsproxy.c        |    3 +++
+>>  kernel/user.c           |    8 ++++++--
+>>  kernel/utsname.c        |    4 ++++
+>>  5 files changed, 18 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+>> index 69f3997..85171be 100644
+>> --- a/include/linux/utsname.h
+>> +++ b/include/linux/utsname.h
+>> @@ -37,9 +37,12 @@ struct new_utsname {
+>>  #include <linux/nsproxy.h>
+>>  #include <linux/err.h>
+>>  
+>> +struct user_namespace;
+>> +
+>>  struct uts_namespace {
+>>  	struct kref kref;
+>>  	struct new_utsname name;
+>> +	struct user_namespace *user_ns;
+>>  };
+>>  extern struct uts_namespace init_uts_ns;
+>>  
+>> diff --git a/init/version.c b/init/version.c
+>> index 79fb8c2..9eb19fb 100644
+>> --- a/init/version.c
+>> +++ b/init/version.c
+>> @@ -21,6 +21,7 @@ extern int version_string(LINUX_VERSION_CODE);
+>>  int version_string(LINUX_VERSION_CODE);
+>>  #endif
+>>  
+>> +extern struct user_namespace init_user_ns;
+>>  struct uts_namespace init_uts_ns = {
+>>  	.kref = {
+>>  		.refcount	= ATOMIC_INIT(2),
+>
+> Wait, WTF?
+>
+> You have a static kref and you try to automatically instanciate it here?
+> As it's static, why are you even having a kref at all, what good does it
+> do you, you can't delete the thing, it's always around, so just remove
+> it entirely please.
+>
+> Or, dynamically create it properly.  In other words, this is majorly
+> broken.
 
-I wonder if we need to mention this new ioctl somewhere under
-Documentation/input or not. INPUT_PROP_SEMI_MT could add useful
-information for multi-touch-protocol.txt. The others could play a role
-in Chase's new Documentation/input/evdev-codes.txt.
+There is a very weird case for the data structures the initial task has
+references to.  The initial task never goes away and so those data
+structure never go away.  Furthermore we need many of those data
+structures before we have a memory allocator ready.  So we statically
+allocate a single data structure and up it's reference count to ensure
+that the count never goes to zero.
 
-Ping
+There are also major benefits to have the version of something that is
+never freed never going away, because it means you can just reference it
+in code.  So while I would be happy to say this is special don't use a
+kref and roll the reference counting logic by hand, we aren't
+dynamically allocating init_uts_ns any time soon.
 
-> ---
->  drivers/input/evdev.c       |    4 ++++
->  drivers/input/input.c       |   15 +++++++++++++++
->  drivers/input/misc/uinput.c |    4 ++++
->  include/linux/input.h       |   16 ++++++++++++++++
->  include/linux/uinput.h      |    1 +
->  5 files changed, 40 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index e3f7fc6..0cd97e8 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -677,6 +677,10 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->  #define EVIOC_MASK_SIZE(nr)    ((nr) & ~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
->        switch (EVIOC_MASK_SIZE(cmd)) {
->
-> +       case EVIOCGPROP(0):
-> +               return bits_to_user(dev->propbit, INPUT_PROP_MAX,
-> +                                   size, p, compat_mode);
-> +
->        case EVIOCGKEY(0):
->                return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
->
-> diff --git a/drivers/input/input.c b/drivers/input/input.c
-> index 37708d1..c3e5fc7 100644
-> --- a/drivers/input/input.c
-> +++ b/drivers/input/input.c
-> @@ -1318,11 +1318,26 @@ static ssize_t input_dev_show_modalias(struct device *dev,
->  }
->  static DEVICE_ATTR(modalias, S_IRUGO, input_dev_show_modalias, NULL);
->
-> +static int input_print_bitmap(char *buf, int buf_size, unsigned long *bitmap,
-> +                             int max, int add_cr);
-> +
-> +static ssize_t input_dev_show_properties(struct device *dev,
-> +                                        struct device_attribute *attr,
-> +                                        char *buf)
-> +{
-> +       struct input_dev *input_dev = to_input_dev(dev);
-> +       int len = input_print_bitmap(buf, PAGE_SIZE, input_dev->propbit,
-> +                                    INPUT_PROP_MAX, true);
-> +       return min_t(int, len, PAGE_SIZE);
-> +}
-> +static DEVICE_ATTR(properties, S_IRUGO, input_dev_show_properties, NULL);
-> +
->  static struct attribute *input_dev_attrs[] = {
->        &dev_attr_name.attr,
->        &dev_attr_phys.attr,
->        &dev_attr_uniq.attr,
->        &dev_attr_modalias.attr,
-> +       &dev_attr_properties.attr,
->        NULL
->  };
->
-> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
-> index bea8972..82542a1 100644
-> --- a/drivers/input/misc/uinput.c
-> +++ b/drivers/input/misc/uinput.c
-> @@ -680,6 +680,10 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->                        retval = uinput_set_bit(arg, swbit, SW_MAX);
->                        break;
->
-> +               case UI_SET_PROPBIT:
-> +                       retval = uinput_set_bit(arg, propbit, INPUT_PROP_MAX);
-> +                       break;
-> +
->                case UI_SET_PHYS:
->                        if (udev->state == UIST_CREATED) {
->                                retval = -EINVAL;
-> diff --git a/include/linux/input.h b/include/linux/input.h
-> index b3a1e02..8d9c76c 100644
-> --- a/include/linux/input.h
-> +++ b/include/linux/input.h
-> @@ -91,6 +91,7 @@ struct input_keymap_entry {
->  #define EVIOCGNAME(len)                _IOC(_IOC_READ, 'E', 0x06, len)         /* get device name */
->  #define EVIOCGPHYS(len)                _IOC(_IOC_READ, 'E', 0x07, len)         /* get physical location */
->  #define EVIOCGUNIQ(len)                _IOC(_IOC_READ, 'E', 0x08, len)         /* get unique identifier */
-> +#define EVIOCGPROP(len)                _IOC(_IOC_READ, 'E', 0x09, len)         /* get device properties */
->
->  #define EVIOCGKEY(len)         _IOC(_IOC_READ, 'E', 0x18, len)         /* get global key state */
->  #define EVIOCGLED(len)         _IOC(_IOC_READ, 'E', 0x19, len)         /* get all LEDs */
-> @@ -108,6 +109,18 @@ struct input_keymap_entry {
->  #define EVIOCGRAB              _IOW('E', 0x90, int)                    /* Grab/Release device */
->
->  /*
-> + * Device properties and quirks
-> + */
-> +
-> +#define INPUT_PROP_POINTER             0x00    /* needs a pointer */
-> +#define INPUT_PROP_DIRECT              0x01    /* direct input devices */
-> +#define INPUT_PROP_BUTTONPAD           0x02    /* has button(s) under pad */
-> +#define INPUT_PROP_SEMI_MT             0x03    /* touch rectangle only */
-> +
-> +#define INPUT_PROP_MAX                 0x1f
-> +#define INPUT_PROP_CNT                 (INPUT_PROP_MAX + 1)
-> +
-> +/*
->  * Event types
->  */
->
-> @@ -1090,6 +1103,7 @@ struct ff_effect {
->  * @phys: physical path to the device in the system hierarchy
->  * @uniq: unique identification code for the device (if device has it)
->  * @id: id of the device (struct input_id)
-> + * @propbit: bitmap of device properties and quirks
->  * @evbit: bitmap of types of events supported by the device (EV_KEY,
->  *     EV_REL, etc.)
->  * @keybit: bitmap of keys/buttons this device has
-> @@ -1173,6 +1187,8 @@ struct input_dev {
->        const char *uniq;
->        struct input_id id;
->
-> +       unsigned long propbit[BITS_TO_LONGS(INPUT_PROP_CNT)];
-> +
->        unsigned long evbit[BITS_TO_LONGS(EV_CNT)];
->        unsigned long keybit[BITS_TO_LONGS(KEY_CNT)];
->        unsigned long relbit[BITS_TO_LONGS(REL_CNT)];
-> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
-> index 05f7fed2..d28c726 100644
-> --- a/include/linux/uinput.h
-> +++ b/include/linux/uinput.h
-> @@ -104,6 +104,7 @@ struct uinput_ff_erase {
->  #define UI_SET_FFBIT           _IOW(UINPUT_IOCTL_BASE, 107, int)
->  #define UI_SET_PHYS            _IOW(UINPUT_IOCTL_BASE, 108, char*)
->  #define UI_SET_SWBIT           _IOW(UINPUT_IOCTL_BASE, 109, int)
-> +#define UI_SET_PROPBIT         _IOW(UINPUT_IOCTL_BASE, 110, int)
->
->  #define UI_BEGIN_FF_UPLOAD     _IOWR(UINPUT_IOCTL_BASE, 200, struct uinput_ff_upload)
->  #define UI_END_FF_UPLOAD       _IOW(UINPUT_IOCTL_BASE, 201, struct uinput_ff_upload)
-> --
-> 1.7.2.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Eric
