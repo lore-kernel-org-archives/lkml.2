@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab0LQAnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:43:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46119 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320Ab0LQAnP convert rfc822-to-8bit (ORCPT
+	id S1754606Ab0LQAuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:50:21 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29788 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab0LQAuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:43:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,358,1288594800"; 
-   d="scan'208";a="869131262"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Dec 2010 16:43:12 -0800
-Subject: RE: linux-next: build warnings after merge of the ia64 tree
-Thread-Topic: linux-next: build warnings after merge of the ia64 tree
-Thread-Index: AcudgNNgYAzVxwvIRJ6CrgRDLIvv8wAAhgTQ
-Message-ID: <987664A83D2D224EAE907B061CE93D530193D00A03@orsmsx505.amr.corp.intel.com>
-References: <20101217112357.ec7879f1.sfr@canb.auug.org.au>
-In-Reply-To: <20101217112357.ec7879f1.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 16 Dec 2010 19:50:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67160045"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>,
+        Brian Swetland <swetland@google.com>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH 22/22] msm: clock-8x60: Don't keep IOMMU clocks on at boot
+Date: Thu, 16 Dec 2010 16:50:06 -0800
+Message-Id: <1292547006-19741-23-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3.398.g0b0cd
+In-Reply-To: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
+References: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> After merging the ia64 tree, today's linux-next build
-> produced these warnings:
+Now that the IOMMU driver properly handles its clocks we can stop
+keeping the clocks it requires to be on during early boot.
 
->drivers/acpi/apei/erst.c: In function 'erst_reader':
->drivers/acpi/apei/erst.c:826: warning: passing argument 1 of >'spinlock_check' from incompatible pointer type
+Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-msm/clock-8x60.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-Hmmmh. I wonder why I didn't see them in my build?
-
-I'll take a look and try to fix it tomorrow.
-
-Thanks for the notice.
-
--Tony
+diff --git a/arch/arm/mach-msm/clock-8x60.c b/arch/arm/mach-msm/clock-8x60.c
+index 28017b7..78f33ef 100644
+--- a/arch/arm/mach-msm/clock-8x60.c
++++ b/arch/arm/mach-msm/clock-8x60.c
+@@ -1851,15 +1851,6 @@ static void reg_init(void)
+ 	/* Set the dsi_byte_clk src to the DSI PHY PLL,
+ 	 * dsi_esc_clk to PXO/2, and the hdmi_app_clk src to PXO */
+ 	rmwreg(0x400001, MISC_CC2_REG, 0x424003);
+-
+-	/*
+-	 * Turn on clocks required by the SMMU driver until it properly
+-	 * controls its own clocks.
+-	 */
+-	local_clk_enable(C(SMMU_P));
+-	local_clk_enable(C(JPEGD_AXI));
+-	local_clk_enable(C(VFE_AXI));
+-	local_clk_enable(C(VCODEC_AXI));
+ }
+ 
+ /* Local clock driver initialization. */
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
