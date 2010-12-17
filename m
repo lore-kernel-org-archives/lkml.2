@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0LQTzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:55:22 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:58313 "EHLO
+	id S1755772Ab0LQTz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:55:29 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:58335 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593Ab0LQTzS (ORCPT
+	with ESMTP id S1754641Ab0LQTz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:55:18 -0500
+	Fri, 17 Dec 2010 14:55:26 -0500
 X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
@@ -14,10 +14,10 @@ Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCHv6 03/16] pps: fix race in PPS_FETCH handler
-Date: Fri, 17 Dec 2010 22:54:27 +0300
-Message-Id: <3371e349eded0cec5cd00bc5145ce10633369686.1292604060.git.lasaine@lvk.cs.msu.su>
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: [PATCHv6 11/16] pps: timestamp is always passed to dcd_change()
+Date: Fri, 17 Dec 2010 22:54:35 +0300
+Message-Id: <d24554c00a8c24b4e3754efb5bccfa27950e1afa.1292604060.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
 References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
@@ -26,92 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a race in PPS_FETCH ioctl handler when several processes want
-to obtain PPS data simultaneously using sleeping PPS_FETCH. They all
-sleep most of the time in the system call.
-With the old approach when the first process waiting on the pps queue
-is waken up it makes new system call right away and zeroes pps->go. So
-other processes continue to sleep. This is a clear race condition
-because of the global 'go' variable.
-With the new approach pps->last_ev holds some value increasing at each
-PPS event. PPS_FETCH ioctl handler saves current value to the local
-variable at the very beginning so it can safely check that there is a
-new event by just comparing both variables.
+Remove the code that gatheres timestamp in pps_tty_dcd_change() in case
+passed ts parameter is NULL because it never happens in the current
+code. Fix comments as well.
 
 Acked-by: Rodolfo Giometti <giometti@linux.it>
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- drivers/pps/kapi.c         |    4 ++--
- drivers/pps/pps.c          |   10 +++++++---
- include/linux/pps_kernel.h |    2 +-
- 3 files changed, 10 insertions(+), 6 deletions(-)
+ Documentation/serial/tty.txt    |    2 +-
+ drivers/pps/clients/pps-ldisc.c |    8 --------
+ include/linux/tty_ldisc.h       |    2 +-
+ 3 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 55f3961..3f89f5eb 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -326,8 +326,8 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
+diff --git a/Documentation/serial/tty.txt b/Documentation/serial/tty.txt
+index 7c90050..540db41 100644
+--- a/Documentation/serial/tty.txt
++++ b/Documentation/serial/tty.txt
+@@ -107,7 +107,7 @@ write_wakeup()	-	May be called at any point between open and close.
  
- 	/* Wake up if captured something */
- 	if (captured) {
--		pps->go = ~0;
--		wake_up_interruptible(&pps->queue);
-+		pps->last_ev++;
-+		wake_up_interruptible_all(&pps->queue);
+ dcd_change()	-	Report to the tty line the current DCD pin status
+ 			changes and the relative timestamp. The timestamp
+-			can be NULL.
++			cannot be NULL.
  
- 		kill_fasync(&pps->async_queue, SIGIO, POLL_IN);
- 	}
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index c76afb9..dc7e66c 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -136,6 +136,7 @@ static long pps_cdev_ioctl(struct file *file,
  
- 	case PPS_FETCH: {
- 		struct pps_fdata fdata;
-+		unsigned int ev;
+ Driver Access
+diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
+index 1b3c6ed..79451f2 100644
+--- a/drivers/pps/clients/pps-ldisc.c
++++ b/drivers/pps/clients/pps-ldisc.c
+@@ -32,14 +32,6 @@ static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
+ 				struct pps_event_time *ts)
+ {
+ 	struct pps_device *pps = (struct pps_device *)tty->disc_data;
+-	struct pps_event_time __ts;
+-
+-	/* First of all we get the time stamp... */
+-	pps_get_ts(&__ts);
+-
+-	/* Does caller give us a timestamp? */
+-	if (!ts)	/* No. Do it ourself! */
+-		ts = &__ts;
  
- 		pr_debug("PPS_FETCH: source %d\n", pps->id);
+ 	BUG_ON(pps == NULL);
  
-@@ -143,11 +144,12 @@ static long pps_cdev_ioctl(struct file *file,
- 		if (err)
- 			return -EFAULT;
+diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
+index 763e061..ff7dc08 100644
+--- a/include/linux/tty_ldisc.h
++++ b/include/linux/tty_ldisc.h
+@@ -104,7 +104,7 @@
+  *			struct pps_event_time *ts)
+  *
+  *	Tells the discipline that the DCD pin has changed its status and
+- *	the relative timestamp. Pointer ts can be NULL.
++ *	the relative timestamp. Pointer ts cannot be NULL.
+  */
  
--		pps->go = 0;
-+		ev = pps->last_ev;
- 
- 		/* Manage the timeout */
- 		if (fdata.timeout.flags & PPS_TIME_INVALID)
--			err = wait_event_interruptible(pps->queue, pps->go);
-+			err = wait_event_interruptible(pps->queue,
-+					ev != pps->last_ev);
- 		else {
- 			unsigned long ticks;
- 
-@@ -159,7 +161,9 @@ static long pps_cdev_ioctl(struct file *file,
- 
- 			if (ticks != 0) {
- 				err = wait_event_interruptible_timeout(
--						pps->queue, pps->go, ticks);
-+						pps->queue,
-+						ev != pps->last_ev,
-+						ticks);
- 				if (err == 0)
- 					return -ETIMEDOUT;
- 			}
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index c930d11..c3aed4b 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -55,7 +55,7 @@ struct pps_device {
- 	struct pps_ktime clear_tu;
- 	int current_mode;			/* PPS mode at event time */
- 
--	int go;					/* PPS event is arrived? */
-+	unsigned int last_ev;			/* last PPS event id */
- 	wait_queue_head_t queue;		/* PPS event queue */
- 
- 	unsigned int id;			/* PPS source unique ID */
+ #include <linux/fs.h>
 -- 
 1.7.2.3
 
