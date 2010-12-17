@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab0LQSlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:41:23 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44759 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab0LQSlW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:41:22 -0500
-Subject: Re: [RFC][PATCH 5/5] sched: Reduce ttwu rq->lock contention
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1292610297.2266.334.camel@twins>
-References: <20101216145602.899838254@chello.nl>
-	 <20101216150920.968046926@chello.nl> <20101216184229.GA15889@redhat.com>
-	 <1292525893.2708.50.camel@laptop> <1292526220.2708.55.camel@laptop>
-	 <1292528874.2708.85.camel@laptop> <1292531553.2708.89.camel@laptop>
-	 <20101217165414.GA8997@redhat.com>  <20101217175013.GB8997@redhat.com>
-	 <1292610297.2266.334.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 17 Dec 2010 19:41:04 +0100
-Message-ID: <1292611264.2266.344.camel@twins>
+	id S1755816Ab0LQSnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:43:01 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:36160 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752109Ab0LQSnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 13:43:00 -0500
+Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
+From: Dario Faggioli <raistlin@linux.it>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Michael Trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1012171630330.12146@localhost6.localdomain6>
+References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
+	 <1292596194.2266.283.camel@twins> <1292596369.2266.286.camel@twins>
+	 <AANLkTinGkf3a4_sw32b4UqAmpUU+i6fDmDUT8tXdw14D@mail.gmail.com>
+	 <1292599007.2266.290.camel@twins>
+	 <alpine.LFD.2.00.1012171630330.12146@localhost6.localdomain6>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-7MGPi23zBQhg9JtNzDXe"
+Date: Fri, 17 Dec 2010 19:44:54 +0100
+Message-ID: <1292611494.2697.58.camel@Palantir>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-12-17 at 19:24 +0100, Peter Zijlstra wrote:
-> > Even simpler. This can race with, say, __migrate_task() which does
-> > deactivate_task + activate_task and temporary clears on_rq. Although
-> > this is simple to fix, I think.
-> 
-> Yes, another hole.. 
 
-__migrate_task() is a tad special in that it should only migrate
-runnable tasks, but of course we can have it preempted with ->state !=
-TASK_RUNNING, which makes life interesting, but we can fix that by
-including a PREEMPT_ACTIVE test in ttwu.
+--=-7MGPi23zBQhg9JtNzDXe
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Other such callers are more straight fwd though:
+On Fri, 2010-12-17 at 16:43 +0100, Thomas Gleixner wrote:=20
+> There's that and I have yet to see a proof that running code with
+> lower frequency and not going idle saves more power than running full
+> speed and going into low power states for longer time.
+>=20
+I was expecting a reply like this from right from you! :-P
 
-  rt_mutex_setprio()
-  set_user_nice()
-  sched_move_task()
-  __sched_setscheduler()
-  normalize_task()
+BTW, I mostly agree that race to idle is better. The point here is that
+you might end in a situation where frequency scaling is enabled and/or
+a particular frequency is statically selected for whatever reason. In
+that case, making the scheduler aware of such could be needed to get the
+expected behaviour out of it, independently from the fact it is probably
+going to be worse than race-to-idle for power saving purposes... How
+much am I wrong?
 
-none of those are fast-path operations, so it is quite doable to also
-take the ->pi_lock there and fully serialize them.
-  
+> Also if you want to have your deadline scheduler aware of cpu
+> frequency changes, then simply limit the total bandwith based on the
+> lowest possible frequency and it works always.=20
+>
+That could be a solution as well, although you're limiting a lot the
+bandwidth available for deadline task. But something similar could be
+considered...
+
+> This whole dynamic
+> bandwith expansion is more an academic exercise than a practical
+> necessity.
+>=20
+Well, despite the fact that Harald is with Ericsson and as not much to
+do with academia. :-D
+
+Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
+--=-7MGPi23zBQhg9JtNzDXe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk0Lr6YACgkQk4XaBE3IOsROgQCfY5SNuX5trgolEapMJNaXuOt8
+hBMAn2Ao5v9CpWx/zuUoF2oC1hFPMRGZ
+=mxHu
+-----END PGP SIGNATURE-----
+
+--=-7MGPi23zBQhg9JtNzDXe--
+
