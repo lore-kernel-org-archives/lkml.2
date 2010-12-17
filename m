@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab0LQLaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:30:18 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40085 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab0LQLaQ convert rfc822-to-8bit (ORCPT
+	id S1752042Ab0LQLbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:31:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62109 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab0LQLbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:30:16 -0500
+	Fri, 17 Dec 2010 06:31:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=A+0Y+WZ7EJhlBMYTTN0I9APIpePX0NujQCSbnLe+1zEGQTaSR/iFnoGj/ZV8TRyJBg
-         I5RzSd2q6oKnKAPSGwURLbiq/EkEo2Q2+8kdxq7t2QgRddbD2eHipTBJzxV0wx4eXnzJ
-         sLYoKSjSPVHdZvgrTU28OBRGk20Edac6o/4Tw=
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=MwPuGD+mhROnMJXlO+xN4DCMBcTBjWBSRU7osmG/UYZxpfhQnvmacEmg/Uq9hivA9F
+         iNEJOV9ZUzW3j6/mqsJLB92W6vqDY8t78AO1cMnIfxx3ZKfx8St96xBzlDGYgddV1odO
+         oT6P9n+Uy3ueDtSw4/HzIU/1HCP0efb2hUGw8=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <201012152214.29452.PeterHuewe@gmx.de>
-References: <1291850970-7190-1-git-send-email-peterhuewe@gmx.de>
-	<AANLkTin+vOvpK4geMKdcx4wiOSc_EdPNwXJAcFTaCcnf@mail.gmail.com>
-	<4D092A38.7020407@oracle.com>
-	<201012152214.29452.PeterHuewe@gmx.de>
-Date: Fri, 17 Dec 2010 12:30:15 +0100
-Message-ID: <AANLkTikPVqaZE8KBOCKWuwkqRpn3mHKQn+V3bUU5cW7=@mail.gmail.com>
-Subject: Re: [PATCH] platform/x86: Fix recursive Kconfig dependency
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: =?UTF-8?Q?Peter_H=C3=BCwe?= <PeterHuewe@gmx.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, John Linville <linville@tuxdriver.com>
+In-Reply-To: <99eb693af85e07b01d81d45f1bc77f64.squirrel@www.codeaurora.org>
+References: <4CF94DDD.8000409@codeaurora.org>
+	<20101203203653.GB10245@n2100.arm.linux.org.uk>
+	<4CFDD297.4020600@codeaurora.org>
+	<15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
+	<20101209103835.GA31465@n2100.arm.linux.org.uk>
+	<4D017B45.4000805@codeaurora.org>
+	<AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
+	<4D045692.4050607@codeaurora.org>
+	<AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
+	<8c67e174d807416f0c6c190cc72d3f5a.squirrel@www.codeaurora.org>
+	<20101217094818.GA9937@n2100.arm.linux.org.uk>
+	<99eb693af85e07b01d81d45f1bc77f64.squirrel@www.codeaurora.org>
+Date: Fri, 17 Dec 2010 11:31:03 +0000
+X-Google-Sender-Auth: SLlF9TGiVnYgViu5hsYXEufo10k
+Message-ID: <AANLkTinsgqLDe3=KX59n1UAp9v0ErXQzxj+A+qQ8TRj_@mail.gmail.com>
+Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to early_initcall
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, Nicolas Pitre <nico@marvell.com>,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
+        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 15, 2010 at 10:14 PM, Peter Hüwe <PeterHuewe@gmx.de> wrote:
-> Am Mittwoch 15 Dezember 2010, 21:51:04 schrieb Randy Dunlap:
->> > Hi, another patch was posted before:
->> >
->> > http://article.gmane.org/gmane.linux.drivers.platform.x86.devel/970/match
->> > =acpi_wmi
-> Thanks for the information.
->
->> > Your patch seems to miss TC1100_WMI section.
+On 17 December 2010 10:26, Saravana Kannan <skannan@codeaurora.org> wrote:
+>>> Looks like you agree with our approach. If that's the case, would you
+>>> mind
+>>> Acking Jeff's initial patch that this thread is based on?
 >>
->> Yes, it would be better to do both (all) of them the same way.
-> Yeah, you're right - but as Sedat's patch is perfect (and fixes both) - so for
-> Sedats's patch:
-> Acked-by: Peter Huewe <peterhuewe@gmx.de>
+>> I read Catalin's reply as agreeing with me.
 >
-> Thanks,
-> Peter
+> Catalin, Can you clarify?
+
+I'll try but I started my holidays and I'll only be online occasionally.
+
+Just to clarify, even if I ack Jeff's patch, it is for Russell to
+decide what gets merged. Now, Jeff's patch doesn't show anything about
+how the dma_alloc_coherent is used, just suggests something in the
+commit log, so I don't see it critical to this discussion. I wouldn't
+ack it without agreement on the extension of the DMA API (which can
+only have a no-op get_dma_ops at this point).
+
+I agree with Russell's points that just using the DMA API as it is may
+break in the future, hence a proposal to treat it slightly different.
+
+People in ARM working on a generic state save/restore mechanism face
+the same problem - they need some non-cacheable memory for
+synchronisation. I'm not sure whether they managed to find an
+alternative algorithm with cached memory and cache flushing and I also
+haven't followed the development to give more details.
+
+> Russell,
 >
+> I agree with your point about using an API for purpose and not property.
+> But I read Catalin's proposal as, let's treat secure domain as another DMA
+> "device". If we make a conscious agreement to do that, then using the DMA
+> API for secure domain would be "using it for its purpose" and we will make
+> an effort to not break it with future updates. Of course, if we don't
+> agree on that proposal, then we can't use the DMA API for secure domain
+> stuff.
 
-[ CC John Linville ]
+If there is no better proposal, I'm for such extension to the DMA API.
+>From the kernel perspecitve, the secure side is just another entity
+that accesses the RAM directly. It's not a physically separate device
+indeed but from a direct memory access perspective it can be treated
+as any other device.
 
-It's a bit disappointing to see my fix is still not in
-platform-drivers-x86/linux-next [1] (even it's only fixing "warnings",
-9 days past).
-linux-next tree is for me a very high dynamic SCM tree, I am doing
-mostly daily builds, at weekend I am testing/pulling other trees
-before they go into Monday's linux-next.
-As far as I have fun with "my process"... I will continue.
+In the DMA API we can fall back to the non-coherent ops when a NULL
+struct device is passed. I assume in your code you already pass a NULL
+device to dma_alloc_coherent().
 
-Yesterday, I provided a patch which broke iwlwifi in linux-next
-(next-20101216) and it was applied quickly into wireless-next-2.6 GIT
-master and it is in next day's linux-next. OK, this was a breakage not
-fixing warnings (which can be of course ignored).
-
-Yesterday, I had a talk with resposibles of GRML project, because they
-refused to apply a 6-months-old patch from IIRC Eric Biederman(n).
-Debian has it already in their linux-2.6 SCM as:
-       bugfix/x86/Skip-looking-for-ioapic-overrides-when-ioapics-are-not-present.patch
-
-To be honest, I can't understand why this patch is still not upstream
-(even it is a "cosmetic" fix).
-
-So what shall I do: Cry louder, ignore, resend???
-
-Next very unamused thingie is, sometimes you do not get a feedback, if
-a patch is in WTF tree applied or not, so I am replying myself to the
-threads so that people are informed that stuff is closed, please go on
-to next of your problems.
-
-As a conclusion for myself, it highly depends on the submaintainer...
-
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/mjg59/platform-drivers-x86.git;a=shortlog;h=refs/heads/linux-next
+-- 
+Catalin
