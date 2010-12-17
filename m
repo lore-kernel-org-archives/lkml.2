@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab0LQSox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 13:44:53 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37309 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755743Ab0LQSov convert rfc822-to-8bit (ORCPT
+	id S1755856Ab0LQSpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 13:45:47 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33343 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743Ab0LQSpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 13:44:51 -0500
-MIME-Version: 1.0
-Message-ID: <7fbf2264-04be-4899-9c1f-5c2e0942b158@default>
-Date: Fri, 17 Dec 2010 10:44:06 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: RE: [RFC] radix_tree_destroy?
-References: <62b1cf2f-17ec-45c9-a980-308d9b75cdc5@default
- 20101217032721.GD20847@linux-sh.org>
-In-Reply-To: <20101217032721.GD20847@linux-sh.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6539.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Dec 2010 13:45:46 -0500
+Subject: RE: intel-iommu.c bug
+From: David Woodhouse <dwmw2@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "Raj, Ashok" <ashok.raj@intel.com>, Cliff Wickman <cpw@sgi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "Keshavamurthy, Anil S" <anil.s.keshavamurthy@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+In-Reply-To: <1292610483.2674.1.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <E1PTbq3-00083L-Sp@eag09.americas.sgi.com>
+	 <647EFE31A07A4A478691C20DABDFFCB125C3855230@orsmsx501.amr.corp.intel.com>
+	 <1292610483.2674.1.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 18:45:42 +0000
+Message-ID: <1292611542.24326.138.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +void radix_tree_destroy(struct radix_tree_root *root, void
-> (*slot_free)(void *))
-> > +{
-> > +	if (root->rnode == NULL)
-> > +		return;
-> > +	if (root->height == 0)
-> > +		slot_free(root->rnode);
-> 
-> Don't you want indirect_to_ptr(root->rnode) here? You probably also
-> don't
-> want the callback in the !radix_tree_is_indirect_ptr() case.
-> 
-> > +	else {
-> > +		radix_tree_node_destroy(root->rnode, root->height,
-> slot_free);
-> > +		radix_tree_node_free(root->rnode);
-> > +		root->height = 0;
-> > +	}
-> > +	root->rnode = NULL;
-> > +}
-> 
-> The above will handle the nodes, but what about the root? It looks like
-> you're at least going to leak tags on the root, so at the very least
-> you'd still want a root_tag_clear_all() here.
+On Fri, 2010-12-17 at 10:28 -0800, Suresh Siddha wrote:
+> > >-----Original Message-----
+> > >From: Cliff Wickman [mailto:cpw@sgi.com]
+> > >Sent: Friday, December 17, 2010 7:03 AM
+> > >To: linux-kernel@vger.kernel.org
+> > >Cc: Raj, Ashok; Li, Shaohua; Keshavamurthy, Anil S; Yu, Fenghua
+> > >Subject: intel-iommu.c bug
+> > >
+> > >
+> > >
+> > >This bug was reported by Mike Habeck <habeck@sgi.com>.
+> > >The test system was an SGI Altix UV.  These are Mike's words:
+> > >
+> > > It appears there is a bug in the iommu code that when 'forcedac' isn't used
+> > > the nvidia driver is handed back a 44bit dma address even though it's
+> > > dma_mask is set to 40bits.
+> > >
+> > > I added some debug to the intel_iommu code and I see:
+> > >  intel_map_sg(): dma_addr_t=0xf81fffff000, pdev->dma_mask=0xffffffffff
+> > >
+> > > Note the dma_addr_t being handed back is 44bits even though the mask is 40bits.
+> > > This results in the nvidia card generating a bad dma (i.e. the nvidia hw is
+> > > only capable of generating a 40bit dma address so the upper 4 bits are lost
+> > > and that results in the iommu hw detecting a bad dma access):
+> > >
+> > >   DRHD: handling fault status reg 2
+> > >   DMAR:[DMA Read] Request device [36:00.0] fault addr 81fffff000
+> > >   DMAR:[fault reason 06] PTE Read access is not set
+> > >
+> > > If I boot with 'forcedac' then the dma mask is honored and the dma_addr_t
+> > > handed back is 40bits:
+> > >
+> > >   intel_map_sg(): dma_addr_t=0xfffffff000, pdev->dma_mask=0xffffffffff
+> > >
+> > > Without forcedac you'd expect these early maps being handed back to be 32bits.
+> > > This is the first debug printf (so the first mapping the nvidia device has
+> > > requested) so I'd expect it to be 0xfffff000... interesting that is what the
+> > > lower 32bits are in this address being handed back... that 0xf81 upper bits
+> > > appear to be garbage bits.  This might be a hint to help find the bug...
 
-Thanks for your help.  Will do both.  My use model doesn't require
-tags or rcu, so my hacked version of radix_tree_destroy missed those
-subtleties.
+Hm, you're right; it should be returning addresses under 4GiB until that
+space is exhausted and it has to use higher addresses, unless you pass
+'forcedac' on the command line.
 
-So my assumption was correct?  There is no way to efficiently
-destroy an entire radix tree without adding this new routine?
+Please could you instrument alloc_iova (in drivers/pci/iova.c to print
+its arguments, and also pfn_hi and pfn_lo of the iova it returns?
 
-Thanks,
-Dan
+If those are sane, can you print start_vpfn at about line 2909 of
+intel_iommu.c? And if *that* looks sane, print iov_pfn and the new value
+of sg->dma_address each time that's set, at round line 1674.
+
+Is this is 32-bit or 64-bit kernel?
+
+-- 
+dwmw2
+
