@@ -1,197 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab0LQDGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 22:06:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55982 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390Ab0LQDGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 22:06:30 -0500
-Message-ID: <4D0AD3C6.1050905@cn.fujitsu.com>
-Date: Fri, 17 Dec 2010 11:06:46 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752546Ab0LQDI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 22:08:29 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26489 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab0LQDI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 22:08:28 -0500
+Message-ID: <4D0AD3ED.8070607@kernel.org>
+Date: Thu, 16 Dec 2010 19:07:25 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] blkio-cgroup: "use_hierarchy" interface without any
- functionality.
-References: <4CDF7BC5.9080803@cn.fujitsu.com> <4CDF9CC6.2040106@cn.fujitsu.com> <20101115165319.GI30792@redhat.com> <4CE2718C.6010406@kernel.dk> <4D01C6AB.9040807@cn.fujitsu.com> <4D057AA3.8050308@cn.fujitsu.com> <20101215212605.GA10234@redhat.com> <4D097CA2.6000005@cn.fujitsu.com> <20101216154401.GB13870@redhat.com>
-In-Reply-To: <20101216154401.GB13870@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-17 11:06:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-12-17 11:06:23,
-	Serialize complete at 2010-12-17 11:06:23
-Content-Transfer-Encoding: 7bit
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org> <4D0A6F66.1010006@zytor.com> <4D0AA116.4050707@kernel.org> <4D0AA592.3060805@kernel.org> <4D0AB14F.9050900@kernel.org> <4D0AC213.3050102@zytor.com>
+In-Reply-To: <4D0AC213.3050102@zytor.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Dec 16, 2010 at 10:42:42AM +0800, Gui Jianfeng wrote:
->> Vivek Goyal wrote:
->>> On Mon, Dec 13, 2010 at 09:45:07AM +0800, Gui Jianfeng wrote:
->>>> This patch adds "use_hierarchy" in Root CGroup with out any functionality.
->>>>
->>>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->>>> ---
->>>>  block/blk-cgroup.c  |   72 ++++++++++++++++++++++++++++++++++++++++++++++++--
->>>>  block/blk-cgroup.h  |    5 +++-
->>>>  block/cfq-iosched.c |   24 +++++++++++++++++
->>>>  3 files changed, 97 insertions(+), 4 deletions(-)
->>>>
->>>> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
->>>> index 455768a..9747ebb 100644
->>>> --- a/block/blk-cgroup.c
->>>> +++ b/block/blk-cgroup.c
->>>> @@ -25,7 +25,10 @@
->>>>  static DEFINE_SPINLOCK(blkio_list_lock);
->>>>  static LIST_HEAD(blkio_list);
->>>>  
->>>> -struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
->>>> +struct blkio_cgroup blkio_root_cgroup = {
->>>> +		.weight = 2*BLKIO_WEIGHT_DEFAULT,
->>>> +		.use_hierarchy = 1,
->>> Currently flat mode is the default. Lets not change the default. So lets
->>> start with use_hierarchy = 0.
->> OK, will do.
->>
->>> Secondly, why don't you make it per cgroup something along the lines of
->>> memory controller where one can start the hierarchy lower in the cgroup
->>> chain and not necessarily at the root. This way we can avoid some
->>> accounting overhead for all the groups which are non-hierarchical.
->> I'm not sure whether there's a actual use case that needs per cgroup "use_hierarchy".
->> So for first step, I just give a global "use_hierarchy" in root group. If there're
->> some actual requirements that need per cgroup "use_hierarchy". We may add the feature
->> later.
->>
+On 12/16/2010 05:51 PM, H. Peter Anvin wrote:
+> Can whomever has a test case for this please test the attached test patch?
 > 
-> I think there is some use case. Currently libvirt creates its own cgroups
-> for each VM. Depending on what cgroup libvirtd has been placed when it
-> started, it starts creating cgroups from there. So depending on distro,
-> one might mount blkio controller at /cgroup/blkio by default and then
-> libcgroup will create its own cgroups from there.
-> 
-> Now as of today, default is flat so the packages which takes care of 
-> mounting blkio controller, I am not expecting them to suddenly change
-> default to using hierarchy. 
-> 
-> Now if libvirt goes on to create its own cgroups under root cgroup
-> (/cgroup/blkio), then libvirt can't switch it to hierarchical even if
-> it wants to as children cgroups have already been created under root
-> and anyway libvirt is not supposed to control the settings of
-> use_hierarchy of root group.
-> 
-> So if we allow that a hierarchy can be defined from a child node, then
-> libvirt can easily do it only for its sub hierarchy.
-> 
-> 			pivot
-> 		       /    \ 
-> 		      root  libvirtd 
-> 				/ \
-> 			      vm1  vm2
-> 
-> Here root will have use_hierarchy=0 and libvirtd will have use_hierarchy=1
-> 
-> Secondly, I am beginning to believe that overhead of updating the in 
-> all the group of hierarchy might have significant overhead (though I don't
-> have the data yet) but you will take blkcg->stats_lock of each cgroup
-> in the path for each IO completion and CFQ updates so many stats. So
-> there also it might make sense that let libvirtd set use_hierarchy=1
-> if it needs to and incur additional overhead but global default will
-> not be run with use_hierarchy=1. I think libvirtd mounts memory controller
-> as of today with use_hierarchy=0.
-> 
-> Also I don't think it is lot of extra code to support per cgroup
-> use_hierarchy. So to me it makes sense to do it right now. I am more
-> concerned about getting it right now because it is part of user interface.
-> If we introduce something now and then change it 2 releases town the line
-> the we are stuck with one more convetntion of use_hiearchy and support it
-> making life even more complicated.
-> 
-> So I would say that do think through it and it should not be lot of extra
-> code to support it.
-> 
->>>> +	};
->>>>  EXPORT_SYMBOL_GPL(blkio_root_cgroup);
->>>>  
->>>>  static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
->>>> @@ -1385,10 +1388,73 @@ struct cftype blkio_files[] = {
->>>>  #endif
->>>>  };
->>>>  
->>>> +static u64 blkiocg_use_hierarchy_read(struct cgroup *cgroup,
->>>> +				      struct cftype *cftype)
->>>> +{
->>>> +	struct blkio_cgroup *blkcg;
->>>> +
->>>> +	blkcg = cgroup_to_blkio_cgroup(cgroup);
->>>> +	return (u64)blkcg->use_hierarchy;
->>>> +}
->>>> +
->>>> +static int
->>>> +blkiocg_use_hierarchy_write(struct cgroup *cgroup,
->>>> +			    struct cftype *cftype, u64 val)
->>>> +{
->>>> +	struct blkio_cgroup *blkcg;
->>>> +	struct blkio_group *blkg;
->>>> +	struct hlist_node *n;
->>>> +	struct blkio_policy_type *blkiop;
->>>> +
->>>> +	blkcg = cgroup_to_blkio_cgroup(cgroup);
->>>> +
->>>> +	if (val > 1 || !list_empty(&cgroup->children))
->>>> +		return -EINVAL;
->>>> +
->>>> +	if (blkcg->use_hierarchy == val)
->>>> +		return 0;
->>>> +
->>>> +	spin_lock(&blkio_list_lock);
->>>> +	blkcg->use_hierarchy = val;
->>>> +
->>>> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
->>>> +		list_for_each_entry(blkiop, &blkio_list, list) {
->>>> +			/*
->>>> +			 * If this policy does not own the blkg, do not change
->>>> +			 * cfq group scheduling mode.
->>>> +			 */
->>>> +			if (blkiop->plid != blkg->plid)
->>>> +				continue;
->>>> +
->>>> +			if (blkiop->ops.blkio_update_use_hierarchy_fn)
->>>> +				blkiop->ops.blkio_update_use_hierarchy_fn(blkg,
->>>> +									  val);
->>> Should we really allow this? I mean allow changing hierarchy of a group
->>> when there are already children groups. I think memory controller does
->>> not allow this. We can design along the same lines. Keep use_hierarchy
->>> as 0 by default. Allow changing it only if there are no children cgroups.
->>> Otherwise we shall have to send notifications to subscribing policies
->>> and then change their structure etc. Lets keep it simple.
->> Yes, I really don't allow changing use_hierarchy if there are childre cgroups.
->> Please consider following line in my patch.
->>
->> if (val > 1 || !list_empty(&cgroup->children))
->> 	return -EINVAL;
-> 
-> If there are no children cgroups, then there can not be any children blkg
-> and there is no need to send any per blkg notification to each policy?
+with PAGE_OFFSET=0x40000000
 
-Firsly, In my patch, per blkg notification only happens on root blkg.
-Secondly, root cfqg is put onto "flat_service_tree" in flat mode,
-where for hierarchical mode, it don't belongs to anybody. When switching, it
-has to inform root cfqg to switch onto or switch off "flat_service_tree".
-
-Anyway, If we're going to put root cfqg onto grp_service_tree regardless of
-flat or hierarchical mode, this piece of code can be gone.
-
-Thanks,
-Gui
-
-> 
-> Thanks
-> Vivek
-> 
+I'm in purgatory
+bootconsole [uart0] enabled
+Kernel Layout:
+  .text: [0x2f000000-0x2f3fbf4a]
+.rodata: [0x2f3fe000-0x2f5b1fff]
+  .data: [0x2f5b2000-0x2f60e067]
+  .init: [0x2f60f000-0x2f690fff]
+   .bss: [0x2f695000-0x2f796fff]
+   .brk: [0x2f797000-0x2fdbafff]
+    memblock_x86_reserve_range: [0x00001000-0x00001fff]    EX TRAMPOLINE
+    memblock_x86_reserve_range: [0x2f000000-0x2f796fff]    TEXT DATA BSS
+    memblock_x86_reserve_range: [0x36d8a000-0x36f49fff]          RAMDISK
+    memblock_x86_reserve_range: [0x0009c800-0x000fffff]  * BIOS reserved
+Initializing cgroup subsys cpuset
+Initializing cgroup subsys cpu
+Linux version 2.6.37-rc5-tip+ (root@mpk12-3214-189-181) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #11 SMP Thu Dec 16 10:49:27 PST 2010
+KERNEL supported cpus:
+  Intel GenuineIntel
+  AMD AuthenticAMD
+  NSC Geode by NSC
+  Cyrix CyrixInstead
+  Centaur CentaurHauls
+  Transmeta GenuineTMx86
+  Transmeta TransmetaCPU
+  UMC UMC UMC UMC
+BIOS-provided physical RAM map:
+ BIOS-e820: [0x00000000000100-0x0000000009c7ff] (usable)
+ BIOS-e820: [0x0000000009c800-0x0000000009ffff] (reserved)
+ BIOS-e820: [0x000000000e0000-0x000000000fffff] (reserved)
+ BIOS-e820: [0x00000000100000-0x0000007ff9ffff] (usable)
+ BIOS-e820: [0x0000007ffae000-0x0000007ffaffff] (usable)
+ BIOS-e820: [0x0000007ffb0000-0x0000007ffbdfff] (ACPI data)
+ BIOS-e820: [0x0000007ffbe000-0x0000007ffeffff] (ACPI NVS)
+ BIOS-e820: [0x0000007fff0000-0x0000007fffffff] (reserved)
+ BIOS-e820: [0x000000e0000000-0x000000efffffff] (reserved)
+ BIOS-e820: [0x000000fec00000-0x000000fec00fff] (reserved)
+ BIOS-e820: [0x000000fee00000-0x000000feefffff] (reserved)
+ BIOS-e820: [0x000000ff700000-0x000000ffffffff] (reserved)
+last_pfn = 0x7ffb0 max_arch_pfn = 0x1000000
+NX (Execute Disable) protection: active
+user-defined physical RAM map:
+ user: [0x00000000000000-0x0000000009ffff] (usable)
+ user: [0x0000002f000000-0x00000036f59fff] (usable)
+ user: [0x0000007ffb0000-0x0000007ffeffff] (ACPI data)
+DMI present.
+_brk_end: 6f919000, __brk_limit: 6fdbb000
+_brk_end: 6f91901c, __brk_limit: 6fdbb000
+_brk_end: 6f919024, __brk_limit: 6fdbb000
+_brk_end: 6f919030, __brk_limit: 6fdbb000
+_brk_end: 6f919048, __brk_limit: 6fdbb000
+_brk_end: 6f919058, __brk_limit: 6fdbb000
+_brk_end: 6f919060, __brk_limit: 6fdbb000
+_brk_end: 6f91907c, __brk_limit: 6fdbb000
+_brk_end: 6f9190a4, __brk_limit: 6fdbb000
+_brk_end: 6f9190bc, __brk_limit: 6fdbb000
+_brk_end: 6f9190cc, __brk_limit: 6fdbb000
+_brk_end: 6f9190e0, __brk_limit: 6fdbb000
+_brk_end: 6f919104, __brk_limit: 6fdbb000
+_brk_end: 6f919118, __brk_limit: 6fdbb000
+_brk_end: 6f919130, __brk_limit: 6fdbb000
+_brk_end: 6f919134, __brk_limit: 6fdbb000
+_brk_end: 6f919148, __brk_limit: 6fdbb000
+_brk_end: 6f919160, __brk_limit: 6fdbb000
+_brk_end: 6f91918c, __brk_limit: 6fdbb000
+_brk_end: 6f9191b8, __brk_limit: 6fdbb000
+_brk_end: 6f9191e4, __brk_limit: 6fdbb000
+_brk_end: 6f919210, __brk_limit: 6fdbb000
+_brk_end: 6f919234, __brk_limit: 6fdbb000
+_brk_end: 6f919240, __brk_limit: 6fdbb000
+_brk_end: 6f919254, __brk_limit: 6fdbb000
+_brk_end: 6f919268, __brk_limit: 6fdbb000
+DMI: Sun Fire X4240/Sun Fire X4240, BIOS 080014  10/15/2008
+e820 update range: [0x00000000000000-0x0000000000ffff] (usable) ==> (reserved)
+e820 remove range: [0x000000000a0000-0x000000000fffff] (usable)
+last_pfn = 0x36f5a max_arch_pfn = 0x1000000
+MTRR default type: uncachable
+MTRR fixed ranges enabled:
+  00000-9FFFF write-back
+  A0000-EFFFF uncachable
+  F0000-FFFFF write-protect
+MTRR variable ranges enabled:
+  0 base 000000000000 mask FFFF80000000 write-back
+  1 disabled
+  2 disabled
+  3 disabled
+  4 disabled
+  5 disabled
+  6 disabled
+  7 disabled
+x86 PAT enabled: cpu 0, old 0x7010600070106, new 0x7010600070106
+Scan SMP from 40000000 for 1024 bytes.
+Scan SMP from 4009fc00 for 1024 bytes.
+Scan SMP from 400f0000 for 65536 bytes.
+found SMP MP-table at [400ff780] ff780
+    memblock_x86_reserve_range: [0x000ff780-0x000ff78f]   * MP-table mpf
+  mpc: fc4e0-fc6e4
+    memblock_x86_reserve_range: [0x000fc4e0-0x000fc6e3]   * MP-table mpc
+    memblock_x86_reserve_range: [0x2f797000-0x2f91927b]              BRK
