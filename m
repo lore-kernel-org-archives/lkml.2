@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab0LQAyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:54:17 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:12572 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab0LQAuN (ORCPT
+	id S1755057Ab0LQAyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:54:15 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29783 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab0LQAuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Dec 2010 19:50:13 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="66953206"
+X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67160021"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Brian Swetland <swetland@google.com>,
         =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH 09/22] msm: clock: Remove references to clk_ops_pcom
-Date: Thu, 16 Dec 2010 16:49:53 -0800
-Message-Id: <1292547006-19741-10-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 06/22] msm: clock-7x30: Update clock table
+Date: Thu, 16 Dec 2010 16:49:50 -0800
+Message-Id: <1292547006-19741-7-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd
 In-Reply-To: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
 References: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
@@ -25,149 +25,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all devices use proc_comm. The soc_clk_set_ops() function was
-unused. Determining if a clock is local vs. remote is fragile
-when done by comparing clk_ops pointers. Instead, implement an
-is_local() function for all clk_ops to determine if the clock is
-local. Once we do this we can compile clock.c with
-CONFIG_MSM_PROC_COMM=n.
+Mark clocks with CLK_7X30 to indicate they have the potential to
+be locally controllable. If it's determined at runtime that these
+clocks are not locally owned, revert the clocks to proc_comm
+control. Mark clocks with CLK_PCOM when we know that they can't
+be locally controlled.
 
 Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/clock-7x30.c  |    1 +
- arch/arm/mach-msm/clock-8x60.c  |    1 +
- arch/arm/mach-msm/clock-debug.c |    3 +--
- arch/arm/mach-msm/clock-local.c |    5 +++++
- arch/arm/mach-msm/clock-local.h |    1 +
- arch/arm/mach-msm/clock-pcom.c  |    6 ++++++
- arch/arm/mach-msm/clock.c       |    5 -----
- arch/arm/mach-msm/clock.h       |    1 +
- 8 files changed, 16 insertions(+), 7 deletions(-)
+ arch/arm/mach-msm/devices-msm7x30.c |  147 ++++++++++++++++++++---------------
+ 1 files changed, 85 insertions(+), 62 deletions(-)
 
-diff --git a/arch/arm/mach-msm/clock-7x30.c b/arch/arm/mach-msm/clock-7x30.c
-index 0637bee..994104f 100644
---- a/arch/arm/mach-msm/clock-7x30.c
-+++ b/arch/arm/mach-msm/clock-7x30.c
-@@ -1071,4 +1071,5 @@ struct clk_ops soc_clk_ops_7x30 = {
- 	.round_rate = local_clk_round_rate,
- 	.reset = pc_clk_reset,
- 	.set_flags = soc_clk_set_flags,
-+	.is_local = local_clk_is_local,
+diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
+index 2816be3..55382c4 100644
+--- a/arch/arm/mach-msm/devices-msm7x30.c
++++ b/arch/arm/mach-msm/devices-msm7x30.c
+@@ -58,78 +58,101 @@ struct platform_device msm_device_smd = {
  };
-diff --git a/arch/arm/mach-msm/clock-8x60.c b/arch/arm/mach-msm/clock-8x60.c
-index 5bbc8bb..e1f3c6f 100644
---- a/arch/arm/mach-msm/clock-8x60.c
-+++ b/arch/arm/mach-msm/clock-8x60.c
-@@ -1799,4 +1799,5 @@ struct clk_ops soc_clk_ops_8x60 = {
- 	.round_rate = local_clk_round_rate,
- 	.reset = soc_clk_reset,
- 	.set_flags = soc_clk_set_flags,
-+	.is_local = local_clk_is_local,
- };
-diff --git a/arch/arm/mach-msm/clock-debug.c b/arch/arm/mach-msm/clock-debug.c
-index b67b9e82..4886404 100644
---- a/arch/arm/mach-msm/clock-debug.c
-+++ b/arch/arm/mach-msm/clock-debug.c
-@@ -19,7 +19,6 @@
- #include <linux/debugfs.h>
- #include <linux/clk.h>
- #include "clock.h"
--#include "clock-pcom.h"
  
- static int clock_debug_rate_set(void *data, u64 val)
- {
-@@ -79,7 +78,7 @@ static int clock_debug_local_get(void *data, u64 *val)
- {
- 	struct clk *clock = data;
- 
--	*val = clock->ops != &clk_ops_pcom;
-+	*val = clock->ops->is_local(clock->id);
- 
- 	return 0;
- }
-diff --git a/arch/arm/mach-msm/clock-local.c b/arch/arm/mach-msm/clock-local.c
-index d6eb6c6..44e0778 100644
---- a/arch/arm/mach-msm/clock-local.c
-+++ b/arch/arm/mach-msm/clock-local.c
-@@ -677,3 +677,8 @@ long local_clk_round_rate(unsigned id, unsigned rate)
- 
- 	return -EPERM;
- }
+ struct clk msm_clocks_7x30[] = {
+-	CLK_PCOM("adm_clk",	ADM_CLK,	NULL, 0),
+ 	CLK_PCOM("adsp_clk",	ADSP_CLK,	NULL, 0),
+ 	CLK_PCOM("cam_m_clk",	CAM_M_CLK,	NULL, 0),
+ 	CLK_PCOM("camif_pad_pclk",	CAMIF_PAD_P_CLK,	NULL, OFF),
+-	CLK_PCOM("ce_clk",	CE_CLK,	NULL, 0),
+ 	CLK_PCOM("codec_ssbi_clk",	CODEC_SSBI_CLK,	NULL, 0),
+ 	CLK_PCOM("ebi1_clk",	EBI1_CLK,	NULL, CLK_MIN),
+ 	CLK_PCOM("ecodec_clk",	ECODEC_CLK,	NULL, 0),
+-	CLK_PCOM("emdh_clk",	EMDH_CLK,	NULL, OFF | CLK_MINMAX),
+-	CLK_PCOM("emdh_pclk",	EMDH_P_CLK,	NULL, OFF),
+ 	CLK_PCOM("gp_clk",	GP_CLK,		NULL, 0),
+-	CLK_PCOM("grp_2d_clk",	GRP_2D_CLK,	NULL, 0),
+-	CLK_PCOM("grp_2d_pclk",	GRP_2D_P_CLK,	NULL, 0),
+-	CLK_PCOM("grp_clk",	GRP_3D_CLK,	NULL, 0),
+-	CLK_PCOM("grp_pclk",	GRP_3D_P_CLK,	NULL, 0),
+-	CLK_7X30S("grp_src_clk", GRP_3D_SRC_CLK, GRP_3D_CLK,	NULL, 0),
+-	CLK_PCOM("hdmi_clk",	HDMI_CLK,	NULL, 0),
+-	CLK_PCOM("imem_clk",	IMEM_CLK,	NULL, OFF),
+-	CLK_PCOM("jpeg_clk",	JPEG_CLK,	NULL, OFF),
+-	CLK_PCOM("jpeg_pclk",	JPEG_P_CLK,	NULL, OFF),
+-	CLK_PCOM("lpa_codec_clk",	LPA_CODEC_CLK,		NULL, 0),
+-	CLK_PCOM("lpa_core_clk",	LPA_CORE_CLK,		NULL, 0),
+-	CLK_PCOM("lpa_pclk",		LPA_P_CLK,		NULL, 0),
+-	CLK_PCOM("mdc_clk",	MDC_CLK,	NULL, 0),
+-	CLK_PCOM("mddi_clk",	PMDH_CLK,	NULL, OFF | CLK_MINMAX),
+-	CLK_PCOM("mddi_pclk",	PMDH_P_CLK,	NULL, 0),
+-	CLK_PCOM("mdp_clk",	MDP_CLK,	NULL, OFF),
+-	CLK_PCOM("mdp_pclk",	MDP_P_CLK,	NULL, 0),
+-	CLK_PCOM("mdp_lcdc_pclk_clk", MDP_LCDC_PCLK_CLK, NULL, 0),
+-	CLK_PCOM("mdp_lcdc_pad_pclk_clk", MDP_LCDC_PAD_PCLK_CLK, NULL, 0),
+-	CLK_PCOM("mdp_vsync_clk",	MDP_VSYNC_CLK,  NULL, 0),
+-	CLK_PCOM("mfc_clk",		MFC_CLK,		NULL, 0),
+-	CLK_PCOM("mfc_div2_clk",	MFC_DIV2_CLK,		NULL, 0),
+-	CLK_PCOM("mfc_pclk",		MFC_P_CLK,		NULL, 0),
+-	CLK_PCOM("mi2s_m_clk",		MI2S_M_CLK,  		NULL, 0),
+-	CLK_PCOM("mi2s_s_clk",		MI2S_S_CLK,  		NULL, 0),
+-	CLK_PCOM("mi2s_codec_rx_m_clk",	MI2S_CODEC_RX_M_CLK,  NULL, 0),
+-	CLK_PCOM("mi2s_codec_rx_s_clk",	MI2S_CODEC_RX_S_CLK,  NULL, 0),
+-	CLK_PCOM("mi2s_codec_tx_m_clk",	MI2S_CODEC_TX_M_CLK,  NULL, 0),
+-	CLK_PCOM("mi2s_codec_tx_s_clk",	MI2S_CODEC_TX_S_CLK,  NULL, 0),
+-	CLK_PCOM("pbus_clk",	PBUS_CLK,	NULL, CLK_MIN),
+-	CLK_PCOM("pcm_clk",	PCM_CLK,	NULL, 0),
+-	CLK_PCOM("rotator_clk",	AXI_ROTATOR_CLK,		NULL, 0),
+-	CLK_PCOM("rotator_imem_clk",	ROTATOR_IMEM_CLK,	NULL, OFF),
+-	CLK_PCOM("rotator_pclk",	ROTATOR_P_CLK,		NULL, OFF),
+-	CLK_PCOM("sdac_clk",	SDAC_CLK,	NULL, OFF),
+-	CLK_PCOM("spi_clk",	SPI_CLK,	NULL, 0),
+-	CLK_PCOM("spi_pclk",	SPI_P_CLK,	NULL, 0),
+-	CLK_7X30S("tv_src_clk",	TV_CLK, 	TV_ENC_CLK,	NULL, 0),
+-	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
+-	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
+-	CLK_PCOM("uart_clk",	UART2_CLK,	&msm_device_uart2.dev, 0),
+-	CLK_PCOM("usb_hs_clk",		USB_HS_CLK,		NULL, OFF),
+-	CLK_PCOM("usb_hs_pclk",		USB_HS_P_CLK,		NULL, OFF),
+-	CLK_PCOM("usb_hs_core_clk",	USB_HS_CORE_CLK,	NULL, OFF),
+-	CLK_PCOM("usb_hs2_clk",		USB_HS2_CLK,		NULL, OFF),
+-	CLK_PCOM("usb_hs2_pclk",	USB_HS2_P_CLK,		NULL, OFF),
+-	CLK_PCOM("usb_hs2_core_clk",	USB_HS2_CORE_CLK,	NULL, OFF),
+-	CLK_PCOM("usb_hs3_clk",		USB_HS3_CLK,		NULL, OFF),
+-	CLK_PCOM("usb_hs3_pclk",	USB_HS3_P_CLK,		NULL, OFF),
+-	CLK_PCOM("usb_hs3_core_clk",	USB_HS3_CORE_CLK,	NULL, OFF),
++	CLK_PCOM("uart_clk",	UART3_CLK,	NULL, OFF),
++	CLK_PCOM("usb_phy_clk",	USB_PHY_CLK,	NULL, 0),
+ 	CLK_PCOM("vdc_clk",	VDC_CLK,	NULL, OFF | CLK_MIN),
+-	CLK_PCOM("vfe_camif_clk",	VFE_CAMIF_CLK, 	NULL, 0),
+-	CLK_PCOM("vfe_clk",	VFE_CLK,	NULL, 0),
+-	CLK_PCOM("vfe_mdc_clk",	VFE_MDC_CLK,	NULL, 0),
+-	CLK_PCOM("vfe_pclk",	VFE_P_CLK,	NULL, OFF),
+-	CLK_PCOM("vpe_clk",	VPE_CLK,	NULL, 0),
++	CLK_PCOM("pbus_clk",	PBUS_CLK,	NULL, CLK_MIN),
 +
-+bool local_clk_is_local(unsigned id)
-+{
-+	return true;
-+}
-diff --git a/arch/arm/mach-msm/clock-local.h b/arch/arm/mach-msm/clock-local.h
-index c168985..3083369 100644
---- a/arch/arm/mach-msm/clock-local.h
-+++ b/arch/arm/mach-msm/clock-local.h
-@@ -211,6 +211,7 @@ int local_clk_set_max_rate(unsigned id, unsigned rate);
- unsigned local_clk_get_rate(unsigned id);
- unsigned local_clk_is_enabled(unsigned id);
- long local_clk_round_rate(unsigned id, unsigned rate);
-+bool local_clk_is_local(unsigned id);
++	CLK_7X30("adm_clk",	ADM_CLK,	NULL, 0),
++	CLK_7X30L("adm_pclk",   ADM_P_CLK,       NULL, 0),
++	CLK_7X30("cam_m_clk",	CAM_M_CLK,	NULL, 0),
++	CLK_7X30("camif_pad_pclk",	CAMIF_PAD_P_CLK,	NULL, OFF),
++	CLK_7X30("ce_clk",	CE_CLK,		NULL, 0),
++	CLK_7X30("emdh_clk",	EMDH_CLK,	NULL, OFF | CLK_MINMAX),
++	CLK_7X30("emdh_pclk",	EMDH_P_CLK,	NULL, OFF),
++	CLK_7X30("grp_2d_clk",	GRP_2D_CLK,	NULL, 0),
++	CLK_7X30("grp_2d_pclk",	GRP_2D_P_CLK,	NULL, 0),
++	CLK_7X30("grp_clk",	GRP_3D_CLK,	NULL, 0),
++	CLK_7X30("grp_pclk",	GRP_3D_P_CLK,	NULL, 0),
++	CLK_7X30S("grp_src_clk", GRP_3D_SRC_CLK, GRP_3D_CLK,	NULL, 0),
++	CLK_7X30("hdmi_clk",	HDMI_CLK,	NULL, 0),
++	CLK_7X30("i2c_clk",	I2C_CLK,	NULL, 0),
++	CLK_7X30("i2c_clk",	I2C_2_CLK,	NULL, 0),
++	CLK_7X30("imem_clk",	IMEM_CLK,	NULL, OFF),
++	CLK_7X30("jpeg_clk",	JPEG_CLK,	NULL, OFF),
++	CLK_7X30("jpeg_pclk",	JPEG_P_CLK,	NULL, OFF),
++	CLK_7X30("lpa_codec_clk",	LPA_CODEC_CLK,		NULL, 0),
++	CLK_7X30("lpa_core_clk",	LPA_CORE_CLK,		NULL, 0),
++	CLK_7X30("lpa_pclk",		LPA_P_CLK,		NULL, 0),
++	CLK_7X30("mdc_clk",	MDC_CLK,	NULL, 0),
++	CLK_7X30("mddi_clk",	PMDH_CLK,	NULL, OFF | CLK_MINMAX),
++	CLK_7X30("mddi_pclk",	PMDH_P_CLK,	NULL, 0),
++	CLK_7X30("mdp_clk",	MDP_CLK,	NULL, OFF),
++	CLK_7X30("mdp_pclk",	MDP_P_CLK,	NULL, 0),
++	CLK_7X30("mdp_lcdc_pclk_clk", MDP_LCDC_PCLK_CLK, NULL, 0),
++	CLK_7X30("mdp_lcdc_pad_pclk_clk", MDP_LCDC_PAD_PCLK_CLK, NULL, 0),
++	CLK_7X30("mdp_vsync_clk",	MDP_VSYNC_CLK,  NULL, OFF),
++	CLK_7X30("mfc_clk",		MFC_CLK,		NULL, 0),
++	CLK_7X30("mfc_div2_clk",	MFC_DIV2_CLK,		NULL, 0),
++	CLK_7X30("mfc_pclk",		MFC_P_CLK,		NULL, 0),
++	CLK_7X30("mi2s_codec_rx_m_clk",	MI2S_CODEC_RX_M_CLK,  NULL, 0),
++	CLK_7X30("mi2s_codec_rx_s_clk",	MI2S_CODEC_RX_S_CLK,  NULL, 0),
++	CLK_7X30("mi2s_codec_tx_m_clk",	MI2S_CODEC_TX_M_CLK,  NULL, 0),
++	CLK_7X30("mi2s_codec_tx_s_clk",	MI2S_CODEC_TX_S_CLK,  NULL, 0),
++	CLK_7X30("mi2s_m_clk",		MI2S_M_CLK,		NULL, 0),
++	CLK_7X30("mi2s_s_clk",		MI2S_S_CLK,		NULL, 0),
++	CLK_7X30("qup_clk",	QUP_I2C_CLK,	NULL, 0),
++	CLK_7X30("rotator_clk",	AXI_ROTATOR_CLK,		NULL, 0),
++	CLK_7X30("rotator_imem_clk",	ROTATOR_IMEM_CLK,	NULL, OFF),
++	CLK_7X30("rotator_pclk",	ROTATOR_P_CLK,		NULL, OFF),
++	CLK_7X30("sdac_clk",	SDAC_CLK,	NULL, OFF),
++	CLK_7X30("sdc_clk",	SDC1_CLK,	NULL, OFF),
++	CLK_7X30("sdc_pclk",	SDC1_P_CLK,	NULL, OFF),
++	CLK_7X30("sdc_clk",	SDC2_CLK,	NULL, OFF),
++	CLK_7X30("sdc_pclk",	SDC2_P_CLK,	NULL, OFF),
++	CLK_7X30("sdc_clk",	SDC3_CLK,	NULL, OFF),
++	CLK_7X30("sdc_pclk",	SDC3_P_CLK,	NULL, OFF),
++	CLK_7X30("sdc_clk",	SDC4_CLK,	NULL, OFF),
++	CLK_7X30("sdc_pclk",	SDC4_P_CLK,	NULL, OFF),
++	CLK_7X30("spi_clk",	SPI_CLK,	NULL, 0),
++	CLK_7X30("spi_pclk",	SPI_P_CLK,	NULL, 0),
++	CLK_7X30("tsif_ref_clk", TSIF_REF_CLK,	NULL, 0),
++	CLK_7X30("tsif_pclk",	TSIF_P_CLK,	NULL, 0),
++	CLK_7X30("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
++	CLK_7X30("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
++	CLK_7X30S("tv_src_clk",	TV_CLK,		TV_ENC_CLK,	NULL, 0),
++	CLK_7X30("uart_clk",	UART1_CLK,	NULL, OFF),
++	CLK_7X30("uart_clk",	UART2_CLK,	&msm_device_uart2.dev, 0),
++	CLK_7X30("uartdm_clk",	UART1DM_CLK,	NULL, OFF),
++	CLK_7X30L("uartdm_pclk", UART1DM_P_CLK,	NULL, 0),
++	CLK_7X30("uartdm_clk",	UART2DM_CLK,	NULL, 0),
++	CLK_7X30L("uartdm_pclk", UART2DM_P_CLK,	NULL, 0),
++	CLK_7X30("usb_hs_clk",		USB_HS_CLK,		NULL, OFF),
++	CLK_7X30("usb_hs_pclk",		USB_HS_P_CLK,		NULL, OFF),
++	CLK_7X30("usb_hs_core_clk",	USB_HS_CORE_CLK,	NULL, OFF),
++	CLK_7X30("usb_hs2_clk",		USB_HS2_CLK,		NULL, OFF),
++	CLK_7X30("usb_hs2_pclk",	USB_HS2_P_CLK,		NULL, OFF),
++	CLK_7X30("usb_hs2_core_clk",	USB_HS2_CORE_CLK,	NULL, OFF),
++	CLK_7X30("usb_hs3_clk",		USB_HS3_CLK,		NULL, OFF),
++	CLK_7X30("usb_hs3_pclk",	USB_HS3_P_CLK,		NULL, OFF),
++	CLK_7X30("usb_hs3_core_clk",	USB_HS3_CORE_CLK,	NULL, OFF),
++	CLK_7X30("vfe_camif_clk",	VFE_CAMIF_CLK, NULL, 0),
++	CLK_7X30("vfe_clk",	VFE_CLK,	NULL, 0),
++	CLK_7X30("vfe_mdc_clk",	VFE_MDC_CLK,	NULL, 0),
++	CLK_7X30("vfe_pclk",	VFE_P_CLK,	NULL, OFF),
++	CLK_7X30("vpe_clk",	VPE_CLK,	NULL, 0),
  
- /*
-  * Required SoC-specific functions, implemented for every supported SoC
-diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
-index 8c4e867..63b7113 100644
---- a/arch/arm/mach-msm/clock-pcom.c
-+++ b/arch/arm/mach-msm/clock-pcom.c
-@@ -117,6 +117,11 @@ long pc_clk_round_rate(unsigned id, unsigned rate)
- 	return rate;
- }
- 
-+static bool pc_clk_is_local(unsigned id)
-+{
-+	return false;
-+}
-+
- struct clk_ops clk_ops_pcom = {
- 	.enable = pc_clk_enable,
- 	.disable = pc_clk_disable,
-@@ -129,4 +134,5 @@ struct clk_ops clk_ops_pcom = {
- 	.get_rate = pc_clk_get_rate,
- 	.is_enabled = pc_clk_is_enabled,
- 	.round_rate = pc_clk_round_rate,
-+	.is_local = pc_clk_is_local,
+ 	/* 7x30 v2 hardware only. */
+-	CLK_PCOM("csi_clk",	CSI0_CLK,	NULL, 0),
+-	CLK_PCOM("csi_pclk",	CSI0_P_CLK,	NULL, 0),
+-	CLK_PCOM("csi_vfe_clk",	CSI0_VFE_CLK,	NULL, 0),
++	CLK_7X30("csi_clk",	CSI0_CLK,	NULL, 0),
++	CLK_7X30("csi_pclk",	CSI0_P_CLK,	NULL, 0),
++	CLK_7X30("csi_vfe_clk",	CSI0_VFE_CLK,	NULL, 0),
  };
-diff --git a/arch/arm/mach-msm/clock.c b/arch/arm/mach-msm/clock.c
-index 56c7549..06cd313 100644
---- a/arch/arm/mach-msm/clock.c
-+++ b/arch/arm/mach-msm/clock.c
-@@ -21,9 +21,6 @@
- #include <linux/pm_qos_params.h>
  
- #include "clock.h"
--#include "proc_comm.h"
--#include "clock-7x30.h"
--#include "clock-pcom.h"
- 
- static DEFINE_MUTEX(clocks_mutex);
- static DEFINE_SPINLOCK(clocks_lock);
-@@ -84,8 +81,6 @@ EXPORT_SYMBOL(clk_disable);
- 
- int clk_reset(struct clk *clk, enum clk_reset_action action)
- {
--	if (!clk->ops->reset)
--		clk->ops->reset = &pc_clk_reset;
- 	return clk->ops->reset(clk->remote_id, action);
- }
- EXPORT_SYMBOL(clk_reset);
-diff --git a/arch/arm/mach-msm/clock.h b/arch/arm/mach-msm/clock.h
-index 44a6dd6..b74ba3e 100644
---- a/arch/arm/mach-msm/clock.h
-+++ b/arch/arm/mach-msm/clock.h
-@@ -43,6 +43,7 @@ struct clk_ops {
- 	unsigned (*get_rate)(unsigned id);
- 	unsigned (*is_enabled)(unsigned id);
- 	long (*round_rate)(unsigned id, unsigned rate);
-+	bool (*is_local)(unsigned id);
- };
- 
- struct clk {
+ unsigned msm_num_clocks_7x30 = ARRAY_SIZE(msm_clocks_7x30);
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
