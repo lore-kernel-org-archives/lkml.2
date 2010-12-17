@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab0LQCzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 21:55:06 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:36942 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab0LQCzF (ORCPT
+	id S1752460Ab0LQCza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 21:55:30 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:52390 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab0LQCzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 21:55:05 -0500
-Date: Thu, 16 Dec 2010 21:54:44 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Jack Steiner <steiner@sgi.com>
-Cc: hpa@zytor.com, Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        tony.luck@gmail.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gbeshers@sgi.com
-Subject: Re: [PATCH] - Mapping ACPI tables as CACHED
-In-reply-to: <alpine.LFD.2.00.1012151536510.21167@x980>
-Message-id: <alpine.LFD.2.00.1012162149370.20940@x980>
-References: <20101214220932.GA1206@sgi.com>
- <alpine.LFD.2.00.1012141903210.25387@x980> <20101215024136.GB19601@sgi.com>
- <alpine.LFD.2.00.1012142302110.4878@x980> <20101215164635.GA27373@sgi.com>
- <alpine.LFD.2.00.1012151536510.21167@x980>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 16 Dec 2010 21:55:20 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67174856"
+Message-ID: <8c67e174d807416f0c6c190cc72d3f5a.squirrel@www.codeaurora.org>
+In-Reply-To: <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
+References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org>
+    <20101202221909.GK29347@n2100.arm.linux.org.uk>
+    <4CF94DDD.8000409@codeaurora.org>
+    <20101203203653.GB10245@n2100.arm.linux.org.uk>
+    <4CFDD297.4020600@codeaurora.org>
+    <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
+    <20101209103835.GA31465@n2100.arm.linux.org.uk>
+    <4D017B45.4000805@codeaurora.org>
+    <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
+    <4D045692.4050607@codeaurora.org>
+    <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
+Date: Thu, 16 Dec 2010 18:55:06 -0800 (PST)
+Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to 
+     early_initcall
+From: "Saravana Kannan" <skannan@codeaurora.org>
+To: "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Cc: "Saravana Kannan" <skannan@codeaurora.org>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, "Nicolas Pitre" <nico@marvell.com>,
+        linux-kernel@vger.kernel.org,
+        "Jeff Ohlstein" <johlstei@codeaurora.org>, "Tejun Heo" <tj@kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'll bet we can improve the boot sequence so that
-> some of the stuff we do before we have cached mappings
-> we can do with cached mappings...
 
-Nope, that is a losing bet...
+> On 12 December 2010 04:58, Saravana Kannan <skannan@codeaurora.org> wrote:
+>> As you and James suggested, having the NS bit set by the secure world is
+>> definitely a solution that would work. But IMHO, the explicit cache
+>> flush/invalidate approach keeps the design simple and easy to maintain.
+>
+> That is indeed an approach to the problem. But it depends on whether
+> we consider the DMA API appropriate for this. We can view the secure
+> world as a non-coherent agent accessing the memory and could try to
+> justify the use of the DMA API in Linux.
+>
+> At some point we'll probably have platforms supporting cacheable DMA
+> (e.g. via the ARM coherency port) and the DMA API would no longer give
+> you what you need. But it is also possible that platforms with ACP
+> would only have 1 or 2 devices on that port (some HD LCD controller
+> for example) and the rest of devices non-coherent. In this case, we
+> need to have different DMA operations depending on the bus/device (via
+> get_dma_ops) and thus we can allow your scenario via dedicated DMA
+> ops.
 
-The early mappings are temporary, but they are cached,
-for they use __pgprot(__PAGE_KERNEL_IO), which is 
-(__PAGE_KERNEL | _PAGE_IOMAP)
+Catalin,
 
-rather than __pgprot(__PAGE_KERNEL_IO_NOCACHE) or its variants.
+Looks like you agree with our approach. If that's the case, would you mind
+Acking Jeff's initial patch that this thread is based on?
 
-We just need to update the permanent mappings to match.
+Russell,
 
-cheers,
-Len Brown, Intel Open Source Technology Center
+Does Catalin's proposal sound acceptable to you?
+
+Thanks,
+Saravana
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
 
