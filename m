@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab0LQU6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 15:58:40 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:51574 "EHLO e9.ny.us.ibm.com"
+	id S1756424Ab0LQU6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 15:58:43 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51564 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756180Ab0LQUzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 15:55:05 -0500
+	id S1756162Ab0LQUzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 15:55:04 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 17/20] rcu: limit rcu_node leaf-level fanout
-Date: Fri, 17 Dec 2010 12:54:48 -0800
-Message-Id: <1292619291-2468-17-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 08/20] rcu,cleanup: move synchronize_sched_expedited() out of sched.c
+Date: Fri, 17 Dec 2010 12:54:39 -0800
+Message-Id: <1292619291-2468-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20101217205433.GA10199@linux.vnet.ibm.com>
 References: <20101217205433.GA10199@linux.vnet.ibm.com>
@@ -25,115 +25,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some recent benchmarks have indicated possible lock contention on the
-leaf-level rcu_node locks.  This commit therefore limits the number of
-CPUs per leaf-level rcu_node structure to 16, in other words, there
-can be at most 16 rcu_data structures fanning into a given rcu_node
-structure.  Prior to this, the limit was 32 on 32-bit systems and 64 on
-64-bit systems.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Note that the fanout of non-leaf rcu_node structures is unchanged.  The
-organization of accesses to the rcu_node tree is such that references
-to non-leaf rcu_node structures are much less frequent than to the
-leaf structures.
+The first version of synchronize_sched_expedited() used the migration
+code in the scheduler, and was therefore implemented in kernel/sched.c.
+However, the more recent version of this code no longer uses the
+migration code, so this commit moves it to the main RCU source files.
 
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |    3 ++-
- kernel/rcutree.h |   43 ++++++++++++++++++++++++-------------------
- 2 files changed, 26 insertions(+), 20 deletions(-)
+ include/linux/rcupdate.h |    1 -
+ include/linux/rcutiny.h  |    5 +++
+ include/linux/rcutree.h  |    1 +
+ kernel/rcutree_plugin.h  |   71 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched.c           |   69 --------------------------------------------
+ 5 files changed, 77 insertions(+), 70 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index c39ec5b..01c8ad3 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1869,8 +1869,9 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
- {
- 	int i;
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7142ee3..49e8e16 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -66,7 +66,6 @@ extern void call_rcu_sched(struct rcu_head *head,
+ extern void synchronize_sched(void);
+ extern void rcu_barrier_bh(void);
+ extern void rcu_barrier_sched(void);
+-extern void synchronize_sched_expedited(void);
+ extern int sched_expedited_torture_stats(char *page);
  
--	for (i = NUM_RCU_LVLS - 1; i >= 0; i--)
-+	for (i = NUM_RCU_LVLS - 1; i > 0; i--)
- 		rsp->levelspread[i] = CONFIG_RCU_FANOUT;
-+	rsp->levelspread[0] = RCU_FANOUT_LEAF;
+ static inline void __rcu_read_lock_bh(void)
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index ea025a6..30ebd7c 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -60,6 +60,11 @@ static inline void synchronize_rcu_bh_expedited(void)
+ 	synchronize_sched();
  }
- #else /* #ifdef CONFIG_RCU_FANOUT_EXACT */
- static void __init rcu_init_levelspread(struct rcu_state *rsp)
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 1a54be2..e8f057e 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -31,46 +31,51 @@
- /*
-  * Define shape of hierarchy based on NR_CPUS and CONFIG_RCU_FANOUT.
-  * In theory, it should be possible to add more levels straightforwardly.
-- * In practice, this has not been tested, so there is probably some
-- * bug somewhere.
-+ * In practice, this did work well going from three levels to four.
-+ * Of course, your mileage may vary.
-  */
- #define MAX_RCU_LVLS 4
--#define RCU_FANOUT	      (CONFIG_RCU_FANOUT)
--#define RCU_FANOUT_SQ	      (RCU_FANOUT * RCU_FANOUT)
--#define RCU_FANOUT_CUBE	      (RCU_FANOUT_SQ * RCU_FANOUT)
--#define RCU_FANOUT_FOURTH     (RCU_FANOUT_CUBE * RCU_FANOUT)
--
--#if NR_CPUS <= RCU_FANOUT
-+#if CONFIG_RCU_FANOUT > 16
-+#define RCU_FANOUT_LEAF       16
-+#else /* #if CONFIG_RCU_FANOUT > 16 */
-+#define RCU_FANOUT_LEAF       (CONFIG_RCU_FANOUT)
-+#endif /* #else #if CONFIG_RCU_FANOUT > 16 */
-+#define RCU_FANOUT_1	      (RCU_FANOUT_LEAF)
-+#define RCU_FANOUT_2	      (RCU_FANOUT_1 * CONFIG_RCU_FANOUT)
-+#define RCU_FANOUT_3	      (RCU_FANOUT_2 * CONFIG_RCU_FANOUT)
-+#define RCU_FANOUT_4	      (RCU_FANOUT_3 * CONFIG_RCU_FANOUT)
-+
-+#if NR_CPUS <= RCU_FANOUT_1
- #  define NUM_RCU_LVLS	      1
- #  define NUM_RCU_LVL_0	      1
- #  define NUM_RCU_LVL_1	      (NR_CPUS)
- #  define NUM_RCU_LVL_2	      0
- #  define NUM_RCU_LVL_3	      0
- #  define NUM_RCU_LVL_4	      0
--#elif NR_CPUS <= RCU_FANOUT_SQ
-+#elif NR_CPUS <= RCU_FANOUT_2
- #  define NUM_RCU_LVLS	      2
- #  define NUM_RCU_LVL_0	      1
--#  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT)
-+#  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_1)
- #  define NUM_RCU_LVL_2	      (NR_CPUS)
- #  define NUM_RCU_LVL_3	      0
- #  define NUM_RCU_LVL_4	      0
--#elif NR_CPUS <= RCU_FANOUT_CUBE
-+#elif NR_CPUS <= RCU_FANOUT_3
- #  define NUM_RCU_LVLS	      3
- #  define NUM_RCU_LVL_0	      1
--#  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_SQ)
--#  define NUM_RCU_LVL_2	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT)
--#  define NUM_RCU_LVL_3	      NR_CPUS
-+#  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_2)
-+#  define NUM_RCU_LVL_2	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_1)
-+#  define NUM_RCU_LVL_3	      (NR_CPUS)
- #  define NUM_RCU_LVL_4	      0
--#elif NR_CPUS <= RCU_FANOUT_FOURTH
-+#elif NR_CPUS <= RCU_FANOUT_4
- #  define NUM_RCU_LVLS	      4
- #  define NUM_RCU_LVL_0	      1
--#  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_CUBE)
--#  define NUM_RCU_LVL_2	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_SQ)
--#  define NUM_RCU_LVL_3	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT)
--#  define NUM_RCU_LVL_4	      NR_CPUS
-+#  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_3)
-+#  define NUM_RCU_LVL_2	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_2)
-+#  define NUM_RCU_LVL_3	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_1)
-+#  define NUM_RCU_LVL_4	      (NR_CPUS)
- #else
- # error "CONFIG_RCU_FANOUT insufficient for NR_CPUS"
--#endif /* #if (NR_CPUS) <= RCU_FANOUT */
-+#endif /* #if (NR_CPUS) <= RCU_FANOUT_1 */
  
- #define RCU_SUM (NUM_RCU_LVL_0 + NUM_RCU_LVL_1 + NUM_RCU_LVL_2 + NUM_RCU_LVL_3 + NUM_RCU_LVL_4)
- #define NUM_RCU_NODES (RCU_SUM - NR_CPUS)
++static inline void synchronize_sched_expedited(void)
++{
++	synchronize_sched();
++}
++
+ #ifdef CONFIG_TINY_RCU
+ 
+ static inline void rcu_preempt_note_context_switch(void)
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index c0e9683..3a93348 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -48,6 +48,7 @@ static inline void exit_rcu(void)
+ #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ extern void synchronize_rcu_bh(void);
++extern void synchronize_sched_expedited(void);
+ extern void synchronize_rcu_expedited(void);
+ 
+ static inline void synchronize_rcu_bh_expedited(void)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 71a4147..21df7f3 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -25,6 +25,7 @@
+  */
+ 
+ #include <linux/delay.h>
++#include <linux/stop_machine.h>
+ 
+ /*
+  * Check the RCU kernel configuration parameters and print informative
+@@ -1014,6 +1015,76 @@ static void __init __rcu_init_preempt(void)
+ 
+ #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
++#ifndef CONFIG_SMP
++
++void synchronize_sched_expedited(void)
++{
++	cond_resched();
++}
++EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
++
++#else /* #ifndef CONFIG_SMP */
++
++static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
++
++static int synchronize_sched_expedited_cpu_stop(void *data)
++{
++	/*
++	 * There must be a full memory barrier on each affected CPU
++	 * between the time that try_stop_cpus() is called and the
++	 * time that it returns.
++	 *
++	 * In the current initial implementation of cpu_stop, the
++	 * above condition is already met when the control reaches
++	 * this point and the following smp_mb() is not strictly
++	 * necessary.  Do smp_mb() anyway for documentation and
++	 * robustness against future implementation changes.
++	 */
++	smp_mb(); /* See above comment block. */
++	return 0;
++}
++
++/*
++ * Wait for an rcu-sched grace period to elapse, but use "big hammer"
++ * approach to force grace period to end quickly.  This consumes
++ * significant time on all CPUs, and is thus not recommended for
++ * any sort of common-case code.
++ *
++ * Note that it is illegal to call this function while holding any
++ * lock that is acquired by a CPU-hotplug notifier.  Failing to
++ * observe this restriction will result in deadlock.
++ */
++void synchronize_sched_expedited(void)
++{
++	int snap, trycount = 0;
++
++	smp_mb();  /* ensure prior mod happens before capturing snap. */
++	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
++	get_online_cpus();
++	while (try_stop_cpus(cpu_online_mask,
++			     synchronize_sched_expedited_cpu_stop,
++			     NULL) == -EAGAIN) {
++		put_online_cpus();
++		if (trycount++ < 10)
++			udelay(trycount * num_online_cpus());
++		else {
++			synchronize_sched();
++			return;
++		}
++		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
++			smp_mb(); /* ensure test happens before caller kfree */
++			return;
++		}
++		get_online_cpus();
++	}
++	atomic_inc(&synchronize_sched_expedited_count);
++	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
++	put_online_cpus();
++}
++EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
++
++#endif /* #else #ifndef CONFIG_SMP */
++
+ #if !defined(CONFIG_RCU_FAST_NO_HZ)
+ 
+ /*
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ae8f75a..d1e8889 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -9131,72 +9131,3 @@ struct cgroup_subsys cpuacct_subsys = {
+ };
+ #endif	/* CONFIG_CGROUP_CPUACCT */
+ 
+-#ifndef CONFIG_SMP
+-
+-void synchronize_sched_expedited(void)
+-{
+-	barrier();
+-}
+-EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+-
+-#else /* #ifndef CONFIG_SMP */
+-
+-static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+-
+-static int synchronize_sched_expedited_cpu_stop(void *data)
+-{
+-	/*
+-	 * There must be a full memory barrier on each affected CPU
+-	 * between the time that try_stop_cpus() is called and the
+-	 * time that it returns.
+-	 *
+-	 * In the current initial implementation of cpu_stop, the
+-	 * above condition is already met when the control reaches
+-	 * this point and the following smp_mb() is not strictly
+-	 * necessary.  Do smp_mb() anyway for documentation and
+-	 * robustness against future implementation changes.
+-	 */
+-	smp_mb(); /* See above comment block. */
+-	return 0;
+-}
+-
+-/*
+- * Wait for an rcu-sched grace period to elapse, but use "big hammer"
+- * approach to force grace period to end quickly.  This consumes
+- * significant time on all CPUs, and is thus not recommended for
+- * any sort of common-case code.
+- *
+- * Note that it is illegal to call this function while holding any
+- * lock that is acquired by a CPU-hotplug notifier.  Failing to
+- * observe this restriction will result in deadlock.
+- */
+-void synchronize_sched_expedited(void)
+-{
+-	int snap, trycount = 0;
+-
+-	smp_mb();  /* ensure prior mod happens before capturing snap. */
+-	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
+-	get_online_cpus();
+-	while (try_stop_cpus(cpu_online_mask,
+-			     synchronize_sched_expedited_cpu_stop,
+-			     NULL) == -EAGAIN) {
+-		put_online_cpus();
+-		if (trycount++ < 10)
+-			udelay(trycount * num_online_cpus());
+-		else {
+-			synchronize_sched();
+-			return;
+-		}
+-		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
+-			smp_mb(); /* ensure test happens before caller kfree */
+-			return;
+-		}
+-		get_online_cpus();
+-	}
+-	atomic_inc(&synchronize_sched_expedited_count);
+-	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
+-	put_online_cpus();
+-}
+-EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+-
+-#endif /* #else #ifndef CONFIG_SMP */
 -- 
 1.7.3.2
 
