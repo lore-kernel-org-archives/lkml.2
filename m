@@ -1,186 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab0LQAnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:43:09 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60012 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab0LQAnH (ORCPT
+	id S1754405Ab0LQAnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:43:17 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46119 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab0LQAnP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:43:07 -0500
-Message-ID: <4D0AB14F.9050900@kernel.org>
-Date: Thu, 16 Dec 2010 16:39:43 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Thu, 16 Dec 2010 19:43:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,358,1288594800"; 
+   d="scan'208";a="869131262"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 16 Dec 2010 16:43:12 -0800
+Subject: RE: linux-next: build warnings after merge of the ia64 tree
+Thread-Topic: linux-next: build warnings after merge of the ia64 tree
+Thread-Index: AcudgNNgYAzVxwvIRJ6CrgRDLIvv8wAAhgTQ
+Message-ID: <987664A83D2D224EAE907B061CE93D530193D00A03@orsmsx505.amr.corp.intel.com>
+References: <20101217112357.ec7879f1.sfr@canb.auug.org.au>
+In-Reply-To: <20101217112357.ec7879f1.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: kdump broken on 2.6.37-rc4
-References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org> <4D0A6F66.1010006@zytor.com> <4D0AA116.4050707@kernel.org> <4D0AA592.3060805@kernel.org>
-In-Reply-To: <4D0AA592.3060805@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 03:49 PM, Yinghai Lu wrote:
-> On 12/16/2010 03:30 PM, Yinghai Lu wrote:
->> On 12/16/2010 11:58 AM, H. Peter Anvin wrote:
->>> On 12/16/2010 09:28 AM, Yinghai Lu wrote:
->>>>
->>>> the brk is complaining if i change that to 
->>>>
->>>>  	if (end > ((-__PAGE_OFFSET-(128 <<20)-1) & 0x7fffffff))
->>>>  		error("Destination address too large");
->>>>
->>>> brk is complaining when try to get more for dmi ...
->>>> ...
->>>> I'm in purgatory
->>>> bootconsole [uart0] enabled
->>>> Kernel Layout:
->>>>   .text: [0x2e000000-0x2e3f08ca]
->>>> .rodata: [0x2e3f2000-0x2e5a2fff]
->>>>   .data: [0x2e5a3000-0x2e5f6467]
->>>>   .init: [0x2e5f7000-0x2e670fff]
->>>>    .bss: [0x2e675000-0x2e76ffff]
->>>>    .brk: [0x2e770000-0x2e894fff]
->>>>     memblock_x86_reserve_range: [0x00001000-0x00001fff]    EX TRAMPOLINE
->>>>     memblock_x86_reserve_range: [0x2e000000-0x2e76ffff]    TEXT DATA BSS
->>>>     memblock_x86_reserve_range: [0x35bdd000-0x35f49fff]          RAMDISK
->>>>     memblock_x86_reserve_range: [0x0009c800-0x000fffff]  * BIOS reserved
->>>> Initializing cgroup subsys cpuset
->>>> Initializing cgroup subsys cpu
->>>> Linux version 2.6.37-rc5-tip+ (root@mpk12-3214-189-181) (gcc version 4.4.4 20100726 (Red Hat 4.4.4-13) (GCC) ) #4 SMP Wed Dec 15 11:04:32 PST 2010
->>>> KERNEL supported cpus:
->>>>   Intel GenuineIntel
->>>>   AMD AuthenticAMD
->>>>   NSC Geode by NSC
->>>>   Cyrix CyrixInstead
->>>>   Centaur CentaurHauls
->>>>   Transmeta GenuineTMx86
->>>>   Transmeta TransmetaCPU
->>>>   UMC UMC UMC UMC
->>>> BIOS-provided physical RAM map:
->>>>  BIOS-e820: [0x00000000000100-0x0000000009c7ff] (usable)
->>>>  BIOS-e820: [0x0000000009c800-0x0000000009ffff] (reserved)
->>>>  BIOS-e820: [0x000000000e0000-0x000000000fffff] (reserved)
->>>>  BIOS-e820: [0x00000000100000-0x0000007ff9ffff] (usable)
->>>>  BIOS-e820: [0x0000007ffae000-0x0000007ffaffff] (usable)
->>>>  BIOS-e820: [0x0000007ffb0000-0x0000007ffbdfff] (ACPI data)
->>>>  BIOS-e820: [0x0000007ffbe000-0x0000007ffeffff] (ACPI NVS)
->>>>  BIOS-e820: [0x0000007fff0000-0x0000007fffffff] (reserved)
->>>>  BIOS-e820: [0x000000e0000000-0x000000efffffff] (reserved)
->>>>  BIOS-e820: [0x000000fec00000-0x000000fec00fff] (reserved)
->>>>  BIOS-e820: [0x000000fee00000-0x000000feefffff] (reserved)
->>>>  BIOS-e820: [0x000000ff700000-0x000000ffffffff] (reserved)
->>>> last_pfn = 0x7ffb0 max_arch_pfn = 0x1000000
->>>> NX (Execute Disable) protection: active
->>>> user-defined physical RAM map:
->>>>  user: [0x00000000000000-0x0000000009ffff] (usable)
->>>>  user: [0x0000002e000000-0x00000035f59fff] (usable)
->>>>  user: [0x0000007ffb0000-0x0000007ffeffff] (ACPI data)
->>>> DMI present.
->>>> BUG: Int 6: CR2   (null)
->>>>      EDI 00000019  ESI ff940c18  EBP   (null)  ESP ee5a5e84
->>>>      EBX ee5cfb68  EDX 00000006  ECX 00000019  EAX ee8e6019
->>>>      err   (null)  EIP ee5fb4dd   CS 00000060  flg 00010002
->>>> Stack: 00000019 ee62bf45 ff942000 00000563 00000001 ff940c00 000018c7 ee62bf83
->>>>        ff940c00 ee62c063 80000000 ee3e6f2f ee50a3c0 ee5a5ed4 ff940c00 ff940c43
->>>>        000018c7   (null) ee3173d4 000018c8 0000007f ff940c00 ff90b1bf ee5a5f18
->>>> Pid: 0, comm: swapper Not tainted 2.6.37-rc5-tip+ #4
->>>> Call Trace:
->>>>  [<ee3dd1d5>] ? hlt_loop+0x0/0x3
->>>>  [<ee5fb4dd>] ? extend_brk+0x31/0x44
->>>
->>> I'm assuming it bails due to:
->>>
->>> 	BUG_ON((char *)(_brk_end + size) > __brk_limit);
->>>
->>> ... could you find out what _brk_end and __brk_limit are?
->>
->> void __init print_kernel_layout(void)
->> {
->>         printk("Kernel Layout:\n");
->>         printk("  .text: [%#010lx-%#010lx]\n", __pa_symbol(&_text), __pa_symbol(&_etext) - 1);
->>         printk(".rodata: [%#010lx-%#010lx]\n", __pa_symbol(&__start_rodata), __pa_symbol(&__end_rodata) - 1);
->>         printk("  .data: [%#010lx-%#010lx]\n", __pa_symbol(&_sdata), __pa_symbol(&_edata) - 1);
->>         printk("  .init: [%#010lx-%#010lx]\n", __pa_symbol(&__init_begin), __pa_symbol(&__init_end) - 1);
->>         printk("   .bss: [%#010lx-%#010lx]\n", __pa_symbol(&__bss_start), __pa_symbol(&__bss_stop) - 1);
->>         printk("   .brk: [%#010lx-%#010lx]\n", __pa_symbol(&__brk_base), __pa_symbol(&__brk_limit) - 1);
->> }
->>
->>>> Kernel Layout:
->>>>   .text: [0x2e000000-0x2e3f08ca]
->>>> .rodata: [0x2e3f2000-0x2e5a2fff]
->>>>   .data: [0x2e5a3000-0x2e5f6467]
->>>>   .init: [0x2e5f7000-0x2e670fff]
->>>>    .bss: [0x2e675000-0x2e76ffff]
->>>>    .brk: [0x2e770000-0x2e894fff]
->>
->> DMI present.
->> _brk_end: ee8e6000, __brk_limit: ee895000 
->>
-> 
-> looks like in arch/x86/kernel/head_32.S
-> will put page_table in _brk....
-> 
-> if the whole range is some high, it will use more buffer in _brk for ...
-> 
-> brk pre-calucation could be wrong and too small.
+> After merging the ia64 tree, today's linux-next build
+> produced these warnings:
 
-32bit have assume KERNEL_IMAGE_SIZE is 512M
-arch/x86/include/asm/page_32_types.h:#define KERNEL_IMAGE_SIZE  (512 * 1024 * 1024)
-arch/x86/include/asm/page_64_types.h:#define KERNEL_IMAGE_SIZE  (512 * 1024 * 1024)
-arch/x86/kernel/head64.c:       BUILD_BUG_ON(MODULES_VADDR-KERNEL_IMAGE_START < KERNEL_IMAGE_SIZE);
-arch/x86/kernel/head64.c:       BUILD_BUG_ON(MODULES_LEN + KERNEL_IMAGE_SIZE > 2*PUD_SIZE);
-arch/x86/kernel/head64.c:       max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
-arch/x86/kernel/head_32.S: *     (KERNEL_IMAGE_SIZE/4096) / 1024 pages (worst case, non PAE)
-arch/x86/kernel/head_32.S: *     (KERNEL_IMAGE_SIZE/4096) / 512 + 4 pages (worst case for PAE)
-arch/x86/kernel/head_32.S: * KERNEL_IMAGE_SIZE should be greater than pa(_end)
-arch/x86/kernel/head_32.S:KERNEL_PAGES = (KERNEL_IMAGE_SIZE + MAPPING_BEYOND_END)>>PAGE_SHIFT 
+>drivers/acpi/apei/erst.c: In function 'erst_reader':
+>drivers/acpi/apei/erst.c:826: warning: passing argument 1 of >'spinlock_check' from incompatible pointer type
 
-and use that to estimate BRK size.
+Hmmmh. I wonder why I didn't see them in my build?
 
-so we could change the BRK calculating code to handle 896M or just limit crashkernel for 32bit to 512M...
+I'll take a look and try to fix it tomorrow.
 
-handle 896M one:
+Thanks for the notice.
 
----
- arch/x86/boot/compressed/misc.c |    2 +-
- arch/x86/kernel/head_32.S       |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+-Tony
 
-Index: linux-2.6/arch/x86/boot/compressed/misc.c
-===================================================================
---- linux-2.6.orig/arch/x86/boot/compressed/misc.c
-+++ linux-2.6/arch/x86/boot/compressed/misc.c
-@@ -365,7 +365,7 @@ asmlinkage void decompress_kernel(void *
- 	if (heap > 0x3fffffffffffUL)
- 		error("Destination address too large");
- #else
--	if (heap > ((-__PAGE_OFFSET-(512<<20)-1) & 0x7fffffff))
-+	if (heap > ((-__PAGE_OFFSET-(128<<20)-1) & 0x7fffffff))
- 		error("Destination address too large");
- #endif
- #ifndef CONFIG_RELOCATABLE
-Index: linux-2.6/arch/x86/kernel/head_32.S
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/head_32.S
-+++ linux-2.6/arch/x86/kernel/head_32.S
-@@ -68,8 +68,10 @@ MAPPING_BEYOND_END = \
-  * Worst-case size of the kernel mapping we need to make:
-  * the worst-case size of the kernel itself, plus the extra we need
-  * to map for the linear map.
-+ * to make crashkernel bzImage to stay high, make it map to 896M
-+ *  but it will be claimed back when brk is concluded. So no wasting.
-  */
--KERNEL_PAGES = (KERNEL_IMAGE_SIZE + MAPPING_BEYOND_END)>>PAGE_SHIFT
-+KERNEL_PAGES = (KERNEL_IMAGE_SIZE + (384<<20) + MAPPING_BEYOND_END)>>PAGE_SHIFT
- 
- INIT_MAP_SIZE = PAGE_TABLE_SIZE(KERNEL_PAGES) * PAGE_SIZE_asm
- RESERVE_BRK(pagetables, INIT_MAP_SIZE)
