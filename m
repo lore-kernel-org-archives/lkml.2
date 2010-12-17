@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab0LQCza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 21:55:30 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:52390 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab0LQCzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 21:55:20 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67174856"
-Message-ID: <8c67e174d807416f0c6c190cc72d3f5a.squirrel@www.codeaurora.org>
-In-Reply-To: <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
-References: <1291327879-28073-1-git-send-email-johlstei@codeaurora.org>
-    <20101202221909.GK29347@n2100.arm.linux.org.uk>
-    <4CF94DDD.8000409@codeaurora.org>
-    <20101203203653.GB10245@n2100.arm.linux.org.uk>
-    <4CFDD297.4020600@codeaurora.org>
-    <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
-    <20101209103835.GA31465@n2100.arm.linux.org.uk>
-    <4D017B45.4000805@codeaurora.org>
-    <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
-    <4D045692.4050607@codeaurora.org>
-    <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
-Date: Thu, 16 Dec 2010 18:55:06 -0800 (PST)
-Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to 
-     early_initcall
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Catalin Marinas" <catalin.marinas@arm.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: "Saravana Kannan" <skannan@codeaurora.org>, dwalker@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, "Nicolas Pitre" <nico@marvell.com>,
-        linux-kernel@vger.kernel.org,
-        "Jeff Ohlstein" <johlstei@codeaurora.org>, "Tejun Heo" <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
+	id S1752403Ab0LQDA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 22:00:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44087 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab0LQDAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 22:00:25 -0500
+Message-ID: <4D0AD232.8020107@zytor.com>
+Date: Thu, 16 Dec 2010 19:00:02 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Len Brown <lenb@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Adam Belay <abelay@mit.edu>
+Subject: Re: [PATCH 0/9] PCI: revert to allocating bottom-up, avoid E820 areas
+References: <20101216173614.8185.19462.stgit@bob.kio> <AANLkTikqmfWhLuTiP8tPqcCGMZUe=iDOJVUZGy8pnRL0@mail.gmail.com>
+In-Reply-To: <AANLkTikqmfWhLuTiP8tPqcCGMZUe=iDOJVUZGy8pnRL0@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/16/2010 01:59 PM, Linus Torvalds wrote:
+> On Thu, Dec 16, 2010 at 9:38 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+>>
+>> So I think the best band-aid for now is to revert to bottom-up allocation
+>> and do a better job of avoiding E820 reserved areas.  Obviously, it's not
+>> complete because we could still trip over ACPI devices (as in 23802), but
+>> that's a problem we've always had and it's not as likely if we go bottom-up.
+> 
+> Ok, ack for this series. Have we got testers for it? In particular,
+> have the people who have seen regressions been notified of this new
+> series?
+> 
 
-> On 12 December 2010 04:58, Saravana Kannan <skannan@codeaurora.org> wrote:
->> As you and James suggested, having the NS bit set by the secure world is
->> definitely a solution that would work. But IMHO, the explicit cache
->> flush/invalidate approach keeps the design simple and easy to maintain.
->
-> That is indeed an approach to the problem. But it depends on whether
-> we consider the DMA API appropriate for this. We can view the secure
-> world as a non-coherent agent accessing the memory and could try to
-> justify the use of the DMA API in Linux.
->
-> At some point we'll probably have platforms supporting cacheable DMA
-> (e.g. via the ARM coherency port) and the DMA API would no longer give
-> you what you need. But it is also possible that platforms with ACP
-> would only have 1 or 2 devices on that port (some HD LCD controller
-> for example) and the rest of devices non-coherent. In this case, we
-> need to have different DMA operations depending on the bus/device (via
-> get_dma_ops) and thus we can allow your scenario via dedicated DMA
-> ops.
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-Catalin,
+... for the series as well.  For what it's worth.
 
-Looks like you agree with our approach. If that's the case, would you mind
-Acking Jeff's initial patch that this thread is based on?
-
-Russell,
-
-Does Catalin's proposal sound acceptable to you?
-
-Thanks,
-Saravana
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
-
+	-hpa
