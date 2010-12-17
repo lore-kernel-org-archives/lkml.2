@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab0LQROJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 12:14:09 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59981 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab0LQROG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 12:14:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=R740X+EfrckhHewfcjKuIQZPvh3h5bOOboKsLaj7EiCEA9oSeEGijlZT7fK8gNaGAO
-         pz39n5DfK3gzOns9nIhHDE4+ted91FQ08584MthvRXaOFFsblnDagl90OayBp5LXAAVf
-         FZhrDQU/r1AvHELTLIZyN2HDvSNmZ0qXtkvUU=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        William Irwin <wli@holomorphy.com>
-Subject: [RFC 3/5] tlbfs: Remove unnecessary page release
-Date: Sat, 18 Dec 2010 02:13:38 +0900
-Message-Id: <08549e97645f7d6c2bcc5c760a24fde56dfed513.1292604745.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1292604745.git.minchan.kim@gmail.com>
-References: <cover.1292604745.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1292604745.git.minchan.kim@gmail.com>
-References: <cover.1292604745.git.minchan.kim@gmail.com>
+	id S1754934Ab0LQRbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 12:31:36 -0500
+Received: from kroah.org ([198.145.64.141]:38845 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753465Ab0LQRbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 12:31:33 -0500
+Date: Fri, 17 Dec 2010 09:31:25 -0800
+From: Greg KH <greg@kroah.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+Subject: Re: [RFC 1/5] user namespaces: Add a user_namespace as
+ creator/owner of uts_namespace
+Message-ID: <20101217173125.GA29982@kroah.com>
+References: <20101217152246.GA8221@mail.hallyn.com>
+ <20101217152458.GA11162@mail.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101217152458.GA11162@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series changes remove_from_page_cache's page ref counting
-rule. page cache ref count is decreased in remove_from_page_cache.
-So we don't need call again in caller context.
+On Fri, Dec 17, 2010 at 03:24:58PM +0000, Serge E. Hallyn wrote:
+> copy_process() handles CLONE_NEWUSER before the rest of the
+> namespaces.  So in the case of clone(CLONE_NEWUSER|CLONE_NEWUTS)
+> the new uts namespace will have the new user namespace as its
+> owner.  That is what we want, since we want root in that new
+> userns to be able to have privilege over it.
+> 
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> ---
+>  include/linux/utsname.h |    3 +++
+>  init/version.c          |    2 ++
+>  kernel/nsproxy.c        |    3 +++
+>  kernel/user.c           |    8 ++++++--
+>  kernel/utsname.c        |    4 ++++
+>  5 files changed, 18 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+> index 69f3997..85171be 100644
+> --- a/include/linux/utsname.h
+> +++ b/include/linux/utsname.h
+> @@ -37,9 +37,12 @@ struct new_utsname {
+>  #include <linux/nsproxy.h>
+>  #include <linux/err.h>
+>  
+> +struct user_namespace;
+> +
+>  struct uts_namespace {
+>  	struct kref kref;
+>  	struct new_utsname name;
+> +	struct user_namespace *user_ns;
+>  };
+>  extern struct uts_namespace init_uts_ns;
+>  
+> diff --git a/init/version.c b/init/version.c
+> index 79fb8c2..9eb19fb 100644
+> --- a/init/version.c
+> +++ b/init/version.c
+> @@ -21,6 +21,7 @@ extern int version_string(LINUX_VERSION_CODE);
+>  int version_string(LINUX_VERSION_CODE);
+>  #endif
+>  
+> +extern struct user_namespace init_user_ns;
+>  struct uts_namespace init_uts_ns = {
+>  	.kref = {
+>  		.refcount	= ATOMIC_INIT(2),
 
-Cc: William Irwin <wli@holomorphy.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- fs/hugetlbfs/inode.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Wait, WTF?
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 9885082..4f32fb6 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -333,7 +333,6 @@ static void truncate_huge_page(struct page *page)
- 	cancel_dirty_page(page, /* No IO accounting for huge pages? */0);
- 	ClearPageUptodate(page);
- 	remove_from_page_cache(page);
--	put_page(page);
- }
- 
- static void truncate_hugepages(struct inode *inode, loff_t lstart)
--- 
-1.7.0.4
+You have a static kref and you try to automatically instanciate it here?
+As it's static, why are you even having a kref at all, what good does it
+do you, you can't delete the thing, it's always around, so just remove
+it entirely please.
 
+Or, dynamically create it properly.  In other words, this is majorly
+broken.
+
+thanks,
+
+greg k-h
