@@ -1,68 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab0LQWlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 17:41:35 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:47033 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756397Ab0LQWla (ORCPT
+	id S1756640Ab0LQWnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 17:43:24 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7543 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756088Ab0LQWnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 17:41:30 -0500
-X-Greylist: delayed 11673 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Dec 2010 17:41:30 EST
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg KH <greg@kroah.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <michael.kerrisk@gmail.com>
-References: <20101217152246.GA8221@mail.hallyn.com>
-	<20101217152458.GA11162@mail.hallyn.com>
-	<20101217173125.GA29982@kroah.com> <m18vzoryit.fsf@fess.ebiederm.org>
-	<20101217195829.GB1410@kroah.com>
-Date: Fri, 17 Dec 2010 12:40:11 -0800
-In-Reply-To: <20101217195829.GB1410@kroah.com> (Greg KH's message of "Fri, 17
-	Dec 2010 11:58:29 -0800")
-Message-ID: <m1ipysm8us.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 17 Dec 2010 17:43:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 17 Dec 2010 14:35:32 -0800
+Date: Fri, 17 Dec 2010 14:42:21 -0800
+From: rmorell@nvidia.com
+To: Greg KH <gregkh@suse.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20101217224221.GE25105@morell.nvidia.com>
+References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
+ <1292623129-26361-3-git-send-email-rmorell@nvidia.com>
+ <20101217223502.GB19418@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18D/548hzJooDgVBQYOh9zmYYOIewRo+Vk=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg KH <greg@kroah.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC 1/5] user namespaces: Add a user_namespace as creator/owner of uts_namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <20101217223502.GB19418@suse.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
+On Fri, Dec 17, 2010 at 02:35:02PM -0800, Greg KH wrote:
+> On Fri, Dec 17, 2010 at 01:58:49PM -0800, Robert Morell wrote:
+> > The Tegra2 USB controller doesn't properly deal with misaligned DMA
+> > buffers, causing corruption.  This is especially prevalent with USB
+> > network adapters, where skbuff alignment is often in the middle of a
+> > 4-byte dword.
+> > 
+> > To avoid this, allocate a temporary buffer for the DMA if the provided
+> > buffer isn't sufficiently aligned.
+> > 
+> > Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> > Reviewed-by: Scott Williams <scwilliams@nvidia.com>
+> > Reviewed-by: Janne Hellsten <jhellsten@nvidia.com>
+> > ---
+> >  drivers/usb/host/ehci-tegra.c |   94 +++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/usb.h           |    1 +
+> >  2 files changed, 95 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> > index d990c1c..a75e4db 100644
+> > --- a/drivers/usb/host/ehci-tegra.c
+> > +++ b/drivers/usb/host/ehci-tegra.c
+> > @@ -32,6 +32,10 @@
+> >  #define TEGRA_USB_USBMODE_HOST			(3 << 0)
+> >  #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
+> >  
+> > +#define TEGRA_USB_DMA_ALIGN 32
+> > +
+> > +#define URB_ALIGNED_TEMP_BUFFER 0x80000000
+> > +
+> >  struct tegra_ehci_context {
+> >  	bool valid;
+> >  	u32 command;
+> > @@ -457,6 +461,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
+> >  }
+> >  #endif
+> >  
+> > +struct temp_buffer {
+> > +	void *kmalloc_ptr;
+> > +	void *old_xfer_buffer;
+> > +	u8 data[0];
+> > +};
+> > +
+> > +static void free_temp_buffer(struct urb *urb)
+> > +{
+> > +	enum dma_data_direction dir;
+> > +	struct temp_buffer *temp;
+> > +
+> > +	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
+> > +		return;
+> > +
+> > +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+> > +
+> > +	temp = container_of(urb->transfer_buffer, struct temp_buffer,
+> > +			    data);
+> > +
+> > +	if (dir == DMA_FROM_DEVICE)
+> > +		memcpy(temp->old_xfer_buffer, temp->data,
+> > +		       urb->transfer_buffer_length);
+> > +	urb->transfer_buffer = temp->old_xfer_buffer;
+> > +	kfree(temp->kmalloc_ptr);
+> > +
+> > +	urb->transfer_flags &= ~URB_ALIGNED_TEMP_BUFFER;
+> > +}
+> > +
+> > +static int alloc_temp_buffer(struct urb *urb, gfp_t mem_flags)
+> > +{
+> > +	enum dma_data_direction dir;
+> > +	struct temp_buffer *temp, *kmalloc_ptr;
+> > +	size_t kmalloc_size;
+> > +	void *data;
+> > +
+> > +	if (urb->num_sgs || urb->sg ||
+> > +	    urb->transfer_buffer_length == 0 ||
+> > +	    !((uintptr_t)urb->transfer_buffer & (TEGRA_USB_DMA_ALIGN - 1)))
+> > +		return 0;
+> > +
+> > +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+> > +
+> > +	/* Allocate a buffer with enough padding for alignment */
+> > +	kmalloc_size = urb->transfer_buffer_length +
+> > +		sizeof(struct temp_buffer) + TEGRA_USB_DMA_ALIGN - 1;
+> > +
+> > +	kmalloc_ptr = kmalloc(kmalloc_size, mem_flags);
+> > +	if (!kmalloc_ptr)
+> > +		return -ENOMEM;
+> > +
+> > +	/* Position our struct temp_buffer such that data is aligned */
+> > +	temp = PTR_ALIGN(kmalloc_ptr + 1, TEGRA_USB_DMA_ALIGN) - 1;
+> > +
+> > +	temp->kmalloc_ptr = kmalloc_ptr;
+> > +	temp->old_xfer_buffer = urb->transfer_buffer;
+> > +	if (dir == DMA_TO_DEVICE)
+> > +		memcpy(temp->data, urb->transfer_buffer,
+> > +		       urb->transfer_buffer_length);
+> > +	urb->transfer_buffer = temp->data;
+> > +
+> > +	BUILD_BUG_ON(!(URB_ALIGNED_TEMP_BUFFER & URB_DRIVER_PRIVATE));
+> 
+> See below why this should be removed
+> 
+> > +	urb->transfer_flags |= URB_ALIGNED_TEMP_BUFFER;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int tegra_ehci_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+> > +				      gfp_t mem_flags)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = alloc_temp_buffer(urb, mem_flags);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	ret = usb_hcd_map_urb_for_dma(hcd, urb, mem_flags);
+> > +	if (ret)
+> > +		free_temp_buffer(urb);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static void tegra_ehci_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
+> > +{
+> > +	usb_hcd_unmap_urb_for_dma(hcd, urb);
+> > +	free_temp_buffer(urb);
+> > +}
+> > +
+> >  static const struct hc_driver tegra_ehci_hc_driver = {
+> >  	.description		= hcd_name,
+> >  	.product_desc		= "Tegra EHCI Host Controller",
+> > @@ -472,6 +564,8 @@ static const struct hc_driver tegra_ehci_hc_driver = {
+> >  	.shutdown		= tegra_ehci_shutdown,
+> >  	.urb_enqueue		= ehci_urb_enqueue,
+> >  	.urb_dequeue		= ehci_urb_dequeue,
+> > +	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
+> > +	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
+> >  	.endpoint_disable	= ehci_endpoint_disable,
+> >  	.endpoint_reset		= ehci_endpoint_reset,
+> >  	.get_frame_number	= ehci_get_frame,
+> > diff --git a/include/linux/usb.h b/include/linux/usb.h
+> > index 35fe6ab..cd07173 100644
+> > --- a/include/linux/usb.h
+> > +++ b/include/linux/usb.h
+> > @@ -975,6 +975,7 @@ extern int usb_disabled(void);
+> >  #define URB_SETUP_MAP_SINGLE	0x00100000	/* Setup packet DMA mapped */
+> >  #define URB_SETUP_MAP_LOCAL	0x00200000	/* HCD-local setup packet */
+> >  #define URB_DMA_SG_COMBINED	0x00400000	/* S-G entries were combined */
+> > +#define URB_DRIVER_PRIVATE	0x80000000	/* For driver-private use */
+> 
+> Um, what?  You are using this for a build check, which seems pointless
+> as you already modified the code to not need this.
+> 
+> So it doesn't look like this is needed, right?
 
->> There are also major benefits to have the version of something that is
->> never freed never going away, because it means you can just reference it
->> in code.  So while I would be happy to say this is special don't use a
->> kref and roll the reference counting logic by hand, we aren't
->> dynamically allocating init_uts_ns any time soon.
->
-> Why have a reference count at all if it's not needed or used here?
+The intention was to reserve space in the URB flags for
+implementation-specific use.  This placeholder should keep anybody from
+adding driver-agnostic flags to that mask.  The BUILD_BUG_ON is intended
+to make sure that the driver private space doesn't move out from under
+the Tegra-specific flag.
 
-We have to reference count every other uts namespace.
+Thanks,
+Robert
 
-Eric
+> thanks,
+> 
+> greg k-h
+> 
