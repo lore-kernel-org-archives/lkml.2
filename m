@@ -1,142 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab0LQJbq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 04:31:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2435 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab0LQJbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 04:31:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,360,1288594800"; 
-   d="scan'208";a="688113452"
-Date: Fri, 17 Dec 2010 17:31:36 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 22/35] writeback: trace global dirty page states
-Message-ID: <20101217093136.GA21141@localhost>
-References: <20101213144646.341970461@intel.com>
- <20101213150329.002158963@intel.com>
- <20101217021934.GA9525@localhost>
- <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
+	id S1752821Ab0LQJe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 04:34:29 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:59245 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab0LQJe0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 04:34:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Glza5L47W5T9LGpjfd7QUS0jimF0WmiiTdNdrEFB9HajGLM60suRmMA/apFOIPZXmW
+         fBwrrTdmOipe0GjIc9KpEahstnca6r8wEDPpdAA1jsa2SfQrz3gtAT8HmfKXtF0JGC/e
+         Bl/AN+CcHv23+2tE3/4BCLRSEKOY71MvRIfPk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 17 Dec 2010 18:34:24 +0900
+Message-ID: <AANLkTim5vSLmQ8rBjkK6iRKZgwf3drwwbt2LMh5Jj=Sk@mail.gmail.com>
+Subject: mmc NULL point oops
+From: Adam Jiang <jiang.adam@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf3054a5a940c427049797e00c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 02:52:50PM +0800, Hugh Dickins wrote:
-> On Fri, 17 Dec 2010, Wu Fengguang wrote:
-> > On Mon, Dec 13, 2010 at 10:47:08PM +0800, Wu, Fengguang wrote:
-> > 
-> > > +	TP_fast_assign(
-> > > +		strlcpy(__entry->bdi,
-> > > +			dev_name(mapping->backing_dev_info->dev), 32);
-> > > +		__entry->ino			= mapping->host->i_ino;
-> > 
-> > I got an oops against the above line on shmem. Can be fixed by the
-> > below patch, but still not 100% confident..
-> > 
-> > Thanks,
-> > Fengguang
-> > ---
-> > Subject: writeback fix dereferencing NULL shmem mapping->host
-> > Date: Thu Dec 16 22:22:00 CST 2010
-> > 
-> > The oops happens when doing "cp /proc/vmstat /dev/shm". It seems to be
-> > triggered on accessing host->i_ino, since the offset of i_ino is exactly
-> > 0x50. However I'm afraid the problem is not fully understand
-> > 
-> > 1) it's not normal that tmpfs will have mapping->host == NULL
-> > 
-> > 2) I tried removing the dereference as the below diff, however it
-> >    didn't stop the oops. This is very weird.
-> > 
-> > TRACE_EVENT balance_dirty_state:
-> > 
-> >  	TP_fast_assign(
-> >  		strlcpy(__entry->bdi,
-> >  			dev_name(mapping->backing_dev_info->dev), 32);
-> 
-> I believe this line above is actually the problem: you can imagine that
-> tmpfs leaves backing_dev_info->dev NULL, and dev_name() appears to
+--20cf3054a5a940c427049797e00c
+Content-Type: text/plain; charset=ISO-8859-1
 
-Ah, I didn't notice that obvious fact in shmem_backing_dev_info..
+Hello,
 
-> access dev->init_name at 64-bit offset 0x50 down struct device.
+I got a oops from android kernel. The attachment tells the story.
+Because the source code has some delay to sync with linux. Would
+please help to figure out if it is a known problem. Would you please
+give me some bright how to fix it up?
 
-And it's such a coincident that the two lines accessed different
-struct members both with offset 0x50 :)
+/Adam
 
-> > -		__entry->ino			= mapping->host->i_ino;
-> >  		__entry->nr_dirty		= nr_dirty;
-> >  		__entry->nr_writeback		= nr_writeback;
-> >  		__entry->nr_unstable		= nr_unstable;
-> ...
-> > 
-> > CC: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-> 
-> I prefer hughd@google.com, but the tiscali address survived unexpectedly.
+--20cf3054a5a940c427049797e00c
+Content-Type: text/plain; charset=US-ASCII; name="kernel-NULL-pointer-oops.txt"
+Content-Disposition: attachment; filename="kernel-NULL-pointer-oops.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ghsvr4zo0
 
-OK, just updated my alias db.
-
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/page-writeback.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > --- linux-next.orig/mm/page-writeback.c	2010-12-17 09:30:11.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2010-12-17 09:31:05.000000000 +0800
-> > @@ -907,6 +907,9 @@ void balance_dirty_pages_ratelimited_nr(
-> >  {
-> >  	struct backing_dev_info *bdi = mapping->backing_dev_info;
-> >  
-> > +	if (!mapping_cap_writeback_dirty(mapping))
-> > +		return;
-> > +
-> >  	current->nr_dirtied += nr_pages_dirtied;
-> >  
-> >  	if (unlikely(!current->nr_dirtied_pause))
-> 
-> That would not really be the right patch to fix your oops, but it
-
-Then it will also avoid oops in another tracepoint balance_dirty_pages.
-([PATCH 21/35] writeback: trace balance_dirty_pages() in this series)
-
-I skipped the backing_dev_info->dev check partly because it's also
-referenced in tracepoint balance_dirty_pages. So I did this cure-all
-change that makes sense in itself :)
-
-> or something like would be a very sensible patch in its own right:
-> looking back through old patches I never got around to sending in,
-> I can see I had a very similar one two years ago, to save wasting
-> time on dirty page accounting here when it's inappropriate.
-
-It's a pity you didn't submit it.
-
-> Though mine was testing !mapping_cap_account_dirty(mapping).
-
-Sorry I didn't check whether to use mapping_cap_writeback_dirty() or
-mapping_cap_account_dirty() -- I just used a random one of them.
-
-Some double checking shows that the end results are the same as for
-now: all related parts set both flags at the same time with
-BDI_CAP_NO_ACCT_AND_WRITEBACK. However it does look more sane to use
-bdi_cap_account_dirty(bdi). I'll switch to it. Thank you!
-
-Thanks,
-Fengguang
+WyAgIDE0LjQ5NzgzNl0gVW5hYmxlIHRvIGhhbmRsZSBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVm
+ZXJlbmNlIGF0IHZpcnR1YWwgYWRkcmVzcyAwMDAwMDAyNApbICAgMTQuNTA1OTMwXSBwZ2QgPSBj
+MDAwNDAwMApbICAgMTQuNTA4NjM3XSBbMDAwMDAwMjRdICpwZ2Q9MDAwMDAwMDAKWyAgIDE0LjUx
+MjIyOV0gSW50ZXJuYWwgZXJyb3I6IE9vcHM6IDE3IFsjMV0gUFJFRU1QVCBTTVAKWyAgIDE0LjUx
+NzI3OV0gbGFzdCBzeXNmcyBmaWxlOiAvc3lzL2RldmljZXMvcGxhdGZvcm0vc2RoY2ktdGVncmEu
+My9tbWNfaG9zdC9tbWMwL21tYzA6MDAwMS9ibG9jay9tbWNibGswL21tY2JsazBwNC91ZXZlbnQK
+WyAgIDE0LjUyODA1NV0gTW9kdWxlcyBsaW5rZWQgaW46ClsgICAxNC41MzExMjRdIENQVTogMCAg
+ICBUYWludGVkOiBHICAgICAgICBXICAgICgyLjYuMzYtMDAwMjgtZzUxMTM3YmUgIzEpClsgICAx
+NC41Mzc3NjFdIFBDIGlzIGF0IGVuZF9iaW9fYmhfaW9fc3luYysweDU0LzB4NjQKWyAgIDE0LjU0
+MjQ3MV0gTFIgaXMgYXQgZW5kX2Jpb19iaF9pb19zeW5jKzB4NTgvMHg2NApbICAgMTQuNTQ3MTgx
+XSBwYyA6IFs8YzAwZWI0NjA+XSAgICBsciA6IFs8YzAwZWI0NjQ+XSAgICBwc3I6IDQwMDAwMDkz
+ClsgICAxNC41NDcxOTFdIHNwIDogZTcwMWZkYzAgIGlwIDogYzBlMzQ2YjQgIGZwIDogMDAwMDAw
+MDAKWyAgIDE0LjU1ODY2NV0gcjEwOiBlNzBmOTYwOCAgcjkgOiAwMDAwMDAwMCAgcjggOiAwMDAw
+MDAwMgpbICAgMTQuNTYzODkwXSByNyA6IGU3MGY5NjQwICByNiA6IDAwMDAwMDBjICByNSA6IDAw
+MDAwMDAwICByNCA6IGU3MGY5NjQwClsgICAxNC41NzA0MTddIHIzIDogZjAwMDAwMDEgIHIyIDog
+MDAwMDAwYmEgIHIxIDogMDAwMDAwMDEgIHIwIDogMDAwMDAwMDAKWyAgIDE0LjU3Njk0N10gRmxh
+Z3M6IG5aY3YgIElSUXMgb2ZmICBGSVFzIG9uICBNb2RlIFNWQ18zMiAgSVNBIEFSTSAgU2VnbWVu
+dCBrZXJuZWwKWyAgIDE0LjU4NDM0NF0gQ29udHJvbDogMTBjNTNjN2QgIFRhYmxlOiAyNzE4MDA0
+YSAgREFDOiAwMDAwMDAxNwpbICAgMTQuNTkwMDg4XQpbICAgMTQuNTkwMDkzXSBQQzogMHhjMDBl
+YjNlMDoKWyAgIDE0LjU5NDM2N10gYjNlMCAgZTFhMDEwMDQgZTFhMDAwMDYgZWIwMmExZDcgZTU5
+NDMwMTAgZTFhMDAwMDQgZTIxMzQwODAgMTNlMDQwNWUgZWIwMDBmNTcKWyAgIDE0LjYwMjY0Ml0g
+YjQwMCAgZTFhMDAwMDQgZThiZDgwNzAgYzAwZWI0MGMgZTM3MTAwNWYgZTkyZDQwNzAgZTFhMDQw
+MDAgZTU5MDUwNDAgMWEwMDAwMDUKWyAgIDE0LjYxMDkxOV0gYjQyMCAgZTNhMDAwMDcgZTI4NDEw
+MTAgZWIwMmNlNGQgZTNhMDAwMGMgZTFhMDEwMDUgZWIwMmNlNGEgZTU5NDMwMTAgZTMxMzBiMDIK
+WyAgIDE0LjYxOTE5M10gYjQ0MCAgMGEwMDAwMDIgZTNhMDAwMGUgZTFhMDEwMDUgZWIwMmNlNDQg
+ZTU5NDEwMTAgZTFhMDAwMDUgZTIwMTEwMDEgZTFhMGUwMGYKWyAgIDE0LjYyNzQ2NV0gYjQ2MCAg
+ZTU5NWYwMjQgZTFhMDAwMDQgZThiZDQwNzAgZWEwMDBmM2IgZTkyZDQwNzAgZTI0ZGQwMTggZTFh
+MDQwMDIgZTFhMDUwMDMKWyAgIDE0LjYzNTczN10gYjQ4MCAgZTU5MDYwYzAgZWJmZmM5Y2MgZTI1
+MGMwMDAgMWEwMDAwMWEgZTFhMDEwMDYgZTFhMDIwMDQgZTFhMDMwMDUgZTU4ZGMwMDAKWyAgIDE0
+LjY0NDAxNF0gYjRhMCAgZTNhMGMwMDMgZTU4ZGMwMDQgZTI4ZGMwMTQgZTU4ZGMwMDggZTI4ZGMw
+MTAgZTU4ZGMwMGMgZWJmZWQ5YWYgZTI1MGMwMDAKWyAgIDE0LjY1MjI4NV0gYjRjMCAgMWEwMDAw
+MGQgZTU5ZGUwMTQgZTFhMDEwMDYgZTFhMDIwMDQgZTFhMDMwMDUgZTk4ZDUwMDAgZTU5ZGUwMTAg
+ZTU4ZGMwMDAKWyAgIDE0LjY2MDU2MV0KWyAgIDE0LjY2MDU2Nl0gTFI6IDB4YzAwZWIzZTQ6Clsg
+ICAxNC42NjQ4MzhdIGIzZTQgIGUxYTAwMDA2IGViMDJhMWQ3IGU1OTQzMDEwIGUxYTAwMDA0IGUy
+MTM0MDgwIDEzZTA0MDVlIGViMDAwZjU3IGUxYTAwMDA0ClsgICAxNC42NzMxMjFdIGI0MDQgIGU4
+YmQ4MDcwIGMwMGViNDBjIGUzNzEwMDVmIGU5MmQ0MDcwIGUxYTA0MDAwIGU1OTA1MDQwIDFhMDAw
+MDA1IGUzYTAwMDA3ClsgICAxNC42ODE0MjldIGI0MjQgIGUyODQxMDEwIGViMDJjZTRkIGUzYTAw
+MDBjIGUxYTAxMDA1IGViMDJjZTRhIGU1OTQzMDEwIGUzMTMwYjAyIDBhMDAwMDAyClsgICAxNC42
+ODk3MzRdIGI0NDQgIGUzYTAwMDBlIGUxYTAxMDA1IGViMDJjZTQ0IGU1OTQxMDEwIGUxYTAwMDA1
+IGUyMDExMDAxIGUxYTBlMDBmIGU1OTVmMDI0ClsgICAxNC42OTgwNDRdIGI0NjQgIGUxYTAwMDA0
+IGU4YmQ0MDcwIGVhMDAwZjNiIGU5MmQ0MDcwIGUyNGRkMDE4IGUxYTA0MDAyIGUxYTA1MDAzIGU1
+OTA2MGMwClsgICAxNC43MDYzNTFdIGI0ODQgIGViZmZjOWNjIGUyNTBjMDAwIDFhMDAwMDFhIGUx
+YTAxMDA2IGUxYTAyMDA0IGUxYTAzMDA1IGU1OGRjMDAwIGUzYTBjMDAzClsgICAxNC43MTQ2NTld
+IGI0YTQgIGU1OGRjMDA0IGUyOGRjMDE0IGU1OGRjMDA4IGUyOGRjMDEwIGU1OGRjMDBjIGViZmVk
+OWFmIGUyNTBjMDAwIDFhMDAwMDBkClsgICAxNC43MjI5NjZdIGI0YzQgIGU1OWRlMDE0IGUxYTAx
+MDA2IGUxYTAyMDA0IGUxYTAzMDA1IGU5OGQ1MDAwIGU1OWRlMDEwIGU1OGRjMDAwIGU1OGRlMDBj
+ClsgICAxNC43MzEyNzZdClsgICAxNC43MzEyODNdIFNQOiAweGU3MDFmZDQwOgpbICAgMTQuNzM1
+NTYwXSBmZDQwICBlNzk2MmI3YyBjMDAyZTBiYyBjMDAyZjA2MCBjMDAyZjA2MCAwMDAwMTAwMCBj
+MDAzNmJhYyA2MDE4OWE1OCAwMDAwMDAwMwpbICAgMTQuNzQzODY0XSBmZDYwICAwMDAwMTAwMCBm
+ZmZmZmZmZiBlNzAxZmRhYyAwMDAwMDAwYyBlNzBmOTY0MCBjMDAzMGI4YyAwMDAwMDAwMCAwMDAw
+MDAwMQpbICAgMTQuNzUyMTY3XSBmZDgwICAwMDAwMDBiYSBmMDAwMDAwMSBlNzBmOTY0MCAwMDAw
+MDAwMCAwMDAwMDAwYyBlNzBmOTY0MCAwMDAwMDAwMiAwMDAwMDAwMApbICAgMTQuNzYwNDcyXSBm
+ZGEwICBlNzBmOTYwOCAwMDAwMDAwMCBjMGUzNDZiNCBlNzAxZmRjMCBjMDBlYjQ2NCBjMDBlYjQ2
+MCA0MDAwMDA5MyBmZmZmZmZmZgpbICAgMTQuNzY4Nzc4XSBmZGMwICBlNzBmOTY0MCAwMDAwMDAw
+MCAwMDAwMDAwYyBjMDBlZjZiOCBlNzBmOTVjMCBlNzhkMzIyMCAwMDAwMDAwYyBjMDBjMzA1MApb
+ICAgMTQuNzc3MDg2XSBmZGUwICBlNzBmOTVjMCAwMDAwMDAwMCAwMDAwMTAwMCAwMDAwMTAwMCAw
+MDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMCBjMDBlZjZiOApbICAgMTQuNzg1Mzg3XSBmZTAwICBl
+NzI1N2EyOCBlNzBmOTVjMCAwMDAwMTAwMCBjMDE5MzQ4YyBlNzI1N2EyOCAwMDAwMDAwYyAwMDAw
+MTAwMCBlNzI1N2EyOApbICAgMTQuNzkzNjg4XSBmZTIwICAwMDAwMDAwMCAwMDAwMDAwMCAwMDAw
+MDAwMSBlN2JlMDBjYyAwMDAwMDAwMCBlNzAxZmU3MCAwMDAwMDAwMCBjMDE5MzZlYwpbICAgMTQu
+ODAxOTk0XQpbICAgMTQuODAyMDAxXSBJUDogMHhjMGUzNDYzNDoKWyAgIDE0LjgwNjI4MV0gNDYz
+NCAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAg
+MDAwMDAwMDAgMDAwMDAwMDAKWyAgIDE0LjgxNDU4MV0gNDY1NCAgMDAwMDAwMDAgMDAwMDAwMDAg
+MDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAKWyAg
+IDE0LjgyMjg4MV0gNDY3NCAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAw
+MDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAKWyAgIDE0LjgzMTE3OF0gNDY5NCAgMDAw
+MDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwYjcgMDAwMDAw
+YmEgMDAwMDAwMWYKWyAgIDE0LjgzOTQ3OV0gNDZiNCAgYzBiMGNlNzggYzBiMGI5ZDggYzBiMTFl
+NTggYzBiMTFjMzggYzBlMzQ2YzQgYzBlMzQ2YzQgMDAwMGZjMGMgMDAwMDAyZmUKWyAgIDE0Ljg0
+Nzc4OV0gNDZkNCAgMDAwMDAwMDAgMDIwYTA1ZjYgMDAwMzAwMDIgMDAwMDAwMDAgMDAwMDAwMTYg
+MDAwMDAwYmEgMDAwMDAwMWYgYzBlMjA5ZjgKWyAgIDE0Ljg1NjA5Ml0gNDZmNCAgYzBlMjBhNTgg
+YzBlMzQ2ZjggYzBlMzQ2ZjggYzBlMWJiZDggYzBlMWJkZjggMGEwMDAwMGMgMDAwMGZiZmMgMDAw
+MzA4MDEKWyAgIDE0Ljg2NDM5NV0gNDcxNCAgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAgMDAw
+MDAwMTkgMDAwMDAwMDYgMDAwMDAwMDAgMDAwMDAwMDAgMDAwMDAwMDAKWyAgIDE0Ljg3MjY5OV0K
+WyAgIDE0Ljg3MjcwNl0gUjM6IDB4ZWZmZmZmODE6ClsgICAxNC44NzY5ODVdIGZmODAgICoqKioq
+KioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioq
+ICoqKioqKioqClsgICAxNC44ODUzMDNdIGZmYTAgICoqKioqKioqICoqKioqKioqICoqKioqKioq
+ICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqClsgICAxNC44OTM2
+MTFdIGZmYzAgICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoq
+KioqKioqICoqKioqKioqICoqKioqKioqClsgICAxNC45MDE5MjFdIGZmZTAgICoqKioqKioqICoq
+KioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioq
+KioqClsgICAxNC45MTAyMjVdIDAwMDAgICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioq
+KioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqClsgICAxNC45MTg1MzNdIDAw
+MjAgICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioq
+ICoqKioqKioqICoqKioqKioqClsgICAxNC45MjY4MzhdIDAwNDAgICoqKioqKioqICoqKioqKioq
+ICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqClsg
+ICAxNC45MzUxNDRdIDAwNjAgICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoq
+KioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqClsgICAxNC45NDM0NDldIDAwODAgICoq
+KioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioqKioqICoqKioq
+KioqICoqKioqKioqClsgICAxNC45NTE3NTVdClsgICAxNC45NTE3NjJdIFI0OiAweGU3MGY5NWMw
+OgpbICAgMTQuOTU2MDQyXSA5NWMwICAwMDAyMmQwMCAwMDAwMDAwMCAwMDAwMDAwMCBlNzQ2OGJh
+MCBmMDAwMDAyOSAwMDAwMDAwMCAwMDAwMDAwMSAwMDAwMDAwMQpbICAgMTQuOTY0MzUwXSA5NWUw
+ICAwMDAwMDAwMCAwMDAwMTAwMCAwMDAwMTAwMCAwMDAwMDAwNCBmZmZmZmZmZiAwMDAwMDAwMSBl
+NzBmOTYwOCBjMDBjMzE2NApbICAgMTQuOTcyNjUzXSA5NjAwICBlNzBmOTY0MCBjMDBmMDlhNCBj
+MGIwY2U2MCAwMDAwMTAwMCAwMDAwMDAwMCAwMDAwMDAwMCBmZmZmOWJlOSAwMDAwMDAwMApbICAg
+MTQuOTgwOTU5XSA5NjIwICBmZmZmZjdlZSAwMDAwMDAwMCBmZmZmZmZiZSAwMDAwMDAwMCBmZmZm
+YmZmNSAwMDAwMDAwMCBmZmZmYmZkYiAwMDAwMDAwMApbICAgMTQuOTg5MjYwXSA5NjQwICAwMDAy
+MmNmOCAwMDAwMDAwMCAwMDAwMDAwMCBlNzQ2OGJhMCBmMDAwMDAwMSAwMDAwMDAwMCAwMDAwMDAw
+MSAwMDAwMDAwMQpbICAgMTQuOTk3NTYzXSA5NjYwICAwMDAwMDAwMCAwMDAwMDgwMCAwMDAwMDgw
+MCAwMDAwMDAwNCBmZmZmZmZmZiAwMDAwMDAwMCBlNzBmOTY4OCBjMDBlYjQwYwpbICAgMTUuMDA1
+ODY1XSA5NjgwICAwMDAwMDAwMCBjMDBmMDlhNCBjMGUxYzRjMCAwMDAwMTAwMCAwMDAwMDAwMCAw
+MDAwMDAwMCBmZmZmZmZiMyAwMDAwMDAwMApbICAgMTUuMDE0MTcwXSA5NmEwICBmZmZmN2ZiZiAw
+MDAwMDAwMCBmZmZmZmRmYSAwMDAwMDAwMCBmZmZmZmU3ZiAwMDAwMDAwMCBmZmZmZjNmZiAwMDAw
+MDAwMApbICAgMTUuMDIyNDgwXQpbICAgMTUuMDIyNDg2XSBSNzogMHhlNzBmOTVjMDoKWyAgIDE1
+LjAyNjc2N10gOTVjMCAgMDAwMjJkMDAgMDAwMDAwMDAgMDAwMDAwMDAgZTc0NjhiYTAgZjAwMDAw
+MjkgMDAwMDAwMDAgMDAwMDAwMDEgMDAwMDAwMDEKWyAgIDE1LjAzNTA3MV0gOTVlMCAgMDAwMDAw
+MDAgMDAwMDEwMDAgMDAwMDEwMDAgMDAwMDAwMDQgZmZmZmZmZmYgMDAwMDAwMDEgZTcwZjk2MDgg
+YzAwYzMxNjQKWyAgIDE1LjA0MzM3OF0gOTYwMCAgZTcwZjk2NDAgYzAwZjA5YTQgYzBiMGNlNjAg
+MDAwMDEwMDAgMDAwMDAwMDAgMDAwMDAwMDAgZmZmZjliZTkgMDAwMDAwMDAKWyAgIDE1LjA1MTY4
+Ml0gOTYyMCAgZmZmZmY3ZWUgMDAwMDAwMDAgZmZmZmZmYmUgMDAwMDAwMDAgZmZmZmJmZjUgMDAw
+MDAwMDAgZmZmZmJmZGIgMDAwMDAwMDAKWyAgIDE1LjA1OTk4M10gOTY0MCAgMDAwMjJjZjggMDAw
+MDAwMDAgMDAwMDAwMDAgZTc0NjhiYTAgZjAwMDAwMDEgMDAwMDAwMDAgMDAwMDAwMDEgMDAwMDAw
+MDEKWyAgIDE1LjA2ODI4Nl0gOTY2MCAgMDAwMDAwMDAgMDAwMDA4MDAgMDAwMDA4MDAgMDAwMDAw
+MDQgZmZmZmZmZmYgMDAwMDAwMDAgZTcwZjk2ODggYzAwZWI0MGMKWyAgIDE1LjA3NjU5NF0gOTY4
+MCAgMDAwMDAwMDAgYzAwZjA5YTQgYzBlMWM0YzAgMDAwMDEwMDAgMDAwMDAwMDAgMDAwMDAwMDAg
+ZmZmZmZmYjMgMDAwMDAwMDAKWyAgIDE1LjA4NDg5NV0gOTZhMCAgZmZmZjdmYmYgMDAwMDAwMDAg
+ZmZmZmZkZmEgMDAwMDAwMDAgZmZmZmZlN2YgMDAwMDAwMDAgZmZmZmYzZmYgMDAwMDAwMDAKWyAg
+IDE1LjA5MzE5OF0KWyAgIDE1LjA5MzIwNF0gUjEwOiAweGU3MGY5NTg4OgpbICAgMTUuMDk3NTY5
+XSA5NTg4ICBjMDZjODkyMCAwMDAwMDgwMCAwMDAwMDgwMCAwMDAwMDAwMCBmZmZmYzNmOSAwMDAw
+MDAwMCBmZmZmZmZkYSAwMDAwMDAwMApbICAgMTUuMTA1ODcxXSA5NWE4ICBmZmZmZmVkZiAwMDAw
+MDAwMCBmZmZmYmJkZiAwMDAwMDAwMCBmZmZmZGZlNyAwMDAwMDAwMCAwMDAyMmQwMCAwMDAwMDAw
+MApbICAgMTUuMTE0MTcxXSA5NWM4ICAwMDAwMDAwMCBlNzQ2OGJhMCBmMDAwMDAyOSAwMDAwMDAw
+MCAwMDAwMDAwMSAwMDAwMDAwMSAwMDAwMDAwMCAwMDAwMTAwMApbICAgMTUuMTIyNDcxXSA5NWU4
+ICAwMDAwMTAwMCAwMDAwMDAwNCBmZmZmZmZmZiAwMDAwMDAwMSBlNzBmOTYwOCBjMDBjMzE2NCBl
+NzBmOTY0MCBjMDBmMDlhNApbICAgMTUuMTMwNzc5XSA5NjA4ICBjMGIwY2U2MCAwMDAwMTAwMCAw
+MDAwMDAwMCAwMDAwMDAwMCBmZmZmOWJlOSAwMDAwMDAwMCBmZmZmZjdlZSAwMDAwMDAwMApbICAg
+MTUuMTM5MDgwXSA5NjI4ICBmZmZmZmZiZSAwMDAwMDAwMCBmZmZmYmZmNSAwMDAwMDAwMCBmZmZm
+YmZkYiAwMDAwMDAwMCAwMDAyMmNmOCAwMDAwMDAwMApbICAgMTUuMTQ3Mzc5XSA5NjQ4ICAwMDAw
+MDAwMCBlNzQ2OGJhMCBmMDAwMDAwMSAwMDAwMDAwMCAwMDAwMDAwMSAwMDAwMDAwMSAwMDAwMDAw
+MCAwMDAwMDgwMApbICAgMTUuMTU1Njc1XSA5NjY4ICAwMDAwMDgwMCAwMDAwMDAwNCBmZmZmZmZm
+ZiAwMDAwMDAwMCBlNzBmOTY4OCBjMDBlYjQwYyAwMDAwMDAwMCBjMDBmMDlhNApbICAgMTUuMTYz
+OTkzXSBQcm9jZXNzIG1tY3FkIChwaWQ6IDUzLCBzdGFjayBsaW1pdCA9IDB4ZTcwMWUyZjApClsg
+ICAxNS4xNjk3NDhdIFN0YWNrOiAoMHhlNzAxZmRjMCB0byAweGU3MDIwMDAwKQpbICAgMTUuMTc0
+MTI2XSBmZGMwOiBlNzBmOTY0MCAwMDAwMDAwMCAwMDAwMDAwYyBjMDBlZjZiOCBlNzBmOTVjMCBl
+NzhkMzIyMCAwMDAwMDAwYyBjMDBjMzA1MApbICAgMTUuMTgyMzIyXSBmZGUwOiBlNzBmOTVjMCAw
+MDAwMDAwMCAwMDAwMTAwMCAwMDAwMTAwMCAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMCBjMDBl
+ZjZiOApbICAgMTUuMTkwNTE4XSBmZTAwOiBlNzI1N2EyOCBlNzBmOTVjMCAwMDAwMTAwMCBjMDE5
+MzQ4YyBlNzI1N2EyOCAwMDAwMDAwYyAwMDAwMTAwMCBlNzI1N2EyOApbICAgMTUuMTk4NzE0XSBm
+ZTIwOiAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMSBlN2JlMDBjYyAwMDAwMDAwMCBlNzAxZmU3
+MCAwMDAwMDAwMCBjMDE5MzZlYwpbICAgMTUuMjA2OTExXSBmZTQwOiAwMDAwMDAwMCBlNzI1N2Ey
+OCBlN2JlMDBjMCBjMDE5NDM1OCBlNzI1N2EyOCBlN2JkYzgwMCBlN2JlMDBjMCBjMDJhYmIyYwpb
+ICAgMTUuMjE1MTEwXSBmZTYwOiAwMDAwMDAwMCA2MDE3OTg4OCBjMDAyZjA2MCBlNzAxZmU4NCBl
+NzAxZmU4NCBlNzAxZmVlNCBlNzAxZmViNCBlNzAxZmUzYwpbICAgMTUuMjIzMzA0XSBmZTgwOiBj
+MDJhNTA0OCAwMDAwMDAxMiAwMDAyMmNmOCAwMDAwMDkwMCAwMDAwMDAwMCAwMDAwMDAwMCAwMDAw
+MDAwMCAwMDAwMDBiNQpbICAgMTUuMjMxNTAwXSBmZWEwOiAwMDAwMDAwMCAwMDAwMDAwMCAwMDAw
+MDAwMCBlNzAxZmVlNCBlNzAxZmU3MCAwMDAwMDAwYyAwMDAwMDAwMCAwMDAwMGIwMApbICAgMTUu
+MjM5Njk0XSBmZWMwOiAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDQ5ZCAwMDAwMDAw
+MCAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMApbICAgMTUuMjQ3ODkxXSBmZWUwOiBlNzAxZmU3
+MCAwMDk4OTY4MCAwMDAwMDAwMCAwMDAwMDIwMCAwMDAwMDAwOCAwMDAwMDAwMCAwMDAwMDIwMCAw
+MDAwMTAwMApbICAgMTUuMjU2MDg3XSBmZjAwOiBlNzAxZmViNCBlNzAxZmU3MCAwMDAwMDAwMSBl
+NzAwMTgwMCBlNzAxZmY5NCBjMDNlNGFiYyBlNzAxZmY2YyAwMDAwMDAwMgpbICAgMTUuMjY0Mjg0
+XSBmZjIwOiBlNzg2MjAwMCBlNzg2MjAxYyBlNzk2MjkwMCBlNzk2MmI3YyBlNzk2MjkwMCBlNzk2
+MmI4MCBlNzk2MmI3YyBjMDAyZTBiYwpbICAgMTUuMjcyNDgwXSBmZjQwOiBjMDAyZjA2MCBjMDAy
+ZjA2MCAwMDAwMDkwMCAwMDAwMDAwMCA2MDE1ZjY5MCBlNzAxZTAwMCBlNzAxZTAwMCBlNzk3MDYx
+MApbICAgMTUuMjgwNjc5XSBmZjYwOiAwMDAwMDAwMCBlNzAxZmY3NCBlNzI1N2EyOCBjMDE5NDIz
+YyBlNzk3MDYxMCBlNzAxZTAwMCBlN2JlMDBjYyBlN2JlMDBkNApbICAgMTUuMjg4ODc1XSBmZjgw
+OiBlNzk3MDYxMCAwMDAwMDAwMCAwMDAwMDAwMSBlNzk3MDgzOCBlNzI1N2EyOCBjMDJhYzY0OCAw
+MDAwMDAwMCBlNzgzN2RlMApbICAgMTUuMjk3MDcyXSBmZmEwOiBlN2JlMDBjYyBlNzAxZmZjYyBj
+MDJhYzU2MCAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMCAwMDAwMDAwMCBjMDA3YmQ4MApbICAg
+MTUuMzA1MjY4XSBmZmMwOiBlNzgzN2RlMCAwMDAwMDAwMCBlN2JlMDBjYyAwMDAwMDAwMCAwMDAw
+MDAwMCAwMDAwMDAwMCBlNzAxZmZkOCBlNzAxZmZkOApbICAgMTUuMzEzNDY1XSBmZmUwOiAwMDAw
+MDAwMCBlNzgzN2RlMCBjMDA3YmQwMCBjMDAzMWMwNCAwMDAwMDAxMyBjMDAzMWMwNCBmZmZmZWRj
+ZCAwMDAwMDAwMApbICAgMTUuMzIxNjg2XSBbPGMwMGViNDYwPl0gKGVuZF9iaW9fYmhfaW9fc3lu
+YysweDU0LzB4NjQpIGZyb20gWzxjMDBlZjZiOD5dIChiaW9fZW5kaW8rMHg0OC8weDRjKQpbICAg
+MTUuMzMwNDE4XSBbPGMwMGVmNmI4Pl0gKGJpb19lbmRpbysweDQ4LzB4NGMpIGZyb20gWzxjMDBj
+MzA1MD5dIChib3VuY2VfZW5kX2lvKzB4ODgvMHg5NCkKWyAgIDE1LjMzODcwOV0gWzxjMDBjMzA1
+MD5dIChib3VuY2VfZW5kX2lvKzB4ODgvMHg5NCkgZnJvbSBbPGMwMGVmNmI4Pl0gKGJpb19lbmRp
+bysweDQ4LzB4NGMpClsgICAxNS4zNDcwMTRdIFs8YzAwZWY2Yjg+XSAoYmlvX2VuZGlvKzB4NDgv
+MHg0YykgZnJvbSBbPGMwMTkzNDhjPl0gKGJsa191cGRhdGVfcmVxdWVzdCsweDFiYy8weDQwOCkK
+WyAgIDE1LjM1NTkxOF0gWzxjMDE5MzQ4Yz5dIChibGtfdXBkYXRlX3JlcXVlc3QrMHgxYmMvMHg0
+MDgpIGZyb20gWzxjMDE5MzZlYz5dIChibGtfdXBkYXRlX2JpZGlfcmVxdWVzdCsweDE0LzB4NjQp
+ClsgICAxNS4zNjYwMzNdIFs8YzAxOTM2ZWM+XSAoYmxrX3VwZGF0ZV9iaWRpX3JlcXVlc3QrMHgx
+NC8weDY0KSBmcm9tIFs8YzAxOTQzNTg+XSAoX19ibGtfZW5kX3JlcXVlc3QrMHgxNC8weDM0KQpb
+ICAgMTUuMzc1OTA4XSBbPGMwMTk0MzU4Pl0gKF9fYmxrX2VuZF9yZXF1ZXN0KzB4MTQvMHgzNCkg
+ZnJvbSBbPGMwMmFiYjJjPl0gKG1tY19ibGtfaXNzdWVfcndfcnErMHg0MDQvMHg1MGMpClsgICAx
+NS4zODU1OTBdIFs8YzAyYWJiMmM+XSAobW1jX2Jsa19pc3N1ZV9yd19ycSsweDQwNC8weDUwYykg
+ZnJvbSBbPGMwMmFjNjQ4Pl0gKG1tY19xdWV1ZV90aHJlYWQrMHhlOC8weGVjKQpbICAgMTUuMzk1
+MTgzXSBbPGMwMmFjNjQ4Pl0gKG1tY19xdWV1ZV90aHJlYWQrMHhlOC8weGVjKSBmcm9tIFs8YzAw
+N2JkODA+XSAoa3RocmVhZCsweDgwLzB4ODgpClsgICAxNS40MDM1NjZdIFs8YzAwN2JkODA+XSAo
+a3RocmVhZCsweDgwLzB4ODgpIGZyb20gWzxjMDAzMWMwND5dIChrZXJuZWxfdGhyZWFkX2V4aXQr
+MHgwLzB4OCkKWyAgIDE1LjQxMTkzNl0gQ29kZTogZTU5NDEwMTAgZTFhMDAwMDUgZTIwMTEwMDEg
+ZTFhMGUwMGYgKGU1OTVmMDI0KQpbICAgMTUuNDE4MTcxXSAtLS1bIGVuZCB0cmFjZSAwN2NiOTZm
+ZmE5NDc0NmM1IF0tLS0KWyAgIDE1LjQyMjg1MV0gS2VybmVsIHBhbmljIC0gbm90IHN5bmNpbmc6
+IEZhdGFsIGV4Y2VwdGlvbgpbICAgMTUuNDI4MTA4XSBSZWJvb3RpbmcgaW4gMTAgc2Vjb25kcy4u
+Cg==
+--20cf3054a5a940c427049797e00c--
