@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab0LQT4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:56:08 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:58382 "EHLO
+	id S1755955Ab0LQT4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:56:20 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:58412 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab0LQTz4 (ORCPT
+	with ESMTP id S1755454Ab0LQT4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:55:56 -0500
-X-Spam-ASN: 
+	Fri, 17 Dec 2010 14:56:17 -0500
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Howells <dhowells@redhat.com>, "H\. Peter Anvin" <hpa@zytor.com>,
-        Magnus Damm <damm@opensource.se>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCHv6 13/16] pps: capture MONOTONIC_RAW timestamps as well
-Date: Fri, 17 Dec 2010 22:54:37 +0300
-Message-Id: <86006999fd830711c1714c96992b8231f9c4ead0.1292604060.git.lasaine@lvk.cs.msu.su>
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Thomas Weber <weber@corscience.de>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-doc@vger.kernel.org
+Subject: [PATCHv6 14/16] pps: add kernel consumer support
+Date: Fri, 17 Dec 2010 22:54:38 +0300
+Message-Id: <2b9ae07b3049f6632f6c464160e5161bc3bfc00b.1292604060.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
 References: <cover.1292604060.git.lasaine@lvk.cs.msu.su>
@@ -30,105 +29,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MONOTONIC_RAW clock timestamps are ideally suited for frequency
-calculation and also fit well into the original NTP hardpps design. Now
-phase and frequency can be adjusted separately: the former based on
-REALTIME clock and the latter based on MONOTONIC_RAW clock.
-A new function getnstime_raw_and_real is added to timekeeping subsystem
-to capture both timestamps at the same time and atomically.
+Add an optional feature of PPSAPI, kernel consumer support, which uses
+the added hardpps() function.
 
-Acked-by: John Stultz <johnstul@us.ibm.com>
+Acked-by: Rodolfo Giometti <giometti@linux.it>
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- include/linux/pps_kernel.h |    3 ++-
- include/linux/time.h       |    2 ++
- kernel/time/timekeeping.c  |   39 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 43 insertions(+), 1 deletions(-)
+ Documentation/ioctl/ioctl-number.txt |    2 +-
+ drivers/pps/Kconfig                  |    1 +
+ drivers/pps/kapi.c                   |   27 +++++++++++++++
+ drivers/pps/pps.c                    |   62 +++++++++++++++++++++++++++++++++-
+ include/linux/pps.h                  |    7 ++++
+ include/linux/pps_kernel.h           |    6 +++
+ 6 files changed, 103 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index 63ffd78..7081847 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -249,7 +249,7 @@ Code  Seq#(hex)	Include File		Comments
+ 'p'	40-7F	linux/nvram.h
+ 'p'	80-9F	linux/ppdev.h		user-space parport
+ 					<mailto:tim@cyberelk.net>
+-'p'	A1-A4	linux/pps.h		LinuxPPS
++'p'	A1-A5	linux/pps.h		LinuxPPS
+ 					<mailto:giometti@linux.it>
+ 'q'	00-1F	linux/serio.h
+ 'q'	80-FF	linux/telephony.h	Internet PhoneJACK, Internet LineJACK
+diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
+index 33c9126..4823e47 100644
+--- a/drivers/pps/Kconfig
++++ b/drivers/pps/Kconfig
+@@ -7,6 +7,7 @@ menu "PPS support"
+ config PPS
+ 	tristate "PPS support"
+ 	depends on EXPERIMENTAL
++	select NTP_PPS
+ 	---help---
+ 	  PPS (Pulse Per Second) is a special pulse provided by some GPS
+ 	  antennae. Userland can use it to get a high-precision time
+diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+index ebf3374..ed78f6d 100644
+--- a/drivers/pps/kapi.c
++++ b/drivers/pps/kapi.c
+@@ -26,12 +26,23 @@
+ #include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/time.h>
++#include <linux/timex.h>
+ #include <linux/spinlock.h>
+ #include <linux/fs.h>
+ #include <linux/pps_kernel.h>
+ #include <linux/slab.h>
+ 
+ /*
++ * Global variables
++ */
++
++/* state variables to bind kernel consumer */
++/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
++DEFINE_SPINLOCK(pps_kc_hardpps_lock);
++void	*pps_kc_hardpps_dev;	/* some unique pointer to device */
++int	pps_kc_hardpps_mode;	/* mode bits for kernel consumer */
++
++/*
+  * Local functions
+  */
+ 
+@@ -139,6 +150,16 @@ EXPORT_SYMBOL(pps_register_source);
+ 
+ void pps_unregister_source(struct pps_device *pps)
+ {
++	spin_lock_irq(&pps_kc_hardpps_lock);
++	if (pps == pps_kc_hardpps_dev) {
++		pps_kc_hardpps_mode = 0;
++		pps_kc_hardpps_dev = NULL;
++		spin_unlock_irq(&pps_kc_hardpps_lock);
++		dev_info(pps->dev, "unbound kernel consumer"
++				" on device removal\n");
++	} else
++		spin_unlock_irq(&pps_kc_hardpps_lock);
++
+ 	pps_unregister_cdev(pps);
+ 
+ 	/* don't have to kfree(pps) here because it will be done on
+@@ -211,6 +232,12 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
+ 		captured = ~0;
+ 	}
+ 
++	/* Pass some events to kernel consumer if activated */
++	spin_lock(&pps_kc_hardpps_lock);
++	if (pps == pps_kc_hardpps_dev && event & pps_kc_hardpps_mode)
++		hardpps(&ts->ts_real, &ts->ts_raw);
++	spin_unlock(&pps_kc_hardpps_lock);
++
+ 	/* Wake up if captured something */
+ 	if (captured) {
+ 		pps->last_ev++;
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index 54964a5..76f4b5e 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -197,9 +197,69 @@ static long pps_cdev_ioctl(struct file *file,
+ 
+ 		break;
+ 	}
++	case PPS_KC_BIND: {
++		struct pps_bind_args bind_args;
++
++		dev_dbg(pps->dev, "PPS_KC_BIND\n");
++
++		/* Check the capabilities */
++		if (!capable(CAP_SYS_TIME))
++			return -EPERM;
++
++		if (copy_from_user(&bind_args, uarg,
++					sizeof(struct pps_bind_args)))
++			return -EFAULT;
++
++		/* Check for supported capabilities */
++		if ((bind_args.edge & ~pps->info.mode) != 0) {
++			dev_err(pps->dev, "unsupported capabilities (%x)\n",
++					bind_args.edge);
++			return -EINVAL;
++		}
++
++		/* Validate parameters roughly */
++		if (bind_args.tsformat != PPS_TSFMT_TSPEC ||
++				(bind_args.edge & ~PPS_CAPTUREBOTH) != 0 ||
++				bind_args.consumer != PPS_KC_HARDPPS) {
++			dev_err(pps->dev, "invalid kernel consumer bind"
++					" parameters (%x)\n", bind_args.edge);
++			return -EINVAL;
++		}
++
++		/* Check if another consumer is already bound */
++		spin_lock_irq(&pps_kc_hardpps_lock);
++
++		if (bind_args.edge == 0)
++			if (pps_kc_hardpps_dev == pps) {
++				pps_kc_hardpps_mode = 0;
++				pps_kc_hardpps_dev = NULL;
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_info(pps->dev, "unbound kernel"
++						" consumer\n");
++			} else {
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_err(pps->dev, "selected kernel consumer"
++						" is not bound\n");
++				return -EINVAL;
++			}
++		else
++			if (pps_kc_hardpps_dev == NULL ||
++					pps_kc_hardpps_dev == pps) {
++				pps_kc_hardpps_mode = bind_args.edge;
++				pps_kc_hardpps_dev = pps;
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_info(pps->dev, "bound kernel consumer: "
++					"edge=0x%x\n", bind_args.edge);
++			} else {
++				spin_unlock_irq(&pps_kc_hardpps_lock);
++				dev_err(pps->dev, "another kernel consumer"
++						" is already bound\n");
++				return -EINVAL;
++			}
++		break;
++	}
+ 	default:
+ 		return -ENOTTY;
+-		break;
+ 	}
+ 
+ 	return 0;
+diff --git a/include/linux/pps.h b/include/linux/pps.h
+index 0194ab0..a9bb1d9 100644
+--- a/include/linux/pps.h
++++ b/include/linux/pps.h
+@@ -114,11 +114,18 @@ struct pps_fdata {
+ 	struct pps_ktime timeout;
+ };
+ 
++struct pps_bind_args {
++	int tsformat;	/* format of time stamps */
++	int edge;	/* selected event type */
++	int consumer;	/* selected kernel consumer */
++};
++
+ #include <linux/ioctl.h>
+ 
+ #define PPS_GETPARAMS		_IOR('p', 0xa1, struct pps_kparams *)
+ #define PPS_SETPARAMS		_IOW('p', 0xa2, struct pps_kparams *)
+ #define PPS_GETCAP		_IOR('p', 0xa3, int *)
+ #define PPS_FETCH		_IOWR('p', 0xa4, struct pps_fdata *)
++#define PPS_KC_BIND		_IOW('p', 0xa5, struct pps_bind_args *)
+ 
+ #endif /* _PPS_H_ */
 diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index 1aedf50..6ae8898 100644
+index 6ae8898..2302274 100644
 --- a/include/linux/pps_kernel.h
 +++ b/include/linux/pps_kernel.h
-@@ -47,6 +47,7 @@ struct pps_source_info {
- };
+@@ -79,6 +79,12 @@ struct pps_device {
  
- struct pps_event_time {
-+	struct timespec ts_raw;
- 	struct timespec ts_real;
- };
+ extern struct device_attribute pps_attrs[];
  
-@@ -99,7 +100,7 @@ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
- 
- static inline void pps_get_ts(struct pps_event_time *ts)
- {
--	getnstimeofday(&ts->ts_real);
-+	getnstime_raw_and_real(&ts->ts_raw, &ts->ts_real);
- }
- 
- #endif /* LINUX_PPS_KERNEL_H */
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 9f15ac7..1e6d3b5 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -158,6 +158,8 @@ extern unsigned int alarm_setitimer(unsigned int seconds);
- extern int do_getitimer(int which, struct itimerval *value);
- extern void getnstimeofday(struct timespec *tv);
- extern void getrawmonotonic(struct timespec *ts);
-+extern void getnstime_raw_and_real(struct timespec *ts_raw,
-+		struct timespec *ts_real);
- extern void getboottime(struct timespec *ts);
- extern void monotonic_to_bootbased(struct timespec *ts);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 49010d8..f42af9d 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -285,6 +285,45 @@ void ktime_get_ts(struct timespec *ts)
- EXPORT_SYMBOL_GPL(ktime_get_ts);
- 
- /**
-+ * getnstime_raw_and_real - get day and raw monotonic time in timespec format
-+ * @ts_raw:	pointer to the timespec to be set to raw monotonic time
-+ * @ts_real:	pointer to the timespec to be set to the time of day
-+ *
-+ * This function reads both the time of day and raw monotonic time at the
-+ * same time atomically and stores the resulting timestamps in timespec
-+ * format.
-+ */
-+void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
-+{
-+	unsigned long seq;
-+	s64 nsecs_raw, nsecs_real;
++/* state variables to bind kernel consumer */
++/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
++extern spinlock_t pps_kc_hardpps_lock;
++extern void *pps_kc_hardpps_dev;	/* some unique pointer to device */
++extern int pps_kc_hardpps_mode;		/* mode bits for kernel consumer */
 +
-+	WARN_ON_ONCE(timekeeping_suspended);
-+
-+	do {
-+		u32 arch_offset;
-+
-+		seq = read_seqbegin(&xtime_lock);
-+
-+		*ts_raw = raw_time;
-+		*ts_real = xtime;
-+
-+		nsecs_raw = timekeeping_get_ns_raw();
-+		nsecs_real = timekeeping_get_ns();
-+
-+		/* If arch requires, add in gettimeoffset() */
-+		arch_offset = arch_gettimeoffset();
-+		nsecs_raw += arch_offset;
-+		nsecs_real += arch_offset;
-+
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	timespec_add_ns(ts_raw, nsecs_raw);
-+	timespec_add_ns(ts_real, nsecs_real);
-+}
-+EXPORT_SYMBOL(getnstime_raw_and_real);
-+
-+/**
-  * do_gettimeofday - Returns the time of day in a timeval
-  * @tv:		pointer to the timeval to be set
-  *
+ /*
+  * Exported functions
+  */
 -- 
 1.7.2.3
 
