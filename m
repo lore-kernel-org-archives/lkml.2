@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab0LQNZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 08:25:50 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35563 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754626Ab0LQNZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 08:25:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-Date: Fri, 17 Dec 2010 14:25:07 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: Rabin Vincent <rabin@rab.in>, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <20101217125427.GA29640@sirena.org.uk>
-In-Reply-To: <20101217125427.GA29640@sirena.org.uk>
+	id S1754789Ab0LQNda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 08:33:30 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39619 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425Ab0LQNd3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 08:33:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=bJyLwsHfVAe1gji6dU3gHPgCgm1ncD8pNbXgYTj3ACWGJLxcbGJ+rKY8sCpPLmGZli
+         ANMXe4oCrtXUWcJBb28SPJdIiao091+46qj/VlZn35JkFDjFuOsQ8kBf/RxI6rUxfBWO
+         qne440LXT7D+JLWb100ZRpOW8M85bZZWCyLA0=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012171425.07775.rjw@sisk.pl>
+In-Reply-To: <AANLkTinyLQUN6fMwWQDxvPpfRTo-4kHPVsggPSoAGhv-@mail.gmail.com>
+References: <AANLkTinyLQUN6fMwWQDxvPpfRTo-4kHPVsggPSoAGhv-@mail.gmail.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 17 Dec 2010 14:33:11 +0100
+Message-ID: <AANLkTin=vr14wPJottefmfsgfyYZbfcmchQerq+0oP5J@mail.gmail.com>
+Subject: Re: make xconfig broken on 2.6.37-rc2
+To: Ameya Palande <2ameya@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 17, 2010, Mark Brown wrote:
-> On Thu, Dec 16, 2010 at 11:56:57PM +0530, Rabin Vincent wrote:
-> 
-> > There seem to be some differences between the generic ops and the i2c
-> > and platform busses' implementations of the interaction between runtime
-> > PM and system sleep:
-> 
-> >   (1) The platform bus does not implement the
-> >       don't-call-pm->suspend()-if pm_runtime_suspended()-returns-true
-> >       functionality implemented by the generic ops and i2c.
-> 
-> This is platform lagging behind I2C in implementation - both originally 
-> did what platform does and then I2C was updated and platform wasn't.
-> 
-> It'd be really good if this could all be factored out into the PM core,
-> we're going to have to do the same thing for at least SPI as well and
-> possibly some other buses :/
+2010/11/17 Ameya Palande <2ameya@gmail.com>:
+> Hi,
+>
+> When I try to do "make xconfig" on 2.6.37-rc2 it gives me following error:
+>
+>  HOSTCXX scripts/kconfig/qconf.o
+> In file included from scripts/kconfig/qconf.cc:48:
+> scripts/kconfig/qconf.moc:13: fatal error: private/qucomextra_p.h: No
+> such file or directory
+> compilation terminated.
+> make[1]: *** [scripts/kconfig/qconf.o] Error 1
+> make: *** [xconfig] Error 2
+>
+> My host is ubuntu 10.10 x86-32 with libqt3 and libqt4 both installed.
 
-So how exactly the PM core is supposed to include those things?
+hi !
+this is due to moc which points by default to /usr/bin/moc-qt3
+just make it point to moc-qt4 :
+sudo update-alternatives --config moc
 
-There certainly are other buses that don't want to do them.
+then make distclean, make xconfig.
 
-Thanks,
-Rafael
+richard
