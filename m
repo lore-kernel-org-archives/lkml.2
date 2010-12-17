@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab0LQAuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 19:50:20 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29778 "EHLO
+	id S1754653Ab0LQAvC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 19:51:02 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29783 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab0LQAuM (ORCPT
+	with ESMTP id S1754449Ab0LQAuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 19:50:12 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67160016"
+	Thu, 16 Dec 2010 19:50:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67160043"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
         David Brown <davidb@codeaurora.org>,
         Brian Swetland <swetland@google.com>,
         =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
         Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH 03/22] msm: clock: Invert debugfs directory layout
-Date: Thu, 16 Dec 2010 16:49:47 -0800
-Message-Id: <1292547006-19741-4-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 21/22] msm: iommu: Rework clock logic and add IOMMU bus clock control
+Date: Thu, 16 Dec 2010 16:50:05 -0800
+Message-Id: <1292547006-19741-22-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd
 In-Reply-To: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
 References: <1292547006-19741-1-git-send-email-sboyd@codeaurora.org>
@@ -25,100 +26,361 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are currently 3 separate directories for clock debugging in
-debugfs: clk_enable, clk_rate, and clk_local. Each of these
-directories contains a list of clocks. This is rather annoying
-when you are focusing on one clock and want to enable/disable it
-and then check its rate. You either have to cd to the other
-directory or cat ../clk_rate/<clk>.
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-Invert the layout so that there is one clock directory containing
-a directory for each clock. Inside each respective clock
-directory place an enable, rate, and is_local file relating to
-the clk_enable, clk_disable, and clk_local directories that exist
-today.
+Clean up the clock control code in the probe calls, and add
+support for controlling the clock for the IOMMU bus
+interconnect. With the (proper) clock driver in place, the
+clock control logic in the probe function can be made much
+cleaner since it does not have to deal with the placeholder
+driver anymore.
 
-Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/clock-debug.c |   48 ++++++++++++++++++--------------------
- 1 files changed, 23 insertions(+), 25 deletions(-)
+ arch/arm/mach-msm/devices-msm8x60-iommu.c |    5 -
+ arch/arm/mach-msm/include/mach/iommu.h    |    5 -
+ arch/arm/mach-msm/iommu_dev.c             |  204 +++++++++++++++++------------
+ 3 files changed, 120 insertions(+), 94 deletions(-)
 
-diff --git a/arch/arm/mach-msm/clock-debug.c b/arch/arm/mach-msm/clock-debug.c
-index 6f603ed..b67b9e82 100644
---- a/arch/arm/mach-msm/clock-debug.c
-+++ b/arch/arm/mach-msm/clock-debug.c
-@@ -87,47 +87,45 @@ static int clock_debug_local_get(void *data, u64 *val)
- DEFINE_SIMPLE_ATTRIBUTE(clock_local_fops, clock_debug_local_get,
- 			NULL, "%llu\n");
+diff --git a/arch/arm/mach-msm/devices-msm8x60-iommu.c b/arch/arm/mach-msm/devices-msm8x60-iommu.c
+index f9e7bd3..e12d7e2 100644
+--- a/arch/arm/mach-msm/devices-msm8x60-iommu.c
++++ b/arch/arm/mach-msm/devices-msm8x60-iommu.c
+@@ -282,7 +282,6 @@ static struct platform_device msm_root_iommu_dev = {
  
--static struct dentry *dent_rate, *dent_enable, *dent_local;
-+static struct dentry *debugfs_base;
+ static struct msm_iommu_dev jpegd_iommu = {
+ 	.name = "jpegd",
+-	.clk_rate = -1
+ };
  
- int __init clock_debug_init(void)
+ static struct msm_iommu_dev vpe_iommu = {
+@@ -307,7 +306,6 @@ static struct msm_iommu_dev ijpeg_iommu = {
+ 
+ static struct msm_iommu_dev vfe_iommu = {
+ 	.name = "vfe",
+-	.clk_rate = -1
+ };
+ 
+ static struct msm_iommu_dev vcodec_a_iommu = {
+@@ -320,17 +318,14 @@ static struct msm_iommu_dev vcodec_b_iommu = {
+ 
+ static struct msm_iommu_dev gfx3d_iommu = {
+ 	.name = "gfx3d",
+-	.clk_rate = 27000000
+ };
+ 
+ static struct msm_iommu_dev gfx2d0_iommu = {
+ 	.name = "gfx2d0",
+-	.clk_rate = 27000000
+ };
+ 
+ static struct msm_iommu_dev gfx2d1_iommu = {
+ 	.name = "gfx2d1",
+-	.clk_rate = 27000000
+ };
+ 
+ static struct platform_device msm_device_iommu_jpegd = {
+diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
+index 62f6699..10811ba 100644
+--- a/arch/arm/mach-msm/include/mach/iommu.h
++++ b/arch/arm/mach-msm/include/mach/iommu.h
+@@ -45,14 +45,9 @@
+ /**
+  * struct msm_iommu_dev - a single IOMMU hardware instance
+  * name		Human-readable name given to this IOMMU HW instance
+- * clk_rate	Rate to set for this IOMMU's clock, if applicable to this
+- *		particular IOMMU. 0 means don't set a rate.
+- *		-1 means it is an AXI clock with no valid rate
+- *
+  */
+ struct msm_iommu_dev {
+ 	const char *name;
+-	int clk_rate;
+ };
+ 
+ /**
+diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
+index b83c73b..7f2b730 100644
+--- a/arch/arm/mach-msm/iommu_dev.c
++++ b/arch/arm/mach-msm/iommu_dev.c
+@@ -29,6 +29,7 @@
+ 
+ #include <mach/iommu_hw-8xxx.h>
+ #include <mach/iommu.h>
++#include <mach/clk.h>
+ 
+ struct iommu_ctx_iter_data {
+ 	/* input */
+@@ -130,117 +131,134 @@ static int msm_iommu_probe(struct platform_device *pdev)
  {
--	dent_rate = debugfs_create_dir("clk_rate", 0);
--	if (!dent_rate)
--		goto err;
--
--	dent_enable = debugfs_create_dir("clk_enable", 0);
--	if (!dent_enable)
--		goto err;
--
--	dent_local = debugfs_create_dir("clk_local", NULL);
--	if (!dent_local)
--		goto err;
--
-+	debugfs_base = debugfs_create_dir("clk", NULL);
-+	if (!debugfs_base)
-+		return -ENOMEM;
- 	return 0;
--err:
--	debugfs_remove(dent_local);
--	debugfs_remove(dent_enable);
--	debugfs_remove(dent_rate);
--	return -ENOMEM;
- }
+ 	struct resource *r, *r2;
+ 	struct clk *iommu_clk;
++	struct clk *iommu_pclk;
+ 	struct msm_iommu_drvdata *drvdata;
+ 	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
+ 	void __iomem *regs_base;
+ 	resource_size_t	len;
+-	int ret = 0, ncb, nm2v, irq;
++	int ret, ncb, nm2v, irq;
  
- int __init clock_debug_add(struct clk *clock)
- {
- 	char temp[50], *ptr;
-+	struct dentry *clk_dir;
+-	if (pdev->id != -1) {
+-		drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
++	if (pdev->id == -1) {
++		msm_iommu_root_dev = pdev;
++		return 0;
++	}
  
--	if (!dent_rate || !dent_enable || !dent_local)
-+	if (!debugfs_base)
- 		return -ENOMEM;
+-		if (!drvdata) {
+-			ret = -ENOMEM;
+-			goto fail;
+-		}
++	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
  
- 	strncpy(temp, clock->dbg_name, ARRAY_SIZE(temp)-1);
- 	for (ptr = temp; *ptr; ptr++)
- 		*ptr = tolower(*ptr);
- 
--	debugfs_create_file(temp, S_IRUGO | S_IWUSR, dent_rate,
--			    clock, &clock_rate_fops);
--	debugfs_create_file(temp, S_IRUGO | S_IWUSR, dent_enable,
--			    clock, &clock_enable_fops);
--	debugfs_create_file(temp, S_IRUGO, dent_local,
--			    clock, &clock_local_fops);
-+	clk_dir = debugfs_create_dir(temp, debugfs_base);
-+	if (!clk_dir)
-+		return -ENOMEM;
+-		if (!iommu_dev) {
+-			ret = -ENODEV;
+-			goto fail;
+-		}
++	if (!drvdata) {
++		ret = -ENOMEM;
++		goto fail;
++	}
 +
-+	if (!debugfs_create_file("rate", S_IRUGO | S_IWUSR, clk_dir,
-+				clock, &clock_rate_fops))
-+		goto error;
++	if (!iommu_dev) {
++		ret = -ENODEV;
++		goto fail;
++	}
  
-+	if (!debugfs_create_file("enable", S_IRUGO | S_IWUSR, clk_dir,
-+				clock, &clock_enable_fops))
-+		goto error;
+-		if (iommu_dev->clk_rate != 0) {
+-			iommu_clk = clk_get(&pdev->dev, "iommu_clk");
+-
+-			if (IS_ERR(iommu_clk)) {
+-				ret = -ENODEV;
+-				goto fail;
+-			}
+-
+-			if (iommu_dev->clk_rate > 0) {
+-				ret = clk_set_rate(iommu_clk,
+-							iommu_dev->clk_rate);
+-				if (ret) {
+-					clk_put(iommu_clk);
+-					goto fail;
+-				}
+-			}
+-
+-			ret = clk_enable(iommu_clk);
+-			if (ret) {
+-				clk_put(iommu_clk);
+-				goto fail;
+-			}
++	iommu_pclk = clk_get(NULL, "smmu_pclk");
++	if (IS_ERR(iommu_pclk)) {
++		ret = -ENODEV;
++		goto fail;
++	}
 +
-+	if (!debugfs_create_file("is_local", S_IRUGO, clk_dir, clock,
-+				&clock_local_fops))
-+		goto error;
++	ret = clk_enable(iommu_pclk);
++	if (ret)
++		goto fail_enable;
++
++	iommu_clk = clk_get(&pdev->dev, "iommu_clk");
++
++	if (!IS_ERR(iommu_clk))	{
++		if (clk_get_rate(iommu_clk) == 0)
++			clk_set_min_rate(iommu_clk, 1);
++
++		ret = clk_enable(iommu_clk);
++		if (ret) {
+ 			clk_put(iommu_clk);
++			goto fail_pclk;
+ 		}
++	} else
++		iommu_clk = NULL;
+ 
+-		r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+-						 "physbase");
+-		if (!r) {
+-			ret = -ENODEV;
+-			goto fail;
+-		}
++	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "physbase");
+ 
+-		len = r->end - r->start + 1;
++	if (!r) {
++		ret = -ENODEV;
++		goto fail_clk;
++	}
+ 
+-		r2 = request_mem_region(r->start, len, r->name);
+-		if (!r2) {
+-			pr_err("Could not request memory region: "
+-			"start=%p, len=%d\n", (void *) r->start, len);
+-			ret = -EBUSY;
+-			goto fail;
+-		}
++	len = r->end - r->start + 1;
+ 
+-		regs_base = ioremap(r2->start, len);
++	r2 = request_mem_region(r->start, len, r->name);
++	if (!r2) {
++		pr_err("Could not request memory region: start=%p, len=%d\n",
++							(void *) r->start, len);
++		ret = -EBUSY;
++		goto fail_clk;
++	}
+ 
+-		if (!regs_base) {
+-			pr_err("Could not ioremap: start=%p, len=%d\n",
+-				 (void *) r2->start, len);
+-			ret = -EBUSY;
+-			goto fail_mem;
+-		}
++	regs_base = ioremap(r2->start, len);
+ 
+-		irq = platform_get_irq_byname(pdev, "secure_irq");
+-		if (irq < 0) {
+-			ret = -ENODEV;
+-			goto fail_io;
+-		}
++	if (!regs_base) {
++		pr_err("Could not ioremap: start=%p, len=%d\n",
++			 (void *) r2->start, len);
++		ret = -EBUSY;
++		goto fail_mem;
++	}
++
++	irq = platform_get_irq_byname(pdev, "secure_irq");
++	if (irq < 0) {
++		ret = -ENODEV;
++		goto fail_io;
++	}
+ 
+-		mb();
++	mb();
+ 
+-		if (GET_IDR(regs_base) == 0) {
+-			pr_err("Invalid IDR value detected\n");
+-			ret = -ENODEV;
+-			goto fail_io;
+-		}
++	if (GET_IDR(regs_base) == 0) {
++		pr_err("Invalid IDR value detected\n");
++		ret = -ENODEV;
++		goto fail_io;
++	}
+ 
+-		ret = request_irq(irq, msm_iommu_fault_handler, 0,
+-				"msm_iommu_secure_irpt_handler", drvdata);
+-		if (ret) {
+-			pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
+-			goto fail_io;
+-		}
++	ret = request_irq(irq, msm_iommu_fault_handler, 0,
++			"msm_iommu_secure_irpt_handler", drvdata);
++	if (ret) {
++		pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
++		goto fail_io;
++	}
+ 
+-		msm_iommu_reset(regs_base);
+-		drvdata->base = regs_base;
+-		drvdata->irq = irq;
++	msm_iommu_reset(regs_base);
++	drvdata->pclk = iommu_pclk;
++	drvdata->clk = iommu_clk;
++	drvdata->base = regs_base;
++	drvdata->irq = irq;
+ 
+-		nm2v = GET_NM2VCBMT((unsigned long) regs_base);
+-		ncb = GET_NCB((unsigned long) regs_base);
++	nm2v = GET_NM2VCBMT((unsigned long) regs_base);
++	ncb = GET_NCB((unsigned long) regs_base);
+ 
+-		pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
++	pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
+ 			iommu_dev->name, regs_base, irq, ncb+1);
+ 
+-		platform_set_drvdata(pdev, drvdata);
+-	} else
+-		msm_iommu_root_dev = pdev;
++	platform_set_drvdata(pdev, drvdata);
+ 
+-	return 0;
++	if (iommu_clk)
++		clk_disable(iommu_clk);
++
++	clk_disable(iommu_pclk);
+ 
++	return 0;
+ fail_io:
+ 	iounmap(regs_base);
+ fail_mem:
+ 	release_mem_region(r->start, len);
++fail_clk:
++	if (iommu_clk) {
++		clk_disable(iommu_clk);
++		clk_put(iommu_clk);
++	}
++fail_pclk:
++	clk_disable(iommu_pclk);
++fail_enable:
++	clk_put(iommu_pclk);
+ fail:
+ 	kfree(drvdata);
+ 	return ret;
+@@ -252,7 +270,10 @@ static int msm_iommu_remove(struct platform_device *pdev)
+ 
+ 	drv = platform_get_drvdata(pdev);
+ 	if (drv) {
+-		memset(drv, 0, sizeof(struct msm_iommu_drvdata));
++		if (drv->clk)
++			clk_put(drv->clk);
++		clk_put(drv->pclk);
++		memset(drv, 0, sizeof(*drv));
+ 		kfree(drv);
+ 		platform_set_drvdata(pdev, NULL);
+ 	}
+@@ -264,7 +285,7 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+ 	struct msm_iommu_ctx_dev *c = pdev->dev.platform_data;
+ 	struct msm_iommu_drvdata *drvdata;
+ 	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
+-	int i, ret = 0;
++	int i, ret;
+ 	if (!c || !pdev->dev.parent) {
+ 		ret = -EINVAL;
+ 		goto fail;
+@@ -288,6 +309,18 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&ctx_drvdata->attached_elm);
+ 	platform_set_drvdata(pdev, ctx_drvdata);
+ 
++	ret = clk_enable(drvdata->pclk);
++	if (ret)
++		goto fail;
++
++	if (drvdata->clk) {
++		ret = clk_enable(drvdata->clk);
++		if (ret) {
++			clk_disable(drvdata->pclk);
++			goto fail;
++		}
++	}
++
+ 	/* Program the M2V tables for this context */
+ 	for (i = 0; i < MAX_NUM_MIDS; i++) {
+ 		int mid = c->mids[i];
+@@ -310,8 +343,11 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+ 		SET_NSCFG(drvdata->base, mid, 3);
+ 	}
+ 
+-	pr_info("context device %s with bank index %d\n", c->name, c->num);
++	if (drvdata->clk)
++		clk_disable(drvdata->clk);
++	clk_disable(drvdata->pclk);
+ 
++	dev_info(&pdev->dev, "context %s using bank %d\n", c->name, c->num);
  	return 0;
-+error:
-+	debugfs_remove_recursive(clk_dir);
-+	return -ENOMEM;
- }
+ fail:
+ 	kfree(ctx_drvdata);
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
