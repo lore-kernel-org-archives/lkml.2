@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab0LQXDb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 18:03:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756593Ab0LQXD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 18:03:29 -0500
-Date: Fri, 17 Dec 2010 18:03:20 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] blkio-cgroup: "use_hierarchy" interface without any
- functionality.
-Message-ID: <20101217230320.GA2532@redhat.com>
-References: <4CDF7BC5.9080803@cn.fujitsu.com>
- <4CDF9CC6.2040106@cn.fujitsu.com>
- <20101115165319.GI30792@redhat.com>
- <4CE2718C.6010406@kernel.dk>
- <4D01C6AB.9040807@cn.fujitsu.com>
- <4D057AA3.8050308@cn.fujitsu.com>
- <20101215212605.GA10234@redhat.com>
- <4D097CA2.6000005@cn.fujitsu.com>
- <20101216154401.GB13870@redhat.com>
- <4D0AD3C6.1050905@cn.fujitsu.com>
+	id S1754634Ab0LQXIC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 18:08:02 -0500
+Received: from nm9.bullet.mail.ne1.yahoo.com ([98.138.90.72]:20223 "HELO
+	nm9.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753919Ab0LQXH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 18:07:59 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 266311.36986.bm@omp1020.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=AMxIBfc4cZhkN73pwt0U5+vBACMJNCMHsfIYmaU5MmD5Xxyp6oTtIqxeI9xfx60NgjFB5PAGycot6bDoQgIdG6qRrBsV6dWzP/3b+Kz9brtZp72QjJv/jiLAAkorYzdY+5aVF6rq7FK5FUhkwGv1pNfyA6tbqb6p7KgwQ0ewT+c=;
+Message-ID: <288637.75833.qm@web180307.mail.gq1.yahoo.com>
+X-YMail-OSG: J3OtCZUVM1n2y8E2.lSBrI30IbUYfRvxG153G9wtovE2Cgc
+ 4o1AwYmRP48g1N9UgGLXAlz7TvLI2LZLA35kAfxdYSv2FeoBQJCOveGu3P5q
+ FmARmLTzml5.BA2kXXhkUO228sEgNHTvENBAIE4QbiDBAGyHt2JTpMDX1of9
+ 0QDZcoYaWpJZUBxOMjW0V0OAOQM07AOh1z6CYQleHTAoMyXPHbdLT.t9CVLf
+ cwJM1YFiaPRzX5PatvLjEFwjSkU2wHMQdBcxQjk4vop.fkEG6Zn1mqd7L.dS
+ JaYsbcO8ah4qGoskHMs4grLRtxRlLaRMovDnLs1OXA9Cjgx1GKt8hU_en0fZ
+ shvRHey5ti2N7lX2F4se3BAPnPiNKi8TyGW5COrl32rnbj0ztps6wk0aOOOC
+ eAK2kBsviVX7lEAP8
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Fri, 17 Dec 2010 15:07:57 -0800 (PST)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [RFC] Align tegra-ehci DMA transfers to 32B
+To: Greg KH <gregkh@suse.de>, rmorell@nvidia.com
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101217224429.GF25105@morell.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D0AD3C6.1050905@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 11:06:46AM +0800, Gui Jianfeng wrote:
-[..]
-> >>>> +static int
-> >>>> +blkiocg_use_hierarchy_write(struct cgroup *cgroup,
-> >>>> +			    struct cftype *cftype, u64 val)
-> >>>> +{
-> >>>> +	struct blkio_cgroup *blkcg;
-> >>>> +	struct blkio_group *blkg;
-> >>>> +	struct hlist_node *n;
-> >>>> +	struct blkio_policy_type *blkiop;
-> >>>> +
-> >>>> +	blkcg = cgroup_to_blkio_cgroup(cgroup);
-> >>>> +
-> >>>> +	if (val > 1 || !list_empty(&cgroup->children))
-> >>>> +		return -EINVAL;
-> >>>> +
-> >>>> +	if (blkcg->use_hierarchy == val)
-> >>>> +		return 0;
-> >>>> +
-> >>>> +	spin_lock(&blkio_list_lock);
-> >>>> +	blkcg->use_hierarchy = val;
-> >>>> +
-> >>>> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
-> >>>> +		list_for_each_entry(blkiop, &blkio_list, list) {
-> >>>> +			/*
-> >>>> +			 * If this policy does not own the blkg, do not change
-> >>>> +			 * cfq group scheduling mode.
-> >>>> +			 */
-> >>>> +			if (blkiop->plid != blkg->plid)
-> >>>> +				continue;
-> >>>> +
-> >>>> +			if (blkiop->ops.blkio_update_use_hierarchy_fn)
-> >>>> +				blkiop->ops.blkio_update_use_hierarchy_fn(blkg,
-> >>>> +									  val);
-> >>> Should we really allow this? I mean allow changing hierarchy of a group
-> >>> when there are already children groups. I think memory controller does
-> >>> not allow this. We can design along the same lines. Keep use_hierarchy
-> >>> as 0 by default. Allow changing it only if there are no children cgroups.
-> >>> Otherwise we shall have to send notifications to subscribing policies
-> >>> and then change their structure etc. Lets keep it simple.
-> >> Yes, I really don't allow changing use_hierarchy if there are childre cgroups.
-> >> Please consider following line in my patch.
-> >>
-> >> if (val > 1 || !list_empty(&cgroup->children))
-> >> 	return -EINVAL;
-> > 
-> > If there are no children cgroups, then there can not be any children blkg
-> > and there is no need to send any per blkg notification to each policy?
-> 
-> Firsly, In my patch, per blkg notification only happens on root blkg.
-> Secondly, root cfqg is put onto "flat_service_tree" in flat mode,
-> where for hierarchical mode, it don't belongs to anybody. When switching, it
-> has to inform root cfqg to switch onto or switch off "flat_service_tree".
-> 
-> Anyway, If we're going to put root cfqg onto grp_service_tree regardless of
-> flat or hierarchical mode, this piece of code can be gone.
-> 
+Odd.  This is a functional regression with respect
+to previous NVidia EHCI IP; the stuff in your PCI
+south bridges behaves normally, as I recall; no
+such  alignment restrictions.
 
-Exactly. Keeping everything on grp_service_tree() both for flat and
-hierarchical mode will make sure no root group moving around business
-and no notifications when use_hierarchy is set.
-
-Thanks
-Vivek
