@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab0LQWch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 17:32:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36382 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755740Ab0LQWcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 17:32:36 -0500
-Date: Fri, 17 Dec 2010 14:32:27 -0800
-From: Greg KH <gregkh@suse.de>
-To: Robert Morell <rmorell@nvidia.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Align tegra-ehci DMA transfers to 32B
-Message-ID: <20101217223227.GA19418@suse.de>
-References: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292623129-26361-1-git-send-email-rmorell@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756349Ab0LQWeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 17:34:03 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58639 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756015Ab0LQWeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 17:34:01 -0500
+Date: Fri, 17 Dec 2010 14:33:16 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2010-12-16-14-56 uploaded (hugetlb)
+Message-Id: <20101217143316.fa36be7d.randy.dunlap@oracle.com>
+In-Reply-To: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
+References: <201012162329.oBGNTdPY006808@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 01:58:47PM -0800, Robert Morell wrote:
-> This small set of patches fixes an issue where DMA from the tegra EHCI
-> controller could be corrupted.  It was most commonly seen with USB network
-> adapters, though in theory it could happen with any USB traffic.
+On Thu, 16 Dec 2010 14:56:39 -0800 akpm@linux-foundation.org wrote:
+
+> The mm-of-the-moment snapshot 2010-12-16-14-56 has been uploaded to
 > 
-> (Note: An attempt was made to fix this with commit 367c3aab, which set
-> NET_IP_ALIGN to 0 and NET_SKB_PAD to 32.  Unfortunately, not all network
-> drivers honor them (presumably since these are intended as optimizations rather
-> than hard rules).  This does mean that properly-written network drivers should
-> fall through this code with very little overhead, however.)
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> and will soon be available at
+> 
+>    git://zen-kernel.org/kernel/mmotm.git
+> 
+> It contains the following patches against 2.6.37-rc6:
 
-We don't have many USB network drivers, why not just fix them up to
-handle this properly, then you will not need to change any core USB
-code, right?
 
-thanks,
+# CONFIG_HUGETLBFS is not set
+CONFIG_HUGETLB_PAGE=y
 
-greg k-h
+
+In file included from mmotm-2010-1216-1456/kernel/fork.c:36:
+mmotm-2010-1216-1456/include/linux/hugetlb.h: In function 'hstate_inode':
+mmotm-2010-1216-1456/include/linux/hugetlb.h:255: error: implicit declaration of function 'HUGETLBFS_SB'
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
