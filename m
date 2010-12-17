@@ -1,176 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab0LQURF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 15:17:05 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38594 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab0LQURB convert rfc822-to-8bit (ORCPT
+	id S1756077Ab0LQUSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 15:18:07 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:53606 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab0LQUSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 15:17:01 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 17 Dec 2010 21:15:56 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-pm@lists.linux-foundation.org, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [linux-pm] 2.6.37-rc5, pata_atiixp, DVD-ROM: kernel log flooded
- with "rpm_resume flags 0x4", "rpm_resume returns 1"
-Message-ID: <20101217211556.2789cb80@stein>
-In-Reply-To: <Pine.LNX.4.44L0.1012111425520.14704-100000@netrider.rowland.org>
-References: <20101211173234.77617d3a@stein>
-	<Pine.LNX.4.44L0.1012111425520.14704-100000@netrider.rowland.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Dec 2010 15:18:04 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <20101217152246.GA8221@mail.hallyn.com>
+	<20101217152458.GA11162@mail.hallyn.com>
+	<20101217152547.GB11162@mail.hallyn.com>
+	<20101217152625.GC11162@mail.hallyn.com>
+	<20101217152659.GD11162@mail.hallyn.com>
+	<m14oacryar.fsf@fess.ebiederm.org>
+	<20101217200903.GA15528@mail.hallyn.com>
+Date: Fri, 17 Dec 2010 12:17:58 -0800
+In-Reply-To: <20101217200903.GA15528@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Fri, 17 Dec 2010 20:09:03 +0000")
+Message-ID: <m1d3p0qhl5.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18kLBRqh7MflzGrr/TPxHTix9KYv9Eaa/U=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC 4/5] user namespaces: allow killing tasks in your own or child userns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 11 Alan Stern wrote:
-> On Sat, 11 Dec 2010, Stefan Richter wrote:
-> 
-> > Hi,
-> > 
-> > I just booted from 2.6.36 (without PM debugging configured) into
-> > 2.6.37-rc5 (with PM debugging enabled).  There is endless log spam like
-> > this:
-> > 
-> > Dec 11 17:11:31 stein kernel: scsi host6: rpm_resume flags 0x4
-> > Dec 11 17:11:31 stein kernel: scsi host6: rpm_resume returns 1
-> > Dec 11 17:11:31 stein kernel: scsi host6: rpm_resume flags 0x4
-> > Dec 11 17:11:31 stein kernel: scsi host6: rpm_resume returns 1
-> ...
-> 
-> > Why is rpm_resume performed 6 times every two seconds?
-> 
-> This is probably because hal probes the DVD drive every two seconds
-> looking for media changes.  However that's not supposed to cause
-> rpm_resume to be called for the host unless runtime PM is allowed for
-> the DVD drive, which it isn't according to your listings below.  So
-> there's a bug somewhere.
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-I had 2.6.36 running since then and have now booted into 2.6.37-rc6.
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> > --- a/kernel/signal.c
+>> > +++ b/kernel/signal.c
+>> > @@ -659,11 +686,7 @@ static int check_kill_permission(int sig, struct siginfo *info,
+>> >  	cred = current_cred();
+>> >  	tcred = __task_cred(t);
+>> Nit pick  you don't need to compute cred and tcred here now.
+>
+> Just to make sure I understand right: you mean wait until after the
+> same_thread_group() check to save calculation in that case, right?
 
-Yes, it is hal indeed.  Shutting hal down avoids this logging activity.
+I mean cred and tcred are only use in kill_ok_by_cred.
+So we can eliminate those two variables from check_kill_permission.
 
-> > host6 is pata_atiixp with an:
-> > 
-> > 00:14.1 IDE interface: ATI Technologies Inc SB700/SB800 IDE Controller
-> > (prog-if 8a [Master SecP PriP])
-> > 
-> > # grep . /sys/class/scsi_host/host6/power/*
-> > /sys/class/scsi_host/host6/power/async:enabled
-> > grep: /sys/class/scsi_host/host6/power/autosuspend_delay_ms: Input/output error
-> > /sys/class/scsi_host/host6/power/control:auto
-> > /sys/class/scsi_host/host6/power/runtime_active_kids:0
-> > /sys/class/scsi_host/host6/power/runtime_active_time:0
-> > /sys/class/scsi_host/host6/power/runtime_enabled:disabled
-> > /sys/class/scsi_host/host6/power/runtime_status:unsupported
-> > /sys/class/scsi_host/host6/power/runtime_suspended_time:0
-> > /sys/class/scsi_host/host6/power/runtime_usage:0
-> 
-> This is the wrong directory (the class device, not the device itself).  
-> You should look at /sys/class/scsi_host/host6/device/power instead.  
-> And also /sys/class/scsi_host/host6/device/target6:0:0/power.
+>> >  	if (!same_thread_group(current, t) &&
+>> > -	    (cred->euid ^ tcred->suid) &&
+>> > -	    (cred->euid ^ tcred->uid) &&
+>> > -	    (cred->uid  ^ tcred->suid) &&
+>> > -	    (cred->uid  ^ tcred->uid) &&
+>> > -	    !capable(CAP_KILL)) {
+>> > +	    !kill_ok_by_cred(t)) {
+>> >  		switch (sig) {
+>> >  		case SIGCONT:
+>> >  			sid = task_session(t);
 
-OK, correct directory follows below.
 
-Actually, this time I see once every two seconds a message about
-logical unit 6:0:0:0 and 6 times every two seconds a message about
-host7:
-
-Dec 17 20:22:08 stein kernel: sd 6:0:0:0: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: sd 6:0:0:0: rpm_resume returns 1
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:08 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: sd 6:0:0:0: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: sd 6:0:0:0: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume returns 1
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume flags 0x4
-Dec 17 20:22:10 stein kernel: scsi host7: rpm_resume returns 1
-
-sd 6:0:0:0 is a USB card reader built into a monitor:
-Host: scsi6 Channel: 00 Id: 00 Lun: 00
-  Vendor: Generic  Model: Ultra HS-SD/MMC  Rev: 1.88
-  Type:   Direct-Access                    ANSI  SCSI revision: 00
-
-This is from the power/ directory of the "6:0:0:0" device which is
-bound to driver sd:
-
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/async:enabled
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/control:on
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/runtime_active_kids:0
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/runtime_active_time:1650131
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/runtime_enabled:forbidden
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/runtime_status:active
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/runtime_suspended_time:0
-/sys/devices/pci0000:00/0000:00:12.2/usb1/1-1/1-1.1/1-1.1.1/1-1.1.1:1.0/host6/target6:0:0/6:0:0:0/power/runtime_usage:1
-
-host7 is the mentioned ATI SB700/SB800 IDE controller.  Here is the
-power/ directory of the scsi_host device (rather than scsi_host class
-device):
-
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/async:enabled
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/control:auto
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/runtime_active_kids:1
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/runtime_active_time:1935478
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/runtime_enabled:enabled
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/runtime_status:active
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/runtime_suspended_time:0
-/sys/devices/pci0000:00/0000:00:14.1/host7/power/runtime_usage:0
-
-The parent device 0000:00:14.1 is bound to the mentioned pata_atiixp,
-if this is of any importance at all.
-
->From the child device:
-
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/async:enabled
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/control:auto
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/runtime_active_kids:1
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/runtime_active_time:2402125
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/runtime_enabled:enabled
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/runtime_status:active
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/runtime_suspended_time:0
-/sys/devices/pci0000:00/0000:00:14.1/host7/target7:0:0/power/runtime_usage:0
-
---------
-
-On Dec 11 Rafael J. Wysocki wrote:
-> On Saturday, December 11, 2010, Stefan Richter wrote:
-> > Hi,
-> > 
-> > I just booted from 2.6.36 (without PM debugging configured) into
-> > 2.6.37-rc5 (with PM debugging enabled).  There is endless log spam like
-> > this:
-> 
-> I guess you have either CONFIG_PM_VERBOSE set or CONFIG_PM_DEBUG unset.
-> 
-> Which is the case?
-
-I have both options off on 2.6.36 and older kernels.  I have both
-options on on 2.6.37-rc5/-rc6 (because I wanted to check something
-unrelated on 2.6.37).
--- 
-Stefan Richter
--=====-==-=- ==-- =---=
-http://arcgraph.de/sr/
+Eric
