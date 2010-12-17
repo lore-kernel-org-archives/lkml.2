@@ -1,92 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab0LQVKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 16:10:55 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:19399 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756335Ab0LQVKy (ORCPT
+	id S1756524Ab0LQVMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 16:12:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51974 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756506Ab0LQVM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 16:10:54 -0500
-X-Greylist: delayed 843 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 Dec 2010 16:10:53 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=wVi5uqbWGdHS9jKwwoWKWMR4X3XTOFmH5KB1nSXxH9uRWmG6ryWWwfg7eoIluAQ72d
-         pf0awYE85VG9BUB1l6ng==
-Date: Fri, 17 Dec 2010 12:56:41 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yinghai Lu <yinghai@kernel.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] x86, acpi: add MAX_LOCAL_APIC for 32bit
-In-Reply-To: <4D0AD464.2020408@kernel.org>
-Message-ID: <alpine.DEB.2.00.1012171253520.30929@chino.kir.corp.google.com>
-References: <20101111100628.GA24728@localhost> <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost>
- <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <4D093ABB.4030206@zytor.com> <4D0943D5.1090404@kernel.org> <4D094703.7080701@zytor.com>
- <4D0AD464.2020408@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Fri, 17 Dec 2010 16:12:28 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=sESGoGjSBwoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Un_KozB5vK8dKsD_cB4A:9 a=ys3WHognUGhlIgeq040A:7 a=1G6QN08U1giYlpNmx8QLa9N_bN8A:4 a=PUjeQqilurYA:10 a=FVnk07HAnIrHtmMg:21 a=FhAFJzQat1pibfGy:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH/RFC 1/2] jump label: make enable/disable o(1)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <4D0BCD60.3030007@caviumnetworks.com>
+References: <1292526602.2708.57.camel@laptop>
+	 <20101216192303.GB2856@redhat.com> <1292528031.2708.77.camel@laptop>
+	 <20101216193635.GC2856@redhat.com> <1292528501.2708.80.camel@laptop>
+	 <20101216194852.GD2856@redhat.com> <20101216203603.GA15610@Krystal>
+	 <1292532221.2708.93.camel@laptop> <20101216205043.GB18095@Krystal>
+	 <1292532985.2708.97.camel@laptop> <20101217200738.GA4736@redhat.com>
+	 <4D0BCD60.3030007@caviumnetworks.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 17 Dec 2010 16:12:21 -0500
+Message-ID: <1292620341.22905.17.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Dec 2010, Yinghai Lu wrote:
+On Fri, 2010-12-17 at 12:51 -0800, David Daney wrote:
+> On 12/17/2010 12:07 PM, Jason Baron wrote:
 
-> Index: linux-2.6/arch/x86/include/asm/apicdef.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/apicdef.h
-> +++ linux-2.6/arch/x86/include/asm/apicdef.h
-> @@ -145,6 +145,7 @@
->  
->  #ifdef CONFIG_X86_32
->  # define MAX_IO_APICS 64
-> +# define MAX_LOCAL_APIC 256
->  #else
->  # define MAX_IO_APICS 128
->  # define MAX_LOCAL_APIC 32768
-> Index: linux-2.6/arch/x86/kernel/apic/apic.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/apic/apic.c
-> +++ linux-2.6/arch/x86/kernel/apic/apic.c
-> @@ -1689,7 +1689,7 @@ void __init register_lapic_address(unsig
->   * This initializes the IO-APIC and APIC hardware if this is
->   * a UP kernel.
->   */
-> -int apic_version[MAX_APICS];
-> +int apic_version[MAX_LOCAL_APIC];
->  
->  int __init APIC_init_uniprocessor(void)
->  {
-> Index: linux-2.6/arch/x86/include/asm/mpspec.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/mpspec.h
-> +++ linux-2.6/arch/x86/include/asm/mpspec.h
-> @@ -6,7 +6,7 @@
->  #include <asm/mpspec_def.h>
->  #include <asm/x86_init.h>
->  
-> -extern int apic_version[MAX_APICS];
-> +extern int apic_version[];
->  extern int pic_mode;
->  
->  #ifdef CONFIG_X86_32
+> Not acceptable I would think.
 > 
+> How about:
+> 
+> union fubar {
+>     int key_as_non_atomic;
+>     atomic_t key_as_atomic;
+> };
 
-This looks like it duplicates and conflicts with Tejun's NUMA unification 
-patchset, specifically http://marc.info/?l=linux-kernel&m=129087155712396
+I don't even like this union.
+
+> 
+> Now explain the exact semantics of this thing including how you 
+> guarantee no conflicting accesses *ever* occur.
+
+I don't like the mixed semantics at all.
+
+> 
+> 
+> > So for when jump labels are disabled case we could have
+> > one struct:
+> >
+> > struct jump_label_key {
+
+	atomic_t state;
+
+> > }
+> >
+> > and then we could then have (rough c code):
+> >
+> > jump_label_enable(struct jump_label_key *key)
+> > {
+
+	if (atomic_read(&key->state))
+		return;
+	atomic_inc(&key->state);
+
+> > }
+> >
+> > jump_label_disable(struct jump_label_key *key)
+> > {
+
+	if (!atomic_read(&key->state))
+		return;
+	atomic_dec(&key->state);
+	WARN_ON(atomic_read(&key->state);
+
+> > }
+> >
+> > jump_label_inc(struct jump_label_key *key)
+> > {
+
+ 	atomic_inc(&key->state)
+
+> > }
+> >
+> > jump_label_dec(struct jump_label_key *key)
+> > {
+
+ 	atomic_dec((&key->state)
+
+> > }
+> >
+> > bool unlikely_switch(struct jump_label_key *key)
+> > {
+
+ 	if (atomic_read(&key->state))
+
+> > 		return true;
+> > 	return false;
+> > }
+> >
+
+There, now you are guaranteed that you have proper semantics.
+
+> >
+> > can we agree on something like this?
+> 
+> I get a sick feeling whenever casting is used to give types with well 
+> defined semantics (atomic_t) poorly defined semantics (your usage).
+
+Exactly, I like to avoid (void*) anything or even worse, casting one
+type to another for some strange semantics. This is guaranteed nightmare
+of maintenance.
+
+-- Steve
+
+
