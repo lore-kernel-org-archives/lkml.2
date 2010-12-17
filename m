@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab0LQMKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 07:10:00 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:41585 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752907Ab0LQMJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 07:09:58 -0500
-X-Authenticated: #54578410
-X-Provags-ID: V01U2FsdGVkX1/MjaBpA5XMAeIgta4BPFe1Diq04UosHdPnOPLoY4
-	9Ye1X+kXZPKAEP
-Message-ID: <4D0B5312.5080107@gmx.de>
-Date: Fri, 17 Dec 2010 13:09:54 +0100
-From: Michael Lawnick <ml.lawnick@gmx.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Mnenhy/0.8.3 Thunderbird/3.1.7
+	id S1753367Ab0LQMLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 07:11:25 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:45000 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab0LQMLX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 07:11:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=apCSl1BSNh1fA3Cv0UkEsfiQ1wIOwdKLifHVCcbdg8dR63n9Rj8IJvIZ1XY+pc6cYJ
+         RtNy2l63SM7dLXtEn2QbRoHv0oLQAzYW07meczsfFkz4eGELP2nbap4qZzQKverN8jtv
+         +AXv2ROOWlKWuDPyE+i4nR/MO5cn0wb8Dt6x0=
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Ben Dooks <ben-i2c@fluff.org>, Linux I2C <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthias Zacharias <Matthias.Zacharias@bmk-solutions.de>
-Subject: Re: [RFC] i2c-algo-bit: Disable interrupts while SCL is high
-References: <20101216150638.7d3850b5@endymion.delvare>	<20101216160046.GE20097@trinity.fluff.org> <20101216175337.2b1ae6ee@endymion.delvare>
-In-Reply-To: <20101216175337.2b1ae6ee@endymion.delvare>
+In-Reply-To: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+References: <1292584829-28279-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+Date: Fri, 17 Dec 2010 13:11:22 +0100
+Message-ID: <AANLkTikboaQGMGTVchXyo6tidtq7c33KDRU2puL1youv@mail.gmail.com>
+Subject: Re: [PATCH 00/11] mfd and bluetooth: Add CG2900 support
+From: Vitaly Wool <vitalywool@gmail.com>
+To: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Cc: Pavan Savoy <pavan_savoy@sify.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean Delvare said the following:
-> Hi Ben,
-> 
-> On Thu, 16 Dec 2010 16:00:46 +0000, Ben Dooks wrote:
->> On Thu, Dec 16, 2010 at 03:06:38PM +0100, Jean Delvare wrote:
->> > Add a spinlock to every user of i2c-algo-bit, which is taken before
->> > raising SCL and released after lowering SCL. We don't really need
->> > the exclusion functionality, but we have to disable local interrupts.
->> > This is needed to comply with SMBus requirements that SCL shouldn't
->> > be high for longer than 50 us.
->> > 
->> > SMBus slaves can consider SCL being high for 50 us as a timeout
->> > condition. This has been observed to happen reproducibly with the
->> > Melexis MLX90614.
->> > 
->> > The drawback of this approach is that spin_lock_irqsave() and
->> > spin_unlock_irqrestore() will be called once for each bit going on the
->> > I2C bus in either direction. This can mean up to 100 kHz for standard
->> > I2C and SMBus and up to 250 kHz for fast I2C. The good thing is that
->> > this limits the latency to reasonable values (2us at 250 kHz, 5 us at
->> > 100 kHz and 50 us at 10 kHz).
->> 
->> Hmm, this is going to be a drain on interrupt latency... disabling
->> interrupts in a system for that long could cause other things to
->> jitter.
-> 
-> So you consider that even disabling interrupts for 5 us is too long? Or
-> are you only worried by the 50 us case?
+Hi Par,
 
-Sorry to disturb, but
-<MANTRA>
-	Disabling interrupts may be done only for a few instructions.</MANTRA>
+On Fri, Dec 17, 2010 at 12:20 PM, Par-Gunnar Hjalmdahl
+<par-gunnar.p.hjalmdahl@stericsson.com> wrote:
+> This is the 3rd patch set for the ST-Ericsson CG2900 connectivity
+> controller. The CG2900 is a combo controller supporting GPS, Bluetooth,
+> and FM radio. It uses HCI H:4 protocol to combine different functionalities
+> on a common transport, where first byte in the data indicates the current
+> channel. Channels 1-4 are standardized in the Bluetooth Core specification
+> while the other channels are vendor specific.
+>
+> Compared to 2nd patch set this patch set has the following changes:
+>  * UART handling is moved from mfd to bluetooth folder. It now reuses the
+>   existing N_HCI line discipline.
+>  * mfd creation has been moved from cg2900_core into chip specific files.
+>  * All information for each channel, including API functions, exist in each
+>   MFD devices, making them independent of each other.
+>  * All chip specific information has been moved from cg2900_core into the
+>   chip specific files. cg2900_core now only handles registration and
+>   connection between transport and chip driver.
+>  * Fixes for several review comments including use of existing debug system.
 
-Even 1 us is an eternity on modern systems.
+this patchset has only multiplied my confusion.
 
-JM2C
+Not really diving into the details, I'm just trying to understand how
+I'd rewrite the TI shared transport using your approach if I had to.
+It looks like I'd have to, at least:
+ - implement a heavyweight line discipline driver (like cg2900_uart.c)
+half duplicating the functionality in yours;
+ - implement specific MFD driver.
 
--- 
-KR
-Michael
+Actually the reuse of this implementation will be at a level of
+statistics error. The only thing to reuse is actually the approach
+which I'm not really happy about.
+
+So...
+
+If you are aiming for a generic solution, then why you get more and
+more things handled in cg2900-specific code (e. g. packet routing
+which is fairly generic)?
+
+If you are solving your particular problems, isn't the change too
+dramatic e. g. when it comes to line discipline drivers and baudrate
+manipulation?
+
+As of now, I really see no reason why anyone would promote this
+solution instead of making something more generic out of ti-st and
+reusing it then.
+
+Thanks,
+   Vitaly
