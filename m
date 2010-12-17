@@ -1,389 +1,764 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab0LQLXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:23:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:53587 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab0LQLXE (ORCPT
+	id S1753354Ab0LQLYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:24:04 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:47040 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751250Ab0LQLYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:23:04 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/10] MCDE: Add build files and bus
-Date: Fri, 17 Dec 2010 12:22:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        Jimmy RUBIN <jimmy.rubin@stericsson.com>,
-        Dan JOHANSSON <dan.johansson@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-References: <F45880696056844FA6A73F415B568C6953604E802E@EXDCVYMBSTM006.EQ1STM.local> <201011261224.59490.arnd@arndb.de> <4D0A59DD.5060707@stericsson.com>
-In-Reply-To: <4D0A59DD.5060707@stericsson.com>
+	Fri, 17 Dec 2010 06:24:01 -0500
+From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+To: Pavan Savoy <pavan_savoy@sify.com>, Vitaly Wool <vitalywool@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
+        Lukasz Rymanowski <Lukasz.Rymanowski@tieto.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
+        Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+Subject: [PATCH 02/11] mfd: Add CG2900 character devices
+Date: Fri, 17 Dec 2010 12:23:44 +0100
+Message-ID: <1292585024-28368-1-git-send-email-par-gunnar.p.hjalmdahl@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201012171222.55444.arnd@arndb.de>
-X-Provags-ID: V02:K0:O8180JJIhJrjlkE1FYsn1rR1Q+5dOhJ2dw9830lE1r1
- zYpOYAXbb3VKPodtbaObhli0iW1LdojdvdE7Us0Zzsn+bOCvqF
- ngfEznu6bRTXS5RVlZXTvbu7Exm9x/Qby00AGo+CtwbzyeCXzU
- ttg5hc7JZyqj3YaOF/hed7gr3zgGxOAQy5MX6cfm/iLhqWQoxS
- HogOG8JgWqZNmGS0eMPvg==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 December 2010 19:26:37 Marcus Lorentzon wrote:
-> On 11/26/2010 12:24 PM, Arnd Bergmann wrote:
-> > [note: please configure your email client properly so it keeps
-> > proper attribution of text and and does not rewrap the citations
-> > incorrectly. Wrap your own text after 70 characters]
-> >    
-> I'm now using Thunderbird, please let me know if it's better than my 
-> previous webmail client, neither have many features for reply formatting.
+This patch adds character device support for the
+ST-Ericsson CG2900 framework. The CG2900 is chip
+supporting GPS, Bluetooth, and FM radio.
+This patch adds support for creating character devices
+so it is possible for stacks located in User space to
+send data to and receive data from the connected
+controller.
 
-Much better now, just remember to leave empty lines around your replies
-and to trim the lines that you are not replying to.
+Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
+---
+ drivers/mfd/cg2900/Makefile              |    2 +
+ drivers/mfd/cg2900/cg2900_char_devices.c |  701 ++++++++++++++++++++++++++++++
+ 2 files changed, 703 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/cg2900/cg2900_char_devices.c
 
-> > * When I talk about a bus, I mean 'struct bus_type', which identifies
-> >    all devices with a uniform bus interface to their parent device
-> >    (think: PCI, USB, I2C). You seem to think of a bus as a specific
-> >    instance of that bus type, i.e. the device that is the parent of
-> >    all the connected devices. If you have only one instance of a bus
-> >    in any system, and they are all using the same driver, do not add
-> >    a bus_type for it.
-> >    A good reason to add a bus_type would be e.g. if the "display"
-> >    driver uses interfaces to the dss that are common among multiple
-> >    dss drivers from different vendors, but the actual display drivers
-> >    are identical. This does not seem to be the case.
-> >    
-> Correct, I refer to the device, not type or driver. I used a bus type 
-> since it allowed me to setup a default implementation for each driver 
-> callback. So all drivers get generic implementation by default, and 
-> override when that is not enough. Meybe you have a better way of getting 
-> the same behavior.
+diff --git a/drivers/mfd/cg2900/Makefile b/drivers/mfd/cg2900/Makefile
+index a736101..0ac9bc6 100644
+--- a/drivers/mfd/cg2900/Makefile
++++ b/drivers/mfd/cg2900/Makefile
+@@ -5,3 +5,5 @@
+ obj-$(CONFIG_MFD_CG2900)	+= cg2900_core.o
+ export-objs			:= cg2900_core.o
+ 
++obj-$(CONFIG_MFD_CG2900)	+= cg2900_char_devices.o
++
+diff --git a/drivers/mfd/cg2900/cg2900_char_devices.c b/drivers/mfd/cg2900/cg2900_char_devices.c
+new file mode 100644
+index 0000000..c878f5f
+--- /dev/null
++++ b/drivers/mfd/cg2900/cg2900_char_devices.c
+@@ -0,0 +1,701 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Authors:
++ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for ST-Ericsson.
++ * Henrik Possung (henrik.possung@stericsson.com) for ST-Ericsson.
++ * Josef Kindberg (josef.kindberg@stericsson.com) for ST-Ericsson.
++ * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com) for ST-Ericsson.
++ * Kjell Andersson (kjell.k.andersson@stericsson.com) for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ *
++ * Linux Bluetooth HCI H:4 Driver for ST-Ericsson connectivity controller.
++ */
++#define NAME					"cg2900_char_dev"
++#define pr_fmt(fmt)				NAME ": " fmt "\n"
++
++#include <linux/compiler.h>
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/file.h>
++#include <linux/kernel.h>
++#include <linux/list.h>
++#include <linux/miscdevice.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/platform_device.h>
++#include <linux/poll.h>
++#include <linux/sched.h>
++#include <linux/skbuff.h>
++#include <linux/mfd/cg2900.h>
++
++#include "cg2900_core.h"
++
++#define MAIN_DEV				(dev->dev)
++
++/**
++ * struct char_dev_user - Stores device information.
++ * @dev:		Current device.
++ * @miscdev:		Registered device struct.
++ * @name:		Name of device.
++ * @rx_queue:		Data queue.
++ * @rx_wait_queue:	Wait queue.
++ * @reset_wait_queue:	Reset Wait queue.
++ * @read_mutex:		Read mutex.
++ * @write_mutex:	Write mutex.
++ * @list:		List header for inserting into device list.
++ */
++struct char_dev_user {
++	struct device		*dev;
++	struct miscdevice	miscdev;
++	char			*name;
++	struct sk_buff_head	rx_queue;
++	wait_queue_head_t	rx_wait_queue;
++	wait_queue_head_t	reset_wait_queue;
++	struct mutex		read_mutex;
++	struct mutex		write_mutex;
++	struct list_head	list;
++};
++
++/**
++ * struct char_info - Stores all current users.
++ * @open_mutex:	Open mutex (used for both open and release).
++ * @man_mutex:	Management mutex.
++ * @dev_users:	List of char dev users.
++ */
++struct char_info {
++	struct mutex		open_mutex;
++	struct mutex		man_mutex;
++	struct list_head	dev_users;
++};
++
++static struct char_info *char_info;
++
++/**
++ * char_dev_read_cb() - Handle data received from controller.
++ * @dev:	Device receiving data.
++ * @skb:	Buffer with data coming from controller.
++ *
++ * The char_dev_read_cb() function handles data received from the CG2900 driver.
++ */
++static void char_dev_read_cb(struct cg2900_user_data *dev, struct sk_buff *skb)
++{
++	struct char_dev_user *char_dev = dev_get_drvdata(dev->dev);
++
++	dev_dbg(dev->dev, "char_dev_read_cb len %d\n", skb->len);
++
++	skb_queue_tail(&char_dev->rx_queue, skb);
++
++	wake_up_interruptible(&char_dev->rx_wait_queue);
++}
++
++/**
++ * char_dev_reset_cb() - Handle reset from controller.
++ * @dev:	Device resetting.
++ *
++ * The char_dev_reset_cb() function handles reset from the CG2900 driver.
++ */
++static void char_dev_reset_cb(struct cg2900_user_data *dev)
++{
++	struct char_dev_user *char_dev = dev_get_drvdata(dev->dev);
++
++	dev_dbg(dev->dev, "char_dev_reset_cb\n");
++
++	wake_up_interruptible(&char_dev->rx_wait_queue);
++	wake_up_interruptible(&char_dev->reset_wait_queue);
++}
++
++/**
++ * char_dev_open() - Open char device.
++ * @inode:	Device driver information.
++ * @filp:	Pointer to the file struct.
++ *
++ * The char_dev_open() function opens the char device.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EINVAL if device cannot be found in device list.
++ *   Error codes from cg2900->open.
++ */
++static int char_dev_open(struct inode *inode, struct file *filp)
++{
++	int err;
++	int minor;
++	struct char_dev_user *dev = NULL;
++	struct char_dev_user *tmp;
++	struct list_head *cursor;
++	struct cg2900_user_data *user;
++
++	mutex_lock(&char_info->open_mutex);
++
++	minor = iminor(inode);
++
++	/* Find the device for this file */
++	mutex_lock(&char_info->man_mutex);
++	list_for_each(cursor, &char_info->dev_users) {
++		tmp = list_entry(cursor, struct char_dev_user, list);
++		if (tmp->miscdev.minor == minor) {
++			dev = tmp;
++			break;
++		}
++	}
++	mutex_unlock(&char_info->man_mutex);
++	if (!dev) {
++		pr_err("Could not identify device in inode");
++		err = -EINVAL;
++		goto error_handling;
++	}
++
++	filp->private_data = dev;
++	user = dev_get_platdata(dev->dev);
++
++	/* First initiate wait queues for this device. */
++	init_waitqueue_head(&dev->rx_wait_queue);
++	init_waitqueue_head(&dev->reset_wait_queue);
++
++	/* Register to CG2900 Driver */
++	err = user->open(user);
++	if (err) {
++		dev_err(MAIN_DEV,
++			"Couldn't register to CG2900 for H:4 channel %s\n",
++			dev->name);
++		goto error_handling;
++	}
++	dev_info(MAIN_DEV, "char_dev %s opened\n", dev->name);
++
++error_handling:
++	mutex_unlock(&char_info->open_mutex);
++	return err;
++}
++
++/**
++ * char_dev_release() - Release char device.
++ * @inode:	Device driver information.
++ * @filp:	Pointer to the file struct.
++ *
++ * The char_dev_release() function release the char device.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EBADF if NULL pointer was supplied in private data.
++ */
++static int char_dev_release(struct inode *inode, struct file *filp)
++{
++	int err = 0;
++	struct char_dev_user *dev = filp->private_data;
++	struct cg2900_user_data *user;
++
++	pr_debug("char_dev_release");
++
++	if (!dev) {
++		pr_err("Calling with NULL pointer");
++		return -EBADF;
++	}
++
++	mutex_lock(&char_info->open_mutex);
++	mutex_lock(&dev->read_mutex);
++	mutex_lock(&dev->write_mutex);
++
++	user = dev_get_platdata(dev->dev);
++	if (user->opened)
++		user->close(user);
++
++	dev_info(MAIN_DEV, "char_dev %s closed\n", dev->name);
++
++	filp->private_data = NULL;
++	wake_up_interruptible(&dev->rx_wait_queue);
++	wake_up_interruptible(&dev->reset_wait_queue);
++
++	mutex_unlock(&dev->write_mutex);
++	mutex_unlock(&dev->read_mutex);
++	mutex_unlock(&char_info->open_mutex);
++
++	return err;
++}
++
++/**
++ * char_dev_read() - Queue and copy buffer to user.
++ * @filp:	Pointer to the file struct.
++ * @buf:	Received buffer.
++ * @count:	Size of buffer.
++ * @f_pos:	Position in buffer.
++ *
++ * The char_dev_read() function queues and copy the received buffer to
++ * the user space char device. If no data is available this function will block.
++ *
++ * Returns:
++ *   Bytes successfully read (could be 0).
++ *   -EBADF if NULL pointer was supplied in private data.
++ *   -EFAULT if copy_to_user fails.
++ *   Error codes from wait_event_interruptible.
++ */
++static ssize_t char_dev_read(struct file *filp, char __user *buf, size_t count,
++			     loff_t *f_pos)
++{
++	struct char_dev_user *dev = filp->private_data;
++	struct cg2900_user_data *user;
++	struct sk_buff *skb;
++	int bytes_to_copy;
++	int err = 0;
++
++	pr_debug("char_dev_read");
++
++	if (!dev) {
++		pr_err("Calling with NULL pointer");
++		return -EBADF;
++	}
++	mutex_lock(&dev->read_mutex);
++
++	user = dev_get_platdata(dev->dev);
++
++	if (user->opened && skb_queue_empty(&dev->rx_queue)) {
++		err = wait_event_interruptible(dev->rx_wait_queue,
++				(!(skb_queue_empty(&dev->rx_queue))) ||
++				!user->opened);
++		if (err) {
++			dev_err(MAIN_DEV, "Failed to wait for event\n");
++			goto error_handling;
++		}
++	}
++
++	if (!user->opened) {
++		dev_err(MAIN_DEV, "Channel has been closed\n");
++		err = -EBADF;
++		goto error_handling;
++	}
++
++	skb = skb_dequeue(&dev->rx_queue);
++	if (!skb) {
++		dev_dbg(MAIN_DEV,
++			"skb queue is empty - return with zero bytes\n");
++		bytes_to_copy = 0;
++		goto finished;
++	}
++
++	bytes_to_copy = min(count, skb->len);
++
++	err = copy_to_user(buf, skb->data, bytes_to_copy);
++	if (err) {
++		dev_err(MAIN_DEV, "Error %d from copy_to_user\n", err);
++		skb_queue_head(&dev->rx_queue, skb);
++		err = -EFAULT;
++		goto error_handling;
++	}
++
++	skb_pull(skb, bytes_to_copy);
++
++	if (skb->len > 0)
++		skb_queue_head(&dev->rx_queue, skb);
++	else
++		kfree_skb(skb);
++
++	goto finished;
++
++error_handling:
++	mutex_unlock(&dev->read_mutex);
++	return (ssize_t)err;
++finished:
++	mutex_unlock(&dev->read_mutex);
++	return bytes_to_copy;
++}
++
++/**
++ * char_dev_write() - Copy buffer from user and write to CG2900 driver.
++ * @filp:	Pointer to the file struct.
++ * @buf:	Write buffer.
++ * @count:	Size of the buffer write.
++ * @f_pos:	Position of buffer.
++ *
++ * Returns:
++ *   Bytes successfully written (could be 0).
++ *   -EBADF if NULL pointer was supplied in private data.
++ *   -EFAULT if copy_from_user fails.
++ */
++static ssize_t char_dev_write(struct file *filp, const char __user *buf,
++			      size_t count, loff_t *f_pos)
++{
++	struct sk_buff *skb;
++	struct char_dev_user *dev = filp->private_data;
++	struct cg2900_user_data *user;
++	int err = 0;
++
++	pr_debug("char_dev_write");
++
++	if (!dev) {
++		pr_err("Calling with NULL pointer");
++		return -EBADF;
++	}
++
++	user = dev_get_platdata(dev->dev);
++	if (!user->opened) {
++		dev_err(MAIN_DEV, "char_dev_write: Channel not opened\n");
++		return -EACCES;
++	}
++
++	mutex_lock(&dev->write_mutex);
++
++	skb = user->alloc_skb(count, GFP_ATOMIC);
++	if (!skb) {
++		dev_err(MAIN_DEV, "Couldn't allocate sk_buff with length %d\n",
++			count);
++		goto error_handling;
++	}
++
++	err = copy_from_user(skb_put(skb, count), buf, count);
++	if (err) {
++		dev_err(MAIN_DEV, "Error %d from copy_from_user\n", err);
++		kfree_skb(skb);
++		err = -EFAULT;
++		goto error_handling;
++	}
++
++	err = user->write(user, skb);
++	if (err) {
++		dev_err(MAIN_DEV, "cg2900_write failed (%d)\n", err);
++		kfree_skb(skb);
++		goto error_handling;
++	}
++
++	mutex_unlock(&dev->write_mutex);
++	return count;
++
++error_handling:
++	mutex_unlock(&dev->write_mutex);
++	return err;
++}
++
++/**
++ * char_dev_unlocked_ioctl() - Handle IOCTL call to the interface.
++ * @filp:	Pointer to the file struct.
++ * @cmd:	IOCTL command.
++ * @arg:	IOCTL argument.
++ *
++ * Returns:
++ *   0 if there is no error.
++ *   -EINVAL if supplied cmd is not supported.
++ *   For cmd CG2900_CHAR_DEV_IOCTL_CHECK4RESET 0x01 is returned if device is
++ *   reset and 0x02 is returned if device is closed.
++ */
++static long char_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
++				    unsigned long arg)
++{
++	struct char_dev_user *dev = filp->private_data;
++	struct cg2900_user_data *user;
++	struct cg2900_rev_data rev_data;
++	int err = 0;
++	int ret_val;
++	void __user *user_arg = (void __user *)arg;
++
++	dev_dbg(dev->dev, "char_dev_unlocked_ioctl for %s\n"
++		"\tDIR: %d\n"
++		"\tTYPE: %d\n"
++		"\tNR: %d\n"
++		"\tSIZE: %d",
++		dev->name, _IOC_DIR(cmd), _IOC_TYPE(cmd), _IOC_NR(cmd),
++		_IOC_SIZE(cmd));
++
++	user = dev_get_platdata(dev->dev);
++
++	switch (cmd) {
++	case CG2900_CHAR_DEV_IOCTL_RESET:
++		if (!user->opened)
++			return -EACCES;
++		dev_dbg(MAIN_DEV, "ioctl reset command for device %s\n",
++			dev->name);
++		err = user->reset(user);
++		break;
++
++	case CG2900_CHAR_DEV_IOCTL_CHECK4RESET:
++		if (user->opened)
++			ret_val = CG2900_CHAR_DEV_IOCTL_EVENT_IDLE;
++		else
++			ret_val = CG2900_CHAR_DEV_IOCTL_EVENT_RESET;
++
++		dev_dbg(MAIN_DEV, "ioctl check for reset command for device %s",
++			dev->name);
++
++		err = copy_to_user(user_arg, &ret_val, sizeof(ret_val));
++		if (err) {
++			dev_err(MAIN_DEV,
++				"Error %d from copy_to_user for reset\n", err);
++			return -EFAULT;
++		}
++		break;
++
++	case CG2900_CHAR_DEV_IOCTL_GET_REVISION:
++		if (!user->get_local_revision(user, &rev_data)) {
++			dev_err(MAIN_DEV, "No revision data available\n");
++			return -EIO;
++		}
++		dev_dbg(MAIN_DEV, "ioctl check for local revision info\n"
++			"\trevision 0x%04X\n"
++			"\tsub_version 0x%04X\n",
++			rev_data.revision, rev_data.sub_version);
++		err = copy_to_user(user_arg, &rev_data, sizeof(rev_data));
++		if (err) {
++			dev_err(MAIN_DEV,
++				"Error %d from copy_to_user for "
++				"revision\n", err);
++			return -EFAULT;
++		}
++		break;
++
++	default:
++		dev_err(MAIN_DEV, "Unknown ioctl command %08X\n", cmd);
++		err = -EINVAL;
++		break;
++	};
++
++	return err;
++}
++
++/**
++ * char_dev_poll() - Handle POLL call to the interface.
++ * @filp:	Pointer to the file struct.
++ * @wait:	Poll table supplied to caller.
++ *
++ * Returns:
++ *   Mask of current set POLL values
++ */
++static unsigned int char_dev_poll(struct file *filp, poll_table *wait)
++{
++	struct char_dev_user *dev = filp->private_data;
++	struct cg2900_user_data *user;
++	unsigned int mask = 0;
++
++	if (!dev) {
++		pr_debug("Device not open");
++		return POLLERR | POLLRDHUP;
++	}
++
++	user = dev_get_platdata(dev->dev);
++
++	poll_wait(filp, &dev->reset_wait_queue, wait);
++	poll_wait(filp, &dev->rx_wait_queue, wait);
++
++	if (!user->opened)
++		mask |= POLLERR | POLLRDHUP | POLLPRI;
++	else
++		mask |= POLLOUT; /* We can TX unless there is an error */
++
++	if (!(skb_queue_empty(&dev->rx_queue)))
++		mask |= POLLIN | POLLRDNORM;
++
++	return mask;
++}
++
++/*
++ * struct char_dev_fops - Char devices file operations.
++ * @read:		Function that reads from the char device.
++ * @write:		Function that writes to the char device.
++ * @unlocked_ioctl:	Function that performs IO operations with
++ *			the char device.
++ * @poll:		Function that checks if there are possible operations
++ *			with the char device.
++ * @open:		Function that opens the char device.
++ * @release:		Function that release the char device.
++ */
++static const struct file_operations char_dev_fops = {
++	.read		= char_dev_read,
++	.write		= char_dev_write,
++	.unlocked_ioctl	= char_dev_unlocked_ioctl,
++	.poll		= char_dev_poll,
++	.open		= char_dev_open,
++	.release	= char_dev_release
++};
++
++/**
++ * remove_dev() - Remove char device structure for device.
++ * @dev_usr:	Char device user.
++ *
++ * The remove_dev() function releases the char_dev structure for this device.
++ */
++static void remove_dev(struct char_dev_user *dev_usr)
++{
++	if (!dev_usr)
++		return;
++
++	dev_dbg(dev_usr->dev,
++		"Removing char device %s with major %d and minor %d\n",
++		dev_usr->name,
++		MAJOR(dev_usr->miscdev.this_device->devt),
++		MINOR(dev_usr->miscdev.this_device->devt));
++
++	skb_queue_purge(&dev_usr->rx_queue);
++
++	mutex_destroy(&dev_usr->read_mutex);
++	mutex_destroy(&dev_usr->write_mutex);
++
++	/* Remove device node in file system. */
++	misc_deregister(&dev_usr->miscdev);
++	kfree(dev_usr);
++}
++
++/**
++ * cg2900_char_probe() - Initialize char device module.
++ * @pdev:	Platform device.
++ *
++ * Returns:
++ *   0 if success.
++ *   -ENOMEM if allocation fails.
++ *   -EACCES if device already have been initiated.
++ */
++static int __devinit cg2900_char_probe(struct platform_device *pdev)
++{
++	int err = 0;
++	struct char_dev_user *dev_usr;
++	struct cg2900_user_data *user;
++
++	dev_dbg(&pdev->dev, "cg2900_char_probe\n");
++
++	user = dev_get_platdata(&pdev->dev);
++	user->dev = &pdev->dev;
++	user->read_cb = char_dev_read_cb;
++	user->reset_cb = char_dev_reset_cb;
++
++	dev_usr = kzalloc(sizeof(*dev_usr), GFP_KERNEL);
++	if (!dev_usr) {
++		dev_err(&pdev->dev, "Couldn't allocate dev_usr\n");
++		return -ENOMEM;
++	}
++
++	dev_set_drvdata(&pdev->dev, dev_usr);
++	dev_usr->dev = &pdev->dev;
++
++	/* Store device name */
++	dev_usr->name = user->channel_data.char_dev_name;
++
++	/* Prepare miscdevice struct before registering the device */
++	dev_usr->miscdev.minor = MISC_DYNAMIC_MINOR;
++	dev_usr->miscdev.name = dev_usr->name;
++	dev_usr->miscdev.nodename = dev_usr->name;
++	dev_usr->miscdev.fops = &char_dev_fops;
++	dev_usr->miscdev.parent = &pdev->dev;
++	dev_usr->miscdev.mode = S_IRUGO | S_IWUGO;
++
++	err = misc_register(&dev_usr->miscdev);
++	if (err) {
++		dev_err(&pdev->dev, "Error %d registering misc dev\n", err);
++		goto err_free_usr;
++	}
++
++	dev_dbg(&pdev->dev, "Added char device %s with major %d and minor %d\n",
++		dev_usr->name, MAJOR(dev_usr->miscdev.this_device->devt),
++		MINOR(dev_usr->miscdev.this_device->devt));
++
++	mutex_init(&dev_usr->read_mutex);
++	mutex_init(&dev_usr->write_mutex);
++
++	skb_queue_head_init(&dev_usr->rx_queue);
++
++	mutex_lock(&char_info->man_mutex);
++	list_add_tail(&dev_usr->list, &char_info->dev_users);
++	mutex_unlock(&char_info->man_mutex);
++
++	return 0;
++
++err_free_usr:
++	kfree(dev_usr);
++	dev_set_drvdata(&pdev->dev, NULL);
++	return err;
++}
++
++/**
++ * cg2900_char_remove() - Release the char device module.
++ * @pdev:	Platform device.
++ *
++ * Returns:
++ *   0 if success (always success).
++ */
++static int __devexit cg2900_char_remove(struct platform_device *pdev)
++{
++	struct list_head *cursor, *next;
++	struct char_dev_user *tmp;
++	struct char_dev_user *user;
++
++	dev_dbg(&pdev->dev, "cg2900_char_remove\n");
++
++	user = dev_get_drvdata(&pdev->dev);
++
++	mutex_lock(&char_info->man_mutex);
++	list_for_each_safe(cursor, next, &char_info->dev_users) {
++		tmp = list_entry(cursor, struct char_dev_user, list);
++		if (tmp == user) {
++			list_del(cursor);
++			remove_dev(tmp);
++			dev_set_drvdata(&pdev->dev, NULL);
++			break;
++		}
++	}
++	mutex_unlock(&char_info->man_mutex);
++	return 0;
++}
++
++static struct platform_driver cg2900_char_driver = {
++	.driver = {
++		.name	= "cg2900-chardev",
++		.owner	= THIS_MODULE,
++	},
++	.probe	= cg2900_char_probe,
++	.remove	= __devexit_p(cg2900_char_remove),
++};
++
++/**
++ * cg2900_char_init() - Initialize module.
++ *
++ * Registers platform driver.
++ */
++static int __init cg2900_char_init(void)
++{
++	pr_debug("cg2900_char_init");
++
++	/* Initialize private data. */
++	char_info = kzalloc(sizeof(*char_info), GFP_ATOMIC);
++	if (!char_info) {
++		pr_err("Could not alloc char_info struct");
++		return -ENOMEM;
++	}
++
++	mutex_init(&char_info->open_mutex);
++	mutex_init(&char_info->man_mutex);
++	INIT_LIST_HEAD(&char_info->dev_users);
++
++	return platform_driver_register(&cg2900_char_driver);
++}
++
++/**
++ * cg2900_char_exit() - Remove module.
++ *
++ * Unregisters platform driver.
++ */
++static void __exit cg2900_char_exit(void)
++{
++	struct list_head *cursor, *next;
++	struct char_dev_user *tmp;
++
++	pr_debug("cg2900_char_exit");
++
++	platform_driver_unregister(&cg2900_char_driver);
++
++	if (!char_info)
++		return;
++
++	list_for_each_safe(cursor, next, &char_info->dev_users) {
++		tmp = list_entry(cursor, struct char_dev_user, list);
++		list_del(cursor);
++		remove_dev(tmp);
++	}
++
++	mutex_destroy(&char_info->open_mutex);
++	mutex_destroy(&char_info->man_mutex);
++
++	kfree(char_info);
++	char_info = NULL;
++}
++
++module_init(cg2900_char_init);
++module_exit(cg2900_char_exit);
++
++MODULE_AUTHOR("Henrik Possung ST-Ericsson");
++MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("ST-Ericsson CG2900 Char Devices Driver");
+-- 
+1.7.3.2
 
-One solution that I like is to write a module with the common code as
-a library, exporting all the default actions. The specific drivers
-can then fill their operations structure by listing the defaults
-or by providing their own functions to replace them, which in turn
-can call the default functions. This is e.g. what libata does.
-
-> > * When you say that the devices are static, I hope you do not mean
-> >    static in the C language sense. We used to allow devices to be
-> >    declared as "static struct" and registered using
-> >    platform_device_register (or other bus specific functions). This
-> >    is no longer valid and we are removing the existing users, do not
-> >    add new ones. When creating a platform device, use
-> >    platform_device_register_simple or platform_device_register_resndata.
-> >
-> > I'm not sure what you mean with drivers being static. Predefining
-> > the association between displays and drivers in per-machine files is
-> > fine, but since this is really board specific, it would be better
-> > to eventually do this through data passed from the boot loader, so
-> > you don't have to have a machine file for every combination of displays
-> > that is in the field.
-> >    
-> I guess you have read the ARM vs static platform_devices. But, yes, I 
-> mean in the c-language static sense. I will adopt to whatever Russel 
-> King says is The right way in ARM SoCs.
-
-Fair enough. We will have to fix it some day so Greg can go on with
-his plan to disallow static devices, but for now I'm not going to
-stop you. I would use platform_device_register_simple anyway, but feel
-free to do whatever fits your need here.
-
-> We are now taking a step back and start "all over". We were almost as 
-> fresh on this HW block as you are now when we started implementing the 
-> driver earlier this year. I think all of us benefit from now having a 
-> better understanding of customer requirements and the HW itself, there 
-> are some nice quirks ;). Anyway, we will restart the patches and RFC 
-> only the MCDE HW part of the driver, implementing basic fb support for 
-> one display board as you suggested initially. It's a nice step towards 
-> making the patches easier to review and give us some time to prepare the 
-> DSS stuff. That remake was done today, so I think the patch will be sent 
-> out soon. (I'm going on vacation for 3 weeks btw).
-
-Ok, sounds great! I'm also starting a 3 week vacation, but will be at the
-Linaro sprint in Dallas.
-
-My feeling now, after understanding about it some more, is that it would
-actually be better to start with a KMS implementation instead of a classic
-frame buffer. Ideally you wouldn't even need the frame buffer driver or
-the multiplexing between the two then, but still get all the benefits
-from the new KMS infrastructure.
-
-> > In the future, best plan for how you want to submit the code while
-> > you're writing it, instead of as an afterthought. Quite often, the
-> > first patch to submit is also one of the early stages of the driver,
-> > so there is no need to wait for the big picture before you start
-> > submitting. This way, we can work out conceptual mistakes early on,
-> > saving a lot of your time, and the reviewer's time as well.
-> >    
-> This is how we will try to work now that we know how the HW works.
-
-Ok, cool!
-
-> >> DSS give access to all display devices probed on the virtual mcde
-> >> dss bus, or platform bus with specific type of devices if you like.
-> >> All calls to DSS operate on a display device, like create an
-> >> overlay(=framebuffer), request an update, set power mode, etc.
-> >> All calls to DSS related to display itself and not only framebuffer
-> >> scanout, will be passed on to the display driver of the display
-> >> device in question. All calls DSS only related to overlays, like
-> >> buffer pointers, position, rotation etc is handled directly by DSS
-> >> calling mcde_hw.
-> >>
-> >> You could see mcde_hw as a physical level driver and mcde_dss closer
-> >> to a logical driver, delegating display specific decisions to the
-> >> display driver. Another analogy is mcde_hw is host driver and display
-> >> drivers are client device drivers. And DSS is a collection of logic
-> >> to manage the interaction between host and client devices.
-> >>      
-> > The way you describe it, I would picture it differently:
-> >
-> > +----------+ +----+-----+-----+ +-------+
-> > | mcde_hw  | | fb | kms | v4l | | displ |
-> > +----+----------------------------------+
-> > | HW |            mcde_dss              |
-> > +----+----------------------------------+
-> >
-> > In this model, the dss is the core module that everything else
-> > links to. The hw driver talks to the actual hardware and to the
-> > dss. The three front-ends only talk to the dss, but not to the
-> > individual display drivers or to the hw code directly (i.e. they
-> > don't use their exported symbols or internal data structures.
-> > The display drivers only talk to the dss, but not to the front-ends
-> > or the hw drivers.
-> >
-> > Would this be a correct representation of your modules?
-> >    
-> Hmm, mcde_hw does not link to dss. It should be FB->DSS->Display 
-> driver->MCDE_HW->HW IO (+ DSS->MCDE_HW). My picture is how code should 
-> be used. Anything else you find in code is a violation of that layering.
-
-I don't think it makes any sense to have the DSS sit on top of the
-display drivers, since that means it has to know about all of them
-and loading the DSS module would implicitly have to load all the
-display modules below it, even for the displays that are not present.
-
-Moreover, I don't yet see the reason for the split between mcde_hw and
-dss. If dss is the only user of the hardware module (aside from stuff
-using dss), and dss is written against the hw module as a low-level
-implementation, they can simply be the same module.
-
-> > Can you describe the shortcomings of the KSM code? I've added the dri-devel
-> > list to Cc, to get the attention of the right people.
-> >    
-> I will start this work early next year. MCDE DSS refactoring will take 
-> KMS into account. Some of the _possible_ short comings (I must say I 
-> have not looked into this in any detail yet):
-> - 3D HW is bundled with display HW. Makes it harder for us to use 
-> different 3D HW with same display HW or the other way around. I would 
-> like KMS and "DRM3D" to be more separated. We get DRM 3D drivers from IP 
-> vendors, but we still have to expose our own KMS DRM device.
-
-Ok. I'd have to look into this in more detail myself to see how
-severe this is, or how to solve it. The problem seems obvious
-enough that you should see no resistance to a patch for this.
-
-> The other "issue" is the usual, 3D vendors don't upstream their drivers.
-> Which means we have to integrate with drivers not in mainline kernel ...
-> and we still want to open all our drivers, even if some external IPs
-> don't.
-
-This will be a lot tougher for you. External modules are generally
-not accepted as a reason for designing code one way vs. another.
-Whatever the solution is, you have to convince people that it would
-still make sense if all drivers were part of the kernel itself.
-Bonus points to you if you define it in a way that forces the 3d driver
-people to put their code under the GPL in order to work with yours ;-)
-
-> - GEM user space buffer API has a security model and IPC sharing not 
-> compatible (at first glance and after short discussion with Chris 
-> Wilson) with Android (binder fdup) or for protecting buffers from the 
-> user. As I understand it correctly, GEM master, once client 
-> authenticated, you have access to all buffers.
-
-I have no idea what this means, but I trust that you and others
-can come up with a solution.
-
-> - Partial updates, overlay support and pushing any buffer to scanout. 
-> Some might be possible with the latest ioctls in KMS, will look at this.
-
-Remember that with ioctls, you can always add new ones if you need
-them, though you cannot remove or change them in incompatible ways.
-
-If you need the ioctl commands to do something they can't do today,
-try defining new commands in a way that will also work with future
-extensions without making the interface more complex than what you
-need to do. It takes some experience to get this right and the first
-versions will probably get rejected, but that doesn't mean people
-are opposed to extending the interface.
-
-> But as I said, I have not had time to look at this yet. Framebuffer was 
-> just so much easier to implement and the only customer requirement.
-
-Yes.
-
-> > Ok. If your frame buffers are not children of the displays, they should
-> > however be children of the controller:
-> >
-> > .../mcde_controller/
-> >          /chnlA/
-> >                  /displ_crtc0
-> >                  /displ_dbi0
-> >          /chnlB/
-> >                  dspl_crtc1
-> >          /fb0
-> >          /fb1
-> >          /fb2
-> >          /v4l_0
-> >          /v4l_1
-> >
-> > Does this fit better?
-> >
-> >    
-> Maybe, will try to find a better structure for relations. Not something 
-> I've considered before. But I see your point.
-> BTW. Can this hierarchy be changed in runtime? When for example one 
-> display move from one channel to another. There's a lot of muxing going 
-> on in the HW and that is hard to visualize in a static tree structure. A 
-> flat structure might be better then.
-
-It can change at runtime in theory, but that's highly discouraged
-because it tends to break user space programs working with the
-path names.
-
-Using a flatter structure indeed sounds better in that case,
-showing only the displays.
-
-> > What is the relation between a port/connector and a display?
-> > If it's 1:1, it should be the same device.
-> >
-> >    
-> A port is product specific display device data. Just a structure used to 
-> describe the MCDE<->Display/panel physical connection. The display 
-> device resource is you like. Port data describe the SoC-wires-display 
-> connection. Where are the display platform device struct describe the on 
-> SoC display configuration. Like initial color depth, what MCDE 
-> channel/encoder to use etc.
-
-It still sounds to me like it only needs to be one device for
-the display then. The device can have properties for the wires and
-for the settings, but since it's a one-to-one relationship, I would
-represent it as a single object in the device tree.
-
-> >>> * the dss driver gets loaded through udev and matches all the
-> >>>    channels
-> >>> * the dss driver creates the display devices below each channel,
-> >>>    according to the configuration data it got passed.
-> >>>        
-> >> "All" display devices need static platform_data from
-> >> mach-ux500/board-xx.c. This is why we have the bus,
-> >> to bind display dev and driver.
-> >>      
-> > You don't need to instantiate the device from the board though,
-> > just provide the data. When you add the display specific data
-> > to the dss data, the dss can create the display devices:
-> >
-> > static struct mcde_display_data mcde_displays[2] = {
-> > {
-> >          ...
-> > }, {
-> >          ...
-> > },
-> > };
-> >
-> > static struct mcde_dss_data {
-> >          int num_displays;
-> >          struct mcde_display_data *displays;
-> > } my_dss = {
-> >          .num_displays = 2,
-> >          .displays =&mcde_displays;
-> > };
-> >
-> > The mcde_dss probe function then takes the dss_data and iterates
-> > the displays, creating a new child device for each.
-> >
-> >    
-> To me this is exactly the same as the static devices we now have. Same 
-> amount of static data. And if you don't register the device, I don't see 
-> the difference. I will follow the ARM discussions on c-static platform 
-> devices and adopt.
-
-There is a problem in the object life time rules if you instantiate
-all the devices at boot time: It means that the devices lower in the
-hierarchy can get used before the parent devices are fully initialized.
-
-You can do the main mcde device as a static platform device if you
-insist, but registering a hierarchy of static platform devices
-is asking for trouble.
-
-> >> Devices are static from mach-ux500/board-xx. And v4l2/fb setup
-> >> is board/product specific and could change dynamically.
-> >>      
-> > Not sure how the fb setup can be both board specific and dynamic.
-> > If it's statically defined per board, it should be part of the
-> > dss data, and dss can then create the fb devices. If it's completely
-> > dynamic, it gets created through user space interaction anyway.
-> >
-> >    
-> The default is setup dynamically by static calls in board init code. 
-> User space will then be able to change this config. This is one of the 
-> features that is not heavily used and might get removed. Like Multihead 
-> framebuffers or framebuffer cloning to multiple displays. This might be 
-> controlled using KMS instead once adopted.
-
-Ok, makes sense.
-
-> >> No, see above. Just that we have mcde dss to support multiple user
-> >> space apis by customer request. Then doing our own fb on top of
-> >> that is very simple and adds flexibility.
-> >>      
-> > This sounds like an odd thing for a customer to ask for ;-)
-> >
-> > In my experience customers want to solve specific problems like
-> > everyone else, they have little interest in adding complexity
-> > for the sake of it. Is there something wrong with one of the
-> > interfaces? If so, it would be better to fix that than to add
-> > an indirection to allow more of them!
-> >
-> >    
-> Ok, different customers use different platforms that have different 
-> requirements. Read MeeGo vs. Android.
-
-I see. This needs to be solved more generally though, since everyone
-has the same requirements. If we conclude that we should do everything
-with KMS infrastructure, we should also make sure that it works
-for all the relevant users. That might be something worth discussing
-in the Linaro graphics workgroup as well.
-
-> >>> What does the v4l2 driver do? In my simple world, displays are for
-> >>> output
-> >>> and v4l is for input, so I must have missed something here.
-> >>>        
-> >> Currently nothing, since it is not finished. But the idea (and
-> >> requirement) is that normal graphics will use framebuffer and
-> >> video/camera overlays will use v4l2 overlays. Both using same
-> >> mcde channel and display. Some users might also configure their
-> >> board to use two framebuffers instead. Or maybe only use KMS etc ...
-> >>      
-> > I still don't understand, sorry for being slow. Why does a camera
-> > use a display?
-> >    
-> Sorry, camera _application_ use V4L2 overlays for pushing YUV camera 
-> preview or video buffers to screen composition in MCDE. V4L2 have output 
-> devices too, it's not only for capturing, even if that is what most 
-> desktops use it for.
-
-Ok, I'm starting to remember this from the 90's when I used bttv on the
-console framebuffer ;-).
-
-Could you simply define a v4l overlay device for every display device,
-even if you might not want to use it?
-That might simplify the setup considerably.
-
-	Arnd
