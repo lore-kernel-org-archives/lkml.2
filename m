@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0LQLJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 06:09:33 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:33348 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0LQLJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 06:09:32 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6199"; a="67011620"
-Message-ID: <6149a450170fa5fe32b271d2db0ec81b.squirrel@www.codeaurora.org>
-In-Reply-To: <20101217105657.GB9937@n2100.arm.linux.org.uk>
-References: <4CFDD297.4020600@codeaurora.org>
-    <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org>
-    <20101209103835.GA31465@n2100.arm.linux.org.uk>
-    <4D017B45.4000805@codeaurora.org>
-    <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com>
-    <4D045692.4050607@codeaurora.org>
-    <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com>
-    <8c67e174d807416f0c6c190cc72d3f5a.squirrel@www.codeaurora.org>
-    <20101217094818.GA9937@n2100.arm.linux.org.uk>
-    <99eb693af85e07b01d81d45f1bc77f64.squirrel@www.codeaurora.org>
-    <20101217105657.GB9937@n2100.arm.linux.org.uk>
-Date: Fri, 17 Dec 2010 03:09:18 -0800 (PST)
-Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to 
-     early_initcall
-From: "Saravana Kannan" <skannan@codeaurora.org>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: "Saravana Kannan" <skannan@codeaurora.org>,
-        "Catalin Marinas" <catalin.marinas@arm.com>, dwalker@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, "Nicolas Pitre" <nico@marvell.com>,
-        linux-kernel@vger.kernel.org,
-        "Jeff Ohlstein" <johlstei@codeaurora.org>, "Tejun Heo" <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
+	id S1753416Ab0LQLVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 06:21:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22582 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751177Ab0LQLVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Dec 2010 06:21:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,360,1288594800"; 
+   d="scan'208";a="584664162"
+Date: Fri, 17 Dec 2010 19:21:11 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] writeback: skip balance_dirty_pages() for in-memory fs
+Message-ID: <20101217112111.GA8323@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150329.002158963@intel.com>
+ <20101217021934.GA9525@localhost>
+ <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1012162239270.23229@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This avoids unnecessary checks and dirty throttling on tmpfs/ramfs.
 
-> On Fri, Dec 17, 2010 at 02:26:44AM -0800, Saravana Kannan wrote:
->> After Catalin's response to clarify, if we still end up not treating
->> secure domain as a "DMA device", then what's the alternative? Can we get
->> an explicit "cache invalidate API" that's outside of the DMA APIs? Or a
->> general uncached pages alloc/free APIs?
->
-> The answer _always_ is that if the existing APIs don't give you want
-> you need, then either the APIs need extending or a new API needs to
-> be created.
+It also prevents
 
-I will wait to hear Catalin's clarification before I proceed further with
-this point.
+[  388.126563] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
 
->
-> In any case, have you looked at the latest set of SCM patches?  They
-> don't make use of DMA coherent memory anymore, so the problem would
-> seem to be resolved.
->
+in the balance_dirty_pages tracepoint, which will call
 
-Yes, I saw them and even pointed out a few issues during internal-prelim
-review. The new patches get around it with what we hope is a temporary
-solution -- implement cache invalidate in assembly and call it over a
-kmalloc'ed and page aligned memory.
+	dev_name(mapping->backing_dev_info->dev)
 
--Saravana
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+but shmem_backing_dev_info.dev is NULL.
 
+CC: Hugh Dickins <hughd@google.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
+--- linux-next.orig/mm/page-writeback.c	2010-12-17 19:09:19.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-12-17 19:09:22.000000000 +0800
+@@ -899,6 +899,9 @@ void balance_dirty_pages_ratelimited_nr(
+ {
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 
++	if (!bdi_cap_account_dirty(bdi))
++		return;
++
+ 	current->nr_dirtied += nr_pages_dirtied;
+ 
+ 	if (unlikely(!current->nr_dirtied_pause))
