@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab0LQTbz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 14:31:55 -0500
-Received: from mail-gw0-f42.google.com ([74.125.83.42]:48882 "EHLO
-	mail-gw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab0LQTbw (ORCPT
+	id S1755175Ab0LQTec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 14:34:32 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64766 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab0LQTe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 14:31:52 -0500
+	Fri, 17 Dec 2010 14:34:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lnRtYjA4MAW+MQ3lMUskM4CDYs8o6M4r0d1LRFYG7HryBEKoGdJ9LdQ4CH2S5ekOaa
-         p5EZDVFxDZ7KxVtWfJaXT95wg68MY+Xet/9Oy/xy1vDnEDbcSNXO5J+uoYwn5ZDGbxCW
-         HOy2BWrki/sGGIbyFCKzNtR/EkZrz14jbTML0=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lJFrdMpjth+t53KtZaz93hCTBo2KDIS/iGLcTKfBd2nodmTwW0doVEHGewLUVLcr7G
+         DNhvfu7KqDHs+J43waYfgQI1N+iWvS4qoOEq8V0Lv0QIK9Hzlf3F5U6pFkI5/ORYx0YU
+         gWXhWhVVH/TRAIGdrHiXqL0ERai2QUqUneLAs=
+Date: Fri, 17 Dec 2010 11:34:19 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] input: mt updates for 2.6.38
+Message-ID: <20101217193419.GA2576@core.coreip.homeip.net>
+References: <4D09F9E2.6060900@euromail.se>
 MIME-Version: 1.0
-In-Reply-To: <1292612385.2708.108.camel@laptop>
-References: <7997200675c1a53b1954fdc3f46dd208db5dea77.1292578808.git.harald.gustafsson@ericsson.com>
-	<1292596194.2266.283.camel@twins>
-	<1292612166.2697.68.camel@Palantir>
-	<1292612385.2708.108.camel@laptop>
-Date: Fri, 17 Dec 2010 20:31:51 +0100
-Message-ID: <AANLkTikO56++q906A1XRbomeASY77wxeEuBqAdx=EttW@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Added runqueue clock normalized with cpufreq
-From: Harald Gustafsson <hgu1972@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dario Faggioli <raistlin@linux.it>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Michael Trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D09F9E2.6060900@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> We already did the very same thing (for another EU Project called
->> FRESCOR), although it was done in an userspace sort of daemon. It was
->> also able to consider other "high level" parameters like some estimation
->> of the QoS of each application and of the global QoS of the system.
->>
->> However, converting the basic mechanism into a CPUfreq governor should
->> be easily doable... The only problem is finding the time for that! ;-P
->
-> Ah, I think Harald will solve that for you,.. :)
+On Thu, Dec 16, 2010 at 12:37:06PM +0100, Henrik Rydberg wrote:
+> Dmitry,
+> 
+> Please pull from
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git next
+> 
+> to re-receive input-mt updates for 2.6.38.
+> 
+> As a one-time measure, the tree has been rewound all the way to 2.6.37-rc1, to
+> keep our trees at a common checkpoint. Hereafter, the branch will be kept stable
+> and synchronized at a common checkpoint.
+> 
+> Content-wise, the filename change has been folded into the first commit. The
+> finger-count report and the trkid documentation have been folded into the commit
+> where they are introduced. Furthermore, MT_TOOL_ENVELOPE has been dropped
+> completely, and is going to be replaced by an input device quirk. The overall
+> documentation changes have been held back for another respin. Lastly, another
+> device patch has been added to hid-egalax.
+> 
 
-Yes, I don't mind doing that. Could you point me to the right part of
-the FRESCOR code, Dario?
-I will then compare that with what I already have.
+Pulled, thanks Henrik.
+
+-- 
+Dmitry
