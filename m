@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab0LQUzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 15:55:47 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:33758 "EHLO e5.ny.us.ibm.com"
+	id S1756339Ab0LQUzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 15:55:44 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45610 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756242Ab0LQUzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756244Ab0LQUzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Dec 2010 15:55:14 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,11 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH RFC tip/core/rcu 11/20] rcu: fix race condition in synchronize_sched_expedited()
-Date: Fri, 17 Dec 2010 12:54:42 -0800
-Message-Id: <1292619291-2468-11-git-send-email-paulmck@linux.vnet.ibm.com>
+        Mariusz Kozlowski <mk@lab.zgora.pl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 19/20] rculist: fix borked __list_for_each_rcu() macro
+Date: Fri, 17 Dec 2010 12:54:50 -0800
+Message-Id: <1292619291-2468-19-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20101217205433.GA10199@linux.vnet.ibm.com>
 References: <20101217205433.GA10199@linux.vnet.ibm.com>
@@ -26,102 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new (early 2010) implementation of synchronize_sched_expedited() uses
-try_stop_cpu() to force a context switch on every CPU.  It also permits
-concurrent calls to synchronize_sched_expedited() to share a single call
-to try_stop_cpu() through use of an atomically incremented
-synchronize_sched_expedited_count variable.  Unfortunately, this is
-subject to failure as follows:
+From: Mariusz Kozlowski <mk@lab.zgora.pl>
 
-o	Task A invokes synchronize_sched_expedited(), try_stop_cpus()
-	succeeds, but Task A is preempted before getting to the atomic
-	increment of synchronize_sched_expedited_count.
+This restores parentheses blance.
 
-o	Task B also invokes synchronize_sched_expedited(), with exactly
-	the same outcome as Task A.
-
-o	Task C also invokes synchronize_sched_expedited(), again with
-	exactly the same outcome as Tasks A and B.
-
-o	Task D also invokes synchronize_sched_expedited(), but only
-	gets as far as acquiring the mutex within try_stop_cpus()
-	before being preempted, interrupted, or otherwise delayed.
-
-o	Task E also invokes synchronize_sched_expedited(), but only
-	gets to the snapshotting of synchronize_sched_expedited_count.
-
-o	Tasks A, B, and C all increment synchronize_sched_expedited_count.
-
-o	Task E fails to get the mutex, so checks the new value
-	of synchronize_sched_expedited_count.  It finds that the
-	value has increased, so (wrongly) assumes that its work
-	has been done, returning despite there having been no
-	expedited grace period since it began.
-
-The solution is to have the lowest-numbered CPU atomically increment
-the synchronize_sched_expedited_count variable within the
-synchronize_sched_expedited_cpu_stop() function, which is under
-the protection of the mutex acquired by try_stop_cpus().  However, this
-also requires that piggybacking tasks wait for three rather than two
-instances of try_stop_cpu(), because we cannot control the order in
-which the per-CPU callback function occur.
-
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_plugin.h |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+ include/linux/rculist.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 643c8f6..c22c4ef 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1041,6 +1041,8 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
- 	 * robustness against future implementation changes.
- 	 */
- 	smp_mb(); /* See above comment block. */
-+	if (cpumask_first(cpu_online_mask) == smp_processor_id())
-+		atomic_inc(&synchronize_sched_expedited_count);
- 	return 0;
- }
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index f31ef61..70d3ba5 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -244,7 +244,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
+ #define __list_for_each_rcu(pos, head) \
+ 	for (pos = rcu_dereference_raw(list_next_rcu(head)); \
+ 		pos != (head); \
+-		pos = rcu_dereference_raw(list_next_rcu((pos)))
++		pos = rcu_dereference_raw(list_next_rcu(pos)))
  
-@@ -1053,13 +1055,26 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
-  * Note that it is illegal to call this function while holding any
-  * lock that is acquired by a CPU-hotplug notifier.  Failing to
-  * observe this restriction will result in deadlock.
-+ *
-+ * The synchronize_sched_expedited_cpu_stop() function is called
-+ * in stop-CPU context, but in order to keep overhead down to a dull
-+ * roar, we don't force this function to wait for its counterparts
-+ * on other CPUs.  One instance of this function will increment the
-+ * synchronize_sched_expedited_count variable per call to
-+ * try_stop_cpus(), but there is no guarantee what order this instance
-+ * will occur in.  The worst case is that it is last on one call
-+ * to try_stop_cpus(), and the first on the next call.  This means
-+ * that piggybacking requires that synchronize_sched_expedited_count
-+ * be incremented by 3: this guarantees that the piggybacking
-+ * task has waited through an entire cycle of context switches,
-+ * even in the worst case.
-  */
- void synchronize_sched_expedited(void)
- {
- 	int snap, trycount = 0;
- 
- 	smp_mb();  /* ensure prior mod happens before capturing snap. */
--	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
-+	snap = atomic_read(&synchronize_sched_expedited_count) + 2;
- 	get_online_cpus();
- 	while (try_stop_cpus(cpu_online_mask,
- 			     synchronize_sched_expedited_cpu_stop,
-@@ -1077,7 +1092,6 @@ void synchronize_sched_expedited(void)
- 		}
- 		get_online_cpus();
- 	}
--	atomic_inc(&synchronize_sched_expedited_count);
- 	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
- 	put_online_cpus();
- }
+ /**
+  * list_for_each_entry_rcu	-	iterate over rcu list of given type
 -- 
 1.7.3.2
 
