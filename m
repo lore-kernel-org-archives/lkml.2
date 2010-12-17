@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab0LQKtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 05:49:07 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:17889 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714Ab0LQKtG (ORCPT
+	id S1753898Ab0LQK5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 05:57:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36388 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab0LQK5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 05:49:06 -0500
-Message-ID: <4D0B400D.8010903@siemens.com>
-Date: Fri, 17 Dec 2010 11:48:45 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Fri, 17 Dec 2010 05:57:38 -0500
+Date: Fri, 17 Dec 2010 10:56:57 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, Nicolas Pitre <nico@marvell.com>,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>,
+        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: dma-mapping: move consistent_init to
+	early_initcall
+Message-ID: <20101217105657.GB9937@n2100.arm.linux.org.uk>
+References: <4CFDD297.4020600@codeaurora.org> <15d23d63900e4545a40555961c49c421.squirrel@codeaurora.org> <20101209103835.GA31465@n2100.arm.linux.org.uk> <4D017B45.4000805@codeaurora.org> <AANLkTi=PnnT8rVKMxK0tVTdKnKdcKf71fsX2o594Qx3e@mail.gmail.com> <4D045692.4050607@codeaurora.org> <AANLkTimwqC6DqN8ft10EyRbPh9XvibN1fA-Cug4OdS5m@mail.gmail.com> <8c67e174d807416f0c6c190cc72d3f5a.squirrel@www.codeaurora.org> <20101217094818.GA9937@n2100.arm.linux.org.uk> <99eb693af85e07b01d81d45f1bc77f64.squirrel@www.codeaurora.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jan Kiszka <jan.kiszka@web.de>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, Tom Lyon <pugs@cisco.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v3 2/4] genirq: Inform handler about line sharing state
-References: <cover.1292281184.git.jan.kiszka@web.de> <a59c76552ebeaa128022ba9bcc7ea0753b312447.1292281184.git.jan.kiszka@web.de> <alpine.LFD.2.00.1012161410440.12146@localhost6.localdomain6> <4D0A75E3.3090900@web.de> <4D0B1CD9.5060601@web.de> <alpine.LFD.2.00.1012171116480.12146@localhost6.localdomain6> <4D0B3C11.4090307@siemens.com> <alpine.LFD.2.00.1012171137430.12146@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1012171137430.12146@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <99eb693af85e07b01d81d45f1bc77f64.squirrel@www.codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.12.2010 11:41, Thomas Gleixner wrote:
-> On Fri, 17 Dec 2010, Jan Kiszka wrote:
->> Am 17.12.2010 11:23, Thomas Gleixner wrote:
->>> OTOH, if we have to disable anyway, then we could simply keep it
->>> disabled across the installation of a new handler. That would make the
->>> notification business go away, wouldn't it ?
->>
->> No, the notification is still necessary in case the registered handler
->> keeps the line off after returning from both hard and threaded handler.
-> 
-> And how should that happen? If it is in oneshot mode then the line is
-> reenabled when the thread handler returns.
+On Fri, Dec 17, 2010 at 02:26:44AM -0800, Saravana Kannan wrote:
+> After Catalin's response to clarify, if we still end up not treating
+> secure domain as a "DMA device", then what's the alternative? Can we get
+> an explicit "cache invalidate API" that's outside of the DMA APIs? Or a
+> general uncached pages alloc/free APIs?
 
-disable_irq_nosync is called by the handler before returning. And it's
-the handler's job to revert this, properly synchronizing it internally.
+The answer _always_ is that if the existing APIs don't give you want
+you need, then either the APIs need extending or a new API needs to
+be created.
 
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+In any case, have you looked at the latest set of SCM patches?  They
+don't make use of DMA coherent memory anymore, so the problem would
+seem to be resolved.
