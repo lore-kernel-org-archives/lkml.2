@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab0LQBVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 20:21:42 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:22637 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab0LQBVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 20:21:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=kKg4aY3G6iDXFsC23wBPOL1tqRkkGdir39XyZyrKDwHV8nuv795yI+JZQuGoD+StFP
-         9z+qclTeEEDCA8S0nC/A==
-Date: Thu, 16 Dec 2010 17:21:30 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Miklos Szeredi <miklos@szeredi.hu>, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: add replace_page_cache_page() function
-In-Reply-To: <20101216220457.GA3450@barrios-desktop>
-Message-ID: <alpine.LSU.2.00.1012161708260.3351@tigran.mtv.corp.google.com>
-References: <E1PStc6-0006Cd-0Z@pomaz-ex.szeredi.hu> <AANLkTikXQmsgZ8Ea-GoQ4k2St6yCJj8Z3XthuBQ9u+EV@mail.gmail.com> <E1PTCV4-0007sR-SO@pomaz-ex.szeredi.hu> <20101216220457.GA3450@barrios-desktop>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1751835Ab0LQBVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 20:21:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45902 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751778Ab0LQBVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 20:21:50 -0500
+Message-ID: <4D0ABB0E.9080601@zytor.com>
+Date: Thu, 16 Dec 2010 17:21:18 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Maxim Uvarov <muvarov@gmail.com>,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: kdump broken on 2.6.37-rc4
+References: <20101208141942.GA2335@redhat.com> <4D00823A.9050808@kernel.org> <20101209124117.GA6032@redhat.com> <4D01377B.5070809@kernel.org> <20101213100848.GA2237@redhat.com> <4D0663F0.2060103@kernel.org> <4D06783C.6040009@zytor.com> <20101214224135.GB19693@redhat.com> <20101215103954.GA2243@redhat.com> <4D09958D.2040907@kernel.org> <20101216143925.GA13870@redhat.com> <4D0A3E31.4000109@zytor.com> <4D0A4C51.3070008@kernel.org> <4D0A6F66.1010006@zytor.com> <4D0AA116.4050707@kernel.org> <4D0AA592.3060805@kernel.org> <4D0AB14F.9050900@kernel.org>
+In-Reply-To: <4D0AB14F.9050900@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Dec 2010, Minchan Kim wrote:
-> On Thu, Dec 16, 2010 at 12:59:58PM +0100, Miklos Szeredi wrote:
-> > On Thu, 16 Dec 2010, Minchan Kim wrote:
-> > > 
-> > > Why do you release reference of old?
-> > 
-> > That's the page cache reference we release.  Just like we acquire the
-> > page cache reference for "new" above.
+On 12/16/2010 04:39 PM, Yinghai Lu wrote:
 > 
-> I mean current page cache handling semantic and page reference counting semantic
-> is separeated. For example, remove_from_page_cache doesn't drop the reference of page.
-> That's because we need more works after drop the page from page cache.
-> Look at shmem_writepage, truncate_complete_page.
+> and use that to estimate BRK size.
+> 
+> so we could change the BRK calculating code to handle 896M or just limit crashkernel for 32bit to 512M...
+> 
 
-I disagree with you there: I like the way Miklos made it symmetric,
-I like the way delete_from_swap_cache drops the swap cache reference,
-I dislike the way remove_from_page_cache does not - I did once try to
-change that, but did a bad job, messed up reiserfs or reiser4 I forget
-which, retreated in shame.
+Thinking about it, we probably should *both* fix the brk and limit the
+crashkernel to 512 MiB (for compatibility with older crashkernels.)
 
-In both the examples you give, shmem_writepage and truncate_complete_page,
-the caller has to be holding their own reference, in part because they
-locked the page, and will need to unlock it before releasing their ref.
-I think that would be true of any replace_page_cache_page caller.
-
-> 
-> You makes the general API and caller might need works before the old page 
-> is free. So how about this?
-> 
-> err = replace_page_cache_page(oldpage, newpage, GFP_KERNEL);
-> if (err) {
->         ...
-> }
-> 
-> page_cache_release(oldpage); /* drop ref of page cache */
-> 
-> 
-> > 
-> > I suspect it's historic that page_cache_release() doesn't drop the
-> > page cache ref.
-> 
-> Sorry I can't understand your words.
-
-Me neither: I believe Miklos meant __remove_from_page_cache() rather
-than page_cache_release() in that instance.
-
-Hugh
+	-hpa
