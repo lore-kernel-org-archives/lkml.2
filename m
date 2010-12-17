@@ -1,154 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab0LQVfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 16:35:37 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:55601 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab0LQVfe (ORCPT
+	id S1756598Ab0LQViq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 16:38:46 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33139 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755862Ab0LQVik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 16:35:34 -0500
-Message-ID: <4D0BD79B.2010600@vlnb.net>
-Date: Sat, 18 Dec 2010 00:35:23 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Fri, 17 Dec 2010 16:38:40 -0500
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        "Patil, Kiran" <kiran.patil@intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Boaz Harrosh <bharrosh@panasas.com>,
-        Joe Eykholt <jeykholt@cisco.com>, "J.H." <warthog9@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bart Van Assche <bart.vanassche@gmail.com>
-Subject: Re: [ANNOUNCE] TCM/LIO v4.0.0-rc6 for 2.6.37-rc6
-References: <1292557664.31461.68.camel@haakon2.linux-iscsi.org>	 <1292599364.2820.21.camel@mulgrave.site>  <4D0B8975.1040206@vlnb.net>	 <1292602908.2820.41.camel@mulgrave.site>  <4D0BBE40.6030000@vlnb.net> <1292617658.2820.80.camel@mulgrave.site>
-In-Reply-To: <1292617658.2820.80.camel@mulgrave.site>
+In-Reply-To: <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+References: <4d0662e511688484b3@agluck-desktop.sc.intel.com>
+ <AANLkTindPUkF7fCkdbqSstNHFjF3_7fEYh18nhQFx_AJ@mail.gmail.com>
+ <AANLkTim3OpjPysjdCLDuFgFOipmcxyr2ay5cvUAu5PHi@mail.gmail.com> <AANLkTinpYJddhgbf7=Pw_TtGrnWaC8fwo2xv1XRsT1w7@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 17 Dec 2010 13:38:12 -0800
+Message-ID: <AANLkTimA4x8oWyq71nOxB=Otp3Y0i3Kcu27DG0ajaXUG@mail.gmail.com>
+Subject: Re: [concept & "good taste" review] persistent store
+To: Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
+        akpm@linux-foundation.org, ying.huang@intel.com,
+        Borislav Petkov <bp@alien8.de>, David Miller <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:WU74JZtKsg4iq+O96k31+WtvDwm6VPNF2YTZKtAFv/c
- tHIzgIJ8e7HKlvX1MkE+P9Gh1vcgK8x3cGuHJn3n4MtxzgIVyr
- qpopvyXzPFIvsGAjvvhUEKYjro8caTiBNUF8s4j2OIZmXW0ZQB
- Ci0s2G1b+kmzCtC3ig7TxDWaNkQBDBuRHg7lRJf1K4oC3TlFrE
- PcEQr3i/V9j+xOLt6+Xng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 17, 2010 at 10:09 AM, Tony Luck <tony.luck@intel.com> wrote:
+>
+> So does fixing this stupidity provide a useful point for this?
 
-James Bottomley, on 12/17/2010 11:27 PM wrote:
->> James, sorry, but your position is weak and absurd. In it maturity,
->> quality and features don't matter.
-> 
-> I didn't say maturity and quality, I said niche features.  Apparently
-> it's subjective, because both LIO and SCST think their own niche
-> features are essential and the other's are irrelevant.
+Yes. However, I still question the "filesystem" part.
 
-I also meant features. And those features are pretty much objective. See
-the comparison page. As I wrote, I'm willing to add to it anything I
-missed on the first request. Several month passed and there are no
-requests from LIO. So, the page must be complete and accurate.
+Technically, what I think any persistent storage should aim for is to
+be a "journal" - not a filesystem. It's most useful as a temporary
+area for data _before_ that data actually hits the disk, and once it
+has hit the disk (or has been picked up by a network syslog server, of
+course), the usefulness of the persistent storage immediately
+vanishes.
 
-Although you can't ignore maturity and quality, especially considering
-in which rush new features added in LIO in past months.
+So I don't really mind having a filesystem interface to that (the
+whole "everything is a file" model), but I think it can end up
+confusing people about what this thing is useful for. I fear that
+people will try to write to it from user space as some kind of
+mini-filesystem, and that seems pointless.
 
->From where do you know LIO and SCST are the same level of
-maturity/quality? NicholasB told you so?
-
->> Following this logic Linux kernel and
->> a student's home brewed OS kernel for his PhD work are equal.
-> 
-> So linux did begin as a student's home brewed OS kernel ...
-
-Does it mean that we should throw away all those decades of work and
-start again?
-
->>  Obviously,
->> this is wrong. No doubts, that all what Linux kernel can do with the
->> same quality as it does can be added to the student's kernel sooner or
->> later, ... but after several decades of hard work of thousands of people.
-> 
-> Precisely.
-
-Yes, sure. After several decades of hard work of thousands of people.
-Not now, when it's ready. We will believe and wait until it's done.
-
-> Or said a different way: as long as you choose the most
-> community oriented of competing offerings, the community will fill any
-> perceived gaps.  Conversely, you can destroy a project simply by
-> alienating the community.  That's why community is more important than
-> feature set.
-
-What in the SCST community doesn't satisfy you? It keeps growing, not
-"alienating". SCST mailing list has a continual flow of new subscribers
-as well as new patches. There are several hundreds messages a month in
-it. Many people has been participating for many years.
-
-What's wrong with it?
-
-James, what exactly don't you like in the way how SCST maintained? Tell
-us. We are following all the rules we know. But, definitely, you are not
-happy with something.
-
->> At first, can you recall any cases where community comments to SCST were
->> not addressed? All of them have been addressed and none ignored. NEVER.
->>
->> Simply, LIO is very much premature code comparing to SCST. It is very
->> easy to find in it simple issues to comment, hence you see the big value
->> of comments.
-> 
-> Look, I'm not interested in the backstabbing. *Both* projects have
-> fairly large user bases and businesses with revenue models built around
-> them, so I see that argument as a wash for both sides.
-
-Me neither interested in backstabbing. But this is precisely what we are
-seeing.
-
-NicholasB pleased key people (don't know how he managed to do it,
-although suspect), so now you are making absurd arguments trying to
-prove that his second grade meat has the first class taste.
-
-Opinions of ones who tried to eat it doesn't matter, because it isn't a
-"democracy". From other side you don't want to try yourself, because
-NicholasB said the test is perfect, so you believe in it.
-
-Are we in an absurd Kafka novel?
-
->> Are we going to repeat that mistake again?
-> 
-> I don't think it was a mistake. STGT gave us the userspace modifiability
-> that neither LIO nor STGT offered at the time.
-
-Following your logic, it shouldn't have mattered, right? Because it can
-be added to SCST in the future. (LIO didn't even exist at that time.)
-
-But SCST offered user space backend at about time STGT was merged. So,
-it isn't too good argument.
-
-What's interesting is that LIO even now doesn't allow it.
-
-Moreover, accepting LIO is against your own rules you declared.
-Particularly:
-
-1. It doesn't have user space backend.
-
-2. It exports some information via procfs, which was declared as a big
-no-no.
-
-So I keep wondering, why does LIO have so much privileged treatment, so
-what was forbidden for SCST allowed for LIO?
-
-Let's treat SCST equally and allow COMMUNITY, not particular BIASED
-people to choose the best one!
-
-In this regard it looks to be a good idea to freeze accepting both LIO
-and SCST until the end of the next year and then choose one with the
-biggest activity in the related mailing lists, not counting me and
-NicholasB.
-
-You want the best community, so let community choose!
-
-Vlad
+                    Linus
