@@ -1,108 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab0LQCiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Dec 2010 21:38:12 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:41068 "HELO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750943Ab0LQCiL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Dec 2010 21:38:11 -0500
-From: Philip Rakity <prakity@marvell.com>
-To: Chris Ball <cjb@laptop.org>
-CC: Takashi Iwai <tiwai@suse.de>, Aries Lee <arieslee@jmicron.com>,
-        zhangfei gao <zhangfei.gao@gmail.com>, Qiming Wu <wuqm@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Dec 2010 18:33:49 -0800
-Subject: Re: [PATCH] mmc: Test bus-width for old MMC devices (v2)
-Thread-Topic: [PATCH] mmc: Test bus-width for old MMC devices (v2)
-Thread-Index: Acudktd27tbJtgokR4i/w4tlDTRKsA==
-Message-ID: <50D31EC8-BD9E-4920-8CEB-2AD10DF9C5C5@marvell.com>
-References: <s5hfwtzbj8v.wl%tiwai@suse.de>
- <20101216234032.GA17239@void.printf.net>
-In-Reply-To: <20101216234032.GA17239@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752275Ab0LQCmL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Dec 2010 21:42:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34692 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab0LQCmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Dec 2010 21:42:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,358,1288594800"; 
+   d="scan'208";a="688029359"
+Subject: [BUG]x86: relocatable doesn't work with new binutils
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Dec 2010 10:42:06 +0800
+Message-ID: <1292553726.2323.482.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+The CONFIG_RELOCATABLE is broken with new binutils, which will make boot
+panic. According to Lu Hongjiu, the affected binutils are from
+2.20.51.0.12 to 2.21.51.0.3, which are release since Oct 22 this year.
+At least ubuntu 10.10 is using such binutils. see:
+http://sourceware.org/bugzilla/show_bug.cgi?id=12327
+The reason of boot panic is we have 'jiffies = jiffies_64;' in
+vmlinux.lds.S. The jiffies isn't in any section. In kernel build, there
+is warning saying jiffies is an absolute address and can't be
+relocatable. At runtime, jiffies will have virtual address 0.
+We can easily workaround this issue by moving jiffies to a section or at
+least warn people if such binutils are using. what should we do?
 
-Chris,
-
-It is not possible for bus_width to be not initialized.  This would imply ARRAY_SIZE(bus_widths) is 1.  Certainly not true.
-We could just initialize by changing
-+		unsigned idx, bus_width;
-to
-+		unsigned idx, bus_width = 0;
-
-I wonder what compiler are you using so we can avoid this issue in future.
-
-Philip
-
-
-+		static unsigned ext_csd_bits[][2] = {
-+			{ EXT_CSD_BUS_WIDTH_8, EXT_CSD_DDR_BUS_WIDTH_8 },
-+			{ EXT_CSD_BUS_WIDTH_4, EXT_CSD_DDR_BUS_WIDTH_4 },
-+			{ EXT_CSD_BUS_WIDTH_1, EXT_CSD_BUS_WIDTH_1 },
-+		};
-+		static unsigned bus_widths[] = {
-+			MMC_BUS_WIDTH_8,
-+			MMC_BUS_WIDTH_4,
-+			MMC_BUS_WIDTH_1
-+		};
-+		unsigned idx, bus_width;
-+
-+		if (host->caps & MMC_CAP_8_BIT_DATA)
-+			idx = 0;
-+		else
-+			idx = 1;
-+		for (; idx < ARRAY_SIZE(bus_widths); idx++) {
-+			bus_width = bus_widths[idx];
-+			if (bus_width == MMC_BUS_WIDTH_1)
-+				ddr = 0; /* no DDR for 1-bit width */
-
-
-On Dec 16, 2010, at 3:40 PM, Chris Ball wrote:
-
-> Hi Takashi,
-> 
-> On Wed, Dec 15, 2010 at 08:14:24AM +0100, Takashi Iwai wrote:
->> From: Aries Lee <arieslee@jmicron.com>
->> 
->> Some old MMC devices fail with the 4/8 bits the driver tries to use
->> exclusively.  This patch adds a test for the given bus setup and falls
->> back to the lower bit mode (until 1-bit mode) when the test fails.
->> 
->> [Major rework and refactoring by tiwai]
->> [Quirk addition and many fixes by prakity]
->> 
->> v1->v2:
->> - Rebased to the code with DDR support, set DDR bit properly
->> - Return always error when bus-switching fallback failed
->> - Define MMC_BUS_TEST_{R|W} in linux/mmc/mmc.h
->> - Add quirk MMC_CAP_BUS_WIDTH_TEST -- default not used for compatibility
->> - Ignore errors on BUS_TEST_W -- improves chances test will work
->> 
->> Signed-off-by: Aries Lee <arieslee@jmicron.com>
->> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->> Signed-off-by: Philip Rakity <prakity@marvell.com>
->> Tested-by: Philip Rakity <prakity@marvell.com>
-> 
-> This looks good, but adds a warning:
-> 
-> drivers/mmc/core/mmc.c: In function ‘mmc_init_card’:
-> drivers/mmc/core/mmc.c:547: warning: ‘bus_width’ may be used uninitialized in this function
-> 
-> Thanks,
-> 
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
+Thanks,
+Shaohua
 
