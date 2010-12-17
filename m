@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab0LQGWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Dec 2010 01:22:13 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:56550 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751203Ab0LQGWL (ORCPT
+	id S1752846Ab0LQGXD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Dec 2010 01:23:03 -0500
+Received: from mail-fx0-f43.google.com ([209.85.161.43]:55343 "EHLO
+	mail-fx0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab0LQGXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Dec 2010 01:22:11 -0500
-Date: Fri, 17 Dec 2010 08:22:05 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: srinath@mistralsolutions.com
-Cc: linux-omap@vger.kernel.org, jdk@ti.com, tony@atomide.com,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, khilman@deeprootsystems.com,
-        nm@ti.com, nagendra@mistralsolutions.com, umeshk@mistralsolutions.com,
-        sshtylyov@mvista.com, manjugk@ti.com
-Subject: Re: [Patch v4] AM35xx: Craneboard: Add USB EHCI support
-Message-ID: <20101217062205.GD2759@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <[PATCH]AM35xx-Craneboard-Add-USB-EHCI-support>
- <1292513112-12471-1-git-send-email-srinath@mistralsolutions.com>
+	Fri, 17 Dec 2010 01:23:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fkbpbcXNqqzazl6Bn1OzXACHOT16Jim31gcK/x0L7vE3iEpYcar+HVmoej+/7tI3Oj
+         sX1JM6Wf3fOuoxxG6KmwpW0njY+mWIrWtl5a0pd53dW5f4ThVRueyo2Fqi5FN4Da59f4
+         vINBfRUJSRvZlEwnK+PKKkPlp2mZ2y3VlpJRg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1292513112-12471-1-git-send-email-srinath@mistralsolutions.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTingt6SM+uasicwPSJRE5vYpvJ=GyFf3bbKhO72G@mail.gmail.com>
+References: <cover.1292405004.git.fenghua.yu@intel.com>
+	<46a08278c2ba21737528eb4b77391a7e8bc88000.1292405004.git.fenghua.yu@intel.com>
+	<1292446118.2603.11.camel@edumazet-laptop>
+	<20101216011425.GA17446@linux-os.sc.intel.com>
+	<AANLkTingt6SM+uasicwPSJRE5vYpvJ=GyFf3bbKhO72G@mail.gmail.com>
+Date: Fri, 17 Dec 2010 14:22:59 +0800
+Message-ID: <AANLkTi=oXCqPHYs9reF9WL46Wxi_b8vL_NMSsAJJ34wD@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Kernel interfaces for multiqueue aware socket
+From: Junchang Wang <junchangwang@gmail.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "Tang, Xinan" <xinan.tang@intel.com>, netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Dec 16, 2010 at 9:28 AM, Changli Gao <xiaosuo@gmail.com> wrote:
+> On Thu, Dec 16, 2010 at 9:14 AM, Fenghua Yu <fenghua.yu@intel.com> wrote:
+>>
+>> SKF_AD_QUEUE doesn't know number of rx queues. Thus user application can't
+>> specify right SKF_AD_QUEUE.
+>
+> It is wrong. AFAIK, you can get the queue number through
+> /sys/class/net/eth*/queues/ or /proc/interrupts
+>
 
-On Thu, Dec 16, 2010 at 08:55:12PM +0530, srinath@mistralsolutions.com wrote:
-> static void __init am3517_crane_init(void)
-> {
->+	int ret;
->+
-> 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-> 	omap_serial_init();
->+
->+	/* Configure GPIO for EHCI port */
->+	if (omap_mux_init_gpio(GPIO_USB_NRESET, OMAP_PIN_OUTPUT)) {
->+		pr_err("Can not cofigure mux for GPIO_USB_NRESET %d\n",
+Valuable comment. Thanks.
 
-typo: configure
+>
+> If you turn to SKF_AD_QUEUE, I think no patch for kernel is needed.
+>
+This patch set is about parallelization of socket interfaces to gain
+performance boost (say, from 1Mpps to around 5Mpps), rather than
+simply bounding socket to cpu/queue. Therefore, it does worth having.
 
->+			GPIO_USB_NRESET);
->+		return;
->+	}
->+
->+	if (omap_mux_init_gpio(GPIO_USB_POWER, OMAP_PIN_OUTPUT)) {
->+		pr_err("Can not cofigure mux for GPIO_USB_POWER %d\n",
 
-typo: configure
-
->+			GPIO_USB_POWER);
->+		return;
->+	}
->+
->+	ret = gpio_request(GPIO_USB_POWER, "usb_ehci_enable");
->+	if (ret < 0) {
->+		pr_err("Cannot request GPIO %d\n", GPIO_USB_POWER);
-
-Keep consistency, either use Can not or Cannot.
-
->+		return;
->+	}
->+
->+	ret = gpio_direction_output(GPIO_USB_POWER, 1);
->+	if (ret < 0)
->+		goto err;
->+
->+
->+	usb_ehci_init(&ehci_pdata);
->+	return;
->+
->+err:
->+	gpio_free(GPIO_USB_POWER);
->+	pr_err("Unable to initialize EHCI power\n");
->+	return;
-
-this return is unnecessary
-
+Thanks.
 -- 
-balbi
+--Junchang
